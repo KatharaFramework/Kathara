@@ -1,0 +1,5 @@
+ifconfig eth0 2.0.0.2/24 up
+
+route add default gw 2.0.0.1
+
+/etc/init.d/apache2 start

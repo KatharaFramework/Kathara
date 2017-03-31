@@ -1,0 +1,11 @@
+version: '2.1'
+
+services:
+    jupyter:
+        image: jupyter/scipy-notebook
+        privileged: true
+        container_name: jupyter
+        volumes: 
+            - ./shared:/home/jovyan/work/shared
+        ports:
+            - 8888:8888
