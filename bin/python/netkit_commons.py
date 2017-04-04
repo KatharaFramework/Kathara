@@ -125,7 +125,7 @@ def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB)
     docker = DOCKER_BIN
 
     if PLATFORM != WINDOWS:
-        prefix = 'netkit_' + os.getuid() + '_'
+        prefix = 'netkit_' + str(os.getuid()) + '_'
     else:
         prefix = 'netkit_nt_'
 
