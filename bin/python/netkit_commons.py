@@ -9,7 +9,7 @@ import os
 DEBUG = True
 IMAGE_NAME = 'ewindisch/quagga'
 LINUX_TERMINAL_TYPE = 'xterm'
-PATH_TO_TEST_LAB = '/home/lykon/Documents/Netkit-Python-Docker-core/test/shared/MARACAS_lab/'
+PATH_TO_TEST_LAB = '../../test/shared/MARACAS_lab/'
 
 MAC_OS = "darwin"
 WINDOWS = "win32"
@@ -55,8 +55,13 @@ def lab_parse(path = PATH_TO_TEST_LAB):
     for key in config['dummysection']: 
         if DEBUG: print(key, config['dummysection'][key])
         if '[' in key and ']' in key:
-            keys.append(key)
-            links.append(config['dummysection'][key])
+            splitted = key.split('[')[1].split(']')
+            try:
+                ifnumber = int(splitted[0])
+                keys.append(key)
+                links.append(config['dummysection'][key])
+            except ValueError:
+                m_keys.append(key)
         else:
             m_keys.append(key)
 
