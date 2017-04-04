@@ -1,3 +1,4 @@
 #!/bin/bash
-
-python python/lstart.py | while read in; do (xterm -e "$in" &); done
+# TODO add args with "$@"
+sudo true
+python $NETKIT_HOME/python/lstart.py "$PWD/" | while read in; do (sudo xterm -e "$in" &); done
