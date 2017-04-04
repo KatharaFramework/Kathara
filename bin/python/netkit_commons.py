@@ -97,7 +97,12 @@ def lab_parse(path = PATH_TO_TEST_LAB):
 
 def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB):
     docker = DOCKER_BIN
-    prefix = 'netkit_' + os.getuid() + '_'
+
+    if PLATFORM != WINDOWS:
+        prefix = 'netkit_' + os.getuid() + '_'
+    else:
+        prefix = 'netkit_nt_'
+        
     create_network_template = docker + ' network create '
     create_network_commands = []
     for link in links:
