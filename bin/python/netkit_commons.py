@@ -4,6 +4,7 @@ from itertools import chain
 import re
 from sys import platform as _platform
 import subprocess
+import os
 
 DEBUG = True
 IMAGE_NAME = 'ewindisch/quagga'
@@ -96,23 +97,24 @@ def lab_parse(path = PATH_TO_TEST_LAB):
 
 def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB):
     docker = DOCKER_BIN
+    prefix = 'netkit_' + os.getuid() + '_'
     create_network_template = docker + ' network create '
     create_network_commands = []
     for link in links:
-        create_network_commands.append(create_network_template + link)
+        create_network_commands.append(create_network_template + prefix + link)
     
-    create_machine_template = docker + ' run -d --privileged --name {machine_name} -p 808{number}:80 --hostname={machine_name} --network={first_link} {image_name}'
+    create_machine_template = docker + ' run -d --privileged --name ' + prefix + '{machine_name} -p 808{number}:80 --hostname={machine_name} --network=' + prefix + '{first_link} {image_name}'
     # we could use -ti -a stdin -a stdout and then /bin/bash -c "commands;bash", 
     # but that woult execute commands like ifconfig BEFORE all the networks are linked
     create_machine_commands = []
 
-    create_connection_template = docker + ' network connect {link} {machine_name}'
+    create_connection_template = docker + ' network connect {link} ' + prefix + '{machine_name}'
     create_connection_commands = []
 
-    copy_folder_template = docker + ' cp ' + path + '{machine_name}/etc {machine_name}:/'
+    copy_folder_template = docker + ' cp ' + path + '{machine_name}/etc ' + prefix + '{machine_name}:/'
     copy_folder_commands = []
 
-    exec_template = docker + ' exec {params} -ti --privileged=true {machine_name} {command}'
+    exec_template = docker + ' exec {params} -ti --privileged=true ' + prefix + '{machine_name} {command}'
     exec_commands = []
 
     count = 0
