@@ -5,9 +5,14 @@ import re
 from sys import platform as _platform
 import subprocess
 import os
+import base64
+import hashlib
+
+#TODO machine names do not have to contain spaces, as well as link names
+#TODO check for escapes, "" and '' in .startup files
 
 DEBUG = True
-IMAGE_NAME = 'ewindisch/quagga'
+IMAGE_NAME = 'netkit'
 LINUX_TERMINAL_TYPE = 'xterm'
 PATH_TO_TEST_LAB = '../../test/shared/MARACAS_lab/'
 
@@ -39,6 +44,22 @@ def atoi(text):
     return int(text) if text.isdigit() else text
 def natural_keys(text):
     return [ atoi(c) for c in re.split('(\d+)', text) ]
+
+def run_command_detatched(cmd_line):
+    p = subprocess.Popen(cmd_line, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    out = p.communicate()[0]
+    return out
+
+def replace_multiple_items(repls, string):
+        return reduce(lambda a, kv: a.replace(*kv), repls, string)
+
+def write_temp(text, filename):
+    out_file = open(os.path.join(os.environ["NETKIT_HOME"], "temp/" + filename),"w+")
+    out_file.write(text)
+    out_file.close()
+
+def generate_urlsafe_hash(string):
+    return base64.urlsafe_b64encode(hashlib.md5(string).digest())[:-2]
 
 def lab_parse(path = PATH_TO_TEST_LAB):
     # reads lab.conf
@@ -95,7 +116,7 @@ def lab_parse(path = PATH_TO_TEST_LAB):
             config['dummysection'][m_key] = config['dummysection'][m_key][1:-1]
         metadata[m_key] = config['dummysection'][m_key]
     
-    if DEBUG: print machines, options, metadata
+    if DEBUG: print (machines, options, metadata)
 
     return machines, links, options, metadata
 
@@ -107,13 +128,19 @@ def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB)
         prefix = 'netkit_' + os.getuid() + '_'
     else:
         prefix = 'netkit_nt_'
+
+    lab_links_text = ''
+    lab_machines_text = ''
         
     create_network_template = docker + ' network create '
     create_network_commands = []
     for link in links:
         create_network_commands.append(create_network_template + prefix + link)
+        lab_links_text += prefix + link + ' '
+
+    write_temp(lab_links_text, generate_urlsafe_hash(path) + '_links')
     
-    create_machine_template = docker + ' run -d --privileged --name ' + prefix + '{machine_name} -p 808{number}:80 --hostname={machine_name} --network=' + prefix + '{first_link} {image_name}'
+    create_machine_template = docker + ' run -tid --privileged --name ' + prefix + '{machine_name} -p 808{number}:80 --hostname={machine_name} --network=' + prefix + '{first_link} {image_name}'
     # we could use -ti -a stdin -a stdout and then /bin/bash -c "commands;bash", 
     # but that woult execute commands like ifconfig BEFORE all the networks are linked
     create_machine_commands = []
@@ -128,8 +155,6 @@ def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB)
     exec_commands = []
 
     count = 0
-    def replace_multiple_items(repls, string):
-        return reduce(lambda a, kv: a.replace(*kv), repls, string)
 
     for machine_name, interfaces in machines.items():
         repls = ('{machine_name}', machine_name), ('{number}', str(count)), ('{first_link}', interfaces[0][0]), ('{image_name}', IMAGE_NAME)
@@ -145,6 +170,9 @@ def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB)
         else:
             repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \\\\"\\\\033]0;' + machine_name + '\\\\007\\\\"; bash"'), ('{params}', '-e TERM=debian')
         exec_commands.append(replace_multiple_items(repls, exec_template))
+        lab_machines_text += prefix + machine_name + ' '
+
+    write_temp(lab_machines_text, generate_urlsafe_hash(path) + '_machines')
         
     # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array
     startup_commands = []
@@ -159,9 +187,3 @@ def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB)
     commands = create_network_commands + create_machine_commands + create_connection_commands + copy_folder_commands
 
     return commands, startup_commands, exec_commands
-
-
-def run_command_detatched(cmd_line):
-    p = subprocess.Popen(cmd_line, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    out = p.communicate()[0]
-    return out

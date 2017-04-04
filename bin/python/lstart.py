@@ -21,7 +21,7 @@ cr.lab_create(commands, startup_commands)
 COMMAND_LAUNCHER = "bash -c '"
 COMMAND_LAUNCHER_END = "'"
 if nc.PLATFORM == nc.WINDOWS:
-    COMMAND_LAUNCHER = 'start cmd /k "'
+    COMMAND_LAUNCHER = 'start cmd /c "'
     COMMAND_LAUNCHER_END = '"'
 
 # print commands for terminal
