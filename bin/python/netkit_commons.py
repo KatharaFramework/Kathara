@@ -128,7 +128,10 @@ def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB)
             create_connection_commands.append(replace_multiple_items(repls, create_connection_template))
         repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name)
         copy_folder_commands.append(replace_multiple_items(repls, copy_folder_template))
-        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \\\\"\\\\033]0;' + machine_name + '\\\\007\\\\"; bash"'), ('{params}', '-e TERM=debian')
+        if PLATFORM == WINDOWS:
+            repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \'\033]0;' + machine_name + '\007\'; bash"'), ('{params}', '-e TERM=debian')
+        else:
+            repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \\\\"\\\\033]0;' + machine_name + '\\\\007\\\\"; bash"'), ('{params}', '-e TERM=debian')
         exec_commands.append(replace_multiple_items(repls, exec_template))
         
     # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array

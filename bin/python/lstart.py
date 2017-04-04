@@ -18,6 +18,12 @@ args = parser.parse_args()
 # create lab
 cr.lab_create(commands, startup_commands)
 
+COMMAND_LAUNCHER = "bash -c '"
+COMMAND_LAUNCHER_END = "'"
+if nc.PLATFORM == nc.WINDOWS:
+    COMMAND_LAUNCHER = 'start cmd /k "'
+    COMMAND_LAUNCHER_END = '"'
+
 # print commands for terminal
 for exec_command in exec_commands:
-    print("bash -c '" + exec_command + "'")
+    print(COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END)
