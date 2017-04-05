@@ -140,7 +140,7 @@ def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB)
 
     write_temp(lab_links_text, generate_urlsafe_hash(path) + '_links')
     
-    create_machine_template = docker + ' run -tid --privileged --name ' + prefix + '{machine_name} -p 808{number}:80 --hostname={machine_name} --network=' + prefix + '{first_link} {image_name}'
+    create_machine_template = docker + ' run -tid --privileged=true --name ' + prefix + '{machine_name} -p 808{number}:80 --hostname={machine_name} --network=' + prefix + '{first_link} {image_name}'
     # we could use -ti -a stdin -a stdout and then /bin/bash -c "commands;bash", 
     # but that woult execute commands like ifconfig BEFORE all the networks are linked
     create_machine_commands = []
@@ -180,7 +180,7 @@ def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB)
         f = open(path + machine_name + '.startup', 'r')
         for line in f:
             if line.strip() and line not in ['\n', '\r\n']:
-                repls = ('{machine_name}', machine_name), ('{command}', line.strip()), ('{params}', '-d')
+                repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + line.strip() + '"'), ('{params}', '-d')
                 startup_commands.append(replace_multiple_items(repls, exec_template))
         f.close()
     
