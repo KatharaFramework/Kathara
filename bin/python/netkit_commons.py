@@ -180,7 +180,7 @@ def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB)
         f = open(path + machine_name + '.startup', 'r')
         for line in f:
             if line.strip() and line not in ['\n', '\r\n']:
-                repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + line.strip().replace(r'\r\n', '\n') + '"'), ('{params}', '-d')
+                repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + line.strip().replace(r'\r', '') + '"'), ('{params}', '-d')
                 startup_commands.append(replace_multiple_items(repls, exec_template))
         f.close()
     
