@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TODO check suid
+
 sudo true
 
 sudo chmod 755 $NETKIT_HOME/lstart.sh
