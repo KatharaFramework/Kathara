@@ -1,6 +1,7 @@
 import argparse
 import netkit_commons as nc 
 import lstart_create as cr
+import os
 
 DEBUG = nc.DEBUG
 nc.DEBUG = False
@@ -18,6 +19,10 @@ args = parser.parse_args()
 
 # create lab
 if not args.execbash:
+    # removing \r from DOS/MAC files before docker cp
+    for machine in machines:
+        nc.win2linux_all_files_in_dir(os.path.join(args.path))
+    # running creation commands not verbosely
     cr.lab_create(commands, startup_commands)
 
 COMMAND_LAUNCHER = "bash -c '"
@@ -26,6 +31,6 @@ if nc.PLATFORM == nc.WINDOWS:
     COMMAND_LAUNCHER = 'start cmd /c "'
     COMMAND_LAUNCHER_END = '"'
 
-# print commands for terminal
+# print commands for terminal (exec bash commands to open terminals)
 for exec_command in exec_commands:
     print(COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END)

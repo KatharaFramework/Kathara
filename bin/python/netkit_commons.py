@@ -61,6 +61,18 @@ def write_temp(text, filename):
 def generate_urlsafe_hash(string):
     return base64.urlsafe_b64encode(hashlib.md5(string).digest())[:-2]
 
+def win2linux(filename):
+        c = open(filename).read()
+        c = c[1:] if len(c) > 0 and ord(c[0]) == 0xfeff else c
+        open(filename, 'wb').write(re.sub(r'\r', '', c))
+        open("D:\pippo.txt", 'a+').write(filename + "\n")
+
+def win2linux_all_files_in_dir(some_dir):
+    for dname, dirs, files in os.walk(some_dir):
+        for fname in files:
+            fpath = os.path.join(dname, fname)
+            win2linux(fpath)
+
 def lab_parse(path = PATH_TO_TEST_LAB):
     # reads lab.conf
     with open(path + 'lab.conf') as stream:
