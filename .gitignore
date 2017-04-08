@@ -90,3 +90,4 @@ ENV/
 
 # temp files
 *.sh~
+test/shared/
