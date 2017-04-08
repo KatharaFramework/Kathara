@@ -3,18 +3,14 @@ config = configparser.ConfigParser()
 from itertools import chain
 import re
 from sys import platform as _platform
-import subprocess
 import os
-import base64
-import hashlib
+import utils as u
 
-#TODO machine names do not have to contain spaces, as well as link names
-#TODO check for escapes, "" and '' in .startup files
+#TODO test escapes, "" and '' in .startup files
 
 DEBUG = True
 IMAGE_NAME = 'netkit'
 LINUX_TERMINAL_TYPE = 'xterm'
-PATH_TO_TEST_LAB = '../../test/shared/MARACAS_lab/'
 
 MAC_OS = "darwin"
 WINDOWS = "win32"
@@ -39,40 +35,7 @@ BASH_SEPARATOR = ' ; '
 if PLATFORM == WINDOWS:
     BASH_SEPARATOR = SEPARATOR_WINDOWS
 
-# helper functions for natural sorting
-def atoi(text):
-    return int(text) if text.isdigit() else text
-def natural_keys(text):
-    return [ atoi(c) for c in re.split('(\d+)', text) ]
-
-def run_command_detatched(cmd_line):
-    p = subprocess.Popen(cmd_line, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    out = p.communicate()[0]
-    return out
-
-def replace_multiple_items(repls, string):
-        return reduce(lambda a, kv: a.replace(*kv), repls, string)
-
-def write_temp(text, filename):
-    out_file = open(os.path.join(os.environ["NETKIT_HOME"], "temp/" + filename),"w+")
-    out_file.write(text)
-    out_file.close()
-
-def generate_urlsafe_hash(string):
-    return base64.urlsafe_b64encode(hashlib.md5(string).digest())[:-2]
-
-def win2linux(filename):
-        c = open(filename).read()
-        c = c[1:] if len(c) > 0 and ord(c[0]) == 0xfeff else c
-        open(filename, 'wb').write(re.sub(r'\r', '', c))
-
-def win2linux_all_files_in_dir(some_dir):
-    for dname, dirs, files in os.walk(some_dir):
-        for fname in files:
-            fpath = os.path.join(dname, fname)
-            win2linux(fpath)
-
-def lab_parse(path = PATH_TO_TEST_LAB):
+def lab_parse(path):
     # reads lab.conf
     with open(path + 'lab.conf') as stream:
         # adds a section to mimic a .ini file
@@ -100,7 +63,7 @@ def lab_parse(path = PATH_TO_TEST_LAB):
     # we only need unique links
     links = set(links)
     # sort the keys so that we keep the order of the interfaces
-    keys.sort(key=natural_keys)
+    keys.sort(key=u.natural_keys)
 
     # we then get a dictionary of machines ignoring interfaces that have missing positions (eg: 1,3,6 instead of 0,1,2)
     machines = {}
@@ -132,7 +95,7 @@ def lab_parse(path = PATH_TO_TEST_LAB):
     return machines, links, options, metadata
 
 
-def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB):
+def create_commands(machines, links, options, metadata, path):
     docker = DOCKER_BIN
 
     if PLATFORM != WINDOWS:
@@ -149,7 +112,7 @@ def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB)
         create_network_commands.append(create_network_template + prefix + link)
         lab_links_text += prefix + link + ' '
 
-    write_temp(lab_links_text, generate_urlsafe_hash(path) + '_links')
+    u.write_temp(lab_links_text, u.generate_urlsafe_hash(path) + '_links')
     
     create_machine_template = docker + ' run -tid --privileged=true --name ' + prefix + '{machine_name} --hostname={machine_name} --network=' + prefix + '{first_link} {image_name}'
     # we could use -ti -a stdin -a stdout and then /bin/bash -c "commands;bash", 
@@ -169,21 +132,21 @@ def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB)
 
     for machine_name, interfaces in machines.items():
         repls = ('{machine_name}', machine_name), ('{number}', str(count)), ('{first_link}', interfaces[0][0]), ('{image_name}', IMAGE_NAME)
-        create_machine_commands.append(replace_multiple_items(repls, create_machine_template))
+        create_machine_commands.append(u.replace_multiple_items(repls, create_machine_template))
         count += 1
         for link,_ in interfaces[1:]:
             repls = ('{link}', link), ('{machine_name}', machine_name)
-            create_connection_commands.append(replace_multiple_items(repls, create_connection_template))
+            create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
         repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name)
-        copy_folder_commands.append(replace_multiple_items(repls, copy_folder_template))
+        copy_folder_commands.append(u.replace_multiple_items(repls, copy_folder_template))
         if PLATFORM == WINDOWS:
             repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \'\033]0;' + machine_name + '\007\'; bash"'), ('{params}', '-e TERM=debian')
         else:
             repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \\\\"\\\\033]0;' + machine_name + '\\\\007\\\\"; bash"'), ('{params}', '-e TERM=debian')
-        exec_commands.append(replace_multiple_items(repls, exec_template))
+        exec_commands.append(u.replace_multiple_items(repls, exec_template))
         lab_machines_text += prefix + machine_name + ' '
 
-    write_temp(lab_machines_text, generate_urlsafe_hash(path) + '_machines')
+    u.write_temp(lab_machines_text, u.generate_urlsafe_hash(path) + '_machines')
         
     # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array
     startup_commands = []
@@ -191,8 +154,8 @@ def create_commands(machines, links, options, metadata, path = PATH_TO_TEST_LAB)
         f = open(path + machine_name + '.startup', 'r')
         for line in f:
             if line.strip() and line not in ['\n', '\r\n']:
-                repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + line.strip().replace(r'\r', '') + '"'), ('{params}', '-d')
-                startup_commands.append(replace_multiple_items(repls, exec_template))
+                repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + line.strip().replace('\\', '\\\\').replace('"', '\\\\"').replace("'", "\\\\'") + '"'), ('{params}', '-d')
+                startup_commands.append(u.replace_multiple_items(repls, exec_template))
         f.close()
     
     commands = create_network_commands + create_machine_commands + create_connection_commands + copy_folder_commands

@@ -1,5 +1,6 @@
 import argparse
 import netkit_commons as nc 
+import file_conversion as fc
 import lstart_create as cr
 import os
 
@@ -22,7 +23,7 @@ args = parser.parse_args()
 if not args.execbash:
     # removing \r from DOS/MAC files before docker cp
     for machine in machines:
-        nc.win2linux_all_files_in_dir(os.path.join(args.path))
+        fc.win2linux_all_files_in_dir(os.path.join(args.path))
     # running creation commands not verbosely
     cr.lab_create(commands, startup_commands)
 
