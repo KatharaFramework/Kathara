@@ -2,6 +2,7 @@ import argparse
 import netkit_commons as nc 
 import file_conversion as fc
 import lstart_create as cr
+import utils as u
 import os
 
 DEBUG = nc.DEBUG
@@ -23,7 +24,11 @@ args = parser.parse_args()
 if not args.execbash:
     # removing \r from DOS/MAC files before docker cp
     for machine in machines:
-        fc.win2linux_all_files_in_dir(os.path.join(args.path))
+        machine_path = os.path.join(args.path, machine)
+        fc.win2linux_all_files_in_dir(machine_path)
+        # checking if folder tree for the given machine contains etc/zebra and if so rename it as etc/quagga before copy
+        if os.path.isdir(os.path.join(machine_path, "etc/zebra")):
+            os.rename(os.path.join(machine_path, "etc/zebra"), os.path.join(machine_path, "etc/quagga"))
     # running creation commands not verbosely
     cr.lab_create(commands, startup_commands)
 

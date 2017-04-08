@@ -98,11 +98,13 @@ def lab_parse(path):
 def create_commands(machines, links, options, metadata, path):
     docker = DOCKER_BIN
 
+    # deciding machine and network prefix in order to avoid conflicts with other users and containers
     if PLATFORM != WINDOWS:
         prefix = 'netkit_' + str(os.getuid()) + '_'
     else:
         prefix = 'netkit_nt_'
 
+    # generating network create command and network names separated by spaces for the temp file
     lab_links_text = ''
     lab_machines_text = ''
         
@@ -112,8 +114,10 @@ def create_commands(machines, links, options, metadata, path):
         create_network_commands.append(create_network_template + prefix + link)
         lab_links_text += prefix + link + ' '
 
+    # writing the network list in the temp file
     u.write_temp(lab_links_text, u.generate_urlsafe_hash(path) + '_links')
     
+    # generating commands for running the containers, copying the config folder and executing the terminals connected to the containers
     create_machine_template = docker + ' run -tid --privileged=true --name ' + prefix + '{machine_name} --hostname={machine_name} --network=' + prefix + '{first_link} {image_name}'
     # we could use -ti -a stdin -a stdout and then /bin/bash -c "commands;bash", 
     # but that woult execute commands like ifconfig BEFORE all the networks are linked
@@ -146,9 +150,10 @@ def create_commands(machines, links, options, metadata, path):
         exec_commands.append(u.replace_multiple_items(repls, exec_template))
         lab_machines_text += prefix + machine_name + ' '
 
+    # writing the container list in the temp file
     u.write_temp(lab_machines_text, u.generate_urlsafe_hash(path) + '_machines')
         
-    # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array
+    # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array of exec commands. We also replace escapes and quotes
     startup_commands = []
     for machine_name, _ in machines.items():
         f = open(path + machine_name + '.startup', 'r')
