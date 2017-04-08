@@ -27,6 +27,7 @@ if not args.execbash:
         machine_path = os.path.join(args.path, machine)
         fc.win2linux_all_files_in_dir(machine_path)
         # checking if folder tree for the given machine contains etc/zebra and if so rename it as etc/quagga before copy
+        # TODO add warning for user
         if os.path.isdir(os.path.join(machine_path, "etc/zebra")):
             try:
                 os.rename(os.path.join(machine_path, "etc/zebra"), os.path.join(machine_path, "etc/quagga"))

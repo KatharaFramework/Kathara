@@ -90,4 +90,5 @@ ENV/
 
 # temp files
 *.sh~
-test/shared/
+Dockerfile~
+*.py~

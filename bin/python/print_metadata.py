@@ -12,5 +12,7 @@ args = parser.parse_args()
 # get lab machines, options, links and metadata
 (_,_,_, metadata) = nc.lab_parse(args.path)
 
-# TODO do better print
-print metadata
+print "========================= Starting Lab =========================="
+for key, value in metadata.items():
+    print '{message: <20}'.format(message=key+":") + value
+print "================================================================="
