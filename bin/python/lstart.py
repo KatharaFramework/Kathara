@@ -28,7 +28,10 @@ if not args.execbash:
         fc.win2linux_all_files_in_dir(machine_path)
         # checking if folder tree for the given machine contains etc/zebra and if so rename it as etc/quagga before copy
         if os.path.isdir(os.path.join(machine_path, "etc/zebra")):
-            os.rename(os.path.join(machine_path, "etc/zebra"), os.path.join(machine_path, "etc/quagga"))
+            try:
+                os.rename(os.path.join(machine_path, "etc/zebra"), os.path.join(machine_path, "etc/quagga"))
+            except:
+                pass
     # running creation commands not verbosely
     cr.lab_create(commands, startup_commands)
 

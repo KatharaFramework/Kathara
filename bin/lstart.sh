@@ -5,6 +5,8 @@ python $NETKIT_HOME/python/check.py "$PWD/"
 export RC=$?
 if [ "$RC" = "0" ]; then
 
+    python $NETKIT_HOME/python/print_metadata.py "$PWD/"
+
     M=_machines
 
     sudo true

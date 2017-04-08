@@ -56,7 +56,7 @@ def lab_parse(path):
                 keys.append(key)
                 links.append(config['dummysection'][key])
             except ValueError:
-                m_keys.append(key)
+                pass
         else:
             m_keys.append(key)
 

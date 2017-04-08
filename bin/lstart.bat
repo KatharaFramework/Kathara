@@ -3,6 +3,8 @@
 python %NETKIT_HOME%\python\check.py %cd%\
 IF ERRORLEVEL 1 GOTO END
 
+python %NETKIT_HOME%\python\print_metadata.py %cd%\
+
 FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\folder_hash.py %cd%\') do SET VAR1=%NETKIT_HOME%\temp\%%a_machines
 
 if not exist %VAR1% (
