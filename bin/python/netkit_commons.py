@@ -126,7 +126,7 @@ def create_commands(machines, links, options, metadata, path):
     create_connection_template = docker + ' network connect ' + prefix + '{link} ' + prefix + '{machine_name}'
     create_connection_commands = []
 
-    copy_folder_template = docker + ' cp ' + path + '{machine_name}/etc ' + prefix + '{machine_name}:/'
+    copy_folder_template = docker + ' cp "' + path + '{machine_name}/etc" ' + prefix + '{machine_name}:/'
     copy_folder_commands = []
 
     exec_template = docker + ' exec {params} -ti --privileged=true ' + prefix + '{machine_name} {command}'

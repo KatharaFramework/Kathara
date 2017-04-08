@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('path')
 
 args = parser.parse_args()
+args.path = args.path.replace('"', '')
 
 has_invalid_characters = False
 (machines, links, _, _) = nc.lab_parse(args.path)

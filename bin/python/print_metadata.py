@@ -8,6 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('path')
 
 args = parser.parse_args()
+args.path = args.path.replace('"', '')
 
 # get lab machines, options, links and metadata
 (_,_,_, metadata) = nc.lab_parse(args.path)

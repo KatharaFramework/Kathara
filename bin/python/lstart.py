@@ -14,6 +14,7 @@ parser.add_argument("--execbash", action="store_true")
 parser.add_argument("-n", "--noterminals", action="store_true")
 
 args = parser.parse_args()
+args.path = args.path.replace('"', '')
 
 # get lab machines, options, links and metadata
 (machines, links, options, metadata) = nc.lab_parse(args.path)
@@ -35,6 +36,8 @@ if not args.execbash:
                 pass
     # running creation commands not verbosely
     cr.lab_create(commands, startup_commands)
+else:
+    cr.lab_create([], startup_commands)
 
 COMMAND_LAUNCHER = "bash -c '"
 COMMAND_LAUNCHER_END = "'"
