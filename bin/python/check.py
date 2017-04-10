@@ -28,5 +28,5 @@ if has_invalid_characters:
     sys.exit(1)
 
 if sys.version_info >= (3, 0):
-    print "Requires Python 2.x, not Python 3.x\n"
+    print ("Requires Python 2.x, not Python 3.x\n")
     sys.exit(1)
