@@ -2,13 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_CMD_LEN 500
+#define MAX_CMD_LEN 1000
 
 void check_overflow(int count) 
 {
     if (count >= MAX_CMD_LEN) 
     {
-        fprintf(stderr, "Command longer then buffer\n");
+        fprintf(stderr, "The command is longer than the buffer\n");
         exit(EXIT_FAILURE);
     }
 }
