@@ -27,7 +27,7 @@ elif _platform == WINDOWS:
 DOCKER_BIN = 'docker'
 
 if PLATFORM != WINDOWS:
-    DOCKER_BIN = 'sudo docker'
+    DOCKER_BIN = os.environ['NETKIT_HOME'] + '/wrapper/bin/netkit_dw'
 
 SEPARATOR_WINDOWS = ' & '
 BASH_SEPARATOR = ' ; '
@@ -146,7 +146,7 @@ def create_commands(machines, links, options, metadata, path):
         if PLATFORM == WINDOWS:
             repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \'\033]0;' + machine_name + '\007\'; bash"'), ('{params}', '-e TERM=vt100')
         else:
-            repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \\\\"\\\\033]0;' + machine_name + '\\\\007\\\\"; bash"'), ('{params}', '-e TERM=vt100')
+            repls = ('{machine_name}', machine_name), ('{command}', 'bash'), ('{params}', '-e TERM=vt100')
         exec_commands.append(u.replace_multiple_items(repls, exec_template))
         lab_machines_text += prefix + machine_name + ' '
 

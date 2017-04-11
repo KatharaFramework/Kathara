@@ -47,5 +47,8 @@ if nc.PLATFORM == nc.WINDOWS:
 
 # print commands for terminal (exec bash commands to open terminals)
 if not args.noterminals:
-    for exec_command in exec_commands:
-        print(COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END)
+    for exec_command, machine_name in zip(exec_commands, machines):
+        if nc.PLATFORM == nc.WINDOWS:        
+            print(COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END)
+        else:        
+            print(machine_name + ";" + COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END)

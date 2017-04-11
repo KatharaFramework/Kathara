@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define MAX_CMD_LEN 1000
 
@@ -62,6 +64,8 @@ int main(int argc, char *argv[])
             strcat(cmd, *p);
             current_arg++;
         }
+	
+	setuid(0);
         system(cmd);
     }
 
