@@ -4,14 +4,6 @@
 
 #define MAX_CMD_LEN 500
 
-int length(char* w) 
-{
-    int n;
-    for(n=0; w[n]; n++)
-        ;
-    return n;
-}
-
 void check_overflow(int count) 
 {
     if (count >= MAX_CMD_LEN) 
@@ -53,7 +45,7 @@ int main(int argc, char *argv[])
     else
     {
         strcat(cmd, "docker ");
-        int char_count = 7 + length(argv[1]);
+        int char_count = 7 + strlen(argv[1]);
         check_overflow(char_count);
         strcat(cmd, argv[1]);
         int is_cp = 0;
@@ -64,7 +56,7 @@ int main(int argc, char *argv[])
         {
             check_invalid_cp(*p, is_cp, current_arg, argc); 
             check_mount_option(*p);
-            char_count += length(*p) + 1;
+            char_count += strlen(*p) + 1;
             check_overflow(char_count);
             strcat(cmd, " ");
             strcat(cmd, *p);
