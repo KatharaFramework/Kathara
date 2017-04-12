@@ -7,7 +7,7 @@ gcc $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
 
 echo "Setting permissions"
 sudo chown root:root $NETKIT_HOME/wrapper/bin/netkit_dw
-sudo chmod 4755 $NETKIT_HOME/wrapper/bin/netkit_dw
+sudo chmod 4750 $NETKIT_HOME/wrapper/bin/netkit_dw
 
 sudo chmod 755 $NETKIT_HOME/lstart.sh
 sudo chmod 755 $NETKIT_HOME/lclean.sh
