@@ -9,12 +9,11 @@ if [ "$RC" = "0" ]; then
 
     M=_machines
 
-    sudo true
     python $NETKIT_HOME/python/folder_hash.py "$PWD/" | 
     while IFS=';' read -ra in; do ( 
         if [ -f "$NETKIT_HOME/temp/$in$M" ]; 
         then 
-            sudo docker start `cat "$NETKIT_HOME/temp/$in$M"`; 
+            $NETKIT_HOME/wrapper/bin/netkit_dw start `cat "$NETKIT_HOME/temp/$in$M"`; 
                 python $NETKIT_HOME/python/lstart.py --execbash $@ "$PWD/" | 
                 (while IFS=';' read -ra in; do (xterm -T "${in[0]}" -e "${in[1]}" &); done)
         else 
