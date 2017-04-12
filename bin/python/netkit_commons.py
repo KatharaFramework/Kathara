@@ -1,5 +1,6 @@
-import configparser
-config = configparser.ConfigParser()
+import ConfigParser
+config = ConfigParser.ConfigParser()
+import StringIO
 from itertools import chain
 import re
 from sys import platform as _platform
@@ -37,24 +38,23 @@ if PLATFORM == WINDOWS:
 
 def lab_parse(path):
     # reads lab.conf
-    with open(path + 'lab.conf') as stream:
-        # adds a section to mimic a .ini file
-        stream = chain(("[dummysection]",), stream)
-        config.read_file(stream)
+    ini_str = '[dummysection]\n' + open(os.path.join(path, 'lab.conf'), 'r').read()
+    ini_fp = StringIO.StringIO(ini_str)
+    config.readfp(ini_fp)
 
     # gets 2 list of keys, one for machines and the other for the metadata
     # we also need a unique list of links
     keys = []
     m_keys = []
     links = []
-    for key in config['dummysection']: 
-        if DEBUG: print(key, config['dummysection'][key])
+    for key, value in config.items('dummysection'): 
+        if DEBUG: print(key, value)
         if '[' in key and ']' in key:
             splitted = key.split('[')[1].split(']')
             try:
                 ifnumber = int(splitted[0])
                 keys.append(key)
-                links.append(config['dummysection'][key])
+                links.append(value)
             except ValueError:
                 pass
         else:
@@ -77,18 +77,19 @@ def lab_parse(path):
             if not machines.get(name):
                 machines[name] = []
             if len(machines[name]) == 0 or machines[name][len(machines[name])-1][1] == ifnumber - 1:
-                machines[name].append((config['dummysection'][key], ifnumber))
+                machines[name].append((config.get('dummysection', key), ifnumber))
         except ValueError:
             option = splitted[0]
             if not options.get(name):
                 options[name] = []
-                options[name].append((option, config['dummysection'][key]))
+                options[name].append((option, config.get('dummysection', key)))
     # same with metadata
     metadata = {}
     for m_key in m_keys:
-        if config['dummysection'][m_key].startswith('"') and config['dummysection'][m_key].endswith('"'):
-            config['dummysection'][m_key] = config['dummysection'][m_key][1:-1]
-        metadata[m_key] = config['dummysection'][m_key]
+        app = config.get('dummysection', m_key)
+        if app.startswith('"') and app.endswith('"'):
+            app = app[1:-1]
+        metadata[m_key] = app
     
     if DEBUG: print (machines, options, metadata)
 
