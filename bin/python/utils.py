@@ -29,3 +29,14 @@ def check_folder_or_file_name_in_dir(some_dir, file_or_folder_name):
         for filename in files:
             if (file_or_folder_name in filename): 
                 return True
+
+def couple_list_to_dict(clist):
+    dic = {}
+    for (value, key) in clist:
+        dic[str(key)] = value
+    return dic
+
+def merge_two_dicts(x, y):
+    z = x.copy()
+    z.update(y)
+    return z
