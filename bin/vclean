@@ -1,8 +1,8 @@
 #!/bin/bash
 
-$NETKIT_HOME/lclean -d "$NETKIT_HOME/temp/labs/$PWD" $@
+$NETKIT_HOME/lclean -d "$NETKIT_HOME/temp/labs/netkit_`echo $UID`_$@"
 
-rm -rf $NETKIT_HOME/temp/labs/$PWD
+rm -rf "$NETKIT_HOME/temp/labs/netkit_`echo $UID`_$@"
 
 export RC=$?
 if [ "$RC" != "0" ]; then 

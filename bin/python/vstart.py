@@ -11,6 +11,11 @@ import os
 DEBUG = nc.DEBUG
 nc.DEBUG = False
 
+if nc.PLATFORM != nc.WINDOWS:
+        prefix = 'netkit_' + str(os.getuid()) + '_'
+else:
+    prefix = 'netkit_nt_'
+
 def conf_line_writer(eths):
     if (eths != None):
         interfaces = {}
@@ -50,7 +55,7 @@ parser.add_argument('--eth', dest='eths', nargs='*', help='Set a specific interf
 parser.add_argument('-e', '--exec', dest='exe', nargs='*')
 
 args = parser.parse_args()
-machine_path = os.path.join(os.environ["NETKIT_HOME"], "temp/labs/" + args.machine_name)
+machine_path = os.path.join(os.environ["NETKIT_HOME"], "temp/labs/" + prefix + args.machine_name)
 
 #starting machine already started
 if (os.path.exists(machine_path)):
