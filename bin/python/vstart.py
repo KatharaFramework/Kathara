@@ -34,7 +34,7 @@ def create_lab(machine_path, machine_name, conf_lines):
     conf_line_template = '{machine_name}[{argument}]={value}\n'
 
     if not os.path.exists(machine_path):
-        os.makedirs(machine_path)
+        os.mkdir(machine_path)
     confp = open(os.path.join(machine_path, 'lab.conf'), 'w+')
     for key, value in conf_lines.items():
             repls = ('{machine_name}', machine_name), ('{argument}', str(key)), ('{value}', value)
@@ -50,7 +50,7 @@ parser.add_argument('--eth', dest='eths', nargs='*', help='Set a specific interf
 parser.add_argument('-e', '--exec', dest='exe', nargs='*')
 
 args = parser.parse_args()
-machine_path = os.path.join(os.environ["NETKIT_HOME"], "temp\labs\\" + args.machine_name)
+machine_path = os.path.join(os.environ["NETKIT_HOME"], "temp/labs/" + args.machine_name)
 
 #starting machine already started
 if (os.path.exists(machine_path)):

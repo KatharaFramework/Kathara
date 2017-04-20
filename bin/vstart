@@ -1,0 +1,7 @@
+#!/bin/bash
+
+$NETKIT_HOME/lstart -d `python $NETKIT_HOME/python/vstart.py "$PWD/" $@`
+
+export RC=$?
+if [ "$RC" = "0" ]; then
+	echo FAILED

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+sudo true
+
+echo "Compiling netkit_dw"
+sudo gcc $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
+
+echo "Setting permissions"
+sudo chown root:root $NETKIT_HOME/wrapper/bin/netkit_dw
+sudo chmod 4755 $NETKIT_HOME/wrapper/bin/netkit_dw
+sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw
+sudo chmod 000 $NETKIT_HOME/wrapper/netkit_dw.c
+
+sudo chmod 777 $NETKIT_HOME/temp
+sudo chmod 777 $NETKIT_HOME/temp/labs
+
+sudo chmod 755 $NETKIT_HOME/lstart
+sudo chmod 755 $NETKIT_HOME/lclean
+sudo chmod 755 $NETKIT_HOME/lcrash
+sudo chmod 755 $NETKIT_HOME/lhalt
+sudo chmod 755 $NETKIT_HOME/linfo
+
+sudo chmod 755 $NETKIT_HOME/vstart
+sudo chmod 755 $NETKIT_HOME/vclean
+sudo chmod 755 $NETKIT_HOME/vcrash
+sudo chmod 755 $NETKIT_HOME/vhalt
+sudo chmod 755 $NETKIT_HOME/vinfo
+
+echo "Building image"
+#sudo docker rmi -f netkit
+#sudo docker build -t netkit $NETKIT_HOME
+
+sudo -k
