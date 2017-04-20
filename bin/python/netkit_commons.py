@@ -157,7 +157,7 @@ def create_commands(machines, links, options, metadata, path):
     # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array of exec commands. We also replace escapes and quotes
     startup_commands = []
     for machine_name, _ in machines.items():
-        f = open(path + machine_name + '.startup', 'r')
+        f = open(os.path.join(path, machine_name + '.startup'), 'r')
         for line in f:
             if line.strip() and line not in ['\n', '\r\n']:
                 repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + line.strip().replace('\\', '\\\\').replace('"', '\\\\"').replace("'", "\\\\'") + '"'), ('{params}', '-d')

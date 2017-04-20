@@ -12,20 +12,24 @@ parser = argparse.ArgumentParser(description='Create and start a Netkit Lab.')
 parser.add_argument('path')
 parser.add_argument("--execbash", action="store_true")
 parser.add_argument("-n", "--noterminals", action="store_true")
+parser.add_argument('-d', '--directory', required=False, help='Folder contining the lab.')
 
 args = parser.parse_args()
-args.path = args.path.replace('"', '')
+
+lab_path = args.path.replace('"', '')
+if args.directory:
+    lab_path = args.directory.replace('"', '')
 
 # get lab machines, options, links and metadata
-(machines, links, options, metadata) = nc.lab_parse(args.path)
+(machines, links, options, metadata) = nc.lab_parse(lab_path)
 # get command lists
-(commands, startup_commands, exec_commands) = nc.create_commands(machines, links, options, metadata, args.path)
+(commands, startup_commands, exec_commands) = nc.create_commands(machines, links, options, metadata, lab_path)
 
 # create lab
 if not args.execbash:
     # removing \r from DOS/MAC files before docker cp
     for machine in machines:
-        machine_path = os.path.join(args.path, machine)
+        machine_path = os.path.join(lab_path, machine)
         fc.win2linux_all_files_in_dir(machine_path)
         # checking if folder tree for the given machine contains etc/zebra and if so rename it as etc/quagga before copy
         # TODO add warning for user
