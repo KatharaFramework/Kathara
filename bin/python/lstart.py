@@ -23,7 +23,7 @@ if args.directory:
 # get lab machines, options, links and metadata
 (machines, links, options, metadata) = nc.lab_parse(lab_path)
 # get command lists
-(commands, startup_commands, exec_commands) = nc.create_commands(machines, links, options, metadata, lab_path)
+(commands, startup_commands, exec_commands) = nc.create_commands(machines, links, options, metadata, lab_path, args.execbash)
 
 # create lab
 if not args.execbash:

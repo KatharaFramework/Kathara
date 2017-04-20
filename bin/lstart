@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python $NETKIT_HOME/python/check.py "$PWD/" $@
+python $NETKIT_HOME/python/check.py "$PWD/" -f $@
 
 export RC=$?
 if [ "$RC" = "0" ]; then

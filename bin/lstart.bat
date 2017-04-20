@@ -1,6 +1,6 @@
 @echo off
 
-python %NETKIT_HOME%\python\check.py "%cd%/" %*
+python %NETKIT_HOME%\python\check.py "%cd%/" -f %*
 IF ERRORLEVEL 1 GOTO END
 
 python %NETKIT_HOME%\python\print_metadata.py "%cd%/" %*

@@ -83,11 +83,12 @@ if (os.path.exists(os.path.join(args.current_path, "lab.conf"))):
             shutil.copytree(folder_path, os.path.join(machine_path, args.machine_name))
 
 #starting new machine not existing in lab pointed by current directory
-#creating and updating interfaces in lab.conf
-conf_lines = conf_line_writer(args.eths)
-create_lab(machine_path, args.machine_name, conf_lines)
+else:
+    #creating and updating interfaces in lab.conf
+    conf_lines = conf_line_writer(args.eths)
+    create_lab(machine_path, args.machine_name, conf_lines)
 
-#copying and appending commands to startup file
-startup_writer(machine_path, args.machine_name, args.exe)
+    #copying and appending commands to startup file
+    startup_writer(machine_path, args.machine_name, args.exe)
 
 print machine_path

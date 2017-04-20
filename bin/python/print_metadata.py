@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('path')
 parser.add_argument('-d', '--directory', required=False, help='Folder contining the lab.')
 
-args = parser.parse_args()
+args, unknown = parser.parse_known_args()
 
 lab_path = args.path.replace('"', '')
 if args.directory:

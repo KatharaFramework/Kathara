@@ -1,0 +1,10 @@
+#!/bin/bash
+
+$NETKIT_HOME/lclean -d "$NETKIT_HOME/temp/labs/$PWD" $@
+
+rm -rf $NETKIT_HOME/temp/labs/$PWD
+
+export RC=$?
+if [ "$RC" != "0" ]; then 
+	echo FAILED;
+fi
