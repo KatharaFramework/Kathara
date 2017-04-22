@@ -127,7 +127,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
         if not PRINT: u.write_temp(lab_links_text, u.generate_urlsafe_hash(path) + '_links')
     
     # generating commands for running the containers, copying the config folder and executing the terminals connected to the containers
-    create_machine_template = docker + ' run -tid --privileged=true --name ' + prefix + '{machine_name} --hostname={machine_name} --network=' + prefix + '{first_link} {image_name}'
+    create_machine_template = docker + ' run -tid --privileged=true --name ' + prefix + '{machine_name} --hostname={machine_name} --network=' + prefix + '{first_link} {machine_options} {image_name}'
     # we could use -ti -a stdin -a stdout and then /bin/bash -c "commands;bash", 
     # but that woult execute commands like ifconfig BEFORE all the networks are linked
     create_machine_commands = []
@@ -152,7 +152,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
         if options.get(machine_name):
             for opt, val in options[machine_name]:
                 if opt=='mem' or opt=='M': 
-                    machine_option_string+='--memory="'+ val +'" '
+                    machine_option_string+='--memory='+ val.upper() +' '
                 if opt=='image' or opt=='i' or opt=='model-fs' or opt=='m' or opt=='f' or opt=='filesystem': 
                     this_image = DOCKER_HUB_PREFIX + val
                 if opt=='eth': 
@@ -165,8 +165,8 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
                     repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + val.strip().replace('\\', '\\\\').replace('"', '\\\\"').replace("'", "\\\\'") + '"'), ('{params}', '-d')
                     startup_commands.append(u.replace_multiple_items(repls, exec_template))
 
-        repls = ('{machine_name}', machine_name), ('{number}', str(count)), ('{first_link}', interfaces[0][0]), ('{image_name}', this_image)
-        create_machine_commands.append(u.replace_multiple_items(repls, create_machine_template) + machine_option_string)
+        repls = ('{machine_name}', machine_name), ('{number}', str(count)), ('{first_link}', interfaces[0][0]), ('{image_name}', this_image), ('{machine_options}', machine_option_string)
+        create_machine_commands.append(u.replace_multiple_items(repls, create_machine_template))
         count += 1
         for link,_ in interfaces[1:]:
             repls = ('{link}', link), ('{machine_name}', machine_name)
