@@ -10,6 +10,7 @@ import utils as u
 #TODO test escapes, "" and '' in .startup files
 
 DEBUG = True
+PRINT = False
 IMAGE_NAME = 'netkit'
 DOCKER_HUB_PREFIX = "netkit/"
 LINUX_TERMINAL_TYPE = 'xterm'
@@ -123,7 +124,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
 
     # writing the network list in the temp file
     if not execbash:
-        u.write_temp(lab_links_text, u.generate_urlsafe_hash(path) + '_links')
+        if not PRINT: u.write_temp(lab_links_text, u.generate_urlsafe_hash(path) + '_links')
     
     # generating commands for running the containers, copying the config folder and executing the terminals connected to the containers
     create_machine_template = docker + ' run -tid --privileged=true --name ' + prefix + '{machine_name} --hostname={machine_name} --network=' + prefix + '{first_link} {image_name}'
@@ -146,7 +147,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
     for machine_name, interfaces in machines.items():
         this_image = IMAGE_NAME
 
-        # TODO parsing options
+        # Parsing options from lab.conf
         machine_option_string = " "
         if options.get(machine_name):
             for opt, val in options[machine_name]:
@@ -157,9 +158,9 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
                 if opt=='eth': 
                     app = val.split(":")
                     create_network_commands.append(create_network_template + prefix + app[1])
-                    repls = ('{link}', prefix + app[1]), ('{machine_name}', machine_name)
+                    repls = ('{link}', app[1]), ('{machine_name}', machine_name)
                     create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
-                    u.write_temp(" " + prefix + app[1], u.generate_urlsafe_hash(path) + '_links')
+                    if not PRINT: u.write_temp(" " + prefix + app[1], u.generate_urlsafe_hash(path) + '_links')
                 if opt=='e' or opt=='exec':
                     repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + val.strip().replace('\\', '\\\\').replace('"', '\\\\"').replace("'", "\\\\'") + '"'), ('{params}', '-d')
                     startup_commands.append(u.replace_multiple_items(repls, exec_template))
@@ -181,7 +182,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
 
     # writing the container list in the temp file
     if not execbash:
-        u.write_temp(lab_machines_text, u.generate_urlsafe_hash(path) + '_machines')
+        if not PRINT: u.write_temp(lab_machines_text, u.generate_urlsafe_hash(path) + '_machines')
         
     # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array of exec commands. We also replace escapes and quotes
     for machine_name, _ in machines.items():

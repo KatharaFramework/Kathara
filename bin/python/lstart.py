@@ -90,6 +90,7 @@ if args.force_lab:
 
 if args.print_only:
     cr.PRINT = True
+    nc.PRINT = True
 
 lab_path = args.path.replace('"', '').replace("'", '')
 if args.directory:
