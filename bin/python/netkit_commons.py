@@ -11,7 +11,10 @@ import utils as u
 
 DEBUG = True
 IMAGE_NAME = 'netkit'
+DOCKER_HUB_PREFIX = "netkit/"
 LINUX_TERMINAL_TYPE = 'xterm'
+
+FORCE_LAB = False
 
 MAC_OS = "darwin"
 WINDOWS = "win32"
@@ -37,6 +40,9 @@ if PLATFORM == WINDOWS:
     BASH_SEPARATOR = SEPARATOR_WINDOWS
 
 def lab_parse(path):
+    if FORCE_LAB and (not os.path.exists(os.path.join(path, 'lab.conf'))):
+        return ({}, [], {}, {})
+
     # reads lab.conf
     ini_str = '[dummysection]\n' + open(os.path.join(path, 'lab.conf'), 'r').read()
     ini_fp = StringIO.StringIO(ini_str)
@@ -52,11 +58,11 @@ def lab_parse(path):
         if '[' in key and ']' in key:
             splitted = key.split('[')[1].split(']')
             try:
-                ifnumber = int(splitted[0])
-                keys.append(key)
+                _ = int(splitted[0])
                 links.append(value)
             except ValueError:
                 pass
+            keys.append(key)
         else:
             m_keys.append(key)
 
@@ -82,7 +88,7 @@ def lab_parse(path):
             option = splitted[0]
             if not options.get(name):
                 options[name] = []
-                options[name].append((option, config.get('dummysection', key)))
+            options[name].append((option, config.get('dummysection', key)))
     # same with metadata
     metadata = {}
     for m_key in m_keys:
@@ -133,12 +139,33 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
 
     exec_template = docker + ' exec {params} -ti --privileged=true ' + prefix + '{machine_name} {command}'
     exec_commands = []
+    startup_commands = []
 
     count = 0
 
     for machine_name, interfaces in machines.items():
-        repls = ('{machine_name}', machine_name), ('{number}', str(count)), ('{first_link}', interfaces[0][0]), ('{image_name}', IMAGE_NAME)
-        create_machine_commands.append(u.replace_multiple_items(repls, create_machine_template))
+        this_image = IMAGE_NAME
+
+        # TODO parsing options
+        machine_option_string = " "
+        if options.get(machine_name):
+            for opt, val in options[machine_name]:
+                if opt=='mem' or opt=='M': 
+                    machine_option_string+='--memory="'+ val +'" '
+                if opt=='image' or opt=='i' or opt=='model-fs' or opt=='m' or opt=='f' or opt=='filesystem': 
+                    this_image = DOCKER_HUB_PREFIX + val
+                if opt=='eth': 
+                    app = val.split(":")
+                    create_network_commands.append(create_network_template + prefix + app[1])
+                    repls = ('{link}', prefix + app[1]), ('{machine_name}', machine_name)
+                    create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
+                    u.write_temp(" " + prefix + app[1], u.generate_urlsafe_hash(path) + '_links')
+                if opt=='e' or opt=='exec':
+                    repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + val.strip().replace('\\', '\\\\').replace('"', '\\\\"').replace("'", "\\\\'") + '"'), ('{params}', '-d')
+                    startup_commands.append(u.replace_multiple_items(repls, exec_template))
+
+        repls = ('{machine_name}', machine_name), ('{number}', str(count)), ('{first_link}', interfaces[0][0]), ('{image_name}', this_image)
+        create_machine_commands.append(u.replace_multiple_items(repls, create_machine_template) + machine_option_string)
         count += 1
         for link,_ in interfaces[1:]:
             repls = ('{link}', link), ('{machine_name}', machine_name)
@@ -157,7 +184,6 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
         u.write_temp(lab_machines_text, u.generate_urlsafe_hash(path) + '_machines')
         
     # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array of exec commands. We also replace escapes and quotes
-    startup_commands = []
     for machine_name, _ in machines.items():
         startup_file = os.path.join(path, machine_name + '.startup')
         if os.path.exists(startup_file):

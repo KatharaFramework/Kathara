@@ -17,7 +17,7 @@ def replace_multiple_items(repls, string):
 
 # writes the temporary files in NETKIT_HOME/temp
 def write_temp(text, filename):
-    out_file = open(os.path.join(os.environ["NETKIT_HOME"], "temp/" + filename),"w+")
+    out_file = open(os.path.join(os.environ["NETKIT_HOME"], "temp/" + filename),"a+")
     out_file.write(text)
     out_file.close()
 

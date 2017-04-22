@@ -12,9 +12,9 @@ parser.add_argument('-f', '--full', required=False, action="store_true")
 
 args, unknown = parser.parse_known_args()
 
-lab_path = args.path.replace('"', '')
+lab_path = args.path.replace('"', '').replace("'", '')
 if args.directory:
-    lab_path = args.directory.replace('"', '')
+    lab_path = args.directory.replace('"', '').replace("'", '')
 
 if args.full:
     has_invalid_characters = False
