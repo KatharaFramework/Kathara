@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [ $# -ne 2 ]; then
+if [ $# -ne 1 ]; then
 	echo Usage: $0 machine_name
 	exit 1
 fi
 
-$NETKIT_HOME/lclean -d "$NETKIT_HOME/temp/labs/netkit_`echo $UID`_$@"
+$NETKIT_HOME/lclean -d "$NETKIT_HOME/temp/labs/netkit_`echo $UID`_$1"

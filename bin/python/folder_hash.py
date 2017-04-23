@@ -18,9 +18,9 @@ parser.add_argument(
 
 args, unknown = parser.parse_known_args()
 
-lab_path = args.path.replace('"', '').replace("'", '')
+lab_path = args.path.replace('"', '').replace("'", '').replace("//", '/')
 if args.directory:
-    lab_path = args.directory.replace('"', '').replace("'", '')
+    lab_path = args.directory.replace('"', '').replace("'", '').replace("//", '/')
 
 if args.print_only and nc.PLATFORM == nc.WINDOWS: #linux still needs the hash for the while statement
     print " "
