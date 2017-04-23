@@ -3,9 +3,12 @@ config = ConfigParser.ConfigParser()
 import StringIO
 from itertools import chain
 import re
+import sys
 from sys import platform as _platform
 import os
 import utils as u
+import depgen as dpg
+from collections import OrderedDict
 
 #TODO test escapes, "" and '' in .startup files
 
@@ -40,6 +43,35 @@ BASH_SEPARATOR = ' ; '
 if PLATFORM == WINDOWS:
     BASH_SEPARATOR = SEPARATOR_WINDOWS
 
+
+def dep_sort(item, dependency_list):
+    try:
+        return dependency_list.index(item) + 1
+    except:
+        return 0
+
+def reorder_by_lab_dep(path, machines):
+    if not os.path.exists(os.path.join(path, 'lab.dep')): 
+        return machines
+    # getting dependencies inside a data structure
+    dependencies = {}
+    conf = open(os.path.join(path, 'lab.dep'), 'r')
+    for line in conf:
+        if line.strip() and line.strip() not in ['\n', '\r\n']:
+            app = line.split(":")
+            app[1] = re.sub('\s+', ' ', app[1]).strip()
+            dependencies[app[0].strip()] = app[1].split(' ') # dependencies[machine3] = [machine1, machine2]
+
+    # building dependency set
+    if dpg.has_loop(dependencies):
+        sys.stderr.write("WARNING: loop in lab.dep, it will be ignored. \n")
+        return machines
+
+    dependency_list = dpg.flatten(dependencies)
+    # reordering machines
+    ordered_machines = OrderedDict(sorted(machines.items(), key=lambda t: dep_sort(t[0], dependency_list)))
+    return ordered_machines
+
 def lab_parse(path):
     if FORCE_LAB and (not os.path.exists(os.path.join(path, 'lab.conf'))):
         return ({}, [], {}, {})
@@ -60,12 +92,12 @@ def lab_parse(path):
             splitted = key.split('[')[1].split(']')
             try:
                 _ = int(splitted[0])
-                links.append(value)
+                links.append(value.strip())
             except ValueError:
                 pass
-            keys.append(key)
+            keys.append(key.strip())
         else:
-            m_keys.append(key)
+            m_keys.append(key.strip())
 
     # we only need unique links
     links = set(links)
@@ -77,16 +109,16 @@ def lab_parse(path):
     options = {}
     for key in keys: 
         splitted = key.split('[')
-        name = splitted[0]
+        name = splitted[0].strip()
         splitted = splitted[1].split(']')
         try:
-            ifnumber = int(splitted[0])
+            ifnumber = int(splitted[0].strip())
             if not machines.get(name):
                 machines[name] = []
             if len(machines[name]) == 0 or machines[name][len(machines[name])-1][1] == ifnumber - 1:
                 machines[name].append((config.get('dummysection', key), ifnumber))
         except ValueError:
-            option = splitted[0]
+            option = splitted[0].strip()
             if not options.get(name):
                 options[name] = []
             options[name].append((option, config.get('dummysection', key)))
@@ -98,8 +130,9 @@ def lab_parse(path):
             app = app[1:-1]
         metadata[m_key] = app
     
+    machines = reorder_by_lab_dep(path, machines)
+    
     if DEBUG: print (machines, options, metadata)
-
     return machines, links, options, metadata
 
 
@@ -190,7 +223,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
         if os.path.exists(startup_file):
             f = open(startup_file, 'r')
             for line in f:
-                if line.strip() and line not in ['\n', '\r\n']:
+                if line.strip() and line.strip() not in ['\n', '\r\n']:
                     repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + line.strip().replace('\\', '\\\\').replace('"', '\\\\"').replace("'", "\\\\'") + '"'), ('{params}', '-d')
                     startup_commands.append(u.replace_multiple_items(repls, exec_template))
             f.close()
