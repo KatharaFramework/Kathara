@@ -1,10 +1,8 @@
 #!/bin/bash
 
-$NETKIT_HOME/lclean -d "$NETKIT_HOME/temp/labs/netkit_`echo $UID`_$@"
-
-rm -rf "$NETKIT_HOME/temp/labs/netkit_`echo $UID`_$@"
-
-export RC=$?
-if [ "$RC" != "0" ]; then 
-	echo FAILED;
+if [ $# -ne 2 ]; then
+	echo Usage: $0 machine_name
+	exit 1
 fi
+
+$NETKIT_HOME/lclean -d "$NETKIT_HOME/temp/labs/netkit_`echo $UID`_$@"
