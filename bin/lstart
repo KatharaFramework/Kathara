@@ -1,5 +1,20 @@
 #!/bin/bash
 
+NETKIT_TERMINAL_TYPE="xterm -T "
+for i in "$@"
+do
+case $i in
+    --xterm=*)
+    NETKIT_TERMINAL_TYPE="${i#*=} --title="
+    shift # past argument=value
+    ;;
+    *)
+       # unknown option
+    ;;
+esac
+done
+
+
 python $NETKIT_HOME/python/check.py "$PWD/" -f $@
 
 export RC=$?
@@ -15,9 +30,9 @@ if [ "$RC" = "0" ]; then
         then 
             $NETKIT_HOME/wrapper/bin/netkit_dw start `cat "$NETKIT_HOME/temp/$in$M"`; 
                 python $NETKIT_HOME/python/lstart.py --execbash "$PWD/" $@ | 
-                (while IFS=';' read -ra in; do (xterm -T "${in[0]}" -e "${in[1]}" &); done)
+                (while IFS=';' read -ra in; do ($NETKIT_TERMINAL_TYPE"${in[0]}" -e "${in[1]}" &); done)
         else 
-            python $NETKIT_HOME/python/lstart.py "$PWD/" $@ | while IFS=';' read -ra in; do (xterm -T "${in[0]}" -e "${in[1]}" &); done  
+            python $NETKIT_HOME/python/lstart.py "$PWD/" $@ | while IFS=';' read -ra in; do ($NETKIT_TERMINAL_TYPE"${in[0]}" -e "${in[1]}" &); done  
         fi ); 
     done
 

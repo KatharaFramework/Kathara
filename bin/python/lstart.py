@@ -75,15 +75,17 @@ parser.add_argument(
     dest="print_only",
     required=False,
     action='store_true',
-    help='Print commands used to start the containers (containers are not started).'
+    help='Print commands used to start the containers to stderr (containers are not started).'
 )
 parser.add_argument("--execbash", required=False, action="store_true", help=argparse.SUPPRESS)
 
 args = parser.parse_args()
 
 # applying parameter options (1/3)
+title_option = " -T "
 if args.xterm and (" " not in args.xterm):
     nc.LINUX_TERMINAL_TYPE = args.xterm.replace('"', '').replace("'", '')
+    title_option = " --title="
 
 if args.force_lab: 
     nc.FORCE_LAB = True
@@ -120,13 +122,14 @@ if not args.execbash:
     for machine in machines:
         machine_path = os.path.join(lab_path, machine)
         fc.win2linux_all_files_in_dir(machine_path)
-        # checking if folder tree for the given machine contains etc/zebra and if so rename it as etc/quagga before copy
-        # TODO add warning for user
-        if os.path.isdir(os.path.join(machine_path, "etc/zebra")):
+        # checking if folder tree for the given machine contains etc/zebra (and we are not in print mode) 
+        # and if so rename it as etc/quagga before the copy to the container
+        if os.path.isdir(os.path.join(machine_path, "etc/zebra")) and (not cr.PRINT):
             try:
+                sys.stderr.write("Moving '" + os.path.join(machine_path, "etc/zebra") + "' to '" + os.path.join(machine_path, "etc/quagga") + "'\n")
                 os.rename(os.path.join(machine_path, "etc/zebra"), os.path.join(machine_path, "etc/quagga"))
             except:
-                pass
+                sys.stderr.write("ERROR: could not move '" + os.path.join(machine_path, "etc/zebra") + "' to '" + os.path.join(machine_path, "etc/quagga") + "'\n")
     # running creation commands not verbosely
     cr.lab_create(commands, startup_commands)
 else:
@@ -144,10 +147,13 @@ if not args.noterminals:
         if nc.PLATFORM == nc.WINDOWS:        
             if cr.PRINT: sys.stderr.write(COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END + "\n")
             else: print(COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END)
-        else:   
-            if cr.PRINT: sys.stderr.write(machine_name + ";" + COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END + "\n")
+        else:
+            if cr.PRINT: sys.stderr.write(nc.LINUX_TERMINAL_TYPE + title_option + '"' + machine_name + '" -e "' + COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END + '"\n')
             else: print(machine_name + ";" + COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END)
 
 # applying parameter options (3/3)
 if args.list:
-    print('"' + os.path.join(os.environ['NETKIT_HOME'], 'linfo') + '" -d "' + lab_path + '"')
+    if nc.PLATFORM == nc.WINDOWS:
+        print('"' + os.path.join(os.environ['NETKIT_HOME'], 'linfo') + '" -d "' + lab_path + '"')
+    else:
+        print("stats ;" + '"' + os.path.join(os.environ['NETKIT_HOME'], 'linfo') + '" -d "' + lab_path + '"')

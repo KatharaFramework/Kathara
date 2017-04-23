@@ -6,9 +6,9 @@
 
 #define MAX_CMD_LEN 1500
 
-char* allowed_words_1 [] = { "run", "exec", "kill", "rm", "stop", "start", "rmi", "connect", "create" };
+char* allowed_words_1 [] = { "run", "exec", "kill", "rm", "stop", "start", "rmi", "connect", "create", "stats" };
 char* allowed_words_2 [] = { "-ti", "-tid", "-it", "-itd", "-dit", "-dti", "--privileged=true", "--name", "--hostname=", "--network=", "--memory=", "-f", "-e", "-d"};
-#define ALLOWED_WORDS_1_LEN 9
+#define ALLOWED_WORDS_1_LEN 10
 #define ALLOWED_WORDS_2_LEN 14
 
 void check_overflow(int count) 

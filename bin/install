@@ -27,7 +27,7 @@ sudo chmod 755 $NETKIT_HOME/vhalt
 sudo chmod 755 $NETKIT_HOME/vinfo
 
 echo "Building image"
-#sudo docker rmi -f netkit
-#sudo docker build -t netkit $NETKIT_HOME
+sudo docker rmi -f netkit
+sudo docker build -t netkit $NETKIT_HOME
 
 sudo -k
