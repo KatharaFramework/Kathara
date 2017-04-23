@@ -1,39 +1,48 @@
 #!/bin/bash
 
-NETKIT_TERMINAL_TYPE="xterm -T "
+NETKIT_TERMINAL_STRING="xterm -T "
+NETKIT_PRINT=0
 for i in "$@"
 do
 case $i in
     --xterm=*)
-    NETKIT_TERMINAL_TYPE="${i#*=} --title="
-    shift # past argument=value
+    NETKIT_TERMINAL_STRING="${i#*=} --title="
+    #shift 
+    ;;
+    --print)
+    NETKIT_PRINT=1
+    #shift
     ;;
     *)
-       # unknown option
+    # unknown option
     ;;
 esac
 done
-
 
 python $NETKIT_HOME/python/check.py "$PWD/" -f $@
 
 export RC=$?
 if [ "$RC" = "0" ]; then
-
     python $NETKIT_HOME/python/print_metadata.py "$PWD/" $@
 
     M=_machines
 
     python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | 
     while IFS=';' read -ra in; do ( 
-        if [ -f "$NETKIT_HOME/temp/$in$M" ]; 
-        then 
-            $NETKIT_HOME/wrapper/bin/netkit_dw start `cat "$NETKIT_HOME/temp/$in$M"`; 
-                python $NETKIT_HOME/python/lstart.py --execbash "$PWD/" $@ | 
-                (while IFS=';' read -ra in; do ($NETKIT_TERMINAL_TYPE"${in[0]}" -e "${in[1]}" &); done)
-        else 
-            python $NETKIT_HOME/python/lstart.py "$PWD/" $@ | while IFS=';' read -ra in; do ($NETKIT_TERMINAL_TYPE"${in[0]}" -e "${in[1]}" &); done  
-        fi ); 
+        if [ "$NETKIT_PRINT" = "0" ];
+        then
+		if [ -f "$NETKIT_HOME/temp/$in$M" ]; 
+		then 
+		    $NETKIT_HOME/wrapper/bin/netkit_dw start `cat "$NETKIT_HOME/temp/$in$M"`; 
+			python $NETKIT_HOME/python/lstart.py --execbash "$PWD/" $@ | 
+			(while IFS=';' read -ra in; do ($NETKIT_TERMINAL_STRING"${in[0]}" -e "${in[1]}" &); done)
+		else 
+		    python $NETKIT_HOME/python/lstart.py "$PWD/" $@ | while IFS=';' read -ra in; do ($NETKIT_TERMINAL_STRING"${in[0]}" -e "${in[1]}" &); done  
+		fi
+        else
+		python $NETKIT_HOME/python/lstart.py "$PWD/" $@ | while read in; do (echo "$in &"); done  
+        fi
+    ); 
     done
 
 else

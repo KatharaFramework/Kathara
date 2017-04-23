@@ -148,11 +148,11 @@ if not args.noterminals:
             if cr.PRINT: sys.stderr.write(COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END + "\n")
             else: print(COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END)
         else:
-            if cr.PRINT: sys.stderr.write(nc.LINUX_TERMINAL_TYPE + title_option + '"' + machine_name + '" -e "' + COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END + '"\n')
+            if cr.PRINT: print(nc.LINUX_TERMINAL_TYPE + title_option + '"' + machine_name + '" -e "' + COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END + '"')
             else: print(machine_name + ";" + COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END)
 
 # applying parameter options (3/3)
-if args.list:
+if args.list and (not cr.PRINT):
     if nc.PLATFORM == nc.WINDOWS:
         print('"' + os.path.join(os.environ['NETKIT_HOME'], 'linfo') + '" -d "' + lab_path + '"')
     else:
