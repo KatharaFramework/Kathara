@@ -30,7 +30,7 @@ if args.full:
                 break
 
     if has_invalid_characters:  
-        print "Invalid characters in machine names or link names\n"
+        print ("Invalid characters in machine names or link names\n")
         sys.exit(1)
 
 if sys.version_info >= (3, 0):
