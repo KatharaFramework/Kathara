@@ -3,6 +3,8 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pwd.h>
+#include <sys/types.h>
 
 #define MAX_CMD_LEN 1500
 
@@ -10,6 +12,11 @@ char* allowed_words_1 [] = { "run", "exec", "kill", "rm", "stop", "start", "rmi"
 char* allowed_words_2 [] = { "-ti", "-tid", "-it", "-itd", "-dit", "-dti", "--privileged=true", "--name", "--hostname=", "--network=", "--memory=", "-f", "-e", "-d"};
 #define ALLOWED_WORDS_1_LEN 10
 #define ALLOWED_WORDS_2_LEN 14
+
+char* get_user_home() {
+    struct passwd *passwdEnt = getpwuid(getuid());
+    return passwdEnt->pw_dir;
+}
 
 void check_overflow(int count) 
 {
@@ -27,6 +34,10 @@ void check_mount_option(char* p)
         fprintf(stderr, "-v and volumes options are not allowed\n");
         exit(EXIT_FAILURE); 
     }
+}
+
+int is_run(char* p){
+    return strncmp("run", p, 3)==0;
 }
 
 int is_path_in_container(char* p)
@@ -88,6 +99,14 @@ int main(int argc, char *argv[])
         int char_count = 7 + strlen(argv[1]);
         check_overflow(char_count);
         strcat(cmd, argv[1]);
+        if(is_run(argv[1])) {
+             char* home_dir = get_user_home();
+             char_count += strlen(home_dir) + 1 + 2 + 1 + 10 + 1;
+             check_overflow(char_count);
+             strcat(cmd, " -v ");
+             strcat(cmd, home_dir);
+             strcat(cmd, ":/hosthome ");
+        }
         if(strncmp(argv[1], "cp", 2)==0) 
             current_state = CP1;
         else if(is_allowed_word(argv[1], allowed_words_1, ALLOWED_WORDS_1_LEN, 1))
