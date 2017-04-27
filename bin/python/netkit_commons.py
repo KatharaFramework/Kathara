@@ -73,8 +73,12 @@ def reorder_by_lab_dep(path, machines):
     return ordered_machines
 
 def lab_parse(path):
+    if (not FORCE_LAB) and (not os.path.exists(os.path.join(path, 'lab.conf'))):
+        print ("No lab.conf in given directory\n")
+        sys.exit(1)
+
     if FORCE_LAB and (not os.path.exists(os.path.join(path, 'lab.conf'))):
-        return ({}, [], {}, {})
+        return ({}, [], {}, {}) #TODO has to get names from last positional args
 
     # reads lab.conf
     ini_str = '[dummysection]\n' + open(os.path.join(path, 'lab.conf'), 'r').read()

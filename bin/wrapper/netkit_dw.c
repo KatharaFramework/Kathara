@@ -84,8 +84,10 @@ int main(int argc, char *argv[])
     typedef enum {INITIAL, CP1, CP2, CPOK, NETWORK, OK} state;
     state current_state = INITIAL;
 
-    char cmd[MAX_CMD_LEN] = "";
+    char cmd[MAX_CMD_LEN] = "docker";
+    int run = 0;
     char **p;
+    int char_count = 7;
 
     if (argc < 2) /* no parameters */
     {
@@ -94,18 +96,6 @@ int main(int argc, char *argv[])
     }
     else
     {
-        strcat(cmd, "docker ");
-        int char_count = 7 + strlen(argv[1]);
-        check_overflow(char_count);
-        strcat(cmd, argv[1]);
-        if(is_run(argv[1])) {
-             char* home_dir = get_user_home();
-             char_count += strlen(home_dir) + 1 + 2 + 1 + 10 + 1;
-             check_overflow(char_count);
-             strcat(cmd, " -v ");
-             strcat(cmd, home_dir);
-             strcat(cmd, ":/hosthome ");
-        }
         if(strncmp(argv[1], "cp", 2)==0) 
             current_state = CP1;
         else if(is_allowed_word(argv[1], allowed_words_1, ALLOWED_WORDS_1_LEN, 1))
@@ -117,6 +107,18 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Usage: netkit_dw [options] command\n");
             exit(EXIT_FAILURE);
         }
+
+        if(is_run(argv[1])) {
+            run = 1;
+            char* home_dir = get_user_home();
+            char_count += 4 + strlen(home_dir) + 1 + 2 + 1 + 10 + 1;
+            check_overflow(char_count);
+            strcat(cmd, " -v ");
+            strcat(cmd, home_dir);
+            strcat(cmd, ":/hosthome ");
+            argv[1] = cmd;
+        }
+
         int current_arg = 2;
         for(p = &argv[2]; *p; p++)
         {
@@ -147,10 +149,6 @@ int main(int argc, char *argv[])
                     exit(EXIT_FAILURE);
                 }
             check_mount_option(*p); // redundant check for -v parameter
-            char_count += strlen(*p) + 1;
-            check_overflow(char_count);
-            strcat(cmd, " ");
-            strcat(cmd, *p);
             current_arg++;
         }
         
