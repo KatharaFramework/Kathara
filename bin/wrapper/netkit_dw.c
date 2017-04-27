@@ -5,12 +5,12 @@
 #include <unistd.h>
 #include <pwd.h>
 
-#define MAX_CMD_LEN 1500
+#define MAX_CMD_LEN 1000
 
 char* allowed_words_1 [] = { "run", "exec", "kill", "rm", "stop", "start", "rmi", "connect", "create", "stats" };
-char* allowed_words_2 [] = { "-ti", "-tid", "-it", "-itd", "-dit", "-dti", "--privileged=true", "--name", "--hostname=", "--network=", "--memory=", "-f", "-e", "-d"};
+char* allowed_words_2 [] = { "-ti", "-tid", "-it", "-itd", "-dit", "-dti", "--privileged=true", "--name", "--hostname=", "--network=", "--memory=", "-f", "-e", "-d", "-c"};
 #define ALLOWED_WORDS_1_LEN 10
-#define ALLOWED_WORDS_2_LEN 14
+#define ALLOWED_WORDS_2_LEN 15
 
 char* get_user_home() {
     struct passwd *passwdEnt = getpwuid(getuid());
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
         if(current_state==OK || current_state==CPOK)
         {
             setuid(0);
-            execve(cmd, NULL, NULL);
+            fprintf(stderr, "%d\n", execvp("docker", argv));
         }
     }
 

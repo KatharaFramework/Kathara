@@ -195,10 +195,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
                     create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
                     if not PRINT: u.write_temp(" " + prefix + app[1], u.generate_urlsafe_hash(path) + '_links', PLATFORM)
                 if opt=='e' or opt=='exec':
-                    if PLATFORM == WINDOWS:
-                        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + val.strip().replace('\\', r'\\').replace('"', r'\\"').replace("'", r"\\'") + '"'), ('{params}', '-d')
-                    else:
-                        repls = ('{machine_name}', machine_name), ('{command}', '\'bash -c "' + val.strip().replace('\\', r'\\').replace('"', r'\\"').replace("'", r"\\'") + '"\''), ('{params}', '-d')
+                    repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + val.strip().replace('\\', r'\\').replace('"', r'\\"').replace("'", r"\\'") + '"'), ('{params}', '-d')
                     startup_commands.append(u.replace_multiple_items(repls, exec_template))
 
         repls = ('{machine_name}', machine_name), ('{number}', str(count)), ('{first_link}', interfaces[0][0]), ('{image_name}', this_image), ('{machine_options}', machine_option_string)
@@ -227,10 +224,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
             f = open(startup_file, 'r')
             for line in f:
                 if line.strip() and line.strip() not in ['\n', '\r\n']:
-                    if PLATFORM == WINDOWS:
-                        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + line.strip().replace('\\', r'\\').replace('"', r'\"').replace("'", r"\'") + '"'), ('{params}', '-d')
-                    else:
-                        repls = ('{machine_name}', machine_name), ('{command}', '\'bash -c "' + line.strip().replace('\\', r'\\').replace('"', r'\"').replace("'", r"\'") + '"\''), ('{params}', '-d')
+                    repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + line.strip().replace('\\', r'\\').replace('"', r'\"').replace("'", r"\'") + '"'), ('{params}', '-d')
                     startup_commands.append(u.replace_multiple_items(repls, exec_template))
             f.close()
     
