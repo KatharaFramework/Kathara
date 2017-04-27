@@ -31,9 +31,9 @@ if [ "$RC" = "0" ]; then
     while IFS=';' read -ra in; do ( 
         if [ "$NETKIT_PRINT" = "0" ];
         then
-		if [ -f "$NETKIT_HOME/temp/$in$M" ]; 
+		if [ -f "$HOME/netkit_temp/$in$M" ]; 
 		then 
-		    $NETKIT_HOME/wrapper/bin/netkit_dw start `cat "$NETKIT_HOME/temp/$in$M"`; 
+		    $NETKIT_HOME/wrapper/bin/netkit_dw start `cat "$HOME/netkit_temp/$in$M"`; 
 			python $NETKIT_HOME/python/lstart.py --execbash "$PWD/" $@ | 
 			(while IFS=';' read -ra in; do ($NETKIT_TERMINAL_STRING"${in[0]}" -e "${in[1]}" &); done)
 		else 

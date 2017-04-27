@@ -2,4 +2,4 @@
 
 $NETKIT_HOME/lstart -d `python $NETKIT_HOME/python/vstart.py "$PWD/" $@`
 
-rm -rf "$NETKIT_HOME/temp/labs/netkit_`echo $UID`_$1"
+rm -rf "$HOME/netkit_temp/netkit_`echo $UID`_$1"

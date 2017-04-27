@@ -4,7 +4,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pwd.h>
-#include <sys/types.h>
 
 #define MAX_CMD_LEN 1500
 
@@ -158,7 +157,7 @@ int main(int argc, char *argv[])
         if(current_state==OK || current_state==CPOK)
         {
             setuid(0);
-            system(cmd);
+            execve(cmd, NULL, NULL);
         }
     }
 

@@ -1,6 +1,11 @@
 import sys
 import netkit_commons as nc
 import argparse
+import os
+try:
+    import pwd
+except ImportError: #windows
+    pass
 
 DEBUG = nc.DEBUG
 nc.DEBUG = False
@@ -36,3 +41,9 @@ if args.full:
 if sys.version_info >= (3, 0):
     print ("Requires Python 2.x, not Python 3.x\n")
     sys.exit(1)
+
+if nc.PLATFORM != nc.WINDOWS:
+    if pwd.getpwuid(os.getuid()).pw_dir != os.environ['HOME']:
+        print ("HOME variable is different from the real home directory. This won't allow labs to work.\n")
+        print ("Please set HOME=" + pwd.getpwuid(os.getuid()).pw_dir + "\n")
+        sys.exit(1)

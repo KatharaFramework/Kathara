@@ -5,4 +5,4 @@ if [ $# -ne 1 ]; then
 	exit 1
 fi
 
-$NETKIT_HOME/lclean -d "$NETKIT_HOME/temp/labs/netkit_`echo $UID`_$1"
+$NETKIT_HOME/lclean -d "$HOME/netkit_temp/labs/netkit_`echo $UID`_$1"

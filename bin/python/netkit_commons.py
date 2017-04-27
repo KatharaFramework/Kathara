@@ -157,7 +157,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
 
     # writing the network list in the temp file
     if not execbash:
-        if not PRINT: u.write_temp(lab_links_text, u.generate_urlsafe_hash(path) + '_links')
+        if not PRINT: u.write_temp(lab_links_text, u.generate_urlsafe_hash(path) + '_links', PLATFORM)
     
     # generating commands for running the containers, copying the config folder and executing the terminals connected to the containers
     create_machine_template = docker + ' run -tid --privileged=true --name ' + prefix + '{machine_name} --hostname={machine_name} --network=' + prefix + '{first_link} {machine_options} {image_name}'
@@ -193,9 +193,12 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
                     create_network_commands.append(create_network_template + prefix + app[1])
                     repls = ('{link}', app[1]), ('{machine_name}', machine_name)
                     create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
-                    if not PRINT: u.write_temp(" " + prefix + app[1], u.generate_urlsafe_hash(path) + '_links')
+                    if not PRINT: u.write_temp(" " + prefix + app[1], u.generate_urlsafe_hash(path) + '_links', PLATFORM)
                 if opt=='e' or opt=='exec':
-                    repls = ('{machine_name}', machine_name), ('{command}', '\'bash -c "' + val.strip().replace('\\', r'\\').replace('"', r'\\"').replace("'", r"\\'") + '"\''), ('{params}', '-d')
+                    if PLATFORM == WINDOWS:
+                        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + val.strip().replace('\\', r'\\').replace('"', r'\\"').replace("'", r"\\'") + '"'), ('{params}', '-d')
+                    else:
+                        repls = ('{machine_name}', machine_name), ('{command}', '\'bash -c "' + val.strip().replace('\\', r'\\').replace('"', r'\\"').replace("'", r"\\'") + '"\''), ('{params}', '-d')
                     startup_commands.append(u.replace_multiple_items(repls, exec_template))
 
         repls = ('{machine_name}', machine_name), ('{number}', str(count)), ('{first_link}', interfaces[0][0]), ('{image_name}', this_image), ('{machine_options}', machine_option_string)
@@ -215,7 +218,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
 
     # writing the container list in the temp file
     if not execbash:
-        if not PRINT: u.write_temp(lab_machines_text, u.generate_urlsafe_hash(path) + '_machines')
+        if not PRINT: u.write_temp(lab_machines_text, u.generate_urlsafe_hash(path) + '_machines', PLATFORM)
         
     # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array of exec commands. We also replace escapes and quotes
     for machine_name, _ in machines.items():
@@ -224,7 +227,10 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
             f = open(startup_file, 'r')
             for line in f:
                 if line.strip() and line.strip() not in ['\n', '\r\n']:
-                    repls = ('{machine_name}', machine_name), ('{command}', '\'bash -c "' + line.strip().replace('\\', r'\\').replace('"', r'\"').replace("'", r"\'") + '"\''), ('{params}', '-d')
+                    if PLATFORM == WINDOWS:
+                        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + line.strip().replace('\\', r'\\').replace('"', r'\"').replace("'", r"\'") + '"'), ('{params}', '-d')
+                    else:
+                        repls = ('{machine_name}', machine_name), ('{command}', '\'bash -c "' + line.strip().replace('\\', r'\\').replace('"', r'\"').replace("'", r"\'") + '"\''), ('{params}', '-d')
                     startup_commands.append(u.replace_multiple_items(repls, exec_template))
             f.close()
     
