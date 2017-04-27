@@ -6,11 +6,12 @@
 #include <pwd.h>
 
 #define MAX_CMD_LEN 1000
+#define ARG_MAX 10
 
 char* allowed_words_1 [] = { "run", "exec", "kill", "rm", "stop", "start", "rmi", "connect", "create", "stats" };
-char* allowed_words_2 [] = { "-ti", "-tid", "-it", "-itd", "-dit", "-dti", "--privileged=true", "--name", "--hostname=", "--network=", "--memory=", "-f", "-e", "-d", "-c"};
+char* allowed_words_2 [] = { "-ti", "-tid", "-it", "-itd", "-dit", "-dti", "-di", "-id", "--privileged=true", "--name", "--hostname=", "--network=", "--memory=", "-f", "-e", "-d", "-c"};
 #define ALLOWED_WORDS_1_LEN 10
-#define ALLOWED_WORDS_2_LEN 15
+#define ALLOWED_WORDS_2_LEN 17
 
 char* get_user_home() {
     struct passwd *passwdEnt = getpwuid(getuid());
@@ -84,10 +85,12 @@ int main(int argc, char *argv[])
     typedef enum {INITIAL, CP1, CP2, CPOK, NETWORK, OK} state;
     state current_state = INITIAL;
 
-    char cmd[MAX_CMD_LEN] = "docker";
-    int run = 0;
+    char cmd[MAX_CMD_LEN] = "";
     char **p;
-    int char_count = 7;
+    int char_count = 0;
+    char* env_args[ARG_MAX];
+    int offset = 0;
+    int current_arg = 1;
 
     if (argc < 2) /* no parameters */
     {
@@ -96,6 +99,9 @@ int main(int argc, char *argv[])
     }
     else
     {
+        env_args[current_arg] = malloc(strlen(argv[current_arg])+1);
+        strcpy(env_args[current_arg], argv[current_arg]);
+
         if(strncmp(argv[1], "cp", 2)==0) 
             current_state = CP1;
         else if(is_allowed_word(argv[1], allowed_words_1, ALLOWED_WORDS_1_LEN, 1))
@@ -109,19 +115,22 @@ int main(int argc, char *argv[])
         }
 
         if(is_run(argv[1])) {
-            run = 1;
+            offset = 1;
             char* home_dir = get_user_home();
-            char_count += 4 + strlen(home_dir) + 1 + 2 + 1 + 10 + 1;
+            char_count += 9 + strlen(home_dir) + 1 + 10;
             check_overflow(char_count);
-            strcat(cmd, " -v ");
+            strcat(cmd, "--volume=");
             strcat(cmd, home_dir);
-            strcat(cmd, ":/hosthome ");
-            argv[1] = cmd;
+            strcat(cmd, ":/hosthome");
+            env_args[current_arg+offset] = malloc(strlen(cmd)+1);
+            strcpy(env_args[current_arg+offset], cmd);
         }
 
-        int current_arg = 2;
-        for(p = &argv[2]; *p; p++)
+        current_arg = 2;
+        for(p = &argv[current_arg]; *p; p++)
         {
+            env_args[current_arg+offset] = malloc(strlen(argv[current_arg])+1);
+            strcpy(env_args[current_arg+offset], argv[current_arg]);
             if(current_state==CP1)
                 if (is_valid_cp(*p, current_arg, argc))
                     current_state = CP2;
@@ -149,13 +158,16 @@ int main(int argc, char *argv[])
                     exit(EXIT_FAILURE);
                 }
             check_mount_option(*p); // redundant check for -v parameter
+
             current_arg++;
         }
-        
+
+        env_args[argc+offset] = NULL;
         if(current_state==OK || current_state==CPOK)
         {
             setuid(0);
-            fprintf(stderr, "%d\n", execvp("docker", argv));
+            fprintf(stderr, "%d\n", execvp("docker", env_args));
+perror("execve");
         }
     }
 
