@@ -71,7 +71,7 @@ def reorder_by_lab_dep(path, machines):
     return ordered_machines
 
 def lab_parse(path, force=False):
-    if (not FORCE_LAB) and (not os.path.exists(os.path.join(path, 'lab.conf'))):
+    if (not force) and (not os.path.exists(os.path.join(path, 'lab.conf'))):
         print ("No lab.conf in given directory\n")
         sys.exit(1)
 

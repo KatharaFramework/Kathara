@@ -117,7 +117,9 @@ for machine_name, _ in options.items():
     options[machine_name] = options[machine_name] + additional_options
 
 # filter machines based on machine_name_args
-filtered_machines = dict((k, machines[k]) for k in machine_name_args)
+filtered_machines = machines
+if len(machine_name_args) >= 1:
+    filtered_machines = dict((k, machines[k]) for k,v in machines.items() if k in machine_name_args)
 
 # get command lists
 (commands, startup_commands, exec_commands) = nc.create_commands(filtered_machines, links, options, metadata, lab_path, args.execbash)
@@ -125,7 +127,7 @@ filtered_machines = dict((k, machines[k]) for k in machine_name_args)
 # create lab
 if not args.execbash:
     # removing \r from DOS/MAC files before docker cp
-    for machine in machines:
+    for machine in filtered_machines:
         machine_path = os.path.join(lab_path, machine)
         fc.win2linux_all_files_in_dir(machine_path)
         # checking if folder tree for the given machine contains etc/zebra (and we are not in print mode) 
@@ -149,7 +151,7 @@ if nc.PLATFORM == nc.WINDOWS:
 
 # print commands for terminal (exec bash commands to open terminals)
 if not args.noterminals:
-    for exec_command, machine_name in zip(exec_commands, machines):
+    for exec_command, machine_name in zip(exec_commands, filtered_machines):
         if nc.PLATFORM == nc.WINDOWS:        
             if cr.PRINT: sys.stderr.write(COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END + "\n")
             else: print(COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END)
