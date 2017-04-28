@@ -164,7 +164,10 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
         if not PRINT: u.write_temp(lab_links_text, u.generate_urlsafe_hash(path) + '_links', PLATFORM)
     
     # generating commands for running the containers, copying the config folder and executing the terminals connected to the containers
-    create_machine_template = docker + ' run -tid --privileged=true --name ' + prefix + '{machine_name} --hostname={machine_name} --network=' + prefix + '{first_link} {machine_options} {image_name}'
+    if PLATFORM != WINDOWS:
+        create_machine_template = docker + ' run -tid --privileged=true --name ' + prefix + '{machine_name} --hostname={machine_name} --network=' + prefix + '{first_link} {machine_options} {image_name}'
+    else: 
+        create_machine_template = docker + ' run --volume="' + os.path.expanduser('~') +'":/hosthome -tid --privileged=true --name ' + prefix + '{machine_name} --hostname={machine_name} --network=' + prefix + '{first_link} {machine_options} {image_name}'
     # we could use -ti -a stdin -a stdout and then /bin/bash -c "commands;bash", 
     # but that woult execute commands like ifconfig BEFORE all the networks are linked
     create_machine_commands = []
@@ -183,6 +186,10 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
 
     for machine_name, interfaces in machines.items():
         this_image = IMAGE_NAME
+
+        # copying the hostlab directory
+        if not execbash:
+            copy_folder_commands.append(docker + ' cp "' + path + '" ' + prefix + machine_name + ':/hostlab')
 
         # Parsing options from lab.conf
         machine_option_string = " "
@@ -209,7 +216,8 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
             repls = ('{link}', link), ('{machine_name}', machine_name)
             create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
         repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name)
-        copy_folder_commands.append(u.replace_multiple_items(repls, copy_folder_template))
+        if os.path.exists(path + '{machine_name}'):
+            copy_folder_commands.append(u.replace_multiple_items(repls, copy_folder_template))
         if PLATFORM == WINDOWS:
             repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \'\033]0;' + machine_name + '\007\'; bash"'), ('{params}', '-e TERM=vt100')
         else:
