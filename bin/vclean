@@ -5,4 +5,26 @@ if [ $# -ne 1 ]; then
 	exit 1
 fi
 
-$NETKIT_HOME/lclean -d "$HOME/netkit_temp/labs/netkit_`echo $UID`_$1"
+FORCE_RT=""
+for i in "$@"
+do
+case $i in
+    --T)
+    FORCE_RT="-T"
+    #shift 
+    ;;
+    --remove-tunnels)
+    FORCE_RT="-T"
+    #shift 
+    ;;
+    --clean-all)
+    FORCE_RT="-T"
+    #shift
+    ;;
+    *)
+    # unknown option
+    ;;
+esac
+done
+
+$NETKIT_HOME/lclean $FORCE_RT -d "$HOME/netkit_temp/labs/netkit_`echo $UID`_${@: -1}"

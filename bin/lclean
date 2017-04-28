@@ -2,6 +2,28 @@
 
 python $NETKIT_HOME/python/check.py "$PWD/" $@
 
+FORCE_RT=""
+for i in "$@"
+do
+case $i in
+    --T)
+    FORCE_RT="-f"
+    #shift 
+    ;;
+    --remove-tunnels)
+    FORCE_RT="-f"
+    #shift 
+    ;;
+    --clean-all)
+    FORCE_RT="-f"
+    #shift
+    ;;
+    *)
+    # unknown option
+    ;;
+esac
+done
+
 export RC=$?
 if [ "$RC" = "0" ]; then
 
@@ -9,7 +31,7 @@ if [ "$RC" = "0" ]; then
     L=_links
 
     python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do ($NETKIT_HOME/wrapper/bin/netkit_dw rm -f `cat "$HOME/netkit_temp/$in$M"`; rm "$HOME/netkit_temp/$in$M"); done
-    python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do ($NETKIT_HOME/wrapper/bin/netkit_dw network rm `cat "$HOME/netkit_temp/$in$L"`; rm "$HOME/netkit_temp/$in$L"); done
+    python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do ($NETKIT_HOME/wrapper/bin/netkit_dw network rm $FORCE_RT `cat "$HOME/netkit_temp/$in$L"`; rm "$HOME/netkit_temp/$in$L"); done
 
 else
     echo FAILED

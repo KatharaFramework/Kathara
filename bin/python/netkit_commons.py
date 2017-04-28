@@ -18,8 +18,6 @@ IMAGE_NAME = 'netkit'
 DOCKER_HUB_PREFIX = "netkit/"
 LINUX_TERMINAL_TYPE = 'xterm'
 
-FORCE_LAB = False
-
 MAC_OS = "darwin"
 WINDOWS = "win32"
 LINUX = "linux"
@@ -72,12 +70,12 @@ def reorder_by_lab_dep(path, machines):
     ordered_machines = OrderedDict(sorted(machines.items(), key=lambda t: dep_sort(t[0], dependency_list)))
     return ordered_machines
 
-def lab_parse(path):
+def lab_parse(path, force=False):
     if (not FORCE_LAB) and (not os.path.exists(os.path.join(path, 'lab.conf'))):
         print ("No lab.conf in given directory\n")
         sys.exit(1)
 
-    if FORCE_LAB and (not os.path.exists(os.path.join(path, 'lab.conf'))):
+    if force and (not os.path.exists(os.path.join(path, 'lab.conf'))):
         return ({}, [], {}, {}) #TODO has to get names from last positional args
 
     # reads lab.conf

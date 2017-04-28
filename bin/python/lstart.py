@@ -79,7 +79,9 @@ parser.add_argument(
 )
 parser.add_argument("--execbash", required=False, action="store_true", help=argparse.SUPPRESS)
 
-args = parser.parse_args()
+args, unknown = parser.parse_known_args()
+
+machine_name_args = filter (lambda x: not x.startswith("--"), unknown)
 
 # applying parameter options (1/3)
 title_option = " -T "
@@ -87,8 +89,9 @@ if args.xterm and (" " not in args.xterm):
     nc.LINUX_TERMINAL_TYPE = args.xterm.replace('"', '').replace("'", '')
     title_option = " --title="
 
+FORCE_LAB=False
 if args.force_lab: 
-    nc.FORCE_LAB = True
+    FORCE_LAB = True
 
 if args.print_only:
     cr.PRINT = True
@@ -106,15 +109,18 @@ if args.options:
         additional_options.append((app[0].strip(), app[1].strip()))
 
 # get lab machines, options, links and metadata
-(machines, links, options, metadata) = nc.lab_parse(lab_path)
+(machines, links, options, metadata) = nc.lab_parse(lab_path, force=FORCE_LAB)
 
 # applying parameter options (2/3)
 # adding additional_options to options
 for machine_name, _ in options.items():
     options[machine_name] = options[machine_name] + additional_options
 
+# filter machines based on machine_name_args
+filtered_machines = dict((k, machines[k]) for k in machine_name_args)
+
 # get command lists
-(commands, startup_commands, exec_commands) = nc.create_commands(machines, links, options, metadata, lab_path, args.execbash)
+(commands, startup_commands, exec_commands) = nc.create_commands(filtered_machines, links, options, metadata, lab_path, args.execbash)
 
 # create lab
 if not args.execbash:
