@@ -119,9 +119,9 @@ parser.add_argument(
 args, unknown = parser.parse_known_args()
 
 if nc.PLATFORM == nc.WINDOWS:
-    machine_path = os.path.join(os.environ["NETKIT_HOME"], "temp/labs/" + prefix + args.machine_name))
+    machine_path = os.path.join(os.environ["NETKIT_HOME"], "temp/labs/" + prefix + args.machine_name)
 else:
-    machine_path =  os.path.join(pwd.getpwuid(os.getuid()).pw_dir, "netkit_temp/labs/" + prefix + args.machine_name))
+    machine_path =  os.path.join(pwd.getpwuid(os.getuid()).pw_dir, "netkit_temp/labs/" + prefix + args.machine_name)
 
 image = ""
 if args.image:
