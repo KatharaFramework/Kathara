@@ -20,11 +20,11 @@ def replace_multiple_items(repls, string):
         return reduce(lambda a, kv: a.replace(*kv), repls, string)
 
 # writes the temporary files in NETKIT_HOME/temp
-def write_temp(text, filename, mode="linux"):
+def write_temp(text, filename, mode="linux", file_mode="a+"):
     if mode=="win32":
-        out_file = open(os.path.join(os.environ["NETKIT_HOME"], "temp/" + filename),"a+")
+        out_file = open(os.path.join(os.environ["NETKIT_HOME"], "temp/" + filename), file_mode)
     else:
-        out_file = open(os.path.join(pwd.getpwuid(os.getuid()).pw_dir, "netkit_temp/" + filename),"a+")
+        out_file = open(os.path.join(pwd.getpwuid(os.getuid()).pw_dir, "netkit_temp/" + filename), file_mode)
     out_file.write(text)
     out_file.close()
 

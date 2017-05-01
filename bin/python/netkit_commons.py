@@ -138,7 +138,7 @@ def lab_parse(path, force=False):
     return machines, links, options, metadata
 
 
-def create_commands(machines, links, options, metadata, path, execbash=False):
+def create_commands(machines, links, options, metadata, path, execbash=False, no_machines_tmp=False):
     docker = DOCKER_BIN
 
     # deciding machine and network prefix in order to avoid conflicts with other users and containers
@@ -159,7 +159,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
 
     # writing the network list in the temp file
     if not execbash:
-        if not PRINT: u.write_temp(lab_links_text, u.generate_urlsafe_hash(path) + '_links', PLATFORM)
+        if not PRINT: u.write_temp(lab_links_text, u.generate_urlsafe_hash(path) + '_links', PLATFORM, file_mode="w+")
     
     # generating commands for running the containers, copying the config folder and executing the terminals connected to the containers
     if PLATFORM != WINDOWS:
@@ -224,8 +224,9 @@ def create_commands(machines, links, options, metadata, path, execbash=False):
         lab_machines_text += prefix + machine_name + ' '
 
     # writing the container list in the temp file
-    if not execbash:
-        if not PRINT: u.write_temp(lab_machines_text, u.generate_urlsafe_hash(path) + '_machines', PLATFORM)
+    if not no_machines_tmp:
+        if not execbash:
+            if not PRINT: u.write_temp(lab_machines_text, u.generate_urlsafe_hash(path) + '_machines', PLATFORM)
         
     # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array of exec commands. We also replace escapes and quotes
     for machine_name, _ in machines.items():

@@ -122,7 +122,7 @@ if len(machine_name_args) >= 1:
     filtered_machines = dict((k, machines[k]) for k,v in machines.items() if k in machine_name_args)
 
 # get command lists
-(commands, startup_commands, exec_commands) = nc.create_commands(filtered_machines, links, options, metadata, lab_path, args.execbash)
+(commands, startup_commands, exec_commands) = nc.create_commands(filtered_machines, links, options, metadata, lab_path, args.execbash, no_machines_tmp=(len(machine_name_args) >= 1))
 
 # create lab
 if not args.execbash:
