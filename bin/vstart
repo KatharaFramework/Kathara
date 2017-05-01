@@ -9,4 +9,4 @@ done
 
 $NETKIT_HOME/lstart -d `python $NETKIT_HOME/python/vstart.py "$PWD/" $NETKIT_LASTARG ${@:1:$#-1}`
 
-rm -rf "$HOME/netkit_temp/netkit_${UID}_${NETKIT_LASTARG}"
+rm -rf "$HOME/netkit_temp/labs/netkit_${UID}_${NETKIT_LASTARG}"

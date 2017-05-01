@@ -3,19 +3,24 @@
 python $NETKIT_HOME/python/check.py "$PWD/" $@
 
 NETKIT_LIST=0
-NETKIT_ALL=1
+NETKIT_APP_PREV=$0
 for i in "$@"
 do
 case $i in
     --list)
+    NETKIT_APP_PREV=$i
     NETKIT_LIST=1
     #shift 
     ;;
     -*)
+    NETKIT_APP_PREV=$i
     #shift 
     ;;
     *)
-    $NETKIT_HOME/wrapper/bin/netkit_dw stop netkit_${UID}_$i; NETKIT_ALL=0
+    if [ "$NETKIT_APP_PREV" != "-d" ]; then
+        $NETKIT_HOME/wrapper/bin/netkit_dw stop netkit_${UID}_$i; NETKIT_ALL=0
+    fi
+    NETKIT_APP_PREV=$i
     #shift
     ;;
 esac
