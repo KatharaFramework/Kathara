@@ -84,7 +84,7 @@ parser.add_argument(
 parser.add_argument(
     '-l', '--hostlab',
     required=False,
-    help='DEPRECATED.'
+    help='Set a path for a lab folder to search the specified machine.'
 )
 parser.add_argument(
     '-w', '--hostwd',
@@ -116,7 +116,7 @@ parser.add_argument(
     help='DEPRECATED.'
 )
 
-args = parser.parse_args()
+args, unknown = parser.parse_known_args()
 machine_path = os.path.join(os.environ["NETKIT_HOME"], "temp/labs/" + prefix + args.machine_name)
 
 image = ""
@@ -189,32 +189,33 @@ if (os.path.exists(machine_path)):
     sys.exit(0)
 
 #starting machine already existing in current lab
-if (os.path.exists(os.path.join(args.current_path, "lab.conf"))):
-    (machines, links, options, metadata) = nc.lab_parse(args.current_path)
-    if machines.get(args.machine_name) != None:
-        #creating and updating interfaces in lab.conf
-        conf_lines = {}
-        if (args.eths != None):
-            new_eths = eths_line_writer(args.eths)
-            conf_lines = u.merge_two_dicts(u.couple_list_to_dict(machines[args.machine_name]), new_eths)
-        else: conf_lines = u.couple_list_to_dict(machines[args.machine_name])
-        conf_lines = conf_line_writer(conf_lines)
+if args.hostlab : 
+    if (os.path.exists(os.path.join(args.hostlab, "lab.conf"))):
+        (machines, links, options, metadata) = nc.lab_parse(args.hostlab)
+        if machines.get(args.machine_name) != None:
+            #creating and updating interfaces in lab.conf
+            conf_lines = {}
+            if (args.eths != None):
+                new_eths = eths_line_writer(args.eths)
+                conf_lines = u.merge_two_dicts(u.couple_list_to_dict(machines[args.machine_name]), new_eths)
+            else: conf_lines = u.couple_list_to_dict(machines[args.machine_name])
+            conf_lines = conf_line_writer(conf_lines)
 
-        create_lab(machine_path, args.machine_name, conf_lines)
+            create_lab(machine_path, args.machine_name, conf_lines)
 
-        #copying and appending commands to startup file
-        startup_path = os.path.join(args.current_path, args.machine_name + ".startup")
-        if (os.path.exists(startup_path)):
-            shutil.copy(startup_path, os.path.join(machine_path, args.machine_name + ".startup"))
-        if (args.exe != None):
-            startup_writer(machine_path, args.machine_name, args.exe)
+            #copying and appending commands to startup file
+            startup_path = os.path.join(args.hostlab, args.machine_name + ".startup")
+            if (os.path.exists(startup_path)):
+                shutil.copy(startup_path, os.path.join(machine_path, args.machine_name + ".startup"))
+            if (args.exe != None):
+                startup_writer(machine_path, args.machine_name, args.exe)
 
-        #copying machine folder
-        folder_path = os.path.join(args.current_path, args.machine_name)
-        if (os.path.exists(folder_path)):
-            shutil.copytree(folder_path, os.path.join(machine_path, args.machine_name))
-    else:
-        start_new_machine()
+            #copying machine folder
+            folder_path = os.path.join(args.hostlab, args.machine_name)
+            if (os.path.exists(folder_path)):
+                shutil.copytree(folder_path, os.path.join(machine_path, args.machine_name))
+        else:
+            start_new_machine()
 
 #starting new machine not existing in lab pointed by current directory
 else:
