@@ -1,0 +1,3 @@
+#!/bin/bash
+
+$NETKIT_HOME/wrapper/bin/netkit_dw stats --no-stream ; $NETKIT_HOME/wrapper/bin/netkit_dw network list

@@ -2,12 +2,16 @@
 
 python $NETKIT_HOME/python/check.py "$PWD/" $@
 
+NETKIT_LIST=0
 NETKIT_ALL=1
 for i in "$@"
 do
 case $i in
     --list)
     NETKIT_LIST=1
+    #shift 
+    ;;
+    -*)
     #shift 
     ;;
     *)
@@ -23,6 +27,10 @@ if [ "$RC" = "0" ]; then
     if [ "$NETKIT_ALL" = "1" ]; then
         M=_machines
         python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do ($NETKIT_HOME/wrapper/bin/netkit_dw stop `cat "$HOME/netkit_temp/$in$M"`); done
+    fi
+
+    if [ "$NETKIT_LIST" = "1" ]; then
+        $NETKIT_HOME/wrapper/bin/netkit_dw stats --no-stream ; $NETKIT_HOME/wrapper/bin/netkit_dw network list
     fi
 
 else

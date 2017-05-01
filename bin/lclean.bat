@@ -4,9 +4,16 @@ python %NETKIT_HOME%\python\check.py "%cd%/" %*
 IF ERRORLEVEL 1 GOTO END
 
 SET NETKIT_ALL=1
-FOR %%t in (%*) DO (
-    IF "%%t" == "--list" SET NETKIT_LIST=1
-    ELSE docker rm -f netkit_nt_%%t & SET NETKIT_ALL=0
+SET NETKIT_APP=%1
+FOR %%p in (%*) DO (
+    SET NETKIT_APP=%%p
+    IF "%%p" == "--list" ( 
+        SET NETKIT_LIST=1
+    )
+    IF /i NOT "%NETKIT_APP:~0,1%" == "-" (
+        SET NETKIT_ALL=0 
+        docker rm -f netkit_nt_%%p
+    )
 )
 
 FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\folder_hash.py "%cd%/" %*') DO SET VAR1=%NETKIT_HOME%\temp\%%a_machines

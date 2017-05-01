@@ -5,9 +5,16 @@ IF ERRORLEVEL 1 GOTO END
 
 SET NETKIT_LIST=0
 SET NETKIT_ALL=1
-FOR %%t in (%*) DO (
-    IF "%%t" == "--list" SET NETKIT_LIST=1
-    ELSE docker stop  netkit_nt_%%t & SET NETKIT_ALL=0
+SET NETKIT_APP=%1
+FOR %%p in (%*) DO (
+    SET NETKIT_APP=%%p
+    IF "%%p" == "--list" ( 
+        SET NETKIT_LIST=1
+    )
+    IF /i NOT "%NETKIT_APP:~0,1%" == "-" (
+        SET NETKIT_ALL=0 
+        docker stop netkit_nt_%%p
+    )
 )
 
 IF "%NETKIT_ALL%" == "1" (
@@ -15,6 +22,6 @@ IF "%NETKIT_ALL%" == "1" (
     FOR /f "delims=" %%a in (%VAR1%) DO docker stop %%a
 )
 
-IF "%NETKIT_LIST%" == "1" docker ps -a & docker newtwork list
+IF "%NETKIT_LIST%" == "1" docker stats --no-stream & docker network list
 
 :END

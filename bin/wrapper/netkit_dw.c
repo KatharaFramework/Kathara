@@ -8,9 +8,9 @@
 #define MAX_CMD_LEN 1000
 #define ARG_MAX 10
 
-char* allowed_words_1 [] = { "run", "exec", "kill", "rm", "stop", "start", "rmi", "connect", "create", "stats", "ps", "list" };
-char* allowed_words_2 [] = { "-ti", "-tid", "-it", "-itd", "-dit", "-dti", "-di", "-id", "--privileged=true", "--name", "--hostname=", "--network=", "--memory=", "-f", "-e", "-d", "-c", "-a"};
-#define ALLOWED_WORDS_1_LEN 12
+char* allowed_words_1 [] = { "run", "exec", "kill", "rm", "stop", "start", "rmi", "connect", "create", "stats", "list" };
+char* allowed_words_2 [] = { "-ti", "-tid", "-it", "-itd", "-dit", "-dti", "-di", "-id", "--privileged=true", "--name", "--hostname=", "--network=", "--memory=", "-f", "-e", "-d", "-c", "--no-stream" };
+#define ALLOWED_WORDS_1_LEN 11
 #define ALLOWED_WORDS_2_LEN 18
 
 char* get_user_home() {
