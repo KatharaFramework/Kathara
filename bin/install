@@ -14,6 +14,9 @@ sudo chmod 000 $NETKIT_HOME/wrapper/netkit_dw.c
 mkdir $HOME/netkit_temp
 mkdir $HOME/netkit_temp/labs
 
+sudo chmod 755 $HOME/netkit_temp
+sudo chmod 755 $HOME/netkit_temp/labs
+
 sudo chmod 755 $NETKIT_HOME/lstart
 sudo chmod 755 $NETKIT_HOME/lrestart
 sudo chmod 755 $NETKIT_HOME/lclean

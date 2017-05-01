@@ -19,7 +19,7 @@ case $i in
 esac
 done
 
-if [ "$NETKIT_ALL" = "0" ]; then
+if [ "$NETKIT_NET" = "0" ]; then
 	$NETKIT_HOME/lclean -d "$HOME/netkit_temp/labs/netkit_${UID}_${@: -1}"
 else $NETKIT_HOME/wrapper/bin/netkit_dw network rm netkit_${UID}_${@: -1}
 fi

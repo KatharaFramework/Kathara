@@ -192,12 +192,12 @@ def lstart_command_writer():
     
 
 #starting machine already started
-if (os.path.exists(machine_path)):
+if (os.path.exists(machine_path)): # TODO old check, has to be done with folder_hash and temp lab dir
     print lstart_command_writer()
     sys.exit(0)
 
 #starting machine already existing in current lab
-if args.hostlab : 
+if args.hostlab: 
     if (os.path.exists(os.path.join(args.hostlab, "lab.conf"))):
         (machines, links, options, metadata) = nc.lab_parse(args.hostlab)
         if machines.get(args.machine_name) != None:
