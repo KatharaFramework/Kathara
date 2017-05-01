@@ -2,10 +2,14 @@
 
 SET NETKIT_LASTARG=""
 FOR %%a in (%*) do SET NETKIT_LASTARG=%%a
-FOR %%a in (%*) do (
-    IF "%%a"=="%NETKIT_LASTARG%" SHIFT
+
+FOR %%p in (%*) DO (
+    IF "%%p"=="%NETKIT_LASTARG%" GOTO ENDLOOP
+    SET NETKIT_APP=%%p
+    IF /i NOT "%NETKIT_APP:~0,1%" == "-" (
+        CALL docker network create netkit_nt_%%p
+        CALL docker network connect netkit_nt_%%p netkit_nt_%NETKIT_LASTARG%
+    )
 )
 
-FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\vstart.py "%cd%/" %NETKIT_LASTARG% %*') do CALL %NETKIT_HOME%\lstart -d %%a
-
-RMDIR %NETKIT_HOME%\temp\labs\netkit_nt_%NETKIT_LASTARG% /S /Q
+:ENDLOOP

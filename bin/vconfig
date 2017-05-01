@@ -2,10 +2,14 @@
 
 for i in "$@"
 do
-    if [ "$i" = "${@: -1}" ]; then shift
-    fi
+case $i in
+    ${@: -1})
+    ;;
+    -*)
+    ;;
+    *)
+    docker network create netkit_${UID}_$i
+    docker connect netkit_${UID}_$i netkit_${UID}_${@: -1}
+    ;;
+esac
 done
-
-$NETKIT_HOME/lstart -d `python $NETKIT_HOME/python/vstart.py "$PWD/" ${@: -1} $@`
-
-rm -rf "$HOME/netkit_temp/netkit_${UID}_${@: -1}"
