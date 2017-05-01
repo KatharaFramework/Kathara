@@ -7,6 +7,10 @@ import utils as u
 import sys
 import re
 import os
+try:
+    import pwd
+except ImportError: #windows
+    pass
 
 DEBUG = nc.DEBUG
 nc.DEBUG = False
