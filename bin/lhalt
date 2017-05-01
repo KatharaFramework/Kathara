@@ -2,12 +2,28 @@
 
 python $NETKIT_HOME/python/check.py "$PWD/" $@
 
+NETKIT_ALL=1
+for i in "$@"
+do
+case $i in
+    --list)
+    NETKIT_LIST=1
+    #shift 
+    ;;
+    *)
+    $NETKIT_HOME/wrapper/bin/netkit_dw stop netkit_${UID}_$i; NETKIT_ALL=0
+    #shift
+    ;;
+esac
+done
+
 export RC=$?
 if [ "$RC" = "0" ]; then
 
-    M=_machines
-
-    python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do ($NETKIT_HOME/wrapper/bin/netkit_dw stop `cat "$HOME/netkit_temp/$in$M"`); done
+    if [ "$NETKIT_ALL" = "1" ]; then
+        M=_machines
+        python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do ($NETKIT_HOME/wrapper/bin/netkit_dw stop `cat "$HOME/netkit_temp/$in$M"`); done
+    fi
 
 else
     echo FAILED

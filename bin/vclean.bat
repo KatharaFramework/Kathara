@@ -2,7 +2,7 @@
 
 IF [%1]==[] GOTO USAGE
 
-for %%a in (%*) do SET NETKIT_LASTARG=%%a
+FOR %%a in (%*) do SET NETKIT_LASTARG=%%a
 
 CALL %NETKIT_HOME%\lclean -d %NETKIT_HOME%\temp/labs/netkit_nt_%NETKIT_LASTARG%
 

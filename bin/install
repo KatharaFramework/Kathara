@@ -15,6 +15,7 @@ mkdir $HOME/netkit_temp
 mkdir $HOME/netkit_temp/labs
 
 sudo chmod 755 $NETKIT_HOME/lstart
+sudo chmod 755 $NETKIT_HOME/lrestart
 sudo chmod 755 $NETKIT_HOME/lclean
 sudo chmod 755 $NETKIT_HOME/lcrash
 sudo chmod 755 $NETKIT_HOME/lhalt
