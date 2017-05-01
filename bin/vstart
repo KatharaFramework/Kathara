@@ -2,10 +2,12 @@
 
 for i in "$@"
 do
-    if [ "$i" = "${@: -1}" ]; then shift
+    if [ "$i" = "${@: -1}" ]; then 
+        NETKIT_LASTARG=${@: -1}
+        shift
     fi
 done
 
-$NETKIT_HOME/lstart -d `python $NETKIT_HOME/python/vstart.py "$PWD/" ${@: -1} $@`
+$NETKIT_HOME/lstart -d python $NETKIT_HOME/python/vstart.py "$PWD/" $NETKIT_LASTARG $@
 
-rm -rf "$HOME/netkit_temp/netkit_${UID}_${@: -1}"
+rm -rf "$HOME/netkit_temp/netkit_${UID}_${NETKIT_LASTARG}"
