@@ -188,13 +188,9 @@ def lstart_command_writer():
         command += " --xterm=" + args.xterm
     if args.print_only:
         command += " --print"
+    if (len(sys.argv) <= 3) and args.machine_name:
+        command += " -F " + args.machine_name
     return command
-    
-
-#starting machine already started
-if (os.path.exists(machine_path)): # TODO old check, has to be done with folder_hash and temp lab dir
-    print lstart_command_writer()
-    sys.exit(0)
 
 #starting machine already existing in current lab
 if args.hostlab: 

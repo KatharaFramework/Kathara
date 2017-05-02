@@ -6,4 +6,4 @@ if [ $# -ne 1 ]; then
 fi
 
 
-$NETKIT_HOME/lcrash -d "$HOME/netkit_temp/labs/netkit_${UID}_${@: -1}"
+$NETKIT_HOME/lcrash -d "$HOME/netkit_temp/labs/netkit_${UID}_${@: -1}" ${@: -1}

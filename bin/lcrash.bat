@@ -22,7 +22,9 @@ FOR %%p in (%*) DO (
 
 IF "%NETKIT_ALL%" == "1" (
     FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\folder_hash.py "%cd%/" %*') DO SET VAR1=%NETKIT_HOME%\temp\%%a_machines
-    FOR /f "delims=" %%a in (%VAR1%) DO docker kill %%a
+    IF exist %VAR1% (
+        FOR /f "delims=" %%a in (%VAR1%) DO docker kill %%a
+    )
 )
 
 IF "%NETKIT_LIST%" == "1" docker stats --no-stream & docker network list

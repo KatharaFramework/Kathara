@@ -14,6 +14,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('path')
 parser.add_argument('-d', '--directory', required=False, help='Folder contining the lab.')
 parser.add_argument('-f', '--full', required=False, action="store_true")
+parser.add_argument(
+    '-F', '--force-lab',
+    dest='force_lab',
+    required=False,
+    action='store_true', 
+    help='Force the lab to start without a lab.conf or lab.dep file.'
+)
 
 args, unknown = parser.parse_known_args()
 
@@ -23,7 +30,7 @@ if args.directory:
 
 if args.full:
     has_invalid_characters = False
-    (machines, links, _, _) = nc.lab_parse(lab_path)
+    (machines, links, _, _) = nc.lab_parse(lab_path, force=args.force_lab)
     for machine_name, _ in machines.items():
         if (' ' in machine_name) or ('"' in machine_name) or ("'" in machine_name):
             has_invalid_characters = True

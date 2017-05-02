@@ -32,13 +32,22 @@ if [ "$RC" = "0" ]; then
     M=_machines
     L=_links
     if [ "$NETKIT_ALL" = "1" ]; then
-        python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do ($NETKIT_HOME/wrapper/bin/netkit_dw rm -f `cat "$HOME/netkit_temp/$in$M"`; rm "$HOME/netkit_temp/$in$M"); done
+        python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do (
+                if [ -f "$HOME/netkit_temp/$in$M" ]; then
+                    $NETKIT_HOME/wrapper/bin/netkit_dw rm -f `cat "$HOME/netkit_temp/$in$M"`; rm "$HOME/netkit_temp/$in$M"
+                fi
+            ); done
     fi
-    python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do ($NETKIT_HOME/wrapper/bin/netkit_dw network rm `cat "$HOME/netkit_temp/$in$L"`); done
-    if [ "$NETKIT_ALL" = "1" ]; then
-        rm "$HOME/netkit_temp/`python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@`_links"
-    fi
-
+    python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do (
+            if [ -f "$HOME/netkit_temp/$in$L" ]; then
+                $NETKIT_HOME/wrapper/bin/netkit_dw network rm `cat "$HOME/netkit_temp/$in$L"`
+            fi
+            if [ "$NETKIT_ALL" = "1" ]; then
+                if [ -f "$HOME/netkit_temp/$in$L" ]; then
+                    rm "$HOME/netkit_temp/$in$L"
+                fi
+            fi
+        ); done
 else
     echo FAILED
 fi

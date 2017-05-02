@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $# -ne 1 ]; then
+if [ $# -lt 1 ]; then
 	echo Usage: $0 machine_name
 	exit 1
 fi
@@ -20,6 +20,6 @@ esac
 done
 
 if [ "$NETKIT_NET" = "0" ]; then
-	$NETKIT_HOME/lclean -d "$HOME/netkit_temp/labs/netkit_${UID}_${@: -1}"
+	$NETKIT_HOME/lclean -d "$HOME/netkit_temp/labs/netkit_${UID}_${@: -1}" ${@: -1}
 else $NETKIT_HOME/wrapper/bin/netkit_dw network rm netkit_${UID}_${@: -1}
 fi

@@ -24,13 +24,21 @@ FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\folder_hash.py "%cd%/" %*
 FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\folder_hash.py "%cd%/" %*') DO SET VAR2=%NETKIT_HOME%\temp\%%a_links
 
 IF "%NETKIT_ALL%" == "1" (
-    FOR /f "delims=" %%a in (%VAR1%) DO docker rm -f %%a
+    IF exist %VAR1% (
+        FOR /f "delims=" %%a in (%VAR1%) DO docker rm -f %%a
+    )
 )
-FOR /f "delims=" %%a in (%VAR2%) DO docker network rm %%a
+IF exist %VAR2% (
+    FOR /f "delims=" %%a in (%VAR2%) DO docker network rm %%a
+)
 
 IF "%NETKIT_ALL%" == "1" (
-    DEL %VAR1%
-    DEL %VAR2%
+    IF exist %VAR1% (
+        DEL %VAR1%
+    )
+    IF exist %VAR2% (
+        DEL %VAR2%
+    )
 )
 
 :END

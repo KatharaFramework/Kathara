@@ -91,7 +91,7 @@ if args.xterm and (" " not in args.xterm):
 
 FORCE_LAB=False
 if args.force_lab: 
-    FORCE_LAB = True
+    FORCE_LAB = args.force_lab
 
 if args.print_only:
     cr.PRINT = True
@@ -120,6 +120,11 @@ for machine_name, _ in options.items():
 filtered_machines = machines
 if len(machine_name_args) >= 1:
     filtered_machines = dict((k, machines[k]) for k,v in machines.items() if k in machine_name_args)
+
+# if force-lab is set true and we have no machines from lab.conf we need to set machine names from args
+if FORCE_LAB and (len(filtered_machines.items()) == 0):
+    filtered_machines = dict((k, [('default', 0)]) for k in machine_name_args)
+    links = ['default']
 
 # get command lists
 (commands, startup_commands, exec_commands) = nc.create_commands(filtered_machines, links, options, metadata, lab_path, args.execbash, no_machines_tmp=(len(machine_name_args) >= 1))

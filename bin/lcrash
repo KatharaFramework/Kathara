@@ -31,7 +31,9 @@ if [ "$RC" = "0" ]; then
 
     if [ "$NETKIT_ALL" = "1" ]; then
         M=_machines
-        python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do ($NETKIT_HOME/wrapper/bin/netkit_dw kill `cat "$HOME/netkit_temp/$in$M"`); done
+        if [ -f "$HOME/netkit_temp/$in$M" ]; then
+            $NETKIT_HOME/wrapper/bin/netkit_dw kill `cat "$HOME/netkit_temp/$in$M"`
+        fi
     fi
 
     if [ "$NETKIT_LIST" = "1" ]; then
