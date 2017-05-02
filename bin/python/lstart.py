@@ -5,6 +5,7 @@ import lstart_create as cr
 import utils as u
 import os
 import sys
+import shutil
 
 DEBUG = nc.DEBUG
 nc.DEBUG = False
@@ -143,6 +144,15 @@ if not args.execbash:
                 os.rename(os.path.join(machine_path, "etc/zebra"), os.path.join(machine_path, "etc/quagga"))
             except:
                 sys.stderr.write("ERROR: could not move '" + os.path.join(machine_path, "etc/zebra") + "' to '" + os.path.join(machine_path, "etc/quagga") + "'\n")
+        if os.path.isdir(os.path.join(machine_path, "var/www")) and (not os.path.isdir(os.path.join(machine_path, "var/www/html"))) and (not cr.PRINT):
+            try:
+                sys.stderr.write("Moving '" + os.path.join(machine_path, "var/www") + "' to '" + os.path.join(machine_path, "var/www/html") + "'\n")
+                os.makedirs(os.path.join(machine_path, "var/www/html"))
+                for node in os.listdir(os.path.join(machine_path, "var/www")):
+                    if node != "html":
+                        shutil.move(os.path.join(os.path.join(machine_path, "var/www"), node), os.path.join(os.path.join(machine_path, "var/www/html"), node))
+            except:
+                sys.stderr.write("ERROR: could not move '" + os.path.join(machine_path, "var/www") + "' to '" + os.path.join(machine_path, "var/www/html") + "'\n")
     # running creation commands not verbosely
     cr.lab_create(commands, startup_commands)
 else:

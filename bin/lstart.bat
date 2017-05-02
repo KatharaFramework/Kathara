@@ -10,7 +10,6 @@ FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\folder_hash.py "%cd%/" %*
 if not exist %VAR1% (
     FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\lstart.py "%cd%/" %*') do ( 
         %%a
-        IF ERRORLEVEL 1 GOTO END
     )
 ) else (FOR /f "delims=" %%b in (%VAR1%) do docker start %%b & FOR /F "tokens=*" %%c in ('python %NETKIT_HOME%\python\lstart.py "%cd%/" --execbash %*') do %%c)
 
