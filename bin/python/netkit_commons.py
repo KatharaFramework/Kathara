@@ -14,8 +14,8 @@ from collections import OrderedDict
 
 DEBUG = True
 PRINT = False
-IMAGE_NAME = 'netkit'
-DOCKER_HUB_PREFIX = "netkit/"
+IMAGE_NAME = 'netkit_base'
+DOCKER_HUB_PREFIX = "bonofiglio/"
 LINUX_TERMINAL_TYPE = 'xterm'
 
 MAC_OS = "darwin"
@@ -176,14 +176,14 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
     copy_folder_template = docker + ' cp "' + path + '{machine_name}/{folder_or_file}" ' + prefix + '{machine_name}:/{dest}'
     copy_folder_commands = []
 
-    exec_template = docker + ' exec {params} -ti --privileged=true ' + prefix + '{machine_name} {command}'
+    exec_template = docker + ' exec {params} -i --privileged=true ' + prefix + '{machine_name} {command}'
     exec_commands = []
     startup_commands = []
 
     count = 0
 
     for machine_name, interfaces in machines.items():
-        this_image = IMAGE_NAME
+        this_image = DOCKER_HUB_PREFIX + IMAGE_NAME
 
         # copying the hostlab directory
         if not execbash:
@@ -222,7 +222,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
                     repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{folder_or_file}', folder_or_file), ('{dest}', '')
                 copy_folder_commands.append(u.replace_multiple_items(repls, copy_folder_template))
         if PLATFORM == WINDOWS:
-            repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \'\033]0;' + machine_name + '\007\'; bash"'), ('{params}', '-e TERM=vt100')
+            repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \'\033]0;' + machine_name + '\007\'; bash"'), ('{params}', '-t -e TERM=vt100')
         else:
             repls = ('{machine_name}', machine_name), ('{command}', 'bash'), ('{params}', '-e TERM=vt100')
         exec_commands.append(u.replace_multiple_items(repls, exec_template))

@@ -37,7 +37,7 @@ sudo chmod 755 $NETKIT_HOME/python
 sudo chmod 755 $NETKIT_HOME/python/*
 
 echo "Building image"
-sudo docker rmi -f netkit
-sudo docker build -t netkit $NETKIT_HOME
+sudo docker pull bonofiglio/netkit_base
+sudo docker pull bonofiglio/p4
 
 sudo -k

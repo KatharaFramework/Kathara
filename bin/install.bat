@@ -1,4 +1,4 @@
 @echo off
 
-docker rmi -f netkit
-docker build -t netkit %NETKIT_HOME%
+docker pull bonofiglio/netkit_base
+docker pull bonofiglio/p4
