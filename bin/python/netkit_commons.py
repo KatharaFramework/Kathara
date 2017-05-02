@@ -216,7 +216,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
             for folder_or_file in os.listdir(os.path.join(path, machine_name)):
                 if folder_or_file == 'etc': 
                     repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{folder_or_file}', folder_or_file), ('{dest}', 'temp_etc')
-                    repls2 = ('{machine_name}', machine_name), ('{command}', 'bash -c "cp /temp_etc/* /etc/; rm -rf /temp_etc"'), ('{params}', '')
+                    repls2 = ('{machine_name}', machine_name), ('{command}', 'bash -c "cp -rf /temp_etc/* /etc/; rm -rf /temp_etc"'), ('{params}', '')
                     startup_commands.insert(0, u.replace_multiple_items(repls2, exec_template))
                 else:
                     repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{folder_or_file}', folder_or_file), ('{dest}', '')
@@ -224,7 +224,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         if PLATFORM == WINDOWS:
             repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \'\033]0;' + machine_name + '\007\'; bash"'), ('{params}', '-t -e TERM=vt100')
         else:
-            repls = ('{machine_name}', machine_name), ('{command}', 'bash'), ('{params}', '-e TERM=vt100')
+            repls = ('{machine_name}', machine_name), ('{command}', 'bash'), ('{params}', '-t -e TERM=vt100')
         exec_commands.append(u.replace_multiple_items(repls, exec_template))
         lab_machines_text += prefix + machine_name + ' '
 
