@@ -173,7 +173,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
     create_connection_template = docker + ' network connect ' + prefix + '{link} ' + prefix + '{machine_name}'
     create_connection_commands = []
 
-    copy_folder_template = docker + ' cp "' + path + '{machine_name}/{folder_or_file}" ' + prefix + '{machine_name}:/'
+    copy_folder_template = docker + ' cp "' + path + '{machine_name}/{folder_or_file}" ' + prefix + '{machine_name}:/{dest}'
     copy_folder_commands = []
 
     exec_template = docker + ' exec {params} -ti --privileged=true ' + prefix + '{machine_name} {command}'
@@ -214,7 +214,12 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
             create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
         if os.path.exists(os.path.join(path, machine_name)):
             for folder_or_file in os.listdir(os.path.join(path, machine_name)):
-                repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{folder_or_file}', folder_or_file)
+                if folder_or_file == 'etc': 
+                    repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{folder_or_file}', folder_or_file), ('{dest}', 'temp_etc')
+                    repls2 = ('{machine_name}', machine_name), ('{command}', 'bash -c "cp /temp_etc/* /etc/; rm -rf /temp_etc"'), ('{params}', '')
+                    startup_commands.insert(0, u.replace_multiple_items(repls2, exec_template))
+                else:
+                    repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{folder_or_file}', folder_or_file), ('{dest}', '')
                 copy_folder_commands.append(u.replace_multiple_items(repls, copy_folder_template))
         if PLATFORM == WINDOWS:
             repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \'\033]0;' + machine_name + '\007\'; bash"'), ('{params}', '-e TERM=vt100')
