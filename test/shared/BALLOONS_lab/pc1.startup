@@ -1,0 +1,4 @@
+ifconfig eth0 up
+ifconfig eth0 add 2100::2/64
+
+route -A inet6 add default gw 2100::1

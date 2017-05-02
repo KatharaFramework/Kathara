@@ -1,0 +1,7 @@
+@           IN   SOA infons root.infons 2006031201 28 14 3600000 0
+
+@           IN    NS infons
+infons      IN     A 10.0.2.2
+
+cloud       IN    NS r102.cloud
+r102.cloud  IN     A 100.0.12.2

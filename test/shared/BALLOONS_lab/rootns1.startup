@@ -1,0 +1,5 @@
+ifconfig eth0 8.8.4.4/24 up
+
+route add default gw 8.8.4.1
+
+/etc/init.d/bind start

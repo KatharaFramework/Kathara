@@ -1,0 +1,8 @@
+@          IN SOA rootns root.rootns 2006031201 28 14 3600000 0
+
+@          IN NS rootns
+rootns     IN  A 8.8.4.4
+
+info        IN NS infons.info
+infons.info IN  A 10.0.2.2
+
