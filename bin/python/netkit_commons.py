@@ -173,7 +173,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
     create_connection_template = docker + ' network connect ' + prefix + '{link} ' + prefix + '{machine_name}'
     create_connection_commands = []
 
-    copy_folder_template = docker + ' cp "' + path + '{machine_name}/etc" ' + prefix + '{machine_name}:/'
+    copy_folder_template = docker + ' cp "' + path + '{machine_name}/{folder_or_file}" ' + prefix + '{machine_name}:/'
     copy_folder_commands = []
 
     exec_template = docker + ' exec {params} -ti --privileged=true ' + prefix + '{machine_name} {command}'
@@ -212,9 +212,10 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         for link,_ in interfaces[1:]:
             repls = ('{link}', link), ('{machine_name}', machine_name)
             create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
-        repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name)
         if os.path.exists(os.path.join(path, machine_name)):
-            copy_folder_commands.append(u.replace_multiple_items(repls, copy_folder_template))
+            for folder_or_file in os.listdir(os.path.join(path, machine_name)):
+                repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{folder_or_file}', folder_or_file)
+                copy_folder_commands.append(u.replace_multiple_items(repls, copy_folder_template))
         if PLATFORM == WINDOWS:
             repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \'\033]0;' + machine_name + '\007\'; bash"'), ('{params}', '-e TERM=vt100')
         else:
