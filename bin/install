@@ -11,11 +11,13 @@ sudo chmod 4755 $NETKIT_HOME/wrapper/bin/netkit_dw
 sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw
 sudo chmod 000 $NETKIT_HOME/wrapper/netkit_dw.c
 
-mkdir $HOME/netkit_temp
-mkdir $HOME/netkit_temp/labs
+mkdir -p $HOME/netkit_temp
+mkdir -p $HOME/netkit_temp/labs
 
 sudo chmod 755 $HOME/netkit_temp
 sudo chmod 755 $HOME/netkit_temp/labs
+
+sudo chmod 755 $NETKIT_HOME/install
 
 sudo chmod 755 $NETKIT_HOME/lstart
 sudo chmod 755 $NETKIT_HOME/lrestart
@@ -29,9 +31,13 @@ sudo chmod 755 $NETKIT_HOME/vclean
 sudo chmod 755 $NETKIT_HOME/vcrash
 sudo chmod 755 $NETKIT_HOME/vhalt
 sudo chmod 755 $NETKIT_HOME/vlist
+sudo chmod 755 $NETKIT_HOME/vconfig
+
+sudo chmod 755 $NETKIT_HOME/python
+sudo chmod 755 $NETKIT_HOME/python/*
 
 echo "Building image"
-#sudo docker rmi -f netkit
-#sudo docker build -t netkit $NETKIT_HOME
+sudo docker rmi -f netkit
+sudo docker build -t netkit $NETKIT_HOME
 
 sudo -k
