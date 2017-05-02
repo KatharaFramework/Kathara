@@ -213,7 +213,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
             repls = ('{link}', link), ('{machine_name}', machine_name)
             create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
         repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name)
-        if os.path.exists(path + '{machine_name}'):
+        if os.path.exists(os.path.join(path, machine_name)):
             copy_folder_commands.append(u.replace_multiple_items(repls, copy_folder_template))
         if PLATFORM == WINDOWS:
             repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \'\033]0;' + machine_name + '\007\'; bash"'), ('{params}', '-e TERM=vt100')
