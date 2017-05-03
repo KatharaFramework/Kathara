@@ -189,6 +189,10 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         if not execbash:
             copy_folder_commands.append(docker + ' cp "' + path + '" ' + prefix + machine_name + ':/hostlab')
 
+        # shut down default eth0 until the user 
+        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "ip link set eth0 down"'), ('{params}', '')
+        startup_commands.insert(0, u.replace_multiple_items(repls, exec_template))
+
         # Parsing options from lab.conf
         machine_option_string = " "
         if options.get(machine_name):
@@ -232,7 +236,8 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
     if not no_machines_tmp:
         if not execbash:
             if not PRINT: u.write_temp(lab_machines_text, u.generate_urlsafe_hash(path) + '_machines', PLATFORM)
-        
+
+
     # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array of exec commands. We also replace escapes and quotes
     for machine_name, _ in machines.items():
         startup_file = os.path.join(path, machine_name + '.startup')
