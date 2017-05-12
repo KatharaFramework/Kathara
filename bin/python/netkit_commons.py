@@ -189,6 +189,10 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         if not execbash:
             copy_folder_commands.append(docker + ' cp "' + path + '" ' + prefix + machine_name + ':/hostlab')
 
+        # applying docker patch for /proc and icmp
+        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.all.rp_filter=2"'), ('{params}', '')
+        startup_commands.insert(0, u.replace_multiple_items(repls, exec_template))
+
         # Parsing options from lab.conf
         machine_option_string = " "
         if options.get(machine_name):

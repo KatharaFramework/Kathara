@@ -3,6 +3,7 @@
 python $NETKIT_HOME/python/check.py "$PWD/" $@
 
 NETKIT_ALL=1
+NETKIT_LIST=0
 NETKIT_APP_PREV=$0
 for i in "$@"
 do

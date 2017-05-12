@@ -2,6 +2,7 @@
 
 python $NETKIT_HOME/python/check.py "$PWD/" $@
 
+NETKIT_ALL=1
 NETKIT_LIST=0
 NETKIT_APP_PREV=$0
 for i in "$@"
@@ -29,17 +30,20 @@ done
 export RC=$?
 if [ "$RC" = "0" ]; then
 
+    M=_machines
+    L=_links
     if [ "$NETKIT_ALL" = "1" ]; then
-        M=_machines
-        if [ -f "$HOME/netkit_temp/$in$M" ]; then
-            $NETKIT_HOME/wrapper/bin/netkit_dw kill `cat "$HOME/netkit_temp/$in$M"`
-        fi
+        python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do (
+                if [ -f "$HOME/netkit_temp/$in$M" ]; then
+                    $NETKIT_HOME/wrapper/bin/netkit_dw kill `cat "$HOME/netkit_temp/$in$M"`
+                fi
+            ); done
     fi
 
     if [ "$NETKIT_LIST" = "1" ]; then
         $NETKIT_HOME/wrapper/bin/netkit_dw stats --no-stream ; $NETKIT_HOME/wrapper/bin/netkit_dw network list
     fi
-
+    
 else
     echo FAILED
 fi
