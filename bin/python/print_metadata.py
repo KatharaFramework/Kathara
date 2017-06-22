@@ -26,6 +26,7 @@ if args.directory:
 
 if not args.print_only: 
     print "========================= Starting Lab =========================="
-    for key, value in metadata.items():
-        print '{message: <20}'.format(message=key+":") + value
-    print "================================================================="
+    if len(metadata.items()) >= 1:
+        for key, value in metadata.items():
+            print '{message: <20}'.format(message=key+":") + value
+        print "================================================================="

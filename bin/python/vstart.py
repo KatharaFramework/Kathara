@@ -24,7 +24,7 @@ else:
 parser = argparse.ArgumentParser(description='Create and start a Netkit Machine.')
 parser.add_argument('current_path')
 parser.add_argument('machine_name')
-parser.add_argument('--eth', dest='eths', nargs='*', help='Set a specific interface on a collision domain.')
+parser.add_argument('--eth', dest='eths', nargs='*', required=True, help='Set a specific interface on a collision domain.')
 parser.add_argument('-e', '--exec', dest='exe', nargs='*', help='Execute a specific command in the container.')
 parser.add_argument(
     '-k', '--kernel',

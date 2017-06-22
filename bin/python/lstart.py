@@ -117,8 +117,9 @@ if args.options:
 for machine_name, _ in options.items():
     options[machine_name] = options[machine_name] + additional_options
 
-# filter machines based on machine_name_args
 filtered_machines = machines
+
+# filter machines based on machine_name_args (if at least one)
 if len(machine_name_args) >= 1:
     filtered_machines = dict((k, machines[k]) for k,v in machines.items() if k in machine_name_args)
 
@@ -126,6 +127,15 @@ if len(machine_name_args) >= 1:
 if FORCE_LAB and (len(filtered_machines.items()) == 0):
     filtered_machines = dict((k, [('default', 0)]) for k in machine_name_args)
     links = ['default']
+
+# some checks
+if len(filtered_machines) < 1:
+    sys.stderr.write("Please specify at least a machine.\n")
+    sys.exit(1)
+for _, interfaces in filtered_machines: 
+    if len(interfaces) < 1:
+        sys.stderr.write("Please specify at least a link for every machine.\n")
+        sys.exit(1)
 
 # get command lists
 (commands, startup_commands, exec_commands) = nc.create_commands(filtered_machines, links, options, metadata, lab_path, args.execbash, no_machines_tmp=(len(machine_name_args) >= 1))
