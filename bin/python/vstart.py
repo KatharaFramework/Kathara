@@ -175,7 +175,9 @@ def create_lab(machine_path, machine_name, conf_lines):
 
 def start_new_machine():
     #creating and updating interfaces in lab.conf
-    conf_lines = eths_line_writer(args.eths)
+    conf_lines = {}
+    if (args.eths != None):
+        conf_lines = eths_line_writer(args.eths)
     conf_lines = conf_line_writer(conf_lines)
     create_lab(machine_path, args.machine_name, conf_lines)
 
