@@ -132,10 +132,10 @@ if FORCE_LAB and (len(filtered_machines.items()) == 0):
 if len(filtered_machines) < 1:
     sys.stderr.write("Please specify at least a machine.\n")
     sys.exit(1)
-for _, interfaces in filtered_machines: 
-    if len(interfaces) < 1:
-        sys.stderr.write("Please specify at least a link for every machine.\n")
-        sys.exit(1)
+for _, interfaces in filtered_machines.items(): 
+	if len(interfaces) < 1:
+		sys.stderr.write("Please specify at least a link for every machine.\n")
+		sys.exit(1)
 
 # get command lists
 (commands, startup_commands, exec_commands) = nc.create_commands(filtered_machines, links, options, metadata, lab_path, args.execbash, no_machines_tmp=(len(machine_name_args) >= 1))
