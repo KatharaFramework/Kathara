@@ -1,2 +1,2 @@
-# Netkit-Python-Docker-core
+# Kathará
 Netkit implementation using Python and Docker
