@@ -155,7 +155,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
     create_network_commands = []
     network_counter = 0
     for link in links:
-        create_network_commands.append(create_network_template + prefix + link + " --subnet=" + str(10+network_counter) + ".0.0.0/16")
+        create_network_commands.append(create_network_template + prefix + link + " --subnet=" + str(1+network_counter) + ".0.0.0/16 --gateway=" + str(1+network_counter) + ".0.0.1")
         lab_links_text += prefix + link + ' '
 	network_counter += 1
 
