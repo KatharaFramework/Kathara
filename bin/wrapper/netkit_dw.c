@@ -9,9 +9,9 @@
 #define ARG_MAX 10
 
 char* allowed_words_1 [] = { "run", "exec", "kill", "rm", "stop", "start", "rmi", "connect", "create", "stats", "list" };
-char* allowed_words_2 [] = { "-i", "-t" ,"-ti", "-tid", "-it", "-itd", "-dit", "-dti", "-di", "-id", "--privileged=true", "--name", "--hostname=", "--network=", "--memory=", "-f", "-e", "-d", "-c", "--no-stream" };
+char* allowed_words_2 [] = { "-i", "-t" ,"-ti", "-tid", "-it", "-itd", "-dit", "-dti", "-di", "-id", "--privileged=true", "--name", "--hostname=", "--network=", "--memory=", "-f", "-e", "-d", "-c", "--no-stream", "--subnet=" };
 #define ALLOWED_WORDS_1_LEN 11
-#define ALLOWED_WORDS_2_LEN 20
+#define ALLOWED_WORDS_2_LEN 21
 
 char* get_user_home() {
     struct passwd *passwdEnt = getpwuid(getuid());
