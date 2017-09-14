@@ -1,3 +1,7 @@
 #!/bin/bash
 
-$NETKIT_HOME/wrapper/bin/netkit_dw stats --no-stream ; $NETKIT_HOME/wrapper/bin/netkit_dw network list
+if [ $# -ne 1 ]; then
+	$NETKIT_HOME/wrapper/bin/netkit_dw stats --no-stream ; $NETKIT_HOME/wrapper/bin/netkit_dw network list
+else
+	$NETKIT_HOME/wrapper/bin/netkit_dw stats --no-stream | grep $1
+fi
