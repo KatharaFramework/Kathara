@@ -3,7 +3,7 @@
 sudo true
 
 echo "Compiling netkit_dw"
-sudo gcc $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
+sudo gcc -std=c99 $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
 
 echo "Setting permissions"
 sudo chown root:root $NETKIT_HOME/wrapper/bin/netkit_dw
