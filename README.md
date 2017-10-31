@@ -10,8 +10,8 @@ Kathará has the performances to run in production and can emulate most network 
   * Unix: `export NETKIT_HOME=/home/foo/kathara/bin`
   * Windows: System > Advanced settings > Environment Variables > New > ...
 * Run the installer:
-  * Unix: `$NETKIT_HOME/install`
-  * Windows: `%NETKIT_HOME%\install`
+  * Unix: `$NETKIT_HOME/install` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed)
+  * Windows: `%NETKIT_HOME%\install`(completely optional, it only pre-downloads images)
 * You can optionally add NETKIT_HOME to your PATH
 
 # Provided Docker Images
