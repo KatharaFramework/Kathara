@@ -25,15 +25,20 @@ if [ "$NOT_ADMIN" = "1" ]; then
     echo "Compiling netkit_dw"
     sudo gcc -std=c99 $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
 else
-    echo "Admin mode: bypassing netkit_dw with empty wrapper - WARNING: unsafe installation"
-    sudo cp $NETKIT_HOME/wrapper/bin/fake_wrapper $NETKIT_HOME/wrapper/bin/netkit_dw
+    echo -e "\033[0;33mAdmin mode\033[0m: bypassing netkit_dw with empty wrapper"
+    echo -e "\033[0;31mWARNING: unsafe installation, this will create a softlink to /usr/bin/docker as the wrapper.\033[0m"
+    echo -e "\033[0;31mAlso the software will not work until you set correct permissions to docker (SUID and root user group) or your user is is in the docker group.\033[0m"
+    sudo rm $NETKIT_HOME/wrapper/bin/netkit_dw
+    sudo ln -s /usr/bin/docker $NETKIT_HOME/wrapper/bin/netkit_dw
 fi
 
 echo "Setting permissions"
-sudo chown root:root $NETKIT_HOME/wrapper/bin/netkit_dw
-sudo chmod 4755 $NETKIT_HOME/wrapper/bin/netkit_dw
-sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw
-sudo chmod 000 $NETKIT_HOME/wrapper/netkit_dw.c
+if [ "$NOT_ADMIN" = "1" ]; then
+    sudo chown root:root $NETKIT_HOME/wrapper/bin/netkit_dw
+    sudo chmod 4755 $NETKIT_HOME/wrapper/bin/netkit_dw
+    sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw
+    sudo chmod 000 $NETKIT_HOME/wrapper/netkit_dw.c
+fi
 
 mkdir -p $HOME/netkit_temp
 mkdir -p $HOME/netkit_temp/labs
