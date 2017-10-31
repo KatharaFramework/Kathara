@@ -26,7 +26,7 @@ if [ "$NOT_ADMIN" = "1" ]; then
     sudo gcc -std=c99 $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
 else
     echo "Admin mode: bypassing netkit_dw with empty wrapper - WARNING: unsafe installation"
-    cp $NETKIT_HOME/wrapper/bin/fake_wrapper $NETKIT_HOME/wrapper/bin/netkit_dw
+    sudo cp $NETKIT_HOME/wrapper/bin/fake_wrapper $NETKIT_HOME/wrapper/bin/netkit_dw
 fi
 
 echo "Setting permissions"
@@ -63,10 +63,10 @@ sudo chmod 755 $NETKIT_HOME/python/*
 if [ "$SKIP_P4" = "1" ]; then
     echo "Pulling images"
     sudo docker pull bonofiglio/netkit_base
-    sudo docker pull bonofiglio/p4
 else
     echo "Pulling images"
     sudo docker pull bonofiglio/netkit_base
+    sudo docker pull bonofiglio/p4
 fi
 
 sudo -k
