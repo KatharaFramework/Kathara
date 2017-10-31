@@ -1,9 +1,33 @@
 #!/bin/bash
 
+SKIP_P4=0
+NOT_ADMIN=1
+for i in "$@"
+do
+case $i in
+    --skip-p4)
+    SKIP_P4=1
+    #shift 
+    ;;
+    --admin)
+    NOT_ADMIN=0
+    #shift 
+    ;;
+    *)
+    #shift
+    ;;
+esac
+done
+
 sudo true
 
-echo "Compiling netkit_dw"
-sudo gcc -std=c99 $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
+if [ "$NOT_ADMIN" = "1" ]; then
+    echo "Compiling netkit_dw"
+    sudo gcc -std=c99 $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
+else
+    echo "Admin mode: bypassing netkit_dw with empty wrapper - WARNING: unsafe installation"
+    cp $NETKIT_HOME/wrapper/bin/fake_wrapper $NETKIT_HOME/wrapper/bin/netkit_dw
+fi
 
 echo "Setting permissions"
 sudo chown root:root $NETKIT_HOME/wrapper/bin/netkit_dw
@@ -36,8 +60,13 @@ sudo chmod 755 $NETKIT_HOME/vconfig
 sudo chmod 755 $NETKIT_HOME/python
 sudo chmod 755 $NETKIT_HOME/python/*
 
-echo "Building image"
-sudo docker pull bonofiglio/netkit_base
-sudo docker pull bonofiglio/p4
+if [ "$SKIP_P4" = "1" ]; then
+    echo "Pulling images"
+    sudo docker pull bonofiglio/netkit_base
+    sudo docker pull bonofiglio/p4
+else
+    echo "Pulling images"
+    sudo docker pull bonofiglio/netkit_base
+fi
 
 sudo -k

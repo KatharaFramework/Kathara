@@ -173,7 +173,9 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
     create_machine_commands = []
 
     create_connection_template = docker + ' network connect ' + prefix + '{link} ' + prefix + '{machine_name}'
+    create_bridge_connection_template = docker + ' network connect {link} ' + prefix + '{machine_name}'
     create_connection_commands = []
+    create_bridge_connection_commands = []
 
     copy_folder_template = docker + ' cp "' + path + '{machine_name}/{folder_or_file}" ' + prefix + '{machine_name}:/{dest}'
     copy_folder_commands = []
@@ -209,6 +211,9 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
                     repls = ('{link}', app[1]), ('{machine_name}', machine_name)
                     create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
                     if not PRINT: u.write_temp(" " + prefix + app[1], u.generate_urlsafe_hash(path) + '_links', PLATFORM)
+                if opt=='bridged': 
+                    repls = ('{link}', "bridge"), ('{machine_name}', machine_name)
+                    create_bridge_connection_commands.append(u.replace_multiple_items(repls, create_bridge_connection_template))
                 if opt=='e' or opt=='exec':
                     repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + val.strip().replace('\\', r'\\').replace('"', r'\\"').replace("'", r"\\'") + '"'), ('{params}', '-d')
                     startup_commands.append(u.replace_multiple_items(repls, exec_template))
@@ -251,6 +256,6 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
                     startup_commands.append(u.replace_multiple_items(repls, exec_template))
             f.close()
     
-    commands = create_network_commands + create_machine_commands + create_connection_commands + copy_folder_commands
+    commands = create_network_commands + create_machine_commands + create_connection_commands + create_bridge_connection_commands + copy_folder_commands
 
     return commands, startup_commands, exec_commands

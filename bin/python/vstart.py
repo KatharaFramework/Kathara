@@ -119,6 +119,12 @@ parser.add_argument(
     action='store_true',
     help='DEPRECATED.'
 )
+parser.add_argument(
+    '--bridged',
+    required=False,
+    action='store_true',
+    help='Adds a bridge interface to the container.'
+)
 
 args, unknown = parser.parse_known_args()
 
@@ -147,6 +153,8 @@ def eths_line_writer(eths):
 def conf_line_writer(conf_lines):
     if args.mem:
         conf_lines["mem"] = args.mem
+    if args.bridged:
+        conf_lines["bridged"] = "_"
     if image != "":
         conf_lines["image"] = image
     return conf_lines
