@@ -7,10 +7,10 @@ Kathará has the performances to run in production and can emulate most network 
 * To run Kathará you first need to install [Docker](https://www.docker.com/) and Python 2.x.
 * Download all the files to a directory of your choice.
 * Add the environment variable NETKIT_HOME to your system pointing to the **bin** folder:
-  * Unix: `export NETKIT_HOME=/home/foo/kathara/bin`
+  * Linux: `export NETKIT_HOME=/home/foo/kathara/bin`
   * Windows: System > Advanced settings > Environment Variables > New > ...
 * Run the installer:
-  * Unix: `$NETKIT_HOME/install` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed)
+  * Linux: `$NETKIT_HOME/install` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed)
   * Windows: `%NETKIT_HOME%\install`(completely optional, it only pre-downloads images)
 * You can optionally add NETKIT_HOME to your PATH
 
