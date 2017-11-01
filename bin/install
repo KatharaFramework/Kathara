@@ -27,7 +27,7 @@ if [ "$NOT_ADMIN" = "1" ]; then
 else
     echo -e "\033[0;33mAdmin mode\033[0m: bypassing netkit_dw with empty wrapper"
     echo -e "\033[0;31mWARNING: unsafe installation, this will create a softlink to /usr/bin/docker as the wrapper.\033[0m"
-    echo -e "\033[0;31mAlso the software will not work until you set correct permissions to docker (SUID and root user group) or your user is is in the docker group.\033[0m"
+    echo -e "\033[0;31mAlso the software will NOT work until your user is in the docker group or you set correct permissions to docker (SUID and root).\033[0m"
     sudo rm $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo ln -s /usr/bin/docker $NETKIT_HOME/wrapper/bin/netkit_dw
 fi
