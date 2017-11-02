@@ -16,10 +16,10 @@ Kathará has the performances to run in production and can emulate most network 
   * Windows: `%NETKIT_HOME%\install`(completely optional, it only pre-downloads images)
 * You can optionally add NETKIT_HOME to your PATH
 
-# Provided Docker Images
+## Provided Docker Images
 A list of the Docker images we provided can be found at [this page](https://hub.docker.com/u/bonofiglio/) in the Docker Hub.
 
-# Manual
+## Manual
 The interface of Kathará is basically the same we used for Netkit, and it's available here: [Man page of NETKIT](http://wiki.netkit.org/man/man7/netkit.7.html).
 
 The main difference is the way we specify the interfaces in the `vstart` command (now requiring `--eth 0:A --eth 1:B ...`) but why would you ever use `vstart` when you have `lstart`?
