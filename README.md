@@ -9,6 +9,7 @@ Kathará has the performances to run in production and can emulate most network 
 * Add the environment variable NETKIT_HOME to your system pointing to the **bin** folder:
   * Linux: `export NETKIT_HOME=/home/foo/kathara/bin`
   * Windows: System > Advanced settings > Environment Variables > New > ...
+    You'll also need to share the drive containing labs and the user folder (it can be done from Docker settings, from the tray icon).
 * Run the installer:
   * Linux: `$NETKIT_HOME/install` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed)
   * Windows: `%NETKIT_HOME%\install`(completely optional, it only pre-downloads images)
