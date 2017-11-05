@@ -24,4 +24,4 @@ The interface of Kathará is basically the same we used for Netkit, and it's ava
 
 The main difference is the way we specify the interfaces in the `vstart` command (now requiring `--eth 0:A --eth 1:B ...`) but why would you ever use `vstart` when you have `lstart`?
 
-Also the subnet `172.0.0.0/8` (so every IPs starting with `172`) is reserved and should not be used when configuring links. 
+Also the subnet `172.0.0.0/8` (basically any IP starting with `172`) is reserved and should not be used when configuring links. 
