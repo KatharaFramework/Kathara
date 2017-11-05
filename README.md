@@ -23,3 +23,5 @@ A list of the Docker images we provided can be found at [this page](https://hub.
 The interface of Kathará is basically the same we used for Netkit, and it's available here: [Man page of NETKIT](http://wiki.netkit.org/man/man7/netkit.7.html).
 
 The main difference is the way we specify the interfaces in the `vstart` command (now requiring `--eth 0:A --eth 1:B ...`) but why would you ever use `vstart` when you have `lstart`?
+
+Also the subnet `172.0.0.0/8` (so every IPs starting with `172`) is reserved and should not be used when configuring links. 
