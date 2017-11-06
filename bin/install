@@ -25,11 +25,10 @@ if [ "$NOT_ADMIN" = "1" ]; then
     echo "Compiling netkit_dw"
     sudo gcc -std=c99 $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
 else
-    echo -e "\033[0;33mAdmin mode\033[0m: bypassing netkit_dw with empty wrapper"
-    echo -e "\033[0;31mWARNING: unsafe installation, this will create a softlink to /usr/bin/docker as the wrapper.\033[0m"
-    echo -e "\033[0;31mAlso the software will NOT work until your user is in the docker group or you set correct permissions to docker (SUID and root).\033[0m"
+    echo -e "\033[0;33mAdmin mode\033[0m"
+    echo -e "\033[0;31mWARNING: unsafe installation, this will not create a wrapper and remove it if previously installed.\033[0m"
+    echo -e "\033[0;31mYou will need to use 'sudo true' before using commands and set the env variable NETKIT_ADMIN to 1.\033[0m"
     sudo rm $NETKIT_HOME/wrapper/bin/netkit_dw
-    sudo ln -s /usr/bin/docker $NETKIT_HOME/wrapper/bin/netkit_dw
 fi
 
 echo "Setting permissions"
