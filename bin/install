@@ -27,8 +27,8 @@ if [ "$NOT_ADMIN" = "1" ]; then
 else
     echo -e "\033[0;33mAdmin mode\033[0m"
     echo -e "\033[0;31mWARNING: unsafe installation, this will not create a wrapper and remove it if previously installed.\033[0m"
-    echo -e "\033[0;31mYou will need to use 'sudo true' before using commands and set the env variable NETKIT_ADMIN to 1.\033[0m"
     sudo rm $NETKIT_HOME/wrapper/bin/netkit_dw
+    sudo cp $NETKIT_HOME/wrapper/bin/fake_wrapper $NETKIT_HOME/wrapper/bin/netkit_dw
 fi
 
 echo "Setting permissions"

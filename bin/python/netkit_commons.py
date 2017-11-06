@@ -34,8 +34,6 @@ DOCKER_BIN = 'docker'
 
 if PLATFORM != WINDOWS:
     DOCKER_BIN = os.environ['NETKIT_HOME'] + '/wrapper/bin/netkit_dw'
-if os.environ['NETKIT_ADMIN'] == '1' and PLATFORM != WINDOWS:
-    DOCKER_BIN = 'sudo docker'
 
 SEPARATOR_WINDOWS = ' & '
 BASH_SEPARATOR = ' ; '
