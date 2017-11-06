@@ -65,6 +65,9 @@ sudo chmod 755 $NETKIT_HOME/vhalt
 sudo chmod 755 $NETKIT_HOME/vlist
 sudo chmod 755 $NETKIT_HOME/vconfig
 
+sudo chmod 755 $NETKIT_HOME/kathara_version
+sudo chmod 755 $NETKIT_HOME/kathara_version.txt
+
 sudo chmod 755 $NETKIT_HOME/python
 sudo chmod 755 $NETKIT_HOME/python/*
 
