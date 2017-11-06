@@ -1,4 +1,4 @@
 #!/bin/bash
 
-$NETKIT_HOME/lcrash $@
+$NETKIT_HOME/lclean $@
 $NETKIT_HOME/lstart $@
