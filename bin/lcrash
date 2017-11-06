@@ -35,6 +35,7 @@ if [ "$RC" = "0" ]; then
     if [ "$NETKIT_ALL" = "1" ]; then
         python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do (
                 if [ -f "$HOME/netkit_temp/$in$M" ]; then
+                    echo -e "\033[0;33mContainers will be stopped (forcefully) but not deleted\033[0m"
                     $NETKIT_HOME/wrapper/bin/netkit_dw kill `cat "$HOME/netkit_temp/$in$M"`
                 fi
             ); done

@@ -21,6 +21,7 @@ FOR %%p in (%*) DO (
 )
 
 IF "%NETKIT_ALL%" == "1" (
+    ECHO "Containers will be stopped (gracefully) but not deleted"
     FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\folder_hash.py "%cd%/" %*') DO SET VAR1=%NETKIT_HOME%\temp\%%a_machines
     IF exist %VAR1% (
         FOR /f "delims=" %%a in (%VAR1%) DO docker stop %%a

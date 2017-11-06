@@ -223,7 +223,8 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         for link,_ in interfaces[1:]:
             repls = ('{link}', link), ('{machine_name}', machine_name)
             create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
-        if os.path.exists(os.path.join(path, machine_name)):
+        # convoluted method to copy MACHINE_NAME/etc folder to the etc of the container
+        if os.path.exists(os.path.join(path, machine_name)) and not execbash:
             for folder_or_file in os.listdir(os.path.join(path, machine_name)):
                 if folder_or_file == 'etc': 
                     repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{folder_or_file}', folder_or_file), ('{dest}', 'temp_etc')

@@ -29,7 +29,7 @@ done
 
 export RC=$?
 if [ "$RC" = "0" ]; then
-
+    echo -e "\033[0;33mContainers will be deleted\033[0m"
     M=_machines
     L=_links
     if [ "$NETKIT_ALL" = "1" ]; then
