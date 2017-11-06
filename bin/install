@@ -37,6 +37,10 @@ if [ "$NOT_ADMIN" = "1" ]; then
     sudo chmod 4755 $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo chmod 000 $NETKIT_HOME/wrapper/netkit_dw.c
+else 
+    sudo chown root:root $NETKIT_HOME/wrapper/bin/netkit_dw
+    sudo chmod 4755 $NETKIT_HOME/wrapper/bin/netkit_dw
+    sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw
 fi
 
 mkdir -p $HOME/netkit_temp
