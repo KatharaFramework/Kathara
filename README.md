@@ -4,17 +4,17 @@ Implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-c
 Kathará has the performances to run in production and can emulate most network equipments. 
 
 ## Installation
-* To run Kathará you first need to install [Docker](https://www.docker.com/) and Python 2.x.
+* To run Kathará you first need to install [Docker](https://www.docker.com/) and Python 2.x. For Linux users I suggest installing Docker from https://get.docker.com while for Windows and Mac it's easier to use https://download.docker.com. 
 * Download all the files to a directory of your choice (from a release or `git clone`). 
-* Add the environment variable NETKIT_HOME to your system pointing to the **bin** folder:
-  * Linux: `export NETKIT_HOME=/home/foo/kathara/bin`
+* Add the environment variable `NETKIT_HOME` to your system _pointing to the **bin** folder_:
+  * Linux: `export NETKIT_HOME=/home/foo/kathara/bin` (you can also do this permanently by adding it to `~/.bashrc`)
   * Windows: System > Advanced settings > Environment Variables > New > ...
     
     You'll also need to share the drive containing labs and the user folder (it can be done from Docker settings, from the tray icon).
 * Run the installer:
   * Linux: `$NETKIT_HOME/install` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed)
   * Windows: `%NETKIT_HOME%\install`(completely optional, it only pre-downloads images)
-* You can optionally add NETKIT_HOME to your PATH
+* You can optionally add NETKIT_HOME to your PATH, but the `NETKIT_HOME` variable is still required. 
 
 ## Provided Docker Images
 A list of the Docker images we provided can be found at [this page](https://hub.docker.com/u/bonofiglio/) in the Docker Hub.
