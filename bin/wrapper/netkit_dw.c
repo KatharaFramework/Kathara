@@ -14,8 +14,7 @@ char* allowed_words_2 [] = { "-i", "-t" ,"-ti", "-tid", "-it", "-itd", "-dit", "
 #define ALLOWED_WORDS_2_LEN 22
 
 char* get_user_home() {
-    struct passwd *passwdEnt = getpwuid(getuid());
-    return passwdEnt->pw_dir;
+    return getpwuid(getuid())->pw_dir;
 }
 
 void check_overflow(int count) 
