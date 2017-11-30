@@ -1,5 +1,5 @@
 # Kathará
-Implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-core) using Python and Docker, allowing for SDN, NFV and traditional routing protocols. Comes with P4, Bind, Quagga, OpenVSwitch and more. 
+From the Greek Καθαρά. Implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-core) using Python and Docker, allowing for SDN, NFV and traditional routing protocols. Comes with P4, Bind, Quagga, OpenVSwitch and more. 
 
 Kathará has the performances to run in production and can emulate most network equipments. 
 
