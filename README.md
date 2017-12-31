@@ -1,7 +1,11 @@
 # ![Kathará](logo_kathara_small.png)
-From the Greek Καθαρά. Implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-core) using Python and Docker, allowing for SDN, NFV and traditional routing protocols. Comes with **P4**, **OpenVSwitch**, **Quagga**, **Bind**,  and more. 
+From the Greek Καθαρά. 
 
-Kathará has the performances to run in production and can emulate most network equipments. 
+Implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-core) using Python and Docker. 10 times faster than Netkit and more than 100 times lighter, allows easy configuration and deploy of arbitrary virtual networks with for SDN, NFV and traditional routing protocols. 
+
+Kathará comes with **P4**, **OpenVSwitch**, **Quagga**, **Bind**, and more, but can also be extended with your own container images. 
+
+Thanks to Docker, the framework has the performances to run in production and our images can emulate most network equipments.
 
 ## Installation
 * To run Kathará you first need to install [Docker](https://www.docker.com/) and Python 2.x. For Linux users I suggest installing Docker from https://get.docker.com while for Windows and Mac it's easier to use https://download.docker.com. 
