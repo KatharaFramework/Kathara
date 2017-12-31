@@ -1,4 +1,4 @@
-# Kathará
+# ![Kathará](logo_kathara_small.png)
 From the Greek Καθαρά. Implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-core) using Python and Docker, allowing for SDN, NFV and traditional routing protocols. Comes with **P4**, **OpenVSwitch**, **Quagga**, **Bind**,  and more. 
 
 Kathará has the performances to run in production and can emulate most network equipments. 
