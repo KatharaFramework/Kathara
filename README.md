@@ -1,4 +1,5 @@
 # [![Kathará](logo_kathara_small.png)](http://www.kathara.org)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) 
 <ul>
     <li><a href="#installation">Installation</a></li>
     <li><a href="#provided-docker-images">Provided Docker Images</a></li>
