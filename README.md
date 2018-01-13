@@ -6,6 +6,7 @@
     <li><a href="#installation">Installation</a></li>
     <li><a href="#provided-docker-images">Provided Docker Images</a></li>
     <li><a href="#manual">Manual</a></li>
+    <li><a href="#tools">Tools</a></li>
     <li><a href="#example">Example</a></li>
 </ul>
 
@@ -39,6 +40,11 @@ The main difference is the way we specify the interfaces in the `vstart` command
 
 Also the subnet `172.0.0.0/8` (basically any IP starting with `172`) is reserved and should not be used when configuring links. 
 
+## Tools
+Being based on Netkit, all previous [tools](http://wiki.netkit.org/index.php/Download_Contributions) still work. 
+In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-Lab-Generator), a web interface that allows the easy creation of a lab configuration and the visualization of the topology itself. 
+![Netkit Lab Generator](https://raw.githubusercontent.com/Kidel/Netkit-Lab-Generator/master/images/screencapture-1460378572119.png)
+
 ## Example
 * Installa Kathará by following the installation steps above
 * Download and unpack MARACAS_lab from [here](http://wiki.netkit.org/netkit-labs/netkit-labs_exams/icn-20151120/icn-20151120.tar.gz).
@@ -51,3 +57,4 @@ Also the subnet `172.0.0.0/8` (basically any IP starting with `172`) is reserved
   * Linux: `$NETKIT_HOME/lclean`
   * Windows: `%NETKIT_HOME%\lclean`
 * This will kill and remove any container. 
+
