@@ -42,7 +42,7 @@ Also the subnet `172.0.0.0/8` (basically any IP starting with `172`) is reserved
 
 ## Tools
 Being based on Netkit, all previous [tools](http://wiki.netkit.org/index.php/Download_Contributions) still work. 
-In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-Lab-Generator), a web interface that allows the easy creation of a lab configuration and the visualization of the topology itself. 
+In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-Lab-Generator), a web interface that allows the easy creation of a lab configuration and the visualization of its network topology. 
 ![Netkit Lab Generator](https://raw.githubusercontent.com/Kidel/Netkit-Lab-Generator/master/images/screencapture-1460378572119.png)
 
 ## Example
