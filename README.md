@@ -1,5 +1,4 @@
-# ![Kathará](logo_kathara_small.png)
-[Kathara.org](http://www.kathara.org)
+# [![Kathará](logo_kathara_small.png)](http://www.kathara.org)
 <ul>
     <li><a href="#installation">Installation</a></li>
     <li><a href="#provided-docker-images">Provided Docker Images</a></li>
