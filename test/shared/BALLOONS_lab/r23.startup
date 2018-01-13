@@ -1,5 +1,0 @@
-ifconfig eth0 150.20.200.2/30 up
-ifconfig eth1 20.0.23.1/24 up
-ifconfig lo:1 23.23.23.23/30 up
-
-/etc/init.d/zebra start

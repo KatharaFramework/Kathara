@@ -1,3 +1,0 @@
-ifconfig eth0 1.0.0.2/24 up
-
-route add default gw 1.0.0.1

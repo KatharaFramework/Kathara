@@ -1,3 +1,0 @@
-ospf2: ospf1 ospf3
-rip1: rip2
-host: server ospf2 rip1
