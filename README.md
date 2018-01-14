@@ -5,8 +5,8 @@
 <ul>
     <li><a href="#installation">Installation</a></li>
     <li><a href="#provided-docker-images">Provided Docker Images</a></li>
+    <li><a href="#graphical-user-interface">Graphical User Interface</a></li>
     <li><a href="#manual">Manual</a></li>
-    <li><a href="#tools">Tools</a></li>
     <li><a href="#example">Example</a></li>
 </ul>
 
@@ -33,17 +33,18 @@ Thanks to Docker, the framework has the performances to run in production and ou
 ## Provided Docker Images
 A list of the Docker images we provided can be found at [this page](https://hub.docker.com/u/bonofiglio/) in the Docker Hub.
 
+## Graphical User Interface
+Being based on Netkit, all previous [tools](http://wiki.netkit.org/index.php/Download_Contributions) still work. 
+In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-Lab-Generator), a GUI that allows the easy creation of a lab configuration and the visualization of its network topology.
+![Netkit Lab Generator](https://raw.githubusercontent.com/Kidel/Netkit-Lab-Generator/master/images/screencapture-201814011.png)
+You can download both Kathará and the GUI by cloning recursively using `git clone --recursive`
+
 ## Manual
 The interface of Kathará is basically the same we used for Netkit, and it's available here: [Man page of NETKIT](http://wiki.netkit.org/man/man7/netkit.7.html).
 
 The main difference is the way we specify the interfaces in the `vstart` command (now requiring `--eth 0:A --eth 1:B ...`) but why would you ever use `vstart` when you have `lstart`?
 
 Also the subnet `172.0.0.0/8` (basically any IP starting with `172`) is reserved and should not be used when configuring links. 
-
-## Tools
-Being based on Netkit, all previous [tools](http://wiki.netkit.org/index.php/Download_Contributions) still work. 
-In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-Lab-Generator), a web interface that allows the easy creation of a lab configuration and the visualization of its network topology. 
-![Netkit Lab Generator](https://raw.githubusercontent.com/Kidel/Netkit-Lab-Generator/master/images/screencapture-1460378572119.png)
 
 ## Example
 * Installa Kathará by following the installation steps above

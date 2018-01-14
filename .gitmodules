@@ -1,0 +1,3 @@
+[submodule "GUI"]
+	path = GUI
+	url = https://github.com/Kidel/Netkit-Lab-Generator.git
