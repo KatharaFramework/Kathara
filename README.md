@@ -34,10 +34,13 @@ Thanks to Docker, the framework has the performances to run in production and ou
 A list of the Docker images we provided can be found at [this page](https://hub.docker.com/u/bonofiglio/) in the Docker Hub.
 
 ## Graphical User Interface
+You can download both Kathará and the GUI by cloning recursively using 
+* `git clone --recursive https://github.com/Kidel/Kathara.git`
+
 Being based on Netkit, all previous [tools](http://wiki.netkit.org/index.php/Download_Contributions) still work. 
 In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-Lab-Generator), a GUI that allows the easy creation of a lab configuration and the visualization of its network topology.
-![Netkit Lab Generator](https://raw.githubusercontent.com/Kidel/Netkit-Lab-Generator/master/images/screencapture-201814011.png)
-You can download both Kathará and the GUI by cloning recursively using `git clone --recursive`
+![Netkit Lab Generator](https://raw.githubusercontent.com/Kidel/Netkit-Lab-Generator/master/images/screencapture-201801141.png)
+
 
 ## Manual
 The interface of Kathará is basically the same we used for Netkit, and it's available here: [Man page of NETKIT](http://wiki.netkit.org/man/man7/netkit.7.html).
