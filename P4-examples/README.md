@@ -1,5 +1,5 @@
 # P4 examples
-In this repository there are three Kathará labs. In each lab there are two kind of machines, switch or client/server/sniffer. The purpose is implement the network with one or more P4 switches. Of course, you can run ping in all machines and start conversation between client and server. Below the representation of the three topologies:
+In this repository there are three Kathará labs. In each lab there are two kind of machines, switch or client/server/sniffer. The purpose is implement the network with one or more P4 switches. Below the representation of the three topologies:
 * **lab-single-switch**:
 
 ![lab-single-switch](https://github.com/giuseppevalentinobaldi/P4-lab/blob/master/res/lab-single-switch.png)
