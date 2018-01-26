@@ -18,7 +18,7 @@ Kathará comes with **P4**, **OpenVSwitch**, **Quagga**, **Bind**, and more, but
 Thanks to Docker, the framework has the performances to run in production and our images can emulate most network equipments.
 
 ## Installation
-* To run Kathará you first need to install [Docker](https://www.docker.com/) and Python 2.x. For Linux users I suggest installing Docker from https://get.docker.com while for Windows and Mac it's easier to use https://download.docker.com. 
+* To run Kathará you first need to install [Docker](https://www.docker.com/) and Python 2.x. For Linux users I suggest installing Docker from https://get.docker.com while for Windows and Mac it's easier to use https://download.docker.com. On Linux and Mac OS it also requires **xterm** unless you manually specify another terminal emulator using the `--xterm=X`command (where X is, of course, the name of another terminal emulator you have installed on your system).
 * Download all the files to a directory of your choice (from a [release](https://github.com/Kidel/Kathara/releases) or `git clone`). 
 * Add the environment variable `NETKIT_HOME` to your system _pointing to the **bin** folder_:
   * Linux: `export NETKIT_HOME=/home/foo/kathara/bin` (you can also do this permanently by adding it to `~/.bashrc`).
@@ -64,3 +64,7 @@ Also the subnet `172.0.0.0/8` (basically any IP starting with `172`) is reserved
   * Windows: `%NETKIT_HOME%\lclean`
 * This will kill and remove any container. 
 
+## TODO
+* lwipe command to wipe all the related containers, networks and cache.
+* better and more informative installer.
+* instructions for Mac OS.
