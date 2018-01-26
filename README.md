@@ -39,7 +39,6 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
 * Run the installer:
   * `$NETKIT_HOME/install` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed, and `--admin` removes the wrapper (unsafe/admin mode)). 
 * You can optionally add NETKIT_HOME to your PATH, but the `NETKIT_HOME` variable is still required. 
-* Remember to run Docker before using Kathará.
 
 ### Windows
 * Install [Docker](https://www.docker.com/) from [here](https://www.docker.com/community-edition#/download) or [here](https://download.docker.com).
@@ -63,7 +62,8 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
   * `export NETKIT_HOME=/home/foo/kathara/bin` (you can also do this permanently by adding it to `~/.bash_profile`).
 * Run the installer:
   * `$NETKIT_HOME/install --admin` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed). 
-* You can optionally add NETKIT_HOME to your PATH, but the `NETKIT_HOME` variable is still required. 
+* You can optionally add NETKIT_HOME to your PATH, but the `NETKIT_HOME` variable is still required.
+* Remember to run Docker before using Kathará.
 
 ## Provided Docker Images
 A list of the Docker images we provided can be found at [this page](https://hub.docker.com/u/bonofiglio/) in the Docker Hub.
