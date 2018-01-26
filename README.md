@@ -3,9 +3,9 @@
     <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg" alt="License: GPL v3" target="_blank" /></a>
 </p>
 <ul>
+    <li><a href="#graphical-user-interface">Graphical User Interface</a></li>
     <li><a href="#installation">Installation</a></li>
     <li><a href="#provided-docker-images">Provided Docker Images</a></li>
-    <li><a href="#graphical-user-interface">Graphical User Interface</a></li>
     <li><a href="#manual">Manual</a></li>
     <li><a href="#example">Example</a></li>
 </ul>
@@ -16,6 +16,16 @@ Implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-c
 Kathará comes with **P4**, **OpenVSwitch**, **Quagga**, **Bind**, and more, but can also be extended with your own container images. 
 
 Thanks to Docker, the framework has the performances to run in production and our images can emulate most network equipments.
+
+## Graphical User Interface
+You can download both Kathará and the GUI by cloning recursively using 
+* `git clone --recursive https://github.com/Kidel/Kathara.git`
+
+Or by downloading the compiled version from the [releases](https://github.com/Kidel/Kathara/releases) page.
+
+Being based on Netkit, all previous [tools](http://wiki.netkit.org/index.php/Download_Contributions) still work. 
+In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-Lab-Generator), a GUI that allows the easy creation of a lab configuration and the visualization of its network topology.
+![Netkit Lab Generator](https://raw.githubusercontent.com/Kidel/Netkit-Lab-Generator/master/images/screencapture-201801143.png)
 
 ## Installation
 * To run Kathará you first need to install [Docker](https://www.docker.com/) and Python 2.x. For Linux users I suggest installing Docker from https://get.docker.com while for Windows and Mac it's easier to use https://download.docker.com. On Linux and Mac OS it also requires **xterm** unless you manually specify another terminal emulator using the `--xterm=X`command (where X is, of course, the name of another terminal emulator you have installed on your system).
@@ -32,17 +42,6 @@ Thanks to Docker, the framework has the performances to run in production and ou
 
 ## Provided Docker Images
 A list of the Docker images we provided can be found at [this page](https://hub.docker.com/u/bonofiglio/) in the Docker Hub.
-
-## Graphical User Interface
-You can download both Kathará and the GUI by cloning recursively using 
-* `git clone --recursive https://github.com/Kidel/Kathara.git`
-
-Or by downloading the compiled version from the [releases](https://github.com/Kidel/Kathara/releases) page.
-
-Being based on Netkit, all previous [tools](http://wiki.netkit.org/index.php/Download_Contributions) still work. 
-In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-Lab-Generator), a GUI that allows the easy creation of a lab configuration and the visualization of its network topology.
-![Netkit Lab Generator](https://raw.githubusercontent.com/Kidel/Netkit-Lab-Generator/master/images/screencapture-201801143.png)
-
 
 ## Manual
 The interface of Kathará is basically the same we used for Netkit, and it's available here: [Man page of NETKIT](http://wiki.netkit.org/man/man7/netkit.7.html).
