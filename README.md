@@ -89,6 +89,5 @@ Also the subnet `172.0.0.0/8` (basically any IP starting with `172`) is reserved
 * This will kill and remove any container. 
 
 ## TODO
-* lwipe command to wipe all the related containers, networks and cache.
-* better and more informative installer.
-* instructions for Mac OS.
+* `lwipe` command to wipe the cache plus all Kathará containers and networks.
+* Better and more informative installer.
