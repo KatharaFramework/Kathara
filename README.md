@@ -59,9 +59,9 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
 * (suggested) Install [XQuartz](https://www.xquartz.org/) to get **xterm** terminal emulator, that is used by default. You can also specify a different terminal emulator by using the `--xterm=...` command parameter while starting a network node or a lab. It is also possible to avoid opening new terminals at all by using `--noterminals`.
 * Download all the files to a directory of your choice (from a [release](https://github.com/Kidel/Kathara/releases) or `git clone --recursive https://github.com/Kidel/Kathara.git`). 
 * Add the environment variable `NETKIT_HOME` to your system _pointing to the **bin** folder_:
-  * `export NETKIT_HOME=/home/foo/kathara/bin` (you can also do this permanently by adding it to `~/.bash_profile`).
+  * `export NETKIT_HOME=/Users/<YOUR_USER_HOME>/kathara/bin` (you can also do this permanently by adding it to `~/.bash_profile`).
 * Run the installer:
-  * `$NETKIT_HOME/install --admin` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed). 
+  * `$NETKIT_HOME/install --admin` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed). Ignore any warning related to user groups.
 * You can optionally add NETKIT_HOME to your PATH, but the `NETKIT_HOME` variable is still required.
 * Remember to run Docker before using Kathará.
 
