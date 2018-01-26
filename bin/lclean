@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python $NETKIT_HOME/python/check.py "$PWD/" $@
+python $NETKIT_HOME/python/check.py "$PWD/" "$@"
 
 NETKIT_ALL=1
 NETKIT_LIST=0
@@ -33,13 +33,13 @@ if [ "$RC" = "0" ]; then
     M=_machines
     L=_links
     if [ "$NETKIT_ALL" = "1" ]; then
-        python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do (
+        python $NETKIT_HOME/python/folder_hash.py "$PWD/" "$@" | while read in; do (
                 if [ -f "$HOME/netkit_temp/$in$M" ]; then
                     $NETKIT_HOME/wrapper/bin/netkit_dw rm -f `cat "$HOME/netkit_temp/$in$M"`; rm "$HOME/netkit_temp/$in$M"
                 fi
             ); done
     fi
-    python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | while read in; do (
+    python $NETKIT_HOME/python/folder_hash.py "$PWD/" "$@" | while read in; do (
             if [ -f "$HOME/netkit_temp/$in$L" ]; then
                 $NETKIT_HOME/wrapper/bin/netkit_dw network rm `cat "$HOME/netkit_temp/$in$L"`
             fi

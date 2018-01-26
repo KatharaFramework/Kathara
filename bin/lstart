@@ -1,9 +1,11 @@
 #!/bin/bash
+echo "Hello world"
 
 NETKIT_TERMINAL_STRING="xterm -T "
 NETKIT_PRINT=0
 for i in "$@"
 do
+echo $i
 case $i in
     --xterm=*)
     NETKIT_TERMINAL_STRING="${i#*=} --title="
@@ -19,27 +21,27 @@ case $i in
 esac
 done
 
-python $NETKIT_HOME/python/check.py "$PWD/" -f $@
+python $NETKIT_HOME/python/check.py "$PWD/" -f "$@"
 
 export RC=$?
 if [ "$RC" = "0" ]; then
-    python $NETKIT_HOME/python/print_metadata.py "$PWD/" $@
+    python $NETKIT_HOME/python/print_metadata.py "$PWD/" "$@"
 
     M=_machines
 
-    python $NETKIT_HOME/python/folder_hash.py "$PWD/" $@ | 
+    python $NETKIT_HOME/python/folder_hash.py "$PWD/" "$@"| 
     while IFS=';' read -ra in; do ( 
         if [ "$NETKIT_PRINT" = "0" ];
         then
 		if [ -f "$HOME/netkit_temp/$in$M" ]; then 
 		    $NETKIT_HOME/wrapper/bin/netkit_dw start `cat "$HOME/netkit_temp/$in$M"`; 
-			python $NETKIT_HOME/python/lstart.py --execbash "$PWD/" $@ | 
+			python $NETKIT_HOME/python/lstart.py --execbash "$PWD/" "$@" | 
 			(while IFS=';' read -ra in; do ($NETKIT_TERMINAL_STRING"${in[0]}" -e "${in[1]}" &); done)
 		else 
-		    python $NETKIT_HOME/python/lstart.py "$PWD/" $@ | while IFS=';' read -ra in; do ($NETKIT_TERMINAL_STRING"${in[0]}" -e "${in[1]}" &); done  
+		    python $NETKIT_HOME/python/lstart.py "$PWD/" "$@" | while IFS=';' read -ra in; do ($NETKIT_TERMINAL_STRING"${in[0]}" -e "${in[1]}" &); done  
 		fi
         else
-		python $NETKIT_HOME/python/lstart.py "$PWD/" $@ | while read in; do (echo "$in &"); done  
+		python $NETKIT_HOME/python/lstart.py "$PWD/" "$@" | while read in; do (echo "$in &"); done  
         fi
     ); 
     done
