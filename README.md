@@ -67,7 +67,7 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
 * Add the environment variable `NETKIT_HOME` to your system _pointing to the **bin** folder_:
   * `export NETKIT_HOME=/Users/<YOUR_USER_HOME>/kathara/bin` (you can also do this permanently by adding it to `~/.bash_profile`).
 * Run the installer:
-  * `$NETKIT_HOME/install --admin` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed). Ignore any warning related to user groups.
+  * `$NETKIT_HOME/install --admin` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed). Ignore any warning related to user groups and please be aware that `--admin` is mandatory on Mac and you also don't need a wrapper since Docker works from inside an hypervisor. There is also no need to share drives, since the user folder is already shared with the hypervisor by default. 
 * You can optionally add NETKIT_HOME to your PATH, but the `NETKIT_HOME` variable is still required.
 * Remember to run Docker before using Kathará.
 
