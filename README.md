@@ -4,7 +4,13 @@
 </p>
 <ul>
     <li><a href="#graphical-user-interface">Graphical User Interface</a></li>
-    <li><a href="#installation">Installation</a></li>
+    <li><a href="#installation">Installation</a>
+        <ul>
+            <li><a href="#linux">Linux</a></li>
+            <li><a href="#windows">Windows</a></li>
+            <li><a href="#mac">Mac</a></li>
+        </ul>
+    </li>
     <li><a href="#provided-docker-images">Provided Docker Images</a></li>
     <li><a href="#manual">Manual</a></li>
     <li><a href="#example">Example</a></li>
@@ -53,7 +59,7 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
 * You can optionally add NETKIT_HOME to your PATH, but the `NETKIT_HOME` variable is still required.
 * Remember to run Docker before using Kathará.
 
-### Mac OS
+### Mac
 * Install [Docker](https://www.docker.com/) from [here](https://www.docker.com/community-edition#/download) or [here](https://download.docker.com).
 * Install Python 2.x. You can get it from [here](https://www.python.org/downloads).
 * (suggested) Install [XQuartz](https://www.xquartz.org/) to get **xterm** terminal emulator, that is used by default. You can also specify a different terminal emulator by using the `--xterm=...` command parameter while starting a network node or a lab. It is also possible to avoid opening new terminals at all by using `--noterminals`.
