@@ -1,11 +1,9 @@
 #!/bin/bash
-echo "Hello world"
 
 NETKIT_TERMINAL_STRING="xterm -T "
 NETKIT_PRINT=0
 for i in "$@"
 do
-echo $i
 case $i in
     --xterm=*)
     NETKIT_TERMINAL_STRING="${i#*=} --title="
