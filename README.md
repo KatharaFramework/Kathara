@@ -32,7 +32,7 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
 ### Linux
 * Install [Docker](https://www.docker.com/). We suggest installing Docker from [this script](https://get.docker.com).
 * Install Python 2.x. It should be pre-installed on most Linux distributions; if it isn't, you can get it from [here](https://www.python.org/downloads).
-* (suggested) Install **xterm** terminal emulator (usually `sudo apt-get install xterm`), that is used by default. You can also specify a different terminal emulator by using the `--xterm=...` command parameter while starting a network node or a lab.
+* (suggested) Install **xterm** terminal emulator (usually `sudo apt-get install xterm`), that is used by default. You can also specify a different terminal emulator by using the `--xterm=...` command parameter while starting a network node or a lab. It is also possible to avoid opening new terminals at all by using `--noterminals`.
 * Download all the files to a directory of your choice (from a [release](https://github.com/Kidel/Kathara/releases) or `git clone --recursive https://github.com/Kidel/Kathara.git`). 
 * Add the environment variable `NETKIT_HOME` to your system _pointing to the **bin** folder_:
   * `export NETKIT_HOME=/home/foo/kathara/bin` (you can also do this permanently by adding it to `~/.bashrc`).
@@ -56,7 +56,7 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
 ### Mac OS
 * Install [Docker](https://www.docker.com/) from [here](https://www.docker.com/community-edition#/download) or [here](https://download.docker.com).
 * Install Python 2.x. You can get it from [here](https://www.python.org/downloads).
-* (suggested) Install [XQuartz](https://www.xquartz.org/) to get **xterm** terminal emulator, that is used by default. You can also specify a different terminal emulator by using the `--xterm=...` command parameter while starting a network node or a lab.
+* (suggested) Install [XQuartz](https://www.xquartz.org/) to get **xterm** terminal emulator, that is used by default. You can also specify a different terminal emulator by using the `--xterm=...` command parameter while starting a network node or a lab. It is also possible to avoid opening new terminals at all by using `--noterminals`.
 * Download all the files to a directory of your choice (from a [release](https://github.com/Kidel/Kathara/releases) or `git clone --recursive https://github.com/Kidel/Kathara.git`). 
 * Add the environment variable `NETKIT_HOME` to your system _pointing to the **bin** folder_:
   * `export NETKIT_HOME=/home/foo/kathara/bin` (you can also do this permanently by adding it to `~/.bash_profile`).
