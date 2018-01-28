@@ -95,6 +95,5 @@ Also the subnet `172.0.0.0/8` (basically any IP starting with `172`) is reserved
 * This will kill and remove any container. 
 
 ## TODO
-* `lwipe` command to wipe the cache plus all Kathará containers and networks.
 * Components and configuration checker.
 * Better and more informative installer.
