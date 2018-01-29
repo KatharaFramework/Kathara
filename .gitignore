@@ -96,9 +96,6 @@ Dockerfile~
 # builds
 bin/wrapper/bin/netkit_dw
 test/shared/MARACAS_lab2/
-#bin/temp/*
-
-# do not ignore gitkeep
-!*/.gitkeep
+bin/temp/*
 
 
