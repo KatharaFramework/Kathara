@@ -72,7 +72,7 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
 * Remember to run Docker before using Kathará.
 
 ## Provided Docker Images
-A list of the Docker images we provided can be found at [this page](https://hub.docker.com/u/bonofiglio/) in the Docker Hub.
+A list of the Docker images we provided can be found at [this page](https://hub.docker.com/u/kathara/) in the Docker Hub.
 
 ## Manual
 The interface of Kathará is basically the same we used for Netkit, and it's available here: [Man page of NETKIT](http://wiki.netkit.org/man/man7/netkit.7.html).

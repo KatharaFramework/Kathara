@@ -15,7 +15,7 @@ from collections import OrderedDict
 DEBUG = True
 PRINT = False
 IMAGE_NAME = 'netkit_base'
-DOCKER_HUB_PREFIX = "bonofiglio/"
+DOCKER_HUB_PREFIX = "kathara/"
 LINUX_TERMINAL_TYPE = 'xterm'
 
 MAC_OS = "darwin"

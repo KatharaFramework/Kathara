@@ -74,11 +74,11 @@ sudo chmod 755 $NETKIT_HOME/python/*
 
 if [ "$SKIP_P4" = "1" ]; then
     echo "Pulling images"
-    sudo docker pull bonofiglio/netkit_base
+    sudo docker pull kathara/netkit_base
 else
     echo "Pulling images"
-    sudo docker pull bonofiglio/netkit_base
-    sudo docker pull bonofiglio/p4
+    sudo docker pull kathara/netkit_base
+    sudo docker pull kathara/p4
 fi
 
 sudo -k

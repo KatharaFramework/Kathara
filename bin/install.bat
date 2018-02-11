@@ -1,4 +1,4 @@
 @echo off
 
-docker pull bonofiglio/netkit_base
-docker pull bonofiglio/p4
+docker pull kathara/netkit_base
+docker pull kathara/p4
