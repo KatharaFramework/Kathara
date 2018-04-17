@@ -1,5 +1,7 @@
 @echo off
 
+FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\adapter.py') DO SET ADAPTER_BIN=%%a
+
 IF [%1]==[] GOTO USAGE
 
 FOR %%a in (%*) do SET NETKIT_LASTARG=%%a
@@ -12,7 +14,7 @@ FOR %%p in (%*) DO (
 )
 
 IF "%NETKIT_NET%" == "0" CALL %NETKIT_HOME%\lclean -d %NETKIT_HOME%\temp/labs/netkit_nt_%NETKIT_LASTARG% %NETKIT_LASTARG%
-IF "%NETKIT_NET%" == "1" CALL docker network rm netkit_nt_%NETKIT_LASTARG%
+IF "%NETKIT_NET%" == "1" CALL %ADAPTER_BIN% network rm netkit_nt_%NETKIT_LASTARG%
 
 GOTO END
 

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
+
 for i in "$@"
 do
 case $i in
@@ -8,8 +10,8 @@ case $i in
     -*)
     ;;
     *)
-    docker network create netkit_${UID}_$i
-    docker connect netkit_${UID}_$i netkit_${UID}_${@: -1}
+    $ADAPTER_BIN network create netkit_${UID}_$i
+    $ADAPTER_BIN connect netkit_${UID}_$i netkit_${UID}_${@: -1}
     ;;
 esac
 done

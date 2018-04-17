@@ -27,6 +27,8 @@ case $i in
 esac
 done
 
+export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
+
 export RC=$?
 if [ "$RC" = "0" ]; then
     echo -e "\033[0;33mContainers will be deleted\033[0m"
@@ -35,13 +37,13 @@ if [ "$RC" = "0" ]; then
     if [ "$NETKIT_ALL" = "1" ]; then
         python $NETKIT_HOME/python/folder_hash.py "$PWD/" "$@" | while read in; do (
                 if [ -f "$HOME/netkit_temp/$in$M" ]; then
-                    $NETKIT_HOME/wrapper/bin/netkit_dw rm -f `cat "$HOME/netkit_temp/$in$M"`; rm "$HOME/netkit_temp/$in$M"
+                    $ADAPTER_BIN rm -f `cat "$HOME/netkit_temp/$in$M"`; rm "$HOME/netkit_temp/$in$M"
                 fi
             ); done
     fi
     python $NETKIT_HOME/python/folder_hash.py "$PWD/" "$@" | while read in; do (
             if [ -f "$HOME/netkit_temp/$in$L" ]; then
-                $NETKIT_HOME/wrapper/bin/netkit_dw network rm `cat "$HOME/netkit_temp/$in$L"`
+                $ADAPTER_BIN network rm `cat "$HOME/netkit_temp/$in$L"`
             fi
             if [ "$NETKIT_ALL" = "1" ]; then
                 if [ -f "$HOME/netkit_temp/$in$L" ]; then

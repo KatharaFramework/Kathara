@@ -10,8 +10,6 @@ import utils as u
 import depgen as dpg
 from collections import OrderedDict
 
-#TODO test escapes, "" and '' in .startup files
-
 DEBUG = True
 PRINT = False
 IMAGE_NAME = 'netkit_base'
@@ -30,10 +28,27 @@ if _platform == MAC_OS:
 elif _platform == WINDOWS:
     PLATFORM = WINDOWS
 
-DOCKER_BIN = 'docker'
+def read_config():
+    ini_str = '[dummysection]\n' + open(os.path.join(os.environ['NETKIT_HOME'], 'python', 'config'), 'r').read()
+    ini_fp = StringIO.StringIO(ini_str)
+    config.readfp(ini_fp)
+    conf = {}
+    for key, value in config.items('dummysection'): 
+        conf[key] = value
+    return conf
+
+kat_config = read_config()
+
+try: 
+    DOCKER_BIN = kat_config['win_bin']
+except:
+    DOCKER_BIN = 'docker'
 
 if PLATFORM != WINDOWS:
-    DOCKER_BIN = os.environ['NETKIT_HOME'] + '/wrapper/bin/netkit_dw'
+    try: 
+        DOCKER_BIN = kat_config['unix_bin']
+    except:
+        DOCKER_BIN = os.environ['NETKIT_HOME'] + '/wrapper/bin/netkit_dw'
 
 SEPARATOR_WINDOWS = ' & '
 BASH_SEPARATOR = ' ; '

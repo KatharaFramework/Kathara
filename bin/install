@@ -37,11 +37,15 @@ if [ "$NOT_ADMIN" = "1" ]; then
     sudo chmod 4755 $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo chmod 000 $NETKIT_HOME/wrapper/netkit_dw.c
+    sudo rm $NETKIT_HOME/python/config
+    echo "unix_bin=/wrapper/bin/netkit_dw" > $NETKIT_HOME/python/config
+    
 else 
-    sudo chown root:root $NETKIT_HOME/wrapper/bin/netkit_dw
-    sudo chmod 4755 $NETKIT_HOME/wrapper/bin/netkit_dw
-    sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw
+    sudo rm $NETKIT_HOME/python/config
+    echo "unix_bin=sudo docker" > $NETKIT_HOME/python/config
 fi
+
+sudo chmod 755 $NETKIT_HOME/python/config
 
 mkdir -p $HOME/netkit_temp
 mkdir -p $HOME/netkit_temp/labs

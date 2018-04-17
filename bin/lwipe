@@ -2,13 +2,15 @@
 
 echo -e "\033[0;33mThis command will wipe containers and cache associated with Kathara\033[0m"
 
-$NETKIT_HOME/wrapper/bin/netkit_dw ps -a | 
-while read -r line; do (python $NETKIT_HOME/python/rm_node_name_from_ps.py $line); done |
-while read -r command; do ($NETKIT_HOME/wrapper/bin/netkit_dw $command); done
+export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
 
-$NETKIT_HOME/wrapper/bin/netkit_dw network list | 
+$ADAPTER_BIN ps -a | 
+while read -r line; do (python $NETKIT_HOME/python/rm_node_name_from_ps.py $line); done |
+while read -r command; do ($ADAPTER_BIN $command); done
+
+$ADAPTER_BIN network list | 
 while read -r line; do (python $NETKIT_HOME/python/rm_network_name_from_list.py $line); done |
-while read -r command; do ($NETKIT_HOME/wrapper/bin/netkit_dw $command); done
+while read -r command; do ($ADAPTER_BIN $command); done
 
 rm -f $HOME/netkit_temp/* 2> /dev/null
 

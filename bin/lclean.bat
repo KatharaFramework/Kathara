@@ -1,5 +1,7 @@
 @echo off
 
+FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\adapter.py') DO SET ADAPTER_BIN=%%a
+
 python %NETKIT_HOME%\python\check.py "%cd%/" %*
 IF ERRORLEVEL 1 GOTO END
 
@@ -14,7 +16,7 @@ FOR %%p in (%*) DO (
     IF NOT "%NETKIT_APP:~0,1%" == "-" (
         IF NOT "%NETKIT_APP_PREV%" == "-d" (
             SET NETKIT_ALL=0 
-            docker rm -f netkit_nt_%%p
+            %ADAPTER_BIN% rm -f netkit_nt_%%p
         )
     )
     SET NETKIT_APP_PREV=%%p
@@ -26,11 +28,11 @@ FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\folder_hash.py "%cd%/" %*
 IF "%NETKIT_ALL%" == "1" (
     ECHO "Containers will be deleted"
     IF exist %VAR1% (
-        FOR /f "delims=" %%a in (%VAR1%) DO docker rm -f %%a
+        FOR /f "delims=" %%a in (%VAR1%) DO %ADAPTER_BIN% rm -f %%a
     )
 )
 IF exist %VAR2% (
-    FOR /f "delims=" %%a in (%VAR2%) DO docker network rm %%a
+    FOR /f "delims=" %%a in (%VAR2%) DO %ADAPTER_BIN% network rm %%a
 )
 
 IF "%NETKIT_ALL%" == "1" (

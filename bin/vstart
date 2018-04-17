@@ -7,7 +7,9 @@ do
     fi
 done
 
+export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
+
 $NETKIT_HOME/lstart -d `python $NETKIT_HOME/python/vstart.py "$PWD/" $NETKIT_LASTARG ${@:1:$#-1}`
-$NETKIT_HOME/wrapper/bin/netkit_dw start netkit_${UID}_$NETKIT_LASTARG
+$ADAPTER_BIN start netkit_${UID}_$NETKIT_LASTARG
 
 rm -rf "$HOME/netkit_temp/labs/netkit_${UID}_${NETKIT_LASTARG}"

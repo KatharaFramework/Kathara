@@ -5,6 +5,8 @@ if [ $# -lt 1 ]; then
 	exit 1
 fi
 
+export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
+
 NETKIT_NET=0
 for i in "$@"
 do
@@ -21,5 +23,5 @@ done
 
 if [ "$NETKIT_NET" = "0" ]; then
 	$NETKIT_HOME/lclean -d "$HOME/netkit_temp/labs/netkit_${UID}_${@: -1}" ${@: -1}
-else $NETKIT_HOME/wrapper/bin/netkit_dw network rm netkit_${UID}_${@: -1}
+else $ADAPTER_BIN network rm netkit_${UID}_${@: -1}
 fi

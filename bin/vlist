@@ -1,7 +1,9 @@
 #!/bin/bash
 
+export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
+
 if [ $# -ne 1 ]; then
-	$NETKIT_HOME/wrapper/bin/netkit_dw stats --no-stream ; $NETKIT_HOME/wrapper/bin/netkit_dw network list
+	$ADAPTER_BIN stats --no-stream ; $ADAPTER_BIN network list
 else
-	$NETKIT_HOME/wrapper/bin/netkit_dw stats --no-stream | grep $1
+	$ADAPTER_BIN stats --no-stream | grep $1
 fi
