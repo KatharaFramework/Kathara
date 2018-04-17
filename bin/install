@@ -45,6 +45,9 @@ else
     echo "unix_bin=sudo docker" > $NETKIT_HOME/python/config
 fi
 
+sudo chown root:root $NETKIT_HOME/*
+sudo chown root:root $NETKIT_HOME/python/*
+
 sudo chmod 755 $NETKIT_HOME/python/config
 
 mkdir -p $HOME/netkit_temp
