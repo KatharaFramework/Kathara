@@ -29,11 +29,12 @@ elif _platform == WINDOWS:
     PLATFORM = WINDOWS
 
 def read_config():
-    ini_str = '[dummysection]\n' + open(os.path.join(os.environ['NETKIT_HOME'], 'python', 'config'), 'r').read()
-    ini_fp = StringIO.StringIO(ini_str)
-    config.readfp(ini_fp)
+    tmp_config = ConfigParser.ConfigParser()
+    ini = '[dummysection]\n' + open(os.path.join(os.environ['NETKIT_HOME'], 'python', 'config'), 'r').read()
+    ini_string = StringIO.StringIO(ini)
+    tmp_config.readfp(ini_string)
     conf = {}
-    for key, value in config.items('dummysection'): 
+    for key, value in tmp_config.items('dummysection'): 
         conf[key] = value
     return conf
 
