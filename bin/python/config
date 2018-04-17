@@ -1,2 +1,0 @@
-win_bin=docker
-unix_bin=/wrapper/bin/netkit_dw
