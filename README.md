@@ -43,7 +43,7 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
 * Add the environment variable `NETKIT_HOME` to your system _pointing to the **bin** folder_:
   * `export NETKIT_HOME=/home/foo/kathara/bin` (you can also do this permanently by adding it to `~/.bashrc`).
 * Run the installer:
-  * `$NETKIT_HOME/install` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed, and `--admin` removes the wrapper (unsafe/admin mode)). 
+  * `$NETKIT_HOME/install` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed, and `--admin` removes the wrapper (will require sudo)). 
 * You can optionally add NETKIT_HOME to your PATH, but the `NETKIT_HOME` variable is still required. 
 
 ### Windows
@@ -55,7 +55,7 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
     * Variable name: `NETKIT_HOME`, Variable value: `DRIVE:\path\to\kathara\bin`.
     * You'll also need to share the drive that will contain the labs and the drive with your user folder (it can be done from Docker settings, from the tray icon), as shown [here](images/winshare.png) (note that you may have/need different drives).
 * Run the installer:
-  * `%NETKIT_HOME%\install`(completely optional, it only pre-downloads images).
+  * `%NETKIT_HOME%\install`(it will create the configuration file and download the images).
 * You can optionally add NETKIT_HOME to your PATH, but the `NETKIT_HOME` variable is still required.
 * Remember to run Docker before using Kathará.
 
