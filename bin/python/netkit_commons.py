@@ -30,7 +30,7 @@ elif _platform == WINDOWS:
 
 def read_config():
     tmp_config = ConfigParser.ConfigParser()
-    ini = '[dummysection]\n' + open(os.path.join(os.environ['NETKIT_HOME'], 'python', 'config'), 'r').read()
+    ini = '[dummysection]\n' + open(os.path.join(os.environ['NETKIT_HOME'], '..', 'config'), 'r').read()
     ini_string = StringIO.StringIO(ini)
     tmp_config.readfp(ini_string)
     conf = {}
