@@ -38,6 +38,7 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
 ### Linux
 * Install [Docker](https://www.docker.com/). We suggest installing Docker from [this script](https://get.docker.com).
 * Install Python 2.x. It should be pre-installed on most Linux distributions; if it isn't, you can get it from [here](https://www.python.org/downloads).
+* You may need gcc to install the wrapper, simply run `apt-get install build-essential`
 * (suggested) Install **xterm** terminal emulator (usually `sudo apt-get install xterm`), that is used by default. You can also specify a different terminal emulator by using the `--xterm=...` command parameter while starting a network node or a lab. It is also possible to avoid opening new terminals at all by using `--noterminals`.
 * Download all the files to a directory of your choice (from a [release](https://github.com/Kidel/Kathara/releases) or `git clone --recursive https://github.com/Kidel/Kathara.git`). 
 * Add the environment variable `NETKIT_HOME` to your system _pointing to the **bin** folder_:
