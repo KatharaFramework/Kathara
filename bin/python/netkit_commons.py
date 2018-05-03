@@ -110,7 +110,7 @@ def lab_parse(path, force=False):
             splitted = key.split('[')[1].split(']')
             try:
                 _ = int(splitted[0])
-                links.append(value.strip())
+                links.append(value.strip().replace('"','').replace("'",''))
             except ValueError:
                 pass
             keys.append(key.strip())
@@ -212,6 +212,12 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         # applying docker patch for /proc and icmp
         repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.all.rp_filter=0"'), ('{params}', '')
         startup_commands.insert(0, u.replace_multiple_items(repls, exec_template))
+        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.default.rp_filter=0"'), ('{params}', '')
+        startup_commands.insert(1, u.replace_multiple_items(repls, exec_template))
+        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.lo.rp_filter=0"'), ('{params}', '')
+        startup_commands.insert(2, u.replace_multiple_items(repls, exec_template))
+        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.eth0.rp_filter=0"'), ('{params}', '')
+        startup_commands.insert(2, u.replace_multiple_items(repls, exec_template))
 
         # Parsing options from lab.conf
         machine_option_string = " "
@@ -227,6 +233,8 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
                     repls = ('{link}', app[1]), ('{machine_name}', machine_name)
                     create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
                     if not PRINT: u.write_temp(" " + prefix + app[1], u.generate_urlsafe_hash(path) + '_links', PLATFORM)
+                    repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.eth'+str(app[0])+'.rp_filter=0"'), ('{params}', '')
+                    startup_commands.insert(4, u.replace_multiple_items(repls, exec_template))
                 if opt=='bridged': 
                     repls = ('{link}', "bridge"), ('{machine_name}', machine_name)
                     create_bridge_connection_commands.append(u.replace_multiple_items(repls, create_bridge_connection_template))
@@ -236,9 +244,13 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         repls = ('{machine_name}', machine_name), ('{number}', str(count)), ('{first_link}', interfaces[0][0]), ('{image_name}', this_image), ('{machine_options}', machine_option_string)
         create_machine_commands.append(u.replace_multiple_items(repls, create_machine_template))
         count += 1
+        eth_cnt=1
         for link,_ in interfaces[1:]:
             repls = ('{link}', link), ('{machine_name}', machine_name)
             create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
+            repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.eth'+str(eth_cnt)+'.rp_filter=0"'), ('{params}', '')
+            startup_commands.insert(4, u.replace_multiple_items(repls, exec_template))
+            eth_cnt+=1
         # convoluted method to copy MACHINE_NAME/etc folder to the etc of the container
         if os.path.exists(os.path.join(path, machine_name)) and not execbash:
             for folder_or_file in os.listdir(os.path.join(path, machine_name)):
