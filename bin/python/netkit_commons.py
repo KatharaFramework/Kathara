@@ -194,7 +194,6 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
     create_bridge_connection_commands = []
 
     copy_folder_template = docker + ' cp "' + path + '{machine_name}/{folder_or_file}" ' + prefix + '{machine_name}:/{dest}'
-    copy_test_template = docker + ' cp "' + path + '_test/{machine_name}.test" ' + prefix + '{machine_name}:/{dest}'
     copy_folder_commands = []
 
     exec_template = docker + ' exec {params} -i --privileged=true ' + prefix + '{machine_name} {command}'
@@ -209,11 +208,6 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         # copying the hostlab directory
         if not execbash:
             copy_folder_commands.append(docker + ' cp "' + path + '" ' + prefix + machine_name + ':/hostlab')
-
-        # convoluted method to copy MACHINE_NAME/etc folder to the etc of the container
-        if os.path.exists(os.path.join(path, '_test', machine_name + '.test')) and not execbash:
-            repls_t = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{dest}', '/_test/')
-            copy_folder_commands.append(u.replace_multiple_items(repls_t, copy_test_template))
 
         # applying docker patch for /proc and icmp
         repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.all.rp_filter=0"'), ('{params}', '')
