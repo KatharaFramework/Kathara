@@ -2,8 +2,6 @@
 
 python $NETKIT_HOME/python/check.py "$PWD/" "$@"
 
-$NETKIT_HOME/lstart -n "$@" 
-
 export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
 
 NETKIT_ALL=1
@@ -53,6 +51,8 @@ case $i in
         ;;
 esac
 done
+
+$NETKIT_HOME/lstart -n "$@" 
 
 export RC=$?
 if [ "$RC" = "0" ]; then
