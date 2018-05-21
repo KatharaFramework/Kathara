@@ -1,0 +1,84 @@
+#!/bin/bash
+
+python $NETKIT_HOME/python/check.py "$PWD/" "$@"
+
+$NETKIT_HOME/lstart -n "$@" 
+# TODO 
+# prendere la cartella del lab in caso di -d
+
+export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
+
+NETKIT_ALL=1
+NETKIT_LIST=0
+NETKIT_APP_PREV=$0
+TEST_NETKIT_MACHINE_TOTEST=0
+TEST_BASEDIR=_test
+for i in "$@"
+do
+case $i in
+    --list)
+    NETKIT_APP_PREV=$i
+    NETKIT_LIST=1
+    #shift 
+    ;;
+    -*)
+    NETKIT_APP_PREV=$i
+    #shift 
+    ;;
+    *)
+    if [ "$NETKIT_APP_PREV" != "-d" ]; then
+        NETKIT_ALL=0
+        TEST_NETKIT_MACHINE_TOTEST=$i
+    else 
+        TEST_BASEDIR=$i/_test
+    fi
+    NETKIT_APP_PREV=$i
+    #shift
+    ;;
+esac
+done
+
+export RC=$?
+if [ "$RC" = "0" ]; then
+    M=_machines
+    if [ "$NETKIT_ALL" = "1" ]; then
+        python $NETKIT_HOME/python/folder_hash.py "$PWD/" "$@" | while read in; do (
+                if [ -f "$HOME/netkit_temp/$in$M" ]; then
+                    for app_machine_name in `cat "$HOME/netkit_temp/$in$M"`
+                    do
+                        TEST_SIGNATURE=signature
+                        if [ ! -f $TEST_BASEDIR/$TEST_SIGNATURE/$app_machine_name.default ]; then
+                            TEST_SIGNATURE=results
+                        fi
+                        $ADAPTER_BIN exec -ti $app_machine_name ip addr show > $TEST_BASEDIR/$TEST_SIGNATURE/$app_machine_name.default
+                        $ADAPTER_BIN exec -ti $app_machine_name route -n > $TEST_BASEDIR/$TEST_SIGNATURE/$app_machine_name.default
+                        $ADAPTER_BIN exec -ti $app_machine_name netstat -tuwln > $TEST_BASEDIR/$TEST_SIGNATURE/$app_machine_name.default
+                        $ADAPTER_BIN exec -ti $app_machine_name ps -e -o uid,command > $TEST_BASEDIR/$TEST_SIGNATURE/$app_machine_name.default
+
+                        if [ ! -f $TEST_BASEDIR/$app_machine_name.test ]; then
+                            $ADAPTER_BIN exec -ti $app_machine_name bash -c "/$app_machine_name.test" > $TEST_BASEDIR/$TEST_SIGNATURE/$app_machine_name.user
+                        fi
+                    done
+                fi
+            ); done
+    else
+        TEST_SIGNATURE=signature
+        if [ ! -f $TEST_BASEDIR/$TEST_SIGNATURE/$TEST_NETKIT_MACHINE_TOTEST.default ]; then
+            TEST_SIGNATURE=results
+        fi
+        $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST ip addr show > $TEST_BASEDIR/$TEST_SIGNATURE/$TEST_NETKIT_MACHINE_TOTEST.default
+        $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST route -n > $TEST_BASEDIR/$TEST_SIGNATURE/$TEST_NETKIT_MACHINE_TOTEST.default
+        $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST netstat -tuwln > $TEST_BASEDIR/$TEST_SIGNATURE/$TEST_NETKIT_MACHINE_TOTEST.default
+        $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST ps -e -o uid,command > $TEST_BASEDIR/$TEST_SIGNATURE/$TEST_NETKIT_MACHINE_TOTEST.default
+
+        if [ ! -f $TEST_BASEDIR/$TEST_NETKIT_MACHINE_TOTEST.test ]; then
+            $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST bash -c "/$TEST_NETKIT_MACHINE_TOTEST.test" > $TEST_BASEDIR/$TEST_SIGNATURE/$TEST_NETKIT_MACHINE_TOTEST.user
+        fi
+    fi
+    
+else
+    echo FAILED
+fi
+
+$NETKIT_HOME/lclean "$@"
+

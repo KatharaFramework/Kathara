@@ -69,6 +69,8 @@ sudo chmod 755 $NETKIT_HOME/lhalt
 sudo chmod 755 $NETKIT_HOME/linfo
 sudo chmod 755 $NETKIT_HOME/lwipe
 
+sudo chmod 755 $NETKIT_HOME/ltest
+
 sudo chmod 755 $NETKIT_HOME/vstart
 sudo chmod 755 $NETKIT_HOME/vclean
 sudo chmod 755 $NETKIT_HOME/vcrash

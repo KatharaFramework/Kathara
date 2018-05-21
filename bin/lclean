@@ -2,6 +2,8 @@
 
 python $NETKIT_HOME/python/check.py "$PWD/" "$@"
 
+export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
+
 NETKIT_ALL=1
 NETKIT_LIST=0
 NETKIT_APP_PREV=$0
@@ -19,15 +21,13 @@ case $i in
     ;;
     *)
     if [ "$NETKIT_APP_PREV" != "-d" ]; then
-        $NETKIT_HOME/wrapper/bin/netkit_dw rm -f netkit_${UID}_$i; NETKIT_ALL=0
+        $ADAPTER_BIN rm -f netkit_${UID}_$i; NETKIT_ALL=0
     fi
     NETKIT_APP_PREV=$i
     #shift
     ;;
 esac
 done
-
-export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
 
 export RC=$?
 if [ "$RC" = "0" ]; then
