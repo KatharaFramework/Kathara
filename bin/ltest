@@ -3,8 +3,6 @@
 python $NETKIT_HOME/python/check.py "$PWD/" "$@"
 
 $NETKIT_HOME/lstart -n "$@" 
-# TODO 
-# prendere la cartella del lab in caso di -d
 
 export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
 
@@ -27,11 +25,14 @@ case $i in
         TEST_REBUILT=1
         #shift 
         ;;
-    --verify)
-        shift; CURRENT_ARGUMENT="$1"
-        case "$CURRENT_ARGUMENT" in
-            user|builtin|both)
-                TEST_VERIFY="$CURRENT_ARGUMENT";;
+    --verify=*)
+        case $i in
+            --verify=user)
+                TEST_VERIFY=user;;
+            --verify=builtin)
+                TEST_VERIFY=builtin;;
+            --verify=both)
+                TEST_VERIFY=both;;
             *)
                 echo -e "\033[0;33mInvalid setting for option --verify\033[0m"
                 exit 1;;
@@ -64,14 +65,14 @@ if [ "$RC" = "0" ]; then
                         TEST_SIGNATURE=signature
                         if [ -f $TEST_BASEDIR/$TEST_SIGNATURE/${app_machine_name/netkit_${UID}_/}.default ]; then
                             TEST_SIGNATURE=results
-                        else 
                             mkdir -p $TEST_BASEDIR/diff
-                            if ["$TEST_VERIFY" != "0" ]; then
+                        else 
+                            if [ "$TEST_VERIFY" != "0" ]; then
                                 echo -e "\033[0;33mOption --verify must be used after the signature has been generated\033[0m"
                                 exit 1
                             fi
                         fi
-                        if ["$TEST_REBUILT" = "1"]; then
+                        if [ "$TEST_REBUILT" = "1" ]; then
                             TEST_SIGNATURE=signature
                         fi
 
@@ -87,23 +88,23 @@ if [ "$RC" = "0" ]; then
                             $ADAPTER_BIN exec $app_machine_name bash -c "/hostlab/_test/${app_machine_name/netkit_${UID}_/}.test" > $TEST_BASEDIR/$TEST_SIGNATURE/${app_machine_name/netkit_${UID}_/}.user
                         fi
 
-                        case "$TEST_VERIFY" in
+                        case $TEST_VERIFY in
                             user)
-                                diff $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.user $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.user > $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.user
+                                diff $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.user $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.user > $TEST_BASEDIR/diff/${app_machine_name/netkit_${UID}_/}.user
                                 ;;
                             builtin)
-                                diff $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.default $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.default > $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.default
+                                diff $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.default $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.default > $TEST_BASEDIR/diff/${app_machine_name/netkit_${UID}_/}.default
                                 ;;
                             both)
-                                diff $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.user $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.user > $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.user
-                                diff $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.default $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.default > $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.default
+                                diff $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.user $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.user > $TEST_BASEDIR/diff/${app_machine_name/netkit_${UID}_/}.user
+                                diff $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.default $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.default > $TEST_BASEDIR/diff/${app_machine_name/netkit_${UID}_/}.default
                                 ;;
                             *)
                                 if [ -f $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.default ] && [ -f $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.default ]; then
-                                    diff $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.default $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.default > $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.default
+                                    diff $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.default $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.default > $TEST_BASEDIR/diff/${app_machine_name/netkit_${UID}_/}.default
                                 fi
                                 if [ -f $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.user ] && [ -f $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.user ]; then
-                                    diff $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.user $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.user > $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.user
+                                    diff $TEST_BASEDIR/signature/${app_machine_name/netkit_${UID}_/}.user $TEST_BASEDIR/results/${app_machine_name/netkit_${UID}_/}.user > $TEST_BASEDIR/diff/${app_machine_name/netkit_${UID}_/}.user
                                 fi
                                 ;;
                         esac
@@ -115,14 +116,14 @@ if [ "$RC" = "0" ]; then
         TEST_SIGNATURE=signature
         if [ -f $TEST_BASEDIR/$TEST_SIGNATURE/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default ]; then
             TEST_SIGNATURE=results
+            mkdir -p $TEST_BASEDIR/diff
         else 
-            if ["$TEST_VERIFY" != "0" ]; then
-                mkdir -p $TEST_BASEDIR/diff
+            if [ "$TEST_VERIFY" != "0" ]; then
                 echo -e "\033[0;33mOption --verify must be used after the signature has been generated\033[0m"
                 exit 1
             fi
         fi
-        if ["$TEST_REBUILT" = "1"]; then
+        if [ "$TEST_REBUILT" = "1" ]; then
             TEST_SIGNATURE=signature
         fi
 
@@ -138,23 +139,23 @@ if [ "$RC" = "0" ]; then
             $ADAPTER_BIN exec $TEST_NETKIT_MACHINE_TOTEST bash -c "/hostlab/_test/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.test" > $TEST_BASEDIR/$TEST_SIGNATURE/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user
         fi
 
-        case "$TEST_VERIFY" in
+        case $TEST_VERIFY in
             user)
-                diff $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user > $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user
+                diff $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user > $TEST_BASEDIR/diff/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user
                 ;;
             builtin)
-                diff $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default > $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default
+                diff $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default > $TEST_BASEDIR/diff/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default
                 ;;
             both)
-                diff $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user > $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user
-                diff $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default > $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default
+                diff $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user > $TEST_BASEDIR/diff/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user
+                diff $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default > $TEST_BASEDIR/diff/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default
                 ;;
             *)
                 if [ -f $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default ] && [ -f $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default ]; then
-                    diff $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default > $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default
+                    diff $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default > $TEST_BASEDIR/diff/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default
                 fi
                 if [ -f $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user ] && [ -f $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user ]; then
-                    diff $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user > $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user
+                    diff $TEST_BASEDIR/signature/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user $TEST_BASEDIR/results/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user > $TEST_BASEDIR/diff/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user
                 fi
                 ;;
         esac
