@@ -84,6 +84,10 @@ In addition there is another command, `lwipe`, that erases every container and n
 
 Also the subnet `172.0.0.0/8` (basically any IP starting with `172`) is reserved and should not be used when configuring links. 
 
+For `ltest`there are 2 minor adjustments:
+* `--verify` needs to be followed by `=` before the option (e.g. `ltest --verify=user`).
+* `--script-mode` has been replaced by simply sending stdout to `/dev/null` (e.g. `ltest --verify=user &> /dev/null`).
+
 ## Example
 * Installa Kathará by following the installation steps above
 * Download and unpack MARACAS_lab from [here](http://wiki.netkit.org/netkit-labs/netkit-labs_exams/icn-20151120/icn-20151120.tar.gz).
