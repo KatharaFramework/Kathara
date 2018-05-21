@@ -47,32 +47,32 @@ if [ "$RC" = "0" ]; then
                     for app_machine_name in `cat "$HOME/netkit_temp/$in$M"`
                     do
                         TEST_SIGNATURE=signature
-                        if [ ! -f $TEST_BASEDIR/$TEST_SIGNATURE/$app_machine_name.default ]; then
+                        if [ ! -f $TEST_BASEDIR/$TEST_SIGNATURE/${app_machine_name/netkit_${UID}_/}.default ]; then
                             TEST_SIGNATURE=results
                         fi
-                        $ADAPTER_BIN exec -ti $app_machine_name ip addr show > $TEST_BASEDIR/$TEST_SIGNATURE/$app_machine_name.default
-                        $ADAPTER_BIN exec -ti $app_machine_name route -n > $TEST_BASEDIR/$TEST_SIGNATURE/$app_machine_name.default
-                        $ADAPTER_BIN exec -ti $app_machine_name netstat -tuwln > $TEST_BASEDIR/$TEST_SIGNATURE/$app_machine_name.default
-                        $ADAPTER_BIN exec -ti $app_machine_name ps -e -o uid,command > $TEST_BASEDIR/$TEST_SIGNATURE/$app_machine_name.default
+                        $ADAPTER_BIN exec -ti $app_machine_name ip addr show > $TEST_BASEDIR/$TEST_SIGNATURE/${app_machine_name/netkit_${UID}_/}.default
+                        $ADAPTER_BIN exec -ti $app_machine_name route -n > $TEST_BASEDIR/$TEST_SIGNATURE/${app_machine_name/netkit_${UID}_/}.default
+                        $ADAPTER_BIN exec -ti $app_machine_name netstat -tuwln > $TEST_BASEDIR/$TEST_SIGNATURE/${app_machine_name/netkit_${UID}_/}.default
+                        $ADAPTER_BIN exec -ti $app_machine_name ps -e -o uid,command > $TEST_BASEDIR/$TEST_SIGNATURE/${app_machine_name/netkit_${UID}_/}.default
 
-                        if [ ! -f $TEST_BASEDIR/$app_machine_name.test ]; then
-                            $ADAPTER_BIN exec -ti $app_machine_name bash -c "/$app_machine_name.test" > $TEST_BASEDIR/$TEST_SIGNATURE/$app_machine_name.user
+                        if [ ! -f $TEST_BASEDIR/${app_machine_name/netkit_${UID}_/}.test ]; then
+                            $ADAPTER_BIN exec -ti $app_machine_name bash -c "/${app_machine_name/netkit_${UID}_/}.test" > $TEST_BASEDIR/$TEST_SIGNATURE/${app_machine_name/netkit_${UID}_/}.user
                         fi
                     done
                 fi
             ); done
     else
         TEST_SIGNATURE=signature
-        if [ ! -f $TEST_BASEDIR/$TEST_SIGNATURE/$TEST_NETKIT_MACHINE_TOTEST.default ]; then
+        if [ ! -f $TEST_BASEDIR/$TEST_SIGNATURE/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default ]; then
             TEST_SIGNATURE=results
         fi
-        $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST ip addr show > $TEST_BASEDIR/$TEST_SIGNATURE/$TEST_NETKIT_MACHINE_TOTEST.default
-        $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST route -n > $TEST_BASEDIR/$TEST_SIGNATURE/$TEST_NETKIT_MACHINE_TOTEST.default
-        $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST netstat -tuwln > $TEST_BASEDIR/$TEST_SIGNATURE/$TEST_NETKIT_MACHINE_TOTEST.default
-        $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST ps -e -o uid,command > $TEST_BASEDIR/$TEST_SIGNATURE/$TEST_NETKIT_MACHINE_TOTEST.default
+        $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST ip addr show > $TEST_BASEDIR/$TEST_SIGNATURE/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default
+        $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST route -n > $TEST_BASEDIR/$TEST_SIGNATURE/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default
+        $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST netstat -tuwln > $TEST_BASEDIR/$TEST_SIGNATURE/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default
+        $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST ps -e -o uid,command > $TEST_BASEDIR/$TEST_SIGNATURE/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.default
 
-        if [ ! -f $TEST_BASEDIR/$TEST_NETKIT_MACHINE_TOTEST.test ]; then
-            $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST bash -c "/$TEST_NETKIT_MACHINE_TOTEST.test" > $TEST_BASEDIR/$TEST_SIGNATURE/$TEST_NETKIT_MACHINE_TOTEST.user
+        if [ ! -f $TEST_BASEDIR/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.test ]; then
+            $ADAPTER_BIN exec -ti $TEST_NETKIT_MACHINE_TOTEST bash -c "/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.test" > $TEST_BASEDIR/$TEST_SIGNATURE/${TEST_NETKIT_MACHINE_TOTEST/netkit_${UID}_/}.user
         fi
     fi
     
