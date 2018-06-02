@@ -14,6 +14,7 @@
     <li><a href="#provided-docker-images">Provided Docker Images</a></li>
     <li><a href="#manual">Manual</a></li>
     <li><a href="#example">Example</a></li>
+    <li><a href="#extend-kathará">Extend Kathará</a></li>
 </ul>
 
 From the Greek Καθαρά. 
@@ -100,6 +101,17 @@ For `ltest`there are 2 minor adjustments:
   * Linux: `$NETKIT_HOME/lclean`
   * Windows: `%NETKIT_HOME%\lclean`
 * This will kill and remove any container. 
+
+## Extend Kathará
+Extending Kathará is actually very simple. Any local or remote Docker image tagged as `kathara/IMAGENAME` can be used with `vstart --image=IMAGENAME --eth=0:A node_name` or with `lstart` having something like that in `lab.conf`: `node_name[image]=IMAGENAME`.
+
+To alter (locally) an existing Kathará image refer to the following steps (remember that, by default, Docker needs root or sudo on Linux).
+1. `docker pull kathara/netkit_base` (or `kathara/p4`)
+2. `docker run -tid --name YOUR_NEW_NAME kathara/netkit_base`
+3. `docker exec -ti  YOUR_NEW_NAME bash`
+4. Do your thing, then exit.
+5. `docker commit YOUR_NEW_NAME  kathara/YOUR_NEW_NAME`
+6. `docker rm -f YOUR_NEW_NAME`
 
 ## TODO
 * Components and configuration checker.
