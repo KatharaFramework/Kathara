@@ -1,0 +1,3 @@
+ifconfig eth0 20.0.0.2/30 up
+ifconfig eth1 20.0.0.9/30 up
+ifconfig eth2 10.20.0.1/24 up
