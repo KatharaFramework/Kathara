@@ -1,0 +1,18 @@
+ifconfig eth0 192.168.1.2/16 up
+
+sleep 2
+
+service openvswitch-switch start
+
+sleep 2
+
+ovs-vsctl add-br br0
+
+ovs-vsctl add-port br0 eth1
+ovs-vsctl add-port br0 eth2
+
+ifconfig eth1 up
+ifconfig eth2 up
+
+ovs-vsctl set-controller br0 tcp:192.168.1.1:6633
+ovs-vsctl set bridge br0 protocols=[OpenFlow13]

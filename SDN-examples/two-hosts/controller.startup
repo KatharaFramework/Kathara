@@ -1,0 +1,3 @@
+ifconfig eth0 192.168.1.1/16 up
+
+ryu-manager /usr/local/lib/python2.7/dist-packages/ryu/app/simple_switch_13.py
