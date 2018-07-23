@@ -241,6 +241,8 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
                 if opt=='e' or opt=='exec':
                     repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + val.strip().replace('\\', r'\\').replace('"', r'\\"').replace("'", r"\\'") + '"'), ('{params}', '-d')
                     startup_commands.append(u.replace_multiple_items(repls, exec_template))
+                if opt=='port': 
+                    machine_option_string+='-p='+ val.upper() +':3000' + ' '
         repls = ('{machine_name}', machine_name), ('{number}', str(count)), ('{first_link}', interfaces[0][0]), ('{image_name}', this_image), ('{machine_options}', machine_option_string)
         create_machine_commands.append(u.replace_multiple_items(repls, create_machine_template))
         count += 1

@@ -125,6 +125,11 @@ parser.add_argument(
     action='store_true',
     help='Adds a bridge interface to the container.'
 )
+parser.add_argument(
+    '--port',
+    required=False,
+    help='Choose a port number to map to the internal port 3000 of the container.'
+)
 
 args, unknown = parser.parse_known_args()
 
@@ -153,6 +158,8 @@ def eths_line_writer(eths):
 def conf_line_writer(conf_lines):
     if args.mem:
         conf_lines["mem"] = args.mem
+    if args.port:
+        conf_lines["port"] = args.port
     if args.bridged:
         conf_lines["bridged"] = "_"
     if image != "":
