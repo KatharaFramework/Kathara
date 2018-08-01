@@ -1,7 +1,7 @@
 @echo off
 
-SET APPVAR = %cd%
-
+cd /d %cd%
+setlocal
 FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\adapter.py') DO SET ADAPTER_BIN=%%a
 
 echo "This command will wipe containers and cache associated with Kathara"
@@ -19,5 +19,4 @@ cd /d %folder%
 for /F "delims=" %%p in ('dir /b') do (
 	IF NOT "%%p"=="labs" (del "%%p" /s/q)
 )
-
-cd /d %APPVAR%
+endlocal
