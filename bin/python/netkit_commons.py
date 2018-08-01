@@ -296,11 +296,13 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         startup_file = os.path.join(path, machine_name + '.startup')
         if os.path.exists(startup_file):
             f = open(startup_file, 'r')
+            full_startup_command = ''
             for line in f:
                 if line.strip() and line.strip() not in ['\n', '\r\n']:
-                    repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + line.strip().replace('\\', r'\\').replace('"', r'\"').replace("'", r"\'") + '"'), ('{params}', '-d')
-                    startup_commands.append(u.replace_multiple_items(repls, exec_template))
+                    full_startup_command += line.strip().replace('\\', r'\\').replace('"', r'\"').replace("'", r"\'") + ';'
             f.close()
+            repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + full_startup_command + '"'), ('{params}', '-d')
+            startup_commands.append(u.replace_multiple_items(repls, exec_template))
     
     commands = create_network_commands + create_machine_commands + create_connection_commands + create_bridge_connection_commands + copy_folder_commands
 
