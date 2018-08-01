@@ -184,9 +184,9 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         except:
             network_counter = 0
         for link in links:
-            create_network_commands.append(create_network_template + prefix + link + " --subnet=172." + str(19+network_counter) + ".0.0/16 --gateway=172." + str(19+network_counter) + ".0.1")
+            create_network_commands.append(create_network_template + prefix + link + " --subnet=172." + str(18+network_counter) + ".0.0/16 --gateway=172." + str(18+network_counter) + ".0.1")
             lab_links_text += prefix + link + ' '
-            network_counter += 1
+            network_counter = (network_counter + 1) % 237
     with open(os.path.join(base_path,'last_network_counter.txt'), 'w') as last_network_counter:
         last_network_counter.write(str(network_counter))
     
