@@ -169,12 +169,27 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         
     create_network_template = docker + ' network create '
     create_network_commands = []
-    network_counter = 0
-    for link in links:
-        create_network_commands.append(create_network_template + prefix + link + " --subnet=172." + str(18+network_counter) + ".0.0/16 --gateway=172." + str(18+network_counter) + ".0.1")
-        lab_links_text += prefix + link + ' '
-	network_counter += 1
 
+    base_path = os.path.join(os.environ['NETKIT_HOME'], 'temp')
+    if PLATFORM != WINDOWS:
+        base_path = os.path.join(os.environ['HOME'], 'netkit_temp')
+    network_counter = 0
+    if not os.path.exists(os.path.join(base_path,'last_network_counter.txt')):
+        last_network_counter = open(os.path.join(base_path,'last_network_counter.txt'), 'w')
+        last_network_counter.close()
+
+    with open(os.path.join(base_path,'last_network_counter.txt'), 'r') as last_network_counter:
+        try:
+            network_counter = int(last_network_counter.readline())
+        except:
+            network_counter = 0
+        for link in links:
+            create_network_commands.append(create_network_template + prefix + link + " --subnet=172." + str(19+network_counter) + ".0.0/16 --gateway=172." + str(19+network_counter) + ".0.1")
+            lab_links_text += prefix + link + ' '
+            network_counter += 1
+    with open(os.path.join(base_path,'last_network_counter.txt'), 'w') as last_network_counter:
+        last_network_counter.write(str(network_counter))
+    
     # writing the network list in the temp file
     if not execbash:
         if not PRINT: u.write_temp(lab_links_text, u.generate_urlsafe_hash(path) + '_links', PLATFORM, file_mode="w+")
