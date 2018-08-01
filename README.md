@@ -52,7 +52,7 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
 * Install [Docker](https://www.docker.com/) from [here](https://www.docker.com/community-edition#/download) or [here](https://download.docker.com).
   * **NB**: On Windows 8 x64 and 10 x64 this will also download and enable Hyper-V. If you later want to use another hypervisor like VMware or Virtual Box, than you will have to disable Hyper-V and restart your PC. If you later need to use Docker or Kathará again, you'll have to re-enable Hyper-V and restart. **Also this will require that Virtualization technology is enabled in your system BIOS. It is also highly suggested to enable virtualization on BIOS and Windows before trying to install Docker**.
   * For more information and an example check out [this document](https://github.com/Kidel/Kathara/blob/master/doc/HyperV.pdf).
-* Install Python 2.x. You can get it from [here](https://www.python.org/downloads).
+* Install Python 2.x. You can get it from [here](https://www.python.org/downloads). Make sure that Python is added to your PATH variable. 
 * Add the environment variable `NETKIT_HOME` to your system _pointing to the **bin** folder_:
   * System > Advanced settings > Environment Variables > New > ...
     * Variable name: `NETKIT_HOME`, Variable value: `DRIVE:\path\to\kathara\bin`.
