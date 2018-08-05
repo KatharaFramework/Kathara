@@ -98,6 +98,8 @@ int main(int argc, char *argv[])
     }
     else
     {
+		env_args[0] = malloc(strlen("docker")+1);
+        strcpy(env_args[0], "docker");   
         env_args[current_arg] = malloc(strlen(argv[current_arg])+1);
         strcpy(env_args[current_arg], argv[current_arg]);
 
