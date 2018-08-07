@@ -114,6 +114,7 @@ To alter (locally) an existing Kathará image refer to the following steps (reme
 5. `docker commit YOUR_NEW_NAME  kathara/YOUR_NEW_NAME`
 6. `docker rm -f YOUR_NEW_NAME`
 
+
 ## TODO
 * Components and configuration checker.
 * Better and more informative installer.
