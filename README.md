@@ -3,14 +3,8 @@
     <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg" alt="License: GPL v3" target="_blank" /></a>
 </p>
 <ul>
+    <li><a href="#installation">Installation</a></li>
     <li><a href="#graphical-user-interface">Graphical User Interface</a></li>
-    <li><a href="#installation">Installation</a>
-        <ul>
-            <li><a href="#linux">Linux</a></li>
-            <li><a href="#windows">Windows</a></li>
-            <li><a href="#mac">Mac</a></li>
-        </ul>
-    </li>
     <li><a href="#provided-docker-images">Provided Docker Images</a></li>
     <li><a href="#manual">Manual</a></li>
     <li><a href="#example">Example</a></li>
@@ -24,6 +18,9 @@ Kathará comes with **P4**, **OpenVSwitch**, **Quagga**, **Bind**, and more, but
 
 Thanks to Docker, the framework has the performances to run in production and our images can emulate most network equipments.
 
+## Installation
+Check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki) for the installation guide.
+
 ## Graphical User Interface
 You can download both Kathará and the GUI by cloning recursively using 
 * `git clone --recursive https://github.com/Kidel/Kathara.git`
@@ -33,10 +30,6 @@ Or by downloading the **pre-compiled** version from the [releases](https://githu
 Being based on Netkit, all previous [tools](http://wiki.netkit.org/index.php/Download_Contributions) still work. 
 In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-Lab-Generator), a GUI that allows the easy creation of a lab configuration and the visualization of its network topology.
 ![Netkit Lab Generator](https://raw.githubusercontent.com/Kidel/Netkit-Lab-Generator/master/images/screencapture-201801143.png)
-
-## Installation
-
-Check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki) for the installation guide.
 
 ## Provided Docker Images
 A list of the Docker images we provided can be found at [this page](https://hub.docker.com/u/kathara/) in the Docker Hub.
