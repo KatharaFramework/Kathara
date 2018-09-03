@@ -36,7 +36,7 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
 
 ## Installation
 
-Check the Wiki for the installation guide.
+Check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki) for the installation guide.
 
 ## Provided Docker Images
 A list of the Docker images we provided can be found at [this page](https://hub.docker.com/u/kathara/) in the Docker Hub.
