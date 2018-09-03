@@ -29,7 +29,7 @@ Or by downloading the **pre-compiled** version from the [releases](https://githu
 
 Being based on Netkit, all previous [tools](http://wiki.netkit.org/index.php/Download_Contributions) still work. 
 In particular we suggest [Netkit Lab Generator](https://github.com/KatharaFramework/Lab-Generator), a GUI that allows the easy creation of a lab configuration and the visualization of its network topology.
-![Netkit Lab Generator](https://github.com/KatharaFramework/Lab-Generator/blob/master/images/screencapture-201801143.png)
+![Netkit Lab Generator](https://raw.githubusercontent.com/Kidel/Netkit-Lab-Generator/master/images/screencapture-201801143.png)
 
 ## Provided Docker Images
 A list of the Docker images we provided can be found at [this page](https://hub.docker.com/u/kathara/) in the Docker Hub.
