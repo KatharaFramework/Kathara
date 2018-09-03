@@ -36,43 +36,7 @@ In particular we suggest [Netkit Lab Generator](https://github.com/Kidel/Netkit-
 
 ## Installation
 
-### Linux
-* Install [Docker](https://www.docker.com/). We suggest installing Docker from [this script](https://get.docker.com).
-* Install Python 2.x. It should be pre-installed on most Linux distributions; if it isn't, you can get it from [here](https://www.python.org/downloads).
-* You may need gcc to install the wrapper, simply run `apt-get install build-essential`
-* (suggested) Install **xterm** terminal emulator (usually `sudo apt-get install xterm`), that is used by default. You can also specify a different terminal emulator by using the `--xterm=...` command parameter while starting a network node or a lab. It is also possible to avoid opening new terminals at all by using `--noterminals`.
-* Download all the files to a directory of your choice (from a [release](https://github.com/Kidel/Kathara/releases) or `git clone --recursive https://github.com/Kidel/Kathara.git`). 
-* Add the environment variable `NETKIT_HOME` to your system _pointing to the **bin** folder_:
-  * `export NETKIT_HOME=/home/foo/kathara/bin` (you can also do this permanently by adding it to `~/.bashrc`).
-* Run the installer:
-  * `$NETKIT_HOME/install` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed, and `--admin` removes the wrapper (will require sudo)). 
-* You can optionally add NETKIT_HOME to your PATH, but the `NETKIT_HOME` variable is still required. 
-
-### Windows
-* Install [Docker](https://www.docker.com/) from [here](https://www.docker.com/community-edition#/download) or [here](https://download.docker.com).
-  * **NB**: On Windows 8 x64 and 10 x64 this will also download and enable Hyper-V. If you later want to use another hypervisor like VMware or Virtual Box, than you will have to disable Hyper-V and restart your PC. If you later need to use Docker or Kathará again, you'll have to re-enable Hyper-V and restart. **Also this will require that Virtualization technology is enabled in your system BIOS. It is also highly suggested to enable virtualization on BIOS and Windows before trying to install Docker**.
-  * For more information and an example check out [this document](https://github.com/Kidel/Kathara/blob/master/doc/HyperV.pdf).
-* Install Python 2.x. You can get it from [here](https://www.python.org/downloads). Make sure that Python is added to your PATH variable. 
-* Add the environment variable `NETKIT_HOME` to your system _pointing to the **bin** folder_:
-  * System > Advanced settings > Environment Variables > New > ...
-    * Variable name: `NETKIT_HOME`, Variable value: `DRIVE:\path\to\kathara\bin`.
-    * You'll also need to share the drive that will contain the labs and the drive with your user folder (it can be done from Docker settings, from the tray icon), as shown [here](images/winshare.png) (note that you may have/need different drives).
-* Run the installer:
-  * `%NETKIT_HOME%\install`(it will create the configuration file and download the images).
-* You can optionally add NETKIT_HOME to your PATH, but the `NETKIT_HOME` variable is still required.
-* Remember to run Docker before using Kathará.
-
-### Mac
-* Install [Docker](https://www.docker.com/) from [here](https://www.docker.com/community-edition#/download) or [here](https://download.docker.com).
-* Install Python 2.x. You can get it from [here](https://www.python.org/downloads).
-* (suggested) Install [XQuartz](https://www.xquartz.org/) to get **xterm** terminal emulator, that is used by default. You can also specify a different terminal emulator by using the `--xterm=...` command parameter while starting a network node or a lab. It is also possible to avoid opening new terminals at all by using `--noterminals`.
-* Download all the files to a directory of your choice (from a [release](https://github.com/Kidel/Kathara/releases) or `git clone --recursive https://github.com/Kidel/Kathara.git`). 
-* Add the environment variable `NETKIT_HOME` to your system _pointing to the **bin** folder_:
-  * `export NETKIT_HOME=/Users/<YOUR_USER_HOME>/kathara/bin` (you can also do this permanently by adding it to `~/.bash_profile`).
-* Run the installer:
-  * `$NETKIT_HOME/install --admin` (optionally `--skip-p4` to avoid pre-downloading the P4 image, that may not be needed). Ignore any warning related to user groups and please be aware that `--admin` is mandatory on Mac and you also don't need a wrapper since Docker works from inside an hypervisor. There is also no need to share drives, since the user folder is already shared with the hypervisor by default. 
-* You can optionally add NETKIT_HOME to your PATH, but the `NETKIT_HOME` variable is still required.
-* Remember to run Docker before using Kathará.
+Check the Wiki for the installation guide.
 
 ## Provided Docker Images
 A list of the Docker images we provided can be found at [this page](https://hub.docker.com/u/kathara/) in the Docker Hub.
