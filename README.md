@@ -74,4 +74,3 @@ To alter (locally) an existing Kathará image refer to the following steps (reme
 
 ## TODO
 * Components and configuration checker.
-* Better and more informative installer.
