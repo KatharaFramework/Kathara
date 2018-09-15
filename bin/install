@@ -39,11 +39,11 @@ if [ "$NOT_ADMIN" = "1" ]; then
     sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo chmod 000 $NETKIT_HOME/wrapper/netkit_dw.c
     sudo rm $NETKIT_HOME/../config
-    echo "unix_bin=$NETKIT_HOME/wrapper/bin/netkit_dw" > $NETKIT_HOME/../config
+    echo -e "unix_bin=$NETKIT_HOME/wrapper/bin/netkit_dw\nbase_image=kathara/netkit_base" > $NETKIT_HOME/../config
     
 else 
     sudo rm $NETKIT_HOME/../config
-    echo "unix_bin=sudo docker" > $NETKIT_HOME/../config
+    echo -e "unix_bin=sudo docker\nbase_image=kathara/netkit_base" > $NETKIT_HOME/../config
 fi
 
 sudo chown root:root $NETKIT_HOME/*
