@@ -3,7 +3,7 @@
     <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg" alt="License: GPL v3" target="_blank" /></a>
 </p>
 <ul>
-    <li><a href="https://github.com/KatharaFramework/Kathara/wiki">Installation</a></li>
+    <li><a href="https://github.com/KatharaFramework/Kathara/wiki/Installation-Guide" target="_blank">Installation</a></li>
     <li><a href="#graphical-user-interface">Graphical User Interface</a></li>
     <li><a href="#provided-docker-images">Provided Docker Images</a></li>
     <li><a href="#manual">Manual</a></li>
