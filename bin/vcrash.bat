@@ -1,14 +1,4 @@
 @echo off
 
-IF [%1]==[] GOTO USAGE
-
-FOR %%a in (%*) do SET NETKIT_LASTARG=%%a
-
-CALL %NETKIT_HOME%\lcrash -d %NETKIT_HOME%\temp/labs/netkit_nt_%NETKIT_LASTARG% %NETKIT_LASTARG%
-
-GOTO END
-
-:USAGE
-ECHO Usage: %0 machine_name 
-
-:END
+ECHO "Deprecated, will run vclean instead. To run the old vcrash specifically use vcrash_legacy"
+%NETKIT_HOME%/vclean %*
