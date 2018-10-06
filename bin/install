@@ -1,12 +1,12 @@
 #!/bin/bash
 
-SKIP_P4=0
+SKIP_P4=1
 NOT_ADMIN=1
 for i in "$@"
 do
 case $i in
-    --skip-p4)
-    SKIP_P4=1
+    --p4)
+    SKIP_P4=0
     #shift 
     ;;
     --admin)
