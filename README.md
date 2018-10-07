@@ -19,7 +19,7 @@ Kathará comes with **P4**, **OpenVSwitch**, **Quagga**, **Bind**, and more, but
 Thanks to Docker, the framework has the performances to run in production and our images can emulate most network equipments.
 
 ## Installation
-Check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki) for the installation guide.
+Install Docker and Python 2.x and then run the installer. For a step by step guide check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki).
 
 ## Graphical User Interface
 You can download both Kathará and the GUI by cloning recursively using 
