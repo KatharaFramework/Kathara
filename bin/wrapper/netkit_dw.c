@@ -80,7 +80,7 @@ int is_allowed_word(char* p, char** allowed_words, int len, int strict)
 }
 
 int is_brctl_patch(int argc, char *argv[]) {
-    char* allowed_words [] = { "", "run", "--net=host", "--ipc=host", "--uts=host", "--pid=host", "-it", "--security-opt=seccomp=unconfined", "--privileged", "--rm", "-v", "/:/host", "alpine", "/usr/sbin/chroot", "/host", "/bin/ash", "-c", "brctl setageing br-XXXXXXXXXXXX 0; echo 65528 > /sys/class/net/br-XXXXXXXXXXXX/bridge/group_fwd_mask" };
+    char* allowed_words [] = { "", "run", "--net=host", "--ipc=host", "--uts=host", "--pid=host", "-i", "--security-opt=seccomp=unconfined", "--privileged", "--rm", "-v", "/:/host", "alpine", "/usr/sbin/chroot", "/host", "/bin/sh", "-c", "echo 0 > /sys/class/net/br-XXXXXXXXXXXX/bridge/ageing_time; echo 65528 > /sys/class/net/br-XXXXXXXXXXXX/bridge/group_fwd_mask" };
     
     if(argc != 18) 
     {
