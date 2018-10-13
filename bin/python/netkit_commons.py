@@ -226,8 +226,8 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         if not execbash:
             copy_folder_commands.append(docker + ' cp "' + path + '" ' + prefix + machine_name + ':/hostlab')
 
-	#get the shell we run inside docker
-	if options.get(machine_name):
+        #get the shell we run inside docker
+        if options.get(machine_name):
             matching = [s for s in options[machine_name] if "shell" in s]
             if len(matching) > 0:
                 this_shell = matching[0][1]
