@@ -61,6 +61,8 @@ sudo chmod 755 $HOME/netkit_temp/labs
 
 sudo chmod 755 $NETKIT_HOME/install
 
+sudo chmod 755 $NETKIT_HOME/brctl_config
+
 sudo chmod 755 $NETKIT_HOME/lstart
 sudo chmod 755 $NETKIT_HOME/lrestart
 sudo chmod 755 $NETKIT_HOME/lclean

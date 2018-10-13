@@ -79,6 +79,28 @@ int is_allowed_word(char* p, char** allowed_words, int len, int strict)
     return 0;
 }
 
+int is_brctl_patch(int argc, char *argv[]) {
+    char* allowed_words [] = { "", "run", "--net=host", "--ipc=host", "--uts=host", "--pid=host", "-it", "--security-opt=seccomp=unconfined", "--privileged", "--rm", "-v", "/:/host", "alpine", "/usr/sbin/chroot", "/host", "/bin/ash", "-c", "brctl setageing br-XXXXXXXXXXXX 0; echo 65528 > /sys/class/net/br-XXXXXXXXXXXX/bridge/group_fwd_mask" };
+    
+    if(argc != 18) 
+    {
+        return 0;
+    }
+
+    for(int i = 1; i < 18; i++) 
+    {
+        int length = strlen(allowed_words[i]);
+        for(int j = 0; j < length; j++)
+        {
+            if(allowed_words[i][j] != argv[i][j] && allowed_words[i][j]!='X')
+            {
+                return 0;
+            }
+        }
+    }
+    return 1;
+}
+
 int main(int argc, char *argv[]) 
 {
     typedef enum {INITIAL, CP1, CP2, CPOK, NETWORK, OK} state;
@@ -98,69 +120,77 @@ int main(int argc, char *argv[])
     }
     else
     {
-		env_args[0] = malloc(strlen("docker")+1);
-        strcpy(env_args[0], "docker");   
-        env_args[current_arg] = malloc(strlen(argv[current_arg])+1);
-        strcpy(env_args[current_arg], argv[current_arg]);
-
-        if(strncmp(argv[1], "cp", 2)==0) 
-            current_state = CP1;
-        else if(is_allowed_word(argv[1], allowed_words_1, ALLOWED_WORDS_1_LEN, 1))
-            current_state = OK;
-        else if(strncmp(argv[1], "network", 7)==0) 
-            current_state = NETWORK;
-        else 
-        {   //current_stete = PIT;
-            fprintf(stderr, "Usage: netkit_dw [options] command\n");
-            exit(EXIT_FAILURE);
-        }
-
-        if(is_run(argv[1])) {
-            offset = 1;
-            char* home_dir = get_user_home();
-            char_count += 9 + strlen(home_dir) + 1 + 10;
-            check_overflow(char_count);
-            strcat(cmd, "--volume=");
-            strcat(cmd, home_dir);
-            strcat(cmd, ":/hosthome");
-            env_args[current_arg+offset] = malloc(strlen(cmd)+1);
-            strcpy(env_args[current_arg+offset], cmd);
-        }
-
-        current_arg = 2;
-        for(p = &argv[current_arg]; *p; p++)
+        if(is_brctl_patch(int argc, char *argv[]))
         {
-            env_args[current_arg+offset] = malloc(strlen(argv[current_arg])+1);
-            strcpy(env_args[current_arg+offset], argv[current_arg]);
-            if(current_state==CP1)
-                if (is_valid_cp(*p, current_arg, argc))
-                    current_state = CP2;
-                else //current_stete = PIT;
-                    exit(EXIT_FAILURE);
-            if(current_state==CP2)
-                if (is_valid_cp(*p, current_arg, argc))
-                    current_state = CPOK; // there cannot be other arguments if we are here
-                else //current_stete = PIT;
-                    exit(EXIT_FAILURE);
-            if(current_state==NETWORK)
-                if (is_allowed_word(*p, allowed_words_1, ALLOWED_WORDS_1_LEN, 1))
-                    current_state = OK;
-                else 
-                {   //current_stete = PIT;
-                    fprintf(stderr, "Parameter %i not allowed (1)\n", current_arg);
-                    exit(EXIT_FAILURE);
-                }
-            if(current_state==OK)
-                if (is_allowed_word(*p, allowed_words_2, ALLOWED_WORDS_2_LEN, 0))
-                    current_state = OK;
-                else 
-                {   //current_stete = PIT;
-                    fprintf(stderr, "Parameter %i not allowed (2)\n", current_arg);
-                    exit(EXIT_FAILURE);
-                }
-            check_mount_option(*p); // redundant check for -v parameter
+            current_state==OK;
+        }
+        else 
+        {
+            env_args[0] = malloc(strlen("docker")+1);
+            strcpy(env_args[0], "docker");   
+            env_args[current_arg] = malloc(strlen(argv[current_arg])+1);
+            strcpy(env_args[current_arg], argv[current_arg]);
 
-            current_arg++;
+            if(strncmp(argv[1], "cp", 2)==0) 
+                current_state = CP1;
+            else if(is_allowed_word(argv[1], allowed_words_1, ALLOWED_WORDS_1_LEN, 1))
+                current_state = OK;
+            else if(strncmp(argv[1], "network", 7)==0) 
+                current_state = NETWORK;
+            else 
+            {   //current_stete = PIT;
+                fprintf(stderr, "Usage: netkit_dw [options] command\n");
+                exit(EXIT_FAILURE);
+            }
+
+            if(is_run(argv[1])) {
+                offset = 1;
+                char* home_dir = get_user_home();
+                char_count += 9 + strlen(home_dir) + 1 + 10;
+                check_overflow(char_count);
+                strcat(cmd, "--volume=");
+                strcat(cmd, home_dir);
+                strcat(cmd, ":/hosthome");
+                env_args[current_arg+offset] = malloc(strlen(cmd)+1);
+                strcpy(env_args[current_arg+offset], cmd);
+            }
+
+            current_arg = 2;
+            for(p = &argv[current_arg]; *p; p++)
+            {
+                env_args[current_arg+offset] = malloc(strlen(argv[current_arg])+1);
+                strcpy(env_args[current_arg+offset], argv[current_arg]);
+                if(current_state==CP1)
+                    if (is_valid_cp(*p, current_arg, argc))
+                        current_state = CP2;
+                    else //current_stete = PIT;
+                        exit(EXIT_FAILURE);
+                if(current_state==CP2)
+                    if (is_valid_cp(*p, current_arg, argc))
+                        current_state = CPOK; // there cannot be other arguments if we are here
+                    else //current_stete = PIT;
+                        exit(EXIT_FAILURE);
+                if(current_state==NETWORK)
+                    if (is_allowed_word(*p, allowed_words_1, ALLOWED_WORDS_1_LEN, 1))
+                        current_state = OK;
+                    else 
+                    {   //current_stete = PIT;
+                        fprintf(stderr, "Parameter %i not allowed (1)\n", current_arg);
+                        exit(EXIT_FAILURE);
+                    }
+                if(current_state==OK)
+                    if (is_allowed_word(*p, allowed_words_2, ALLOWED_WORDS_2_LEN, 0))
+                        current_state = OK;
+                    else 
+                    {   //current_stete = PIT;
+                        fprintf(stderr, "Parameter %i not allowed (2)\n", current_arg);
+                        exit(EXIT_FAILURE);
+                    }
+                check_mount_option(*p); // redundant check for -v parameter
+
+                current_arg++;
+            }
+
         }
 
         env_args[argc+offset] = NULL;

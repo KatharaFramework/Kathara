@@ -101,3 +101,4 @@ bin/temp/*
 bin/python/config
 config
 .vscode/
+test/
