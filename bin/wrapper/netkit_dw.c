@@ -6,12 +6,12 @@
 #include <pwd.h>
 
 #define MAX_CMD_LEN 1000
-#define ARG_MAX 10
+#define ARG_MAX 20
 
-char* allowed_words_1 [] = { "run", "exec", "kill", "rm", "stop", "start", "rmi", "connect", "create", "stats", "list", "ps" };
-char* allowed_words_2 [] = { "-i", "-a", "-t" ,"-ti", "-tid", "-it", "-itd", "-dit", "-dti", "-di", "-id", "--privileged=true", "--name", "--hostname=", "--network=", "--memory=", "-f", "-e", "-d", "-c", "--no-stream", "--subnet=", "--gateway=", "-p=" };
-#define ALLOWED_WORDS_1_LEN 12
-#define ALLOWED_WORDS_2_LEN 24
+char* allowed_words_1 [] = { "run", "exec", "kill", "rm", "stop", "start", "rmi", "connect", "create", "stats", "list", "ps", "ls" };
+char* allowed_words_2 [] = { "-i", "-a", "-t" ,"-ti", "-tid", "-it", "-itd", "-dit", "-dti", "-di", "-id", "--privileged=true", "--name", "--hostname=", "--network=", "--memory=", "-f", "-e", "-d", "-c", "--no-stream", "--subnet=", "--gateway=", "-p=", "-qf", "name=" };
+#define ALLOWED_WORDS_1_LEN 13
+#define ALLOWED_WORDS_2_LEN 26
 
 char* get_user_home() {
     return getpwuid(getuid())->pw_dir;
@@ -122,7 +122,14 @@ int main(int argc, char *argv[])
     {
         if(is_brctl_patch(argc, argv))
         {
-            current_state==OK;
+            current_state = OK;
+            env_args[0] = malloc(strlen("docker")+1);
+            strcpy(env_args[0], "docker");
+            for(int i=1; i<argc; i++) 
+            {
+                env_args[i] = malloc(strlen(argv[i])+1);
+                strcpy(env_args[i], argv[i]);
+            }
         }
         else 
         {

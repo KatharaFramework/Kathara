@@ -89,9 +89,11 @@ sudo chmod 755 $NETKIT_HOME/python/*
 if [ "$SKIP_P4" = "1" ]; then
     echo "Pulling images"
     sudo docker pull kathara/netkit_base
+    sudo docker pull alpine
 else
     echo "Pulling images"
     sudo docker pull kathara/netkit_base
+    sudo docker pull alpine
     sudo docker pull kathara/p4
 fi
 

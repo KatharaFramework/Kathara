@@ -2,7 +2,7 @@
 
 export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
 
-export APP_NET = `%ADAPTER_BIN% network ls -qf "name=$@"`
+export APP_NET=$($ADAPTER_BIN network ls -qf "name=$@")
 
 echo "Applying brctl patch to link $APP_NET"
 $ADAPTER_BIN run --net=host --ipc=host --uts=host --pid=host -it --security-opt=seccomp=unconfined --privileged --rm -v /:/host alpine /usr/sbin/chroot /host /bin/ash -c "brctl setageing br-$APP_NET 0; echo 65528 > /sys/class/net/br-$APP_NET/bridge/group_fwd_mask"
