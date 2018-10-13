@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        if(is_brctl_patch(argc, *argv[]))
+        if(is_brctl_patch(argc, argv))
         {
             current_state==OK;
         }
