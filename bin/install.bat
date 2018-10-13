@@ -12,6 +12,7 @@ FOR %%p in (%*) DO (
 )
 
 docker pull kathara/netkit_base
+docker pull alpine
 IF "%SKIP_P4%" == "0" (
   docker pull kathara/p4
 )
