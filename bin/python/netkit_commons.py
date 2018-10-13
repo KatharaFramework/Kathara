@@ -220,19 +220,26 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
 
     for machine_name, interfaces in machines.items():
         this_image = DOCKER_HUB_PREFIX + IMAGE_NAME
+        this_shell = 'bash'
 
         # copying the hostlab directory
         if not execbash:
             copy_folder_commands.append(docker + ' cp "' + path + '" ' + prefix + machine_name + ':/hostlab')
 
+	#get the shell we run inside docker
+	if options.get(machine_name):
+            matching = [s for s in options[machine_name] if "shell" in s]
+            if len(matching) > 0:
+                this_shell = matching[0][1]
+
         # applying docker patch for /proc and icmp
-        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.all.rp_filter=0"'), ('{params}', '')
+        repls = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "sysctl net.ipv4.conf.all.rp_filter=0"'), ('{params}', '')
         startup_commands.insert(0, u.replace_multiple_items(repls, exec_template))
-        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.default.rp_filter=0"'), ('{params}', '')
+        repls = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "sysctl net.ipv4.conf.default.rp_filter=0"'), ('{params}', '')
         startup_commands.insert(1, u.replace_multiple_items(repls, exec_template))
-        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.lo.rp_filter=0"'), ('{params}', '')
+        repls = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "sysctl net.ipv4.conf.lo.rp_filter=0"'), ('{params}', '')
         startup_commands.insert(2, u.replace_multiple_items(repls, exec_template))
-        repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.eth0.rp_filter=0"'), ('{params}', '')
+        repls = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "sysctl net.ipv4.conf.eth0.rp_filter=0"'), ('{params}', '')
         startup_commands.insert(2, u.replace_multiple_items(repls, exec_template))
 
         # Parsing options from lab.conf
@@ -249,13 +256,13 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
                     repls = ('{link}', app[1]), ('{machine_name}', machine_name)
                     create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
                     if not PRINT: u.write_temp(" " + prefix + app[1], u.generate_urlsafe_hash(path) + '_links', PLATFORM)
-                    repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.eth'+str(app[0])+'.rp_filter=0"'), ('{params}', '')
+                    repls = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "sysctl net.ipv4.conf.eth'+str(app[0])+'.rp_filter=0"'), ('{params}', '')
                     startup_commands.insert(4, u.replace_multiple_items(repls, exec_template))
                 if opt=='bridged': 
                     repls = ('{link}', "bridge"), ('{machine_name}', machine_name)
                     create_bridge_connection_commands.append(u.replace_multiple_items(repls, create_bridge_connection_template))
                 if opt=='e' or opt=='exec':
-                    repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + val.strip().replace('\\', r'\\').replace('"', r'\\"').replace("'", r"\\'") + '"'), ('{params}', '-d')
+                    repls = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "' + val.strip().replace('\\', r'\\').replace('"', r'\\"').replace("'", r"\\'") + '"'), ('{params}', '-d')
                     startup_commands.append(u.replace_multiple_items(repls, exec_template))
                 if opt=='port': 
                     machine_option_string+='-p='+ val.upper() +':3000' + ' '
@@ -266,7 +273,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         for link,_ in interfaces[1:]:
             repls = ('{link}', link), ('{machine_name}', machine_name)
             create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
-            repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "sysctl net.ipv4.conf.eth'+str(eth_cnt)+'.rp_filter=0"'), ('{params}', '')
+            repls = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "sysctl net.ipv4.conf.eth'+str(eth_cnt)+'.rp_filter=0"'), ('{params}', '')
             startup_commands.insert(4, u.replace_multiple_items(repls, exec_template))
             eth_cnt+=1
         # convoluted method to copy MACHINE_NAME/etc folder to the etc of the container
@@ -274,15 +281,15 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
             for folder_or_file in os.listdir(os.path.join(path, machine_name)):
                 if folder_or_file == 'etc': 
                     repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{folder_or_file}', folder_or_file), ('{dest}', 'temp_etc')
-                    repls2 = ('{machine_name}', machine_name), ('{command}', 'bash -c "chmod -R 777 /temp_etc/*; cp -rfp /temp_etc/* /etc/; rm -rf /temp_etc; mkdir /var/log/zebra; chmod -R 777 /var/log/quagga; chmod -R 777 /var/log/zebra"'), ('{params}', '')
+                    repls2 = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "chmod -R 777 /temp_etc/*; cp -rfp /temp_etc/* /etc/; rm -rf /temp_etc; mkdir /var/log/zebra; chmod -R 777 /var/log/quagga; chmod -R 777 /var/log/zebra"'), ('{params}', '')
                     startup_commands.insert(0, u.replace_multiple_items(repls2, exec_template))
                 else:
                     repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{folder_or_file}', folder_or_file), ('{dest}', '')
                 copy_folder_commands.append(u.replace_multiple_items(repls, copy_folder_template))
         if PLATFORM == WINDOWS:
-            repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "echo -ne \'\033]0;' + machine_name + '\007\'; bash"'), ('{params}', '-t -e TERM=vt100')
+            repls = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "echo -ne \'\033]0;' + machine_name + '\007\'; bash"'), ('{params}', '-t -e TERM=vt100')
         else:
-            repls = ('{machine_name}', machine_name), ('{command}', 'bash'), ('{params}', '-t -e TERM=vt100')
+            repls = ('{machine_name}', machine_name), ('{command}', this_shell), ('{params}', '-t -e TERM=vt100')
         exec_commands.append(u.replace_multiple_items(repls, exec_template))
         lab_machines_text += prefix + machine_name + ' '
 
@@ -302,7 +309,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
                 if line.strip() and line.strip() not in ['\n', '\r\n']:
                     full_startup_command += line.strip().replace('\\', r'\\').replace('"', r'\"').replace("'", r"\'") + ';'
             f.close()
-            repls = ('{machine_name}', machine_name), ('{command}', 'bash -c "' + full_startup_command + '"'), ('{params}', '-d')
+            repls = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "' + full_startup_command + '"'), ('{params}', '-d')
             startup_commands.append(u.replace_multiple_items(repls, exec_template))
     
     commands = create_network_commands + create_machine_commands + create_connection_commands + create_bridge_connection_commands + copy_folder_commands

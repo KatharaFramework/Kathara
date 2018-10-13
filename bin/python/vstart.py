@@ -130,6 +130,11 @@ parser.add_argument(
     required=False,
     help='Choose a port number to map to the internal port 3000 of the container.'
 )
+parser.add_argument(
+    '--shell',
+    required=False,
+    help='Set the shell (sh, bash, etc.) that should be used inside the container.'
+)
 
 args, unknown = parser.parse_known_args()
 
@@ -164,6 +169,8 @@ def conf_line_writer(conf_lines):
         conf_lines["bridged"] = "_"
     if image != "":
         conf_lines["image"] = image
+    if args.shell:
+        conf_lines["shell"] = args.shell
     return conf_lines
 
 def startup_writer(machine_path, machine_name, commands):
