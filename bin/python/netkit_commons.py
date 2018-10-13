@@ -12,8 +12,7 @@ from collections import OrderedDict
 
 DEBUG = True
 PRINT = False
-IMAGE_NAME = 'netkit_base'
-DOCKER_HUB_PREFIX = "kathara/"
+IMAGE_NAME = 'kathara/netkit_base'
 LINUX_TERMINAL_TYPE = 'xterm'
 
 MAC_OS = "darwin"
@@ -50,6 +49,9 @@ if PLATFORM != WINDOWS:
         DOCKER_BIN = kat_config['unix_bin']
     except:
         DOCKER_BIN = os.environ['NETKIT_HOME'] + '/wrapper/bin/netkit_dw'
+
+if 'base_image' in kat_config and not kat_config['base_image'] == '':
+	IMAGE_NAME = kat_config['base_image']
 
 SEPARATOR_WINDOWS = ' & '
 BASH_SEPARATOR = ' ; '
@@ -219,7 +221,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
     count = 0
 
     for machine_name, interfaces in machines.items():
-        this_image = DOCKER_HUB_PREFIX + IMAGE_NAME
+        this_image = IMAGE_NAME
 
         # copying the hostlab directory
         if not execbash:
@@ -242,7 +244,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
                 if opt=='mem' or opt=='M': 
                     machine_option_string+='--memory='+ val.upper() +' '
                 if opt=='image' or opt=='i' or opt=='model-fs' or opt=='m' or opt=='f' or opt=='filesystem': 
-                    this_image = DOCKER_HUB_PREFIX + val
+                    this_image = val
                 if opt=='eth': 
                     app = val.split(":")
                     create_network_commands.append(create_network_template + prefix + app[1])
