@@ -62,7 +62,8 @@ For `ltest`there are 2 minor adjustments:
 
 ## Extend Kathará
 Extending Kathará is actually very simple. Any local or remote Docker image tagged as `kathara/IMAGENAME` can be used with `vstart --image=IMAGENAME --eth=0:A node_name` or with `lstart` having something like that in `lab.conf`: `node_name[image]=IMAGENAME`.
-If your image use a different shell than bash (or you just want to use a other shell) then you can change the shell by use vstart with an extra flag `--shell=SHELLNAME` or by editing your `lab.conf`: `node_name[shell]=SHELLNAME`.
+
+If your Docker image uses a different shell instead of `bash` you can change it in `vstart` by using the extra flag `--shell=SHELLNAME` or in lstart by editing your `lab.conf` accordingly (e.g.: `node_name[shell]=SHELLNAME`).
 
 To alter (locally) an existing Kathará image refer to the following steps (remember that, by default, Docker needs root or sudo on Linux).
 1. `docker pull kathara/netkit_base` (or `kathara/p4`)
