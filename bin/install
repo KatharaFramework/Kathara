@@ -34,7 +34,7 @@ fi
 
 echo "Setting permissions"
 if [ "$NOT_ADMIN" = "1" ]; then
-    sudo chown root:root $NETKIT_HOME/wrapper/bin/netkit_dw
+    sudo chown 0:0 $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo chmod 4755 $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo chmod 000 $NETKIT_HOME/wrapper/netkit_dw.c
@@ -46,9 +46,9 @@ else
     echo "unix_bin=sudo docker" > $NETKIT_HOME/../config
 fi
 
-sudo chown root:root $NETKIT_HOME/*
-sudo chown root:root $NETKIT_HOME/python/*
-sudo chown root:root $NETKIT_HOME/../config
+sudo chown 0:0 $NETKIT_HOME/*
+sudo chown 0:0 $NETKIT_HOME/python/*
+sudo chown 0:0 $NETKIT_HOME/../config
 
 sudo chmod 755 $NETKIT_HOME/../config
 
