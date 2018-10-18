@@ -52,7 +52,6 @@ sudo chown 0:0 $NETKIT_HOME/../config
 
 sudo chmod 755 $NETKIT_HOME/../config
 
-
 mkdir -p $HOME/netkit_temp
 mkdir -p $HOME/netkit_temp/labs
 
@@ -60,6 +59,7 @@ sudo chmod 755 $HOME/netkit_temp
 sudo chmod 755 $HOME/netkit_temp/labs
 
 sudo chmod 755 $NETKIT_HOME/install
+sudo chmod 755 $NETKIT_HOME/check
 
 sudo chmod 755 $NETKIT_HOME/brctl_config
 
