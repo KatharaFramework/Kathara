@@ -1,0 +1,29 @@
+#!/bin/bash
+
+sudo true
+
+echo Docker version is
+sudo docker --version
+echo ''
+
+echo Trying to run Docker Hello World
+sudo docker run --rm hello-world
+echo ''
+
+echo Python version is
+python -V
+echo ''
+
+echo NETKIT_HOME is
+ECHO $NETKIT_HOME
+echo ''
+
+echo Config file contents are
+cat $NETKIT_HOME/../config
+echo ''
+
+echo Netkit temp folder contains
+ls $HOME/temp/
+echo ''
+
+sudo -k
