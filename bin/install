@@ -68,6 +68,8 @@ sudo chmod 755 $NETKIT_HOME/lrestart
 sudo chmod 755 $NETKIT_HOME/lclean
 sudo chmod 755 $NETKIT_HOME/lcrash
 sudo chmod 755 $NETKIT_HOME/lhalt
+sudo chmod 755 $NETKIT_HOME/lcrash_legacy
+sudo chmod 755 $NETKIT_HOME/lhalt_legacy
 sudo chmod 755 $NETKIT_HOME/linfo
 sudo chmod 755 $NETKIT_HOME/lwipe
 
@@ -77,6 +79,8 @@ sudo chmod 755 $NETKIT_HOME/vstart
 sudo chmod 755 $NETKIT_HOME/vclean
 sudo chmod 755 $NETKIT_HOME/vcrash
 sudo chmod 755 $NETKIT_HOME/vhalt
+sudo chmod 755 $NETKIT_HOME/vcrash_legacy
+sudo chmod 755 $NETKIT_HOME/vhalt_legacy
 sudo chmod 755 $NETKIT_HOME/vlist
 sudo chmod 755 $NETKIT_HOME/vconfig
 
