@@ -1,0 +1,4 @@
+#!/bin/bash
+
+$NETKIT_HOME/lwipe
+$NETKIT_HOME/install
