@@ -19,6 +19,15 @@ case $i in
 esac
 done
 
+if [ "$NETKIT_HOME" = "" ]; then
+	echo -e "\033[0;31mWARNING: NETKIT_HOME is not defined..\033[0m"
+	read -p " Would you continue?(y/n)" answer
+	if [ "$answer" = "${answer#[Yy]}" ] ;then
+		echo -e "\033[0;33mEXIT: Make sure NETKIT_HOME is correctly set .\033[0m"
+		exit 1
+	fi
+fi
+
 sudo true
 
 if [ "$NOT_ADMIN" = "1" ]; then
@@ -44,6 +53,11 @@ if [ "$NOT_ADMIN" = "1" ]; then
 else 
     sudo rm -f $NETKIT_HOME/../config
     echo "unix_bin=sudo docker" | sudo tee -a $NETKIT_HOME/../config > /dev/null
+fi
+
+if [ ! -f $NETKIT_HOME/../config ]; then
+	echo -e "\033[0;33mEXIT: Unable to create configuration file. Check your permissions .\033[0m"
+	exit 1
 fi
 
 sudo chown 0:0 $NETKIT_HOME/*
