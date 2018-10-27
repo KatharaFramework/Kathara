@@ -1,4 +1,7 @@
-import configparser as ConfigParser
+try: 
+    import configparser as ConfigParser
+except:
+    import ConfigParser
 config = ConfigParser.ConfigParser()
 from io import StringIO
 from itertools import chain
