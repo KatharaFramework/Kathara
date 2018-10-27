@@ -82,7 +82,7 @@ parser.add_argument("--execbash", required=False, action="store_true", help=argp
 
 args, unknown = parser.parse_known_args()
 
-machine_name_args = filter (lambda x: not (x.startswith("--") or x.startswith("-")), unknown)
+machine_name_args = list(filter (lambda x: not (x.startswith("--") or x.startswith("-")), unknown))
 
 # applying parameter options (1/3)
 title_option = " -T "

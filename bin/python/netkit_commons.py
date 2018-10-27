@@ -1,6 +1,6 @@
-import ConfigParser
+import configparser as ConfigParser
 config = ConfigParser.ConfigParser()
-import StringIO
+from io import StringIO
 from itertools import chain
 import re
 import sys
@@ -30,8 +30,8 @@ elif _platform == WINDOWS:
 
 def read_config():
     tmp_config = ConfigParser.ConfigParser()
-    ini = '[dummysection]\n' + open(os.path.join(os.environ['NETKIT_HOME'], '..', 'config'), 'r').read()
-    ini_string = StringIO.StringIO(ini)
+    ini = u'[dummysection]\n' + open(os.path.join(os.environ['NETKIT_HOME'], '..', 'config'), 'r').read()
+    ini_string = StringIO(ini)
     tmp_config.readfp(ini_string)
     conf = {}
     for key, value in tmp_config.items('dummysection'): 
@@ -95,8 +95,8 @@ def lab_parse(path, force=False):
         return ({}, [], {}, {}) # has to get names from last positional args
 
     # reads lab.conf
-    ini_str = '[dummysection]\n' + open(os.path.join(path, 'lab.conf'), 'r').read()
-    ini_fp = StringIO.StringIO(ini_str)
+    ini_str = u'[dummysection]\n' + open(os.path.join(path, 'lab.conf'), 'r').read()
+    ini_fp = StringIO(ini_str)
     config.readfp(ini_fp)
 
     # gets 2 list of keys, one for machines and the other for the metadata
@@ -193,7 +193,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
     
     # writing the network list in the temp file
     if not execbash:
-        if not PRINT: u.write_temp(lab_links_text, u.generate_urlsafe_hash(path) + '_links', PLATFORM, file_mode="w+")
+        if not PRINT: u.write_temp(lab_links_text, str(u.generate_urlsafe_hash(path)) + '_links', PLATFORM, file_mode="w+")
     
     # generating commands for running the containers, copying the config folder and executing the terminals connected to the containers
     if PLATFORM != WINDOWS:
@@ -296,7 +296,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
     # writing the container list in the temp file
     if not no_machines_tmp:
         if not execbash:
-            if not PRINT: u.write_temp(lab_machines_text, u.generate_urlsafe_hash(path) + '_machines', PLATFORM)
+            if not PRINT: u.write_temp(lab_machines_text, str(u.generate_urlsafe_hash(path)) + '_machines', PLATFORM)
 
 
     # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array of exec commands. We also replace escapes and quotes
