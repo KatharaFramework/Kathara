@@ -45,10 +45,6 @@ if args.full:
         print ("Invalid characters in machine names or link names\n")
         sys.exit(1)
 
-if sys.version_info >= (3, 0):
-    print ("Requires Python 2.x, not Python 3.x\n")
-    sys.exit(1)
-
 if nc.PLATFORM != nc.WINDOWS:
     if pwd.getpwuid(os.getuid()).pw_dir != os.environ['HOME']:
         print ("HOME variable is different from the real home directory. This won't allow labs to work.\n")

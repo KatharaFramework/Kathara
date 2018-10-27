@@ -25,8 +25,8 @@ if args.directory:
 (_,_,_, metadata) = nc.lab_parse(lab_path)
 
 if not args.print_only: 
-    print "========================= Starting Lab =========================="
+    print("========================= Starting Lab ==========================")
     if len(metadata.items()) >= 1:
         for key, value in metadata.items():
-            print '{message: <20}'.format(message=key+":") + value
-        print "================================================================="
+            print('{message: <20}'.format(message=key+":") + value)
+        print("=================================================================")

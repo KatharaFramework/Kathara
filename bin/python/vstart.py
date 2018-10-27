@@ -249,4 +249,4 @@ if args.hostlab:
 else:
     start_new_machine()
 
-print lstart_command_writer()
+print(lstart_command_writer())

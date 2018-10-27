@@ -23,6 +23,6 @@ if args.directory:
     lab_path = args.directory.replace('"', '').replace("'", '').replace("//", '/')
 
 if args.print_only and nc.PLATFORM == nc.WINDOWS: #linux still needs the hash for the while statement
-    print " "
+    print(" ")
 else:
-    print u.generate_urlsafe_hash(lab_path)
+    print(u.generate_urlsafe_hash(lab_path))
