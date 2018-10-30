@@ -23,7 +23,7 @@ cat $NETKIT_HOME/../config
 echo ''
 
 echo Netkit temp folder contains
-ls $HOME/temp/
+ls $HOME/netkit_temp/
 echo ''
 
 sudo -k
