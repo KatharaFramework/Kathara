@@ -22,6 +22,6 @@ esac
 done
 
 if [ "$NETKIT_NET" = "0" ]; then
-	$NETKIT_HOME/lclean -d "$HOME/netkit_temp/labs/netkit_${UID}_${@: -1}" ${@: -1}
+	$NETKIT_HOME/lclean -d "$HOME/netkit_temp/labs/netkit_${UID}_${@: -1}" 
 else $ADAPTER_BIN network rm netkit_${UID}_${@: -1}
 fi

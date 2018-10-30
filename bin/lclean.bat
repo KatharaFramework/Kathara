@@ -1,4 +1,5 @@
 @echo off
+setlocal enableDelayedExpansion
 
 FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\adapter.py') DO SET ADAPTER_BIN=%%a
 
@@ -13,8 +14,8 @@ FOR %%p in (%*) DO (
     IF "%%p" == "--list" ( 
         SET NETKIT_LIST=1
     )
-    IF NOT "%NETKIT_APP:~0,1%" == "-" (
-        IF NOT "%NETKIT_APP_PREV%" == "-d" (
+    IF NOT "!NETKIT_APP:~0,1!" == "-" (
+        IF NOT "!NETKIT_APP_PREV!" == "-d" (
             SET NETKIT_ALL=0 
             %ADAPTER_BIN% rm -f netkit_nt_%%p
         )
@@ -25,7 +26,7 @@ FOR %%p in (%*) DO (
 FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\folder_hash.py "%cd%/" %*') DO SET VAR1=%NETKIT_HOME%\temp\%%a_machines
 FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\folder_hash.py "%cd%/" %*') DO SET VAR2=%NETKIT_HOME%\temp\%%a_links
 
-IF "%NETKIT_ALL%" == "1" (
+IF "!NETKIT_ALL!" == "1" (
     ECHO "Containers will be deleted"
     IF exist %VAR1% (
         FOR /f "delims=" %%a in (%VAR1%) DO %ADAPTER_BIN% rm -f %%a
@@ -35,7 +36,7 @@ IF exist %VAR2% (
     FOR /f "delims=" %%a in (%VAR2%) DO %ADAPTER_BIN% network rm %%a
 )
 
-IF "%NETKIT_ALL%" == "1" (
+IF "!NETKIT_ALL!" == "1" (
     IF exist %VAR1% (
         DEL %VAR1%
     )
