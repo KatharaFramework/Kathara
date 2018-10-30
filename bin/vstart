@@ -9,6 +9,8 @@ done
 
 export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
 
+mkdir -p $HOME/netkit_temp/labs
+
 $NETKIT_HOME/lstart -d `python $NETKIT_HOME/python/vstart.py "$PWD/" $NETKIT_LASTARG ${@:1:$#-1}`
 $ADAPTER_BIN start netkit_${UID}_$NETKIT_LASTARG
 

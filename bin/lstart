@@ -19,6 +19,8 @@ case $i in
 esac
 done
 
+mkdir -p $HOME/netkit_temp/labs
+
 python $NETKIT_HOME/python/check.py "$PWD/" -f "$@"
 
 export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
