@@ -19,21 +19,48 @@ case $i in
 esac
 done
 
+if [ -z "$NETKIT_HOME" ]; then
+    echo 'Error: $NETKIT_HOME is not set'
+    exit 0
+fi
+
+if [ ! -d "$NETKIT_HOME" ]; then
+    echo 'Error: $NETKIT_HOME does not point to a directory'
+    exit 0
+fi
+
+if [ ! -d '$NETKIT_HOME/../bin' ]; then
+    echo 'Error: $NETKIT_HOME should point to the bin folder'
+    exit 0
+fi
+
 sudo true
+
+echo "Setting permissions"
+
+sudo chown 0:0 $NETKIT_HOME/../.
+sudo chown -R 0:0 $NETKIT_HOME/..
+
+sudo chmod 755 $NETKIT_HOME/../.
+sudo chmod a+rX $NETKIT_HOME/../*
+sudo chmod 755 $NETKIT_HOME/*
+
+sudo chmod 644 $NETKIT_HOME/kathara_version.txt
+
+sudo chmod 755 $NETKIT_HOME/python
+sudo chmod 644 $NETKIT_HOME/python/*
+
+sudo chmod 600 $NETKIT_HOME/*.bat
+sudo chmod 700 $NETKIT_HOME/temp
+sudo chmod -R a+rX $NETKIT_HOME/../P4-examples
+
+sudo chmod 755 $NETKIT_HOME/wrapper
 
 if [ "$NOT_ADMIN" = "1" ]; then
     echo "Compiling netkit_dw"
     sudo gcc -std=c99 $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
-else
-    echo -e "\033[0;33mAdmin mode\033[0m"
-    echo -e "\033[0;31mWARNING: This will not create a wrapper or remove it if previously installed.\033[0m"
-    echo -e "\033[0;33mIt will also require sudo to start network nodes and access them.\033[0m"
-    sudo rm $NETKIT_HOME/wrapper/bin/netkit_dw
-    sudo cp $NETKIT_HOME/wrapper/bin/fake_wrapper $NETKIT_HOME/wrapper/bin/netkit_dw
-fi
-
-echo "Setting permissions"
-if [ "$NOT_ADMIN" = "1" ]; then
+    sudo chmod a+rX $NETKIT_HOME/wrapper
+    sudo chmod a+rX $NETKIT_HOME/wrapper/bin
     sudo chown 0:0 $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo chmod 4755 $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw
@@ -41,48 +68,17 @@ if [ "$NOT_ADMIN" = "1" ]; then
     sudo rm -f $NETKIT_HOME/../config
     echo "unix_bin=$NETKIT_HOME/wrapper/bin/netkit_dw" | sudo tee -a $NETKIT_HOME/../config > /dev/null
     
-else 
+else
+    echo -e "\033[0;33mAdmin mode\033[0m"
+    echo -e "\033[0;31mWARNING: This will not create a wrapper or remove it if previously installed.\033[0m"
+    echo -e "\033[0;33mIt will also require sudo to start network nodes and access them.\033[0m"
+    sudo rm $NETKIT_HOME/wrapper/bin/netkit_dw
+    sudo cp $NETKIT_HOME/wrapper/bin/fake_wrapper $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo rm -f $NETKIT_HOME/../config
     echo "unix_bin=sudo docker" | sudo tee -a $NETKIT_HOME/../config > /dev/null
 fi
 
-sudo chown 0:0 $NETKIT_HOME/*
-sudo chown 0:0 $NETKIT_HOME/python/*
-sudo chown 0:0 $NETKIT_HOME/../config
-
-sudo chmod 755 $NETKIT_HOME/../config
-
-sudo chmod 755 $NETKIT_HOME/install
-sudo chmod 755 $NETKIT_HOME/check
-
-sudo chmod 755 $NETKIT_HOME/brctl_config
-
-sudo chmod 755 $NETKIT_HOME/lstart
-sudo chmod 755 $NETKIT_HOME/lrestart
-sudo chmod 755 $NETKIT_HOME/lclean
-sudo chmod 755 $NETKIT_HOME/lcrash
-sudo chmod 755 $NETKIT_HOME/lhalt
-sudo chmod 755 $NETKIT_HOME/lcrash_legacy
-sudo chmod 755 $NETKIT_HOME/lhalt_legacy
-sudo chmod 755 $NETKIT_HOME/linfo
-sudo chmod 755 $NETKIT_HOME/lwipe
-
-sudo chmod 755 $NETKIT_HOME/ltest
-
-sudo chmod 755 $NETKIT_HOME/vstart
-sudo chmod 755 $NETKIT_HOME/vclean
-sudo chmod 755 $NETKIT_HOME/vcrash
-sudo chmod 755 $NETKIT_HOME/vhalt
-sudo chmod 755 $NETKIT_HOME/vcrash_legacy
-sudo chmod 755 $NETKIT_HOME/vhalt_legacy
-sudo chmod 755 $NETKIT_HOME/vlist
-sudo chmod 755 $NETKIT_HOME/vconfig
-
-sudo chmod 755 $NETKIT_HOME/kathara_version
-sudo chmod 755 $NETKIT_HOME/kathara_version.txt
-
-sudo chmod 755 $NETKIT_HOME/python
-sudo chmod 755 $NETKIT_HOME/python/*
+sudo chmod 644 $NETKIT_HOME/../config
 
 if [ "$SKIP_P4" = "1" ]; then
     echo "Pulling images"
