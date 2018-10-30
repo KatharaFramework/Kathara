@@ -29,7 +29,7 @@ if [ ! -d "$NETKIT_HOME" ]; then
     exit 0
 fi
 
-if [ ! -d '$NETKIT_HOME/../bin' ]; then
+if [ ! -d "$NETKIT_HOME/../bin" ]; then
     echo 'Error: $NETKIT_HOME should point to the bin folder'
     exit 0
 fi
