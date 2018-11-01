@@ -16,6 +16,10 @@ ECHO NETKIT_HOME is
 ECHO %NETKIT_HOME%
 echo.
 
+ECHO Kathara version is
+%NETKIT_HOME%\kathara_version.bat
+echo.
+
 ECHO Config file contents are
 type %NETKIT_HOME%\..\config
 echo.
