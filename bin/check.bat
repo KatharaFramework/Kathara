@@ -17,7 +17,8 @@ ECHO %NETKIT_HOME%
 echo.
 
 ECHO Kathara version is
-%NETKIT_HOME%\kathara_version.bat
+call %NETKIT_HOME%\kathara_version
+echo.
 echo.
 
 ECHO Config file contents are
@@ -25,5 +26,5 @@ type %NETKIT_HOME%\..\config
 echo.
 
 ECHO Netkit temp folder contains
-dir %NETKIT_HOME%\temp\
+dir /S %NETKIT_HOME%\temp\
 echo.
