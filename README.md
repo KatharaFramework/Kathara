@@ -8,6 +8,7 @@
     <li><a href="#provided-docker-images">Provided Docker Images</a></li>
     <li><a href="#manual">Manual</a></li>
     <li><a href="#example">Example</a></li>
+    <li><a href="https://github.com/KatharaFramework/Kathara-Labs">More Examples and Guides</a></li>
     <li><a href="#extend-kathará">Extend Kathará</a></li>
 </ul>
 
