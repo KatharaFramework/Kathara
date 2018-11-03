@@ -60,7 +60,7 @@ For `ltest`there are 2 minor adjustments:
   * Windows: `%NETKIT_HOME%\lclean`
 * This will kill and remove any container. 
 
-### More examples and guides can be found here: https://github.com/KatharaFramework/Kathara-Labs
+### More examples and guides can be found [here](https://github.com/KatharaFramework/Kathara-Labs).
 
 ## Extend Kathará
 Extending Kathará is actually very simple. Any local or remote Docker image tagged as `kathara/IMAGENAME` can be used with `vstart --image=IMAGENAME --eth=0:A node_name` or with `lstart` having something like that in `lab.conf`: `node_name[image]=IMAGENAME`.
