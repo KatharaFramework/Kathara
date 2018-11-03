@@ -8,7 +8,7 @@
     <li><a href="#provided-docker-images">Provided Docker Images</a></li>
     <li><a href="#manual">Manual</a></li>
     <li><a href="#example">Example</a></li>
-    <li><a href="https://github.com/KatharaFramework/Kathara-Labs">More Examples and Guides</a></li>
+    <li><a href="https://github.com/KatharaFramework/Kathara-Labs">More Examples and Tutorials</a></li>
     <li><a href="#extend-kathará">Extend Kathará</a></li>
 </ul>
 
@@ -61,7 +61,7 @@ For `ltest`there are 2 minor adjustments:
   * Windows: `%NETKIT_HOME%\lclean`
 * This will kill and remove any container. 
 
-### More examples and guides can be found [here](https://github.com/KatharaFramework/Kathara-Labs).
+### More examples and tutorials can be found [here](https://github.com/KatharaFramework/Kathara-Labs).
 
 ## Extend Kathará
 Extending Kathará is actually very simple. Any local or remote Docker image tagged as `kathara/IMAGENAME` can be used with `vstart --image=IMAGENAME --eth=0:A node_name` or with `lstart` having something like that in `lab.conf`: `node_name[image]=IMAGENAME`.
