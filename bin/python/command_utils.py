@@ -2,7 +2,11 @@ import subprocess
 import sys
 
 def run_command_detatched(cmd_line):
-    process = subprocess.Popen(cmd_line.encode(sys.getfilesystemencoding()), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    cmd_line = cmd_line.encode(sys.getfilesystemencoding())
+    try:
+        process = subprocess.Popen(cmd_line.decode(), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except:
+        process = subprocess.Popen(cmd_line, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     # Poll process for new output until finished
     while True:
         nextline = process.stdout.readline().decode('utf-8')
