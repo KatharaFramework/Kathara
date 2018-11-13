@@ -58,7 +58,7 @@ sudo chmod 755 $NETKIT_HOME/wrapper
 if [ "$NOT_ADMIN" = "1" ]; then
     echo "Compiling netkit_dw"
     if type chattr >/dev/null 2>/dev/null; then sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw; else sudo chflags noschg $NETKIT_HOME/wrapper/bin/netkit_dw; fi
-    sudo gcc -std=c99 $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
+    sudo gcc -w -std=c99 $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo chmod a+rX $NETKIT_HOME/wrapper
     sudo chmod a+rX $NETKIT_HOME/wrapper/bin
     sudo chown 0:0 $NETKIT_HOME/wrapper/bin/netkit_dw
