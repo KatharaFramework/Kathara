@@ -38,6 +38,8 @@ sudo true
 
 echo "Setting permissions"
 
+if type chattr >/dev/null 2>/dev/null; then sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw; else sudo chflags noschg $NETKIT_HOME/wrapper/bin/netkit_dw; fi
+
 sudo chown 0:0 $NETKIT_HOME/../.
 sudo chown -R 0:0 $NETKIT_HOME/..
 
@@ -57,7 +59,6 @@ sudo chmod 755 $NETKIT_HOME/wrapper
 
 if [ "$NOT_ADMIN" = "1" ]; then
     echo "Compiling netkit_dw"
-    if type chattr >/dev/null 2>/dev/null; then sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw; else sudo chflags noschg $NETKIT_HOME/wrapper/bin/netkit_dw; fi
     sudo gcc -w -std=c99 $NETKIT_HOME/wrapper/netkit_dw.c -o $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo chmod a+rX $NETKIT_HOME/wrapper
     sudo chmod a+rX $NETKIT_HOME/wrapper/bin
@@ -72,7 +73,6 @@ else
     echo -e "\033[0;33mAdmin mode\033[0m"
     echo -e "\033[0;31mWARNING: This will not create a wrapper or remove it if previously installed.\033[0m"
     echo -e "\033[0;33mIt will also require sudo to start network nodes and access them.\033[0m"
-    if type chattr >/dev/null 2>/dev/null; then sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw; else sudo chflags noschg $NETKIT_HOME/wrapper/bin/netkit_dw; fi
     sudo rm $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo cp $NETKIT_HOME/wrapper/bin/fake_wrapper $NETKIT_HOME/wrapper/bin/netkit_dw
     sudo rm -f $NETKIT_HOME/../config
