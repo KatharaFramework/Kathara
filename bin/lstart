@@ -36,6 +36,7 @@ if [ "$RC" = "0" ]; then
         if [ "$NETKIT_PRINT" = "0" ];
         then
 		if [ -f "$HOME/netkit_temp/$in$M" ]; then 
+            echo -e "\033[0;33mPrevious status found: will try to resume containers instead of creating them\033[0m"
 		    $ADAPTER_BIN start `cat "$HOME/netkit_temp/$in$M"`; 
 			python $NETKIT_HOME/python/lstart.py --execbash "$PWD/" "$@" | 
 			(while IFS=';' read -ra in; do ($NETKIT_TERMINAL_STRING"${in[0]}" -e "${in[1]}" &); done)

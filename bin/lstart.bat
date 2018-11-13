@@ -13,6 +13,9 @@ if not exist %VAR1% (
     FOR /F "tokens=*" %%a in ('python %NETKIT_HOME%\python\lstart.py "%cd%/" %*') do ( 
         %%a
     )
-) else (FOR /f "delims=" %%b in (%VAR1%) do %ADAPTER_BIN% start %%b & FOR /F "tokens=*" %%c in ('python %NETKIT_HOME%\python\lstart.py "%cd%/" --execbash %*') do %%c)
+) else (
+    echo "Previous status found: will try to resume containers instead of creating them"
+    FOR /f "delims=" %%b in (%VAR1%) do %ADAPTER_BIN% start %%b & FOR /F "tokens=*" %%c in ('python %NETKIT_HOME%\python\lstart.py "%cd%/" --execbash %*') do %%c
+)
 
 :END
