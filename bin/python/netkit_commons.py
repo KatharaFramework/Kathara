@@ -284,7 +284,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
             for folder_or_file in os.listdir(os.path.join(path, machine_name)):
                 if folder_or_file == 'etc': 
                     repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{folder_or_file}', folder_or_file), ('{dest}', 'temp_etc')
-                    repls2 = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "chmod -R 777 /temp_etc/*; cp -rfp /temp_etc/* /etc/; rm -rf /temp_etc; mkdir /var/log/zebra; chmod -R 777 /var/log/quagga; chmod -R 777 /var/log/zebra"'), ('{params}', '')
+                    repls2 = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "chmod -R 777 /temp_etc/*; cp -rfp /temp_etc/* /etc/; rm -rf /temp_etc; mkdir /var/log/zebra; chmod -R 777 /var/log/quagga; chmod -R 777 /var/log/zebra; chmod -R 777 /var/www/*"'), ('{params}', '')
                     startup_commands.insert(0, u.replace_multiple_items(repls2, exec_template))
                 else:
                     repls = ('{machine_name}', machine_name), ('{machine_name}', machine_name), ('{folder_or_file}', folder_or_file), ('{dest}', '')
