@@ -10,8 +10,15 @@ import shutil
 DEBUG = nc.DEBUG
 nc.DEBUG = False
 
+def commandline_arg(bytestring):
+    try:
+        unicode_string = bytestring.decode(sys.getfilesystemencoding())
+        return unicode_string
+    except AttributeError:
+        return bytestring
+
 parser = argparse.ArgumentParser(description='Create and start a Netkit Lab.')
-parser.add_argument('path')
+parser.add_argument('path', type=commandline_arg)
 parser.add_argument(
     "-n", "--noterminals", 
     required=False,

@@ -91,7 +91,7 @@ def reorder_by_lab_dep(path, machines):
 
 def lab_parse(path, force=False):
     if (not force) and (not os.path.exists(os.path.join(path, 'lab.conf'))):
-        print ("No lab.conf in given directory\n")
+        sys.stderr.write("No lab.conf in given directory\n" + path)
         sys.exit(1)
 
     if force and (not os.path.exists(os.path.join(path, 'lab.conf'))):
@@ -108,7 +108,7 @@ def lab_parse(path, force=False):
     m_keys = []
     links = []
     for key, value in config.items('dummysection'): 
-        if DEBUG: print(key, value)
+        if DEBUG: sys.stderr.write(key, value)
         if '[' in key and ']' in key:
             splitted = key.split('[')[1].split(']')
             try:

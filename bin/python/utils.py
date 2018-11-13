@@ -8,8 +8,11 @@ try:
 except ImportError: #windows
     pass
 
+non_ascii = r'[^\x00-\x7F]+'
+
 def generate_urlsafe_hash(string):
-    return base64.urlsafe_b64encode(hashlib.md5(string.encode('utf-8')).digest())[:-2]
+    string = re.sub(non_ascii,'', string)
+    return base64.urlsafe_b64encode(hashlib.md5(string.encode('utf-8', errors='ignore')).digest())[:-2]
 
 # helper functions for natural sorting
 def atoi(text):
