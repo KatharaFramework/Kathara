@@ -9,6 +9,7 @@ try:
 except ImportError: #windows
     pass
 import sys
+from sys import platform as _platform
 
 non_ascii = r'[^\x00-\x7F]+'
 
@@ -59,7 +60,7 @@ def timestamp():
 
 def log(message, mode='a+'):
     filepath=os.path.join(os.environ['NETKIT_HOME'], '..', 'logs.txt')
-    if PLATFORM != WINDOWS:
+    if _platform != "win32":
         filepath=os.path.join(os.environ['HOME'], 'kathara_logs.txt')
     with open(filepath, mode) as file:
         file.write(timestamp()  + ' ' + message + '\n')
