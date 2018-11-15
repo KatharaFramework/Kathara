@@ -102,3 +102,4 @@ bin/python/config
 config
 .vscode/
 test/
+logs.txt

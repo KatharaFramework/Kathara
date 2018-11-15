@@ -3,6 +3,7 @@ import hashlib
 import re
 import os
 import functools
+import datetime
 try:
     import pwd
 except ImportError: #windows
@@ -51,3 +52,10 @@ def merge_two_dicts(x, y):
     z = x.copy()
     z.update(y)
     return z
+
+def timestamp():
+    return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+def log(message, filepath=os.path.join(os.environ['NETKIT_HOME'], '..', 'logs.txt'), mode='a+'):
+    with open(filepath, mode) as file:
+        file.write(timestamp()  + ' ' + message + '\n')
