@@ -7,14 +7,15 @@ from utils import istextfile
 def win2linux(filename):
     c = None
     istext = False
-    with open(filename) as f:
+    with open(filename, 'rb') as f:
         istext = istextfile(f)
+    with open(filename) as f:
         if not istext:
             return
-        else:
-            c = f.read()
+        c = f.read()
         if len(c) <= 0:
             return
+        c = c[1:] if len(c) > 0 and ord(c[0]) == 0xfeff else c
     try: #python3 
         open(filename, 'wb').write(re.sub(r'\r', '', c).encode())
     except: #python2
