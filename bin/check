@@ -19,7 +19,7 @@ ECHO $NETKIT_HOME
 echo ''
 
 echo Kathara version is
-echo $NETKIT_HOME/kathara_version
+echo `$NETKIT_HOME/kathara_version`
 echo ''
 
 echo Config file contents are
