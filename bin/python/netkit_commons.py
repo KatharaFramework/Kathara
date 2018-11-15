@@ -309,7 +309,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
             f = open(startup_file, 'r')
             full_startup_command = ''
             for line in f:
-                if line.strip() and line.strip() not in ['\n', '\r\n']:
+                if line.strip() and (line.strip() not in ['\n', '\r\n', '\n\r']) and (not line.startswith('#')):
                     full_startup_command += line.strip().replace('\\', r'\\').replace('"', r'\"').replace("'", r"\'") + ';'
             f.close()
             repls = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "' + full_startup_command + '"'), ('{params}', '-d')
