@@ -57,7 +57,10 @@ def merge_two_dicts(x, y):
 def timestamp():
     return datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-def log(message, filepath=os.path.join(os.environ['NETKIT_HOME'], '..', 'logs.txt'), mode='a+'):
+def log(message, mode='a+'):
+    filepath=os.path.join(os.environ['NETKIT_HOME'], '..', 'logs.txt')
+    if PLATFORM != WINDOWS:
+        filepath=os.path.join(os.environ['HOME'], 'kathara_logs.txt')
     with open(filepath, mode) as file:
         file.write(timestamp()  + ' ' + message + '\n')
 
