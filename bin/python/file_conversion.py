@@ -11,7 +11,8 @@ def win2linux(filename):
         istext = istextfile(f)
         if not istext:
             return
-        else c = f.read()
+        else:
+            c = f.read()
         if len(c) <= 0:
             return
     try: #python3 
