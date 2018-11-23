@@ -3,6 +3,9 @@ import sys
 
 def run_command_detatched(cmd_line):
     cmd_line = cmd_line.encode(sys.getfilesystemencoding())
+    if len(cmd_line) > 8192:
+        sys.stderr.write("Command too long, try using a shorter path. The status is now corrupted, please run lwipe\n")
+        exit(0)
     try:
         process = subprocess.Popen(cmd_line.decode(), shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except:
