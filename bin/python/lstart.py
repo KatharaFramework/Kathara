@@ -6,6 +6,8 @@ import utils as u
 import os
 import sys
 import shutil
+from sys import platform as _platform
+from netkit_commons import LINUX, LINUX2
 
 DEBUG = nc.DEBUG
 nc.DEBUG = False
@@ -145,7 +147,21 @@ for _, interfaces in filtered_machines.items():
 		sys.exit(1)
 
 # get command lists
+external_commands = []
 (commands, startup_commands, exec_commands) = nc.create_commands(filtered_machines, links, options, metadata, lab_path, args.execbash, no_machines_tmp=(len(machine_name_args) >= 1))
+
+#check if exist external.conf file, if user have root permission for execute external.conf file and check plaftorm
+if (os.path.exists(os.path.join(lab_path, 'external.conf'))):
+    if (_platform == LINUX or _platform == LINUX2): 
+        if(os.geteuid() == 0):
+            external_commands = nc.external_commands(lab_path, links)
+        else:
+            sys.stderr.write("Please need root permission to execute external.conf file.\n")
+            sys.exit(1)
+    else:
+        sys.stderr.write("Please only Linux operating system is supported.\n")
+        sys.stderr.write("Your operating system is " + _platform + "\n")
+        sys.exit(1)
 
 # create lab
 if not args.execbash:
@@ -171,9 +187,9 @@ if not args.execbash:
             except:
                 sys.stderr.write("ERROR: could not move '" + os.path.join(machine_path, "var/www") + "' to '" + os.path.join(machine_path, "var/www/html") + "'\n")
     # running creation commands not verbosely
-    cr.lab_create(commands, startup_commands)
+    cr.lab_create(commands, startup_commands, external_commands)
 else:
-    cr.lab_create([], startup_commands)
+    cr.lab_create([], startup_commands, [])
 
 COMMAND_LAUNCHER = "bash -c '"
 COMMAND_LAUNCHER_END = "'"
