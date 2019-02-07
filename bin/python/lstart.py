@@ -170,7 +170,6 @@ if (os.path.exists(os.path.join(lab_path, 'external.conf'))):
 # get command lists
 (commands, startup_commands, exec_commands) = nc.create_commands(filtered_machines, links, options, metadata, lab_path, args.execbash, no_machines_tmp=(len(machine_name_args) >= 1))
 
-
 # create lab
 if not args.execbash:
     # removing \r from DOS/MAC files before docker cp
