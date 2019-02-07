@@ -169,7 +169,6 @@ def external_parse(path):
             interfaces.append((line.split()[1]))
     return collision_domains, interfaces
 
-
 #create external_commands
 def external_commands(path, collision_domains, interfaces, execbash=False):
     lab_external_links_text = ''
