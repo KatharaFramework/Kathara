@@ -55,4 +55,4 @@ else
     echo FAILED
 fi
 
-#python $NETKIT_HOME/python/rm_interface.py "$PWD/"
+python $NETKIT_HOME/python/rm_interface.py "$PWD/"
