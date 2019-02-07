@@ -21,13 +21,14 @@ def remove_subinterface(path):
 	temp_path = os.path.join(pwd.getpwuid(os.getuid()).pw_dir, "netkit_temp/")
 	hash_path = str(u.generate_urlsafe_hash(path))
 	if (os.path.exists(temp_path + hash_path + '_external_links')):
-		with open(temp_path + hash_path + '_external_links', 'r') as external_file_temp:
-			delete_commands.append('echo "\033[0;33mSubinterfaces will be deleted\033[0m"')
-			for line in external_file_temp:
-				subinterface = line.split()[0]
-				delete_commands.append('sudo ip link set dev ' + subinterface + ' ' + 'down')
-				delete_commands.append('sudo ip link delete ' + subinterface)
-				delete_commands.append('echo ' + subinterface)
+		if (os.stat(temp_path + hash_path + '_external_links').st_size != 0):
+			with open(temp_path + hash_path + '_external_links', 'r') as external_file_temp:
+				delete_commands.append('echo "\033[0;33mSubinterfaces will be deleted\033[0m"')
+				for line in external_file_temp:
+					subinterface = line.split()[0]
+					delete_commands.append('sudo ip link set dev ' + subinterface + ' ' + 'down')
+					delete_commands.append('sudo ip link delete ' + subinterface)
+					delete_commands.append('echo ' + subinterface)
 
 		os.remove(temp_path + hash_path + '_external_links')
 
