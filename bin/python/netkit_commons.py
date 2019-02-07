@@ -171,7 +171,7 @@ def external_commands(path, links, execbash=False):
                         interface = line.split()[1]
                         #check if paramater's interface have a vlan syntax 
                         if interface.__contains__("."):
-                            lab_external_links_text += collision_domain + ' '
+                            lab_external_links_text += interface + '\n'
                             prefix_interface = interface.split(".")[0]
                             vlan_id = interface.split(".")[1]
                             commands.append(os.path.join(os.environ['NETKIT_HOME'],'brctl_config_external ' + prefix + collision_domain + ' ' + interface + ' ' + prefix_interface + ' ' + vlan_id))
