@@ -8,7 +8,6 @@ import sys
 import shutil
 from sys import platform as _platform
 from netkit_commons import LINUX, LINUX2
-import lstart_create as lc
 
 DEBUG = nc.DEBUG
 nc.DEBUG = False
