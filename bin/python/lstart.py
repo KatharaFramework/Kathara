@@ -6,6 +6,7 @@ import utils as u
 import os
 import sys
 import shutil
+import re
 from sys import platform as _platform
 from netkit_commons import LINUX, LINUX2
 
@@ -150,26 +151,26 @@ external_commands = []
 #check if exist external.conf file, if user have root permission for execute external.conf file and check plaftorm
 if (os.path.exists(os.path.join(lab_path, 'external.conf'))):
     if (_platform == LINUX or _platform == LINUX2): 
-        if(os.geteuid() == 0):
+        if (os.geteuid() == 0):
             collision_domains, external_interfaces = nc.external_parse(lab_path)
             #list of all interfaces
-            list_interfaces = os.listdir('/sys/class/net/')
+            list_interfaces = [dir for dir in os.listdir('/sys/class/net/') if re.match('lo|wlx.*|docker0|veth.*', dir) is None]
 
             for collision_domain in collision_domains:
                 #check collision domains specified in external.conf 
-                if not(collision_domain in links):
-                    sys.stderr.write(collision_domain + ' '+ 'is not a valid collision domain, please check your external.conf file.' + '\n')
+                if not collision_domain in links:
+                    sys.stderr.write(collision_domain + ' ' + 'is not a valid collision domain, please check your external.conf file.' + '\n')
                     sys.exit(1)
             for external_interface in external_interfaces:
                 #check ethernet interface specified in external.conf
                 if external_interface.__contains__("."):
                     prefix_interface = external_interface.split(".")[0]
                     if not prefix_interface in list_interfaces:
-                        sys.stderr.write(external_interface + ' '+ 'is not a valid ethernet interface, please check your external.conf file.' + '\n')
+                        sys.stderr.write(external_interface + ' ' + 'is not a valid ethernet interface, please check your external.conf file.' + '\n')
                         sys.exit(1)
                 else:
-                    if not(external_interface in list_interfaces):
-                        sys.stderr.write(external_interface + ' '+ 'is not a valid ethernet interface, please check your external.conf file.' + '\n')
+                    if not external_interface in list_interfaces:
+                        sys.stderr.write(external_interface + ' ' + 'is not a valid ethernet interface, please check your external.conf file.' + '\n')
                         sys.exit(1)
             
             external_commands = nc.external_commands(lab_path, collision_domains, external_interfaces)
