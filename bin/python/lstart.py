@@ -179,7 +179,7 @@ if (os.path.exists(os.path.join(lab_path, 'external.conf'))):
             sys.exit(1)
     else:
         sys.stderr.write("Please only Linux operating system is supported.\n")
-        sys.stderr.write("Your operating system is " + _platform + "\n")
+        sys.stderr.write("Your operating system is " + _platform + "." + "\n")
         sys.exit(1)
 
 # get command lists
