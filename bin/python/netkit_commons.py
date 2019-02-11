@@ -215,7 +215,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
     base_path = os.path.join(os.environ['NETKIT_HOME'], 'temp')
     if PLATFORM != WINDOWS:
         base_path = os.path.join(os.environ['HOME'], 'netkit_temp')
-    network_counter = random.randint(0,9)
+    network_counter = 0
     if not os.path.exists(os.path.join(base_path,'last_network_counter.txt')):
         last_network_counter = open(os.path.join(base_path,'last_network_counter.txt'), 'w')
         last_network_counter.close()
