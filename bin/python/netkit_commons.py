@@ -181,7 +181,7 @@ def external_commands(path, collision_domains, interfaces, execbash=False):
             prefix_interface = interface.split(".")[0]
             vlan_id = interface.split(".")[1]
             if (len(interface) > 15):
-                prefix_truncate_interface = prefix_interface[:-3]
+                prefix_truncate_interface = prefix_interface[:-5]
                 interface = prefix_truncate_interface + '.' + vlan_id
 
             lab_external_links_text += interface + '\n'
