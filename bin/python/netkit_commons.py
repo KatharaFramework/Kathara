@@ -171,7 +171,7 @@ def external_parse(path):
     return collision_domains, interfaces
 
 #create external_commands
-def external_commands(path, collision_domains, interfaces, list_interfaces, execbash=False):
+def external_commands(path, collision_domains, interfaces, execbash=False):
     lab_external_links_text = ''
     commands = []
     prefix = 'netkit_' + str(os.getuid()) + '_'

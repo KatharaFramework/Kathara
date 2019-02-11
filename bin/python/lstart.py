@@ -173,7 +173,7 @@ if (os.path.exists(os.path.join(lab_path, 'external.conf'))):
                         sys.stderr.write(external_interface + ' ' + 'is not a valid ethernet interface, please check your external.conf file.' + '\n')
                         sys.exit(1)
             
-            external_commands = nc.external_commands(lab_path, collision_domains, external_interfaces, list_interfaces)
+            external_commands = nc.external_commands(lab_path, collision_domains, external_interfaces)
         else:
             sys.stderr.write("Please need root permission to execute external.conf file.\n")
             sys.exit(1)
