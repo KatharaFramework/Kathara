@@ -36,7 +36,7 @@ def remove_subinterface(path):
 
 				os.remove(temp_path + hash_path + '_external_links')
 		else:
-			sys.stderr.write("Please you started the lab with external.conf file, need root permission to clean current lab." +"\n")
+			sys.stderr.write("\033[0;33mPlease you started the lab with external.conf file, need root permission to clean current lab.\033[0m" +"\n")
 			sys.exit(1)
 
 	return delete_commands
