@@ -190,7 +190,7 @@ def create_lab(machine_path, machine_name, conf_lines):
         os.mkdir(machine_path)
     confp = open(os.path.join(machine_path, 'lab.conf'), 'w+')
     if conf_lines:
-        for key, value in conf_lines.items():
+        for key, value in list(conf_lines.items()):
                 repls = ('{machine_name}', machine_name), ('{argument}', str(key)), ('{value}', value)
                 confp.write(u.replace_multiple_items(repls, conf_line_template))
     confp.close()

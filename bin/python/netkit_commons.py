@@ -1,8 +1,8 @@
 try: 
     import configparser as ConfigParser
 except:
-    import ConfigParser
-config = ConfigParser.ConfigParser()
+    import configparser
+config = configparser.ConfigParser()
 from io import StringIO
 from itertools import chain
 import re
@@ -32,8 +32,8 @@ elif _platform == WINDOWS:
     PLATFORM = WINDOWS
 
 def read_config():
-    tmp_config = ConfigParser.ConfigParser()
-    ini = u'[dummysection]\n' + open(os.path.join(os.environ['NETKIT_HOME'], '..', 'config'), 'r').read()
+    tmp_config = configparser.ConfigParser()
+    ini = '[dummysection]\n' + open(os.path.join(os.environ['NETKIT_HOME'], '..', 'config'), 'r').read()
     ini_string = StringIO(ini)
     tmp_config.readfp(ini_string)
     conf = {}
@@ -86,7 +86,7 @@ def reorder_by_lab_dep(path, machines):
 
     dependency_list = dpg.flatten(dependencies)
     # reordering machines
-    ordered_machines = OrderedDict(sorted(machines.items(), key=lambda t: dep_sort(t[0], dependency_list)))
+    ordered_machines = OrderedDict(sorted(list(machines.items()), key=lambda t: dep_sort(t[0], dependency_list)))
     return ordered_machines
 
 def lab_parse(path, force=False):
@@ -98,7 +98,7 @@ def lab_parse(path, force=False):
         return ({}, [], {}, {}) # has to get names from last positional args
 
     # reads lab.conf
-    ini_str = u'[dummysection]\n' + open(os.path.join(path, 'lab.conf'), 'r').read()
+    ini_str = '[dummysection]\n' + open(os.path.join(path, 'lab.conf'), 'r').read()
     ini_fp = StringIO(ini_str)
     config.readfp(ini_fp)
 
@@ -153,7 +153,7 @@ def lab_parse(path, force=False):
     
     machines = reorder_by_lab_dep(path, machines)
     
-    if DEBUG: print (machines, options, metadata)
+    if DEBUG: print(machines, options, metadata)
     return machines, links, options, metadata
 
 
@@ -221,7 +221,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
 
     count = 0
 
-    for machine_name, interfaces in machines.items():
+    for machine_name, interfaces in list(machines.items()):
         this_image = DOCKER_HUB_PREFIX + IMAGE_NAME
         this_shell = 'bash'
 
@@ -303,7 +303,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
 
 
     # for each machine we have to get the machine.startup file and insert every non empty line as a string inside an array of exec commands. We also replace escapes and quotes
-    for machine_name, _ in machines.items():
+    for machine_name, _ in list(machines.items()):
         startup_file = os.path.join(path, machine_name + '.startup')
         if os.path.exists(startup_file):
             f = open(startup_file, 'r')

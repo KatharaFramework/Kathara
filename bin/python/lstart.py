@@ -89,7 +89,7 @@ parser.add_argument("--execbash", required=False, action="store_true", help=argp
 
 args, unknown = parser.parse_known_args()
 
-machine_name_args = list(filter (lambda x: not (x.startswith("--") or x.startswith("-")), unknown))
+machine_name_args = list([x for x in unknown if not (x.startswith("--") or x.startswith("-"))])
 
 # applying parameter options (1/3)
 title_option = " -T "
@@ -121,17 +121,17 @@ if args.options:
 
 # applying parameter options (2/3)
 # adding additional_options to options
-for machine_name, _ in options.items():
+for machine_name, _ in list(options.items()):
     options[machine_name] = options[machine_name] + additional_options
 
 filtered_machines = machines
 
 # filter machines based on machine_name_args (if at least one)
 if len(machine_name_args) >= 1:
-    filtered_machines = dict((k, machines[k]) for k,v in machines.items() if k in machine_name_args)
+    filtered_machines = dict((k, machines[k]) for k,v in list(machines.items()) if k in machine_name_args)
 
 # if force-lab is set true and we have no machines from lab.conf we need to set machine names from args
-if FORCE_LAB and (len(filtered_machines.items()) == 0):
+if FORCE_LAB and (len(list(filtered_machines.items())) == 0):
     filtered_machines = dict((k, [('default', 0)]) for k in machine_name_args)
     links = ['default']
 
@@ -139,7 +139,7 @@ if FORCE_LAB and (len(filtered_machines.items()) == 0):
 if len(filtered_machines) < 1:
     sys.stderr.write("Please specify at least a machine.\n")
     sys.exit(1)
-for _, interfaces in filtered_machines.items(): 
+for _, interfaces in list(filtered_machines.items()): 
 	if len(interfaces) < 1:
 		sys.stderr.write("Please specify at least a link for every machine.\n")
 		sys.exit(1)

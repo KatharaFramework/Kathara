@@ -31,7 +31,7 @@ if args.directory:
 if args.full:
     has_invalid_characters = False
     (machines, links, _, _) = nc.lab_parse(lab_path, force=args.force_lab)
-    for machine_name, _ in machines.items():
+    for machine_name, _ in list(machines.items()):
         if (' ' in machine_name) or ('"' in machine_name) or ("'" in machine_name):
             has_invalid_characters = True
             break
@@ -48,5 +48,5 @@ if args.full:
 if nc.PLATFORM != nc.WINDOWS:
     if pwd.getpwuid(os.getuid()).pw_dir != os.environ['HOME']:
         print ("HOME variable is different from the real home directory. This won't allow labs to work.\n")
-        print ("Please set HOME=" + pwd.getpwuid(os.getuid()).pw_dir + "\n")
+        print("Please set HOME=" + pwd.getpwuid(os.getuid().pw_dir + "\n"))
         sys.exit(1)

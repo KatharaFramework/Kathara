@@ -11,11 +11,11 @@ def _order(idepdict, val=None, level=0):
     #'''Generates a relative order in a dep dictionary'''
     results = {}
     if val is None:
-        for k,v in idepdict.items():
+        for k,v in list(idepdict.items()):
             for dep in v:
                 results.setdefault(k,0)
                 d = _order(idepdict, val=dep, level=level+1)
-                for dk, dv in d.items():
+                for dk, dv in list(d.items()):
                     if dv > results.get(dk,0):
                         results[dk] = dv
         return results
@@ -27,7 +27,7 @@ def _order(idepdict, val=None, level=0):
         else:
             for dep in deps:
                 d = _order(idepdict, val=dep, level=level+1)
-                for dk, dv in d.items():
+                for dk, dv in list(d.items()):
                     if dv > results.get(dk,0):
                         results[dk] = dv
             return results
@@ -35,8 +35,8 @@ def _order(idepdict, val=None, level=0):
 def _invert(d):
     #'''Inverts a dictionary'''
     i = {}
-    for k,v in d.items():
-        if isinstance(v, types.ListType):
+    for k,v in list(d.items()):
+        if isinstance(v, list):
             for dep in v:
                 depl = i.get(dep, [])
                 depl.append(k)
@@ -60,7 +60,7 @@ def flatten(depdict):
 
     #Sort the keys and append to a list
     output = [] 
-    for key in sorted(iorder.iterkeys()):
+    for key in sorted(iorder.keys()):
         output.extend(iorder[key])
     return output
 
@@ -68,7 +68,7 @@ def flatten(depdict):
 def has_loop(depdict, seen=None, val=None):
     #'''Check to see if a given depdict has a dependency loop'''
     if seen is None:
-        for k, v in depdict.items(): 
+        for k, v in list(depdict.items()): 
             seen = []
             for val in v: 
                 if has_loop(depdict, seen=list(seen), val=val):
