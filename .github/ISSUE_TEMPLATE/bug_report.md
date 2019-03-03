@@ -22,7 +22,5 @@ If applicable, add screenshots to help explain your problem.
 
 <details>
 <summary>"check" Command Output</summary>
-```
-Add here the output of $NETKIT_HOME/check or %NETKIT_HOME%\check depending on your operating system (the first is for Linux/MacOS, the second one is for Windows)
-```
+Add the output of `$NETKIT_HOME/check` or `%NETKIT_HOME%\check` depending on your operating system (the first is for Linux/MacOS, the second one is for Windows)
 </details>
