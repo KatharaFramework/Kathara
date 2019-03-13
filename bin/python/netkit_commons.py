@@ -12,6 +12,7 @@ import os
 import utils as u
 import depgen as dpg
 from collections import OrderedDict
+import ipaddress
 
 DEBUG = True
 PRINT = False
@@ -190,7 +191,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         for link in links:
             subnet = ipaddress.ip_address("172.19.0.0") + (network_counter * 256 * 256)
             gateway = ipaddress.ip_address("172.19.0.1") + (network_counter * 256 * 256)
-            create_network_commands.append(create_network_template + prefix + link + " --subnet=" + str(subnet) + "/16 --gateway=" + str(subnet))
+            create_network_commands.append(create_network_template + prefix + link + " --subnet=" + str(subnet) + "/16 --gateway=" + str(gateway))
             lab_links_text += prefix + link + ' '
             network_counter += 1
             create_network_commands.append(os.path.join(os.environ['NETKIT_HOME'], 'brctl_config ' + prefix + link))
