@@ -85,6 +85,11 @@ parser.add_argument(
     action='store_true',
     help='Print commands used to start the containers to stderr (containers are not started).'
 )
+parser.add_argument(
+    '-c', '--counter',
+    required=False,
+    help='Start from a specifin network counter (overrides whatever was previously initialized, using 0 will prompt the default behavior).'
+)
 parser.add_argument("--execbash", required=False, action="store_true", help=argparse.SUPPRESS)
 
 args, unknown = parser.parse_known_args()
@@ -100,6 +105,13 @@ if args.xterm and (" " not in args.xterm):
 FORCE_LAB=False
 if args.force_lab: 
     FORCE_LAB = args.force_lab
+
+network_counter = 0
+if args.counter: 
+    try: 
+        network_counter = int(args.counter)
+    except:
+        pass
 
 if args.print_only:
     cr.PRINT = True
@@ -145,7 +157,7 @@ for _, interfaces in filtered_machines.items():
 		sys.exit(1)
 
 # get command lists
-(commands, startup_commands, exec_commands) = nc.create_commands(filtered_machines, links, options, metadata, lab_path, args.execbash, no_machines_tmp=(len(machine_name_args) >= 1))
+(commands, startup_commands, exec_commands) = nc.create_commands(filtered_machines, links, options, metadata, lab_path, args.execbash, no_machines_tmp=(len(machine_name_args) >= 1), network_counter=network_counter)
 
 # create lab
 if not args.execbash:

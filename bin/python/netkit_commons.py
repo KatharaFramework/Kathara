@@ -157,7 +157,7 @@ def lab_parse(path, force=False):
     return machines, links, options, metadata
 
 
-def create_commands(machines, links, options, metadata, path, execbash=False, no_machines_tmp=False):
+def create_commands(machines, links, options, metadata, path, execbash=False, no_machines_tmp=False, network_counter=0):
     docker = DOCKER_BIN
 
     # deciding machine and network prefix in order to avoid conflicts with other users and containers
@@ -176,20 +176,23 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
     base_path = os.path.join(os.environ['NETKIT_HOME'], 'temp')
     if PLATFORM != WINDOWS:
         base_path = os.path.join(os.environ['HOME'], 'netkit_temp')
-    network_counter = 0
+
     if not os.path.exists(os.path.join(base_path,'last_network_counter.txt')):
         last_network_counter = open(os.path.join(base_path,'last_network_counter.txt'), 'w')
         last_network_counter.close()
 
     with open(os.path.join(base_path,'last_network_counter.txt'), 'r') as last_network_counter:
-        try:
-            network_counter = int(last_network_counter.readline())
-        except:
-            network_counter = 0
+        if network_counter == 0: # means it was not set by user
+            try:
+                network_counter = int(last_network_counter.readline())
+            except:
+                network_counter = 0
         for link in links:
-            create_network_commands.append(create_network_template + prefix + link + " --subnet=172." + str(19+network_counter) + ".0.0/16 --gateway=172." + str(19+network_counter) + ".0.1")
+            subnet = ipaddress.ip_address("172.19.0.0") + (network_counter * 256 * 256)
+            gateway = ipaddress.ip_address("172.19.0.1") + (network_counter * 256 * 256)
+            create_network_commands.append(create_network_template + prefix + link + " --subnet=" + str(subnet) + "/16 --gateway=" + str(subnet))
             lab_links_text += prefix + link + ' '
-            network_counter = (network_counter + 1) % 236
+            network_counter += 1
             create_network_commands.append(os.path.join(os.environ['NETKIT_HOME'], 'brctl_config ' + prefix + link))
     with open(os.path.join(base_path,'last_network_counter.txt'), 'w') as last_network_counter:
         last_network_counter.write(str(network_counter))
