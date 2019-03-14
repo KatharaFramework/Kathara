@@ -91,14 +91,11 @@ fi
 
 sudo chmod 644 $NETKIT_HOME/../config
 
-if [ "$SKIP_P4" = "1" ]; then
-    echo "Pulling images"
-    sudo docker pull kathara/netkit_base
-    sudo docker pull alpine
-else
-    echo "Pulling images"
-    sudo docker pull kathara/netkit_base
-    sudo docker pull alpine
+echo "Pulling images"
+sudo docker pull kathara/netkit_base
+sudo docker pull alpine
+
+if [ "$SKIP_P4" = "0" ]; then
     sudo docker pull kathara/p4
 fi
 
