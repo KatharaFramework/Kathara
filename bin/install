@@ -45,8 +45,10 @@ if [ "$SKIP_PIP" = "0" ]; then
     echo "Checking ipaddress library"
     python -c "import numpy"
     if [ "$?" = "0" ]; then
-        echo "Installing ipaddress using pip (to skip use --nopip)"
+        echo "Library not found, installing using pip (to skip use --nopip)"
         pip install ipaddress
+    else 
+        echo "Library already installed"
     fi
 fi
 
