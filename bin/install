@@ -2,6 +2,7 @@
 
 SKIP_P4=1
 NOT_ADMIN=1
+SKIP_PIP=0
 for i in "$@"
 do
 case $i in
@@ -11,6 +12,10 @@ case $i in
     ;;
     --admin)
     NOT_ADMIN=0
+    #shift 
+    ;;
+    --nopip)
+    SKIP_PIP=1
     #shift 
     ;;
     *)
@@ -35,6 +40,11 @@ if [ ! -d "$NETKIT_HOME/../bin" ]; then
 fi
 
 sudo true
+
+if [ "$SKIP_PIP" = "0" ]; then
+    echo "Installing ipaddress using pip (to skip use --nopip)"
+    pip install ipaddress
+fi
 
 echo "Setting permissions"
 
