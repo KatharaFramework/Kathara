@@ -23,6 +23,10 @@ IF "%SKIP_P4%" == "0" (
 )
 
 IF "%SKIP_PIP%" == "0" (
+  echo "Checking ipaddress library"
+  python -c "import ipaddress"
+  IF "%ERRORLEVEL%" == "1" (
   echo "Installing ipaddress using pip (to skip use --nopip)"
-  pip install ipaddress
+    pip install ipaddress
+  )
 )
