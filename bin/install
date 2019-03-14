@@ -42,8 +42,12 @@ fi
 sudo true
 
 if [ "$SKIP_PIP" = "0" ]; then
-    echo "Installing ipaddress using pip (to skip use --nopip)"
-    pip install ipaddress
+    echo "Checking ipaddress library"
+    python -c "import numpy"
+    if [ "$?" = "0" ]; then
+        echo "Installing ipaddress using pip (to skip use --nopip)"
+        pip install ipaddress
+    fi
 fi
 
 echo "Setting permissions"
