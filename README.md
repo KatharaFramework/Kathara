@@ -13,7 +13,7 @@
 </ul>
 
 From the Greek Καθαρά. 
-Implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-core) using Python and Docker. 10 times faster than Netkit and more than 100 times lighter, allows easy configuration and deploy of arbitrary virtual networks with for SDN, NFV and traditional routing protocols. 
+Implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-core) using Python and Docker. 10 times faster than Netkit and more than 100 times lighter, allows easy configuration and deploy of arbitrary virtual networks with SDN, NFV and traditional routing protocols. 
 
 Kathará comes with **P4**, **OpenVSwitch**, **Quagga**, **Bind**, and more, but can also be extended with your own container images. 
 
@@ -42,7 +42,7 @@ The main difference is the way we specify the interfaces in the `vstart` command
 
 In addition there is another command, `lwipe`, that erases every container and network created by Kathará, including its cache. 
 
-Also the subnet `172.0.0.0/8` (basically any IP starting with `172`) is reserved and should not be used when configuring links. 
+Also the subnet `172.0.0.0/8` is reserved and should not be used when configuring links. Subsequent subnets may also be used if the number of links grows past 236 (virtually from `172.0.0.0/8` to `255.0.0.0/8`). You can control this by using the option `--counter` followed by a number in `lstart` (e.g.: `$NETKIT_HOME/lstart --counter 255` will start from `173.19.0.0`). This trick is used to create more network links despite Docker limitations. 
 
 For `ltest`there are 2 minor adjustments:
 * `--verify` needs to be followed by `=` before the option (e.g. `ltest --verify=user`).
