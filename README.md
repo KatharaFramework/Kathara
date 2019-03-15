@@ -66,7 +66,7 @@ There is also a new command called `lwipe` that acts like `lclean` but for every
 ### More examples and tutorials can be found [here](https://github.com/KatharaFramework/Kathara-Labs).
 
 ## Extend Kathará
-Extending Kathará is actually very simple. Any local or remote Docker image tagged as `kathara/IMAGENAME` can be used with `vstart --image=IMAGENAME --eth=0:A node_name` or with `lstart` having something like that in `lab.conf`: `node_name[image]=IMAGENAME`.
+Extending Kathará is actually very simple. Any local or remote Docker image tagged as `kathara/IMAGENAME` can be used with `vstart --image=IMAGENAME --eth=0:A node_name` or with `lstart` having something like that in `lab.conf`: `node_name[image]=IMAGENAME`. The prefix `kathara/` acts as a namespace. 
 
 If your Docker image uses a different shell instead of `bash` you can change it in `vstart` by using the extra flag `--shell=SHELLNAME` or in lstart by editing your `lab.conf` accordingly (e.g.: `node_name[shell]=SHELLNAME`).
 
@@ -78,3 +78,4 @@ To alter (locally) an existing Kathará image refer to the following steps (reme
 5. `docker commit YOUR_NEW_NAME  kathara/YOUR_NEW_NAME`
 6. `docker rm -f YOUR_NEW_NAME`
 
+A similar process can be used, as previously mentioned, to re-tag any local image as `kathara/IMAGENAME`, allowing it to be used in `lab.conf` and `vstart`. 
