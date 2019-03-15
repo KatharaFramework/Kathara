@@ -48,6 +48,8 @@ For `ltest`there are 2 minor adjustments:
 * `--verify` needs to be followed by `=` before the option (e.g. `ltest --verify=user`).
 * `--script-mode` has been replaced by simply sending stdout to `/dev/null` (e.g. `ltest --verify=user &> /dev/null`).
 
+There is also a new command called `lwipe` that acts like `lclean` but for every Kathará lab or Kathará node on your system. It will also wipe any counter or status file, basically starting from a fresh install. 
+
 ## Example
 * Installa Kathará by following the installation steps above
 * Download and unpack MARACAS_lab from [here](http://wiki.netkit.org/netkit-labs/netkit-labs_exams/icn-20151120/icn-20151120.tar.gz).
