@@ -98,11 +98,11 @@ sudo -k
 
 if [ "$SKIP_PIP" = "0" ]; then
     echo "Checking ipaddress library"
-    python -c "import numpy"
-    if [ "$?" = "0" ]; then
+    python -c "import ipaddress" > /dev/null
+    if [ $? -eq 0 ]; then
+        echo "Library already installed"
+    else 
         echo "Library not found, installing using pip (to skip use --nopip)"
         pip install ipaddress
-    else 
-        echo "Library already installed"
     fi
 fi
