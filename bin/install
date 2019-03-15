@@ -41,17 +41,6 @@ fi
 
 sudo true
 
-if [ "$SKIP_PIP" = "0" ]; then
-    echo "Checking ipaddress library"
-    python -c "import numpy"
-    if [ "$?" = "0" ]; then
-        echo "Library not found, installing using pip (to skip use --nopip)"
-        pip install ipaddress
-    else 
-        echo "Library already installed"
-    fi
-fi
-
 echo "Setting permissions"
 
 if type chattr >/dev/null 2>/dev/null; then sudo chattr -i $NETKIT_HOME/wrapper/bin/netkit_dw; else sudo chflags noschg $NETKIT_HOME/wrapper/bin/netkit_dw; fi
@@ -106,3 +95,14 @@ if [ "$SKIP_P4" = "0" ]; then
 fi
 
 sudo -k
+
+if [ "$SKIP_PIP" = "0" ]; then
+    echo "Checking ipaddress library"
+    python -c "import numpy"
+    if [ "$?" = "0" ]; then
+        echo "Library not found, installing using pip (to skip use --nopip)"
+        pip install ipaddress
+    else 
+        echo "Library already installed"
+    fi
+fi
