@@ -50,6 +50,8 @@ For `ltest`there are 2 minor adjustments:
 
 There is also a new command called `lwipe` that acts like `lclean` but for every Kathará lab or Kathará node on your system. It will also wipe any counter or status file, basically starting from a fresh install. 
 
+Finally both `vstart` and `lab.conf` have the `bridged` option that can be used to give Internet connectivity to the nodes by creating an interface to the host. 
+
 ## Example
 * Installa Kathará by following the installation steps above
 * Download and unpack MARACAS_lab from [here](http://wiki.netkit.org/netkit-labs/netkit-labs_exams/icn-20151120/icn-20151120.tar.gz).
