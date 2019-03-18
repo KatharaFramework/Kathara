@@ -189,7 +189,7 @@ def external_commands(path, collision_domains, interfaces, execbash=False):
 
             commands.append(os.path.join(os.environ['NETKIT_HOME'],'brctl_config_external ' + prefix + collision_domain + ' ' + interface + ' ' + prefix_interface  + ' ' + vlan_id))
         else:
-            commands.append(os.path.join(os.environ['NETKIT_HOME'],'brctl_config_external ' + prefix + collision_domain + ' ' + prefix_interface))        
+            commands.append(os.path.join(os.environ['NETKIT_HOME'],'brctl_config_external ' + prefix + collision_domain + ' ' + interface))        
 
     if not execbash:
         if not PRINT: u.write_temp(lab_external_links_text, str(u.generate_urlsafe_hash(path)) + '_external_links', PLATFORM, file_mode="w+")
