@@ -20,7 +20,8 @@ def lab_create(commands, startup_commands):
     else:
         if nc.PLATFORM == nc.WINDOWS: 
             u.write_temp("@ECHO OFF \n\n" + lab_create_command_string, "last_lab_creation.bat", mode=nc.PLATFORM, file_mode="w")
-            cu.run_command_detatched('cd "' + u.get_temp_folder(mode=nc.PLATFORM) + '"' + nc.BASH_SEPARATOR + "last_lab_creation.bat")
+            drive = u.get_temp_folder(mode=nc.PLATFORM).split(':')[0] + ': '
+            cu.run_command_detatched(drive + nc.BASH_SEPARATOR + ' cd "' + u.get_temp_folder(mode=nc.PLATFORM) + '"' + nc.BASH_SEPARATOR + "last_lab_creation.bat")
         else: 
             u.write_temp("#!/bin/bash \n\n" + lab_create_command_string, "last_lab_creation.sh", mode=nc.PLATFORM, file_mode="w")
             os.chmod(os.path.join(u.get_temp_folder(mode=nc.PLATFORM), "last_lab_creation.sh"), 0o755)
