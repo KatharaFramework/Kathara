@@ -183,14 +183,18 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         last_network_counter.close()
 
     with open(os.path.join(base_path,'last_network_counter.txt'), 'r') as last_network_counter:
+        base_ip = u'172.19.0.0'
+        max_ip = u'254.255.0.0'
+        multiplier = 256 * 256
+        max_counter = ( int(ipaddress.ip_address(max_ip)) - int(ipaddress.ip_address(base_ip)) ) / multiplier
         if network_counter == 0: # means it was not set by user
             try:
-                network_counter = int(last_network_counter.readline())
+                network_counter = int(last_network_counter.readline()) % max_counter
             except:
                 network_counter = 0
         for link in links:
-            subnet = ipaddress.ip_address(u'172.19.0.0') + (network_counter * 256 * 256)
-            gateway = ipaddress.ip_address(u'172.19.0.1') + (network_counter * 256 * 256)
+            subnet = ipaddress.ip_address(base_ip) + (network_counter * multiplier)
+            gateway = ipaddress.ip_address(base_ip) + (network_counter * multiplier)
             create_network_commands.append(create_network_template + prefix + link + " --subnet=" + str(subnet) + "/16 --gateway=" + str(gateway))
             lab_links_text += prefix + link + ' '
             network_counter += 1
