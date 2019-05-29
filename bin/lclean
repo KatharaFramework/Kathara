@@ -42,6 +42,7 @@ if [ "$RC" = "0" ]; then
             ); done
         python $NETKIT_HOME/python/rm_subinterface.py "$PWD/"
     fi
+    echo -e "\033[0;33mNetworks will be deleted\033[0m"
     python $NETKIT_HOME/python/folder_hash.py "$PWD/" "$@" | while read in; do (
             if [ -f "$HOME/netkit_temp/$in$L" ]; then
                 $ADAPTER_BIN network rm `cat "$HOME/netkit_temp/$in$L"`
