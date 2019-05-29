@@ -13,7 +13,7 @@
 </ul>
 
 From the Greek Καθαρά. 
-Implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-core) using Python and Docker. 10 times faster than Netkit and more than 100 times lighter, allows easy configuration and deploy of arbitrary virtual networks with for SDN, NFV and traditional routing protocols. 
+Implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-core) using Python and Docker. 10 times faster than Netkit and more than 100 times lighter, allows easy configuration and deploy of arbitrary virtual networks with SDN, NFV and traditional routing protocols. 
 
 Kathará comes with **P4**, **OpenVSwitch**, **Quagga**, **Bind**, and more, but can also be extended with your own container images. 
 
@@ -42,11 +42,15 @@ The main difference is the way we specify the interfaces in the `vstart` command
 
 In addition there is another command, `lwipe`, that erases every container and network created by Kathará, including its cache. 
 
-Also the subnet `172.0.0.0/8` (basically any IP starting with `172`) is reserved and should not be used when configuring links. 
+Also the subnet `172.0.0.0/8` is reserved and should not be used when configuring links. Subsequent subnets may also be used if the number of links grows past 236 (virtually from `172.0.0.0/8` to `255.0.0.0/8`). You can control this by using the option `--counter` followed by a number in `lstart` (e.g.: `$NETKIT_HOME/lstart --counter 255` will start from `173.19.0.0`). This trick is used to create more network links despite Docker limitations. 
 
 For `ltest`there are 2 minor adjustments:
 * `--verify` needs to be followed by `=` before the option (e.g. `ltest --verify=user`).
 * `--script-mode` has been replaced by simply sending stdout to `/dev/null` (e.g. `ltest --verify=user &> /dev/null`).
+
+There is also a new command called `lwipe` that acts like `lclean` but for every Kathará lab or Kathará node on your system. It will also wipe any counter or status file, basically starting from a fresh install. 
+
+Finally both `vstart` and `lab.conf` have the `bridged` option that can be used to give Internet connectivity to the nodes by creating an interface to the host. 
 
 ## Example
 * Installa Kathará by following the installation steps above
@@ -64,7 +68,7 @@ For `ltest`there are 2 minor adjustments:
 ### More examples and tutorials can be found [here](https://github.com/KatharaFramework/Kathara-Labs).
 
 ## Extend Kathará
-Extending Kathará is actually very simple. Any local or remote Docker image tagged as `kathara/IMAGENAME` can be used with `vstart --image=IMAGENAME --eth=0:A node_name` or with `lstart` having something like that in `lab.conf`: `node_name[image]=IMAGENAME`.
+Extending Kathará is actually very simple. Any local or remote Docker image tagged as `kathara/IMAGENAME` can be used with `vstart --image=IMAGENAME --eth=0:A node_name` or with `lstart` having something like that in `lab.conf`: `node_name[image]=IMAGENAME`. The prefix `kathara/` acts as a namespace. 
 
 If your Docker image uses a different shell instead of `bash` you can change it in `vstart` by using the extra flag `--shell=SHELLNAME` or in lstart by editing your `lab.conf` accordingly (e.g.: `node_name[shell]=SHELLNAME`).
 
@@ -76,3 +80,4 @@ To alter (locally) an existing Kathará image refer to the following steps (reme
 5. `docker commit YOUR_NEW_NAME  kathara/YOUR_NEW_NAME`
 6. `docker rm -f YOUR_NEW_NAME`
 
+A similar process can be used, as previously mentioned, to re-tag any local image as `kathara/IMAGENAME`, allowing it to be used in `lab.conf` and `vstart`. 

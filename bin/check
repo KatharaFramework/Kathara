@@ -15,7 +15,7 @@ python -V
 echo ''
 
 echo NETKIT_HOME is
-ECHO $NETKIT_HOME
+echo $NETKIT_HOME
 echo ''
 
 echo Kathara version is

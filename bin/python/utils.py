@@ -26,14 +26,18 @@ def natural_keys(text):
 def replace_multiple_items(repls, string):
         return functools.reduce(lambda a, kv: a.replace(*kv), repls, string)
 
+def get_temp_folder(mode="linux"):
+    if mode=="win32":
+        return os.path.join(os.environ["NETKIT_HOME"], "temp/")
+    return os.path.join(pwd.getpwuid(os.getuid()).pw_dir, "netkit_temp/")
+
 # writes the temporary files in NETKIT_HOME/temp
 def write_temp(text, filename, mode="linux", file_mode="a+"):
-    if mode=="win32":
-        out_file = open(os.path.join(os.environ["NETKIT_HOME"], "temp/" + filename), file_mode)
-    else:
-        out_file = open(os.path.join(pwd.getpwuid(os.getuid()).pw_dir, "netkit_temp/" + filename), file_mode)
+    out_file = open(os.path.join(get_temp_folder(mode=mode), filename), file_mode)
     out_file.write(text)
     out_file.close()
+
+
 
 def check_folder_or_file_name_in_dir(some_dir, file_or_folder_name):
     for dname, dirs, files in os.walk(some_dir):
