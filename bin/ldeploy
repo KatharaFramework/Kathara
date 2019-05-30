@@ -1,0 +1,25 @@
+#!/bin/bash
+
+mkdir -p $HOME/netkit_temp/labs
+
+python $NETKIT_HOME/python/check.py "$PWD/" -f "$@"
+
+export RC=$?
+if [ "$RC" = "0" ]; then
+    python $NETKIT_HOME/python/print_metadata.py "$PWD/" "$@"
+
+    M=_machines
+
+    python $NETKIT_HOME/python/folder_hash.py "$PWD/" "$@"| 
+    while IFS=';' read -ra in; do (
+		if [ -f "$HOME/netkit_temp/$in$M" ]; then 
+            echo -e "\033[0;33mLab already deployed. Exiting...\033[0m"
+            exit 0
+		else 
+		    python $NETKIT_HOME/python/ldeploy.py "$PWD/" "$@"
+		fi
+    ); 
+    done
+else
+    echo FAILED
+fi

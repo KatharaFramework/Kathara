@@ -138,12 +138,12 @@ def lab_parse(path, force=False):
             if not machines.get(name):
                 machines[name] = []
             if len(machines[name]) == 0 or machines[name][len(machines[name])-1][1] == ifnumber - 1:
-                machines[name].append((config.get('dummysection', key), ifnumber))
+                machines[name].append((config.get('dummysection', key).strip().replace('"','').replace("'",''), ifnumber))
         except ValueError:
             option = splitted[0].strip()
             if not options.get(name):
                 options[name] = []
-            options[name].append((option, config.get('dummysection', key)))
+            options[name].append((option, config.get('dummysection', key).strip().replace('"','').replace("'",'')))
     # same with metadata
     metadata = {}
     for m_key in m_keys:
@@ -253,11 +253,11 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         machine_option_string = " "
         if options.get(machine_name):
             for opt, val in options[machine_name]:
-                if opt=='mem' or opt=='M': 
+                if opt=='mem' or opt=='M':
                     machine_option_string+='--memory='+ val.upper() +' '
-                if opt=='image' or opt=='i' or opt=='model-fs' or opt=='m' or opt=='f' or opt=='filesystem': 
+                if opt=='image' or opt=='i' or opt=='model-fs' or opt=='m' or opt=='f' or opt=='filesystem':
                     this_image = DOCKER_HUB_PREFIX + val
-                if opt=='eth': 
+                if opt=='eth':
                     app = val.split(":")
                     create_network_commands.append(create_network_template + prefix + app[1])
                     repls = ('{link}', app[1]), ('{machine_name}', machine_name)
