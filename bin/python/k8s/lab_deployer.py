@@ -9,7 +9,7 @@ import machine_deployer
 def deploy(machines, links, options, path, no_machines_tmp=False, network_counter=0):
     # Loads the configuration of the master if it's not print mode
     if not nc.PRINT:
-        config.load_incluster_config()
+        config.load_kube_config()
 
     namespace = "default"
 
