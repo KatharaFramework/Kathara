@@ -44,7 +44,7 @@ def build_k8s_pod_for_machine(machine):
     if machine["startup_commands"] and len(machine["startup_commands"]) > 0:
         post_start = client.V1Handler(
                         _exec=client.V1ExecAction(
-                            command=["bash", "-c", "; ".join(machine["startup_commands"])]
+                            command=["/bin/bash", "-c", "; ".join(machine["startup_commands"])]
                         )
                      )
         lifecycle = client.V1Lifecycle(post_start=post_start)
@@ -115,33 +115,39 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
 
         # Build the postStart commands.
         startup_commands = [
-            # Copy the machine folder from the hostlab directory into the root folder of the container
-            # In this way, files are all replaced in the container
-            "cp -rfp /hostlab/%s/* /" % machine_name,   # TODO: if
+            # If execution mark file is found, abort (this means that postStart has been called again)
+            # If not mark the startup execution with a file
+            "if [ -f \"/tmp/post_start\" ]; then exit; else touch /tmp/post_start; fi",
+
+            # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
+            # In this way, files are all replaced in the container root folder
+            "if [ -d \"/hostlab/%s\" ]; then cp -rfp /hostlab/%s/* /; fi" % machine_name,
+
             # Create /var/log/zebra folder
             "mkdir /var/log/zebra",
+
             # Give proper permissions to few files/directories (copied from Kathara)
             "chmod -R 777 /var/log/quagga; chmod -R 777 /var/log/zebra; chmod -R 777 /var/www/*",
-            # Patch the /etc/resolv.conf file if present
-            # This should be patched with "cat" because file is already in use.
-            ""                                          # TODO
+
+            # Removes /etc/bind already existing configuration from k8s internal DNS
+            "rm -Rf /etc/bind/*",
+
+            # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
+            # If not, clear the content of the file.
+            # This should be patched with "cat" because file is already in use by k8s internal DNS.
+            "if [ -f \"/hostlab/%s/etc/resolv.conf\" ]; then " \
+            "cat /hostlab/%s/etc/resolv.conf > /etc/resolv.conf; else" \
+            "cat \"\" > /etc/resolv.conf; fi" % machine_name,
+
+            # If .startup file is present
+            "if [ -f \"/hostlab/%s.startup\" ]; then " \
+            # Copy it from the hostlab directory into the root folder of the container
+            "cp /hostlab/%s.startup /;" \
+            # Give execute permissions to the file and execute it
+            "chmod u+x /%s.startup; /%s.startup;" \
+            # Delete the file after execution
+            "rm /%s.startup; fi" % machine_name
         ]
-
-        # After the "basic" initialization is completed, inject the machine.startup file commands
-        # Get the machine.startup file and insert every non empty line as a string (stripped and escaped) inside the
-        # array of startup commands
-        startup_file_path = os.path.join(lab_path, machine_name + '.startup')
-        if os.path.exists(startup_file_path):
-            with open(startup_file_path, 'r') as startup_file:
-                for startup_command in startup_file:
-                    stripped_command = startup_command.strip()
-
-                    if stripped_command \
-                       and (stripped_command not in ['\n', '\r\n', '\n\r']) \
-                       and (not stripped_command.startswith('#')):
-                        startup_commands.append(
-                            stripped_command.replace('\\', r'\\').replace('"', r'\"').replace("'", r"\'")
-                        )
 
         # Saves extra options for current machine
         if options.get(machine_name):
