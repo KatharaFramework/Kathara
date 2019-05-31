@@ -1,10 +1,11 @@
 import json
 import os
-import re
 import sys
 
 import netkit_commons as nc
 from kubernetes.client.apis import custom_objects_api
+
+import k8s_utils
 
 group = "k8s.cni.cncf.io"
 version = "v1"
@@ -40,14 +41,7 @@ def write_network_counter(network_counter):
         last_network_counter.write(str(network_counter))
 
 
-def build_link_name(link):
-    # Network Attachment Definition name for k8s should be only alphanumeric lowercase + "-" + "."
-    link_name = link.lower()
-    link_name = re.sub('[^0-9a-z\-\.]+', '', link_name)
-    return "net-" + link_name
-
-
-def build_k8s_definition_for_network(link_name, network_counter):
+def build_k8s_definition_for_link(link_name, network_counter):
     # Creates a dict which contains the "link" network definition to deploy in k8s
     return {
         "apiVersion": "k8s.cni.cncf.io/v1",
@@ -77,8 +71,8 @@ def deploy_links(links, namespace="default", network_counter=0):
     for link in links:
         print "Deploying link `%s`..." % link
 
-        link_name = build_link_name(link)
-        net_attach_def = build_k8s_definition_for_network(link_name, network_counter)
+        link_name = k8s_utils.build_k8s_name(link, prefix="net")
+        net_attach_def = build_k8s_definition_for_link(link_name, network_counter)
         if not nc.PRINT:
             custom_api.create_namespaced_custom_object(group, version, namespace, plural, net_attach_def)
         else:               # If print mode, prints the "link" network definition as a JSON on stderr

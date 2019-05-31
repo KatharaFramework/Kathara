@@ -1,11 +1,13 @@
+import json
 import os
 import socket
 import sys
-import json
 
 import netkit_commons as nc
 from kubernetes import client
 from kubernetes.client.apis import core_v1_api
+
+import k8s_utils
 
 
 def build_k8s_pod_for_machine(machine):
@@ -100,6 +102,9 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
     # Init API Client
     core_api = core_v1_api.CoreV1Api()
 
+    created_machines = []   # Saves each k8s machine name. This will be used later to write which machines are
+                            # part of the lab.
+
     for machine_name, interfaces in machines.items():
         print "Deploying machine `%s`..." % machine_name
 
@@ -107,7 +112,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
         # create a custom pod definition
         current_machine = {
             "namespace": namespace,
-            "name": machine_name,
+            "name": k8s_utils.build_k8s_name(machine_name),
             "interfaces": [netkit_to_k8s_links[interface_name] for interface_name, _ in interfaces],
             "image": nc.DOCKER_HUB_PREFIX + nc.IMAGE_NAME,
             "lab_path": lab_path,
@@ -122,7 +127,8 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
 
             # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
             # In this way, files are all replaced in the container root folder
-            "if [ -d \"/hostlab/{machine_name}\" ]; then cp -rfp /hostlab/{machine_name}/* /; fi" % {'machine_name': machine_name},
+            "if [ -d \"/hostlab/{machine_name}\" ]; then " \
+            "cp -rfp /hostlab/{machine_name}/* /; fi" % {'machine_name': machine_name},
 
             # Create /var/log/zebra folder
             "mkdir /var/log/zebra",
@@ -189,3 +195,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             core_api.create_namespaced_pod(body=pod, namespace=namespace)
         else:               # If print mode, prints the pod definition as a JSON on stderr
             sys.stderr.write(json.dumps(pod.to_dict(), indent=True))
+
+        created_machines.append(current_machine["name"])
+
+    return created_machines

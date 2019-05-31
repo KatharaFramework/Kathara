@@ -2,6 +2,7 @@ import netkit_commons as nc
 import utils as u
 from kubernetes import config
 
+import k8s_utils
 import link_deployer
 import machine_deployer
 
@@ -13,9 +14,9 @@ def deploy(machines, links, options, path, no_machines_tmp=False, network_counte
 
     namespace = "default"
 
-    # TODO: This be used later...
-    print "Namespace is %s" % str(u.generate_urlsafe_hash(path))
-    # namespace = str(u.generate_urlsafe_hash(path))
+    # TODO: This'll be used in later versions...
+    print "Namespace is %s" % k8s_utils.build_k8s_name(str(u.generate_urlsafe_hash(path)))
+    # namespace = k8s_utils.build_k8s_name(str(u.generate_urlsafe_hash(path)))
     # KubernetesDeployer.get_instance().create_namespace(lab.name)
 
     print "Deploying networks..."
@@ -41,4 +42,4 @@ def deploy(machines, links, options, path, no_machines_tmp=False, network_counte
     # Writes the machines list in the temp file (only if no_machines_tmp is False)
     if not no_machines_tmp:
         if not nc.PRINT:
-            u.write_temp(" ".join(k8s_machines.values()), namespace + '_machines', nc.PLATFORM)
+            u.write_temp(" ".join(k8s_machines), namespace + '_machines', nc.PLATFORM)
