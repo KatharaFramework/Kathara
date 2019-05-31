@@ -6,6 +6,7 @@ import sys
 import netkit_commons as nc
 from kubernetes import client
 from kubernetes.client.apis import core_v1_api
+from kubernetes.client.rest import ApiException
 
 import k8s_utils
 
@@ -113,6 +114,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
         current_machine = {
             "namespace": namespace,
             "name": k8s_utils.build_k8s_name(machine_name),
+            # TODO: Handle interface namespacing!
             "interfaces": [netkit_to_k8s_links[interface_name] for interface_name, _ in interfaces],
             "image": nc.DOCKER_HUB_PREFIX + nc.IMAGE_NAME,
             "lab_path": lab_path,
@@ -121,14 +123,14 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
 
         # Build the postStart commands.
         startup_commands = [
-            # If execution mark file is found, abort (this means that postStart has been called again)
-            # If not mark the startup execution with a file
+            # If execution flag file is found, abort (this means that postStart has been called again)
+            # If not flag the startup execution with a file
             "if [ -f \"/tmp/post_start\" ]; then exit; else touch /tmp/post_start; fi",
 
             # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
             # In this way, files are all replaced in the container root folder
             "if [ -d \"/hostlab/{machine_name}\" ]; then " \
-            "cp -rfp /hostlab/{machine_name}/* /; fi" % {'machine_name': machine_name},
+            "cp -rfp /hostlab/{machine_name}/* /; fi".format(machine_name=machine_name),
 
             # Create /var/log/zebra folder
             "mkdir /var/log/zebra",
@@ -143,17 +145,17 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             # If not, clear the content of the file.
             # This should be patched with "cat" because file is already in use by k8s internal DNS.
             "if [ -f \"/hostlab/{machine_name}/etc/resolv.conf\" ]; then " \
-            "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else" \
-            "cat \"\" > /etc/resolv.conf; fi" % {'machine_name': machine_name},
+            "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else " \
+            "echo \"\" > /etc/resolv.conf; fi".format(machine_name=machine_name),
 
             # If .startup file is present
             "if [ -f \"/hostlab/{machine_name}.startup\" ]; then " \
             # Copy it from the hostlab directory into the root folder of the container
-            "cp /hostlab/{machine_name}.startup /;" \
+            "cp /hostlab/{machine_name}.startup /; " \
             # Give execute permissions to the file and execute it
-            "chmod u+x /{machine_name}.startup; /{machine_name}.startup;" \
+            "chmod u+x /{machine_name}.startup; /{machine_name}.startup; " \
             # Delete the file after execution
-            "rm /{machine_name}.startup; fi" % {'machine_name': machine_name}
+            "rm /{machine_name}.startup; fi".format(machine_name=machine_name)
         ]
 
         # Saves extra options for current machine
@@ -192,10 +194,14 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
         pod = build_k8s_pod_for_machine(current_machine)
 
         if not nc.PRINT:
-            core_api.create_namespaced_pod(body=pod, namespace=namespace)
+            try:
+                core_api.create_namespaced_pod(body=pod, namespace=namespace)
+                print "Machine `%s` deployed successfully!" % machine_name
+
+                created_machines.append(current_machine["name"])
+            except ApiException as e:
+                sys.stderr.write("ERROR: could not deploy machine `%s` - %s" % (machine_name, e.message))
         else:               # If print mode, prints the pod definition as a JSON on stderr
             sys.stderr.write(json.dumps(pod.to_dict(), indent=True))
-
-        created_machines.append(current_machine["name"])
 
     return created_machines
