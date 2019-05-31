@@ -6,7 +6,6 @@ import sys
 import netkit_commons as nc
 from kubernetes.client.apis import custom_objects_api
 
-custom_api = custom_objects_api.CustomObjectsApi()
 group = "k8s.cni.cncf.io"
 version = "v1"
 plural = "network-attachment-definitions"
@@ -67,6 +66,9 @@ def build_k8s_definition_for_network(link_name, network_counter):
 
 
 def deploy_links(links, namespace="default", network_counter=0):
+    # Init API Client
+    custom_api = custom_objects_api.CustomObjectsApi()
+
     # Reads the network counter. In k8s case, the counter is used for VXLAN ID tag.
     network_counter = read_network_counter(network_counter)
 

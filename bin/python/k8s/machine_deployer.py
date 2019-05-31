@@ -7,8 +7,6 @@ import netkit_commons as nc
 from kubernetes import client
 from kubernetes.client.apis import core_v1_api
 
-core_api = core_v1_api.CoreV1Api()
-
 
 def build_k8s_pod_for_machine(machine):
     # Defines volume mounts for both hostlab and hosthome
@@ -99,6 +97,9 @@ def build_k8s_pod_for_machine(machine):
 
 
 def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"):
+    # Init API Client
+    core_api = core_v1_api.CoreV1Api()
+
     for machine_name, interfaces in machines.items():
         print "Deploying machine `%s`..." % machine_name
 
@@ -121,7 +122,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
 
             # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
             # In this way, files are all replaced in the container root folder
-            "if [ -d \"/hostlab/%s\" ]; then cp -rfp /hostlab/%s/* /; fi" % machine_name,
+            "if [ -d \"/hostlab/{machine_name}\" ]; then cp -rfp /hostlab/{machine_name}/* /; fi" % {'machine_name': machine_name},
 
             # Create /var/log/zebra folder
             "mkdir /var/log/zebra",
@@ -135,18 +136,18 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
             # If not, clear the content of the file.
             # This should be patched with "cat" because file is already in use by k8s internal DNS.
-            "if [ -f \"/hostlab/%s/etc/resolv.conf\" ]; then " \
-            "cat /hostlab/%s/etc/resolv.conf > /etc/resolv.conf; else" \
-            "cat \"\" > /etc/resolv.conf; fi" % machine_name,
+            "if [ -f \"/hostlab/{machine_name}/etc/resolv.conf\" ]; then " \
+            "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else" \
+            "cat \"\" > /etc/resolv.conf; fi" % {'machine_name': machine_name},
 
             # If .startup file is present
-            "if [ -f \"/hostlab/%s.startup\" ]; then " \
+            "if [ -f \"/hostlab/{machine_name}.startup\" ]; then " \
             # Copy it from the hostlab directory into the root folder of the container
-            "cp /hostlab/%s.startup /;" \
+            "cp /hostlab/{machine_name}.startup /;" \
             # Give execute permissions to the file and execute it
-            "chmod u+x /%s.startup; /%s.startup;" \
+            "chmod u+x /{machine_name}.startup; /{machine_name}.startup;" \
             # Delete the file after execution
-            "rm /%s.startup; fi" % machine_name
+            "rm /{machine_name}.startup; fi" % {'machine_name': machine_name}
         ]
 
         # Saves extra options for current machine
