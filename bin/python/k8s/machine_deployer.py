@@ -127,6 +127,20 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             # If not flag the startup execution with a file
             "if [ -f \"/tmp/post_start\" ]; then exit; else touch /tmp/post_start; fi",
 
+            # Patch interface names
+            # Rename original k8s eth0 into kube
+            "ip link set eth0 down; ip link set eth0 name kube; ip link set kube up"
+
+            # Rename each netX interface into eth(X - 1)
+            "NET_IFACES=$(ls /sys/class/net | grep net | sort); " \
+            "if ! [ -z \"$NET_IFACES\" ]; then " \
+            "idx=0; " \
+            "for iface in $NET_IFACES; do " \
+            "ip link set $iface down; ip link set $iface name eth$idx; ip link set eth$idx up; " \
+            "idx=$(($idx+1)); " \
+            "done " \
+            "fi"
+
             # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
             # In this way, files are all replaced in the container root folder
             "if [ -d \"/hostlab/{machine_name}\" ]; then " \
@@ -200,7 +214,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
 
                 created_machines.append(current_machine["name"])
             except ApiException as e:
-                sys.stderr.write("ERROR: could not deploy machine `%s` - %s" % (machine_name, e.message))
+                sys.stderr.write("ERROR: could not deploy machine `%s`" % machine_name)
         else:               # If print mode, prints the pod definition as a JSON on stderr
             sys.stderr.write(json.dumps(pod.to_dict(), indent=True))
 

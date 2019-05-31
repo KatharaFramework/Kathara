@@ -73,20 +73,19 @@ def deploy_links(links, namespace="default", network_counter=0):
     for link in links:
         print "Deploying link `%s`..." % link
 
-        link_name = k8s_utils.build_k8s_name(link, prefix="netkit-net")
+        link_name = k8s_utils.build_k8s_name(link, prefix="net")
         net_attach_def = build_k8s_definition_for_link(link_name, network_counter)
         if not nc.PRINT:
             try:
                 custom_api.create_namespaced_custom_object(group, version, namespace, plural, net_attach_def)
                 print "Link `%s` deployed successfully as `%s`!" % (link, link_name)
-
-                created_links[link] = link_name
             except ApiException as e:
-                sys.stderr.write("ERROR: could not deploy link `%s` - %s" % (link, e.message))
+                sys.stderr.write("ERROR: could not deploy link `%s`" % link)
         else:               # If print mode, prints the "link" network definition as a JSON on stderr
             sys.stderr.write(json.dumps(net_attach_def, indent=True))
 
         network_counter += 1
+        created_links[link] = link_name
 
     # Writes the new network counter back.
     write_network_counter(network_counter)
