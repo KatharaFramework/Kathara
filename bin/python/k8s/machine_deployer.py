@@ -17,8 +17,9 @@ def build_k8s_pod_for_machine(machine):
     hosthome_volume_mount = client.V1VolumeMount(name="hosthome", mount_path="/hosthome")
 
     # Minimum caps to make Quagga work without "privileged" mode.
-    container_capabilities = client.V1Capabilities(add=["NET_ADMIN", "NET_RAW", "SYS_ADMIN"])
+    container_capabilities = client.V1Capabilities(add=["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "SYS_ADMIN"])
     security_context = client.V1SecurityContext(capabilities=container_capabilities)
+    #security_context = client.V1SecurityContext(privileged=True)
 
     # Container port is declared only if it's defined in machine options
     container_ports = None
@@ -55,7 +56,6 @@ def build_k8s_pod_for_machine(machine):
                             name="kathara",
                             image="docker.io/%s:latest" % machine["image"],
                             lifecycle=lifecycle,
-                            tty=True,
                             stdin=True,
                             image_pull_policy="IfNotPresent",
                             ports=container_ports,
@@ -127,10 +127,22 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             # If not flag the startup execution with a file
             "if [ -f \"/tmp/post_start\" ]; then exit; else touch /tmp/post_start; fi",
 
+            # Removes /etc/bind already existing configuration from k8s internal DNS
+            "rm -Rf /etc/bind/*",
+
             # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
             # In this way, files are all replaced in the container root folder
             "if [ -d \"/hostlab/{machine_name}\" ]; then " \
-            "cp -rfp /hostlab/{machine_name}/* /; fi".format(machine_name=machine_name),
+            "mkdir /machine_data; cp -rp /hostlab/{machine_name}/* /machine_data; " \
+            "chmod -R 777 /machine_data/*; " \
+            "cp -rfp /machine_data/* /; fi".format(machine_name=machine_name),
+
+            # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
+            # If not, clear the content of the file.
+            # This should be patched with "cat" because file is already in use by k8s internal DNS.
+            "if [ -f \"/machine_data/etc/resolv.conf\" ]; then " \
+            "cat /machine_data/etc/resolv.conf > /etc/resolv.conf; else " \
+            "echo \"\" > /etc/resolv.conf; fi",
 
             # Create /var/log/zebra folder
             "mkdir /var/log/zebra",
@@ -138,24 +150,19 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             # Give proper permissions to few files/directories (copied from Kathara)
             "chmod -R 777 /var/log/quagga; chmod -R 777 /var/log/zebra; chmod -R 777 /var/www/*",
 
-            # Removes /etc/bind already existing configuration from k8s internal DNS
-            "rm -Rf /etc/bind/*",
-
-            # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
-            # If not, clear the content of the file.
-            # This should be patched with "cat" because file is already in use by k8s internal DNS.
-            "if [ -f \"/hostlab/{machine_name}/etc/resolv.conf\" ]; then " \
-            "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else " \
-            "echo \"\" > /etc/resolv.conf; fi".format(machine_name=machine_name),
-
             # If .startup file is present
             "if [ -f \"/hostlab/{machine_name}.startup\" ]; then " \
             # Copy it from the hostlab directory into the root folder of the container
             "cp /hostlab/{machine_name}.startup /; " \
             # Give execute permissions to the file and execute it
-            "chmod u+x /{machine_name}.startup; /{machine_name}.startup; " \
+            # We redirect the output "&>" to a random file so we avoid blocking stdin/stdout 
+            # (which was happening using Quagga on startup)
+            "chmod u+x /{machine_name}.startup; /{machine_name}.startup &> /tmp/startup_out; " \
             # Delete the file after execution
-            "rm /{machine_name}.startup; fi".format(machine_name=machine_name)
+            "rm /{machine_name}.startup; fi".format(machine_name=machine_name),
+
+            # Delete machine data folder after everything is ready
+            "rm -Rf /machine_data"
         ]
 
         # Saves extra options for current machine
