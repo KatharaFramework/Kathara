@@ -12,7 +12,9 @@ import os
 import utils as u
 import depgen as dpg
 from collections import OrderedDict
+import random
 import ipaddress
+
 
 DEBUG = True
 PRINT = False
@@ -157,6 +159,45 @@ def lab_parse(path, force=False):
     if DEBUG: print (machines, options, metadata)
     return machines, links, options, metadata
 
+#parsing external.conf file
+def external_parse(path):
+    collision_domains = []
+    interfaces = []
+    with open(os.path.join(path, 'external.conf'),'r') as external_file:
+        for line in external_file:
+            if line.strip() and (line.strip() not in ['\n', '\r\n', '\n\r']) and (not line.startswith('#')):
+                #insert collision domain in collisions_domains list
+                collision_domains.append(line.split(" ")[0])
+                #insert interface in interfaces list
+                interfaces.append((line.split()[1]))
+    return collision_domains, interfaces
+
+#create external_commands
+def external_commands(path, collision_domains, interfaces, execbash=False):
+    lab_external_links_text = ''
+    commands = []
+    prefix = 'netkit_' + str(os.getuid()) + '_'
+
+    for (collision_domain, interface) in zip(collision_domains, interfaces):                                       
+        #check if paramater's interface have a vlan syntax 
+        if interface.__contains__("."):
+            prefix_interface = interface.split(".")[0]
+            vlan_id = interface.split(".")[1]
+            if (len(interface) > 15):
+                prefix_truncate_interface = prefix_interface[-9:]
+                interface = prefix_truncate_interface + '.' + vlan_id
+
+            lab_external_links_text += interface + '\n'
+
+            commands.append(os.path.join(os.environ['NETKIT_HOME'],'brctl_config_external ' + prefix + collision_domain + ' ' + interface + ' ' + prefix_interface  + ' ' + vlan_id))
+        else:
+            commands.append(os.path.join(os.environ['NETKIT_HOME'],'brctl_config_external ' + prefix + collision_domain + ' ' + interface))        
+
+    if not execbash:
+        if not PRINT: u.write_temp(lab_external_links_text, str(u.generate_urlsafe_hash(path)) + '_external_links', PLATFORM, file_mode="w+")
+
+    return commands    
+
 
 def create_commands(machines, links, options, metadata, path, execbash=False, no_machines_tmp=False, network_counter=0):
     docker = DOCKER_BIN
@@ -183,14 +224,18 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         last_network_counter.close()
 
     with open(os.path.join(base_path,'last_network_counter.txt'), 'r') as last_network_counter:
+        base_ip = u'172.19.0.0'
+        max_ip = u'254.255.0.0'
+        multiplier = 256 * 256
+        max_counter = ( int(ipaddress.ip_address(max_ip)) - int(ipaddress.ip_address(base_ip)) ) / multiplier
         if network_counter == 0: # means it was not set by user
             try:
-                network_counter = int(last_network_counter.readline())
+                network_counter = int(last_network_counter.readline()) % max_counter
             except:
                 network_counter = 0
         for link in links:
-            subnet = ipaddress.ip_address(u'172.19.0.0') + (network_counter * 256 * 256)
-            gateway = ipaddress.ip_address(u'172.19.0.1') + (network_counter * 256 * 256)
+            subnet = ipaddress.ip_address(base_ip) + (network_counter * multiplier)
+            gateway = ipaddress.ip_address(base_ip) + (network_counter * multiplier) + 1
             create_network_commands.append(create_network_template + prefix + link + " --subnet=" + str(subnet) + "/16 --gateway=" + str(gateway))
             lab_links_text += prefix + link + ' '
             network_counter += 1

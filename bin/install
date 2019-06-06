@@ -3,6 +3,8 @@
 SKIP_P4=1
 NOT_ADMIN=1
 SKIP_PIP=0
+K8S=0
+
 for i in "$@"
 do
 case $i in
@@ -17,6 +19,10 @@ case $i in
     --nopip)
     SKIP_PIP=1
     #shift 
+    ;;
+    --k8s)
+    K8S=1
+    #shift
     ;;
     *)
     #shift
@@ -104,5 +110,18 @@ if [ "$SKIP_PIP" = "0" ]; then
     else 
         echo "Library not found, installing using pip (to skip use --nopip)"
         pip install ipaddress
+    fi
+
+    if [ "$K8S" = "1" ]; then
+        # Get Kubernetes Python library when installing in Kubernetes mode
+        echo "Checking Kubernetes library"
+        python -c "import kubernetes" > /dev/null
+        if [ $? -eq 0 ]; then
+            echo "Library already installed"
+        else
+            echo "Library not found, installing using pip (to skip use --nopip)"
+            pip install urllib3==1.23
+            pip install kubernetes
+        fi
     fi
 fi

@@ -1,12 +1,15 @@
 import argparse
 import os
+import re
 import shutil
 import sys
+from sys import platform as _platform
 
 import file_conversion as fc
 import lstart_create as cr
 import netkit_commons as nc
 from k8s import lab_deployer
+from netkit_commons import LINUX, LINUX2
 
 DEBUG = nc.DEBUG
 nc.DEBUG = False
@@ -94,7 +97,7 @@ parser.add_argument(
 )
 parser.add_argument("--execbash", required=False, action="store_true", help=argparse.SUPPRESS)
 parser.add_argument(
-    '-k', '--k8s_bin',
+    '-k', '--k8s',
     required=False,
     action='store_true',
     help='Start the lab in Kubernetes mode. Lab will be deployed on the configured cluster and no terminals will open.'
@@ -102,7 +105,7 @@ parser.add_argument(
 
 args, unknown = parser.parse_known_args()
 
-machine_name_args = list(filter (lambda x: not (x.startswith("--") or x.startswith("-")), unknown))
+machine_name_args = list(filter(lambda x: not (x.startswith("--") or x.startswith("-")), unknown))
 
 # applying parameter options (1/3)
 title_option = " -T "
@@ -164,6 +167,43 @@ for _, interfaces in filtered_machines.items():
         sys.stderr.write("Please specify at least a link for every machine.\n")
         sys.exit(1)
 
+external_commands = []
+# check if exist external.conf file, if user have root permission for execute external.conf file and check platform
+if os.path.exists(os.path.join(lab_path, 'external.conf')):
+    if _platform == LINUX or _platform == LINUX2:
+        if os.geteuid() == 0:
+            collision_domains, external_interfaces = nc.external_parse(lab_path)
+            # list of all interfaces
+            list_interfaces = [iface for iface in os.listdir('/sys/class/net/') if
+                               re.match('lo|wlx.*|docker0|veth.*', iface) is None]
+
+            for collision_domain in collision_domains:
+                # check collision domains specified in external.conf
+                if collision_domain not in links:
+                    sys.stderr.write(collision_domain + ' ' + 'is not a valid collision domain, please check your external.conf file.' + '\n')
+                    sys.exit(1)
+
+            for external_interface in external_interfaces:
+                # check ethernet interface specified in external.conf
+                if external_interface.__contains__("."):
+                    prefix_interface = external_interface.split(".")[0]
+                    if prefix_interface not in list_interfaces:
+                        sys.stderr.write(external_interface + ' ' + 'is not a valid ethernet interface, please check your external.conf file.' + '\n')
+                        sys.exit(1)
+                else:
+                    if external_interface not in list_interfaces:
+                        sys.stderr.write(external_interface + ' ' + 'is not a valid ethernet interface, please check your external.conf file.' + '\n')
+                        sys.exit(1)
+
+            external_commands = nc.external_commands(lab_path, collision_domains, external_interfaces)
+        else:
+            sys.stderr.write("Please need root permission to execute external.conf file.\n")
+            sys.exit(1)
+    else:
+        sys.stderr.write("Please only Linux operating system is supported.\n")
+        sys.stderr.write("Your operating system is " + _platform + "." + "\n")
+        sys.exit(1)
+
 if not args.execbash:
     # removing \r from DOS/MAC files
     for machine in filtered_machines:
@@ -183,7 +223,7 @@ if not args.execbash:
                 sys.stderr.write("ERROR: could not move '" + zebra_path + "' to '" + quagga_path + "'\n")
 
         if (not nc.PRINT) and os.path.isdir(os.path.join(machine_path, "var/www")) and \
-         (not os.path.isdir(os.path.join(machine_path, "var/www/html"))):
+                (not os.path.isdir(os.path.join(machine_path, "var/www/html"))):
             www_path = os.path.join(machine_path, "var/www")
             html_path = os.path.join(machine_path, "var/www/html")
 
@@ -200,22 +240,22 @@ if not args.execbash:
 if not args.k8s:
     # get command lists
     (commands, startup_commands, exec_commands) = nc.create_commands(
-                                                        filtered_machines,
-                                                        links,
-                                                        options,
-                                                        metadata,
-                                                        lab_path,
-                                                        args.execbash,
-                                                        no_machines_tmp=(len(machine_name_args) >= 1),
-                                                        network_counter=network_counter
+                                                    filtered_machines,
+                                                    links,
+                                                    options,
+                                                    metadata,
+                                                    lab_path,
+                                                    args.execbash,
+                                                    no_machines_tmp=(len(machine_name_args) >= 1),
+                                                    network_counter=network_counter
                                                   )
 
     # create lab
     if not args.execbash:
         # running creation commands not verbosely
-        cr.lab_create(commands, startup_commands)
+        cr.lab_create(commands, startup_commands, external_commands)
     else:
-        cr.lab_create([], startup_commands)
+        cr.lab_create([], startup_commands, [])
 
     COMMAND_LAUNCHER = "bash -c '"
     COMMAND_LAUNCHER_END = "'"
@@ -233,8 +273,10 @@ if not args.k8s:
                     print(COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END)
             else:
                 if cr.PRINT:
-                    print(nc.LINUX_TERMINAL_TYPE + title_option + '"' + machine_name + '" -e "' + COMMAND_LAUNCHER +
-                          exec_command + COMMAND_LAUNCHER_END + '"')
+                    print(
+                        nc.LINUX_TERMINAL_TYPE + title_option + '"' + machine_name + '" -e "' + COMMAND_LAUNCHER +
+                        exec_command + COMMAND_LAUNCHER_END + '"'
+                    )
                 else:
                     print(machine_name + ";" + COMMAND_LAUNCHER + exec_command + COMMAND_LAUNCHER_END)
 else:
@@ -244,7 +286,6 @@ else:
         links,
         options,
         lab_path,
-        no_machines_tmp=(len(machine_name_args) >= 1),
         network_counter=network_counter
     )
 

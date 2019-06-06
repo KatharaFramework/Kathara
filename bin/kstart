@@ -8,15 +8,15 @@ export RC=$?
 if [ "$RC" = "0" ]; then
     python $NETKIT_HOME/python/print_metadata.py "$PWD/" "$@"
 
-    M=_machines
+    D=_deploy
 
-    python $NETKIT_HOME/python/folder_hash.py "$PWD/" "$@"| 
+    python $NETKIT_HOME/python/folder_hash.py "$PWD/" "$@" |
     while IFS=';' read -ra in; do (
-		if [ -f "$HOME/netkit_temp/$in$M" ]; then 
+		if [ -f "$HOME/netkit_temp/$in$D" ]; then
             echo -e "\033[0;33mLab already deployed. Exiting...\033[0m"
             exit 0
 		else 
-		    python $NETKIT_HOME/python/ldeploy.py "$PWD/" "$@"
+		    python $NETKIT_HOME/python/lstart.py "$PWD/" "$@" --k8s
 		fi
     ); 
     done

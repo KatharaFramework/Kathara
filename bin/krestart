@@ -1,0 +1,3 @@
+#!/bin/bash
+
+$NETKIT_HOME/kclean "$@"; $NETKIT_HOME/kstart "$@"

@@ -1,7 +1,6 @@
 import base64
 import json
 import shutil
-import socket
 import sys
 import tarfile
 import tempfile
@@ -28,7 +27,7 @@ def build_k8s_config_map_for_machine(machine):
     data = dict()
     data["hostlab.tar.gz"] = base64.b64encode(tar_data)
 
-    metadata = client.V1ObjectMeta(name="lab_files", deletion_grace_period_seconds=0)
+    metadata = client.V1ObjectMeta(name="%s_lab_files" % machine['namespace'], deletion_grace_period_seconds=0)
     config_map = client.V1ConfigMap(api_version="v1", kind="ConfigMap", binary_data=data, metadata=metadata)
 
     return config_map
@@ -99,7 +98,7 @@ def build_k8s_pod_for_machine(machine):
     hostlab_volume = client.V1Volume(
                         name="hostlab",
                         config_map=client.V1ConfigMapVolumeSource(
-                            name="lab_files"
+                            name="%s_lab_files" % machine['namespace']
                         )
                      )
     # Hosthome is the current user home directory
@@ -121,9 +120,6 @@ def build_k8s_pod_for_machine(machine):
 def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"):
     # Init API Client
     core_api = core_v1_api.CoreV1Api()
-
-    created_machines = []   # Saves each k8s_bin machine name. This will be used later to write which machines are
-                            # part of the lab.
 
     for machine_name, interfaces in machines.items():
         print "Deploying machine `%s`..." % machine_name
@@ -227,12 +223,29 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
                 core_api.create_namespaced_config_map(body=config_map, namespace=namespace)
                 core_api.create_namespaced_pod(body=pod, namespace=namespace)
                 print "Machine `%s` deployed successfully!" % machine_name
-
-                created_machines.append(current_machine["name"])
             except ApiException as e:
                 sys.stderr.write("ERROR: could not deploy machine `%s`" % machine_name + "\n")
         else:               # If print mode, prints the pod definition as a JSON on stderr
             sys.stderr.write(json.dumps(config_map.to_dict(), indent=True) + "\n")
             sys.stderr.write(json.dumps(pod.to_dict(), indent=True) + "\n\n")
 
-    return created_machines
+
+def delete(machine_name, namespace, core_api=None):
+    core_api = core_v1_api.CoreV1Api() if core_api is None else core_api
+
+    try:
+        core_api.delete_namespaced_pod(name=machine_name, namespace=namespace)
+        print "Machine `%s` deleted successfully!" % machine_name
+    except ApiException as e:
+        sys.stderr.write("ERROR: could not delete machine `%s`" % machine_name + "\n")
+
+
+def delete_by_namespace(namespace):
+    core_api = core_v1_api.CoreV1Api()
+
+    pods = core_api.list_namespaced_pod(namespace=namespace)
+    for pod in pods.items:
+        delete(pod.metadata.name, namespace, core_api=core_api)
+
+    config_map_name = "%s_lab_files" % namespace
+    core_api.delete_namespaced_config_map(name=config_map_name, namespace=namespace)

@@ -69,7 +69,7 @@ def deploy_links(links, namespace="default", network_counter=0):
     network_counter = read_network_counter(network_counter)
 
     created_links = {}      # Associates each netkit link name to a k8s_bin name. This will be used later both to write
-                            # which links are part of the lab and to map machine's collision domains to k8s_bin networks.
+                            # which links are part of the lab and to map machine's collision domains to k8s_bin networks
     for link in links:
         print "Deploying link `%s`..." % link
 
@@ -91,3 +91,21 @@ def deploy_links(links, namespace="default", network_counter=0):
     write_network_counter(network_counter)
 
     return created_links
+
+
+def delete(link_name, namespace, custom_api=None):
+    custom_api = custom_objects_api.CustomObjectsApi() if custom_api is None else custom_api
+
+    try:
+        custom_api.delete_namespaced_custom_object(group, version, namespace, plural, link_name, {})
+        print "Link `%s` deleted successfully!" % link_name
+    except ApiException as e:
+        sys.stderr.write("ERROR: could not delete link `%s`" % link_name + "\n")
+
+
+def delete_by_namespace(namespace):
+    custom_api = custom_objects_api.CustomObjectsApi()
+
+    net_attach_defs = custom_api.list_namespaced_custom_object(group, version, namespace, plural)
+    for net_attach_def in net_attach_defs:
+        delete(net_attach_def.metadata.name, namespace, custom_api=custom_api)
