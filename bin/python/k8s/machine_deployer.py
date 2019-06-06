@@ -1,7 +1,10 @@
+import base64
 import json
-import os
+import shutil
 import socket
 import sys
+import tarfile
+import tempfile
 
 import netkit_commons as nc
 from kubernetes import client
@@ -11,15 +14,34 @@ from kubernetes.client.rest import ApiException
 import k8s_utils
 
 
+def build_k8s_config_map_for_machine(machine):
+    temp_path = tempfile.mkdtemp()
+
+    with tarfile.open(temp_path + "/hostlab.tar.gz", "w:gz") as tar:
+        tar.add("%s" % machine["lab_path"], arcname='.')
+
+    with open(temp_path + "/hostlab.tar.gz", "rb") as tar_file:
+        tar_data = tar_file.read()
+
+    shutil.rmtree(temp_path)
+
+    data = dict()
+    data["hostlab.tar.gz"] = base64.b64encode(tar_data)
+
+    metadata = client.V1ObjectMeta(name="lab_files", deletion_grace_period_seconds=0)
+    config_map = client.V1ConfigMap(api_version="v1", kind="ConfigMap", binary_data=data, metadata=metadata)
+
+    return config_map
+
+
 def build_k8s_pod_for_machine(machine):
     # Defines volume mounts for both hostlab and hosthome
-    hostlab_volume_mount = client.V1VolumeMount(name="hostlab", mount_path="/hostlab")
+    hostlab_volume_mount = client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara")
     hosthome_volume_mount = client.V1VolumeMount(name="hosthome", mount_path="/hosthome")
 
     # Minimum caps to make Quagga work without "privileged" mode.
     container_capabilities = client.V1Capabilities(add=["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "SYS_ADMIN"])
     security_context = client.V1SecurityContext(capabilities=container_capabilities)
-    #security_context = client.V1SecurityContext(privileged=True)
 
     # Container port is declared only if it's defined in machine options
     container_ports = None
@@ -39,7 +61,7 @@ def build_k8s_pod_for_machine(machine):
 
         resources = client.V1ResourceRequirements(limits=limits)
 
-    # postStart lifecycle hook is launched asynchronously by k8s master when the main container is Ready.
+    # postStart lifecycle hook is launched asynchronously by k8s_bin master when the main container is Ready.
     # On Ready state, the pod has volumes and network interfaces up, so this hook is used
     # to execute custom commands coming from .startup file and "exec" option
     lifecycle = None
@@ -54,7 +76,7 @@ def build_k8s_pod_for_machine(machine):
     # Container definition
     kathara_container = client.V1Container(
                             name="kathara",
-                            image="docker.io/%s:latest" % machine["image"],
+                            image="%s:latest" % machine["image"],
                             lifecycle=lifecycle,
                             stdin=True,
                             image_pull_policy="IfNotPresent",
@@ -66,27 +88,24 @@ def build_k8s_pod_for_machine(machine):
 
     # Creates networks annotation and metadata definition
     annotations = dict()
-    annotations["k8s.v1.cni.cncf.io/networks"] = ", ".join(machine["interfaces"])
+    annotations["k8s_bin.v1.cni.cncf.io/networks"] = ", ".join(machine["interfaces"])
     metadata = client.V1ObjectMeta(name=machine["name"], deletion_grace_period_seconds=0, annotations=annotations)
 
-    # Adds fake DNS just to override k8s one
+    # Adds fake DNS just to override k8s_bin one
     dns_config = client.V1PodDNSConfig(nameservers=["127.0.0.1"])
 
     # Define volumes
     # Hostlab is the lab directory mounted from the kubemaster through NFS (read only mode)
     hostlab_volume = client.V1Volume(
                         name="hostlab",
-                        nfs=client.V1NFSVolumeSource(
-                            server=socket.gethostname(),    # Since we use Kathara from a master, and NFS server
-                                                            # is on a master, we get the current hostname
-                            path=machine["lab_path"],
-                            read_only=True
+                        config_map=client.V1ConfigMapVolumeSource(
+                            name="lab_files"
                         )
                      )
     # Hosthome is the current user home directory
     hosthome_volume = client.V1Volume(
                         name="hosthome",
-                        host_path=client.V1HostPathVolumeSource(path=os.path.expanduser('~'))
+                        host_path=client.V1HostPathVolumeSource(path='~')
                       )
 
     spec = client.V1PodSpec(
@@ -103,7 +122,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
     # Init API Client
     core_api = core_v1_api.CoreV1Api()
 
-    created_machines = []   # Saves each k8s machine name. This will be used later to write which machines are
+    created_machines = []   # Saves each k8s_bin machine name. This will be used later to write which machines are
                             # part of the lab.
 
     for machine_name, interfaces in machines.items():
@@ -127,8 +146,11 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             # If not flag the startup execution with a file
             "if [ -f \"/tmp/post_start\" ]; then exit; else touch /tmp/post_start; fi",
 
-            # Removes /etc/bind already existing configuration from k8s internal DNS
+            # Removes /etc/bind already existing configuration from k8s_bin internal DNS
             "rm -Rf /etc/bind/*",
+
+            # Extract hostlab.tar.gz data into /hostlab
+            "tar -xfz /tmp/kathara/hostlab.tar.gz /hostlab"
 
             # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
             # In this way, files are all replaced in the container root folder
@@ -139,7 +161,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
 
             # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
             # If not, clear the content of the file.
-            # This should be patched with "cat" because file is already in use by k8s internal DNS.
+            # This should be patched with "cat" because file is already in use by k8s_bin internal DNS.
             "if [ -f \"/machine_data/etc/resolv.conf\" ]; then " \
             "cat /machine_data/etc/resolv.conf > /etc/resolv.conf; else " \
             "echo \"\" > /etc/resolv.conf; fi",
@@ -156,7 +178,6 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             "cp /hostlab/{machine_name}.startup /; " \
             # Give execute permissions to the file and execute it
             # We redirect the output "&>" to a random file so we avoid blocking stdin/stdout 
-            # (which was happening using Quagga on startup)
             "chmod u+x /{machine_name}.startup; /{machine_name}.startup &> /tmp/startup_out; " \
             # Delete the file after execution
             "rm /{machine_name}.startup; fi".format(machine_name=machine_name),
@@ -198,17 +219,20 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
         # Assign it here, because an extra exec command can be found in options and appended
         current_machine["startup_commands"] = startup_commands
 
+        config_map = build_k8s_config_map_for_machine(current_machine)
         pod = build_k8s_pod_for_machine(current_machine)
 
         if not nc.PRINT:
             try:
+                core_api.create_namespaced_config_map(body=config_map, namespace=namespace)
                 core_api.create_namespaced_pod(body=pod, namespace=namespace)
                 print "Machine `%s` deployed successfully!" % machine_name
 
                 created_machines.append(current_machine["name"])
             except ApiException as e:
-                sys.stderr.write("ERROR: could not deploy machine `%s`" % machine_name)
+                sys.stderr.write("ERROR: could not deploy machine `%s`" % machine_name + "\n")
         else:               # If print mode, prints the pod definition as a JSON on stderr
-            sys.stderr.write(json.dumps(pod.to_dict(), indent=True))
+            sys.stderr.write(json.dumps(config_map.to_dict(), indent=True) + "\n")
+            sys.stderr.write(json.dumps(pod.to_dict(), indent=True) + "\n\n")
 
     return created_machines

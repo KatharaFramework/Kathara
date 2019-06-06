@@ -3,14 +3,7 @@ import os
 import shutil
 import sys
 
-import file_conversion as fc
-import lstart_create as cr
-import netkit_commons as nc
 from k8s import lab_deployer
-
-DEBUG = nc.DEBUG
-nc.DEBUG = False
-
 
 def commandline_arg(bytestring):
     try:
@@ -19,111 +12,15 @@ def commandline_arg(bytestring):
     except AttributeError:
         return bytestring
 
-parser = argparse.ArgumentParser(description='Create and start a Netkit Lab.')
+parser = argparse.ArgumentParser(description='Clean a Netkit Lab deployment on Kubernetes cluster.')
 parser.add_argument('path', type=commandline_arg)
-parser.add_argument(
-    "-n", "--noterminals", 
-    required=False,
-    action="store_true", 
-    help='Start the lab without opening terminal windows.'
-)
 parser.add_argument(
     '-d', '--directory',
     required=False,
     help='Specify the folder containing the lab.'
 )
-parser.add_argument(
-    '-F', '--force-lab',
-    dest='force_lab',
-    required=False,
-    action='store_true', 
-    help='Force the lab to start without a lab.conf or lab.dep file.'
-)
-parser.add_argument(
-    '-f', '--fast',
-    required=False,
-    action='store_true', 
-    help='DEPRECATED.'
-)
-parser.add_argument(
-    '-l', '--list',
-    required=False,
-    action='store_true', 
-    help='Show a list of running containers after the lab has been started.'
-)
-parser.add_argument(
-    '-o', '--pass',
-    dest='options',
-    nargs='*',
-    required=False, 
-    help="Pass options to vstart. Options should be a list of double quoted strings, like '--pass \"mem=64m\" \"eth=0:A\"'."
-)
-parser.add_argument(
-    '-p', '--parallel',
-    required=False, 
-    help='DEPRECATED.'
-)
-parser.add_argument(
-    '-s', '--sequential',
-    required=False,
-    action='store_true', 
-    help='DEPRECATED.'
-)
-parser.add_argument(
-    '-w', '--wait',
-    required=False,
-    action='store_true',
-    help='DEPRECATED.'
-)
-parser.add_argument(
-    '--xterm',
-    required=False,
-    help='Set a different terminal emulator application (Unix only).'
-)
-parser.add_argument(
-    '--print',
-    dest="print_only",
-    required=False,
-    action='store_true',
-    help='Print commands used to start the containers to stderr (containers are not started).'
-)
-parser.add_argument(
-    '-c', '--counter',
-    required=False,
-    help='Start from a specific network counter (overrides whatever was previously initialized, using 0 will prompt the default behavior).'
-)
-parser.add_argument("--execbash", required=False, action="store_true", help=argparse.SUPPRESS)
-parser.add_argument(
-    '-k', '--k8s_bin',
-    required=False,
-    action='store_true',
-    help='Start the lab in Kubernetes mode. Lab will be deployed on the configured cluster and no terminals will open.'
-)
 
 args, unknown = parser.parse_known_args()
-
-machine_name_args = list(filter (lambda x: not (x.startswith("--") or x.startswith("-")), unknown))
-
-# applying parameter options (1/3)
-title_option = " -T "
-if args.xterm and (" " not in args.xterm):
-    nc.LINUX_TERMINAL_TYPE = args.xterm.replace('"', '').replace("'", '')
-    title_option = " --title="
-
-FORCE_LAB = False
-if args.force_lab: 
-    FORCE_LAB = args.force_lab
-
-network_counter = 0
-if args.counter: 
-    try: 
-        network_counter = int(args.counter)
-    except ValueError:
-        pass
-
-if args.print_only:
-    cr.PRINT = True
-    nc.PRINT = True
 
 lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else \
            args.path.replace('"', '').replace("'", '')
@@ -159,7 +56,7 @@ if len(filtered_machines) < 1:
     sys.stderr.write("Please specify at least a machine.\n")
     sys.exit(1)
 
-for _, interfaces in filtered_machines.items(): 
+for _, interfaces in filtered_machines.items():
     if len(interfaces) < 1:
         sys.stderr.write("Please specify at least a link for every machine.\n")
         sys.exit(1)

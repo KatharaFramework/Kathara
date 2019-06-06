@@ -8,7 +8,7 @@ from kubernetes.client.apis import custom_objects_api
 
 import k8s_utils
 
-group = "k8s.cni.cncf.io"
+group = "k8s_bin.cni.cncf.io"
 version = "v1"
 plural = "network-attachment-definitions"
 
@@ -43,10 +43,10 @@ def write_network_counter(network_counter):
 
 
 def build_k8s_definition_for_link(link_name, network_counter):
-    # Creates a dict which contains the "link" network definition to deploy in k8s
+    # Creates a dict which contains the "link" network definition to deploy in k8s_bin
     # TODO: Handle namespacing
     return {
-        "apiVersion": "k8s.cni.cncf.io/v1",
+        "apiVersion": "k8s_bin.cni.cncf.io/v1",
         "kind": "NetworkAttachmentDefinition",
         "metadata": {
             "name": link_name
@@ -65,11 +65,11 @@ def deploy_links(links, namespace="default", network_counter=0):
     # Init API Client
     custom_api = custom_objects_api.CustomObjectsApi()
 
-    # Reads the network counter. In k8s case, the counter is used for VXLAN ID tag.
+    # Reads the network counter. In k8s_bin case, the counter is used for VXLAN ID tag.
     network_counter = read_network_counter(network_counter)
 
-    created_links = {}      # Associates each netkit link name to a k8s name. This will be used later both to write
-                            # which links are part of the lab and to map machine's collision domains to k8s networks.
+    created_links = {}      # Associates each netkit link name to a k8s_bin name. This will be used later both to write
+                            # which links are part of the lab and to map machine's collision domains to k8s_bin networks.
     for link in links:
         print "Deploying link `%s`..." % link
 
