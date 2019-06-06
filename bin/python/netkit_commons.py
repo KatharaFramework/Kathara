@@ -194,7 +194,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
                 network_counter = 0
         for link in links:
             subnet = ipaddress.ip_address(base_ip) + (network_counter * multiplier)
-            gateway = ipaddress.ip_address(base_ip) + (network_counter * multiplier)
+            gateway = ipaddress.ip_address(base_ip) + (network_counter * multiplier) + 1
             create_network_commands.append(create_network_template + prefix + link + " --subnet=" + str(subnet) + "/16 --gateway=" + str(gateway))
             lab_links_text += prefix + link + ' '
             network_counter += 1
