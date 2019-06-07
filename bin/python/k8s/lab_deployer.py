@@ -14,7 +14,6 @@ def deploy(machines, links, options, path, network_counter=0):
     if not nc.PRINT:
         k8s_utils.load_kube_config()
 
-    # namespace = "default"
     namespace = k8s_utils.get_namespace_name(str(u.generate_urlsafe_hash(path)))
     namespace_deployer.deploy_namespace(namespace)
 
@@ -40,20 +39,18 @@ def deploy(machines, links, options, path, network_counter=0):
 
 
 def delete_lab(namespace):
-    # TODO: Probably with namespaces those two lines are useless.
-    machine_deployer.delete_by_namespace(namespace)
-    link_deployer.delete_by_namespace(namespace)
+    print "Deleting lab with namespace `%s`..." % namespace
 
-    if namespace != "default":
-        namespace_deployer.delete(namespace)
+    # Deleting namespace will also delete all resources in it.
+    namespace_deployer.delete(namespace)
 
+    # Delete "flag" file.
     os.remove("%s/%s_deploy" % (u.get_temp_folder(nc.PLATFORM), namespace))
 
 
 def delete(path, filtered_machines=None):
     k8s_utils.load_kube_config()
 
-    # namespace = "default"
     namespace = k8s_utils.get_namespace_name(str(u.generate_urlsafe_hash(path)))
 
     if filtered_machines is not None and len(filtered_machines) > 0:
@@ -69,7 +66,12 @@ def delete_all():
     k8s_utils.load_kube_config()
 
     temp_files = os.listdir(u.get_temp_folder(nc.PLATFORM))
+    # Get all current deployed labs, getting the list of "flag" files in temp folder.
     deploy_temp_files = list(filter(lambda x: "_deploy" in x, temp_files))
+
+    # If no lab is deployed, return.
+    if len(deploy_temp_files) <= 0:
+        return
 
     for deploy_temp_file in deploy_temp_files:
         namespace = deploy_temp_file.replace("_deploy", "")

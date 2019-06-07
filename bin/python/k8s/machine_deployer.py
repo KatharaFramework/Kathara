@@ -14,11 +14,13 @@ import k8s_utils
 
 
 def build_k8s_config_map(namespace, lab_path):
+    # Make a temp folder and create a tar.gz of the lab directory
     temp_path = tempfile.mkdtemp()
 
     with tarfile.open("%s/hostlab.tar.gz" % temp_path, "w:gz") as tar:
         tar.add("%s" % lab_path, arcname='.')
 
+    # Read tar.gz content and convert it into base64
     with open("%s/hostlab.tar.gz" % temp_path, "rb") as tar_file:
         tar_data = tar_file.read()
 
@@ -27,6 +29,8 @@ def build_k8s_config_map(namespace, lab_path):
     data = dict()
     data["hostlab.b64"] = base64.b64encode(tar_data)
 
+    # Create a ConfigMap on the cluster containing the base64 of the .tar.gz file.
+    # This will be decoded and extracted in the postStart hook of the pod.
     metadata = client.V1ObjectMeta(name="%s-lab-files" % namespace, deletion_grace_period_seconds=0)
     config_map = client.V1ConfigMap(api_version="v1", kind="ConfigMap", data=data, metadata=metadata)
 
@@ -87,7 +91,7 @@ def build_k8s_pod_for_machine(machine):
 
     # Creates networks annotation and metadata definition
     annotations = dict()
-    annotations["k8s.v1.cni.cncf.io/networks"] = ", ".join(machine["interfaces"])
+    annotations["k8s.v1.cni.cncf.io/networks"] = '"' + ", ".join(machine["interfaces"]) + '"'
     metadata = client.V1ObjectMeta(name=machine["name"], deletion_grace_period_seconds=0, annotations=annotations)
 
     # Adds fake DNS just to override k8s_bin one
@@ -244,14 +248,3 @@ def delete(machine_name, namespace, core_api=None):
         print "Machine `%s` deleted successfully!" % machine_name
     except ApiException:
         sys.stderr.write("ERROR: could not delete machine `%s`" % machine_name + "\n")
-
-
-def delete_by_namespace(namespace):
-    core_api = core_v1_api.CoreV1Api()
-
-    pods = core_api.list_namespaced_pod(namespace=namespace)
-    for pod in pods.items:
-        delete(pod.metadata.name, namespace, core_api=core_api)
-
-    config_map_name = "%s-lab-files" % namespace
-    core_api.delete_namespaced_config_map(name=config_map_name, namespace=namespace)
