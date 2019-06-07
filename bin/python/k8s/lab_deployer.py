@@ -48,9 +48,13 @@ def deploy(machines, links, options, path, network_counter=0):
 
 
 def get_lab_info(path):
-    k8s_utils.load_kube_config()
-
     namespace = k8s_utils.get_namespace_name(str(u.generate_urlsafe_hash(path)))
+
+    if not os.path.exists("%s/%s_deploy" % (u.get_temp_folder(nc.PLATFORM), namespace)):
+        print "Lab is not deployed."
+        return
+
+    k8s_utils.load_kube_config()
 
     machine_deployer.dump_namespace_machines(namespace)
     link_deployer.dump_namespace_links(namespace)

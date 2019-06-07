@@ -99,7 +99,9 @@ def dump_namespace_links(namespace):
     net_attach_defs = custom_api.list_namespaced_custom_object(group, version, namespace, plural)
 
     print "========================= Links =========================="
-    print "NAME"
+    print "NAME\t\tVXLAN ID"
 
     for net_attach_def in net_attach_defs["items"]:
-        print "%s\t\t%s" % (net_attach_def["metadata"]["name"], str(net_attach_def))
+        parsed_config = json.loads(net_attach_def["spec"]["config"])
+
+        print "%s\t\t%s" % (net_attach_def["metadata"]["name"], parsed_config["vlanId"])

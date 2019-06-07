@@ -291,7 +291,10 @@ else:
 
 # applying parameter options (3/3)
 if args.list and (not cr.PRINT):
-    if nc.PLATFORM == nc.WINDOWS:
-        print('"' + os.path.join(os.environ['NETKIT_HOME'], 'linfo') + '" -d "' + lab_path + '"')
+    if not args.k8s:
+        if nc.PLATFORM == nc.WINDOWS:
+            print('"' + os.path.join(os.environ['NETKIT_HOME'], 'linfo') + '" -d "' + lab_path + '"')
+        else:
+            print("stats ;" + '"' + os.path.join(os.environ['NETKIT_HOME'], 'linfo') + '" -d "' + lab_path + '"')
     else:
-        print("stats ;" + '"' + os.path.join(os.environ['NETKIT_HOME'], 'linfo') + '" -d "' + lab_path + '"')
+        lab_deployer.get_lab_info(lab_path)

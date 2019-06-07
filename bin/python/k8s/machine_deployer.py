@@ -244,11 +244,11 @@ def dump_namespace_machines(namespace):
     core_api = core_v1_api.CoreV1Api()
 
     print "========================= Machines =========================="
-    print "NAME\t\tSTATUS"
+    print "NAME\t\tSTATUS\t\tHOST\t\tSCHEDULER"
 
     pods = core_api.list_namespaced_pod(namespace=namespace)
     for pod in pods.items:
-        print "%s\t\t%s" % (pod.metadata.name, str(pod))
+        print "%s\t\t%s\t\t%s\t%s" % (pod.metadata.name, pod.status.phase, pod.spec.node_name, pod.spec.scheduler_name)
 
 
 def delete(machine_name, namespace, core_api=None):
