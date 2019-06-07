@@ -2,6 +2,8 @@
 
 mkdir -p $HOME/netkit_temp/labs
 
+echo -e "\033[0;33mRunning in Kubernetes mode. No terminals will open.\033[0m"
+
 python $NETKIT_HOME/python/check.py "$PWD/" -f "$@"
 
 export RC=$?

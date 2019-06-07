@@ -22,7 +22,7 @@ parser.add_argument(
     '-A', '--all',
     required=False,
     action='store_true',
-    help='With this parameter, all labs deployed on cluster are deleted.'
+    help='All labs deployed on cluster are deleted.'
 )
 
 args, unknown = parser.parse_known_args()

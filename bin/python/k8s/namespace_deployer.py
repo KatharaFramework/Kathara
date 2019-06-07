@@ -12,4 +12,3 @@ def delete(namespace_name):
     core_api = core_v1_api.CoreV1Api()
 
     core_api.delete_namespace(namespace_name)
-

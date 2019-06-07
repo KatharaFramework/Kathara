@@ -223,7 +223,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
                 core_api.create_namespaced_config_map(body=config_map, namespace=namespace)
                 core_api.create_namespaced_pod(body=pod, namespace=namespace)
                 print "Machine `%s` deployed successfully!" % machine_name
-            except ApiException as e:
+            except ApiException:
                 sys.stderr.write("ERROR: could not deploy machine `%s`" % machine_name + "\n")
         else:               # If print mode, prints the pod definition as a JSON on stderr
             sys.stderr.write(json.dumps(config_map.to_dict(), indent=True) + "\n")
@@ -236,7 +236,7 @@ def delete(machine_name, namespace, core_api=None):
     try:
         core_api.delete_namespaced_pod(name=machine_name, namespace=namespace)
         print "Machine `%s` deleted successfully!" % machine_name
-    except ApiException as e:
+    except ApiException:
         sys.stderr.write("ERROR: could not delete machine `%s`" % machine_name + "\n")
 
 

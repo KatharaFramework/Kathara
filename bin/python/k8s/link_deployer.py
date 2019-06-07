@@ -79,10 +79,10 @@ def deploy_links(links, namespace="default", network_counter=0):
             try:
                 custom_api.create_namespaced_custom_object(group, version, namespace, plural, net_attach_def)
                 print "Link `%s` deployed successfully as `%s`!" % (link, link_name)
-            except ApiException as e:
-                sys.stderr.write("ERROR: could not deploy link `%s`" % link)
+            except ApiException:
+                sys.stderr.write("ERROR: could not deploy link `%s`" % link + "\n")
         else:               # If print mode, prints the "link" network definition as a JSON on stderr
-            sys.stderr.write(json.dumps(net_attach_def, indent=True))
+            sys.stderr.write(json.dumps(net_attach_def, indent=True) + "\n\n")
 
         network_counter += 1
         created_links[link] = link_name
@@ -99,7 +99,7 @@ def delete(link_name, namespace, custom_api=None):
     try:
         custom_api.delete_namespaced_custom_object(group, version, namespace, plural, link_name, {})
         print "Link `%s` deleted successfully!" % link_name
-    except ApiException as e:
+    except ApiException:
         sys.stderr.write("ERROR: could not delete link `%s`" % link_name + "\n")
 
 

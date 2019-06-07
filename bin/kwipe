@@ -1,5 +1,5 @@
 #!/bin/bash
 
-echo -e "\033[0;33mThis command will wipe containers and cache associated with Kathara\033[0m"
+echo -e "\033[0;33mThis command will wipe all Kathara labs on the cluster.\033[0m"
 
 python $NETKIT_HOME/python/k8s/commands/deploy_cleaner.py "$PWD/" "$@" --all
