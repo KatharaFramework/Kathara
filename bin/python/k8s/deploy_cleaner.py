@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from k8s import lab_deployer
+import lab_deployer
 
 
 def commandline_arg(bytestring):

@@ -27,6 +27,8 @@ def build_k8s_config_map(namespace, lab_path):
     data = dict()
     data["hostlab.tar.gz"] = base64.b64encode(tar_data)
 
+    print(str(data))
+
     metadata = client.V1ObjectMeta(name="%s-lab-files" % namespace, deletion_grace_period_seconds=0)
     config_map = client.V1ConfigMap(api_version="v1", kind="ConfigMap", binary_data=data, metadata=metadata)
 
@@ -87,7 +89,7 @@ def build_k8s_pod_for_machine(machine):
 
     # Creates networks annotation and metadata definition
     annotations = dict()
-    annotations["k8s_bin.v1.cni.cncf.io/networks"] = ", ".join(machine["interfaces"])
+    annotations["k8s.v1.cni.cncf.io/networks"] = ", ".join(machine["interfaces"])
     metadata = client.V1ObjectMeta(name=machine["name"], deletion_grace_period_seconds=0, annotations=annotations)
 
     # Adds fake DNS just to override k8s_bin one
@@ -104,7 +106,7 @@ def build_k8s_pod_for_machine(machine):
     # Hosthome is the current user home directory
     hosthome_volume = client.V1Volume(
                         name="hosthome",
-                        host_path=client.V1HostPathVolumeSource(path='~')
+                        host_path=client.V1HostPathVolumeSource(path='~/')
                       )
 
     spec = client.V1PodSpec(
@@ -123,6 +125,10 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
 
     # Config Map will contain lab data to mount into the container as a volume.
     config_map = build_k8s_config_map(namespace, lab_path)
+    if not nc.PRINT:    
+        core_api.create_namespaced_config_map(body=config_map, namespace=namespace)
+    else:
+        sys.stderr.write(json.dumps(config_map.to_dict(), indent=True) + "\n\n")
 
     for machine_name, interfaces in machines.items():
         print "Deploying machine `%s`..." % machine_name
@@ -222,13 +228,11 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
 
         if not nc.PRINT:
             try:
-                core_api.create_namespaced_config_map(body=config_map, namespace=namespace)
                 core_api.create_namespaced_pod(body=pod, namespace=namespace)
                 print "Machine `%s` deployed successfully!" % machine_name
             except ApiException:
                 sys.stderr.write("ERROR: could not deploy machine `%s`" % machine_name + "\n")
         else:               # If print mode, prints the pod definition as a JSON on stderr
-            sys.stderr.write(json.dumps(config_map.to_dict(), indent=True) + "\n")
             sys.stderr.write(json.dumps(pod.to_dict(), indent=True) + "\n\n")
 
 

@@ -8,7 +8,7 @@ from kubernetes.client.apis import custom_objects_api
 
 import k8s_utils
 
-group = "k8s_bin.cni.cncf.io"
+group = "k8s.cni.cncf.io"
 version = "v1"
 plural = "network-attachment-definitions"
 
@@ -46,7 +46,7 @@ def build_k8s_definition_for_link(link_name, network_counter):
     # Creates a dict which contains the "link" network definition to deploy in k8s_bin
     # TODO: Handle namespacing
     return {
-        "apiVersion": "k8s_bin.cni.cncf.io/v1",
+        "apiVersion": "k8s.cni.cncf.io/v1",
         "kind": "NetworkAttachmentDefinition",
         "metadata": {
             "name": link_name
