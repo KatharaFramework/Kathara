@@ -2,6 +2,7 @@ import os
 
 import netkit_commons as nc
 import utils as u
+from kubernetes.client.rest import ApiException
 
 import k8s_utils
 import link_deployer
@@ -15,7 +16,15 @@ def deploy(machines, links, options, path, network_counter=0):
         k8s_utils.load_kube_config()
 
     namespace = k8s_utils.get_namespace_name(str(u.generate_urlsafe_hash(path)))
-    namespace_deployer.deploy_namespace(namespace)
+
+    # Lab is deployed only if associated namespace is created.
+    try:
+        namespace_deployer.deploy_namespace(namespace)
+
+        print "Lab namespace is `%s`" % namespace
+    except ApiException:
+        print "ERROR: Cannot deploy lab on cluster."
+        return
 
     print "Deploying links..."
     netkit_to_k8s_links = link_deployer.deploy_links(
@@ -38,6 +47,15 @@ def deploy(machines, links, options, path, network_counter=0):
         u.write_temp("", "%s_deploy" % namespace, nc.PLATFORM)
 
 
+def get_lab_info(path):
+    k8s_utils.load_kube_config()
+
+    namespace = k8s_utils.get_namespace_name(str(u.generate_urlsafe_hash(path)))
+
+    machine_deployer.dump_namespace_machines(namespace)
+    link_deployer.dump_namespace_links(namespace)
+
+
 def delete_lab(namespace):
     print "Deleting lab with namespace `%s`..." % namespace
 
@@ -45,7 +63,11 @@ def delete_lab(namespace):
     namespace_deployer.delete(namespace)
 
     # Delete "flag" file.
-    os.remove("%s/%s_deploy" % (u.get_temp_folder(nc.PLATFORM), namespace))
+    try:
+        os.remove("%s/%s_deploy" % (u.get_temp_folder(nc.PLATFORM), namespace))
+    except OSError:
+        # Suppress errors when kclean is called on a non deployed lab.
+        pass
 
 
 def delete(path, filtered_machines=None):

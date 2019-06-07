@@ -91,7 +91,7 @@ def build_k8s_pod_for_machine(machine):
 
     # Creates networks annotation and metadata definition
     annotations = dict()
-    annotations["k8s.v1.cni.cncf.io/networks"] = '"' + ", ".join(machine["interfaces"]) + '"'
+    annotations["k8s.v1.cni.cncf.io/networks"] = ", ".join(machine["interfaces"])
     metadata = client.V1ObjectMeta(name=machine["name"], deletion_grace_period_seconds=0, annotations=annotations)
 
     # Adds fake DNS just to override k8s_bin one
@@ -238,6 +238,17 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
                 sys.stderr.write("ERROR: could not deploy machine `%s`" % machine_name + "\n")
         else:               # If print mode, prints the pod definition as a JSON on stderr
             sys.stderr.write(json.dumps(pod.to_dict(), indent=True) + "\n\n")
+
+
+def dump_namespace_machines(namespace):
+    core_api = core_v1_api.CoreV1Api()
+
+    print "========================= Machines =========================="
+    print "NAME\t\tSTATUS"
+
+    pods = core_api.list_namespaced_pod(namespace=namespace)
+    for pod in pods.items:
+        print "%s\t\t%s" % (pod.metadata.name, str(pod))
 
 
 def delete(machine_name, namespace, core_api=None):

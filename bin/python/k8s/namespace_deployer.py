@@ -16,7 +16,7 @@ def deploy_namespace(namespace_name):
         try:
             core_api.create_namespace(namespace_def)
         except ApiException:
-            sys.stderr.write("ERROR: could not create namespace `%s`" % namespace_name + "\n")
+            raise ApiException()
     else:   # If print mode, prints the pod definition as a JSON on stderr
         sys.stderr.write(json.dumps(namespace_def.to_dict(), indent=True) + "\n\n")
 
@@ -27,4 +27,5 @@ def delete(namespace_name):
     try:
         core_api.delete_namespace(namespace_name)
     except ApiException:
-        sys.stderr.write("ERROR: could not delete namespace `%s`" % namespace_name + "\n")
+        # Suppress errors when kclean is called on a non deployed lab.
+        pass

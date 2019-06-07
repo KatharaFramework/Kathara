@@ -1,0 +1,10 @@
+#!/bin/bash
+
+python $NETKIT_HOME/python/check.py "$PWD/" "$@"
+
+export RC=$?
+if [ "$RC" = "0" ]; then
+    python $NETKIT_HOME/python/kinfo.py "$PWD/" "$@"
+else
+    echo FAILED
+fi

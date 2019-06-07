@@ -12,7 +12,7 @@ def build_k8s_name(resource_name, prefix=""):
 
 def get_namespace_name(hash_name):
     name = build_k8s_name(hash_name)
-    return name[0:8]
+    return name[0:7]
 
 
 def load_kube_config():

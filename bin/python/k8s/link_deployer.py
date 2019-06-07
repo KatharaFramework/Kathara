@@ -3,8 +3,8 @@ import os
 import sys
 
 import netkit_commons as nc
-from kubernetes.client.rest import ApiException
 from kubernetes.client.apis import custom_objects_api
+from kubernetes.client.rest import ApiException
 
 import k8s_utils
 
@@ -54,7 +54,7 @@ def build_k8s_definition_for_link(link_name, namespace, network_counter):
             "config": """{
                         "cniVersion": "0.3.0",
                         "type": "kathara",
-                        "suffix": %s,
+                        "suffix": "%s",
                         "vlanId": %d
                     }""" % (namespace, 10 + network_counter)
         }
@@ -91,3 +91,15 @@ def deploy_links(links, namespace="default", network_counter=0):
     write_network_counter(network_counter)
 
     return created_links
+
+
+def dump_namespace_links(namespace):
+    custom_api = custom_objects_api.CustomObjectsApi()
+
+    net_attach_defs = custom_api.list_namespaced_custom_object(group, version, namespace, plural)
+
+    print "========================= Links =========================="
+    print "NAME"
+
+    for net_attach_def in net_attach_defs["items"]:
+        print "%s\t\t%s" % (net_attach_def["metadata"]["name"], str(net_attach_def))
