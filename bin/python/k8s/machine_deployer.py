@@ -13,13 +13,13 @@ from kubernetes.client.rest import ApiException
 import k8s_utils
 
 
-def build_k8s_config_map_for_machine(machine):
+def build_k8s_config_map(namespace, lab_path):
     temp_path = tempfile.mkdtemp()
 
-    with tarfile.open(temp_path + "/hostlab.tar.gz", "w:gz") as tar:
-        tar.add("%s" % machine["lab_path"], arcname='.')
+    with tarfile.open("%s/hostlab.tar.gz" % temp_path, "w:gz") as tar:
+        tar.add("%s" % lab_path, arcname='.')
 
-    with open(temp_path + "/hostlab.tar.gz", "rb") as tar_file:
+    with open("%s/hostlab.tar.gz" % temp_path, "rb") as tar_file:
         tar_data = tar_file.read()
 
     shutil.rmtree(temp_path)
@@ -27,7 +27,7 @@ def build_k8s_config_map_for_machine(machine):
     data = dict()
     data["hostlab.tar.gz"] = base64.b64encode(tar_data)
 
-    metadata = client.V1ObjectMeta(name="%s-lab-files" % machine['namespace'], deletion_grace_period_seconds=0)
+    metadata = client.V1ObjectMeta(name="%s-lab-files" % namespace, deletion_grace_period_seconds=0)
     config_map = client.V1ConfigMap(api_version="v1", kind="ConfigMap", binary_data=data, metadata=metadata)
 
     return config_map
@@ -120,6 +120,9 @@ def build_k8s_pod_for_machine(machine):
 def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"):
     # Init API Client
     core_api = core_v1_api.CoreV1Api()
+
+    # Config Map will contain lab data to mount into the container as a volume.
+    config_map = build_k8s_config_map(namespace, lab_path)
 
     for machine_name, interfaces in machines.items():
         print "Deploying machine `%s`..." % machine_name
@@ -215,7 +218,6 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
         # Assign it here, because an extra exec command can be found in options and appended
         current_machine["startup_commands"] = startup_commands
 
-        config_map = build_k8s_config_map_for_machine(current_machine)
         pod = build_k8s_pod_for_machine(current_machine)
 
         if not nc.PRINT:
