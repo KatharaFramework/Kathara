@@ -27,7 +27,7 @@ def build_k8s_config_map_for_machine(machine):
     data = dict()
     data["hostlab.tar.gz"] = base64.b64encode(tar_data)
 
-    metadata = client.V1ObjectMeta(name="%s_lab_files" % machine['namespace'], deletion_grace_period_seconds=0)
+    metadata = client.V1ObjectMeta(name="%s-lab-files" % machine['namespace'], deletion_grace_period_seconds=0)
     config_map = client.V1ConfigMap(api_version="v1", kind="ConfigMap", binary_data=data, metadata=metadata)
 
     return config_map
@@ -98,7 +98,7 @@ def build_k8s_pod_for_machine(machine):
     hostlab_volume = client.V1Volume(
                         name="hostlab",
                         config_map=client.V1ConfigMapVolumeSource(
-                            name="%s_lab_files" % machine['namespace']
+                            name="%s-lab-files" % machine['namespace']
                         )
                      )
     # Hosthome is the current user home directory
@@ -247,5 +247,5 @@ def delete_by_namespace(namespace):
     for pod in pods.items:
         delete(pod.metadata.name, namespace, core_api=core_api)
 
-    config_map_name = "%s_lab_files" % namespace
+    config_map_name = "%s-lab-files" % namespace
     core_api.delete_namespaced_config_map(name=config_map_name, namespace=namespace)
