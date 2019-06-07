@@ -42,9 +42,8 @@ def write_network_counter(network_counter):
         last_network_counter.write(str(network_counter))
 
 
-def build_k8s_definition_for_link(link_name, network_counter):
+def build_k8s_definition_for_link(link_name, namespace, network_counter):
     # Creates a dict which contains the "link" network definition to deploy in k8s_bin
-    # TODO: Handle namespacing
     return {
         "apiVersion": "k8s.cni.cncf.io/v1",
         "kind": "NetworkAttachmentDefinition",
@@ -55,8 +54,9 @@ def build_k8s_definition_for_link(link_name, network_counter):
             "config": """{
                         "cniVersion": "0.3.0",
                         "type": "kathara",
+                        "suffix": %s,
                         "vlanId": %d
-                    }""" % (10 + network_counter)
+                    }""" % (namespace, 10 + network_counter)
         }
     }
 
@@ -74,7 +74,7 @@ def deploy_links(links, namespace="default", network_counter=0):
         print "Deploying link `%s`..." % link
 
         link_name = k8s_utils.build_k8s_name(link, prefix="net")
-        net_attach_def = build_k8s_definition_for_link(link_name, network_counter)
+        net_attach_def = build_k8s_definition_for_link(link_name, namespace, network_counter)
         if not nc.PRINT:
             try:
                 custom_api.create_namespaced_custom_object(group, version, namespace, plural, net_attach_def)

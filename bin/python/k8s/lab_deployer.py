@@ -14,12 +14,9 @@ def deploy(machines, links, options, path, network_counter=0):
     if not nc.PRINT:
         k8s_utils.load_kube_config()
 
-    namespace = "default"
-
-    # TODO: This'll be used in later versions...
-    print "Namespace is %s" % k8s_utils.get_namespace_name(str(u.generate_urlsafe_hash(path)))
-    # namespace = k8s_utils.build_k8s_name(str(u.generate_urlsafe_hash(path)))
-    # namespace_deployer.deploy_namespace(namespace)
+    # namespace = "default"
+    namespace = k8s_utils.get_namespace_name(str(u.generate_urlsafe_hash(path)))
+    namespace_deployer.deploy_namespace(namespace)
 
     print "Deploying links..."
     netkit_to_k8s_links = link_deployer.deploy_links(
@@ -56,11 +53,8 @@ def delete_lab(namespace):
 def delete(path, filtered_machines=None):
     k8s_utils.load_kube_config()
 
-    namespace = "default"
-
-    # TODO: This'll be used in later versions...
-    print "Namespace is %s" % k8s_utils.get_namespace_name(str(u.generate_urlsafe_hash(path)))
-    # namespace = k8s_utils.build_k8s_name(str(u.generate_urlsafe_hash(path)))
+    # namespace = "default"
+    namespace = k8s_utils.get_namespace_name(str(u.generate_urlsafe_hash(path)))
 
     if filtered_machines is not None and len(filtered_machines) > 0:
         # Some machine names are passed, delete only those machines.

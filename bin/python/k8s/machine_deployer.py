@@ -136,8 +136,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
         current_machine = {
             "namespace": namespace,
             "name": k8s_utils.build_k8s_name(machine_name),
-            # TODO: Handle interface namespacing!
-            "interfaces": [netkit_to_k8s_links[interface_name] for interface_name, _ in interfaces],
+            "interfaces": [namespace + "/" + netkit_to_k8s_links[interface_name] for interface_name, _ in interfaces],
             "image": nc.DOCKER_HUB_PREFIX + nc.IMAGE_NAME,
             "lab_path": lab_path,
             "startup_commands": []
