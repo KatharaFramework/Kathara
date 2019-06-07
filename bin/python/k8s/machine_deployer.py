@@ -25,9 +25,7 @@ def build_k8s_config_map(namespace, lab_path):
     shutil.rmtree(temp_path)
 
     data = dict()
-    data["hostlab.tar.gz"] = base64.b64encode(tar_data)
-
-    print(str(data))
+    data["hostlab.b64"] = base64.b64encode(tar_data)
 
     metadata = client.V1ObjectMeta(name="%s-lab-files" % namespace, deletion_grace_period_seconds=0)
     config_map = client.V1ConfigMap(api_version="v1", kind="ConfigMap", binary_data=data, metadata=metadata)
@@ -154,8 +152,11 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             # Removes /etc/bind already existing configuration from k8s_bin internal DNS
             "rm -Rf /etc/bind/*",
 
+            # Parse hostlab.b64
+            "base64 -d /tmp/kathara/hostlab.b64 > /hostlab.tar.gz",
             # Extract hostlab.tar.gz data into /hostlab
-            "tar -xfz /tmp/kathara/hostlab.tar.gz /hostlab"
+            "mkdir /hostlab",
+            "tar -xfz /hostlab.tar.gz -C /hostlab; rm -f hostlab.tar.gz",
 
             # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
             # In this way, files are all replaced in the container root folder

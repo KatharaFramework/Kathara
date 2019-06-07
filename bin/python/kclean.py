@@ -2,7 +2,7 @@ import argparse
 import sys
 
 import netkit_commons as nc
-import lab_deployer
+from k8s import lab_deployer
 
 nc.DEBUG = False
 
@@ -36,4 +36,4 @@ if not args.all:
     machine_name_args = list(filter(lambda x: not (x.startswith("--") or x.startswith("-")), unknown))
     lab_deployer.delete(lab_path, machine_name_args)
 else:
-    lab_deployer.delete_all(lab_path)
+    lab_deployer.delete_all()

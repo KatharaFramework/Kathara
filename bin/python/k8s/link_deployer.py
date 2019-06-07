@@ -107,5 +107,5 @@ def delete_by_namespace(namespace):
     custom_api = custom_objects_api.CustomObjectsApi()
 
     net_attach_defs = custom_api.list_namespaced_custom_object(group, version, namespace, plural)
-    for net_attach_def in net_attach_defs:
-        delete(net_attach_def.metadata.name, namespace, custom_api=custom_api)
+    for net_attach_def in net_attach_defs["items"]:
+        delete(net_attach_def["metadata"]["name"], namespace, custom_api=custom_api)
