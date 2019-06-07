@@ -20,8 +20,6 @@ def deploy(machines, links, options, path, network_counter=0):
     # Lab is deployed only if associated namespace is created.
     try:
         namespace_deployer.deploy_namespace(namespace)
-
-        print "Lab namespace is `%s`" % namespace
     except ApiException:
         print "ERROR: Cannot deploy lab on cluster."
         return
@@ -55,6 +53,10 @@ def get_lab_info(path):
         return
 
     k8s_utils.load_kube_config()
+
+    print "========================= Lab Info =========================="
+
+    print "NAMESPACE: %s" % namespace
 
     machine_deployer.dump_namespace_machines(namespace)
     link_deployer.dump_namespace_links(namespace)
