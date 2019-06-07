@@ -1,8 +1,10 @@
 import argparse
 import sys
 
+import netkit_commons as nc
 import lab_deployer
 
+nc.DEBUG = False
 
 def commandline_arg(bytestring):
     try:
