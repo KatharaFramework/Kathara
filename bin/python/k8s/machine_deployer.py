@@ -156,7 +156,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             "base64 -d /tmp/kathara/hostlab.b64 > /hostlab.tar.gz",
             # Extract hostlab.tar.gz data into /hostlab
             "mkdir /hostlab",
-            "tar -xfz /hostlab.tar.gz -C /hostlab; rm -f hostlab.tar.gz",
+            "tar xvfz /hostlab.tar.gz -C /hostlab; rm -f hostlab.tar.gz",
 
             # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
             # In this way, files are all replaced in the container root folder
