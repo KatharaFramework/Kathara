@@ -28,7 +28,7 @@ def build_k8s_config_map(namespace, lab_path):
     data["hostlab.b64"] = base64.b64encode(tar_data)
 
     metadata = client.V1ObjectMeta(name="%s-lab-files" % namespace, deletion_grace_period_seconds=0)
-    config_map = client.V1ConfigMap(api_version="v1", kind="ConfigMap", binary_data=data, metadata=metadata)
+    config_map = client.V1ConfigMap(api_version="v1", kind="ConfigMap", data=data, metadata=metadata)
 
     return config_map
 
@@ -104,7 +104,7 @@ def build_k8s_pod_for_machine(machine):
     # Hosthome is the current user home directory
     hosthome_volume = client.V1Volume(
                         name="hosthome",
-                        host_path=client.V1HostPathVolumeSource(path='~/')
+                        host_path=client.V1HostPathVolumeSource(path='/home')
                       )
 
     spec = client.V1PodSpec(
