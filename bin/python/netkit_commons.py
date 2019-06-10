@@ -140,12 +140,12 @@ def lab_parse(path, force=False):
             if not machines.get(name):
                 machines[name] = []
             if len(machines[name]) == 0 or machines[name][len(machines[name])-1][1] == ifnumber - 1:
-                machines[name].append((config.get('dummysection', key), ifnumber))
+                machines[name].append((config.get('dummysection', key).strip().replace('"','').replace("'",''), ifnumber))
         except ValueError:
             option = splitted[0].strip()
             if not options.get(name):
                 options[name] = []
-            options[name].append((option, config.get('dummysection', key)))
+            options[name].append((option, config.get('dummysection', key).strip().replace('"','').replace("'",'')))
     # same with metadata
     metadata = {}
     for m_key in m_keys:
