@@ -231,16 +231,12 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
                 if opt == 'image' or opt == 'i' or opt == 'model-fs' or opt == 'm' or opt == 'f' or opt == 'filesystem':
                     current_machine["image"] = nc.DOCKER_HUB_PREFIX + val
                 if opt == 'eth':
-                    # TODO: Ask what's this
-                    pass
+                    app = val.split(":")
+                    # Build the k8s link name, starting from the option one.
+                    link_name = namespace + "/" + netkit_to_k8s_links[app[1]]
 
-                    # app = val.split(":")
-                    # create_network_commands.append(create_network_template + prefix + app[1])
-                    # repls = ('{link}', app[1]), ('{machine_name}', machine_name)
-                    # create_connection_commands.append(u.replace_multiple_items(repls, create_connection_template))
-                    # if not PRINT: u.write_temp(" " + prefix + app[1], u.generate_urlsafe_hash(path) + '_links', PLATFORM)
-                    # repls = ('{machine_name}', machine_name), ('{command}', this_shell + ' -c "sysctl net.ipv4.conf.eth'+str(app[0])+'.rp_filter=0"'), ('{params}', '')
-                    # startup_commands.insert(4, u.replace_multiple_items(repls, exec_template))
+                # Insert the link name at the specified index (took from the option value)
+                    list.insert(current_machine["interfaces"], int(app[0]), link_name)
                 if opt == 'bridged':
                     # TODO: Bridged is not supported for now
                     pass
@@ -292,8 +288,8 @@ def dump_namespace_machines(namespace):
 
     deployments = apps_api.list_namespaced_deployment(namespace=namespace)
     for deployment in deployments.items:
-        print "%s\t\t%s\t\t%s\t%s" % (deployment.metadata.name,
-                                      deployment.status.ready_replicas,
+        print "%s\t\t%s\t\t%s\t\t%s" % (deployment.metadata.name,
+                                      deployment.status.ready_replicas or 0,
                                       deployment.status.replicas,
                                       deployment.spec.template.spec.scheduler_name
                                       )

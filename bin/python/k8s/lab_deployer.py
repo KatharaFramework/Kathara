@@ -25,8 +25,12 @@ def deploy(machines, links, options, path, network_counter=0):
         return
 
     print "Deploying links..."
+    # Before deploying links, check if there are any extra links in the machine options
+    # This is needed because all the links must be deployed before the machines are created
+    extra_links = k8s_utils.get_extra_links_from_machine_options(machines, options)
+
     netkit_to_k8s_links = link_deployer.deploy_links(
-                            links,
+                            set(links + extra_links),       # Merge the two lists, set is needed to remove duplicates
                             namespace=namespace,
                             network_counter=network_counter
                           )
