@@ -43,7 +43,7 @@ def write_network_counter(network_counter):
 
 
 def build_k8s_definition_for_link(link_name, namespace, network_counter):
-    # Creates a dict which contains the "link" network definition to deploy in k8s_bin
+    # Creates a dict which contains the "link" network definition to deploy in k8s
     return {
         "apiVersion": "k8s.cni.cncf.io/v1",
         "kind": "NetworkAttachmentDefinition",
@@ -65,11 +65,11 @@ def deploy_links(links, namespace="default", network_counter=0):
     # Init API Client
     custom_api = custom_objects_api.CustomObjectsApi()
 
-    # Reads the network counter. In k8s_bin case, the counter is used for VXLAN ID tag.
+    # Reads the network counter. In k8s case, the counter is used for VXLAN ID tag.
     network_counter = read_network_counter(network_counter)
 
-    created_links = {}      # Associates each netkit link name to a k8s_bin name. This will be used later both to write
-                            # which links are part of the lab and to map machine's collision domains to k8s_bin networks
+    created_links = {}      # Associates each netkit link name to a k8s name. This will be used later both to write
+                            # which links are part of the lab and to map machine's collision domains to k8s networks.
     for link in links:
         print "Deploying link `%s`..." % link
 

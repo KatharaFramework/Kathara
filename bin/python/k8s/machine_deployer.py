@@ -8,6 +8,7 @@ import tempfile
 import netkit_commons as nc
 from kubernetes import client
 from kubernetes.client.apis import core_v1_api
+from kubernetes.client.apis import apps_v1_api
 from kubernetes.client.rest import ApiException
 
 import k8s_utils
@@ -29,20 +30,20 @@ def build_k8s_config_map(namespace, lab_path):
     data = dict()
     data["hostlab.b64"] = base64.b64encode(tar_data)
 
-    # Create a ConfigMap on the cluster containing the base64 of the .tar.gz file.
-    # This will be decoded and extracted in the postStart hook of the pod.
+    # Create a ConfigMap on the cluster containing the base64 of the .tar.gz file
+    # This will be decoded and extracted in the postStart hook of the pod
     metadata = client.V1ObjectMeta(name="%s-lab-files" % namespace, deletion_grace_period_seconds=0)
     config_map = client.V1ConfigMap(api_version="v1", kind="ConfigMap", data=data, metadata=metadata)
 
     return config_map
 
 
-def build_k8s_pod_for_machine(machine):
-    # Defines volume mounts for both hostlab and hosthome
+def build_k8s_definition_for_machine(machine):
+    # Define volume mounts for both hostlab and hosthome
     hostlab_volume_mount = client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara")
     hosthome_volume_mount = client.V1VolumeMount(name="hosthome", mount_path="/hosthome")
 
-    # Minimum caps to make Quagga work without "privileged" mode.
+    # Minimum caps to make Quagga work without "privileged" mode
     container_capabilities = client.V1Capabilities(add=["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "SYS_ADMIN"])
     security_context = client.V1SecurityContext(capabilities=container_capabilities)
 
@@ -64,7 +65,7 @@ def build_k8s_pod_for_machine(machine):
 
         resources = client.V1ResourceRequirements(limits=limits)
 
-    # postStart lifecycle hook is launched asynchronously by k8s_bin master when the main container is Ready.
+    # postStart lifecycle hook is launched asynchronously by k8s master when the main container is Ready
     # On Ready state, the pod has volumes and network interfaces up, so this hook is used
     # to execute custom commands coming from .startup file and "exec" option
     lifecycle = None
@@ -76,7 +77,7 @@ def build_k8s_pod_for_machine(machine):
                      )
         lifecycle = client.V1Lifecycle(post_start=post_start)
 
-    # Container definition
+    # Main Container definition
     kathara_container = client.V1Container(
                             name="kathara",
                             image="%s:latest" % machine["image"],
@@ -89,28 +90,40 @@ def build_k8s_pod_for_machine(machine):
                             security_context=security_context
                         )
 
-    # Creates networks annotation and metadata definition
-    annotations = dict()
-    annotations["k8s.v1.cni.cncf.io/networks"] = ", ".join(machine["interfaces"])
-    metadata = client.V1ObjectMeta(name=machine["name"], deletion_grace_period_seconds=0, annotations=annotations)
+    # Create networks annotation
+    pod_annotations = dict()
+    pod_annotations["k8s.v1.cni.cncf.io/networks"] = ", ".join(machine["interfaces"])
 
-    # Adds fake DNS just to override k8s_bin one
+    # Create labels (so Deployment can match them)
+    pod_labels = dict()
+    pod_labels["app"] = "kathara"
+    pod_labels["machine"] = "kathara-%s" % machine["name"]
+
+    pod_metadata = client.V1ObjectMeta(name=machine["name"],
+                                       deletion_grace_period_seconds=0,
+                                       annotations=pod_annotations,
+                                       labels=pod_labels
+                                       )
+
+    # Add fake DNS just to override k8s one
     dns_config = client.V1PodDNSConfig(nameservers=["127.0.0.1"])
 
     # Define volumes
-    # Hostlab is the lab directory mounted from the kubemaster through NFS (read only mode)
+    # Hostlab is the lab base64 encoded .tar.gz of the lab directory, deployed as a ConfigMap in the cluster
+    # The base64 file is mounted into /tmp and it's extracted by the postStart hook
     hostlab_volume = client.V1Volume(
                         name="hostlab",
                         config_map=client.V1ConfigMapVolumeSource(
                             name="%s-lab-files" % machine['namespace']
                         )
                      )
-    # Hosthome is the current user home directory
+    # Hosthome is the host /home directory
     hosthome_volume = client.V1Volume(
                         name="hosthome",
                         host_path=client.V1HostPathVolumeSource(path='/home')
                       )
 
+    # Create PodSpec containing all the info associated with this machine
     spec = client.V1PodSpec(
                 containers=[kathara_container],
                 dns_policy="None",
@@ -118,19 +131,27 @@ def build_k8s_pod_for_machine(machine):
                 volumes=[hostlab_volume, hosthome_volume]
            )
 
-    return client.V1Pod(api_version="v1", kind="Pod", metadata=metadata, spec=spec)
+    # Create PodTemplate which is used by Deployment
+    pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=spec)
+
+    # Defines selection rules for the Deployment, labels to match are the same as the ones defined in PodSpec
+    selector_rules = client.V1LabelSelector(match_labels=pod_labels)
+
+    # Create Deployment Spec, here we set the number of replicas, the previous PodTemplate and the selector rules
+    client.V1DeploymentSpec(replicas=1, template=pod_template, selector=selector_rules)
+
+    # Create Deployment metadata, also this object is marked with the same labels of the Pod
+    deployment_metadata = client.V1ObjectMeta(name="%s-deployment" % machine["name"], labels=pod_labels)
+
+    return client.V1Deployment(api_version="apps/v1", kind="Deployment", metadata=deployment_metadata, spec=spec)
 
 
 def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"):
     # Init API Client
-    core_api = core_v1_api.CoreV1Api()
+    apps_api = apps_v1_api.AppsV1Api()
 
     # Config Map will contain lab data to mount into the container as a volume.
-    config_map = build_k8s_config_map(namespace, lab_path)
-    if not nc.PRINT:    
-        core_api.create_namespaced_config_map(body=config_map, namespace=namespace)
-    else:
-        sys.stderr.write(json.dumps(config_map.to_dict(), indent=True) + "\n\n")
+    deploy_config_map(namespace, lab_path)
 
     for machine_name, interfaces in machines.items():
         print "Deploying machine `%s`..." % machine_name
@@ -152,7 +173,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             # If not flag the startup execution with a file
             "if [ -f \"/tmp/post_start\" ]; then exit; else touch /tmp/post_start; fi",
 
-            # Removes /etc/bind already existing configuration from k8s_bin internal DNS
+            # Removes /etc/bind already existing configuration from k8s internal DNS
             "rm -Rf /etc/bind/*",
 
             # Parse hostlab.b64
@@ -170,7 +191,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
 
             # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
             # If not, clear the content of the file.
-            # This should be patched with "cat" because file is already in use by k8s_bin internal DNS.
+            # This should be patched with "cat" because file is already in use by k8s internal DNS.
             "if [ -f \"/machine_data/etc/resolv.conf\" ]; then " \
             "cat /machine_data/etc/resolv.conf > /etc/resolv.conf; else " \
             "echo \"\" > /etc/resolv.conf; fi",
@@ -228,16 +249,27 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
         # Assign it here, because an extra exec command can be found in options and appended
         current_machine["startup_commands"] = startup_commands
 
-        pod = build_k8s_pod_for_machine(current_machine)
+        machine_def = build_k8s_definition_for_machine(current_machine)
 
         if not nc.PRINT:
             try:
-                core_api.create_namespaced_pod(body=pod, namespace=namespace)
+                apps_api.create_namespaced_deployment(body=machine_def, namespace=namespace)
                 print "Machine `%s` deployed successfully!" % machine_name
             except ApiException:
                 sys.stderr.write("ERROR: could not deploy machine `%s`" % machine_name + "\n")
         else:               # If print mode, prints the pod definition as a JSON on stderr
-            sys.stderr.write(json.dumps(pod.to_dict(), indent=True) + "\n\n")
+            sys.stderr.write(json.dumps(machine_def.to_dict(), indent=True) + "\n\n")
+
+
+def deploy_config_map(namespace, lab_path):
+    # Init API Client
+    core_api = core_v1_api.CoreV1Api()
+
+    config_map = build_k8s_config_map(namespace, lab_path)
+    if not nc.PRINT:
+        core_api.create_namespaced_config_map(body=config_map, namespace=namespace)
+    else:
+        sys.stderr.write(json.dumps(config_map.to_dict(), indent=True) + "\n\n")
 
 
 def dump_namespace_machines(namespace):
@@ -251,8 +283,8 @@ def dump_namespace_machines(namespace):
         print "%s\t\t%s\t\t%s\t%s" % (pod.metadata.name, pod.status.phase, pod.spec.node_name, pod.spec.scheduler_name)
 
 
-def delete(machine_name, namespace, core_api=None):
-    core_api = core_v1_api.CoreV1Api() if core_api is None else core_api
+def delete(machine_name, namespace):
+    core_api = core_v1_api.CoreV1Api()
 
     try:
         core_api.delete_namespaced_pod(name=machine_name, namespace=namespace)
