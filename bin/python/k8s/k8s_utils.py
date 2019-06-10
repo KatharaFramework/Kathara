@@ -20,12 +20,12 @@ def get_extra_links_from_machine_options(machines, options):
 
     for machine_name in machines:
         if options.get(machine_name):
-            eth_options = {k: options[machine_name][k] for k, v in options[machine_name]}
+            eth_options = [v for (k, v) in options.get(machine_name) if k == "eth"]
 
             for val in eth_options:
                 extra_links.append(val.split(":")[1])
 
-    return extra_links
+    return set(extra_links)
 
 
 def load_kube_config():

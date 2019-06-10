@@ -235,7 +235,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
                     # Build the k8s link name, starting from the option one.
                     link_name = namespace + "/" + netkit_to_k8s_links[app[1]]
 
-                # Insert the link name at the specified index (took from the option value)
+                    # Insert the link name at the specified index (took from the option value)
                     list.insert(current_machine["interfaces"], int(app[0]), link_name)
                 if opt == 'bridged':
                     # TODO: Bridged is not supported for now
