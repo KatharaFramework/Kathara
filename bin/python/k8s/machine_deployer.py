@@ -99,7 +99,7 @@ def build_k8s_definition_for_machine(machine):
     pod_labels["app"] = "kathara"
     pod_labels["machine"] = "kathara-%s" % machine["name"]
 
-    pod_metadata = client.V1ObjectMeta(name=machine["name"],
+    pod_metadata = client.V1ObjectMeta(name="%s-pod" % machine["name"],
                                        deletion_grace_period_seconds=0,
                                        annotations=pod_annotations,
                                        labels=pod_labels
@@ -124,26 +124,32 @@ def build_k8s_definition_for_machine(machine):
                       )
 
     # Create PodSpec containing all the info associated with this machine
-    spec = client.V1PodSpec(
-                containers=[kathara_container],
-                dns_policy="None",
-                dns_config=dns_config,
-                volumes=[hostlab_volume, hosthome_volume]
-           )
+    pod_spec = client.V1PodSpec(containers=[kathara_container],
+                                dns_policy="None",
+                                dns_config=dns_config,
+                                volumes=[hostlab_volume, hosthome_volume]
+                                )
 
     # Create PodTemplate which is used by Deployment
-    pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=spec)
+    pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
 
     # Defines selection rules for the Deployment, labels to match are the same as the ones defined in PodSpec
     selector_rules = client.V1LabelSelector(match_labels=pod_labels)
 
     # Create Deployment Spec, here we set the number of replicas, the previous PodTemplate and the selector rules
-    client.V1DeploymentSpec(replicas=1, template=pod_template, selector=selector_rules)
+    deployment_spec = client.V1DeploymentSpec(replicas=machine["replicas"],
+                                              template=pod_template,
+                                              selector=selector_rules
+                                              )
 
     # Create Deployment metadata, also this object is marked with the same labels of the Pod
-    deployment_metadata = client.V1ObjectMeta(name="%s-deployment" % machine["name"], labels=pod_labels)
+    deployment_metadata = client.V1ObjectMeta(name=machine["name"], labels=pod_labels)
 
-    return client.V1Deployment(api_version="apps/v1", kind="Deployment", metadata=deployment_metadata, spec=spec)
+    return client.V1Deployment(api_version="apps/v1",
+                               kind="Deployment",
+                               metadata=deployment_metadata,
+                               spec=deployment_spec
+                               )
 
 
 def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"):
@@ -164,6 +170,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             "interfaces": [namespace + "/" + netkit_to_k8s_links[interface_name] for interface_name, _ in interfaces],
             "image": nc.DOCKER_HUB_PREFIX + nc.IMAGE_NAME,
             "lab_path": lab_path,
+            "replicas": 1,
             "startup_commands": []
         }
 
@@ -245,6 +252,11 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
                         current_machine["port"] = int(val)
                     except ValueError:
                         pass
+                if opt == 'replicas':
+                    try:
+                        current_machine["replicas"] = int(val)
+                    except ValueError:
+                        pass
 
         # Assign it here, because an extra exec command can be found in options and appended
         current_machine["startup_commands"] = startup_commands
@@ -273,21 +285,25 @@ def deploy_config_map(namespace, lab_path):
 
 
 def dump_namespace_machines(namespace):
-    core_api = core_v1_api.CoreV1Api()
+    apps_api = apps_v1_api.AppsV1Api()
 
     print "========================= Machines =========================="
-    print "NAME\t\tSTATUS\t\tHOST\t\tSCHEDULER"
+    print "NAME\t\tREADY\t\tDESIRED\t\tSCHEDULER"
 
-    pods = core_api.list_namespaced_pod(namespace=namespace)
-    for pod in pods.items:
-        print "%s\t\t%s\t\t%s\t%s" % (pod.metadata.name, pod.status.phase, pod.spec.node_name, pod.spec.scheduler_name)
+    deployments = apps_api.list_namespaced_deployment(namespace=namespace)
+    for deployment in deployments.items:
+        print "%s\t\t%s\t\t%s\t%s" % (deployment.metadata.name,
+                                      deployment.status.ready_replicas,
+                                      deployment.status.replicas,
+                                      deployment.spec.template.spec.scheduler_name
+                                      )
 
 
 def delete(machine_name, namespace):
-    core_api = core_v1_api.CoreV1Api()
+    apps_api = apps_v1_api.AppsV1Api()
 
     try:
-        core_api.delete_namespaced_pod(name=machine_name, namespace=namespace)
+        apps_api.delete_namespaced_deployment(name=machine_name, namespace=namespace)
         print "Machine `%s` deleted successfully!" % machine_name
     except ApiException:
         sys.stderr.write("ERROR: could not delete machine `%s`" % machine_name + "\n")
