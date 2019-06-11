@@ -136,7 +136,13 @@ if args.options:
 
 # applying parameter options (2/3)
 # adding additional_options to options
-for machine_name, _ in options.items():
+# Loop through the machines
+for machine_name, _ in machines.items():
+    # Check if a machine already has options, if not create a list
+    if machine_name not in options:
+        options[machine_name] = []
+
+    # Append additional_options to options
     options[machine_name] = options[machine_name] + additional_options
 
 filtered_machines = machines
