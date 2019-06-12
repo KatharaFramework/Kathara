@@ -43,9 +43,8 @@ def build_k8s_definition_for_machine(machine):
     hostlab_volume_mount = client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara")
     hosthome_volume_mount = client.V1VolumeMount(name="hosthome", mount_path="/hosthome")
 
-    # Minimum caps to make Quagga work without "privileged" mode
-    container_capabilities = client.V1Capabilities(add=["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "SYS_ADMIN"])
-    security_context = client.V1SecurityContext(capabilities=container_capabilities)
+    # Container should run in "privileged" mode
+    security_context = client.V1SecurityContext(privileged=True)
 
     # Container port is declared only if it's defined in machine options
     container_ports = None
@@ -270,7 +269,6 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
 
 
 def deploy_config_map(namespace, lab_path):
-    # Init API Client
     core_api = core_v1_api.CoreV1Api()
 
     config_map = build_k8s_config_map(namespace, lab_path)
@@ -282,17 +280,24 @@ def deploy_config_map(namespace, lab_path):
 
 def dump_namespace_machines(namespace):
     apps_api = apps_v1_api.AppsV1Api()
+    core_api = core_v1_api.CoreV1Api()
 
     print "========================= Machines =========================="
     print "NAME\t\tREADY\t\tDESIRED\t\tSCHEDULER"
 
     deployments = apps_api.list_namespaced_deployment(namespace=namespace)
+    pods = core_api.list_namespaced_pod(namespace=namespace)
+
     for deployment in deployments.items:
         print "%s\t\t%s\t\t%s\t\t%s" % (deployment.metadata.name,
-                                      deployment.status.ready_replicas or 0,
-                                      deployment.status.replicas,
-                                      deployment.spec.template.spec.scheduler_name
-                                      )
+                                        deployment.status.ready_replicas or 0,
+                                        deployment.status.replicas,
+                                        deployment.spec.template.spec.scheduler_name
+                                        )
+
+        for pod in pods.items:
+            if deployment.metadata.name in pod.metadata.name:
+                print "\t\t%s" % pod.metadata.name
 
 
 def delete(machine_name, namespace):
