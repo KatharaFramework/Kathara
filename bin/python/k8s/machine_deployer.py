@@ -297,7 +297,7 @@ def dump_namespace_machines(namespace):
 
         for pod in pods.items:
             if deployment.metadata.name in pod.metadata.name:
-                print "\t\t%s" % pod.metadata.name
+                print "\t%s" % pod.metadata.name
 
 
 def delete(machine_name, namespace):
