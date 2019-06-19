@@ -8,7 +8,7 @@ import k8s_utils
 import link_deployer
 import machine_deployer
 import namespace_deployer
-from scheduler import hierarchical_clustering_scheduler
+from scheduler import scheduler
 
 
 def deploy(machines, links, options, path, network_counter=0):
@@ -37,7 +37,8 @@ def deploy(machines, links, options, path, network_counter=0):
                           )
 
     print "Running scheduler to assign machines to Kubernetes nodes..."
-    node_constraints = hierarchical_clustering_scheduler.get_constraints_for_lab(machines)
+    node_constraints = scheduler.schedule(machines)
+    print "Scheduler result is: " + str(node_constraints)
 
     print "Deploying machines..."
     machine_deployer.deploy(

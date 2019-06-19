@@ -5,6 +5,7 @@ inf = float('inf')
 
 
 def convert_machines_to_graph(machines):
+    # Extract a dict with machine_name: [LINKS]
     machines = {machine_name: [k for (k, v) in machines[machine_name]] for machine_name in machines}
 
     graph_edges = []
@@ -13,10 +14,13 @@ def convert_machines_to_graph(machines):
     for machine_name in machines:
         links = machines[machine_name]
 
+        # Check other machines, looping on the same dict
         for other_machine_name in machines:
+            # Skip current machine_name
             if other_machine_name != machine_name:
                 other_links = machines[other_machine_name]
 
+                # If there's a link between the machines, create a tuple representing an edge between the two nodes
                 for link in links:
                     if link in other_links:
                         graph_edges.append((machine_name, other_machine_name))
@@ -27,12 +31,14 @@ def convert_machines_to_graph(machines):
 def neighbours(graph_vertices, graph_edges):
     graph_neighbours = {graph_vertex: set() for graph_vertex in graph_vertices}
 
+    # Convert the tuples in a dict with edge: [LIST OF NEIGHBORS]
     for (start, end) in graph_edges:
         graph_neighbours[start].add(end)
 
     return graph_neighbours
 
 
+# Simple BFS visit with distance support
 def get_vertex_distances(graph, start):
     queue = [start]
     distance_queue = [0]
@@ -52,6 +58,7 @@ def get_vertex_distances(graph, start):
                 queue.append(neighbor)
                 distance_queue.append(current_distance + 1)
 
+    # Edit the return value a bit, creating tuples (which are required by scheduling functions)
     return {(start,): {(k,): vertex_distances[k] for k in vertex_distances if k != start}}
 
 
@@ -63,7 +70,7 @@ def get_available_nodes():
 
     # Purge the API response
     # Get only node names of nodes which aren't masters
-    available_nodes = [node.metadata.name for node in api_nodes.list()
+    available_nodes = [node.metadata.name for node in api_nodes.items
                        if [x.status for x in node.status.conditions if x.type == "Ready"].pop() == "True" and
                        "node-role.kubernetes.io/master" not in node.metadata.labels
                        ]
@@ -72,9 +79,12 @@ def get_available_nodes():
 
 
 def convert_cluster_to_node_selectors(available_nodes, split_cluster):
-    # Loop on the split list
     node_selectors = {}
+
+    # Loop on the split list
     for idx, cluster_machines in enumerate(split_cluster):
+        # Create a new element in the dict for each machine in this cluster tuple and assign it
+        # to the node with the index idx
         for machine_name in cluster_machines:
             node_selectors[machine_name] = available_nodes[idx]
 
@@ -83,6 +93,7 @@ def convert_cluster_to_node_selectors(available_nodes, split_cluster):
 
 def calculate_constraints(machines, scheduling_function):
     if nc.PRINT:
+        print "Print mode, scheduler is not run."
         return None
 
     available_nodes = get_available_nodes()
