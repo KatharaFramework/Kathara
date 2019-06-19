@@ -126,8 +126,12 @@ def build_k8s_definition_for_machine(machine):
     pod_spec = client.V1PodSpec(containers=[kathara_container],
                                 dns_policy="None",
                                 dns_config=dns_config,
-                                volumes=[hostlab_volume, hosthome_volume]
+                                volumes=[hostlab_volume, hosthome_volume],
                                 )
+
+    # Assign node selector only if there's a constraint given by the scheduler
+    if machine["node_selector"] is not None:
+        pod_spec.node_selector = {"kubernetes.io/hostname": machine["node_selector"]}
 
     # Create PodTemplate which is used by Deployment
     pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
@@ -151,7 +155,7 @@ def build_k8s_definition_for_machine(machine):
                                )
 
 
-def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"):
+def deploy(machines, options, netkit_to_k8s_links, node_constraints, lab_path, namespace="default"):
     # Init API Client
     apps_api = apps_v1_api.AppsV1Api()
 
@@ -170,6 +174,7 @@ def deploy(machines, options, netkit_to_k8s_links, lab_path, namespace="default"
             "image": nc.DOCKER_HUB_PREFIX + nc.IMAGE_NAME,
             "lab_path": lab_path,
             "replicas": 1,
+            "node_selector": node_constraints[machine_name] if node_constraints is not None else None,
             "startup_commands": []
         }
 
@@ -283,21 +288,20 @@ def dump_namespace_machines(namespace):
     core_api = core_v1_api.CoreV1Api()
 
     print "========================= Machines =========================="
-    print "NAME\t\tREADY\t\tDESIRED\t\tSCHEDULER"
+    print "NAME\t\tREADY\t\tDESIRED"
 
     deployments = apps_api.list_namespaced_deployment(namespace=namespace)
     pods = core_api.list_namespaced_pod(namespace=namespace)
 
     for deployment in deployments.items:
-        print "%s\t\t%s\t\t%s\t\t%s" % (deployment.metadata.name,
-                                        deployment.status.ready_replicas or 0,
-                                        deployment.status.replicas,
-                                        deployment.spec.template.spec.scheduler_name
-                                        )
+        print "%s\t\t%s\t\t%s" % (deployment.metadata.name,
+                                  deployment.status.ready_replicas or 0,
+                                  deployment.status.replicas
+                                  )
 
         for pod in pods.items:
             if deployment.metadata.name in pod.metadata.name:
-                print "\t%s" % pod.metadata.name
+                print "\t%s\t\t%s" % (pod.metadata.name, pod.spec.node_name)
 
 
 def delete(machine_name, namespace):

@@ -8,6 +8,7 @@ import k8s_utils
 import link_deployer
 import machine_deployer
 import namespace_deployer
+from scheduler import hierarchical_clustering_scheduler
 
 
 def deploy(machines, links, options, path, network_counter=0):
@@ -30,16 +31,20 @@ def deploy(machines, links, options, path, network_counter=0):
     extra_links = k8s_utils.get_extra_links_from_machine_options(machines, options)
 
     netkit_to_k8s_links = link_deployer.deploy_links(
-                            links|extra_links,          # Merge the two sets
+                            links | extra_links,          # Merge the two sets
                             namespace=namespace,
                             network_counter=network_counter
                           )
+
+    print "Running scheduler to assign machines to Kubernetes nodes..."
+    node_constraints = hierarchical_clustering_scheduler.get_constraints_for_lab(machines)
 
     print "Deploying machines..."
     machine_deployer.deploy(
         machines,
         options,
         netkit_to_k8s_links,
+        node_constraints,
         path,
         namespace=namespace
     )
