@@ -227,7 +227,7 @@ def create_commands(machines, links, options, metadata, path, execbash=False, no
         base_ip = u'172.19.0.0'
         max_ip = u'254.255.0.0'
         multiplier = 256 * 256
-        max_counter = ( int(ipaddress.ip_address(max_ip)) - int(ipaddress.ip_address(base_ip)) ) / multiplier
+        max_counter = ( int(ipaddress.ip_address(max_ip)) - int(ipaddress.ip_address(base_ip)) ) // multiplier
         if network_counter == 0: # means it was not set by user
             try:
                 network_counter = int(last_network_counter.readline()) % max_counter
