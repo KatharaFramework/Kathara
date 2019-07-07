@@ -131,7 +131,18 @@ def build_k8s_definition_for_machine(machine):
 
     # Assign node selector only if there's a constraint given by the scheduler
     if machine["node_selector"] is not None:
-        pod_spec.node_selector = {"kubernetes.io/hostname": machine["node_selector"]}
+        node_expression = client.V1NodeSelectorRequirement(key="kubernetes.io/hostname",
+                                                           operator="In",
+                                                           values=[machine["node_selector"]]
+                                                           )
+
+        node_preference = client.V1PreferredSchedulingTerm(
+            preference=client.V1NodeSelectorTerm(match_expressions=[node_expression])
+        )
+
+        pod_spec.affinity = client.V1Affinity(
+            node_affinity=client.V1NodeAffinity(preferred_during_scheduling_ignored_during_execution=[node_preference])
+        )
 
     # Create PodTemplate which is used by Deployment
     pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
@@ -225,6 +236,10 @@ def deploy(machines, options, netkit_to_k8s_links, node_constraints, lab_path, n
 
             # Delete machine data folder after everything is ready
             "rm -Rf /machine_data"
+
+            # Remove the Kubernetes' default gateway which points to the eth0 interface and causes problems sometimes.
+            # This should be done after running the startup (so a new default can be selected)
+            "route del default dev eth0",
         ]
 
         # Saves extra options for current machine
@@ -269,8 +284,6 @@ def deploy(machines, options, netkit_to_k8s_links, node_constraints, lab_path, n
                 print "Machine `%s` deployed successfully!" % machine_name
             except ApiException:
                 sys.stderr.write("ERROR: could not deploy machine `%s`" % machine_name + "\n")
-        else:               # If print mode, prints the pod definition as a JSON on stderr
-            sys.stderr.write(json.dumps(machine_def.to_dict(), indent=True) + "\n\n")
 
 
 def deploy_config_map(namespace, lab_path):

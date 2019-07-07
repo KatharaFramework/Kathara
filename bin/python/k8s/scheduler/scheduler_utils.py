@@ -1,79 +1,69 @@
 import netkit_commons as nc
 from kubernetes.client.apis import core_v1_api
+import semantic_constraints
+from scipy.sparse import csr_matrix
+
 
 inf = float('inf')
 
 
-def convert_machines_to_graph(machines):
-    # Extract a dict with machine_name: [LINKS]
-    machines = {machine_name: [k for (k, v) in machines[machine_name]] for machine_name in machines}
+def convert_machines_to_adjacency_matrix(machines):
+    machines = {machine_name: [v1 for (v1, v2) in machines[machine_name]] for machine_name in machines}
 
-    graph_edges = []
-    graph_vertices = machines.keys()
+    label_to_idx = {name: i for i, name in enumerate(machines.keys())}
+    rows, cols, data = [], [], []
 
-    for machine_name in machines:
+    for idx, machine_name in enumerate(machines):
+        # With this trick we only get the link names
         links = machines[machine_name]
 
         # Check other machines, looping on the same dict
-        for other_machine_name in machines:
-            # Skip current machine_name
-            if other_machine_name != machine_name:
-                other_links = machines[other_machine_name]
+        # Since matrix is symmetric, the loop is started from the element next to the current one
+        # Because it's useless to check it from the beginning
+        for other_machine_name in machines.keys()[(idx + 1):]:
+            start_idx = label_to_idx[machine_name]
+            end_idx = label_to_idx[other_machine_name]
 
-                # If there's a link between the machines, create a tuple representing an edge between the two nodes
-                for link in links:
-                    if link in other_links:
-                        graph_edges.append((machine_name, other_machine_name))
+            # Get a list with only link names
+            other_links = machines[other_machine_name]
 
-    return graph_vertices, set(graph_edges)
+            # If there's a link between the machines, add it in the adjacency matrix
+            # The edge weight is 1 in the beginning.
+            if set(links).intersection(other_links):
+                rows.append(start_idx)
+                cols.append(end_idx)
+                data.append(1)
 
+                rows.append(end_idx)
+                cols.append(start_idx)
+                data.append(1)
 
-def neighbours(graph_vertices, graph_edges):
-    graph_neighbours = {graph_vertex: set() for graph_vertex in graph_vertices}
+    matrix_size = len(machines)
+    # Create sparse adjacency matrix
+    adjacency_matrix = csr_matrix((data, (rows, cols)), shape=(matrix_size, matrix_size), dtype=float)
+    adjacency_matrix = adjacency_matrix.tolil()
 
-    # Convert the tuples in a dict with edge: [LIST OF NEIGHBORS]
-    for (start, end) in graph_edges:
-        graph_neighbours[start].add(end)
-
-    return graph_neighbours
-
-
-# Simple BFS visit with distance support
-def get_vertex_distances(graph, start):
-    queue = [start]
-    distance_queue = [0]
-
-    vertex_distances = {graph_vertex: inf for graph_vertex in graph.keys()}
-
-    while queue:
-        graph_vertex = queue.pop(0)
-        current_distance = distance_queue.pop(0)
-        vertex_distances[graph_vertex] = current_distance
-
-        neighbors = graph[graph_vertex]
-
-        for neighbor in neighbors:
-            if vertex_distances[neighbor] == inf:
-                vertex_distances[neighbor] = current_distance + 1
-                queue.append(neighbor)
-                distance_queue.append(current_distance + 1)
-
-    # Edit the return value a bit, creating tuples (which are required by scheduling functions)
-    return {(start,): {(k,): vertex_distances[k] for k in vertex_distances if k != start}}
+    return adjacency_matrix, label_to_idx
 
 
 def get_available_nodes():
-    # Get k8s current available nodes
-    core_api = core_v1_api.CoreV1Api()
-    # Get node list (API Response), a purge is needed
-    api_nodes = core_api.list_node()
+    # # Get k8s current available nodes
+    # core_api = core_v1_api.CoreV1Api()
+    # # Get node list (API Response), a purge is needed
+    # api_nodes = core_api.list_node()
+    #
+    # # Purge the API response
+    # # Get only node names of nodes which aren't masters
+    # available_nodes = [node.metadata.name for node in api_nodes.items
+    #                    if [x.status for x in node.status.conditions if x.type == "Ready"].pop() == "True" and
+    #                    "node-role.kubernetes.io/master" not in node.metadata.labels
+    #                    ]
 
-    # Purge the API response
-    # Get only node names of nodes which aren't masters
-    available_nodes = [node.metadata.name for node in api_nodes.items
-                       if [x.status for x in node.status.conditions if x.type == "Ready"].pop() == "True" and
-                       "node-role.kubernetes.io/master" not in node.metadata.labels
-                       ]
+    available_nodes = []
+    for i in range(1, 51, 1):
+        available_nodes.append("kubeslave" + str(i))
+
+    # available_nodes = ["kubeslave1", "kubeslave2"]
 
     return available_nodes
 
@@ -91,10 +81,10 @@ def convert_cluster_to_node_selectors(available_nodes, split_cluster):
     return node_selectors
 
 
-def calculate_constraints(machines, scheduling_function):
-    if nc.PRINT:
-        print "Print mode, scheduler is not run."
-        return None
+def calculate_constraints(machines, scheduling_function, lab_path, use_semantic):
+    # if nc.PRINT:
+    #     print "Print mode, scheduler is not run."
+    #     return None
 
     available_nodes = get_available_nodes()
 
@@ -102,14 +92,11 @@ def calculate_constraints(machines, scheduling_function):
     if len(available_nodes) <= 1:
         return None
 
-    (vertices, edges) = convert_machines_to_graph(machines)
+    adjacency_matrix, label_to_idx = convert_machines_to_adjacency_matrix(machines)
 
-    adj_matrix = neighbours(vertices, edges)
+    if use_semantic:
+        semantic_constraints.add_semantic_constraints(adjacency_matrix, label_to_idx, lab_path)
 
-    all_distances = {}
-    for vertex in vertices:
-        all_distances.update(get_vertex_distances(adj_matrix, vertex))
+    machine_clusters = scheduling_function(adjacency_matrix, label_to_idx, available_nodes)
 
-    split_cluster = scheduling_function(vertices, all_distances, available_nodes)
-
-    return convert_cluster_to_node_selectors(available_nodes, split_cluster)
+    return convert_cluster_to_node_selectors(available_nodes, machine_clusters)

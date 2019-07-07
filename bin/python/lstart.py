@@ -15,6 +15,11 @@ DEBUG = nc.DEBUG
 nc.DEBUG = False
 
 
+# Don't do anything if this is imported as a module!
+if __name__ != "__main__":
+    exit()
+
+
 def commandline_arg(bytestring):
     try:
         unicode_string = bytestring.decode(sys.getfilesystemencoding())

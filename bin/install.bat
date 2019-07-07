@@ -51,5 +51,7 @@ pip install ipaddress
 echo Installing kubernetes using pip (to skip use --nopip)
 pip install urllib3==1.23
 pip install kubernetes
+pip install scipy
+pip install scikit-learn
 
 :exit

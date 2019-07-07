@@ -37,8 +37,7 @@ def deploy(machines, links, options, path, network_counter=0):
                           )
 
     print "Running scheduler to assign machines to Kubernetes nodes..."
-    node_constraints = scheduler.schedule(machines)
-    print "Scheduler result is: " + str(node_constraints)
+    node_constraints = scheduler.schedule(machines, path)
 
     print "Deploying machines..."
     machine_deployer.deploy(

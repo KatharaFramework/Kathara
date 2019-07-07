@@ -81,8 +81,6 @@ def deploy_links(links, namespace="default", network_counter=0):
                 print "Link `%s` deployed successfully as `%s`!" % (link, link_name)
             except ApiException:
                 sys.stderr.write("ERROR: could not deploy link `%s`" % link + "\n")
-        else:               # If print mode, prints the "link" network definition as a JSON on stderr
-            sys.stderr.write(json.dumps(net_attach_def, indent=True) + "\n\n")
 
         network_counter += 1
         created_links[link] = link_name

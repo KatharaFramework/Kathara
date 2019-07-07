@@ -22,7 +22,7 @@ parser.add_argument(
     help='Specify the folder containing the lab.'
 )
 
-args, unknown = parser.parse_known_args()
+args = parser.parse_args()
 
 lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else \
            args.path.replace('"', '').replace("'", '')
