@@ -137,7 +137,8 @@ def build_k8s_definition_for_machine(machine):
                                                            )
 
         node_preference = client.V1PreferredSchedulingTerm(
-            preference=client.V1NodeSelectorTerm(match_expressions=[node_expression])
+            preference=client.V1NodeSelectorTerm(match_expressions=[node_expression]),
+            weight=100
         )
 
         pod_spec.affinity = client.V1Affinity(
@@ -202,7 +203,7 @@ def deploy(machines, options, netkit_to_k8s_links, node_constraints, lab_path, n
             "base64 -d /tmp/kathara/hostlab.b64 > /hostlab.tar.gz",
             # Extract hostlab.tar.gz data into /hostlab
             "mkdir /hostlab",
-            "tar xvfz /hostlab.tar.gz -C /hostlab; rm -f hostlab.tar.gz",
+            "tar xmfz /hostlab.tar.gz -C /hostlab; rm -f hostlab.tar.gz",
 
             # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
             # In this way, files are all replaced in the container root folder
@@ -235,11 +236,11 @@ def deploy(machines, options, netkit_to_k8s_links, node_constraints, lab_path, n
             "rm /{machine_name}.startup; fi".format(machine_name=machine_name),
 
             # Delete machine data folder after everything is ready
-            "rm -Rf /machine_data"
+            "rm -Rf /machine_data",
 
             # Remove the Kubernetes' default gateway which points to the eth0 interface and causes problems sometimes.
             # This should be done after running the startup (so a new default can be selected)
-            "route del default dev eth0",
+            "route del default dev eth0 &> /dev/null"
         ]
 
         # Saves extra options for current machine
