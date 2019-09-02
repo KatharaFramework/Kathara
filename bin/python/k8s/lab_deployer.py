@@ -1,4 +1,5 @@
 import os
+import sys
 
 import netkit_commons as nc
 import utils as u
@@ -22,7 +23,7 @@ def deploy(machines, links, options, path, network_counter=0):
     try:
         namespace_deployer.deploy_namespace(namespace)
     except ApiException:
-        print "ERROR: Cannot deploy lab on cluster, it's already in the cluster."
+        sys.stderr.write("ERROR: Cannot deploy lab on cluster, it's already in the cluster.")
         return
 
     print "Deploying links..."
@@ -54,21 +55,28 @@ def deploy(machines, links, options, path, network_counter=0):
         u.write_temp("", "%s_deploy" % namespace, nc.PLATFORM)
 
 
-def get_lab_info(path):
+def get_lab_info(path, only_links=False, only_namespace=False, print_all=False):
     namespace = k8s_utils.get_namespace_name(str(u.generate_urlsafe_hash(path)))
 
     if not os.path.exists("%s/%s_deploy" % (u.get_temp_folder(nc.PLATFORM), namespace)):
         print "Lab is not deployed."
         return
 
+    if only_namespace:
+        print namespace
+        return
+
     k8s_utils.load_kube_config()
 
     print "========================= Lab Info =========================="
 
-    print "NAMESPACE: %s" % namespace
+    if not only_links or print_all:
+        print "NAMESPACE: %s" % namespace
+        
+        machine_deployer.dump_namespace_machines(namespace)
 
-    machine_deployer.dump_namespace_machines(namespace)
-    link_deployer.dump_namespace_links(namespace)
+    if only_links or print_all:
+        link_deployer.dump_namespace_links(namespace)
 
 
 def delete_lab(namespace):
