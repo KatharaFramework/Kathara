@@ -12,6 +12,7 @@ group = "k8s.cni.cncf.io"
 version = "v1"
 plural = "network-attachment-definitions"
 
+MAX_VNI_NUMBER = (1 << 24) - 20
 
 base_path = os.path.join(os.environ['NETKIT_HOME'], 'temp')
 if nc.PLATFORM != nc.WINDOWS:
@@ -40,6 +41,15 @@ def write_network_counter(network_counter):
     # Writes the new value in the file
     with open(os.path.join(base_path, 'last_network_counter.txt'), 'w') as last_network_counter:
         last_network_counter.write(str(network_counter))
+
+
+def get_network_counter(network_counter):
+    network_counter += 1
+
+    if network_counter > MAX_VNI_NUMBER:
+        network_counter = 0
+
+    return network_counter
 
 
 def build_k8s_definition_for_link(link_name, namespace, network_counter):
@@ -71,18 +81,16 @@ def deploy_links(links, namespace="default", network_counter=0):
     created_links = {}      # Associates each netkit link name to a k8s name. This will be used later both to write
                             # which links are part of the lab and to map machine's collision domains to k8s networks.
     for link in links:
-        print "Deploying link `%s`..." % link
-
         link_name = k8s_utils.build_k8s_name(link, prefix="net")
         net_attach_def = build_k8s_definition_for_link(link_name, namespace, network_counter)
+
         if not nc.PRINT:
             try:
                 custom_api.create_namespaced_custom_object(group, version, namespace, plural, net_attach_def)
-                print "Link `%s` deployed successfully as `%s`!" % (link, link_name)
-            except ApiException:
-                sys.stderr.write("ERROR: could not deploy link `%s`" % link + "\n")
+            except ApiException as e:
+                sys.stderr.write("ERROR: could not deploy link `%s`: %s" % (link, str(e)) + "\n")
 
-        network_counter += 1
+        network_counter = get_network_counter(network_counter)
         created_links[link] = link_name
 
     # Writes the new network counter back.

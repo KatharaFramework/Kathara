@@ -68,11 +68,10 @@ def get_lab_info(path, only_links=False, only_namespace=False, print_all=False):
 
     k8s_utils.load_kube_config()
 
-    print "========================= Lab Info =========================="
-
     if not only_links or print_all:
-        print "NAMESPACE: %s" % namespace
-        
+        print "========================= Namespace =========================="
+        print namespace
+
         machine_deployer.dump_namespace_machines(namespace)
 
     if only_links or print_all:
