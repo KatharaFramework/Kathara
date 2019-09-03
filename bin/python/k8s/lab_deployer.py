@@ -23,7 +23,7 @@ def deploy(machines, links, options, path, network_counter=0):
     try:
         namespace_deployer.deploy_namespace(namespace)
     except ApiException:
-        sys.stderr.write("ERROR: Cannot deploy lab on cluster, it's already in the cluster.")
+        sys.stderr.write("ERROR: Cannot deploy lab on cluster, it's already in the cluster.\n")
         return
 
     print "Deploying links..."

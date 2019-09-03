@@ -24,9 +24,13 @@ def generate_mac_address(machine_name, machine_interface_name):
 
     # Convert the byte array into an hex encoded string separated by `:`
     # This will be the MAC Address of the interface
-    mac_address_list = [x.encode("hex") for x in mac_address_hash]
-    mac_address_list[0] = mac_address_list[0] if int(mac_address_list[0], 16) % 2 == 0 else \
-                          "%02x" % (int(mac_address_list[0], 16) - 1)
+    try:                    # Python 2
+        mac_address_list = [x.encode("hex") for x in mac_address_hash]
+    except AttributeError:   # Python 3
+        mac_address_list = ["%02x" % x for x in mac_address_hash]
+    # Steps to obtain a locally administered unicast MAC
+    # See http://www.noah.org/wiki/MAC_address
+    mac_address_list[0] = "%02x" % ((int(mac_address_list[0], 16) | 0x02) & 0xfe)
 
     return ':'.join(mac_address_list)
 

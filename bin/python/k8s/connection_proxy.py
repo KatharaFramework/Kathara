@@ -18,10 +18,10 @@ def get_pod_name_by_deployment_name(core_api, name, namespace):
             if (name + "-") in pod.metadata.name:
                 return pod.metadata.name
     except ApiException as e:
-        sys.stderr.write("Error searching machine `%s`: %s" % (name, str(e)))
+        sys.stderr.write("Error searching machine `%s`: %s\n" % (name, str(e)))
         exit(1)
 
-    sys.stderr.write("Could not find machine `%s` in namespace `%s`." % (name, namespace))
+    sys.stderr.write("Could not find machine `%s` in namespace `%s`.\n" % (name, namespace))
     exit(1)
 
 
