@@ -26,6 +26,10 @@ def deploy(machines, links, options, path, network_counter=0):
         sys.stderr.write("ERROR: Cannot deploy lab on cluster, it's already in the cluster.\n")
         return
 
+    # Writes a temp file just to "flag" that the lab has been deployed
+    if not nc.PRINT:
+        u.write_temp("", "%s_deploy" % namespace, nc.PLATFORM)
+
     print "Deploying links..."
     # Before deploying links, check if there are any extra links in the machine options
     # This is needed because all the links must be deployed before the machines are created
@@ -49,10 +53,6 @@ def deploy(machines, links, options, path, network_counter=0):
         path,
         namespace=namespace
     )
-
-    # Writes a temp file just to "flag" that the lab has been deployed
-    if not nc.PRINT:
-        u.write_temp("", "%s_deploy" % namespace, nc.PLATFORM)
 
 
 def get_lab_info(path, only_links=False, only_namespace=False, print_all=False):

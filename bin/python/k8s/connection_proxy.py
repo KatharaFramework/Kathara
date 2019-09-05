@@ -101,10 +101,10 @@ def connect_to_pod(name, path):
         if response.status.phase != 'Pending':
             break
 
-        print "Machine is not ready... Waiting..."
+        # print "Machine is not ready... Waiting..."
 
         time.sleep(2)
 
-    print "Machine is ready. Connecting..."
+    # print "Machine is ready. Connecting..."
 
     return open_pod_stream(core_api, pod_name, namespace)
