@@ -62,6 +62,10 @@ sudo chmod 644 $NETKIT_HOME/kathara_version.txt
 
 sudo chmod 755 $NETKIT_HOME/python
 sudo chmod 644 $NETKIT_HOME/python/*
+sudo chmod 755 $NETKIT_HOME/python/k8s
+sudo chmod 644 $NETKIT_HOME/python/k8s/*
+sudo chmod 755 $NETKIT_HOME/python/k8s/scheduler
+sudo chmod 644 $NETKIT_HOME/python/k8s/scheduler/*
 
 sudo chmod 600 $NETKIT_HOME/*.bat
 sudo chmod 700 $NETKIT_HOME/temp
