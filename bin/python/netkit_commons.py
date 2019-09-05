@@ -113,14 +113,12 @@ def lab_parse(path, force=False):
     links = set()               # We only need unique links
     options = {}                # Machine options
 
-    metadata = {}               # Global metadata
-
     line = lab_mem_file.readline()
     while line:
         if DEBUG:
             sys.stderr.write(line + "\n")
 
-        matches = re.search(r"^(?P<key>[a-z0-9_]+)\[(?P<arg>\w+)\]=(?P<value>\"\w+\"|\'\w+\'|\w+)$",
+        matches = re.search(r"^(?P<key>[a-zA-Z0-9_]+)\[(?P<arg>\w+)\]=(?P<value>\"\w+\"|\'\w+\'|\w+)$",
                             line.strip()
                             )
 
@@ -151,9 +149,9 @@ def lab_parse(path, force=False):
 
     # Here we ignore interfaces that have missing positions (eg: 1,3,6 instead of 0,1,2)
     for machine_name in machines:
-        current_machine = machines[machine_name]
         # Sort the array before doing interface check.
-        current_machine.sort(key=lambda x: x[1])
+        machines[machine_name].sort(key=lambda x: x[1])
+        current_machine = machines[machine_name]
 
         for i in range(1, len(current_machine)):
             if current_machine[i - 1][1] != current_machine[i][1] - 1:
@@ -162,67 +160,13 @@ def lab_parse(path, force=False):
                 machines[machine_name] = current_machine[:i]
                 break
 
-    """ini_str = u'[dummysection]\n' + open(os.path.join(path, 'lab.conf'), 'r').read()
-    ini_fp = StringIO(ini_str)
-    config.readfp(ini_fp)
-
-    # gets 2 list of keys, one for machines and the other for the metadata
-    # we also need a unique list of links
-    keys = []
-    m_keys = []
-    links = []
-    options = []
-    for key, value in config.items('dummysection'):
-        if DEBUG: sys.stderr.write(key, value)
-        if '[' in key and ']' in key:
-            splitted = key.split('[')[1].split(']')
-            try:
-                _ = int(splitted[0])
-                links.append(value.strip().replace('"', '').replace("'", ''))
-            except ValueError:
-                pass
-            keys.append(key.strip())
-        else:
-            m_keys.append(key.strip())
-
-    # we only need unique links
-    links = set(links)
-    # sort the keys so that we keep the order of the interfaces
-    keys.sort(key=u.natural_keys)
-
-    # we then get a dictionary of machines ignoring interfaces that have missing positions (eg: 1,3,6 instead of 0,1,2)
-    machines = {}
-    options = {}
-    for key in keys:
-        splitted = key.split('[')
-        name = splitted[0].strip()
-        splitted = splitted[1].split(']')
-        try:
-            ifnumber = int(splitted[0].strip())
-            if not machines.get(name):
-                machines[name] = []
-            if len(machines[name]) == 0 or machines[name][len(machines[name]) - 1][1] == ifnumber - 1:
-                machines[name].append(
-                    (config.get('dummysection', key).strip().replace('"', '').replace("'", ''), ifnumber))
-        except ValueError:
-            option = splitted[0].strip()
-            if not options.get(name):
-                options[name] = []
-
-            options[name].append((option, config.get('dummysection', key).strip().replace('"', '').replace("'", '')))
-    # same with metadata
-    metadata = {}
-    for m_key in m_keys:
-        app = config.get('dummysection', m_key)
-        if app.startswith('"') and app.endswith('"'):
-            app = app[1:-1]
-        metadata[m_key] = app
-    """
-
     machines = reorder_by_lab_dep(path, machines)
     
-    if DEBUG: print (machines, options, metadata)
-    return machines, links, options, metadata
+    if DEBUG:
+        print (machines, options, {})
+
+    return machines, links, options, {}
+
 
 #parsing external.conf file
 def external_parse(path):

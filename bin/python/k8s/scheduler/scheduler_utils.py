@@ -1,8 +1,8 @@
 import netkit_commons as nc
 from kubernetes.client.apis import core_v1_api
-import semantic_constraints
 from scipy.sparse import csr_matrix
 
+import semantic_constraints
 
 inf = float('inf')
 
@@ -47,23 +47,17 @@ def convert_machines_to_adjacency_matrix(machines):
 
 
 def get_available_nodes():
-    # # Get k8s current available nodes
-    # core_api = core_v1_api.CoreV1Api()
-    # # Get node list (API Response), a purge is needed
-    # api_nodes = core_api.list_node()
-    #
-    # # Purge the API response
-    # # Get only node names of nodes which aren't masters
-    # available_nodes = [node.metadata.name for node in api_nodes.items
-    #                    if [x.status for x in node.status.conditions if x.type == "Ready"].pop() == "True" and
-    #                    "node-role.kubernetes.io/master" not in node.metadata.labels
-    #                    ]
+    # Get k8s current available nodes
+    core_api = core_v1_api.CoreV1Api()
+    # Get node list (API Response), a purge is needed
+    api_nodes = core_api.list_node()
 
-    available_nodes = []
-    for i in range(1, 51, 1):
-        available_nodes.append("kubeslave" + str(i))
-
-    # available_nodes = ["kubeslave1", "kubeslave2"]
+    # Purge the API response
+    # Get only node names of nodes which aren't masters
+    available_nodes = [node.metadata.name for node in api_nodes.items
+                       if [x.status for x in node.status.conditions if x.type == "Ready"].pop() == "True" and
+                       "node-role.kubernetes.io/master" not in node.metadata.labels
+                       ]
 
     return available_nodes
 
@@ -82,9 +76,9 @@ def convert_cluster_to_node_selectors(available_nodes, split_cluster):
 
 
 def calculate_constraints(machines, scheduling_function, lab_path, use_semantic):
-    # if nc.PRINT:
-    #     print "Print mode, scheduler is not run."
-    #     return None
+    if nc.PRINT:
+        print "Print mode, scheduler is not run."
+        return None
 
     available_nodes = get_available_nodes()
 
