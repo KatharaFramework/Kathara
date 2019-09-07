@@ -1,6 +1,3 @@
-import tempfile
-import uuid
-import shutil
 from model import Device
 from model import Lan
 

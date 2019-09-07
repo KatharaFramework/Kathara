@@ -1,6 +1,3 @@
-import os
-import tarfile
-import base64
 
 class Device(object):
 	__slots__ = ['lab','name','startup_path','shutdown_path','folder','interfaces','meta']
@@ -16,11 +13,11 @@ class Device(object):
 	def add_meta(self, name, value):
 		self.meta[name] = value
 
-	def get_interface_by_name(self, name):
-		if name in self.interfaces:
-			return self.interfaces[name]
+	def get_interface_by_number(self, number):
+		if number in self.interfaces:
+			return self.interfaces[number]
 
-		raise Exception("Interface `%s` not found on device `%s`." % (name, self.name))
+		raise Exception("Interface `%s` not found on device `%s`." % (number, self.name))
 
 	def __repr__(self):
 		return "Device(%s, %s)" % (self.name, self.interfaces)

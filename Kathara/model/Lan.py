@@ -1,3 +1,4 @@
+
 class Lan(object):
 	__slots__ = ['lab','name','net_ifaces']
 
