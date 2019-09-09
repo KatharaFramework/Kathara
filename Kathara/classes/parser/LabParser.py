@@ -1,0 +1,91 @@
+import sys
+import os
+import mmap
+import re
+
+from classes.model.Lab import Lab
+
+# TODO: Remove
+DEBUG = False
+
+
+class LabParser(object):
+    __instance = None
+
+    @staticmethod
+    def get_instance():
+        if LabParser.__instance is None:
+            LabParser()
+
+        return LabParser.__instance
+
+    def __init__(self):
+        if LabParser.__instance is not None:
+            raise Exception("This class is a singleton!")
+        else:
+            LabParser.__instance = self
+
+    # noinspection PyMethodMayBeStatic
+    def lab_parse(self, path):
+        lab_conf_path = os.path.join(path, 'lab.conf')
+
+        if not os.path.exists(lab_conf_path):
+            sys.stderr.write("No lab.conf in given directory: %s\n" % path)
+            sys.exit(1)
+
+        # Reads lab.conf in memory so it is faster.
+        with open(lab_conf_path, 'r') as lab_file:
+            lab_mem_file = mmap.mmap(lab_file.fileno(), 0, prot=mmap.PROT_READ)
+
+        lab = Lab(path)
+
+        line_number = 1
+        line = lab_mem_file.readline().decode('utf-8')
+        while line:
+            if DEBUG:
+                sys.stderr.write(line + "\n")
+
+            matches = re.search(r"^(?P<key>[a-z0-9_]+)\[(?P<arg>\w+)\]=(?P<value>\"\w+\"|\'\w+\'|\w+)$",
+                                line.strip()
+                                )
+
+            if matches:
+                key = matches.group("key").strip()
+                arg = matches.group("arg").strip()
+                value = matches.group("value").replace('"', '').replace("'", '')
+
+                try:
+                    # It's an interface, handle it.
+                    interface_number = int(arg)
+
+                    lab.connect_machine_to_link(key, interface_number, value)
+                except ValueError:
+                    # Not an interface, add it to the machine metas.
+                    lab.assign_meta_to_machine(key, arg, value)
+            else:
+                if not line.startswith('#') and \
+                        line.strip():
+                    if not line.startswith("LAB_DESCRIPTION=") and \
+                            not line.startswith("LAB_VERSION=") and \
+                            not line.startswith("LAB_AUTHOR=") and \
+                            not line.startswith("LAB_EMAIL=") and \
+                            not line.startswith("LAB_WEB="):
+                        sys.stderr.write("Invalid characters in line %d: %s\n" % (line_number, line))
+                        exit(1)
+                    else:
+                        (key, value) = line.split("=")
+                        key = key.replace("LAB_", "").lower()
+                        setattr(lab, key, value.replace('"', '').replace("'", '').strip())
+
+            line_number += 1
+            line = lab_mem_file.readline().decode('utf-8')
+
+        lab.check_integrity()
+
+        # TODO: lab.dep
+        # machines = reorder_by_lab_dep(path, machines)
+
+        if DEBUG:
+            print(lab)
+
+        return lab
