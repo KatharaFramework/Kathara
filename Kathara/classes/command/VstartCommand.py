@@ -1,6 +1,6 @@
 import argparse
 
-from classes.commands.Command import Command
+from classes.command.Command import Command
 
 
 class VstartCommand(Command):
@@ -82,7 +82,7 @@ class VstartCommand(Command):
             dest='print_only',
             required=False,
             action='store_true',
-            help='Print commands used to start the container (dry run).'
+            help='Print command used to start the container (dry run).'
         )
         parser.add_argument(
             '--bridged',

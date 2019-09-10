@@ -1,9 +1,8 @@
 import argparse
 
-from classes.commands.Command import Command
-from classes.parser.LabParser import LabParser
-from classes.deployer.Deployer import Deployer
 import utils
+from classes.command.Command import Command
+from classes.deployer.Deployer import Deployer
 
 
 class LcleanCommand(Command):
@@ -20,20 +19,16 @@ class LcleanCommand(Command):
         parser.add_argument(
             '-d', '--directory',
             required=False,
-            help='Specify the folder contining the lab.'
+            help='Specify the folder containing the lab.'
         )
 
         self.parser = parser
 
     def run(self, current_path, argv):
-        # TODO ma su netkit non si poteva fare "lstart pc1" e startava solo pc1 del lab?
+        # TODO ma su netkit non si poteva fare "lclean pc1" e stoppava solo pc1 del lab?
         args = self.parser.parse_args(argv)
 
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
-
-        # Call the parser
-        #lab = LabParser.get_instance().lab_parse(lab_path)
-
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        Deployer.get_instance().undeploy(lab_hash)
+        Deployer.get_instance().undeploy_lab(lab_hash)

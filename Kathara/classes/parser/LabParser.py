@@ -30,8 +30,7 @@ class LabParser(object):
         lab_conf_path = os.path.join(path, 'lab.conf')
 
         if not os.path.exists(lab_conf_path):
-            sys.stderr.write("No lab.conf in given directory: %s\n" % path)
-            sys.exit(1)
+            raise Exception("No lab.conf in given directory: %s\n" % path)
 
         # Reads lab.conf in memory so it is faster.
         with open(lab_conf_path, 'r') as lab_file:
@@ -45,7 +44,7 @@ class LabParser(object):
             if DEBUG:
                 sys.stderr.write(line + "\n")
 
-            matches = re.search(r"^(?P<key>[a-z0-9_]+)\[(?P<arg>\w+)\]=(?P<value>\"\w+\"|\'\w+\'|\w+)$",
+            matches = re.search(r"^(?P<key>[a-z0-9_]+)\[(?P<arg>\w+)\]=(?P<value>\".+\"|\'.+\'|\w+)$",
                                 line.strip()
                                 )
 
@@ -54,11 +53,19 @@ class LabParser(object):
                 arg = matches.group("arg").strip()
                 value = matches.group("value").replace('"', '').replace("'", '')
 
+                if key == "shared":
+                    raise Exception("[ERROR] In line %d: "
+                                    "`shared` is a reserved name, you can not use it for a machine." % line_number)
+
                 try:
                     # It's an interface, handle it.
                     interface_number = int(arg)
 
-                    lab.connect_machine_to_link(key, interface_number, value)
+                    if re.search(r"^\w$", value):
+                        lab.connect_machine_to_link(key, interface_number, value)
+                    else:
+                        raise Exception("[ERROR] In line %d: "
+                                        "Link `%s` contains non-alphanumeric characters." % (line_number, value))
                 except ValueError:
                     # Not an interface, add it to the machine metas.
                     lab.assign_meta_to_machine(key, arg, value)
@@ -70,8 +77,7 @@ class LabParser(object):
                             not line.startswith("LAB_AUTHOR=") and \
                             not line.startswith("LAB_EMAIL=") and \
                             not line.startswith("LAB_WEB="):
-                        sys.stderr.write("Invalid characters in line %d: %s\n" % (line_number, line))
-                        exit(1)
+                        raise Exception("[ERROR] In line %d: Invalid characters `%s`." % (line_number, line))
                     else:
                         (key, value) = line.split("=")
                         key = key.replace("LAB_", "").lower()

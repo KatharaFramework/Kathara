@@ -1,6 +1,6 @@
 import argparse
 
-from classes.commands.Command import Command
+from classes.command.Command import Command
 
 
 class VcleanCommand(Command):

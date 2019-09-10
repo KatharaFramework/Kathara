@@ -1,0 +1,10 @@
+{
+ "image": "kathara/netkit_base",
+ "deployer_type": "docker",
+ "net_counter": 0,
+ "terminal": "xterm -T",
+ "no_terminals": false,
+ "hosthome_mount": true,
+ "net_prefix": "kathara",
+ "machine_prefix": "kathara"
+}

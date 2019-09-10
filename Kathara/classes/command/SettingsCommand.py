@@ -1,7 +1,7 @@
 from consolemenu import *
 from consolemenu.items import *
 
-from classes.commands.Command import Command
+from classes.command.Command import Command
 
 
 class SettingsCommand(Command):
@@ -10,7 +10,7 @@ class SettingsCommand(Command):
     def __init__(self):
         Command.__init__(self)
 
-        menu = ConsoleMenu("Kathara settings", "Choose the option to change")
+        menu = ConsoleMenu("Kathara Settings", "Choose the option to change")
 
         # MenuItem is the base class for all items, it doesn't do anything when selected
         menu_item = MenuItem("Menu Item")
@@ -41,5 +41,5 @@ class SettingsCommand(Command):
 
         self.menu = menu
 
-    def run(self, argv):
+    def run(self, current_path, argv):
         self.menu.show()

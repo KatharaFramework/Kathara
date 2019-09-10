@@ -3,7 +3,7 @@ import collections
 
 
 class Machine(object):
-    __slots__ = ['lab', 'name', 'startup_path', 'shutdown_path', 'folder', 'interfaces', 'meta']
+    __slots__ = ['lab', 'name', 'startup_path', 'shutdown_path', 'folder', 'interfaces', 'meta', 'startup_commands']
 
     def __init__(self, lab, name):
         self.lab = lab
@@ -20,6 +20,8 @@ class Machine(object):
 
         self.interfaces = {}
         self.meta = {}
+
+        self.startup_commands = []
 
     def add_interface(self, number, link):
         if number in self.interfaces:

@@ -1,7 +1,8 @@
-import utils
+import os
 
-from classes.model.Machine import Machine
+import utils
 from classes.model.Link import Link
+from classes.model.Machine import Machine
 
 
 class Lab(object):
@@ -16,7 +17,11 @@ class Lab(object):
         self.machines = {}
         self.links = {}
 
-        return
+        shared_startup_file = os.path.join(self.path, 'shared.startup')
+        self.shared_startup_path = shared_startup_file if os.path.exists(shared_startup_file) else None
+
+        shared_shutdown_file = os.path.join(self.path, 'shared.shutdown')
+        self.shared_shutdown_path = shared_shutdown_file if os.path.exists(shared_shutdown_file) else None
 
     def connect_machine_to_link(self, machine_name, machine_iface_number, link_name):
         machine = self.get_or_new_machine(machine_name)

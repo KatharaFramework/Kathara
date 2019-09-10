@@ -4,7 +4,7 @@ deployer_type = "docker"
 
 
 class Deployer(object):
-    __slots__ = []
+    __slots__ = ['deployer']
 
     __instance = None
 
@@ -19,35 +19,19 @@ class Deployer(object):
         if Deployer.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
+            self.deployer = utils.class_for_name("classes.deployer.%s" % deployer_type,
+                                                 "%sDeployer" % deployer_type.capitalize()
+                                                 )()
+
             Deployer.__instance = self
 
     # noinspection PyMethodMayBeStatic
-    def deploy(self, lab):
-        machine_deployer = utils.class_for_name("classes.deployer.%s" % deployer_type,
-                                                "%sMachineDeployer" % deployer_type.capitalize()
-                                                )()
+    def deploy_lab(self, lab):
+        self.deployer.deploy_lab(lab)
 
-        link_deployer = utils.class_for_name("classes.deployer.%s" % deployer_type,
-                                             "%sLinkDeployer" % deployer_type.capitalize()
-                                             )()
+    # noinspection PyMethodMayBeStatic
+    def undeploy_lab(self, lab_hash):
+        self.deployer.undeploy_lab(lab_hash)
 
-        for (_, link) in lab.links.items():
-            link_deployer.deploy(link)
-
-        for (_, machine) in lab.machines.items():
-            machine_deployer.deploy(machine)
-
-
-    def undeploy(self, lab_hash):
-        machine_deployer = utils.class_for_name("classes.deployer.%s" % deployer_type,
-                                                "%sMachineDeployer" % deployer_type.capitalize()
-                                                )()
-
-        link_deployer = utils.class_for_name("classes.deployer.%s" % deployer_type,
-                                             "%sLinkDeployer" % deployer_type.capitalize()
-                                             )()
-
-        machine_deployer.undeploy(lab_hash)
-        # link_deployer.undeploy(lab_hash)
-
-        
+    def wipe(self):
+        self.deployer.wipe()

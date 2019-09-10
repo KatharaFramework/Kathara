@@ -1,6 +1,6 @@
 import argparse
 
-from classes.commands.Command import Command
+from classes.command.Command import Command
 from classes.parser.LabParser import LabParser
 from classes.deployer.Deployer import Deployer
 
@@ -36,7 +36,7 @@ class LstartCommand(Command):
         parser.add_argument(
             '-d', '--directory',
             required=False,
-            help='Specify the folder contining the lab.'
+            help='Specify the folder containing the lab.'
         )
         parser.add_argument(
             '-F', '--force-lab',
@@ -57,7 +57,7 @@ class LstartCommand(Command):
             nargs='*',
             required=False,
             help="Pass options to vstart. Options should be a list of double quoted strings, "
-                 "like '--pass \"mem=64m\" \"eth=0:A\"'."
+                 "like '--pass \"mem=64m\" \"image=kathara/netkit_base\"'."
         )
         parser.add_argument(
             '--xterm',
@@ -69,7 +69,7 @@ class LstartCommand(Command):
             dest="print_only",
             required=False,
             action='store_true',
-            help='Print commands used to start the containers to stderr (dry run).'
+            help='Print command used to start the containers to stderr (dry run).'
         )
         parser.add_argument(
             '-c', '--counter',
@@ -95,4 +95,4 @@ class LstartCommand(Command):
         # Call the parser
         lab = LabParser.get_instance().lab_parse(lab_path)
 
-        Deployer.get_instance().deploy(lab)
+        Deployer.get_instance().deploy_lab(lab)
