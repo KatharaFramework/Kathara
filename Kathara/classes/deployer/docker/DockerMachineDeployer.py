@@ -23,9 +23,16 @@ class DockerMachineDeployer(object):
                                                           tty=True,
                                                           stdin_open=True,
                                                           detach=True,
+                                                          labels={"lab_hash":str(machine.lab.folder_hash)}
                                                           )
 
         machine_container.start()
+
+    def undeploy(self, lab_hash):
+        containers = self.client.containers.list(filters= {"label":"lab_hash=%s" % lab_hash})
+        
+        for container in containers:
+          container.remove(force=True)
 
     # noinspection PyMethodMayBeStatic
     def _get_container_name(self, name):

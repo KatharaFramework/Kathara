@@ -35,7 +35,7 @@ class LabParser(object):
 
         # Reads lab.conf in memory so it is faster.
         with open(lab_conf_path, 'r') as lab_file:
-            lab_mem_file = mmap.mmap(lab_file.fileno(), 0, prot=mmap.PROT_READ)
+            lab_mem_file = mmap.mmap(lab_file.fileno(), 0, access=mmap.ACCESS_READ)
 
         lab = Lab(path)
 
