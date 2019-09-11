@@ -1,6 +1,8 @@
 import docker
 import os
 
+from classes.setting.Setting import Setting
+
 
 class DockerLinkDeployer(object):
     __slots__ = ['client']
@@ -25,4 +27,4 @@ class DockerLinkDeployer(object):
 
     # noinspection PyMethodMayBeStatic
     def _get_network_name(self, name):
-        return "kathara_%s_%s" % (os.getlogin(), name)
+        return "%s_%s_%s" % (Setting.get_instance().net_prefix, os.getlogin(), name)

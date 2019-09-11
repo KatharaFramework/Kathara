@@ -35,15 +35,31 @@ class DockerMachineDeployer(object):
                                                           labels={"lab_hash": machine.lab.folder_hash, "app": "kathara"}
                                                           )
 
-        for (_, machine_link) in machine.interfaces.items():
+        other_commands = []
+        other_commands.append("sysctl net.ipv4.conf.all.rp_filter=0")
+        other_commands.append("sysctl net.ipv4.conf.default.rp_filter=0")
+        other_commands.append("sysctl net.ipv4.conf.lo.rp_filter=0")
+        for (iface_num, machine_link) in machine.interfaces.items():
             machine_link.network_object.connect(machine_container)
+            other_commands.append("sysctl net.ipv4.conf.eth%d.rp_filter=0" % iface_num)
 
         if "bridged" in machine.meta:
             bridged_network = self.client.networks.list(names="bridge").pop()
             bridged_network.connect(machine_container)
 
+        # Ordine delle cose da eseguire: rp_filter, shared.startup, machine.startup e infine startup_commands
+        if machine.lab.shared_startup_path:
+          other_commands.append("/bin/bash /hostlab/shared.startup")
+
+        if machine.startup_path:
+          other_commands.append("/bin/bash /hostlab/%s.startup" % machine.name)
+
+        start_commands = other_commands + machine.startup_commands
+
+        print(start_commands)
+
         if machine.startup_commands:
-            machine_container.exec_run(cmd=machine.startup_commands,
+            machine_container.exec_run(cmd=start_commands,
                                        stdout=False,
                                        stderr=False,
                                        privileged=True,
@@ -66,4 +82,4 @@ class DockerMachineDeployer(object):
 
     # noinspection PyMethodMayBeStatic
     def _get_container_name(self, name):
-        return "kathara_%s_%s" % (os.getlogin(), name)
+        return "%s_%s_%s" % (Setting.get_instance().machine_prefix, os.getlogin(), name)
