@@ -1,5 +1,0 @@
-/sbin/ifconfig net1 11.0.0.34 netmask 255.255.255.252 broadcast 11.0.0.35 up
-/sbin/ifconfig net2 11.0.0.6 netmask 255.255.255.252 broadcast 11.0.0.7 up
-/sbin/ifconfig net3 20.1.1.1 netmask 255.255.255.0 broadcast 20.1.1.255 up
-/sbin/ifconfig net4 11.0.0.17 netmask 255.255.255.252 broadcast 11.0.0.19 up
-/etc/init.d/zebra start

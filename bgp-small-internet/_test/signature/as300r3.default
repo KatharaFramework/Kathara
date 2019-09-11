@@ -1,0 +1,56 @@
+[INTERFACES]
+
+eth0      Link encap:Ethernet  HWaddr 62:c9:ca:87:a0:13  
+          inet addr:200.1.128.1  Bcast:200.1.255.255  Mask:255.255.128.0
+          inet6 addr: fe80::60c9:caff:fe87:a013/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+
+eth1      Link encap:Ethernet  HWaddr 42:a6:fc:9f:71:1c  
+          inet addr:200.1.0.2  Bcast:200.1.63.255  Mask:255.255.192.0
+          inet6 addr: fe80::40a6:fcff:fe9f:711c/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          inet6 addr: ::1/128 Scope:Host
+          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+
+
+[ROUTE]
+
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
+200.1.0.0       *               255.255.192.0   U         0 0          0 eth1
+200.1.128.0     *               255.255.128.0   U         0 0          0 eth0
+
+[LISTENING PORTS]
+
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State      
+tcp        0      0 0.0.0.0:2601            0.0.0.0:*               LISTEN     
+tcp        0      0 0.0.0.0:2602            0.0.0.0:*               LISTEN     
+udp        0      0 0.0.0.0:520             0.0.0.0:*                          
+
+[PROCESSES]
+
+  UID COMMAND
+    0 init [2]       
+    0 [kthreadd]
+    0 [ksoftirqd/0]
+    0 [events/0]
+    0 [khelper]
+    0 [kblockd/0]
+    0 [pdflush]
+    0 [pdflush]
+    0 [kswapd0]
+    0 [aio/0]
+    0 [cifsoplockd]
+    0 [cifsdnotifyd]
+    0 /bin/sh /etc/init.d/rc 2
+    0 /sbin/syslogd
+    0 /sbin/klogd -x
+    0 /bin/bash /etc/rc2.d/S99netkit-phase2 start
+    0 /usr/lib/quagga/zebra --daemon -A 0.0.0.0
+    0 /usr/lib/quagga/ripd --daemon -A 0.0.0.0
+    0 /bin/bash /etc/init.d/netkit-test-phase
+    0 /bin/ps -e -o uid,command

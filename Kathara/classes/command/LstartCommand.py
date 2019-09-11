@@ -95,4 +95,6 @@ class LstartCommand(Command):
         # Call the parser
         lab = LabParser.get_instance().lab_parse(lab_path)
 
+        # TODO: Ficcare i varargs
+
         Deployer.get_instance().deploy_lab(lab)

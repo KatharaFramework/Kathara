@@ -1,5 +1,8 @@
-import os
 import collections
+import os
+import shutil
+import tarfile
+import tempfile
 
 
 class Machine(object):
@@ -30,6 +33,10 @@ class Machine(object):
         self.interfaces[number] = link
 
     def add_meta(self, name, value):
+        if name == "exec":
+            self.startup_commands.append(value)
+            return
+
         self.meta[name] = value
 
     def check(self):
@@ -46,6 +53,45 @@ class Machine(object):
                 break
 
         self.interfaces = collections.OrderedDict(sorted_interfaces)
+
+    def pack_data(self):
+        # Make a temp folder and create a tar.gz of the lab directory
+        temp_path = tempfile.mkdtemp()
+
+        is_empty = True
+
+        with tarfile.open("%s/hostlab.tar.gz" % temp_path, "w:gz") as tar:
+            if self.folder:
+                tar.add(self.folder, arcname="hostlab/%s" % self.name)
+                is_empty = False
+
+            if self.startup_path:
+                tar.add(self.startup_path, arcname="hostlab/%s.startup" % self.name)
+                is_empty = False
+
+            if self.shutdown_path:
+                tar.add(self.shutdown_path, arcname="hostlab/%s.shutdown" % self.name)
+                is_empty = False
+
+            if self.lab.shared_startup_path:
+                tar.add(self.lab.shared_startup_path, arcname="hostlab/shared.startup")
+                is_empty = False
+
+            if self.lab.shared_shutdown_path:
+                tar.add(self.lab.shared_shutdown_path, arcname="hostlab/shared.shutdown")
+                is_empty = False
+
+        # If no machine files are found, don't deploy any config map.
+        if is_empty:
+            return None
+
+        # Read tar.gz content and convert it into base64
+        with open("%s/hostlab.tar.gz" % temp_path, "rb") as tar_file:
+            tar_data = tar_file.read()
+
+        shutil.rmtree(temp_path)
+
+        return tar_data
 
     def __repr__(self):
         return "Machine(%s, %s)" % (self.name, self.interfaces)

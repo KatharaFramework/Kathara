@@ -1,0 +1,9 @@
+C(i) 200.1.0.0/18
+Network Next
+R(n) 0.0.0.0/0
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+200.1.0.0       0.0.0.0         255.255.192.0   U     0      0        0 eth1
+200.1.64.0      200.1.128.2     255.255.192.0   UG    2      0        0 eth0
+200.1.128.0     0.0.0.0         255.255.128.0   U     0      0        0 eth0
+0.0.0.0         200.1.0.1       0.0.0.0         UG    2      0        0 eth1

@@ -1,0 +1,68 @@
+[INTERFACES]
+
+eth0      Link encap:Ethernet  HWaddr 8e:1a:16:28:19:b9  
+          inet addr:11.0.0.10  Bcast:11.0.0.11  Mask:255.255.255.252
+          inet6 addr: fe80::8c1a:16ff:fe28:19b9/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+
+eth1      Link encap:Ethernet  HWaddr 76:2f:1f:0b:f5:d1  
+          inet addr:30.3.3.1  Bcast:30.3.3.255  Mask:255.255.255.0
+          inet6 addr: fe80::742f:1fff:fe0b:f5d1/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+
+eth2      Link encap:Ethernet  HWaddr 36:bc:98:ff:fa:c4  
+          inet addr:11.0.0.25  Bcast:11.0.0.27  Mask:255.255.255.252
+          inet6 addr: fe80::34bc:98ff:feff:fac4/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+
+eth3      Link encap:Ethernet  HWaddr 5e:33:b1:62:1d:74  
+          inet addr:11.0.0.18  Bcast:11.0.0.19  Mask:255.255.255.252
+          inet6 addr: fe80::5c33:b1ff:fe62:1d74/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          inet6 addr: ::1/128 Scope:Host
+          UP LOOPBACK RUNNING  MTU:16436  Metric:1
+
+
+[ROUTE]
+
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
+11.0.0.16       *               255.255.255.252 U         0 0          0 eth3
+11.0.0.24       *               255.255.255.252 U         0 0          0 eth2
+11.0.0.8        *               255.255.255.252 U         0 0          0 eth0
+30.3.3.0        *               255.255.255.0   U         0 0          0 eth1
+
+[LISTENING PORTS]
+
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State      
+tcp        0      0 0.0.0.0:2601            0.0.0.0:*               LISTEN     
+tcp        0      0 0.0.0.0:2605            0.0.0.0:*               LISTEN     
+tcp6       0      0 :::179                  :::*                    LISTEN     
+
+[PROCESSES]
+
+  UID COMMAND
+    0 init [2]       
+    0 [kthreadd]
+    0 [ksoftirqd/0]
+    0 [events/0]
+    0 [khelper]
+    0 [kblockd/0]
+    0 [pdflush]
+    0 [pdflush]
+    0 [kswapd0]
+    0 [aio/0]
+    0 [cifsoplockd]
+    0 [cifsdnotifyd]
+    0 /bin/sh /etc/init.d/rc 2
+    0 /sbin/syslogd
+    0 /sbin/klogd -x
+    0 /bin/bash /etc/rc2.d/S99netkit-phase2 start
+    0 /usr/lib/quagga/zebra --daemon -A 0.0.0.0
+    0 /usr/lib/quagga/bgpd --daemon -A 0.0.0.0
+    0 /bin/bash /etc/init.d/netkit-test-phase
+    0 /bin/ps -e -o uid,command

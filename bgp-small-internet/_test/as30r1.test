@@ -1,0 +1,32 @@
+#!/bin/sh
+
+sleep 40
+
+# Dump information about the status of the BGP peerings
+expect -c "
+spawn telnet localhost bgpd
+expect \"Password:*\"
+send \"zebra\\r\"
+expect \"bgpd>*\"
+send \"terminal length 0\\r\"
+expect \"bgpd>*\"
+send \"show ip bgp\\r\"
+expect \"bgpd>*\"
+send \"exit\\r\"
+send_user \"\\r\"" | sed -n '20,$p' | head -n -3 | awk -F " *i? *" '{if (substr($0,4,1)!=" ") {last_prefix=$2} print $1,last_prefix}' | sort
+# Remember that:
+# 1) prefixes may be learned in arbitrary order;
+# 2) if multiple entries exist for a single prefix in the routing table, the
+# first entry is the only one which contains the prefix.
+# Therefore, for a comparison to succeed, only those fields of the routing
+# table for which ordering is not significant should be dumped.
+
+route -n
+
+sleep 10
+
+touch /hostlab/as30r1.testdone
+sleep 10
+
+halt
+
