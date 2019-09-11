@@ -7,6 +7,7 @@ from classes.setting.Setting import Setting
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 SYSCTL_COMMAND = "sysctl %s=0" % RP_FILTER_NAMESPACE
 
+# Known commands that each container should execute
 # Run order: rp_filters, shared.startup, machine.startup and machine.startup_commands
 STARTUP_COMMANDS = [
     # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
@@ -53,7 +54,7 @@ class DockerMachineDeployer(object):
         image = machine.meta["image"] if "image" in machine.meta else Setting.get_instance().image
         # Memory limit, if defined in machine meta.
         memory = machine.meta["mem"].upper() if "mem" in machine.meta else None
-        # Bind the port 3000 of the container to a defined port.
+        # Bind the port 3000 of the container to a defined port (if present).
         ports = None
         if "port" in machine.meta:
             try:
@@ -65,7 +66,10 @@ class DockerMachineDeployer(object):
         # This should be used in container create function
         first_network = machine.interfaces[0].network_object if 0 in machine.interfaces else None
 
+        # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
+
+        volumes = {machine.lab.shared_folder: {'bind': '/shared', 'mode': 'rw'}}
 
         machine_container = self.client.containers.create(image=image,
                                                           name=self._get_container_name(machine.name),
@@ -78,15 +82,19 @@ class DockerMachineDeployer(object):
                                                           tty=True,
                                                           stdin_open=True,
                                                           detach=True,
-                                                          labels={"lab_hash": machine.lab.folder_hash, "app": "kathara"}
+                                                          volumes=volumes,
+                                                          labels={"lab_hash": machine.lab.folder_hash,
+                                                                  "app": "kathara"
+                                                                  }
                                                           )
 
         # Pack machine files into a tar.gz and extract its content inside `/`
         tar_data = machine.pack_data()
-        machine_container.put_archive("/", tar_data)
+        if tar_data:
+            machine_container.put_archive("/", tar_data)
 
-        # Build sysctl rp_filter commands for interfaces (since eth0 is connected above, we put it here)
-        rp_filter_commands = [SYSCTL_COMMAND % x for x in ["eth0"]]
+        # Build sysctl rp_filter commands for interfaces (since eth0 is connected above, we already put it here)
+        rp_filter_commands = [SYSCTL_COMMAND % "eth0"]
 
         # Connect the container to its networks (starting from the second, the first is already connected above)
         for (iface_num, machine_link) in machine.interfaces.items():
@@ -98,11 +106,8 @@ class DockerMachineDeployer(object):
             # Add the rp_filter patch for this interface
             rp_filter_commands.append(SYSCTL_COMMAND % ("eth%d" % iface_num))
 
-        # if "bridged" in machine.meta:
-        #     bridged_network = self.client.networks.list(names="bridge").pop()
-        #     bridged_network.connect(machine_container)
-        #
-        #     rp_filter_commands.append(SYSCTL_COMMAND % ("eth%d" % iface_num))
+        if machine.bridge:
+            machine.bridge.network_object.connect(machine_container)
 
         machine_container.start()
 
@@ -112,6 +117,8 @@ class DockerMachineDeployer(object):
                                               rp_filter="; ".join(rp_filter_commands),
                                               machine_commands="; ".join(machine.startup_commands)
                                               )
+
+        from socket import SocketIO
 
         # Execute the startup commands inside the container
         machine_container.exec_run(cmd=['bash', '-c', startup_commands_string],

@@ -1,8 +1,9 @@
 import argparse
 
 from classes.command.Command import Command
-from classes.parser.LabParser import LabParser
 from classes.deployer.Deployer import Deployer
+from classes.parser.LabParser import LabParser
+from classes.setting.Setting import Setting
 
 
 class LstartCommand(Command):
@@ -87,7 +88,6 @@ class LstartCommand(Command):
         self.parser = parser
 
     def run(self, current_path, argv):
-        # TODO ma su netkit non si poteva fare "lstart pc1" e startava solo pc1 del lab?
         args = self.parser.parse_args(argv)
 
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
@@ -95,6 +95,13 @@ class LstartCommand(Command):
         # Call the parser
         lab = LabParser.get_instance().lab_parse(lab_path)
 
+        print("========================= Starting Lab ==========================")
+        if str(lab):
+            print(str(lab))
+            print("=================================================================")
+
         # TODO: Ficcare i varargs
 
         Deployer.get_instance().deploy_lab(lab)
+
+        Setting.get_instance().save_selected(['net_counter'])

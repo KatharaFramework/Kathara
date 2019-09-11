@@ -8,20 +8,24 @@ from classes.model.Machine import Machine
 class Lab(object):
     __slots__ = ['description', 'version', 'author', 'email', 'web',
                  'machines', 'links', 'net_counter', 'folder_hash', 'path',
-                 'shared_startup_path', 'shared_shutdown_path']
+                 'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
     def __init__(self, path):
-        self.path = path
+        self.path = os.path.abspath(path)
         self.folder_hash = utils.generate_urlsafe_hash(path)
-
-        self.machines = {}
-        self.links = {}
 
         shared_startup_file = os.path.join(self.path, 'shared.startup')
         self.shared_startup_path = shared_startup_file if os.path.exists(shared_startup_file) else None
 
         shared_shutdown_file = os.path.join(self.path, 'shared.shutdown')
         self.shared_shutdown_path = shared_shutdown_file if os.path.exists(shared_shutdown_file) else None
+
+        self.shared_folder = os.path.join(self.path, 'shared')
+        if not os.path.isdir(self.shared_folder):
+            os.mkdir(self.shared_folder)
+
+        self.machines = {}
+        self.links = {}
 
     def connect_machine_to_link(self, machine_name, machine_iface_number, link_name):
         machine = self.get_or_new_machine(machine_name)
@@ -62,3 +66,23 @@ class Lab(object):
 
     def __repr__(self):
         return "Lab(%s, %s, %s, %s)" % (self.path, self.folder_hash, self.machines, self.links)
+
+    def __str__(self):
+        lab_info = ""
+
+        if self.description:
+            lab_info += "Description: %s\n" % self.description
+
+        if self.version:
+            lab_info += "Version: %s\n" % self.version
+
+        if self.author:
+            lab_info += "Author(s): %s\n" %self.author
+
+        if self.email:
+            lab_info += "Email: %s\n" % self.email
+
+        if self.web:
+            lab_info += "Website: %s" % self.web
+
+        return lab_info

@@ -6,11 +6,19 @@ import tempfile
 
 
 class Machine(object):
-    __slots__ = ['lab', 'name', 'startup_path', 'shutdown_path', 'folder', 'interfaces', 'meta', 'startup_commands']
+    __slots__ = ['lab', 'name', 'startup_path', 'shutdown_path', 'folder',
+                 'interfaces', 'bridge', 'meta', 'startup_commands']
 
     def __init__(self, lab, name):
         self.lab = lab
         self.name = name
+
+        self.interfaces = {}
+        self.bridge = None
+
+        self.meta = {}
+
+        self.startup_commands = []
 
         startup_file = os.path.join(lab.path, '%s.startup' % self.name)
         self.startup_path = startup_file if os.path.exists(startup_file) else None
@@ -21,11 +29,6 @@ class Machine(object):
         machine_folder = os.path.join(lab.path, '%s' % self.name)
         self.folder = machine_folder if os.path.isdir(machine_folder) else None
 
-        self.interfaces = {}
-        self.meta = {}
-
-        self.startup_commands = []
-
     def add_interface(self, number, link):
         if number in self.interfaces:
             raise Exception("Interface %d already set on machine `%s`." % (number, self.name))
@@ -35,6 +38,10 @@ class Machine(object):
     def add_meta(self, name, value):
         if name == "exec":
             self.startup_commands.append(value)
+            return
+
+        if name == "bridged":
+            self.bridge = self.lab.get_or_new_link("docker_bridge")
             return
 
         self.meta[name] = value
@@ -81,17 +88,18 @@ class Machine(object):
                 tar.add(self.lab.shared_shutdown_path, arcname="hostlab/shared.shutdown")
                 is_empty = False
 
-        # If no machine files are found, don't deploy any config map.
+        # If no machine files are found, don't deploy anything.
         if is_empty:
             return None
 
-        # Read tar.gz content and convert it into base64
+        # Read tar.gz content
         with open("%s/hostlab.tar.gz" % temp_path, "rb") as tar_file:
             tar_data = tar_file.read()
 
+        # Delete temporary tar.gz
         shutil.rmtree(temp_path)
 
         return tar_data
 
     def __repr__(self):
-        return "Machine(%s, %s)" % (self.name, self.interfaces)
+        return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

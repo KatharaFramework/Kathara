@@ -1,9 +1,10 @@
 import utils
+from classes.deployer.IDeployer import IDeployer
 
 deployer_type = "docker"
 
 
-class Deployer(object):
+class Deployer(IDeployer):
     __slots__ = ['deployer']
 
     __instance = None

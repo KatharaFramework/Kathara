@@ -10,17 +10,17 @@ from classes.setting.Setting import Setting
 description_msg = """kathara <command> [<args>]
 
 The possible kathara command are:
-	vstart		Start a new Kathara machine  
+	vstart		Start a new Kathara machine
 	vclean		Cleanup Kathara processes and configurations
 	vconfig		Attach network interfaces to running Kathara machines
 	vlist		Show running Kathara machines
-	lstart		Start a Kathara lab 
-	lclean		Stop and clean a Kathara lab  
-	linfo		Show information about a Kathara lab  
+	lstart		Start a Kathara lab
+	lclean		Stop and clean a Kathara lab
+	linfo		Show information about a Kathara lab
 	lrestart	Restart a Kathara lab
 	ltest		Test a Kathara lab
     wipe		Delete all Kathara machines and links
-	setting	Show and edit setting
+	setting	    Show and edit setting
 	version		Print current version
 	check		Check your environment
 	install		Perform first run tasks
@@ -50,6 +50,7 @@ class KatharaEntryPoint(object):
             exit(1)
 
         try:
+            # Load config file
             Setting.get_instance()
 
             current_path = os.getcwd()
@@ -57,6 +58,7 @@ class KatharaEntryPoint(object):
         except Exception as e:
             sys.stderr.write(str(e) + '\n')
             exit(1)
+
 
 if __name__ == '__main__':
     KatharaEntryPoint()

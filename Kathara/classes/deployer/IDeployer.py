@@ -9,3 +9,7 @@ class IDeployer(ABC):
     @abstractmethod
     def undeploy_lab(self, lab_hash):
         pass
+
+    @abstractmethod
+    def wipe(self):
+        pass

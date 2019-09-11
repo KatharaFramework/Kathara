@@ -1,8 +1,8 @@
 import argparse
 
 from classes.command.Command import Command
-from classes.parser.LabParser import LabParser
 from classes.deployer.Deployer import Deployer
+from classes.setting.Setting import Setting
 
 
 class WipeCommand(Command):
@@ -22,3 +22,7 @@ class WipeCommand(Command):
         self.parser.parse_args(argv)
 
         Deployer.get_instance().wipe()
+
+        setting_object = Setting.get_instance()
+        setting_object.net_counter = 0
+        setting_object.save_selected(['net_counter'])

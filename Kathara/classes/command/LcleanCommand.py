@@ -25,7 +25,6 @@ class LcleanCommand(Command):
         self.parser = parser
 
     def run(self, current_path, argv):
-        # TODO ma su netkit non si poteva fare "lclean pc1" e stoppava solo pc1 del lab?
         args = self.parser.parse_args(argv)
 
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
