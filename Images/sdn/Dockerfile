@@ -14,6 +14,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y \
     libxslt1-dev \
     zlib1g-dev
 
-RUN pip install ryu
+RUN pip install --no-cache-dir ryu
 
 RUN apt clean
