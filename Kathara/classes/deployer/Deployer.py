@@ -36,3 +36,7 @@ class Deployer(IDeployer):
 
     def wipe(self):
         self.deployer.wipe()
+
+    # noinspection PyMethodMayBeStatic
+    def ConnectTTY(self, lab_hash, machine_name, command):
+        self.deployer.ConnectTTY(lab_hash, machine_name, command)

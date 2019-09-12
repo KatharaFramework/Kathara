@@ -10,8 +10,8 @@ from classes.setting.Setting import Setting, MAX_DOCKER_LAN_NUMBER
 class DockerLinkDeployer(object):
     __slots__ = ['client', 'base_ip']
 
-    def __init__(self):
-        self.client = docker.from_env()
+    def __init__(self, client):
+        self.client = client
 
         # Base IP subnet allocated to Kathara in Docker
         self.base_ip = u'172.19.0.0'

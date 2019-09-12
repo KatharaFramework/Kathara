@@ -78,234 +78,11 @@ class WINCHHandler(object):
             signal.signal(signal.SIGWINCH, self.original_handler)
 
 
-class Operation(object):
-
-    def israw(self, **kwargs):
-        """
-        are we dealing with a tty or not?
-        """
-        raise NotImplementedError()
-
-    def start(self, **kwargs):
-        """
-        start execution
-        """
-        raise NotImplementedError()
-
-    def resize(self, height, width, **kwargs):
-        """
-        if we have terminal, resize it
-        """
-        raise NotImplementedError()
-
-    def sockets(self):
-        """Return sockets for streams."""
-        raise NotImplementedError()
-
-
-class RunOperation(Operation):
-    """
-    class for handling `docker run`-like command
-    """
-
-    def __init__(self, client, container, interactive=True, stdout=None, stderr=None, stdin=None, logs=None):
-        """
-        Initialize the PTY using the docker.Client instance and container dict.
-        """
-
-        if logs is None:
-            warnings.warn("The default behaviour of dockerpty is changing. Please add logs=1 to your dockerpty.start call to maintain existing behaviour. See https://github.com/d11wtq/dockerpty/issues/51 for details.", DeprecationWarning)
-            logs = 1
-
-        self.client = client
-        self.container = container
-        self.raw = None
-        self.interactive = interactive
-        self.stdout = stdout or sys.stdout
-        self.stderr = stderr or sys.stderr
-        self.stdin = stdin or sys.stdin
-        self.logs = logs
-
-    def start(self, sockets=None, **kwargs):
-        """
-        Present the PTY of the container inside the current process.
-
-        This will take over the current process' TTY until the container's PTY
-        is closed.
-        """
-
-        pty_stdin, pty_stdout, pty_stderr = sockets or self.sockets()
-        pumps = []
-
-        if pty_stdin and self.interactive:
-            pumps.append(io.Pump(io.Stream(self.stdin), pty_stdin, wait_for_output=False))
-
-        if pty_stdout:
-            pumps.append(io.Pump(pty_stdout, io.Stream(self.stdout), propagate_close=False))
-
-        if pty_stderr:
-            pumps.append(io.Pump(pty_stderr, io.Stream(self.stderr), propagate_close=False))
-
-        if not self._container_info()['State']['Running']:
-            self.container.start(**kwargs)
-
-        return pumps
-
-    def israw(self, **kwargs):
-        """
-        Returns True if the PTY should operate in raw mode.
-
-        If the container was not started with tty=True, this will return False.
-        """
-
-        if self.raw is None:
-            info = self._container_info()
-            self.raw = self.stdout.isatty() and info['Config']['Tty']
-
-        return self.raw
-
-    def sockets(self):
-        """
-        Returns a tuple of sockets connected to the pty (stdin,stdout,stderr).
-
-        If any of the sockets are not attached in the container, `None` is
-        returned in the tuple.
-        """
-
-        info = self._container_info()
-
-        def attach_socket(key):
-            if info['Config']['Attach{0}'.format(key.capitalize())]:
-                socket = self.container.attach_socket(
-                    params={key: 1, 'stream': 1, 'logs': self.logs}
-                )
-                stream = io.Stream(socket)
-
-                if info['Config']['Tty']:
-                    return stream
-                else:
-                    return io.Demuxer(stream)
-            else:
-                return None
-
-        return map(attach_socket, ('stdin', 'stdout', 'stderr'))
-
-    def resize(self, height, width, **kwargs):
-        """
-        resize pty within container
-        """
-        self.container.resize(height=height, width=width)
-
-    def _container_info(self):
-        """
-        Thin wrapper around client.inspect_container().
-        """
-        self.container.reload()
-        return self.container.attrs
-
-
-def exec_create(client, container, command, interactive=True):
-    exec_id = client.api.exec_create(container, command, tty=interactive, stdin=interactive)
-    return exec_id['Id']
-
-
-class ExecOperation(Operation):
-    """
-    class for handling `docker exec`-like command
-    """
-
-    def __init__(self, client, exec_id, interactive=True, stdout=None, stderr=None, stdin=None):
-        self.exec_id = exec_id
-        self.client = client
-        self.raw = None
-        self.interactive = interactive
-        self.stdout = stdout or sys.stdout
-        self.stderr = stderr or sys.stderr
-        self.stdin = stdin or sys.stdin
-        self._info = None
-
-    def start(self, sockets=None, **kwargs):
-        """
-        start execution
-        """
-        stream = sockets or self.sockets()
-        pumps = []
-
-        if self.interactive:
-            pumps.append(io.Pump(io.Stream(self.stdin), stream, wait_for_output=False))
-
-        pumps.append(io.Pump(stream, io.Stream(self.stdout), propagate_close=False))
-        # FIXME: since exec_start returns a single socket, how do we
-        #        distinguish between stdout and stderr?
-        # pumps.append(io.Pump(stream, io.Stream(self.stderr), propagate_close=False))
-
-        return pumps
-
-    def israw(self, **kwargs):
-        """
-        Returns True if the PTY should operate in raw mode.
-
-        If the exec was not started with tty=True, this will return False.
-        """
-
-        if self.raw is None:
-            self.raw = self.stdout.isatty() and self.is_process_tty()
-
-        return self.raw
-
-    def sockets(self):
-        """
-        Return a single socket which is processing all I/O to exec
-        """
-        socket = self.client.api.exec_start(self.exec_id, socket=True, tty=self.interactive)
-        stream = io.Stream(socket)
-        if self.is_process_tty():
-            return stream
-        else:
-            return io.Demuxer(stream)
-
-    def resize(self, height, width, **kwargs):
-        """
-        resize pty of an execed process
-        """
-        self.client.api.exec_resize(self.exec_id, height=height, width=width)
-
-    def is_process_tty(self):
-        """
-        does execed process have allocated tty?
-        """
-        return self._exec_info()["ProcessConfig"]["tty"]
-
-    def _exec_info(self):
-        """
-        Caching wrapper around client.exec_inspect
-        """
-        if self._info is None:
-            self._info = self.client.api.exec_inspect(self.exec_id)
-        return self._info
-
-
 class PseudoTerminal(object):
     """
     Wraps the pseudo-TTY (PTY) allocated to a docker container.
 
     The PTY is managed via the current process' TTY until it is closed.
-
-    Example:
-
-        import docker
-        from dockerpty import PseudoTerminal
-
-        client = docker.Client()
-        container = client.create_container(
-            image='busybox:latest',
-            stdin_open=True,
-            tty=True,
-            command='/bin/sh',
-        )
-
-        # hijacks the current tty until the pty is closed
-        PseudoTerminal(client, container).start()
 
     Care is taken to ensure all file descriptors are restored on exit. For
     example, you can attach to a running container from within a Python REPL
@@ -313,19 +90,27 @@ class PseudoTerminal(object):
     without adverse effects.
     """
 
-    def __init__(self, client, operation):
+    def __init__(self, client, stream, exec_id):
         """
         Initialize the PTY using the docker.Client instance and container dict.
         """
-
+        self.stream = io.Stream(stream)
+        self.raw = None
+        self.exec_id = exec_id
         self.client = client
-        self.operation = operation
 
-    def sockets(self):
-        return self.operation.sockets()
+    def do_resize(self, height, width):
+        """
+        resize pty of an execed process
+        """
+        self.client.api.exec_resize(self.exec_id, height=height, width=width)
 
     def start(self, sockets=None):
-        pumps = self.operation.start(sockets=sockets)
+        pumps = []
+
+        pumps.append(io.Pump(io.Stream(sys.stdin), self.stream, wait_for_output=False))
+
+        pumps.append(io.Pump(self.stream, io.Stream(sys.stdout), propagate_close=False))
 
         flags = [p.set_blocking(False) for p in pumps]
 
@@ -337,6 +122,7 @@ class PseudoTerminal(object):
                 for (pump, flag) in zip(pumps, flags):
                     io.set_blocking(pump, flag)
 
+
     def resize(self, size=None):
         """
         Resize the container's PTY.
@@ -345,20 +131,33 @@ class PseudoTerminal(object):
         it will be determined by the size of the current TTY.
         """
 
-        if not self.operation.israw():
+        if not self.israw():
             return
 
-        size = size or tty.size(self.operation.stdout)
+        size = size or tty.size(sys.stdout)
 
         if size is not None:
             rows, cols = size
             try:
-                self.operation.resize(height=rows, width=cols)
+                self.do_resize(height=rows, width=cols)
             except IOError:  # Container already exited
                 pass
 
+
+    def israw(self):
+        """
+        Returns True if the PTY should operate in raw mode.
+
+        If the exec was not started with tty=True, this will return False.
+        """
+
+        if self.raw is None:
+            self.raw = sys.stdout.isatty()
+
+        return self.raw
+
     def _hijack_tty(self, pumps):
-        with tty.Terminal(self.operation.stdin, raw=self.operation.israw()):
+        with tty.Terminal(sys.stdin, raw=self.israw()):
             self.resize()
             while True:
                 read_pumps = [p for p in pumps if not p.eof]

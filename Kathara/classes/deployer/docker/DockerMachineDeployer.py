@@ -46,8 +46,8 @@ STARTUP_COMMANDS = [
 class DockerMachineDeployer(object):
     __slots__ = ['client']
 
-    def __init__(self):
-        self.client = docker.from_env()
+    def __init__(self, client):
+        self.client = client
 
     def deploy(self, machine):
         # Container image, if defined in machine meta. If not use default one.
@@ -140,6 +140,6 @@ class DockerMachineDeployer(object):
         for container in containers:
             container.remove(force=True)
 
-    # noinspection PyMethodMayBeStatic
-    def _get_container_name(self, name):
+    @staticmethod
+    def _get_container_name(name):
         return "%s_%s_%s" % (Setting.get_instance().machine_prefix, os.getlogin(), name)

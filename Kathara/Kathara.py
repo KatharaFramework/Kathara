@@ -19,8 +19,8 @@ The possible kathara command are:
 	linfo		Show information about a Kathara lab
 	lrestart	Restart a Kathara lab
 	ltest		Test a Kathara lab
-    wipe		Delete all Kathara machines and links
-	setting	    Show and edit setting
+	wipe		Delete all Kathara machines and links
+	setting		Show and edit setting
 	version		Print current version
 	check		Check your environment
 	install		Perform first run tasks

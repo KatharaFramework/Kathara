@@ -7,5 +7,5 @@ class VersionCommand(Command):
     def __init__(self):
         Command.__init__(self)
 
-    def run(self, argv):
-        print('Current version: 0.1')
+    def run(self, current_path, argv):
+        print('Current version: 0.2')

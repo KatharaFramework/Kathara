@@ -13,3 +13,7 @@ class IDeployer(ABC):
     @abstractmethod
     def wipe(self):
         pass
+
+    @abstractmethod
+    def ConnectTTY(self, lab_hash, machine_name, command):
+        pass
