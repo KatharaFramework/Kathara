@@ -19,8 +19,9 @@ import signal
 import warnings
 from ssl import SSLError
 
-import dockerpty.io as io
-import dockerpty.tty as tty
+# import classes.trdparty.dockerpty as dockerpty
+from classes.trdparty.dockerpty import io
+from classes.trdparty.dockerpty import tty
 
 
 class WINCHHandler(object):

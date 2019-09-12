@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dockerpty.pty import PseudoTerminal, RunOperation, ExecOperation, exec_create
+from classes.trdparty.dockerpty.pty import PseudoTerminal, RunOperation, ExecOperation, exec_create
 
 
 def start(client, container, interactive=True, stdout=None, stderr=None, stdin=None, logs=None):
