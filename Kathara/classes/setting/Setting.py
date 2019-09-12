@@ -10,7 +10,7 @@ K8S = "k8s"
 
 class Setting(object):
     __slots__ = ['setting_path', 'image', 'deployer_type', 'net_counter', 'terminal', 'no_terminals', 'hosthome_mount',
-                 'net_prefix', 'machine_prefix']
+                 'machine_shell', 'net_prefix', 'machine_prefix']
 
     __instance = None
 
@@ -35,6 +35,7 @@ class Setting(object):
             self.terminal = 'xterm -T'
             self.no_terminals = False
             self.hosthome_mount = True
+            self.machine_shell = "bash"
             self.net_prefix = 'kathara'
             self.machine_prefix = 'kathara'
 
@@ -119,6 +120,7 @@ class Setting(object):
                 "terminal": self.terminal,
                 "no_terminals": self.no_terminals,
                 "hosthome_mount": self.hosthome_mount,
+                "machine_shell": self.machine_shell,
                 "net_prefix": self.net_prefix,
                 "machine_prefix": self.machine_prefix
                 }

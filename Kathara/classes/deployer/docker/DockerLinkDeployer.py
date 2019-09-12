@@ -50,6 +50,8 @@ class DockerLinkDeployer(object):
                                                                   }
                                                           )
 
+        self._configure_network(link.network_object)
+
     def undeploy(self, lab_hash):
         self.client.networks.prune(filters={"label": "lab_hash=%s" % lab_hash})
 
@@ -63,3 +65,29 @@ class DockerLinkDeployer(object):
     # noinspection PyMethodMayBeStatic
     def _get_network_name(self, name):
         return "%s_%s_%s" % (Setting.get_instance().net_prefix, os.getlogin(), name)
+
+    def _configure_network(self, network):
+        """
+        Privilege escalation in order to patch Docker bridges to make them behave as hubs.
+        This is needed since Docker runs in a VM on Windows and MacOS.
+        In order to do so, we run an alpine container with host visibility. We chroot in the host `/`.
+        We patch ageing_time and group_fwd_mask of the passed network bridge.
+        :param network: The Docker Network object to patch
+        """
+        patch_command = "/usr/sbin/chroot /host " \
+                        "/bin/sh -c \"" \
+                        "echo 0 > /sys/class/net/br-{net_id}/bridge/ageing_time; " \
+                        "echo 65528 > /sys/class/net/br-{net_id}/bridge/group_fwd_mask" \
+                        "\""
+
+        self.client.containers.run(image="alpine",
+                                   command=patch_command.format(net_id=network.id[:12]),
+                                   network_mode="host",
+                                   ipc_mode="host",
+                                   uts_mode="host",
+                                   pid_mode="host",
+                                   security_opt=["seccomp=unconfined"],
+                                   privileged=True,
+                                   remove=True,
+                                   volumes={"/": {'bind': '/host', 'mode': 'rw'}}
+                                   )

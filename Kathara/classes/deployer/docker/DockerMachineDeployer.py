@@ -118,10 +118,8 @@ class DockerMachineDeployer(object):
                                               machine_commands="; ".join(machine.startup_commands)
                                               )
 
-        from socket import SocketIO
-
         # Execute the startup commands inside the container
-        machine_container.exec_run(cmd=['bash', '-c', startup_commands_string],
+        machine_container.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', startup_commands_string],
                                    stdout=False,
                                    stderr=False,
                                    privileged=True,
