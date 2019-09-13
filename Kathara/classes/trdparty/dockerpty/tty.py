@@ -71,7 +71,6 @@ class Terminal(object):
         self.raw = raw
         self.original_attributes = None
 
-
     def __enter__(self):
         """
         Invoked when a `with` block is first entered.
@@ -80,7 +79,6 @@ class Terminal(object):
         self.start()
         return self
 
-
     def __exit__(self, *_):
         """
         Invoked when a `with` block is finished.
@@ -88,14 +86,12 @@ class Terminal(object):
 
         self.stop()
 
-
     def israw(self):
         """
         Returns True if the TTY should operate in raw mode.
         """
 
         return self.raw
-
 
     def start(self):
         """
@@ -107,7 +103,6 @@ class Terminal(object):
         if os.isatty(self.fd.fileno()) and self.israw():
             self.original_attributes = termios.tcgetattr(self.fd)
             tty.setraw(self.fd)
-
 
     def stop(self):
         """

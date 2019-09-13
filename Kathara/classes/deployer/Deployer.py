@@ -1,5 +1,5 @@
 import utils
-from classes.deployer.IDeployer import IDeployer
+from .IDeployer import IDeployer
 
 deployer_type = "docker"
 
@@ -26,17 +26,14 @@ class Deployer(IDeployer):
 
             Deployer.__instance = self
 
-    # noinspection PyMethodMayBeStatic
-    def deploy_lab(self, lab):
-        self.deployer.deploy_lab(lab)
+    def deploy_lab(self, lab, terminals, options, xterm):
+        self.deployer.deploy_lab(lab, terminals, options, xterm)
 
-    # noinspection PyMethodMayBeStatic
     def undeploy_lab(self, lab_hash):
         self.deployer.undeploy_lab(lab_hash)
 
     def wipe(self):
         self.deployer.wipe()
 
-    # noinspection PyMethodMayBeStatic
-    def ConnectTTY(self, lab_hash, machine_name, command):
-        self.deployer.ConnectTTY(lab_hash, machine_name, command)
+    def connect_tty(self, lab_hash, machine_name, command):
+        self.deployer.connect_tty(lab_hash, machine_name, command)

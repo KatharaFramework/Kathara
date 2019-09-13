@@ -1,10 +1,11 @@
 import docker
 
-from classes.deployer.IDeployer import IDeployer
-from classes.deployer.docker.DockerLinkDeployer import DockerLinkDeployer
-from classes.deployer.docker.DockerMachineDeployer import DockerMachineDeployer
-from classes.trdparty.dockerpty.pty import PseudoTerminal
-from classes.setting.Setting import Setting
+from ..IDeployer import IDeployer
+from .DockerLinkDeployer import DockerLinkDeployer
+from .DockerMachineDeployer import DockerMachineDeployer
+from ...trdparty.dockerpty.pty import PseudoTerminal
+from ...setting.Setting import Setting
+
 
 class DockerDeployer(IDeployer):
     __slots__ = ['machine_deployer', 'link_deployer', 'client']
@@ -14,7 +15,7 @@ class DockerDeployer(IDeployer):
         self.machine_deployer = DockerMachineDeployer(self.client)
         self.link_deployer = DockerLinkDeployer(self.client)
 
-    def deploy_lab(self, lab):
+    def deploy_lab(self, lab, terminals, options, xterm):
         for (_, link) in lab.links.items():
             self.link_deployer.deploy(link)
 
@@ -23,7 +24,10 @@ class DockerDeployer(IDeployer):
         link.network_object = docker_bridge
 
         for (_, machine) in lab.machines.items():
-            self.machine_deployer.deploy(machine)
+            self.machine_deployer.deploy(machine,
+                                         terminals=terminals,
+                                         options=options,
+                                         xterm=xterm)
 
     def undeploy_lab(self, lab_hash):
         self.machine_deployer.undeploy(lab_hash)
@@ -33,9 +37,8 @@ class DockerDeployer(IDeployer):
         self.machine_deployer.wipe()
         self.link_deployer.wipe()
 
-    def ConnectTTY(self, lab_hash, machine_name, command):
-
-        container_name = DockerMachineDeployer._get_container_name(machine_name)
+    def connect_tty(self, lab_hash, machine_name, command):
+        container_name = DockerMachineDeployer.get_container_name(machine_name)
 
         containers = self.client.containers.list(all=True, filters={"label": "lab_hash=%s" % lab_hash, "name":container_name})
 

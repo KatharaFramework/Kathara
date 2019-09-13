@@ -123,7 +123,6 @@ class Stream(object):
                 if e.errno not in Stream.ERRNO_RECOVERABLE:
                     raise e
 
-
     def write(self, data):
         """
         Write `data` to the Stream. Not all data may be written right away.

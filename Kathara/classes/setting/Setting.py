@@ -9,8 +9,8 @@ K8S = "k8s"
 
 
 class Setting(object):
-    __slots__ = ['setting_path', 'image', 'deployer_type', 'net_counter', 'terminal', 'no_terminals', 'hosthome_mount',
-                 'machine_shell', 'net_prefix', 'machine_prefix']
+    __slots__ = ['setting_path', 'image', 'deployer_type', 'net_counter', 'terminal', 'open_terminals',
+                 'hosthome_mount', 'machine_shell', 'net_prefix', 'machine_prefix']
 
     __instance = None
 
@@ -33,7 +33,7 @@ class Setting(object):
             self.deployer_type = 'docker'
             self.net_counter = 0
             self.terminal = 'xterm -T'
-            self.no_terminals = False
+            self.open_terminals = True
             self.hosthome_mount = True
             self.machine_shell = "bash"
             self.net_prefix = 'kathara'
@@ -95,30 +95,32 @@ class Setting(object):
 
         try:
             self.net_counter = int(self.net_counter)
-
-            if self.net_counter < 0:
-                raise Exception("Network Counter must be greater or equal than zero.")
-            else:
-                if self.deployer_type == DOCKER and self.net_counter > MAX_DOCKER_LAN_NUMBER:
-                    raise Exception("Network Counter must be lesser than %d." % MAX_DOCKER_LAN_NUMBER)
-                elif self.deployer_type == K8S and self.net_counter > MAX_K8S_NUMBER:
-                    raise Exception("Network Counter must be lesser than %d." % MAX_K8S_NUMBER)
+            self.check_net_counter()
         except ValueError:
             raise Exception("Network Counter must be an integer.")
 
-    def set_net_counter(self):
+    def inc_net_counter(self):
         self.net_counter += 1
 
         if (self.deployer_type == DOCKER and self.net_counter > MAX_DOCKER_LAN_NUMBER) or \
            (self.deployer_type == K8S and self.net_counter > MAX_K8S_NUMBER):
             self.net_counter = 0
 
+    def check_net_counter(self):
+        if self.net_counter < 0:
+            raise Exception("Network Counter must be greater or equal than zero.")
+        else:
+            if self.deployer_type == DOCKER and self.net_counter > MAX_DOCKER_LAN_NUMBER:
+                raise Exception("Network Counter must be lesser than %d." % MAX_DOCKER_LAN_NUMBER)
+            elif self.deployer_type == K8S and self.net_counter > MAX_K8S_NUMBER:
+                raise Exception("Network Counter must be lesser than %d." % MAX_K8S_NUMBER)
+
     def _to_dict(self):
         return {"image": self.image,
                 "deployer_type": self.deployer_type,
                 "net_counter": self.net_counter,
                 "terminal": self.terminal,
-                "no_terminals": self.no_terminals,
+                "open_terminals": self.open_terminals,
                 "hosthome_mount": self.hosthome_mount,
                 "machine_shell": self.machine_shell,
                 "net_prefix": self.net_prefix,

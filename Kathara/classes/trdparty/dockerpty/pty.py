@@ -16,12 +16,10 @@
 
 import sys
 import signal
-import warnings
 from ssl import SSLError
 
-# import classes.trdparty.dockerpty as dockerpty
-from classes.trdparty.dockerpty import io
-from classes.trdparty.dockerpty import tty
+from . import io
+from . import tty
 
 
 class WINCHHandler(object):
@@ -101,12 +99,12 @@ class PseudoTerminal(object):
 
     def do_resize(self, height, width):
         """
-        resize pty of an execed process
+        resize pty of an executed process
         """
         self.client.api.exec_resize(self.exec_id, height=height, width=width)
 
-    def start(self, sockets=None):
-        pumps = []
+    def start(self):
+        pumps = list()
 
         pumps.append(io.Pump(io.Stream(sys.stdin), self.stream, wait_for_output=False))
 
@@ -121,7 +119,6 @@ class PseudoTerminal(object):
             if flags:
                 for (pump, flag) in zip(pumps, flags):
                     io.set_blocking(pump, flag)
-
 
     def resize(self, size=None):
         """
@@ -142,7 +139,6 @@ class PseudoTerminal(object):
                 self.do_resize(height=rows, width=cols)
             except IOError:  # Container already exited
                 pass
-
 
     def israw(self):
         """

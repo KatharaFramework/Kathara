@@ -1,8 +1,8 @@
 import os
 
 import utils
-from classes.model.Link import Link
-from classes.model.Machine import Machine
+from .Link import Link
+from .Machine import Machine
 
 
 class Lab(object):
@@ -11,7 +11,7 @@ class Lab(object):
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
     def __init__(self, path):
-        self.path = os.path.abspath(path)
+        self.path = path
         self.folder_hash = utils.generate_urlsafe_hash(path)
 
         shared_startup_file = os.path.join(self.path, 'shared.startup')

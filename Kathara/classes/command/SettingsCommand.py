@@ -1,11 +1,11 @@
 from consolemenu import *
 from consolemenu.items import *
 
-from classes.command.Command import Command
+from .Command import Command
 
 
 class SettingsCommand(Command):
-    __slots__ = []
+    __slots__ = ['menu']
 
     def __init__(self):
         Command.__init__(self)

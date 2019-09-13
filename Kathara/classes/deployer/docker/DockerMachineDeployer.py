@@ -1,8 +1,6 @@
 import os
 
-import docker
-
-from classes.setting.Setting import Setting
+from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 SYSCTL_COMMAND = "sysctl %s=0" % RP_FILTER_NAMESPACE
@@ -49,18 +47,32 @@ class DockerMachineDeployer(object):
     def __init__(self, client):
         self.client = client
 
-    def deploy(self, machine):
+    def deploy(self, machine, terminals, options, xterm):
         # Container image, if defined in machine meta. If not use default one.
-        image = machine.meta["image"] if "image" in machine.meta else Setting.get_instance().image
+        image = options["image"] if "image" in options else machine.meta["image"] if "image" in machine.meta \
+                else Setting.get_instance().image
         # Memory limit, if defined in machine meta.
-        memory = machine.meta["mem"].upper() if "mem" in machine.meta else None
+        memory = options["mem"].upper() if "mem" in options else machine.meta["mem"].upper() if "mem" in machine.meta \
+                 else None
         # Bind the port 3000 of the container to a defined port (if present).
         ports = None
-        if "port" in machine.meta:
+        if "port" in options:
+            try:
+                ports = {'3000/tcp': int(options["port"])}
+            except ValueError:
+                pass
+        elif "port" in machine.meta:
             try:
                 ports = {'3000/tcp': int(machine.meta["port"])}
             except ValueError:
                 pass
+
+        # If bridged is required in command line, add it.
+        if "bridged" in options:
+            machine.add_meta("bridged", True)
+
+        if "exec" in options:
+            machine.add_meta("exec", options["exec"])
 
         # Get the first network object, if defined.
         # This should be used in container create function
@@ -71,8 +83,11 @@ class DockerMachineDeployer(object):
 
         volumes = {machine.lab.shared_folder: {'bind': '/shared', 'mode': 'rw'}}
 
+        if Setting.get_instance().hosthome_mount:
+            volumes[os.path.expanduser('~')] = {'bind': '/hosthome', 'mode': 'rw'}
+
         machine_container = self.client.containers.create(image=image,
-                                                          name=self._get_container_name(machine.name),
+                                                          name=self.get_container_name(machine.name),
                                                           hostname=machine.name,
                                                           privileged=True,
                                                           network=first_network.name,
@@ -126,7 +141,9 @@ class DockerMachineDeployer(object):
                                    detach=True
                                    )
 
-        return machine_container
+        if terminals:
+            # xterm
+            pass
 
     def undeploy(self, lab_hash):
         containers = self.client.containers.list(all=True, filters={"label": "lab_hash=%s" % lab_hash})
@@ -141,5 +158,5 @@ class DockerMachineDeployer(object):
             container.remove(force=True)
 
     @staticmethod
-    def _get_container_name(name):
+    def get_container_name(name):
         return "%s_%s_%s" % (Setting.get_instance().machine_prefix, os.getlogin(), name)
