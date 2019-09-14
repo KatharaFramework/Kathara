@@ -4,7 +4,7 @@ import os
 import docker
 from docker import types
 
-from classes.setting.Setting import Setting, MAX_DOCKER_LAN_NUMBER
+from ...setting.Setting import Setting, MAX_DOCKER_LAN_NUMBER
 
 
 class DockerLinkDeployer(object):
@@ -17,10 +17,10 @@ class DockerLinkDeployer(object):
         self.base_ip = u'172.19.0.0'
 
     def deploy(self, link):
+        # Reserved name for bridged connections, ignore.
         if link.name == "docker_bridge":
             return
 
-        # Get current network counter from configuration
         network_counter = Setting.get_instance().net_counter
 
         # Calculate the subnet for this network.
@@ -30,7 +30,7 @@ class DockerLinkDeployer(object):
         network_gateway = network_subnet + 1
 
         # Update the network counter
-        Setting.get_instance().set_net_counter()
+        Setting.get_instance().inc_net_counter()
 
         # Create the network IPAM config for Docker
         network_pool = docker.types.IPAMPool(subnet='%s/16' % str(network_subnet),
@@ -41,7 +41,7 @@ class DockerLinkDeployer(object):
                                                       pool_configs=[network_pool]
                                                       )
 
-        link.network_object = self.client.networks.create(name=self._get_network_name(link.name),
+        link.network_object = self.client.networks.create(name=self.get_network_name(link.name),
                                                           driver='bridge',
                                                           check_duplicate=True,
                                                           ipam=network_ipam_config,
@@ -61,10 +61,6 @@ class DockerLinkDeployer(object):
     def get_docker_bridge(self):
         bridge_list = self.client.networks.list(names="bridge")
         return bridge_list.pop() if bridge_list else None
-
-    # noinspection PyMethodMayBeStatic
-    def _get_network_name(self, name):
-        return "%s_%s_%s" % (Setting.get_instance().net_prefix, os.getlogin(), name)
 
     def _configure_network(self, network):
         """
@@ -91,3 +87,7 @@ class DockerLinkDeployer(object):
                                    remove=True,
                                    volumes={"/": {'bind': '/host', 'mode': 'rw'}}
                                    )
+
+    @staticmethod
+    def get_network_name(name):
+        return "%s_%s_%s" % (Setting.get_instance().net_prefix, os.getlogin(), name)

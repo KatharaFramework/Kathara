@@ -1,20 +1,22 @@
 import argparse
 
-from classes.command.Command import Command
-from classes.deployer.Deployer import Deployer
-from classes.parser.LabParser import LabParser
-from classes.setting.Setting import Setting
+import utils
+from .Command import Command
+from ..deployer.Deployer import Deployer
+from ..parser.LabParser import LabParser
+from ..parser.OptionParser import OptionParser
+from ..setting.Setting import Setting
 
 
 class LstartCommand(Command):
-    __slots__ = []
+    __slots__ = ['parser']
 
     def __init__(self):
         Command.__init__(self)
 
         parser = argparse.ArgumentParser(
             prog='kathara lstart',
-            description='Starts a Kathara Lab.'
+            description='Starts a Kathara lab.'
         )
 
         group = parser.add_mutually_exclusive_group(required=False)
@@ -50,7 +52,7 @@ class LstartCommand(Command):
             '-l', '--list',
             required=False,
             action='store_true',
-            help='Show a list of running container after the lab has been started.'
+            help='Show a list of running containers after the lab has been started.'
         )
         parser.add_argument(
             '-o', '--pass',
@@ -67,22 +69,16 @@ class LstartCommand(Command):
         )
         parser.add_argument(
             '--print',
-            dest="print_only",
+            dest="dry_mode",
             required=False,
             action='store_true',
-            help='Print command used to start the containers to stderr (dry run).'
+            help='Opens the lab.conf file and check if it is correct (dry run).'
         )
         parser.add_argument(
             '-c', '--counter',
             required=False,
             help='Start from a specific network counter '
-                 '(overrides whatever was previously initialized, using 0 will prompt the default behavior).'
-        )
-        parser.add_argument(
-            "--execbash",
-            required=False,
-            action="store_true",
-            help=argparse.SUPPRESS
+                 '(overrides whatever was previously initialized).'
         )
 
         self.parser = parser
@@ -91,17 +87,48 @@ class LstartCommand(Command):
         args = self.parser.parse_args(argv)
 
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+        lab_path = utils.get_absolute_path(lab_path)
 
-        # Call the parser
-        lab = LabParser.get_instance().lab_parse(lab_path)
+        if args.dry_mode:
+            print("========================= Checking Lab ==========================")
+        else:
+            print("========================= Starting Lab ==========================")
 
-        print("========================= Starting Lab ==========================")
+        lab = LabParser.parse(lab_path)
+
         if str(lab):
             print(str(lab))
             print("=================================================================")
 
-        # TODO: Ficcare i varargs
+        if args.dry_mode:
+            print("lab.conf file is correct. Exiting...")
+            exit(0)
 
-        Deployer.get_instance().deploy_lab(lab)
+        if args.list:
+            # TODO: Print lab info
+            exit(0)
 
-        Setting.get_instance().save_selected(['net_counter'])
+        if not args.force_lab:
+            try:
+                parsed_options = OptionParser.parse(args.options)
+            except:
+                raise Exception("--pass parameter not valid.")
+
+            if args.counter:
+                try:
+                    Setting.get_instance().net_counter = int(args.counter)
+                    Setting.get_instance().check_net_counter()
+                except ValueError:
+                    raise Exception("Network Counter must be an integer.")
+
+            Deployer.get_instance().deploy_lab(lab,
+                                               terminals=args.terminals or Setting.get_instance().open_terminals,
+                                               options=parsed_options,
+                                               xterm=args.xterm or Setting.get_instance().terminal
+                                               )
+        else:
+            # TODO: Folder Parser
+            pass
+
+        if not args.counter:
+            Setting.get_instance().save_selected(['net_counter'])

@@ -1,12 +1,12 @@
 import argparse
 
 import utils
-from classes.command.Command import Command
-from classes.deployer.Deployer import Deployer
+from .Command import Command
+from ..deployer.Deployer import Deployer
 
 
 class LcleanCommand(Command):
-    __slots__ = []
+    __slots__ = ['parser']
 
     def __init__(self):
         Command.__init__(self)
@@ -28,6 +28,8 @@ class LcleanCommand(Command):
         args = self.parser.parse_args(argv)
 
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+        lab_path = utils.get_absolute_path(lab_path)
+
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
         Deployer.get_instance().undeploy_lab(lab_hash)

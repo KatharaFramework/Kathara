@@ -1,8 +1,8 @@
 import argparse
 
-from classes.command.Command import Command
-from classes.deployer.Deployer import Deployer
-from classes.setting.Setting import Setting
+from .Command import Command
+from ..deployer.Deployer import Deployer
+from ..setting.Setting import Setting
 
 
 class WipeCommand(Command):

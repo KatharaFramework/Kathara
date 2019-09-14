@@ -1,4 +1,3 @@
-
 class Link(object):
     __slots__ = ['lab', 'name', 'network_object']
 

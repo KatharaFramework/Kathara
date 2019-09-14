@@ -3,30 +3,15 @@ import os
 import mmap
 import re
 
-from classes.model.Lab import Lab
+from ..model.Lab import Lab
 
 # TODO: Remove
 DEBUG = False
 
 
 class LabParser(object):
-    __instance = None
-
     @staticmethod
-    def get_instance():
-        if LabParser.__instance is None:
-            LabParser()
-
-        return LabParser.__instance
-
-    def __init__(self):
-        if LabParser.__instance is not None:
-            raise Exception("This class is a singleton!")
-        else:
-            LabParser.__instance = self
-
-    # noinspection PyMethodMayBeStatic
-    def lab_parse(self, path):
+    def parse(path):
         lab_conf_path = os.path.join(path, 'lab.conf')
 
         if not os.path.exists(lab_conf_path):
@@ -44,7 +29,7 @@ class LabParser(object):
             if DEBUG:
                 sys.stderr.write(line + "\n")
 
-            matches = re.search(r"^(?P<key>[a-z0-9_]+)\[(?P<arg>\w+)\]=(?P<value>\".+\"|\'.+\'|\w+)$",
+            matches = re.search(r"^(?P<key>[a-z0-9_]{1,30})\[(?P<arg>\w+)\]=(?P<value>\".+\"|\'.+\'|\w+)$",
                                 line.strip()
                                 )
 

@@ -1,12 +1,13 @@
 import argparse
 
-from classes.command.Command import Command
-from classes.command.LstartCommand import LstartCommand
-from classes.command.LcleanCommand import LcleanCommand
+import utils
+from .Command import Command
+from .LcleanCommand import LcleanCommand
+from .LstartCommand import LstartCommand
 
 
 class LrestartCommand(Command):
-    __slots__ = []
+    __slots__ = ['parser']
 
     def __init__(self):
         Command.__init__(self)
@@ -73,6 +74,8 @@ class LrestartCommand(Command):
         args = self.parser.parse_args(argv)
 
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+        lab_path = utils.get_absolute_path(lab_path)
+
         lclean_argv = ['-d', args.directory] if args.directory else []
 
         LcleanCommand().run(lab_path, lclean_argv)

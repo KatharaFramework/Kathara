@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class IDeployer(ABC):
     @abstractmethod
-    def deploy_lab(self, lab):
+    def deploy_lab(self, lab, terminals, options, xterm):
         pass
 
     @abstractmethod
@@ -15,5 +15,5 @@ class IDeployer(ABC):
         pass
 
     @abstractmethod
-    def ConnectTTY(self, lab_hash, machine_name, command):
+    def connect_tty(self, lab_hash, machine_name, command):
         pass
