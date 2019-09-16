@@ -12,7 +12,7 @@ from ..setting.Setting import Setting
 
 class Machine(object):
     __slots__ = ['lab', 'name', 'startup_path', 'shutdown_path', 'folder',
-                 'interfaces', 'bridge', 'meta', 'startup_commands']
+                 'interfaces', 'bridge', 'meta', 'startup_commands', 'api_object']
 
     def __init__(self, lab, name):
         self.lab = lab
@@ -24,6 +24,8 @@ class Machine(object):
         self.meta = {}
 
         self.startup_commands = []
+
+        self.api_object = None
 
         startup_file = os.path.join(lab.path, '%s.startup' % self.name)
         self.startup_path = startup_file if os.path.exists(startup_file) else None
@@ -106,12 +108,13 @@ class Machine(object):
 
         return tar_data
 
-    def connect(self):
+    def connect(self, xterm):
         # TODO: Change executable path
         connect_command = "../Kathara/Kathara.py connect %s"
+        terminal = xterm if xterm else Setting.get_instance().terminal
 
         def linux_connect():
-            subprocess.Popen([Setting.get_instance().terminal,
+            subprocess.Popen([terminal,
                               '-e',
                               connect_command % self.name
                               ],

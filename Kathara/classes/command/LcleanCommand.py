@@ -21,6 +21,11 @@ class LcleanCommand(Command):
             required=False,
             help='Specify the folder containing the lab.'
         )
+        parser.add_argument(
+            'machine_names',
+            nargs='*',
+            help='Cleans only specified machines.'
+        )
 
         self.parser = parser
 
@@ -31,5 +36,7 @@ class LcleanCommand(Command):
         lab_path = utils.get_absolute_path(lab_path)
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
+
+        # args.machine_names
 
         Deployer.get_instance().undeploy_lab(lab_hash)

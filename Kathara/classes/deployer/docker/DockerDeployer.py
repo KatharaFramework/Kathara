@@ -33,10 +33,14 @@ class DockerDeployer(IDeployer):
         # Deploy all lab machines.
         for (_, machine) in lab.machines.items():
             self.machine_deployer.deploy(machine,
-                                         terminals=terminals,
                                          options=options,
-                                         xterm=xterm
                                          )
+
+        for (_, machine) in lab.machines.items():
+            self.machine_deployer.start(machine,
+                                        terminals=terminals,
+                                        xterm=xterm
+                                        )
 
     # TODO: Decorator to check if Docker is running
     def undeploy_lab(self, lab_hash):

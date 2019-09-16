@@ -16,10 +16,25 @@ class WipeCommand(Command):
             description='Delete all Kathara machines and links.'
         )
 
+        parser.add_argument(
+            '-f', '--force',
+            required=False,
+            action='store_true',
+            help='Force the wipe.'
+        )
+
         self.parser = parser
 
     def run(self, current_path, argv):
-        self.parser.parse_args(argv)
+        args = self.parser.parse_args(argv)
+
+        if not args.force:
+            answer = None
+            while answer not in ["y", "yes", "Y", "YES", "n", "no", "N", "NO"]:
+                answer = input("Are you sure to wipe Kathara? [y/n] ")
+
+                if answer in ["n", "no", "NO"]:
+                    exit(0)
 
         Deployer.get_instance().wipe()
 

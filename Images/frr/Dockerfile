@@ -10,3 +10,6 @@ RUN sed -i -e 's/service/no service/' /etc/frr/vtysh.conf \
     && rm /etc/frr/frr.conf
 
 RUN apt clean
+
+RUN mkdir /var/log/frr
+RUN chmod -R 777 /var/log/frr

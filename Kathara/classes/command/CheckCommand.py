@@ -1,18 +1,17 @@
 import argparse
 
 from .Command import Command
-from ..setting.Setting import KATHARA_VERSION
 
 
-class VersionCommand(Command):
+class CheckCommand(Command):
     __slots__ = ['parser']
 
     def __init__(self):
         Command.__init__(self)
-
+        
         parser = argparse.ArgumentParser(
-            prog='kathara version',
-            description='Print current version.'
+            prog='kathara check',
+            description='Check your system environment.'
         )
 
         self.parser = parser
@@ -20,4 +19,8 @@ class VersionCommand(Command):
     def run(self, current_path, argv):
         self.parser.parse_args(argv)
 
-        print('Current version: %s.' % KATHARA_VERSION)
+        # Docker Version
+        # Settings.check
+        # Prova a lanciare hello world
+        # Python Version
+        # Kathara Version

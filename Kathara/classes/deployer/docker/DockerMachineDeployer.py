@@ -16,11 +16,8 @@ STARTUP_COMMANDS = [
     "chmod -R 777 /hostlab/{machine_name}/*; "
     "cp -rfp /hostlab/{machine_name}/* /; fi",
 
-    # Create /var/log/zebra folder
-    "mkdir /var/log/zebra",
-
-    # Give proper permissions to few files/directories (copied from Kathara)
-    "chmod -R 777 /var/log/quagga; chmod -R 777 /var/log/zebra; chmod -R 777 /var/www/*",
+    # Give proper permissions to /var/www
+    "chmod -R 777 /var/www/*",
 
     # Placeholder for rp_filter patches
     "{rp_filter}",
@@ -49,7 +46,7 @@ class DockerMachineDeployer(object):
     def __init__(self, client):
         self.client = client
 
-    def deploy(self, machine, terminals, options, xterm):
+    def deploy(self, machine, options):
         # Container image, if defined in machine meta. If not use default one.
         image = options["image"] if "image" in options else machine.meta["image"] if "image" in machine.meta \
                 else Setting.get_instance().image
@@ -82,6 +79,8 @@ class DockerMachineDeployer(object):
 
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
+        sysctl_parameters["net.ipv4.ip_forward"] = 1
+        sysctl_parameters["net.ipv6.ip_forward"] = 1
 
         volumes = {machine.lab.shared_folder: {'bind': '/shared', 'mode': 'rw'}}
 
@@ -129,7 +128,18 @@ class DockerMachineDeployer(object):
         if machine.bridge:
             machine.bridge.network_object.connect(machine_container)
 
-        machine_container.start()
+        machine.api_object = machine_container
+
+    @staticmethod
+    def start(machine, terminals, xterm):
+        # Build sysctl rp_filter commands for interfaces
+        rp_filter_commands = []
+
+        # Build the rp_filter patch for the interfaces
+        for (iface_num, machine_link) in machine.interfaces.items():
+            rp_filter_commands.append(SYSCTL_COMMAND % ("eth%d" % iface_num))
+
+        machine.api_object.start()
 
         # Build the final startup commands string
         startup_commands_string = "; ".join(STARTUP_COMMANDS)\
@@ -139,15 +149,15 @@ class DockerMachineDeployer(object):
                                               )
 
         # Execute the startup commands inside the container
-        machine_container.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', startup_commands_string],
-                                   stdout=False,
-                                   stderr=False,
-                                   privileged=True,
-                                   detach=True
-                                   )
+        machine.api_object.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', startup_commands_string],
+                                    stdout=False,
+                                    stderr=False,
+                                    privileged=True,
+                                    detach=True
+                                    )
 
         if terminals:
-            machine.connect()
+            machine.connect(xterm)
 
     def undeploy(self, lab_hash):
         containers = self.get_machines_by_filters(lab_hash=lab_hash)
@@ -170,6 +180,9 @@ class DockerMachineDeployer(object):
             raise Exception("Error getting the machine `%s` inside the lab." % machine_name)
         else:
             container = containers[0]
+            if container.name != container_name:
+                raise Exception("Error getting the machine `%s` inside the lab. "
+                                "Did you mean %s?" % (machine_name, container.labels["name"]))
 
         if not command:
             command = Setting.get_instance().machine_shell

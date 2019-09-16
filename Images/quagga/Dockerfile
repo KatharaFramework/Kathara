@@ -19,5 +19,8 @@ RUN rm quagga_1.0.20160315-3_amd64.deb
 
 RUN apt clean
 
+RUN mkdir /var/log/zebra
+RUN chmod -R 777 /var/log/quagga
+RUN chmod -R 777 /var/log/zebra
 RUN ln /etc/init.d/quagga /etc/init.d/zebra
 RUN ln -s /etc/quagga /etc/zebra

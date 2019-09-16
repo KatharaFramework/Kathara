@@ -1,6 +1,8 @@
 import json
 import os
 
+KATHARA_VERSION = "0.2"
+
 MAX_DOCKER_LAN_NUMBER = 256 * 256
 MAX_K8S_NUMBER = (1 << 24) - 20
 

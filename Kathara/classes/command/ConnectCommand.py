@@ -13,7 +13,7 @@ class ConnectCommand(Command):
         
         parser = argparse.ArgumentParser(
             prog='kathara connect',
-            description='Connect current terminal to a Kathara machine.'
+            description='Connect to a Kathara machine.'
         )
 
         parser.add_argument(

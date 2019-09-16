@@ -22,7 +22,7 @@ The possible kathara command are:
 	wipe		Delete all Kathara machines and links
 	setting		Show and edit setting
 	version		Print current version
-	check		Check your environment
+	check		Check your system environment
 	install		Perform first run tasks
 	connect		Connect to a Kathara machine
 """

@@ -49,6 +49,22 @@ class Lab(object):
         for machine in self.machines:
             self.machines[machine].check()
 
+    def intersect(self, machines):
+        """
+        
+        :param machines: 
+        :return: 
+        """
+        if not machines:
+            return
+
+        machines_intersection = set(self.machines.keys()) & set(machines)
+        self.machines = {k: v for (k, v) in self.machines.items() if k in machines_intersection}
+
+        intersection_links = set([machine.interfaces.values() for (_, machine) in self.machines.items()])
+        intersection_links = [link for links in intersection_links for link in links]
+        self.links = {link.name: link for link in intersection_links}
+
     def check_dependencies(self):
         dependencies = DepParser.parse(self.path)
 

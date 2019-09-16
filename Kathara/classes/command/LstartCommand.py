@@ -81,6 +81,11 @@ class LstartCommand(Command):
             help='Start from a specific network counter '
                  '(overrides whatever was previously initialized).'
         )
+        parser.add_argument(
+            'machine_names',
+            nargs='*',
+            help='Launches only specified machines.'
+        )
 
         self.parser = parser
 
@@ -102,6 +107,8 @@ class LstartCommand(Command):
                 raise Exception(str(e))
             else:
                 lab = FolderParser.parse(lab_path)
+
+        lab.intersect(args.machine_names)
 
         lab_meta_information = str(lab)
 
@@ -126,8 +133,9 @@ class LstartCommand(Command):
             except ValueError:
                 raise Exception("Network Counter must be an integer.")
 
+        terminals = args.terminals if args.terminals is not None else Setting.get_instance().open_terminals
         Deployer.get_instance().deploy_lab(lab,
-                                           terminals=args.terminals or Setting.get_instance().open_terminals,
+                                           terminals=terminals,
                                            options=parsed_options,
                                            xterm=args.xterm or Setting.get_instance().terminal
                                            )

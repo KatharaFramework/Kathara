@@ -3,7 +3,7 @@ import os
 import re
 import sys
 
-from ..trdparty import depgen
+from ..trdparty.depgen import depgen
 
 
 class DepParser(object):
