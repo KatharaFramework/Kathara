@@ -3,6 +3,7 @@ import argparse
 import utils
 from .Command import Command
 from ..deployer.Deployer import Deployer
+from ..parser.FolderParser import FolderParser
 from ..parser.LabParser import LabParser
 from ..parser.OptionParser import OptionParser
 from ..setting.Setting import Setting
@@ -94,12 +95,21 @@ class LstartCommand(Command):
         else:
             print("========================= Starting Lab ==========================")
 
-        lab = LabParser.parse(lab_path)
+        try:
+            lab = LabParser.parse(lab_path)
+        except FileNotFoundError as e:
+            if not args.force_lab:
+                raise Exception(str(e))
+            else:
+                lab = FolderParser.parse(lab_path)
 
-        if str(lab):
-            print(str(lab))
+        lab_meta_information = str(lab)
+
+        if lab_meta_information:
+            print(lab_meta_information)
             print("=================================================================")
 
+        # If dry mode, we just check if the lab.conf is correct.
         if args.dry_mode:
             print("lab.conf file is correct. Exiting...")
             exit(0)
@@ -108,27 +118,23 @@ class LstartCommand(Command):
             # TODO: Print lab info
             exit(0)
 
-        if not args.force_lab:
+        try:
+            parsed_options = OptionParser.parse(args.options)
+        except:
+            raise Exception("--pass parameter not valid.")
+
+        if args.counter:
             try:
-                parsed_options = OptionParser.parse(args.options)
-            except:
-                raise Exception("--pass parameter not valid.")
+                Setting.get_instance().net_counter = int(args.counter)
+                Setting.get_instance().check_net_counter()
+            except ValueError:
+                raise Exception("Network Counter must be an integer.")
 
-            if args.counter:
-                try:
-                    Setting.get_instance().net_counter = int(args.counter)
-                    Setting.get_instance().check_net_counter()
-                except ValueError:
-                    raise Exception("Network Counter must be an integer.")
-
-            Deployer.get_instance().deploy_lab(lab,
-                                               terminals=args.terminals or Setting.get_instance().open_terminals,
-                                               options=parsed_options,
-                                               xterm=args.xterm or Setting.get_instance().terminal
-                                               )
-        else:
-            # TODO: Folder Parser
-            pass
+        Deployer.get_instance().deploy_lab(lab,
+                                           terminals=args.terminals or Setting.get_instance().open_terminals,
+                                           options=parsed_options,
+                                           xterm=args.xterm or Setting.get_instance().terminal
+                                           )
 
         if not args.counter:
             Setting.get_instance().save_selected(['net_counter'])

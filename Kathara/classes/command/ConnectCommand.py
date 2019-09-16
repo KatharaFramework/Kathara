@@ -21,13 +21,11 @@ class ConnectCommand(Command):
             required=False,
             help='Specify the folder containing the lab.'
         )
-
         parser.add_argument(
             '-c', '--command',
             required=False,
             help='Specify the command to start the TTY.'
         )
-
         parser.add_argument(
             'machine_name',
             help='Name of the machine to connect to'

@@ -3,6 +3,7 @@ import os
 import utils
 from .Link import Link
 from .Machine import Machine
+from ..parser.DepParser import DepParser
 
 
 class Lab(object):
@@ -24,6 +25,12 @@ class Lab(object):
         if not os.path.isdir(self.shared_folder):
             os.mkdir(self.shared_folder)
 
+        self.description = None
+        self.version = None
+        self.author = None
+        self.email = None
+        self.web = None
+
         self.machines = {}
         self.links = {}
 
@@ -41,6 +48,15 @@ class Lab(object):
     def check_integrity(self):
         for machine in self.machines:
             self.machines[machine].check()
+
+    def check_dependencies(self):
+        dependencies = DepParser.parse(self.path)
+
+        if dependencies:
+            machine_items = self.machines.items()
+
+            # TODO: Do something
+            # OrderedDict(sorted(machines.items(), key=lambda t: dep_sort(t[0], dependency_list)))
 
     def get_or_new_machine(self, name):
         """
@@ -77,7 +93,7 @@ class Lab(object):
             lab_info += "Version: %s\n" % self.version
 
         if self.author:
-            lab_info += "Author(s): %s\n" %self.author
+            lab_info += "Author(s): %s\n" % self.author
 
         if self.email:
             lab_info += "Email: %s\n" % self.email

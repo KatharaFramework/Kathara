@@ -4,6 +4,7 @@ import os
 import docker
 from docker import types
 
+from ...model.Link import BRIDGE_LINK_NAME
 from ...setting.Setting import Setting, MAX_DOCKER_LAN_NUMBER
 
 
@@ -18,7 +19,7 @@ class DockerLinkDeployer(object):
 
     def deploy(self, link):
         # Reserved name for bridged connections, ignore.
-        if link.name == "docker_bridge":
+        if link.name == BRIDGE_LINK_NAME:
             return
 
         network_counter = Setting.get_instance().net_counter

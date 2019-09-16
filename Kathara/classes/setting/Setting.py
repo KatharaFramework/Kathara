@@ -32,7 +32,7 @@ class Setting(object):
             self.image = 'kathara/netkit_base'
             self.deployer_type = 'docker'
             self.net_counter = 0
-            self.terminal = 'xterm -T'
+            self.terminal = 'xterm'
             self.open_terminals = True
             self.hosthome_mount = True
             self.machine_shell = "bash"

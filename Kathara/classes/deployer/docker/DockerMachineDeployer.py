@@ -83,6 +83,7 @@ class DockerMachineDeployer(object):
 
         volumes = {machine.lab.shared_folder: {'bind': '/shared', 'mode': 'rw'}}
 
+        # Mount the host home only if specified in settings.
         if Setting.get_instance().hosthome_mount:
             volumes[os.path.expanduser('~')] = {'bind': '/hosthome', 'mode': 'rw'}
 
@@ -90,7 +91,8 @@ class DockerMachineDeployer(object):
                                                           name=self.get_container_name(machine.name),
                                                           hostname=machine.name,
                                                           privileged=True,
-                                                          network=first_network.name,
+                                                          network=first_network.name if first_network else None,
+                                                          network_mode="bridge" if first_network else "none",
                                                           sysctls=sysctl_parameters,
                                                           mem_limit=memory,
                                                           ports=ports,
@@ -142,8 +144,7 @@ class DockerMachineDeployer(object):
                                    )
 
         if terminals:
-            # xterm
-            pass
+            machine.connect()
 
     def undeploy(self, lab_hash):
         containers = self.client.containers.list(all=True, filters={"label": "lab_hash=%s" % lab_hash})

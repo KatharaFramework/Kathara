@@ -3,6 +3,11 @@ import os
 import shutil
 import tarfile
 import tempfile
+from subprocess import Popen
+import utils
+
+from .Link import BRIDGE_LINK_NAME
+from ..setting.Setting import Setting
 
 
 class Machine(object):
@@ -41,7 +46,7 @@ class Machine(object):
             return
 
         if name == "bridged":
-            self.bridge = self.lab.get_or_new_link("docker_bridge")
+            self.bridge = self.lab.get_or_new_link(BRIDGE_LINK_NAME)
             return
 
         self.meta[name] = value
@@ -100,6 +105,24 @@ class Machine(object):
         shutil.rmtree(temp_path)
 
         return tar_data
+
+    def connect(self):
+        # TODO: Change exec call
+        connect_command = "../Kathara/Kathara.py connect %s"
+
+        def linux_connect():
+            Popen([Setting.get_instance().terminal,
+                   '-e',
+                   connect_command % self.name
+                   ], cwd=self.lab.path)
+
+        def windows_connect():
+            Popen(["powershell.exe",
+                   '-Command',
+                   connect_command % self.name
+                   ], cwd=self.lab.path)
+
+        utils.exec_by_platform(linux_connect, windows_connect, linux_connect)
 
     def __repr__(self):
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

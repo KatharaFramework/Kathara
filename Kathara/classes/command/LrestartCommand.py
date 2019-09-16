@@ -14,9 +14,26 @@ class LrestartCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara lrestart',
-            description='Restart a Kathara lab'
+            description='Restart a Kathara lab.'
         )
 
+        group = parser.add_mutually_exclusive_group(required=False)
+
+        group.add_argument(
+            "-n", "--noterminals",
+            action="store_const",
+            dest="terminals",
+            const=False,
+            default=True,
+            help='Start the lab without opening terminal windows.'
+        )
+        group.add_argument(
+            "-t", "--terminals",
+            action="store_const",
+            dest="terminals",
+            const=True,
+            help='Start the lab opening terminal windows.'
+        )
         parser.add_argument(
             '-d', '--directory',
             required=False,
@@ -33,7 +50,7 @@ class LrestartCommand(Command):
             '-l', '--list',
             required=False,
             action='store_true',
-            help='Show a list of running container after the lab has been started.'
+            help='Show a list of running containers after the lab has been started.'
         )
         parser.add_argument(
             '-o', '--pass',
@@ -41,7 +58,7 @@ class LrestartCommand(Command):
             nargs='*',
             required=False,
             help="Pass options to vstart. Options should be a list of double quoted strings, "
-                 "like '--pass \"mem=64m\" \"eth=0:A\"'."
+                 "like '--pass \"mem=64m\" \"image=kathara/netkit_base\"'."
         )
         parser.add_argument(
             '--xterm',
@@ -49,23 +66,10 @@ class LrestartCommand(Command):
             help='Set a different terminal emulator application (Unix only).'
         )
         parser.add_argument(
-            '--print',
-            dest="print_only",
-            required=False,
-            action='store_true',
-            help='Print command used to start the containers to stderr (dry run).'
-        )
-        parser.add_argument(
             '-c', '--counter',
             required=False,
             help='Start from a specific network counter '
-                 '(overrides whatever was previously initialized, using 0 will prompt the default behavior).'
-        )
-        parser.add_argument(
-            "--execbash",
-            required=False,
-            action="store_true",
-            help=argparse.SUPPRESS
+                 '(overrides whatever was previously initialized).'
         )
 
         self.parser = parser

@@ -5,9 +5,6 @@ import re
 
 from ..model.Lab import Lab
 
-# TODO: Remove
-DEBUG = False
-
 
 class LabParser(object):
     @staticmethod
@@ -15,7 +12,7 @@ class LabParser(object):
         lab_conf_path = os.path.join(path, 'lab.conf')
 
         if not os.path.exists(lab_conf_path):
-            raise Exception("No lab.conf in given directory: %s\n" % path)
+            raise FileNotFoundError("No lab.conf in given directory: %s\n" % path)
 
         # Reads lab.conf in memory so it is faster.
         with open(lab_conf_path, 'r') as lab_file:
@@ -26,9 +23,6 @@ class LabParser(object):
         line_number = 1
         line = lab_mem_file.readline().decode('utf-8')
         while line:
-            if DEBUG:
-                sys.stderr.write(line + "\n")
-
             matches = re.search(r"^(?P<key>[a-z0-9_]{1,30})\[(?P<arg>\w+)\]=(?P<value>\".+\"|\'.+\'|\w+)$",
                                 line.strip()
                                 )
@@ -73,10 +67,7 @@ class LabParser(object):
 
         lab.check_integrity()
 
-        # TODO: lab.dep
-        # machines = reorder_by_lab_dep(path, machines)
-
-        if DEBUG:
-            print(lab)
+        # Reorder machines by lab.dep file, if present.
+        lab.check_dependencies()
 
         return lab

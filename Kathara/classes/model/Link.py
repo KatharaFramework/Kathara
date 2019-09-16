@@ -1,3 +1,6 @@
+BRIDGE_LINK_NAME = "docker_bridge"
+
+
 class Link(object):
     __slots__ = ['lab', 'name', 'network_object']
 

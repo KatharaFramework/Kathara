@@ -3,6 +3,13 @@ import hashlib
 import importlib
 import os
 import re
+from sys import platform as _platform
+
+# Platforms constants definition.
+MAC_OS = "darwin"
+WINDOWS = "win32"
+LINUX = "linux"
+LINUX2 = "linux2"
 
 
 def class_for_name(module_name, class_name):
@@ -17,3 +24,12 @@ def generate_urlsafe_hash(string):
 
 def get_absolute_path(path):
     return os.path.abspath(path)
+
+
+def exec_by_platform(fun_linux, fun_windows, fun_mac):
+    if _platform == LINUX or _platform == LINUX2:
+        fun_linux()
+    elif _platform == WINDOWS:
+        fun_windows()
+    elif _platform == MAC_OS:
+        fun_mac()
