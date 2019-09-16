@@ -9,13 +9,15 @@ class FolderParser(object):
     def parse(path):
         lab = Lab(path)
 
-        machine_folders = glob(path + "/*/")
+        # Get all subfolders of lab path
+        machine_folders = glob("%s/*/" % path)
 
         for machine_folder in machine_folders:
             # Get tail of the path, :-1 is required to remove the trailing slash
             # Otherwise basename will return an empty string
             machine_name = os.path.basename(machine_folder[:-1])
 
+            # Shared is a reserved name, ignore it.
             if machine_name == "shared":
                 continue
 

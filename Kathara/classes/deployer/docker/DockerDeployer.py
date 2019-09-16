@@ -8,7 +8,6 @@ from .DockerMachineDeployer import DockerMachineDeployer
 from ..IDeployer import IDeployer
 from ...model.Link import BRIDGE_LINK_NAME
 from ...setting.Setting import Setting
-from ...trdparty.dockerpty.pty import PseudoTerminal
 
 
 class DockerDeployer(IDeployer):
@@ -61,6 +60,8 @@ class DockerDeployer(IDeployer):
             command = Setting.get_instance().machine_shell
 
         def linux_connect():
+            from ...trdparty.dockerpty.pty import PseudoTerminal
+
             # Needed with low level api because we need the id of the exec_create
             resp = self.client.api.exec_create(container.id,
                                                command,
