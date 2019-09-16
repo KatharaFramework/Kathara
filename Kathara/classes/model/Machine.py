@@ -3,7 +3,7 @@ import os
 import shutil
 import tarfile
 import tempfile
-from subprocess import Popen
+import subprocess
 import utils
 
 from .Link import BRIDGE_LINK_NAME
@@ -111,16 +111,20 @@ class Machine(object):
         connect_command = "../Kathara/Kathara.py connect %s"
 
         def linux_connect():
-            Popen([Setting.get_instance().terminal,
+            subprocess.Popen([Setting.get_instance().terminal,
                    '-e',
                    connect_command % self.name
                    ], cwd=self.lab.path)
 
         def windows_connect():
-            Popen(["powershell.exe",
-                   '-Command',
-                   connect_command % self.name
-                   ], cwd=self.lab.path)
+            subprocess.Popen([
+                "powershell.exe",
+                '-Command',
+                'python',
+                connect_command % self.name
+                ],
+                creationflags=subprocess.CREATE_NEW_CONSOLE,
+                cwd=self.lab.path)
 
         utils.exec_by_platform(linux_connect, windows_connect, linux_connect)
 
