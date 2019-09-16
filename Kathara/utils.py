@@ -28,8 +28,8 @@ def get_absolute_path(path):
 
 def exec_by_platform(fun_linux, fun_windows, fun_mac):
     if _platform == LINUX or _platform == LINUX2:
-        fun_linux()
+        return fun_linux()
     elif _platform == WINDOWS:
-        fun_windows()
+        return fun_windows()
     elif _platform == MAC_OS:
-        fun_mac()
+        return fun_mac()

@@ -107,7 +107,7 @@ class Machine(object):
         return tar_data
 
     def connect(self):
-        # TODO: Change exec call
+        # TODO: Change executable path
         connect_command = "../Kathara/Kathara.py connect %s"
 
         def linux_connect():

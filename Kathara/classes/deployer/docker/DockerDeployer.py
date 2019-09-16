@@ -1,13 +1,12 @@
-from subprocess import Popen
-
 import docker
 
-import utils
 from .DockerLinkDeployer import DockerLinkDeployer
 from .DockerMachineDeployer import DockerMachineDeployer
 from ..IDeployer import IDeployer
 from ...model.Link import BRIDGE_LINK_NAME
-from ...setting.Setting import Setting
+
+import os
+
 
 
 class DockerDeployer(IDeployer):
@@ -15,9 +14,11 @@ class DockerDeployer(IDeployer):
 
     def __init__(self):
         self.client = docker.from_env()
+
         self.machine_deployer = DockerMachineDeployer(self.client)
         self.link_deployer = DockerLinkDeployer(self.client)
 
+    # TODO: Decorator to check if Docker is running
     def deploy_lab(self, lab, terminals, options, xterm):
         # Deploy all lab links.
         for (_, link) in lab.links.items():
@@ -36,51 +37,33 @@ class DockerDeployer(IDeployer):
                                          xterm=xterm
                                          )
 
+    # TODO: Decorator to check if Docker is running
     def undeploy_lab(self, lab_hash):
         self.machine_deployer.undeploy(lab_hash)
         self.link_deployer.undeploy(lab_hash)
 
+    # TODO: Decorator to check if Docker is running
     def wipe(self):
         self.machine_deployer.wipe()
         self.link_deployer.wipe()
 
+    # TODO: Decorator to check if Docker is running
     def connect_tty(self, lab_hash, machine_name, command):
-        container_name = DockerMachineDeployer.get_container_name(machine_name)
+        self.machine_deployer.connect(lab_hash=lab_hash,
+                                      machine_name=machine_name,
+                                      command=command
+                                      )
 
-        containers = self.client.containers.list(all=True,
-                                                 filters={"label": "lab_hash=%s" % lab_hash, "name": container_name}
-                                                 )
+    # TODO: Decorator to check if Docker is running
+    def get_info_stream(self, lab_hash):
+        machines = self.machine_deployer.get_machines_by_filters(lab_hash=lab_hash)
 
-        if len(containers) != 1:
-            raise Exception("Error getting the machine `%s` inside the lab." % machine_name)
-        else:
-            container = containers[0]
+        while True:
+            for machine in machines:
+                machine_stream = machine.stats(stream=True, decode=True)
+                result = next(machine_stream)
 
-        if not command:
-            command = Setting.get_instance().machine_shell
+                print(machine.name + " " + result["read"])
 
-        def linux_connect():
-            from ...trdparty.dockerpty.pty import PseudoTerminal
-
-            # Needed with low level api because we need the id of the exec_create
-            resp = self.client.api.exec_create(container.id,
-                                               command,
-                                               stdout=True,
-                                               stderr=True,
-                                               stdin=True,
-                                               tty=True,
-                                               privileged=True
-                                               )
-
-            exec_output = self.client.api.exec_start(resp['Id'],
-                                                     tty=True,
-                                                     socket=True,
-                                                     demux=True
-                                                     )
-
-            PseudoTerminal(self.client, exec_output, resp['Id']).start()
-
-        def windows_connect():
-            Popen(["docker", "exec", "-it", container.id, command])
-
-        utils.exec_by_platform(linux_connect, windows_connect, linux_connect)
+            # os.system('cls')  # For Windows
+            os.system('clear')  # For Linux/OS X

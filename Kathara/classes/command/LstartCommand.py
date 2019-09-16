@@ -114,10 +114,6 @@ class LstartCommand(Command):
             print("lab.conf file is correct. Exiting...")
             exit(0)
 
-        if args.list:
-            # TODO: Print lab info
-            exit(0)
-
         try:
             parsed_options = OptionParser.parse(args.options)
         except:
@@ -138,3 +134,6 @@ class LstartCommand(Command):
 
         if not args.counter:
             Setting.get_instance().save_selected(['net_counter'])
+
+        # if args.list:
+        #     Deployer.get_instance().get_info_stream(lab.folder_hash)

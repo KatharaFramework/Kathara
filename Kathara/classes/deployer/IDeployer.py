@@ -17,3 +17,7 @@ class IDeployer(ABC):
     @abstractmethod
     def connect_tty(self, lab_hash, machine_name, command):
         pass
+
+    @abstractmethod
+    def get_info_stream(self, lab_hash):
+        pass

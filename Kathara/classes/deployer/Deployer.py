@@ -37,3 +37,7 @@ class Deployer(IDeployer):
 
     def connect_tty(self, lab_hash, machine_name, command):
         self.deployer.connect_tty(lab_hash, machine_name, command)
+
+    def get_info_stream(self, lab_hash):
+        self.deployer.get_info_stream(lab_hash)
+

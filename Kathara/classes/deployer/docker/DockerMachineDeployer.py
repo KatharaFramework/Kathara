@@ -1,5 +1,7 @@
 import os
+from subprocess import Popen
 
+import utils
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
@@ -147,16 +149,65 @@ class DockerMachineDeployer(object):
             machine.connect()
 
     def undeploy(self, lab_hash):
-        containers = self.client.containers.list(all=True, filters={"label": "lab_hash=%s" % lab_hash})
+        containers = self.get_machines_by_filters(lab_hash=lab_hash)
 
         for container in containers:
             container.remove(force=True)
 
     def wipe(self):
-        containers = self.client.containers.list(all=True, filters={"label": "app=kathara"})
+        containers = self.get_machines_by_filters()
 
         for container in containers:
             container.remove(force=True)
+
+    def connect(self, lab_hash, machine_name, command):
+        container_name = self.get_container_name(machine_name)
+
+        containers = self.get_machines_by_filters(lab_hash=lab_hash, container_name=container_name)
+
+        if len(containers) != 1:
+            raise Exception("Error getting the machine `%s` inside the lab." % machine_name)
+        else:
+            container = containers[0]
+
+        if not command:
+            command = Setting.get_instance().machine_shell
+
+        def linux_connect():
+            # Import PseudoTerminal only on Linux since some libraries are not available on Windows
+            from ...trdparty.dockerpty.pty import PseudoTerminal
+
+            # Needed with low level api because we need the id of the exec_create
+            resp = self.client.api.exec_create(container.id,
+                                               command,
+                                               stdout=True,
+                                               stderr=True,
+                                               stdin=True,
+                                               tty=True,
+                                               privileged=True
+                                               )
+
+            exec_output = self.client.api.exec_start(resp['Id'],
+                                                     tty=True,
+                                                     socket=True,
+                                                     demux=True
+                                                     )
+
+            PseudoTerminal(self.client, exec_output, resp['Id']).start()
+
+        def windows_connect():
+            Popen(["docker", "exec", "-it", "--privileged", container.id, command])
+
+        utils.exec_by_platform(linux_connect, windows_connect, linux_connect)
+
+    def get_machines_by_filters(self, lab_hash=None, container_name=None):
+        filters = {"label": "app=kathara"}
+        if lab_hash:
+            filters["label"] = "lab_hash=%s" % lab_hash
+        if container_name:
+            filters["name"] = container_name
+
+        return self.client.containers.list(all=True, filters=filters)
 
     @staticmethod
     def get_container_name(name):

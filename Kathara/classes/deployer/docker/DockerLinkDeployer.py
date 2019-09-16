@@ -1,5 +1,6 @@
 import ipaddress
 import os
+import utils
 
 import docker
 from docker import types
@@ -20,6 +21,12 @@ class DockerLinkDeployer(object):
     def deploy(self, link):
         # Reserved name for bridged connections, ignore.
         if link.name == BRIDGE_LINK_NAME:
+            return
+
+        # If a network with the same name exists, return it instead of creating a new one.
+        network_objects = self.get_links_by_filters(link_name=self.get_network_name(link.name))
+        if network_objects:
+            link.network_object = network_objects.pop()
             return
 
         network_counter = Setting.get_instance().net_counter
@@ -63,6 +70,15 @@ class DockerLinkDeployer(object):
         bridge_list = self.client.networks.list(names="bridge")
         return bridge_list.pop() if bridge_list else None
 
+    def get_links_by_filters(self, lab_hash=None, link_name=None):
+        filters = {"label": "app=kathara"}
+        if lab_hash:
+            filters["label"] = "lab_hash=%s" % lab_hash
+        if link_name:
+            filters["name"] = link_name
+
+        return self.client.networks.list(all=True, filters=filters)
+
     def _configure_network(self, network):
         """
         Privilege escalation in order to patch Docker bridges to make them behave as hubs.
@@ -77,6 +93,9 @@ class DockerLinkDeployer(object):
                         "echo 65528 > /sys/class/net/br-{net_id}/bridge/group_fwd_mask" \
                         "\""
 
+        # "/../" because Docker runs in a VM in Windows/MacOS.
+        root_mount = utils.exec_by_platform(lambda: "/", lambda: "/../", lambda: "/../")
+
         self.client.containers.run(image="alpine",
                                    command=patch_command.format(net_id=network.id[:12]),
                                    network_mode="host",
@@ -86,7 +105,7 @@ class DockerLinkDeployer(object):
                                    security_opt=["seccomp=unconfined"],
                                    privileged=True,
                                    remove=True,
-                                   volumes={"/": {'bind': '/host', 'mode': 'rw'}}
+                                   volumes={root_mount: {'bind': '/host', 'mode': 'rw'}}
                                    )
 
     @staticmethod
