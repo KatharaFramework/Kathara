@@ -1,4 +1,4 @@
-FROM debian:10
+FROM debian:9
 
 RUN apt update
 RUN apt upgrade -y
