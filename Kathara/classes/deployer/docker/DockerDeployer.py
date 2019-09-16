@@ -1,12 +1,13 @@
+import os
+from datetime import datetime
+
 import docker
 
+import utils
 from .DockerLinkDeployer import DockerLinkDeployer
 from .DockerMachineDeployer import DockerMachineDeployer
 from ..IDeployer import IDeployer
 from ...model.Link import BRIDGE_LINK_NAME
-
-import os
-
 
 
 class DockerDeployer(IDeployer):
@@ -57,13 +58,50 @@ class DockerDeployer(IDeployer):
     # TODO: Decorator to check if Docker is running
     def get_info_stream(self, lab_hash):
         machines = self.machine_deployer.get_machines_by_filters(lab_hash=lab_hash)
+        if not machines:
+            raise Exception("Lab is not started.")
+
+        machines = sorted(machines, key=lambda x: x.name)
+
+        machine_streams = {}
+
+        for machine in machines:
+            machine_streams[machine] = machine.stats(stream=True, decode=True)
 
         while True:
-            for machine in machines:
-                machine_stream = machine.stats(stream=True, decode=True)
-                result = next(machine_stream)
+            all_stats = "TIMESTAMP: %s\n\n" % datetime.now()
+            all_stats += "MACHINE NAME\tCPU %\tMEM USAGE / LIMIT\tMEM %\tNET I/O\n"
 
-                print(machine.name + " " + result["read"])
+            for (machine, machine_stats) in machine_streams.items():
+                result = next(machine_stats)
 
-            # os.system('cls')  # For Windows
-            os.system('clear')  # For Linux/OS X
+                cpu_usage = "{0:.2f}%".format(result["cpu_stats"]["cpu_usage"]["total_usage"] /
+                                              result["cpu_stats"]["system_cpu_usage"]
+                                              )
+
+                mem_usage = utils.human_readable_bytes(result["memory_stats"]["usage"]) + " / " + \
+                            utils.human_readable_bytes(result["memory_stats"]["limit"])
+
+                mem_percent = "{0:.2f}%".format((result["memory_stats"]["usage"] /
+                                                 result["memory_stats"]["limit"]) * 100
+                                                )
+
+                net_usage_rx = 0
+                net_usage_tx = 0
+                for (_, stats) in result["networks"].items():
+                    net_usage_rx += stats["rx_bytes"]
+                    net_usage_tx += stats["tx_bytes"]
+
+                net_usage = utils.human_readable_bytes(net_usage_rx) + " / " + \
+                            utils.human_readable_bytes(net_usage_tx)
+
+                all_stats += "%s\t\t%s\t%s\t%s\t%s\n" % (machine.labels["name"],
+                                                         cpu_usage,
+                                                         mem_usage,
+                                                         mem_percent,
+                                                         net_usage
+                                                         )
+
+            utils.exec_by_platform(lambda: os.system('clear'), lambda: os.system('cls'), lambda: os.system('clear'))
+
+            print(all_stats)

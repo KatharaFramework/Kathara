@@ -1,11 +1,11 @@
 import collections
 import os
 import shutil
+import subprocess
 import tarfile
 import tempfile
-import subprocess
-import utils
 
+import utils
 from .Link import BRIDGE_LINK_NAME
 from ..setting.Setting import Setting
 
@@ -112,19 +112,22 @@ class Machine(object):
 
         def linux_connect():
             subprocess.Popen([Setting.get_instance().terminal,
-                   '-e',
-                   connect_command % self.name
-                   ], cwd=self.lab.path)
+                              '-e',
+                              connect_command % self.name
+                              ],
+                             cwd=self.lab.path,
+                             start_new_session=True
+                             )
 
         def windows_connect():
-            subprocess.Popen([
-                "powershell.exe",
-                '-Command',
-                'python',
-                connect_command % self.name
-                ],
-                creationflags=subprocess.CREATE_NEW_CONSOLE,
-                cwd=self.lab.path)
+            subprocess.Popen(["powershell.exe",
+                              '-Command',
+                              'python',
+                              connect_command % self.name
+                              ],
+                             creationflags=subprocess.CREATE_NEW_CONSOLE,
+                             cwd=self.lab.path
+                             )
 
         utils.exec_by_platform(linux_connect, windows_connect, linux_connect)
 

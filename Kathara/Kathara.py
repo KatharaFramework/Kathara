@@ -55,6 +55,10 @@ class KatharaEntryPoint(object):
 
             current_path = os.getcwd()
             command_object.run(current_path, sys.argv[2:])
+        except KeyboardInterrupt:
+            print("You interrupted Kathara during a command. The system may be in an inconsistent state!")
+            print("If you find any problem please run `kathara wipe`.")
+            exit(0)
         except Exception as e:
             sys.stderr.write(str(e) + '\n')
             exit(1)

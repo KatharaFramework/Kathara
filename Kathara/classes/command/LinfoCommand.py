@@ -2,10 +2,9 @@ import argparse
 
 import utils
 from .Command import Command
-from ..parser.FolderParser import FolderParser
-from ..parser.LabParser import LabParser
-from ..model.Link import BRIDGE_LINK_NAME
 from ..deployer.Deployer import Deployer
+from ..model.Link import BRIDGE_LINK_NAME
+from ..parser.LabParser import LabParser
 
 
 class LinfoCommand(Command):
@@ -58,3 +57,5 @@ class LinfoCommand(Command):
 
             print("There are %d machines." % n_machines)
             print("There are %d links." % n_links)
+
+            print("====================================================================")

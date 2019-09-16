@@ -3,6 +3,7 @@ import hashlib
 import importlib
 import os
 import re
+import math
 from sys import platform as _platform
 
 # Platforms constants definition.
@@ -33,3 +34,15 @@ def exec_by_platform(fun_linux, fun_windows, fun_mac):
         return fun_windows()
     elif _platform == MAC_OS:
         return fun_mac()
+
+
+def human_readable_bytes(size_bytes):
+    if size_bytes == 0:
+        return "0B"
+
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+
+    return "%s %s" % (s, size_name[i])

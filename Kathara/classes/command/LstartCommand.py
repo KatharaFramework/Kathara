@@ -53,7 +53,7 @@ class LstartCommand(Command):
             '-l', '--list',
             required=False,
             action='store_true',
-            help='Show a list of running containers after the lab has been started.'
+            help='Show a list of running machines after the lab has been started.'
         )
         parser.add_argument(
             '-o', '--pass',
@@ -135,5 +135,5 @@ class LstartCommand(Command):
         if not args.counter:
             Setting.get_instance().save_selected(['net_counter'])
 
-        # if args.list:
-        #     Deployer.get_instance().get_info_stream(lab.folder_hash)
+        if args.list:
+            Deployer.get_instance().get_info_stream(lab.folder_hash)

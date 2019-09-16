@@ -77,7 +77,7 @@ class DockerLinkDeployer(object):
         if link_name:
             filters["name"] = link_name
 
-        return self.client.networks.list(all=True, filters=filters)
+        return self.client.networks.list(filters=filters)
 
     def _configure_network(self, network):
         """

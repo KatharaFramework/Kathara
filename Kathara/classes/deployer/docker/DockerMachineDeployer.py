@@ -102,7 +102,8 @@ class DockerMachineDeployer(object):
                                                           stdin_open=True,
                                                           detach=True,
                                                           volumes=volumes,
-                                                          labels={"lab_hash": machine.lab.folder_hash,
+                                                          labels={"name": machine.name,
+                                                                  "lab_hash": machine.lab.folder_hash,
                                                                   "app": "kathara"
                                                                   }
                                                           )
