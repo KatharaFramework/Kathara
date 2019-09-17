@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 
 
-class IDeployer(ABC):
+class IAdapter(ABC):
     @abstractmethod
-    def deploy_lab(self, lab, terminals, options, xterm):
+    def deploy_lab(self, lab, options):
         pass
 
     @abstractmethod
-    def undeploy_lab(self, lab_hash):
+    def undeploy_lab(self, lab_hash, selected_machines):
         pass
 
     @abstractmethod
@@ -15,7 +15,7 @@ class IDeployer(ABC):
         pass
 
     @abstractmethod
-    def connect_tty(self, lab_hash, machine_name, command):
+    def connect_tty(self, lab_hash, machine_name, shell):
         pass
 
     @abstractmethod

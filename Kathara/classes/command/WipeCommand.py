@@ -1,7 +1,9 @@
 import argparse
+import shutil
 
-from .Command import Command
-from ..deployer.Deployer import Deployer
+import utils
+from ..controller.Controller import Controller
+from ..foundation.command.Command import Command
 from ..setting.Setting import Setting
 
 
@@ -36,8 +38,11 @@ class WipeCommand(Command):
                 if answer in ["n", "no", "NO"]:
                     exit(0)
 
-        Deployer.get_instance().wipe()
+        Controller.get_instance().wipe()
 
         setting_object = Setting.get_instance()
         setting_object.net_counter = 0
         setting_object.save_selected(['net_counter'])
+
+        vlab_dir = utils.get_vlab_temp_path()
+        shutil.rmtree(vlab_dir)

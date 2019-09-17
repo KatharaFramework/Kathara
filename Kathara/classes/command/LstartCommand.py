@@ -1,8 +1,8 @@
 import argparse
 
 import utils
-from .Command import Command
-from ..deployer.Deployer import Deployer
+from ..controller.Controller import Controller
+from ..foundation.command.Command import Command
 from ..parser.FolderParser import FolderParser
 from ..parser.LabParser import LabParser
 from ..parser.OptionParser import OptionParser
@@ -76,6 +76,13 @@ class LstartCommand(Command):
             help='Opens the lab.conf file and check if it is correct (dry run).'
         )
         parser.add_argument(
+            '-H', '--no-hosthome',
+            dest="no_hosthome",
+            required=False,
+            action='store_false',
+            help='/hosthome dir will not be mounted inside the machine.'
+        )
+        parser.add_argument(
             '-c', '--counter',
             required=False,
             help='Start from a specific network counter '
@@ -108,7 +115,8 @@ class LstartCommand(Command):
             else:
                 lab = FolderParser.parse(lab_path)
 
-        lab.intersect(args.machine_names)
+        if args.machine_names:
+            lab.intersect_machines(args.machine_names)
 
         lab_meta_information = str(lab)
 
@@ -133,15 +141,19 @@ class LstartCommand(Command):
             except ValueError:
                 raise Exception("Network Counter must be an integer.")
 
-        terminals = args.terminals if args.terminals is not None else Setting.get_instance().open_terminals
-        Deployer.get_instance().deploy_lab(lab,
-                                           terminals=terminals,
-                                           options=parsed_options,
-                                           xterm=args.xterm or Setting.get_instance().terminal
-                                           )
+        Setting.get_instance().open_terminals = args.terminals if args.terminals is not None \
+                                                else Setting.get_instance().open_terminals
+        Setting.get_instance().terminal = args.xterm or Setting.get_instance().terminal
+        Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
+                                                else Setting.get_instance().hosthome_mount
+
+        if len(lab.machines) <= 0:
+            raise Exception("No machines in the current lab. Exiting...")
+
+        Controller.get_instance().deploy_lab(lab, options=parsed_options)
 
         if not args.counter:
             Setting.get_instance().save_selected(['net_counter'])
 
         if args.list:
-            Deployer.get_instance().get_info_stream(lab.folder_hash)
+            Controller.get_instance().get_info_stream(lab.folder_hash)

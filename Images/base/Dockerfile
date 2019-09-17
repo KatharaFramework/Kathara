@@ -50,6 +50,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y \
     wget \
     vim
 
+RUN apt clean
+
 RUN ln -s /etc/init.d/bind9 /etc/init.d/bind
 
-RUN apt clean
+COPY .bashrc /root/.bashrc

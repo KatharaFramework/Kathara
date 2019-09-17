@@ -1,8 +1,8 @@
 import argparse
 
 import utils
-from .Command import Command
-from ..deployer.Deployer import Deployer
+from ..controller.Controller import Controller
+from ..foundation.command.Command import Command
 from ..model.Link import BRIDGE_LINK_NAME
 from ..parser.LabParser import LabParser
 
@@ -41,7 +41,7 @@ class LinfoCommand(Command):
         if args.live:
             lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-            Deployer.get_instance().get_info_stream(lab_hash)
+            Controller.get_instance().get_info_stream(lab_hash)
         else:
             print("========================= Lab Information ==========================")
 

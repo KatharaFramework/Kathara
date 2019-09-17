@@ -1,9 +1,9 @@
 import argparse
 
 import utils
-from .Command import Command
 from .LcleanCommand import LcleanCommand
 from .LstartCommand import LstartCommand
+from ..foundation.command.Command import Command
 
 
 class LrestartCommand(Command):

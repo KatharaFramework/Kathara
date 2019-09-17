@@ -10,21 +10,20 @@ from classes.setting.Setting import Setting
 description_msg = """kathara <command> [<args>]
 
 The possible kathara command are:
-	vstart		Start a new Kathara machine
-	vclean		Cleanup Kathara processes and configurations
-	vconfig		Attach network interfaces to running Kathara machines
-	vlist		Show running Kathara machines
-	lstart		Start a Kathara lab
-	lclean		Stop and clean a Kathara lab
-	linfo		Show information about a Kathara lab
-	lrestart	Restart a Kathara lab
-	ltest		Test a Kathara lab
-	wipe		Delete all Kathara machines and links
-	setting		Show and edit setting
-	version		Print current version
-	check		Check your system environment
-	install		Perform first run tasks
-	connect		Connect to a Kathara machine
+\tvstart\t\tStart a new Kathara machine
+\tvclean\t\tCleanup Kathara processes and configurations
+\tvconfig\t\tAttach network interfaces to running Kathara machines
+\tvlist\t\tShow running Kathara machines
+\tlstart\t\tStart a Kathara lab
+\tlclean\t\tStop and clean a Kathara lab
+\tlinfo\t\tShow information about a Kathara lab
+\tlrestart\tRestart a Kathara lab
+\tltest\t\tTest a Kathara lab
+\tconnect\t\tConnect to a Kathara machine
+\twipe\t\tDelete all Kathara machines and links
+\tsetting\t\tShow and edit setting
+\tversion\t\tPrint current version
+\tcheck\t\tCheck your system environment
 """
 
 
@@ -57,7 +56,7 @@ class KatharaEntryPoint(object):
             command_object.run(current_path, sys.argv[2:])
         except KeyboardInterrupt:
             print("You interrupted Kathara during a command. The system may be in an inconsistent state!")
-            print("If you find any problem please run `kathara wipe`.")
+            print("If you encounter any problem please run `kathara wipe`.")
             exit(0)
         except Exception as e:
             sys.stderr.write(str(e) + '\n')

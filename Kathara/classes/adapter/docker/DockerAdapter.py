@@ -4,64 +4,63 @@ from datetime import datetime
 import docker
 
 import utils
-from .DockerLinkDeployer import DockerLinkDeployer
-from .DockerMachineDeployer import DockerMachineDeployer
-from ..IDeployer import IDeployer
+from .manager.DockerLinkManager import DockerLinkManager
+from .manager.DockerMachineManager import DockerMachineManager
+from ...foundation.adapter.IAdapter import IAdapter
 from ...model.Link import BRIDGE_LINK_NAME
 
 
-class DockerDeployer(IDeployer):
-    __slots__ = ['machine_deployer', 'link_deployer', 'client']
+class DockerAdapter(IAdapter):
+    __slots__ = ['machine_mgr', 'link_mgr', 'client']
 
     def __init__(self):
         self.client = docker.from_env()
 
-        self.machine_deployer = DockerMachineDeployer(self.client)
-        self.link_deployer = DockerLinkDeployer(self.client)
+        self.machine_mgr = DockerMachineManager(self.client)
+        self.link_mgr = DockerLinkManager(self.client)
 
     # TODO: Decorator to check if Docker is running
-    def deploy_lab(self, lab, terminals, options, xterm):
+    def deploy_lab(self, lab, options):
         # Deploy all lab links.
         for (_, link) in lab.links.items():
-            self.link_deployer.deploy(link)
+            self.link_mgr.deploy(link)
 
         # Create a docker bridge link in the lab object and assign the Docker Network object associated to it.
-        docker_bridge = self.link_deployer.get_docker_bridge()
+        docker_bridge = self.link_mgr.get_docker_bridge()
         link = lab.get_or_new_link(BRIDGE_LINK_NAME)
         link.network_object = docker_bridge
 
         # Deploy all lab machines.
         for (_, machine) in lab.machines.items():
-            self.machine_deployer.deploy(machine,
-                                         options=options,
-                                         )
+            self.machine_mgr.deploy(machine,
+                                    options=options,
+                                    )
 
         for (_, machine) in lab.machines.items():
-            self.machine_deployer.start(machine,
-                                        terminals=terminals,
-                                        xterm=xterm
-                                        )
+            self.machine_mgr.start(machine)
 
     # TODO: Decorator to check if Docker is running
-    def undeploy_lab(self, lab_hash):
-        self.machine_deployer.undeploy(lab_hash)
-        self.link_deployer.undeploy(lab_hash)
+    def undeploy_lab(self, lab_hash, selected_machines):
+        self.machine_mgr.undeploy(lab_hash,
+                                  selected_machines=selected_machines
+                                  )
+        self.link_mgr.undeploy(lab_hash)
 
     # TODO: Decorator to check if Docker is running
     def wipe(self):
-        self.machine_deployer.wipe()
-        self.link_deployer.wipe()
+        self.machine_mgr.wipe()
+        self.link_mgr.wipe()
 
     # TODO: Decorator to check if Docker is running
-    def connect_tty(self, lab_hash, machine_name, command):
-        self.machine_deployer.connect(lab_hash=lab_hash,
-                                      machine_name=machine_name,
-                                      command=command
-                                      )
+    def connect_tty(self, lab_hash, machine_name, shell):
+        self.machine_mgr.connect(lab_hash=lab_hash,
+                                 machine_name=machine_name,
+                                 shell=shell
+                                 )
 
     # TODO: Decorator to check if Docker is running
     def get_info_stream(self, lab_hash):
-        machines = self.machine_deployer.get_machines_by_filters(lab_hash=lab_hash)
+        machines = self.machine_mgr.get_machines_by_filters(lab_hash=lab_hash)
         if not machines:
             raise Exception("Lab is not started.")
 

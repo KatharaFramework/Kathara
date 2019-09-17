@@ -1,7 +1,6 @@
 import mmap
 import os
 import re
-import sys
 
 from ..trdparty.depgen import depgen
 
@@ -20,6 +19,7 @@ class DepParser(object):
         with open(lab_dep_path, 'r') as lab_file:
             dep_mem_file = mmap.mmap(lab_file.fileno(), 0, access=mmap.ACCESS_READ)
 
+        line_number = 1
         line = dep_mem_file.readline().decode('utf-8')
         while line:
             # E.g. MACHINE: MACHINE1 MACHINE2 MACHINE3
@@ -34,11 +34,13 @@ class DepParser(object):
 
                 # Dependencies are saved as dependencies[machine3] = [machine1, machine2]
                 dependencies[key] = deps
+            else:
+                raise Exception("[ERROR] In lab.dep - line %d: Syntax error." % line_number)
 
+            line_number += 1
             line = dep_mem_file.readline().decode('utf-8')
 
         if depgen.has_loop(dependencies):
-            sys.stderr.write("WARNING: loop in lab.dep, it will be ignored.\n")
-            return None
+            raise Exception("ERROR: Loop in lab.dep.\n")
 
         return depgen.flatten(dependencies)

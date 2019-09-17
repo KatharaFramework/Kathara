@@ -1,4 +1,6 @@
 import os
+from itertools import chain
+import collections
 
 import utils
 from .Link import Link
@@ -21,9 +23,13 @@ class Lab(object):
         shared_shutdown_file = os.path.join(self.path, 'shared.shutdown')
         self.shared_shutdown_path = shared_shutdown_file if os.path.exists(shared_shutdown_file) else None
 
-        self.shared_folder = os.path.join(self.path, 'shared')
-        if not os.path.isdir(self.shared_folder):
-            os.mkdir(self.shared_folder)
+        try:
+            self.shared_folder = os.path.join(self.path, 'shared')
+            if not os.path.isdir(self.shared_folder):
+                os.mkdir(self.shared_folder)
+        except Exception:
+            # Do not create shared folder if not permitted.
+            self.shared_folder = None
 
         self.description = None
         self.version = None
@@ -49,30 +55,35 @@ class Lab(object):
         for machine in self.machines:
             self.machines[machine].check()
 
-    def intersect(self, machines):
+    def intersect_machines(self, selected_machines):
         """
-        
-        :param machines: 
-        :return: 
+        Intersect lab machines with selected machines, passed from command line.
+        :param selected_machines: An array with selected machines names.
         """
-        if not machines:
-            return
+        # Intersect selected machines names with self.machines keys
+        selected_machines = set(self.machines.keys()) & set(selected_machines)
+        # Apply filtering
+        self.machines = {k: v for (k, v) in self.machines.items() if k in selected_machines}
 
-        machines_intersection = set(self.machines.keys()) & set(machines)
-        self.machines = {k: v for (k, v) in self.machines.items() if k in machines_intersection}
-
-        intersection_links = set([machine.interfaces.values() for (_, machine) in self.machines.items()])
-        intersection_links = [link for links in intersection_links for link in links]
-        self.links = {link.name: link for link in intersection_links}
+        # Also updates lab links in order to avoid deploying unused ones.
+        # Get only selected machines Link objects.
+        selected_links = chain.from_iterable([machine.interfaces.values() for (_, machine) in self.machines.items()])
+        # Get names of links (which are also the keys of self.links dict)
+        selected_links = set([link.name for link in selected_links])
+        # Apply filtering
+        self.links = {k: v for (k, v) in self.links.items() if k in selected_links}
 
     def check_dependencies(self):
         dependencies = DepParser.parse(self.path)
 
         if dependencies:
-            machine_items = self.machines.items()
+            def dep_sort(item):
+                try:
+                    return dependencies.index(item) + 1
+                except ValueError:
+                    return 0
 
-            # TODO: Do something
-            # OrderedDict(sorted(machines.items(), key=lambda t: dep_sort(t[0], dependency_list)))
+            self.machines = collections.OrderedDict(sorted(self.machines.items(), key=lambda t: dep_sort(t[0])))
 
     def get_or_new_machine(self, name):
         """

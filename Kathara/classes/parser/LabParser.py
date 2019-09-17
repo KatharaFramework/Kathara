@@ -1,6 +1,5 @@
-import sys
-import os
 import mmap
+import os
 import re
 
 from ..model.Lab import Lab

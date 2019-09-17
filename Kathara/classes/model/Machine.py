@@ -108,12 +108,12 @@ class Machine(object):
 
         return tar_data
 
-    def connect(self, xterm):
+    def connect(self, terminal_name):
         # TODO: Change executable path
-        connect_command = "../Kathara/Kathara.py connect %s"
-        terminal = xterm if xterm else Setting.get_instance().terminal
+        connect_command = "/home/skazza/Desktop/ookathara/Kathara/Kathara.py connect %s"
+        terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
-        def linux_connect():
+        def unix_connect():
             subprocess.Popen([terminal,
                               '-e',
                               connect_command % self.name
@@ -132,7 +132,7 @@ class Machine(object):
                              cwd=self.lab.path
                              )
 
-        utils.exec_by_platform(linux_connect, windows_connect, linux_connect)
+        utils.exec_by_platform(unix_connect, windows_connect, unix_connect)
 
     def __repr__(self):
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

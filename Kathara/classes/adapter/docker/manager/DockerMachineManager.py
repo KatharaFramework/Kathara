@@ -2,7 +2,7 @@ import os
 from subprocess import Popen
 
 import utils
-from ...setting.Setting import Setting
+from ....setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 SYSCTL_COMMAND = "sysctl %s=0" % RP_FILTER_NAMESPACE
@@ -12,9 +12,10 @@ SYSCTL_COMMAND = "sysctl %s=0" % RP_FILTER_NAMESPACE
 STARTUP_COMMANDS = [
     # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
     # In this way, files are all replaced in the container root folder
+    # rsync is used to keep symlinks while copying files.
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
     "chmod -R 777 /hostlab/{machine_name}/*; "
-    "cp -rfp /hostlab/{machine_name}/* /; fi",
+    "rsync -r -K /hostlab/{machine_name}/* /; fi",
 
     # Give proper permissions to /var/www
     "chmod -R 777 /var/www/*",
@@ -25,22 +26,22 @@ STARTUP_COMMANDS = [
     # If shared.startup file is present
     "if [ -f \"/hostlab/shared.startup\" ]; then "
     # Give execute permissions to the file and execute it
-    # We redirect the output "&>" to a random file so we avoid blocking stdin/stdout 
-    "chmod u+x /hostlab/shared.startup; /hostlab/shared.startup &> /tmp/startup_out; fi",
+    # We redirect the output "&>" to a debugging file
+    "chmod u+x /hostlab/shared.startup; /hostlab/shared.startup &> /var/log/shared.log; fi",
 
     # If .startup file is present
     "if [ -f \"/hostlab/{machine_name}.startup\" ]; then "
     # Give execute permissions to the file and execute it
-    # We redirect the output "&>" to a random file so we avoid blocking stdin/stdout 
+    # We redirect the output "&>" to a debugging file
     "chmod u+x /hostlab/{machine_name}.startup; "
-    "/hostlab/{machine_name}.startup &> /tmp/startup_out; fi",
+    "/hostlab/{machine_name}.startup &> /var/log/startup.log; fi",
 
     # Placeholder for user commands
     "{machine_commands}"
 ]
 
 
-class DockerMachineDeployer(object):
+class DockerMachineManager(object):
     __slots__ = ['client']
 
     def __init__(self, client):
@@ -70,6 +71,7 @@ class DockerMachineDeployer(object):
         if "bridged" in options:
             machine.add_meta("bridged", True)
 
+        # If any exec command is passed in command line, add it.
         if "exec" in options:
             machine.add_meta("exec", options["exec"])
 
@@ -80,9 +82,13 @@ class DockerMachineDeployer(object):
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
         sysctl_parameters["net.ipv4.ip_forward"] = 1
-        sysctl_parameters["net.ipv6.ip_forward"] = 1
+        # TODO: ipv6_forward not found?
+        # sysctl_parameters["net.ipv6.ip_forward"] = 1
 
-        volumes = {machine.lab.shared_folder: {'bind': '/shared', 'mode': 'rw'}}
+        volumes = {}
+
+        if machine.lab.shared_folder:
+            volumes = {machine.lab.shared_folder: {'bind': '/shared', 'mode': 'rw'}}
 
         # Mount the host home only if specified in settings.
         if Setting.get_instance().hosthome_mount:
@@ -131,7 +137,7 @@ class DockerMachineDeployer(object):
         machine.api_object = machine_container
 
     @staticmethod
-    def start(machine, terminals, xterm):
+    def start(machine):
         # Build sysctl rp_filter commands for interfaces
         rp_filter_commands = []
 
@@ -156,14 +162,18 @@ class DockerMachineDeployer(object):
                                     detach=True
                                     )
 
-        if terminals:
-            machine.connect(xterm)
+        if Setting.get_instance().open_terminals:
+            machine.connect(Setting.get_instance().terminal)
 
-    def undeploy(self, lab_hash):
+    def undeploy(self, lab_hash, selected_machines):
         containers = self.get_machines_by_filters(lab_hash=lab_hash)
 
         for container in containers:
-            container.remove(force=True)
+            # If selected machines list is empty, remove everything
+            # Else, check if the machine is in the list.
+            if not selected_machines or \
+               container.labels["name"] in selected_machines:
+                container.remove(force=True)
 
     def wipe(self):
         containers = self.get_machines_by_filters()
@@ -171,7 +181,7 @@ class DockerMachineDeployer(object):
         for container in containers:
             container.remove(force=True)
 
-    def connect(self, lab_hash, machine_name, command):
+    def connect(self, lab_hash, machine_name, shell):
         container_name = self.get_container_name(machine_name)
 
         containers = self.get_machines_by_filters(lab_hash=lab_hash, container_name=container_name)
@@ -184,16 +194,16 @@ class DockerMachineDeployer(object):
                 raise Exception("Error getting the machine `%s` inside the lab. "
                                 "Did you mean %s?" % (machine_name, container.labels["name"]))
 
-        if not command:
-            command = Setting.get_instance().machine_shell
+        if not shell:
+            shell = Setting.get_instance().machine_shell
 
-        def linux_connect():
+        def tty_connect():
             # Import PseudoTerminal only on Linux since some libraries are not available on Windows
-            from ...trdparty.dockerpty.pty import PseudoTerminal
+            from ....trdparty.dockerpty.pty import PseudoTerminal
 
             # Needed with low level api because we need the id of the exec_create
             resp = self.client.api.exec_create(container.id,
-                                               command,
+                                               shell,
                                                stdout=True,
                                                stderr=True,
                                                stdin=True,
@@ -209,10 +219,10 @@ class DockerMachineDeployer(object):
 
             PseudoTerminal(self.client, exec_output, resp['Id']).start()
 
-        def windows_connect():
-            Popen(["docker", "exec", "-it", "--privileged", container.id, command])
+        def cmd_connect():
+            Popen(["docker", "exec", "-it", "--privileged", container.id, shell])
 
-        utils.exec_by_platform(linux_connect, windows_connect, linux_connect)
+        utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
     def get_machines_by_filters(self, lab_hash=None, container_name=None):
         filters = {"label": "app=kathara"}

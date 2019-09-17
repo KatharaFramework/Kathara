@@ -49,7 +49,7 @@ def _invert(d):
     """
     i = {}
     for (k, v) in d.items():
-        if isinstance(v, types.ListType):
+        if isinstance(v, list):
             for dep in v:
                 depl = i.get(dep, [])
                 depl.append(k)
@@ -79,7 +79,7 @@ def flatten(depdict):
 
     # Sort the keys and append to a list
     output = [] 
-    for key in sorted(iorder.iterkeys()):
+    for key in sorted(iorder.keys()):
         output.extend(iorder[key])
 
     return output

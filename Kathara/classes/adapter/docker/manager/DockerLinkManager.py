@@ -1,15 +1,15 @@
 import ipaddress
 import os
-import utils
 
 import docker
 from docker import types
 
-from ...model.Link import BRIDGE_LINK_NAME
-from ...setting.Setting import Setting, MAX_DOCKER_LAN_NUMBER
+import utils
+from ....model.Link import BRIDGE_LINK_NAME
+from ....setting.Setting import Setting, MAX_DOCKER_LAN_NUMBER
 
 
-class DockerLinkDeployer(object):
+class DockerLinkManager(object):
     __slots__ = ['client', 'base_ip']
 
     def __init__(self, client):
@@ -81,32 +81,43 @@ class DockerLinkDeployer(object):
 
     def _configure_network(self, network):
         """
-        Privilege escalation in order to patch Docker bridges to make them behave as hubs.
-        This is needed since Docker runs in a VM on Windows and MacOS.
-        In order to do so, we run an alpine container with host visibility. We chroot in the host `/`.
+        Patch to Docker bridges to make them act as hubs.
         We patch ageing_time and group_fwd_mask of the passed network bridge.
         :param network: The Docker Network object to patch
         """
-        patch_command = "/usr/sbin/chroot /host " \
-                        "/bin/sh -c \"" \
-                        "echo 0 > /sys/class/net/br-{net_id}/bridge/ageing_time; " \
-                        "echo 65528 > /sys/class/net/br-{net_id}/bridge/group_fwd_mask" \
-                        "\""
+        patches = {
+            "/sys/class/net/br-{net_id}/bridge/ageing_time": 0,
+            "/sys/class/net/br-{net_id}/bridge/group_fwd_mask": 65528
+        }
 
-        # "/../" because Docker runs in a VM in Windows/MacOS.
-        root_mount = utils.exec_by_platform(lambda: "/", lambda: "/../", lambda: "/../")
+        def no_privilege_patch():
+            # Directly patch /sys/class opening the files
+            for (path, value) in patches.items():
+                with open(path.format(net_id=network.id[:12]), 'w') as sys_class:
+                    sys_class.write(str(value))
 
-        self.client.containers.run(image="alpine",
-                                   command=patch_command.format(net_id=network.id[:12]),
-                                   network_mode="host",
-                                   ipc_mode="host",
-                                   uts_mode="host",
-                                   pid_mode="host",
-                                   security_opt=["seccomp=unconfined"],
-                                   privileged=True,
-                                   remove=True,
-                                   volumes={root_mount: {'bind': '/host', 'mode': 'rw'}}
-                                   )
+        def privilege_patch():
+            # Privilege escalation to patch bridges, since Docker runs in a VM on Windows and MacOS.
+            # In order to do so, we run an alpine container with host visibility and chroot in the host `/`.
+            patch_command = ["echo %d > %s" % (value, path.format(net_id=network.id[:12]))
+                             for (path, value) in patches.items()]
+            patch_command = "; ".join(patch_command)
+            privilege_patch_command = "/usr/sbin/chroot /host /bin/sh -c \"%s\"" % patch_command
+
+            self.client.containers.run(image="alpine",
+                                       command=privilege_patch_command,
+                                       network_mode="host",
+                                       ipc_mode="host",
+                                       uts_mode="host",
+                                       pid_mode="host",
+                                       security_opt=["seccomp=unconfined"],
+                                       privileged=True,
+                                       remove=True,
+                                       # "/../" because runs in a VM, so root is one level above
+                                       volumes={"/../": {'bind': '/host', 'mode': 'rw'}}
+                                       )
+
+        utils.exec_by_platform(no_privilege_patch, privilege_patch, privilege_patch)
 
     @staticmethod
     def get_network_name(name):

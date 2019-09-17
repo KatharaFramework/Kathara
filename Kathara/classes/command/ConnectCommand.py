@@ -1,8 +1,8 @@
 import argparse
 
 import utils
-from .Command import Command
-from ..deployer.Deployer import Deployer
+from ..controller.Controller import Controller
+from ..foundation.command.Command import Command
 
 
 class ConnectCommand(Command):
@@ -16,15 +16,22 @@ class ConnectCommand(Command):
             description='Connect to a Kathara machine.'
         )
 
-        parser.add_argument(
+        group = parser.add_mutually_exclusive_group(required=False)
+
+        group.add_argument(
             '-d', '--directory',
-            required=False,
-            help='Specify the folder containing the lab.'
+            help='Specify the folder containing the lab.',
+        )
+        group.add_argument(
+            '-v', '--vmachine',
+            dest="vmachine",
+            action="store_true",
+            help='The machine has been started with vstart command.',
         )
         parser.add_argument(
-            '-c', '--command',
+            '--shell',
             required=False,
-            help='Specify the command to start the TTY.'
+            help='Set the shell (sh, bash, etc.) that should be used inside the machine.'
         )
         parser.add_argument(
             'machine_name',
@@ -36,12 +43,15 @@ class ConnectCommand(Command):
     def run(self, current_path, argv):
         args = self.parser.parse_args(argv)
 
-        lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
-        lab_path = utils.get_absolute_path(lab_path)
+        if args.vmachine:
+            lab_path = utils.get_vlab_temp_path()
+        else:
+            lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+            lab_path = utils.get_absolute_path(lab_path)
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        Deployer.get_instance().connect_tty(lab_hash,
-                                            machine_name=args.machine_name,
-                                            command=args.command
-                                            )
+        Controller.get_instance().connect_tty(lab_hash,
+                                              machine_name=args.machine_name,
+                                              shell=args.shell
+                                              )

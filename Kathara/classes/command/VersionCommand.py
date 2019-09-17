@@ -1,6 +1,6 @@
 import argparse
 
-from .Command import Command
+from ..foundation.command.Command import Command
 from ..setting.Setting import KATHARA_VERSION
 
 

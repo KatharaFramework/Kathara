@@ -1,10 +1,13 @@
 import base64
 import hashlib
 import importlib
+import math
 import os
 import re
-import math
+import tempfile
 from sys import platform as _platform
+
+from classes.setting.Setting import VLAB_NAME
 
 # Platforms constants definition.
 MAC_OS = "darwin"
@@ -38,7 +41,7 @@ def exec_by_platform(fun_linux, fun_windows, fun_mac):
 
 def human_readable_bytes(size_bytes):
     if size_bytes == 0:
-        return "0B"
+        return "0 B"
 
     size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
     i = int(math.floor(math.log(size_bytes, 1024)))
@@ -46,3 +49,11 @@ def human_readable_bytes(size_bytes):
     s = round(size_bytes / p, 2)
 
     return "%s %s" % (s, size_name[i])
+
+
+def get_vlab_temp_path():
+    vlab_directory = os.path.join(tempfile.gettempdir(), VLAB_NAME)
+    if not os.path.isdir(vlab_directory):
+        os.mkdir(vlab_directory)
+
+    return vlab_directory

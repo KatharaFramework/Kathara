@@ -1,8 +1,8 @@
 import argparse
 
 import utils
-from .Command import Command
-from ..deployer.Deployer import Deployer
+from ..controller.Controller import Controller
+from ..foundation.command.Command import Command
 
 
 class LcleanCommand(Command):
@@ -37,6 +37,6 @@ class LcleanCommand(Command):
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        # args.machine_names
-
-        Deployer.get_instance().undeploy_lab(lab_hash)
+        Controller.get_instance().undeploy_lab(lab_hash,
+                                               selected_machines=args.machine_names
+                                               )
