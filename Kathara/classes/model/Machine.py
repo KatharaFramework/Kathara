@@ -110,7 +110,7 @@ class Machine(object):
 
     def connect(self, terminal_name):
         # TODO: Change executable path
-        connect_command = "/home/skazza/Desktop/ookathara/Kathara/Kathara.py connect %s"
+        connect_command = "../Kathara/Kathara.py connect %s"
         terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
         def unix_connect():

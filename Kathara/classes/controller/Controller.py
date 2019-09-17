@@ -39,5 +39,8 @@ class Controller(IAdapter):
     def connect_tty(self, lab_hash, machine_name, shell):
         self.adapter.connect_tty(lab_hash, machine_name, shell)
 
-    def get_info_stream(self, lab_hash):
-        self.adapter.get_info_stream(lab_hash)
+    def get_info_stream(self, lab_hash=None):
+        return self.adapter.get_info_stream(lab_hash)
+
+    def get_machine_info(self, machine_name):
+        return self.adapter.get_machine_info(machine_name)

@@ -41,7 +41,11 @@ class LinfoCommand(Command):
         if args.live:
             lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-            Controller.get_instance().get_info_stream(lab_hash)
+            streamGenerator = Controller.get_instance().get_info_stream(lab_hash)
+
+            while 1:
+                utils.exec_by_platform(lambda: os.system('clear'), lambda: os.system('cls'), lambda: os.system('clear'))
+                print(next(streamGenerator))
         else:
             print("========================= Lab Information ==========================")
 

@@ -19,5 +19,9 @@ class IAdapter(ABC):
         pass
 
     @abstractmethod
-    def get_info_stream(self, lab_hash):
+    def get_info_stream(self, lab_hash=None):
+        pass
+
+    @abstractmethod
+    def get_machine_info(self, machine_name):
         pass

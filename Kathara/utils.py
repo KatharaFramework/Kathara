@@ -23,7 +23,7 @@ def class_for_name(module_name, class_name):
 
 def generate_urlsafe_hash(string):
     string = re.sub(r'[^\x00-\x7F]+', '', string)
-    return str(base64.urlsafe_b64encode(hashlib.md5(string.encode('utf-8', errors='ignore')).digest())[:-2])
+    return base64.urlsafe_b64encode(hashlib.md5(string.encode('utf-8', errors='ignore')).digest())[:-2].decode('utf-8')
 
 
 def get_absolute_path(path):
