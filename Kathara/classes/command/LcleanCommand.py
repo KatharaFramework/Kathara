@@ -1,7 +1,7 @@
 import argparse
 
 import utils
-from ..controller.Controller import Controller
+from ..proxy.ManagerProxy import ManagerProxy
 from ..foundation.command.Command import Command
 
 
@@ -37,6 +37,6 @@ class LcleanCommand(Command):
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        Controller.get_instance().undeploy_lab(lab_hash,
-                                               selected_machines=args.machine_names
-                                               )
+        ManagerProxy.get_instance().undeploy_lab(lab_hash,
+                                                 selected_machines=args.machine_names
+                                                 )

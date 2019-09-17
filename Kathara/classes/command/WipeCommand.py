@@ -2,7 +2,7 @@ import argparse
 import shutil
 
 import utils
-from ..controller.Controller import Controller
+from ..proxy.ManagerProxy import ManagerProxy
 from ..foundation.command.Command import Command
 from ..setting.Setting import Setting
 
@@ -38,11 +38,11 @@ class WipeCommand(Command):
                 if answer in ["n", "no", "NO"]:
                     exit(0)
 
-        Controller.get_instance().wipe()
+        ManagerProxy.get_instance().wipe()
 
         setting_object = Setting.get_instance()
         setting_object.net_counter = 0
         setting_object.save_selected(['net_counter'])
 
-        vlab_dir = utils.get_vlab_temp_path()
-        shutil.rmtree(vlab_dir)
+        vlab_dir = utils.get_vlab_temp_path(force_creation=False)
+        shutil.rmtree(vlab_dir, ignore_errors=True)

@@ -1,11 +1,12 @@
 import argparse
 
 import utils
-from ..controller.Controller import Controller
 from ..foundation.command.Command import Command
-from ..parser.FolderParser import FolderParser
-from ..parser.LabParser import LabParser
 from ..parser.OptionParser import OptionParser
+from ..parser.netkit.DepParser import DepParser
+from ..parser.netkit.FolderParser import FolderParser
+from ..parser.netkit.LabParser import LabParser
+from ..proxy.ManagerProxy import ManagerProxy
 from ..setting.Setting import Setting
 
 
@@ -115,6 +116,10 @@ class LstartCommand(Command):
             else:
                 lab = FolderParser.parse(lab_path)
 
+        dependencies = DepParser.parse(lab_path)
+        if dependencies:
+            lab.apply_dependencies(dependencies)
+
         if args.machine_names:
             lab.intersect_machines(args.machine_names)
 
@@ -150,10 +155,10 @@ class LstartCommand(Command):
         if len(lab.machines) <= 0:
             raise Exception("No machines in the current lab. Exiting...")
 
-        Controller.get_instance().deploy_lab(lab, options=parsed_options)
+        ManagerProxy.get_instance().deploy_lab(lab, options=parsed_options)
 
         if not args.counter:
             Setting.get_instance().save_selected(['net_counter'])
 
         if args.list:
-            Controller.get_instance().get_info_stream(lab.folder_hash)
+            ManagerProxy.get_instance().get_lab_info(lab.folder_hash)

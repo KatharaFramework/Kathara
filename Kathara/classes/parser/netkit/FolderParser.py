@@ -1,7 +1,7 @@
-from glob import glob
 import os
+from glob import glob
 
-from ..model.Lab import Lab
+from ...model.Lab import Lab
 
 
 class FolderParser(object):

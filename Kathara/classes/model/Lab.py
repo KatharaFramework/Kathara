@@ -1,11 +1,10 @@
+import collections
 import os
 from itertools import chain
-import collections
 
 import utils
 from .Link import Link
 from .Machine import Machine
-from ..parser.DepParser import DepParser
 
 
 class Lab(object):
@@ -73,9 +72,7 @@ class Lab(object):
         # Apply filtering
         self.links = {k: v for (k, v) in self.links.items() if k in selected_links}
 
-    def check_dependencies(self):
-        dependencies = DepParser.parse(self.path)
-
+    def apply_dependencies(self, dependencies):
         if dependencies:
             def dep_sort(item):
                 try:

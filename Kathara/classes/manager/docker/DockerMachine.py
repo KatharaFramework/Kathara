@@ -2,7 +2,7 @@ import os
 from subprocess import Popen
 
 import utils
-from ....setting.Setting import Setting
+from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 SYSCTL_COMMAND = "sysctl %s=0" % RP_FILTER_NAMESPACE
@@ -41,7 +41,7 @@ STARTUP_COMMANDS = [
 ]
 
 
-class DockerMachineManager(object):
+class DockerMachine(object):
     __slots__ = ['client']
 
     def __init__(self, client):
@@ -203,7 +203,7 @@ class DockerMachineManager(object):
 
         def tty_connect():
             # Import PseudoTerminal only on Linux since some libraries are not available on Windows
-            from ....trdparty.dockerpty.pty import PseudoTerminal
+            from ...trdparty.dockerpty.pty import PseudoTerminal
 
             # Needed with low level api because we need the id of the exec_create
             resp = self.client.api.exec_create(container.id,

@@ -1,7 +1,7 @@
 import argparse
 
 import utils
-from ..controller.Controller import Controller
+from ..proxy.ManagerProxy import ManagerProxy
 from ..foundation.command.Command import Command
 from ..model.Lab import Lab
 from ..setting.Setting import Setting
@@ -147,6 +147,6 @@ class VstartCommand(Command):
         Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
                                                 else Setting.get_instance().hosthome_mount
 
-        Controller.get_instance().deploy_lab(lab, options=[])
+        ManagerProxy.get_instance().deploy_lab(lab, options=[])
 
         Setting.get_instance().save_selected(['net_counter'])

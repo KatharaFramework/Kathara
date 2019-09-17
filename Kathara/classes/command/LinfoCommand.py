@@ -1,10 +1,12 @@
 import argparse
+import os
+import time
 
 import utils
-from ..controller.Controller import Controller
 from ..foundation.command.Command import Command
 from ..model.Link import BRIDGE_LINK_NAME
-from ..parser.LabParser import LabParser
+from ..parser.netkit.LabParser import LabParser
+from ..proxy.ManagerProxy import ManagerProxy
 
 
 class LinfoCommand(Command):
@@ -39,23 +41,36 @@ class LinfoCommand(Command):
         lab_path = utils.get_absolute_path(lab_path)
 
         if args.live:
-            lab_hash = utils.generate_urlsafe_hash(lab_path)
-
-            Controller.get_instance().get_info_stream(lab_hash)
+            self._get_live_info(lab_path)
         else:
-            print("========================= Lab Information ==========================")
+            self._get_conf_info(lab_path)
 
-            lab = LabParser.parse(lab_path)
-            lab_meta_information = str(lab)
+    @staticmethod
+    def _get_live_info(lab_path):
+        lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-            if lab_meta_information:
-                print(lab_meta_information)
-                print("====================================================================")
+        lab_info = ManagerProxy.get_instance().get_lab_info(lab_hash)
 
-            n_machines = len(lab.machines)
-            n_links = len(lab.links) if BRIDGE_LINK_NAME not in lab.links else len(lab.links) - 1
+        while True:
+            utils.exec_by_platform(lambda: os.system('clear'), lambda: os.system('cls'), lambda: os.system('clear'))
+            print(next(lab_info))
+            time.sleep(1)
 
-            print("There are %d machines." % n_machines)
-            print("There are %d links." % n_links)
+    @staticmethod
+    def _get_conf_info(lab_path):
+        print("========================= Lab Information ==========================")
 
+        lab = LabParser.parse(lab_path)
+        lab_meta_information = str(lab)
+
+        if lab_meta_information:
+            print(lab_meta_information)
             print("====================================================================")
+
+        n_machines = len(lab.machines)
+        n_links = len(lab.links) if BRIDGE_LINK_NAME not in lab.links else len(lab.links) - 1
+
+        print("There are %d machines." % n_machines)
+        print("There are %d links." % n_links)
+
+        print("====================================================================")

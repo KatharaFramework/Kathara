@@ -2,7 +2,7 @@ import mmap
 import os
 import re
 
-from ..model.Lab import Lab
+from ...model.Lab import Lab
 
 
 class LabParser(object):

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class IAdapter(ABC):
+class IManager(ABC):
     @abstractmethod
     def deploy_lab(self, lab, options=None):
         pass
@@ -19,7 +19,11 @@ class IAdapter(ABC):
         pass
 
     @abstractmethod
-    def get_info_stream(self, lab_hash):
+    def get_lab_info(self, lab_hash=None):
+        pass
+
+    @abstractmethod
+    def get_machine_info(self, machine_name):
         pass
 
     @abstractmethod

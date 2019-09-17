@@ -32,7 +32,7 @@ class SettingsCommand(Command):
 
         # A SubmenuItem lets you add a menu (the selection_menu above, for example)
         # as a submenu of another menu
-        deployer_item = SubmenuItem("Choose default adapter", deployer_menu, menu)
+        deployer_item = SubmenuItem("Choose default manager", deployer_menu, menu)
 
         menu.append_item(menu_item)
         menu.append_item(function_item)

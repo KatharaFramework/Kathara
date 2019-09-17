@@ -13,7 +13,6 @@ The possible kathara command are:
 \tvstart\t\tStart a new Kathara machine
 \tvclean\t\tCleanup Kathara processes and configurations
 \tvconfig\t\tAttach network interfaces to running Kathara machines
-\tvlist\t\tShow running Kathara machines
 \tlstart\t\tStart a Kathara lab
 \tlclean\t\tStop and clean a Kathara lab
 \tlinfo\t\tShow information about a Kathara lab
@@ -21,6 +20,7 @@ The possible kathara command are:
 \tltest\t\tTest a Kathara lab
 \tconnect\t\tConnect to a Kathara machine
 \twipe\t\tDelete all Kathara machines and links
+\tlist\t\tShow all running Kathara machines
 \tsetting\t\tShow and edit setting
 \tversion\t\tPrint current version
 \tcheck\t\tCheck your system environment
@@ -59,6 +59,10 @@ class KatharaEntryPoint(object):
             print("If you encounter any problem please run `kathara wipe`.")
             exit(0)
         except Exception as e:
+            import traceback
+
+            traceback.print_exc()
+
             sys.stderr.write(str(e) + '\n')
             exit(1)
 

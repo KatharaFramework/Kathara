@@ -1,7 +1,7 @@
 import argparse
 
 import utils
-from ..controller.Controller import Controller
+from ..proxy.ManagerProxy import ManagerProxy
 from ..foundation.command.Command import Command
 
 
@@ -51,7 +51,7 @@ class ConnectCommand(Command):
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        Controller.get_instance().connect_tty(lab_hash,
-                                              machine_name=args.machine_name,
-                                              shell=args.shell
-                                              )
+        ManagerProxy.get_instance().connect_tty(lab_hash,
+                                                machine_name=args.machine_name,
+                                                shell=args.shell
+                                                )

@@ -2,7 +2,7 @@ import mmap
 import os
 import re
 
-from ..trdparty.depgen import depgen
+from ...trdparty.depgen import depgen
 
 
 class DepParser(object):

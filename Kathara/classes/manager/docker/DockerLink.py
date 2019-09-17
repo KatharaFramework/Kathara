@@ -5,11 +5,11 @@ import docker
 from docker import types
 
 import utils
-from ....model.Link import BRIDGE_LINK_NAME
-from ....setting.Setting import Setting, MAX_DOCKER_LAN_NUMBER
+from ...model.Link import BRIDGE_LINK_NAME
+from ...setting.Setting import Setting, MAX_DOCKER_LAN_NUMBER
 
 
-class DockerLinkManager(object):
+class DockerLink(object):
     __slots__ = ['client', 'base_ip']
 
     def __init__(self, client):
