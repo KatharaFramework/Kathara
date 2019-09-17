@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class IAdapter(ABC):
     @abstractmethod
-    def deploy_lab(self, lab, options):
+    def deploy_lab(self, lab, options=None):
         pass
 
     @abstractmethod
@@ -20,4 +20,8 @@ class IAdapter(ABC):
 
     @abstractmethod
     def get_info_stream(self, lab_hash):
+        pass
+
+    @abstractmethod
+    def get_version(self):
         pass

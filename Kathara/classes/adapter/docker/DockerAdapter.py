@@ -10,6 +10,23 @@ from ...foundation.adapter.IAdapter import IAdapter
 from ...model.Link import BRIDGE_LINK_NAME
 
 
+def check_docker_status(method):
+    """
+    Decorator function to check if Docker daemon is up and running.
+    """
+    def check_status(*args, **kw):
+        client = args[0].client
+        try:
+            client.ping()
+            return method(*args, **kw)
+        except ConnectionError:
+            raise Exception("Can not connect to Docker Daemon. Maybe you have not started it?")
+        # except pywintypes.error:
+        #     raise Exception("Can not connect to Docker Daemon. Maybe you have not started it?")
+
+    return check_status
+
+
 class DockerAdapter(IAdapter):
     __slots__ = ['machine_mgr', 'link_mgr', 'client']
 
@@ -19,8 +36,8 @@ class DockerAdapter(IAdapter):
         self.machine_mgr = DockerMachineManager(self.client)
         self.link_mgr = DockerLinkManager(self.client)
 
-    # TODO: Decorator to check if Docker is running
-    def deploy_lab(self, lab, options):
+    @check_docker_status
+    def deploy_lab(self, lab, options=None):
         # Deploy all lab links.
         for (_, link) in lab.links.items():
             self.link_mgr.deploy(link)
@@ -39,26 +56,26 @@ class DockerAdapter(IAdapter):
         for (_, machine) in lab.machines.items():
             self.machine_mgr.start(machine)
 
-    # TODO: Decorator to check if Docker is running
+    @check_docker_status
     def undeploy_lab(self, lab_hash, selected_machines):
         self.machine_mgr.undeploy(lab_hash,
                                   selected_machines=selected_machines
                                   )
         self.link_mgr.undeploy(lab_hash)
 
-    # TODO: Decorator to check if Docker is running
+    @check_docker_status
     def wipe(self):
         self.machine_mgr.wipe()
         self.link_mgr.wipe()
 
-    # TODO: Decorator to check if Docker is running
+    @check_docker_status
     def connect_tty(self, lab_hash, machine_name, shell):
         self.machine_mgr.connect(lab_hash=lab_hash,
                                  machine_name=machine_name,
                                  shell=shell
                                  )
 
-    # TODO: Decorator to check if Docker is running
+    @check_docker_status
     def get_info_stream(self, lab_hash):
         machines = self.machine_mgr.get_machines_by_filters(lab_hash=lab_hash)
         if not machines:
@@ -108,3 +125,7 @@ class DockerAdapter(IAdapter):
             utils.exec_by_platform(lambda: os.system('clear'), lambda: os.system('cls'), lambda: os.system('clear'))
 
             print(all_stats)
+
+    @check_docker_status
+    def get_version(self):
+        return self.client.version()["Version"]

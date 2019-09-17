@@ -27,7 +27,7 @@ class Lab(object):
             self.shared_folder = os.path.join(self.path, 'shared')
             if not os.path.isdir(self.shared_folder):
                 os.mkdir(self.shared_folder)
-        except Exception:
+        except OSError:
             # Do not create shared folder if not permitted.
             self.shared_folder = None
 

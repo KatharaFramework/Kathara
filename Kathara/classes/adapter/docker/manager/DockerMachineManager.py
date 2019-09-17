@@ -48,6 +48,10 @@ class DockerMachineManager(object):
         self.client = client
 
     def deploy(self, machine, options):
+        # If option is None, create an empty dict to avoid errors.
+        if options is None:
+            options = {}
+
         # Container image, if defined in machine meta. If not use default one.
         image = options["image"] if "image" in options else machine.meta["image"] if "image" in machine.meta \
                 else Setting.get_instance().image

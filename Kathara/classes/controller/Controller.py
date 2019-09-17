@@ -27,7 +27,7 @@ class Controller(IAdapter):
 
             Controller.__instance = self
 
-    def deploy_lab(self, lab, options):
+    def deploy_lab(self, lab, options=None):
         self.adapter.deploy_lab(lab, options)
 
     def undeploy_lab(self, lab_hash, selected_machines):
@@ -41,3 +41,6 @@ class Controller(IAdapter):
 
     def get_info_stream(self, lab_hash):
         self.adapter.get_info_stream(lab_hash)
+
+    def get_version(self):
+        return self.adapter.get_version()
