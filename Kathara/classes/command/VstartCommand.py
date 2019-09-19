@@ -1,8 +1,8 @@
 import argparse
 
 import utils
-from ..proxy.ManagerProxy import ManagerProxy
 from ..foundation.command.Command import Command
+from ..manager.ManagerProxy import ManagerProxy
 from ..model.Lab import Lab
 from ..setting.Setting import Setting
 
@@ -45,7 +45,7 @@ class VstartCommand(Command):
             '--eth',
             dest='eths',
             nargs='+',
-            required=True,
+            required=False,
             help='Set a specific interface on a collision domain.'
         )
         parser.add_argument(
@@ -117,12 +117,13 @@ class VstartCommand(Command):
 
         machine = lab.get_or_new_machine(args.name)
 
-        for eth in args.eths:
-            try:
-                (iface_number, link_name) = eth.split(":")
-                lab.connect_machine_to_link(machine.name, int(iface_number), link_name)
-            except ValueError:
-                raise Exception("Interface number in `--eth %s` is not a number." % eth)
+        if args.eths:
+            for eth in args.eths:
+                try:
+                    (iface_number, link_name) = eth.split(":")
+                    lab.connect_machine_to_link(machine.name, int(iface_number), link_name)
+                except ValueError:
+                    raise Exception("Interface number in `--eth %s` is not a number." % eth)
 
         if args.exec_commands:
             for command in args.exec_commands:
@@ -147,6 +148,6 @@ class VstartCommand(Command):
         Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
                                                 else Setting.get_instance().hosthome_mount
 
-        ManagerProxy.get_instance().deploy_lab(lab, options=[])
+        ManagerProxy.get_instance().deploy_lab(lab)
 
         Setting.get_instance().save_selected(['net_counter'])

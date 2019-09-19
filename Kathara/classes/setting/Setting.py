@@ -51,16 +51,15 @@ class Setting(object):
         if not os.path.exists(self.setting_path):               # If settings file don't exist, create with defaults
             self.save()
         else:                                                   # If file exists, read it and check values
+            settings = {}
             with open(self.setting_path, 'r') as settings_file:
                 try:
                     settings = json.load(settings_file)
-
-                    for (name, value) in settings.items():
-                        setattr(self, name, value)
-
-                    self.check()
-                except Exception:
+                except ValueError:
                     raise Exception("Settings file is not a valid JSON. Fix it or delete it before launching.")
+
+            for (name, value) in settings.items():
+                setattr(self, name, value)
 
     def save(self, content=None):
         """
@@ -77,13 +76,13 @@ class Setting(object):
         Saves only the selected settings, the other ones are kept as the current config.json file.
         :param selected_settings: List of selected settings to save into the JSON
         """
-        settings = None
+        settings = {}
 
         # Open the original JSON file and read it
         with open(self.setting_path, 'r') as settings_file:
             try:
                 settings = json.load(settings_file)
-            except Exception:
+            except ValueError:
                 raise Exception("Settings file is not a valid JSON. Fix it or delete it before launching.")
 
         # Assign to the JSON settings the desired ones
@@ -96,6 +95,12 @@ class Setting(object):
     def check(self):
         if self.deployer_type not in [DOCKER, K8S]:
             raise Exception("Deployer Type not allowed.")
+
+        try:
+            from ..manager.ManagerProxy import ManagerProxy
+            ManagerProxy.get_instance().check(self._to_dict())
+        except Exception as e:
+            raise Exception(str(e))
 
         try:
             self.net_counter = int(self.net_counter)

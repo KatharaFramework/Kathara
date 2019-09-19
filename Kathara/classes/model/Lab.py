@@ -9,12 +9,23 @@ from .Machine import Machine
 
 class Lab(object):
     __slots__ = ['description', 'version', 'author', 'email', 'web',
-                 'machines', 'links', 'net_counter', 'folder_hash', 'path',
+                 'path', 'folder_hash', 'machines', 'links', 'general_options',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
     def __init__(self, path):
+        self.description = None
+        self.version = None
+        self.author = None
+        self.email = None
+        self.web = None
+
         self.path = path
         self.folder_hash = utils.generate_urlsafe_hash(path)
+
+        self.machines = {}
+        self.links = {}
+
+        self.general_options = {}
 
         shared_startup_file = os.path.join(self.path, 'shared.startup')
         self.shared_startup_path = shared_startup_file if os.path.exists(shared_startup_file) else None
@@ -29,15 +40,6 @@ class Lab(object):
         except OSError:
             # Do not create shared folder if not permitted.
             self.shared_folder = None
-
-        self.description = None
-        self.version = None
-        self.author = None
-        self.email = None
-        self.web = None
-
-        self.machines = {}
-        self.links = {}
 
     def connect_machine_to_link(self, machine_name, machine_iface_number, link_name):
         machine = self.get_or_new_machine(machine_name)

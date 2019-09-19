@@ -51,6 +51,7 @@ class KatharaEntryPoint(object):
         try:
             # Load config file
             Setting.get_instance()
+            Setting.get_instance().check()
 
             current_path = os.getcwd()
             command_object.run(current_path, sys.argv[2:])
@@ -59,9 +60,8 @@ class KatharaEntryPoint(object):
             print("If you encounter any problem please run `kathara wipe`.")
             exit(0)
         except Exception as e:
-            import traceback
-
-            traceback.print_exc()
+            # import traceback
+            # traceback.print_exc()
 
             sys.stderr.write(str(e) + '\n')
             exit(1)

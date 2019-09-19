@@ -7,4 +7,4 @@ class Command(ABC):
 
     @abstractmethod
     def run(self, current_path, argv):
-        pass
+        raise NotImplementedError("You must implement `run` method.")

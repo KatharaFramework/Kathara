@@ -1,10 +1,12 @@
 from datetime import datetime
 
 import docker
+from docker.errors import APIError
 
 import utils
 from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
+from ...api.DockerHubApi import DockerHubApi
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
 
@@ -33,13 +35,11 @@ class DockerManager(IManager):
     def __init__(self):
         self.client = docker.from_env()
 
-        self.client.images.get_registry_data("kathara/netkit_base")
-
         self.docker_machine = DockerMachine(self.client)
         self.docker_link = DockerLink(self.client)
 
     @check_docker_status
-    def deploy_lab(self, lab, options=None):
+    def deploy_lab(self, lab):
         # Deploy all lab links.
         for (_, link) in lab.links.items():
             self.docker_link.deploy(link)
@@ -47,13 +47,11 @@ class DockerManager(IManager):
         # Create a docker bridge link in the lab object and assign the Docker Network object associated to it.
         docker_bridge = self.docker_link.get_docker_bridge()
         link = lab.get_or_new_link(BRIDGE_LINK_NAME)
-        link.network_object = docker_bridge
+        link.api_object = docker_bridge
 
         # Deploy all lab machines.
         for (_, machine) in lab.machines.items():
-            self.docker_machine.deploy(machine,
-                                       options=options,
-                                       )
+            self.docker_machine.deploy(machine)
 
         for (_, machine) in lab.machines.items():
             self.docker_machine.start(machine)
@@ -142,8 +140,22 @@ class DockerManager(IManager):
 
         return machine_info
 
+    def check(self, settings):
+        try:
+            # Tries to get the image from the local Docker repository.
+            self.client.images.get(settings["image"])
+        except APIError:
+            # If not found, tries on Docker Hub.
+            try:
+                # If the image exists on Docker Hub, pulls it.
+                DockerHubApi.get_image_information(settings["image"])
+                self.client.images.pull(settings["image"])
+            except Exception:
+                # If not, raise an exception
+                raise Exception("Image `%s` specified in settings does not exists." % settings["image"])
+
     @check_docker_status
-    def get_version(self):
+    def get_release_version(self):
         return self.client.version()["Version"]
 
     @staticmethod

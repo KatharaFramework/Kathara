@@ -66,7 +66,4 @@ class LabParser(object):
 
         lab.check_integrity()
 
-        # Reorder machines by lab.dep file, if present.
-        lab.check_dependencies()
-
         return lab

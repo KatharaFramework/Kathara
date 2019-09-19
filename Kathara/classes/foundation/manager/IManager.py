@@ -3,29 +3,33 @@ from abc import ABC, abstractmethod
 
 class IManager(ABC):
     @abstractmethod
-    def deploy_lab(self, lab, options=None):
-        pass
+    def deploy_lab(self, lab):
+        raise NotImplementedError("You must implement `deploy_lab` method.")
 
     @abstractmethod
     def undeploy_lab(self, lab_hash, selected_machines):
-        pass
+        raise NotImplementedError("You must implement `undeploy_lab` method.")
 
     @abstractmethod
     def wipe(self):
-        pass
+        raise NotImplementedError("You must implement `wipe` method.")
 
     @abstractmethod
     def connect_tty(self, lab_hash, machine_name, shell):
-        pass
+        raise NotImplementedError("You must implement `connect_tty` method.")
 
     @abstractmethod
     def get_lab_info(self, lab_hash=None):
-        pass
+        raise NotImplementedError("You must implement `get_lab_info` method.")
 
     @abstractmethod
     def get_machine_info(self, machine_name):
-        pass
+        raise NotImplementedError("You must implement `get_machine_info` method.")
 
     @abstractmethod
-    def get_version(self):
-        pass
+    def check(self, settings):
+        raise NotImplementedError("You must implement `check` method.")
+
+    @abstractmethod
+    def get_release_version(self):
+        raise NotImplementedError("You must implement `get_release_version` method.")

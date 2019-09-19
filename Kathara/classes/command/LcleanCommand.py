@@ -1,8 +1,8 @@
 import argparse
 
 import utils
-from ..proxy.ManagerProxy import ManagerProxy
 from ..foundation.command.Command import Command
+from ..manager.ManagerProxy import ManagerProxy
 
 
 class LcleanCommand(Command):

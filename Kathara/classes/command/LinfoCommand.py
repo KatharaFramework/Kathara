@@ -4,9 +4,9 @@ import time
 
 import utils
 from ..foundation.command.Command import Command
+from ..manager.ManagerProxy import ManagerProxy
 from ..model.Link import BRIDGE_LINK_NAME
 from ..parser.netkit.LabParser import LabParser
-from ..proxy.ManagerProxy import ManagerProxy
 
 
 class LinfoCommand(Command):

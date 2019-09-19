@@ -1,5 +1,6 @@
 import os
 from subprocess import Popen
+from itertools import islice
 
 import utils
 from ...setting.Setting import Setting
@@ -47,10 +48,9 @@ class DockerMachine(object):
     def __init__(self, client):
         self.client = client
 
-    def deploy(self, machine, options):
-        # If option is None, create an empty dict to avoid errors.
-        if options is None:
-            options = {}
+    def deploy(self, machine):
+        # Get the general options into a local variable (just to avoid accessing the lab object every time)
+        options = machine.lab.general_options
 
         # Container image, if defined in machine meta. If not use default one.
         image = options["image"] if "image" in options else machine.meta["image"] if "image" in machine.meta \
@@ -81,7 +81,16 @@ class DockerMachine(object):
 
         # Get the first network object, if defined.
         # This should be used in container create function
-        first_network = machine.interfaces[0].network_object if 0 in machine.interfaces else None
+        first_network = None
+        if machine.interfaces:
+            first_network = machine.interfaces[0].api_object
+
+        # If no interfaces are declared in machine, but bridged mode is required, get bridge as first link.
+        # Flag that bridged is already connected (because there's another check below).
+        bridged_connected = False
+        if first_network is None and machine.bridge:
+            first_network = machine.bridge.api_object
+            bridged_connected = True
 
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
@@ -126,17 +135,14 @@ class DockerMachine(object):
         rp_filter_commands = [SYSCTL_COMMAND % "eth0"]
 
         # Connect the container to its networks (starting from the second, the first is already connected above)
-        for (iface_num, machine_link) in machine.interfaces.items():
-            if iface_num <= 0:
-                continue
-
-            machine_link.network_object.connect(machine_container)
+        for (iface_num, machine_link) in islice(machine.interfaces.items(), 1, None):
+            machine_link.api_object.connect(machine_container)
 
             # Add the rp_filter patch for this interface
             rp_filter_commands.append(SYSCTL_COMMAND % ("eth%d" % iface_num))
 
-        if machine.bridge:
-            machine.bridge.network_object.connect(machine_container)
+        if not bridged_connected and machine.bridge:
+            machine.bridge.api_object.connect(machine_container)
 
         machine.api_object = machine_container
 

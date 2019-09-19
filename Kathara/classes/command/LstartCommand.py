@@ -2,11 +2,11 @@ import argparse
 
 import utils
 from ..foundation.command.Command import Command
-from ..parser.OptionParser import OptionParser
+from ..manager.ManagerProxy import ManagerProxy
 from ..parser.netkit.DepParser import DepParser
 from ..parser.netkit.FolderParser import FolderParser
 from ..parser.netkit.LabParser import LabParser
-from ..proxy.ManagerProxy import ManagerProxy
+from ..parser.netkit.OptionParser import OptionParser
 from ..setting.Setting import Setting
 
 
@@ -116,6 +116,7 @@ class LstartCommand(Command):
             else:
                 lab = FolderParser.parse(lab_path)
 
+        # Reorder machines by lab.dep file, if present.
         dependencies = DepParser.parse(lab_path)
         if dependencies:
             lab.apply_dependencies(dependencies)
@@ -134,8 +135,11 @@ class LstartCommand(Command):
             print("lab.conf file is correct. Exiting...")
             exit(0)
 
+        if len(lab.machines) <= 0:
+            raise Exception("No machines in the current lab. Exiting...")
+
         try:
-            parsed_options = OptionParser.parse(args.options)
+            lab.general_options = OptionParser.parse(args.options)
         except:
             raise Exception("--pass parameter not valid.")
 
@@ -152,10 +156,7 @@ class LstartCommand(Command):
         Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
                                                 else Setting.get_instance().hosthome_mount
 
-        if len(lab.machines) <= 0:
-            raise Exception("No machines in the current lab. Exiting...")
-
-        ManagerProxy.get_instance().deploy_lab(lab, options=parsed_options)
+        ManagerProxy.get_instance().deploy_lab(lab)
 
         if not args.counter:
             Setting.get_instance().save_selected(['net_counter'])

@@ -1,7 +1,7 @@
 import argparse
 
 from ..foundation.command.Command import Command
-from ..proxy.ManagerProxy import ManagerProxy
+from ..manager.ManagerProxy import ManagerProxy
 
 
 class ListCommand(Command):

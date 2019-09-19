@@ -27,8 +27,8 @@ class ManagerProxy(IManager):
 
             ManagerProxy.__instance = self
 
-    def deploy_lab(self, lab, options=None):
-        self.manager.deploy_lab(lab, options)
+    def deploy_lab(self, lab):
+        self.manager.deploy_lab(lab)
 
     def undeploy_lab(self, lab_hash, selected_machines):
         self.manager.undeploy_lab(lab_hash, selected_machines)
@@ -45,5 +45,8 @@ class ManagerProxy(IManager):
     def get_machine_info(self, machine_name):
         return self.manager.get_machine_info(machine_name)
 
-    def get_version(self):
-        return self.manager.get_version()
+    def check(self, settings):
+        self.manager.check(settings)
+
+    def get_release_version(self):
+        return self.manager.get_release_version()

@@ -26,7 +26,7 @@ class DockerLink(object):
         # If a network with the same name exists, return it instead of creating a new one.
         network_objects = self.get_links_by_filters(link_name=self.get_network_name(link.name))
         if network_objects:
-            link.network_object = network_objects.pop()
+            link.api_object = network_objects.pop()
             return
 
         network_counter = Setting.get_instance().net_counter
@@ -49,16 +49,16 @@ class DockerLink(object):
                                                       pool_configs=[network_pool]
                                                       )
 
-        link.network_object = self.client.networks.create(name=self.get_network_name(link.name),
-                                                          driver='bridge',
-                                                          check_duplicate=True,
-                                                          ipam=network_ipam_config,
-                                                          labels={"lab_hash": link.lab.folder_hash,
-                                                                  "app": "kathara"
-                                                                  }
-                                                          )
+        link.api_object = self.client.networks.create(name=self.get_network_name(link.name),
+                                                      driver='bridge',
+                                                      check_duplicate=True,
+                                                      ipam=network_ipam_config,
+                                                      labels={"lab_hash": link.lab.folder_hash,
+                                                              "app": "kathara"
+                                                              }
+                                                      )
 
-        self._configure_network(link.network_object)
+        self._configure_network(link.api_object)
 
     def undeploy(self, lab_hash):
         self.client.networks.prune(filters={"label": "lab_hash=%s" % lab_hash})
@@ -82,7 +82,7 @@ class DockerLink(object):
     def _configure_network(self, network):
         """
         Patch to Docker bridges to make them act as hubs.
-        We patch ageing_time and group_fwd_mask of the passed network bridge.
+        We patch ageing_time and group_fwd_mask of the passed network.
         :param network: The Docker Network object to patch
         """
         patches = {
