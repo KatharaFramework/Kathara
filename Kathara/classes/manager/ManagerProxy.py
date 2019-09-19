@@ -53,3 +53,6 @@ class ManagerProxy(IManager):
 
     def get_release_version(self):
         return self.manager.get_release_version()
+
+    def attach_links_to_machine(self, lab, machine_name, link_names):
+        self.manager.attach_links_to_machine(lab, machine_name, link_names)
