@@ -9,6 +9,7 @@ from .DockerMachine import DockerMachine
 from ...api.DockerHubApi import DockerHubApi
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
+from ...model.Link import Link
 
 
 def check_docker_status(method):
@@ -139,6 +140,23 @@ class DockerManager(IManager):
         machine_info += "======================================================================="
 
         return machine_info
+
+    @check_docker_status
+    def attach_links_to_machine(self, lab, machine_name, link_names):
+        container_name = self.docker_machine.get_container_name(machine_name)
+        machines = self.docker_machine.get_machines_by_filters(container_name=container_name, lab_hash=lab.folder_hash)
+
+        if not machines:
+            raise Exception("The specified machine does not exists.")
+        elif len(machines) > 1:
+            raise Exception("There are more than one machine matching the name `%d`." % machine_name)
+
+        for link in link_names:
+            link_obj = Link(lab, link)
+            self.docker_link.deploy(link_obj)
+            link_obj.api_object.connect(machines[0])
+
+
 
     def check(self, settings):
         try:

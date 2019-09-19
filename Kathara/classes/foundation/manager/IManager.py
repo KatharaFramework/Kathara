@@ -33,3 +33,7 @@ class IManager(ABC):
     @abstractmethod
     def get_release_version(self):
         raise NotImplementedError("You must implement `get_release_version` method.")
+
+    @abstractmethod
+    def attach_links_to_machine(self, lab, machine_name, link_names):
+        raise NotImplementedError("You must implement `attach_links_to_machine` method.")
