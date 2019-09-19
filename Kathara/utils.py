@@ -57,3 +57,14 @@ def get_vlab_temp_path(force_creation=True):
         os.mkdir(vlab_directory)
 
     return vlab_directory
+
+
+def confirmation_prompt(prompt_string, callback_yes, callback_no):
+    answer = None
+    while answer not in ["y", "yes", "Y", "YES", "n", "no", "N", "NO"]:
+        answer = input("%s [y/n] " % prompt_string)
+
+        if answer in ["n", "no", "NO"]:
+            return callback_no()
+
+    return callback_yes()

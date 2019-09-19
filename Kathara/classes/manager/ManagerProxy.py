@@ -48,5 +48,8 @@ class ManagerProxy(IManager):
     def check(self, settings):
         self.manager.check(settings)
 
+    def check_updates(self, settings):
+        self.manager.check_updates(settings)
+
     def get_release_version(self):
         return self.manager.get_release_version()

@@ -31,12 +31,7 @@ class WipeCommand(Command):
         args = self.parser.parse_args(argv)
 
         if not args.force:
-            answer = None
-            while answer not in ["y", "yes", "Y", "YES", "n", "no", "N", "NO"]:
-                answer = input("Are you sure to wipe Kathara? [y/n] ")
-
-                if answer in ["n", "no", "NO"]:
-                    exit(0)
+            utils.confirmation_prompt("Are you sure to wipe Kathara?", lambda: None, exit)
 
         ManagerProxy.get_instance().wipe()
 

@@ -1,3 +1,5 @@
+import json
+import time
 from datetime import datetime
 
 import docker
@@ -143,16 +145,32 @@ class DockerManager(IManager):
     def check(self, settings):
         try:
             # Tries to get the image from the local Docker repository.
-            self.client.images.get(settings["image"])
+            self.client.images.get(settings.image)
         except APIError:
             # If not found, tries on Docker Hub.
             try:
                 # If the image exists on Docker Hub, pulls it.
-                DockerHubApi.get_image_information(settings["image"])
-                self.client.images.pull(settings["image"])
+                DockerHubApi.get_image_information(settings.image)
+                self.client.images.pull(settings.image)
             except Exception:
                 # If not, raise an exception
-                raise Exception("Image `%s` specified in settings does not exists." % settings["image"])
+                raise Exception("Image `%s` specified in settings does not exists." % settings.image)
+
+    def check_updates(self, settings):
+        local_image_info = self.client.images.get(settings.image)
+        remote_image_info = DockerHubApi.get_image_information(settings.image)
+
+        remote_image_digest = remote_image_info["images"][0]["digest"]
+        local_repo_digest = local_image_info.attrs["RepoDigests"][0]
+        # Format is image_name@sha256, so we strip the first part.
+        (_, local_image_digest) = local_repo_digest.split("@")
+
+        if remote_image_digest != local_image_digest:
+            utils.confirmation_prompt("A new version of image `%s` has been found on Docker Hub. "
+                                      "Do you want to pull it?" % settings.image,
+                                      lambda: self.client.images.pull(settings.image),
+                                      lambda: None
+                                      )
 
     @check_docker_status
     def get_release_version(self):

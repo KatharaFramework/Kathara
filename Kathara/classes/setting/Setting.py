@@ -1,7 +1,9 @@
 import json
 import os
+import time
 
-KATHARA_VERSION = "0.2"
+import version
+from ..api.GitHubApi import GitHubApi
 
 VLAB_NAME = "kathara_vlab"
 
@@ -11,10 +13,12 @@ MAX_K8S_NUMBER = (1 << 24) - 20
 DOCKER = "docker"
 K8S = "k8s"
 
+ONE_WEEK = 604800
+
 
 class Setting(object):
     __slots__ = ['setting_path', 'image', 'deployer_type', 'net_counter', 'terminal', 'open_terminals',
-                 'hosthome_mount', 'machine_shell', 'net_prefix', 'machine_prefix']
+                 'hosthome_mount', 'machine_shell', 'net_prefix', 'machine_prefix', 'last_checked']
 
     __instance = None
 
@@ -42,6 +46,7 @@ class Setting(object):
             self.machine_shell = "bash"
             self.net_prefix = 'kathara'
             self.machine_prefix = 'kathara'
+            self.last_checked = time.time() - ONE_WEEK
 
             self.load()
 
@@ -96,11 +101,32 @@ class Setting(object):
         if self.deployer_type not in [DOCKER, K8S]:
             raise Exception("Deployer Type not allowed.")
 
+        from ..manager.ManagerProxy import ManagerProxy
         try:
-            from ..manager.ManagerProxy import ManagerProxy
-            ManagerProxy.get_instance().check(self._to_dict())
+            ManagerProxy.get_instance().check(self)
         except Exception as e:
             raise Exception(str(e))
+
+        current_time = time.time()
+        # After 1 week, check if a new image version has been released.
+        if current_time - self.last_checked > ONE_WEEK:
+            print("========================= Checking Updates ==============================")
+
+            latest_remote_release = GitHubApi.get_release_information()
+            latest_version = latest_remote_release["tag_name"]
+
+            if version.less_than(version.CURRENT_VERSION, latest_version):
+                print("A new version of Kathara has been released.")
+                print("Current: %s - Latest: %s" % (version.CURRENT_VERSION, latest_version))
+                print("Please update it with `pip install kathara`")
+
+            if self.deployer_type == DOCKER:
+                ManagerProxy.get_instance().check_updates(self)
+
+                self.last_checked = current_time
+                self.save_selected(['last_checked'])
+
+            print("=========================================================================")
 
         try:
             self.net_counter = int(self.net_counter)
@@ -133,5 +159,6 @@ class Setting(object):
                 "hosthome_mount": self.hosthome_mount,
                 "machine_shell": self.machine_shell,
                 "net_prefix": self.net_prefix,
-                "machine_prefix": self.machine_prefix
+                "machine_prefix": self.machine_prefix,
+                "last_checked": self.last_checked
                 }
