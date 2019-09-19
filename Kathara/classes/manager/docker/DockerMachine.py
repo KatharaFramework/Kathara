@@ -4,6 +4,7 @@ from itertools import islice
 
 import utils
 from ...setting.Setting import Setting
+from .DockerImage import DockerImage
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 SYSCTL_COMMAND = "sysctl %s=0" % RP_FILTER_NAMESPACE
@@ -43,10 +44,12 @@ STARTUP_COMMANDS = [
 
 
 class DockerMachine(object):
-    __slots__ = ['client']
+    __slots__ = ['client', 'docker_image']
 
-    def __init__(self, client):
+    def __init__(self, client, docker_image):
         self.client = client
+
+        self.docker_image = docker_image
 
     def deploy(self, machine):
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
@@ -106,6 +109,11 @@ class DockerMachine(object):
         # Mount the host home only if specified in settings.
         if Setting.get_instance().hosthome_mount:
             volumes[os.path.expanduser('~')] = {'bind': '/hosthome', 'mode': 'rw'}
+
+        try:
+            self.docker_image.check_and_pull(image)
+        except Exception as e:
+            raise Exception(str(e))
 
         machine_container = self.client.containers.create(image=image,
                                                           name=self.get_container_name(machine.name),
@@ -175,7 +183,7 @@ class DockerMachine(object):
         if Setting.get_instance().open_terminals:
             machine.connect(Setting.get_instance().terminal)
 
-    def undeploy(self, lab_hash, selected_machines):
+    def undeploy(self, lab_hash, selected_machines=None):
         containers = self.get_machines_by_filters(lab_hash=lab_hash)
 
         for container in containers:
@@ -245,4 +253,4 @@ class DockerMachine(object):
 
     @staticmethod
     def get_container_name(name):
-        return "%s_%s_%s" % (Setting.get_instance().machine_prefix, os.getlogin(), name)
+        return "%s_%s_%s_%s" % (Setting.get_instance().machine_prefix, os.getlogin(), name)

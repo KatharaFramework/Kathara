@@ -30,7 +30,7 @@ class ManagerProxy(IManager):
     def deploy_lab(self, lab):
         self.manager.deploy_lab(lab)
 
-    def undeploy_lab(self, lab_hash, selected_machines):
+    def undeploy_lab(self, lab_hash, selected_machines=None):
         self.manager.undeploy_lab(lab_hash, selected_machines)
 
     def wipe(self):
@@ -45,8 +45,8 @@ class ManagerProxy(IManager):
     def get_machine_info(self, machine_name):
         return self.manager.get_machine_info(machine_name)
 
-    def check(self, settings):
-        self.manager.check(settings)
+    def check_image(self, image_name):
+        self.manager.check_image(image_name)
 
     def check_updates(self, settings):
         self.manager.check_updates(settings)

@@ -7,7 +7,7 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `deploy_lab` method.")
 
     @abstractmethod
-    def undeploy_lab(self, lab_hash, selected_machines):
+    def undeploy_lab(self, lab_hash, selected_machines=None):
         raise NotImplementedError("You must implement `undeploy_lab` method.")
 
     @abstractmethod
@@ -27,7 +27,7 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `get_machine_info` method.")
 
     @abstractmethod
-    def check(self, settings):
+    def check_image(self, image_name):
         raise NotImplementedError("You must implement `check` method.")
 
     @abstractmethod

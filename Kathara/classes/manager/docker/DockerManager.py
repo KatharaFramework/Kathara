@@ -1,14 +1,11 @@
-import json
-import time
 from datetime import datetime
 
 import docker
-from docker.errors import APIError
 
 import utils
+from .DockerImage import DockerImage
 from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
-from ...api.DockerHubApi import DockerHubApi
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
 from ...model.Link import Link
@@ -33,12 +30,14 @@ def check_docker_status(method):
 
 
 class DockerManager(IManager):
-    __slots__ = ['docker_machine', 'docker_link', 'client']
+    __slots__ = ['docker_image', 'docker_machine', 'docker_link', 'client']
 
     def __init__(self):
         self.client = docker.from_env()
 
-        self.docker_machine = DockerMachine(self.client)
+        self.docker_image = DockerImage(self.client)
+
+        self.docker_machine = DockerMachine(self.client, self.docker_image)
         self.docker_link = DockerLink(self.client)
 
     @check_docker_status
@@ -60,7 +59,7 @@ class DockerManager(IManager):
             self.docker_machine.start(machine)
 
     @check_docker_status
-    def undeploy_lab(self, lab_hash, selected_machines):
+    def undeploy_lab(self, lab_hash, selected_machines=None):
         self.docker_machine.undeploy(lab_hash,
                                      selected_machines=selected_machines
                                      )
@@ -158,25 +157,17 @@ class DockerManager(IManager):
             self.docker_link.deploy(link_obj)
             link_obj.api_object.connect(machines[0])
 
-
-
-    def check(self, settings):
+    @check_docker_status
+    def check_image(self, image_name):
         try:
-            # Tries to get the image from the local Docker repository.
-            self.client.images.get(settings.image)
-        except APIError:
-            # If not found, tries on Docker Hub.
-            try:
-                # If the image exists on Docker Hub, pulls it.
-                DockerHubApi.get_image_information(settings.image)
-                self.client.images.pull(settings.image)
-            except Exception:
-                # If not, raise an exception
-                raise Exception("Image `%s` specified in settings does not exists." % settings.image)
+            self.docker_image.check_and_pull(image_name)
+        except Exception as e:
+            raise Exception(str(e))
 
+    @check_docker_status
     def check_updates(self, settings):
-        local_image_info = self.client.images.get(settings.image)
-        remote_image_info = DockerHubApi.get_image_information(settings.image)
+        local_image_info = self.docker_image.check_local(settings.image)
+        remote_image_info = self.docker_image.check_remote(settings.image)
 
         remote_image_digest = remote_image_info["images"][0]["digest"]
         local_repo_digest = local_image_info.attrs["RepoDigests"][0]
@@ -186,7 +177,7 @@ class DockerManager(IManager):
         if remote_image_digest != local_image_digest:
             utils.confirmation_prompt("A new version of image `%s` has been found on Docker Hub. "
                                       "Do you want to pull it?" % settings.image,
-                                      lambda: self.client.images.pull(settings.image),
+                                      lambda: self.docker_image.pull(settings.image),
                                       lambda: None
                                       )
 

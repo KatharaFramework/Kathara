@@ -45,6 +45,7 @@ class VconfigCommand(Command):
             if not matches:
                 sys.stderr.write('Syntax error in --eth field.\n')
                 self.parser.print_help()
+                exit(1)
 
         vlab_dir = utils.get_vlab_temp_path()
         lab = Lab(vlab_dir)

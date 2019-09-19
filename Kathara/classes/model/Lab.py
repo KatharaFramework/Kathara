@@ -54,7 +54,7 @@ class Lab(object):
 
     def check_integrity(self):
         for machine in self.machines:
-            self.machines[machine].check()
+            self.machines[machine].check_image()
 
     def intersect_machines(self, selected_machines):
         """
