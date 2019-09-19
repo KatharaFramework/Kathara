@@ -79,8 +79,9 @@ class DockerManager(IManager):
                                     )
 
     @check_docker_status
-    def get_lab_info(self, lab_hash=None):
-        machines = self.docker_machine.get_machines_by_filters(lab_hash=lab_hash)
+    def get_lab_info(self, lab_hash=None, machine_name=None):
+        container_name = self.docker_machine.get_container_name(machine_name) if machine_name else None
+        machines = self.docker_machine.get_machines_by_filters(lab_hash=lab_hash, container_name=container_name)
 
         if not machines:
             raise Exception("Lab is not started.")
@@ -111,9 +112,9 @@ class DockerManager(IManager):
             yield(all_stats)
 
     @check_docker_status
-    def get_machine_info(self, machine_name):
+    def get_machine_info(self, machine_name, lab_hash=None):
         container_name = self.docker_machine.get_container_name(machine_name)
-        machines = self.docker_machine.get_machines_by_filters(container_name=container_name)
+        machines = self.docker_machine.get_machines_by_filters(container_name=container_name, lab_hash=lab_hash)
 
         if not machines:
             raise Exception("The specified machine is not running.")

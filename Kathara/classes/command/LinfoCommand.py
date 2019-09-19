@@ -32,6 +32,12 @@ class LinfoCommand(Command):
             help='Live mode, can be used only when a lab is launched.'
         )
 
+        parser.add_argument(
+            '-n', '--name',
+            required=False,
+            help='Shows only info about specified machine.'
+        )
+
         self.parser = parser
 
     def run(self, current_path, argv):
@@ -39,17 +45,19 @@ class LinfoCommand(Command):
 
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
         lab_path = utils.get_absolute_path(lab_path)
-
-        if args.live:
-            self._get_live_info(lab_path)
-        else:
-            self._get_conf_info(lab_path)
-
-    @staticmethod
-    def _get_live_info(lab_path):
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        lab_info = ManagerProxy.get_instance().get_lab_info(lab_hash)
+        if args.live:
+            self._get_live_info(lab_hash, args.name)
+        else:
+            if args.name:
+                print(ManagerProxy.get_instance().get_machine_info(args.name, lab_hash))
+            else:
+                self._get_conf_info(lab_path)
+
+    @staticmethod
+    def _get_live_info(lab_hash, machine_name):
+        lab_info = ManagerProxy.get_instance().get_lab_info(lab_hash, machine_name)
 
         while True:
             utils.exec_by_platform(lambda: os.system('clear'), lambda: os.system('cls'), lambda: os.system('clear'))

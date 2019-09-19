@@ -39,11 +39,11 @@ class ManagerProxy(IManager):
     def connect_tty(self, lab_hash, machine_name, shell):
         self.manager.connect_tty(lab_hash, machine_name, shell)
 
-    def get_lab_info(self, lab_hash=None):
-        return self.manager.get_lab_info(lab_hash)
+    def get_lab_info(self, lab_hash=None, machine_name=None):
+        return self.manager.get_lab_info(lab_hash, machine_name)
 
-    def get_machine_info(self, machine_name):
-        return self.manager.get_machine_info(machine_name)
+    def get_machine_info(self, machine_name, lab_hash=None):
+        return self.manager.get_machine_info(machine_name, lab_hash)
 
     def check(self, settings):
         self.manager.check(settings)
