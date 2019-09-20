@@ -8,7 +8,6 @@ from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
-from ...model.Link import Link
 
 
 def check_docker_status(method):
@@ -79,7 +78,8 @@ class DockerManager(IManager):
 
     @check_docker_status
     def get_lab_info(self, lab_hash=None, machine_name=None):
-        container_name = self.docker_machine.get_container_name(machine_name) if machine_name else None
+        container_name = self.docker_machine.get_container_name(machine_name, lab_hash) if machine_name else None
+
         machines = self.docker_machine.get_machines_by_filters(lab_hash=lab_hash, container_name=container_name)
 
         if not machines:
@@ -112,7 +112,7 @@ class DockerManager(IManager):
 
     @check_docker_status
     def get_machine_info(self, machine_name, lab_hash=None):
-        container_name = self.docker_machine.get_container_name(machine_name)
+        container_name = self.docker_machine.get_container_name(machine_name, lab_hash)
         machines = self.docker_machine.get_machines_by_filters(container_name=container_name, lab_hash=lab_hash)
 
         if not machines:
@@ -144,19 +144,18 @@ class DockerManager(IManager):
         return machine_info
 
     @check_docker_status
-    def attach_links_to_machine(self, lab, machine_name, link_names):
-        container_name = self.docker_machine.get_container_name(machine_name)
-        machines = self.docker_machine.get_machines_by_filters(container_name=container_name, lab_hash=lab.folder_hash)
+    def get_machine_from_api(self, name, lab_hash):
+        container_name = self.docker_machine.get_container_name(name, lab_hash)
 
-        if not machines:
-            raise Exception("The specified machine does not exists.")
-        elif len(machines) > 1:
-            raise Exception("There are more than one machine matching the name `%d`." % machine_name)
+        machines = self.docker_machine.get_machines_by_filters(container_name=container_name)
+        return machines.pop() if machines else None
 
-        for link in link_names:
-            link_obj = Link(lab, link)
-            self.docker_link.deploy(link_obj)
-            link_obj.api_object.connect(machines[0])
+    @check_docker_status
+    def get_link_from_api(self, name):
+        link_name = self.docker_link.get_network_name(name)
+
+        links = self.docker_link.get_links_by_filters(link_name=link_name)
+        return links.pop() if links else None
 
     @check_docker_status
     def check_image(self, image_name):
@@ -188,6 +187,8 @@ class DockerManager(IManager):
 
     @staticmethod
     def _get_aggregate_machine_info(stats):
+        network_stats = stats["networks"] if "networks" in stats else {}
+
         return {
             "cpu_usage": "{0:.2f}%".format(stats["cpu_stats"]["cpu_usage"]["total_usage"] /
                                            stats["cpu_stats"]["system_cpu_usage"]
@@ -196,9 +197,9 @@ class DockerManager(IManager):
                          utils.human_readable_bytes(stats["memory_stats"]["limit"]),
             "mem_percent": "{0:.2f}%".format((stats["memory_stats"]["usage"] / stats["memory_stats"]["limit"]) * 100),
             "net_usage": utils.human_readable_bytes(sum([net_stats["rx_bytes"]
-                                                         for (_, net_stats) in stats["networks"].items()])
+                                                         for (_, net_stats) in network_stats.items()])
                                                     ) + " / " +
                          utils.human_readable_bytes(sum([net_stats["tx_bytes"]
-                                                         for (_, net_stats) in stats["networks"].items()])
+                                                         for (_, net_stats) in network_stats.items()])
                                                     )
         }

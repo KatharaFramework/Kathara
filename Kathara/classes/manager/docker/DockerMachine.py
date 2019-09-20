@@ -1,10 +1,9 @@
 import os
-from subprocess import Popen
 from itertools import islice
+from subprocess import Popen
 
 import utils
 from ...setting.Setting import Setting
-from .DockerImage import DockerImage
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 SYSCTL_COMMAND = "sysctl %s=0" % RP_FILTER_NAMESPACE
@@ -52,6 +51,13 @@ class DockerMachine(object):
         self.docker_image = docker_image
 
     def deploy(self, machine):
+        # If a machine with the same name exists, return it instead of creating a new one.
+        container_name = self.get_container_name(machine.name, machine.lab.folder_hash)
+        machine_objects = self.get_machines_by_filters(container_name=container_name)
+        if not machine_objects:
+            machine.api_object = machine_objects.pop()
+            return
+
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options
 
@@ -116,7 +122,7 @@ class DockerMachine(object):
             raise Exception(str(e))
 
         machine_container = self.client.containers.create(image=image,
-                                                          name=self.get_container_name(machine.name),
+                                                          name=container_name,
                                                           hostname=machine.name,
                                                           privileged=True,
                                                           network=first_network.name if first_network else None,
@@ -200,7 +206,7 @@ class DockerMachine(object):
             container.remove(force=True)
 
     def connect(self, lab_hash, machine_name, shell):
-        container_name = self.get_container_name(machine_name)
+        container_name = self.get_container_name(machine_name, lab_hash)
 
         containers = self.get_machines_by_filters(lab_hash=lab_hash, container_name=container_name)
 
@@ -252,5 +258,6 @@ class DockerMachine(object):
         return self.client.containers.list(all=True, filters=filters)
 
     @staticmethod
-    def get_container_name(name):
-        return "%s_%s_%s_%s" % (Setting.get_instance().machine_prefix, os.getlogin(), name)
+    def get_container_name(name, lab_hash):
+        lab_hash = lab_hash if lab_hash else ""
+        return "%s_%s_%s_%s" % (Setting.get_instance().machine_prefix, os.getlogin(), name, lab_hash)

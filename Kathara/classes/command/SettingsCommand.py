@@ -23,6 +23,7 @@ class SettingsCommand(Command):
 
         # A SelectionMenu constructs a menu from a list of strings
         selection_menu = SelectionMenu(["Quagga", "Frr", "OpenVSwitch", "P4"])
+        print(selection_menu.get_selection(["Quagga", "Frr", "OpenVSwitch", "P4"]))
 
         # A SubmenuItem lets you add a menu (the selection_menu above, for example)
         # as a submenu of another menu

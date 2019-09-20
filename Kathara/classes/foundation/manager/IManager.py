@@ -35,9 +35,13 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `check_updates` method.")
 
     @abstractmethod
-    def get_release_version(self):
-        raise NotImplementedError("You must implement `get_release_version` method.")
+    def get_machine_from_api(self, name, lab_hash):
+        raise NotImplementedError("You must implement `get_machine_from_api` method.")
 
     @abstractmethod
-    def attach_links_to_machine(self, lab, machine_name, link_names):
-        raise NotImplementedError("You must implement `attach_links_to_machine` method.")
+    def get_link_from_api(self, name):
+        raise NotImplementedError("You must implement `get_link_from_api` method.")
+
+    @abstractmethod
+    def get_release_version(self):
+        raise NotImplementedError("You must implement `get_release_version` method.")
