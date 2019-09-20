@@ -21,7 +21,7 @@ The possible kathara command are:
 \tconnect\t\tConnect to a Kathara machine
 \twipe\t\tDelete all Kathara machines and links
 \tlist\t\tShow all running Kathara machines
-\tsetting\t\tShow and edit setting
+\tsettings\t\tShow and edit setting
 \tversion\t\tPrint current version
 \tcheck\t\tCheck your system environment
 """
