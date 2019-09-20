@@ -30,7 +30,7 @@ class ManagerProxy(IManager):
     def deploy_lab(self, lab):
         self.manager.deploy_lab(lab)
 
-    def undeploy_lab(self, lab_hash, selected_machines):
+    def undeploy_lab(self, lab_hash, selected_machines=None):
         self.manager.undeploy_lab(lab_hash, selected_machines)
 
     def wipe(self):
@@ -45,14 +45,17 @@ class ManagerProxy(IManager):
     def get_machine_info(self, machine_name, lab_hash=None):
         return self.manager.get_machine_info(machine_name, lab_hash)
 
-    def check(self, settings):
-        self.manager.check(settings)
+    def check_image(self, image_name):
+        self.manager.check_image(image_name)
 
     def check_updates(self, settings):
         self.manager.check_updates(settings)
 
+    def get_machine_from_api(self, name, lab_hash):
+        return self.manager.get_machine_from_api(name, lab_hash)
+
+    def get_link_from_api(self, name):
+        return self.manager.get_link_from_api(name)
+
     def get_release_version(self):
         return self.manager.get_release_version()
-
-    def attach_links_to_machine(self, lab, machine_name, link_names):
-        self.manager.attach_links_to_machine(lab, machine_name, link_names)

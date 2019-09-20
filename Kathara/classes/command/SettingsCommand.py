@@ -29,7 +29,6 @@ class SettingsCommand(Command):
 
         submenu_item = SubmenuItem(select_image_string, select_image_menu, menu)
 
-
         # Manager
         choose_manager_string = "Choose default manager"
         deployer_menu = SelectionMenu([], title=choose_manager_string)

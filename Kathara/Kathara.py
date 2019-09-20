@@ -60,8 +60,8 @@ class KatharaEntryPoint(object):
             print("If you encounter any problem please run `kathara wipe`.")
             exit(0)
         except Exception as e:
-            # import traceback
-            # traceback.print_exc()
+            import traceback
+            traceback.print_exc()
 
             sys.stderr.write(str(e) + '\n')
             exit(1)

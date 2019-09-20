@@ -24,7 +24,8 @@ class DockerLink(object):
             return
 
         # If a network with the same name exists, return it instead of creating a new one.
-        network_objects = self.get_links_by_filters(link_name=self.get_network_name(link.name))
+        link_name = self.get_network_name(link.name)
+        network_objects = self.get_links_by_filters(link_name=link_name)
         if network_objects:
             link.api_object = network_objects.pop()
             return
@@ -49,7 +50,7 @@ class DockerLink(object):
                                                       pool_configs=[network_pool]
                                                       )
 
-        link.api_object = self.client.networks.create(name=self.get_network_name(link.name),
+        link.api_object = self.client.networks.create(name=link_name,
                                                       driver='bridge',
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,

@@ -103,7 +103,7 @@ class Setting(object):
 
         from ..manager.ManagerProxy import ManagerProxy
         try:
-            ManagerProxy.get_instance().check(self)
+            ManagerProxy.get_instance().check_image(self.image)
         except Exception as e:
             raise Exception(str(e))
 
