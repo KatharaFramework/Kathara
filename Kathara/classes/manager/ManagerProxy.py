@@ -30,6 +30,9 @@ class ManagerProxy(IManager):
     def deploy_lab(self, lab):
         self.manager.deploy_lab(lab)
 
+    def update_lab(self, lab_diff):
+        self.manager.update_lab(lab_diff)
+
     def undeploy_lab(self, lab_hash, selected_machines=None):
         self.manager.undeploy_lab(lab_hash, selected_machines)
 
@@ -50,12 +53,6 @@ class ManagerProxy(IManager):
 
     def check_updates(self, settings):
         self.manager.check_updates(settings)
-
-    def get_machine_from_api(self, name, lab_hash):
-        return self.manager.get_machine_from_api(name, lab_hash)
-
-    def get_link_from_api(self, name):
-        return self.manager.get_link_from_api(name)
 
     def get_release_version(self):
         return self.manager.get_release_version()

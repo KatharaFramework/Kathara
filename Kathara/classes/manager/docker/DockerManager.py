@@ -58,6 +58,16 @@ class DockerManager(IManager):
             self.docker_machine.start(machine)
 
     @check_docker_status
+    def update_lab(self, lab_diff):
+        # Deploy new links (if present)
+        for (_, link) in lab_diff.links.items():
+            self.docker_link.deploy(link)
+
+        # Update lab machines.
+        for (_, machine) in lab_diff.machines.items():
+            self.docker_machine.update(machine)
+
+    @check_docker_status
     def undeploy_lab(self, lab_hash, selected_machines=None):
         self.docker_machine.undeploy(lab_hash,
                                      selected_machines=selected_machines
@@ -142,20 +152,6 @@ class DockerManager(IManager):
         machine_info += "======================================================================="
 
         return machine_info
-
-    @check_docker_status
-    def get_machine_from_api(self, name, lab_hash):
-        container_name = self.docker_machine.get_container_name(name, lab_hash)
-
-        machines = self.docker_machine.get_machines_by_filters(container_name=container_name)
-        return machines.pop() if machines else None
-
-    @check_docker_status
-    def get_link_from_api(self, name):
-        link_name = self.docker_link.get_network_name(name)
-
-        links = self.docker_link.get_links_by_filters(link_name=link_name)
-        return links.pop() if links else None
 
     @check_docker_status
     def check_image(self, image_name):

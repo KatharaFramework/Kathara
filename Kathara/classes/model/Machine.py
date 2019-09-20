@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+from glob import glob
 
 import utils
 from .Link import BRIDGE_LINK_NAME
@@ -69,6 +70,10 @@ class Machine(object):
         self.interfaces = collections.OrderedDict(sorted_interfaces)
 
     def pack_data(self):
+        """
+        Pack machine data into a .tar.gz file and returns the tar content as a byte array.
+        While packing files, it also applies the win2linux patch in order to remove UTF-8 BOM.
+        """
         # Make a temp folder and create a tar.gz of the lab directory
         temp_path = tempfile.mkdtemp()
 
@@ -76,26 +81,47 @@ class Machine(object):
 
         with tarfile.open("%s/hostlab.tar.gz" % temp_path, "w:gz") as tar:
             if self.folder:
-                tar.add(self.folder, arcname="hostlab/%s" % self.name)
+                machine_files = filter(os.path.isfile, glob("%s/**" % self.folder, recursive=True))
+
+                for file in machine_files:
+                    (tarinfo, content) = utils.pack_file_for_tar(file,
+                                                                 arcname="hostlab/%s" % os.path.relpath(file,
+                                                                                                        self.folder
+                                                                                                        )
+                                                                 )
+                    tar.addfile(tarinfo, content)
+
                 is_empty = False
 
             if self.startup_path:
-                tar.add(self.startup_path, arcname="hostlab/%s.startup" % self.name)
+                (tarinfo, content) = utils.pack_file_for_tar(self.startup_path,
+                                                             arcname="hostlab/%s.startup" % self.name
+                                                             )
+                tar.addfile(tarinfo, content)
                 is_empty = False
 
             if self.shutdown_path:
-                tar.add(self.shutdown_path, arcname="hostlab/%s.shutdown" % self.name)
+                (tarinfo, content) = utils.pack_file_for_tar(self.shutdown_path,
+                                                             arcname="hostlab/%s.shutdown" % self.name
+                                                             )
+                tar.addfile(tarinfo, content)
                 is_empty = False
 
             if self.lab.shared_startup_path:
-                tar.add(self.lab.shared_startup_path, arcname="hostlab/shared.startup")
+                (tarinfo, content) = utils.pack_file_for_tar(self.lab.shared_startup_path,
+                                                             arcname="hostlab/shared.startup"
+                                                             )
+                tar.addfile(tarinfo, content)
                 is_empty = False
 
             if self.lab.shared_shutdown_path:
-                tar.add(self.lab.shared_shutdown_path, arcname="hostlab/shared.shutdown")
+                (tarinfo, content) = utils.pack_file_for_tar(self.lab.shared_shutdown_path,
+                                                             arcname="hostlab/shared.shutdown"
+                                                             )
+                tar.addfile(tarinfo, content)
                 is_empty = False
 
-        # If no machine files are found, don't deploy anything.
+        # If no machine files are found, return None.
         if is_empty:
             return None
 

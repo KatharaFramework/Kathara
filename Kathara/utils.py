@@ -4,8 +4,12 @@ import importlib
 import math
 import os
 import re
+import tarfile
 import tempfile
+from io import BytesIO
 from sys import platform as _platform
+
+from binaryornot.check import is_binary
 
 from classes.setting.Setting import VLAB_NAME
 
@@ -68,3 +72,19 @@ def confirmation_prompt(prompt_string, callback_yes, callback_no):
             return callback_no()
 
     return callback_yes()
+
+
+def convert_win_2_linux(filename):
+    if not is_binary(filename):
+        file_content = open(filename, mode='r', encoding='utf-8-sig').read()
+        return file_content.replace("\n\r", "\n").encode('utf-8')
+
+
+def pack_file_for_tar(filename, arcname):
+    file_content_patched = convert_win_2_linux(filename)
+
+    file_content = BytesIO(file_content_patched)
+    tarinfo = tarfile.TarInfo(arcname)
+    tarinfo.size = len(file_content_patched)
+
+    return tarinfo, file_content

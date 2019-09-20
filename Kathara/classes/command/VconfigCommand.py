@@ -55,26 +55,6 @@ class VconfigCommand(Command):
             lab.connect_machine_to_link(args.name, iface_number, eth)
             iface_number += 1
 
-        print(lab.__repr__())
-
-        # machine_api_object = ManagerProxy.get_instance().get_machine_from_api(args.name,
-        #                                                                       lab_hash=lab.folder_hash
-        #                                                                       )
-        #
-        # if not machine_api_object:
-        #     raise Exception("Machine `%s` not found." % args.name)
-
-
-        # machine.api_object = machine_api_object
-
-        # attached_networks = machine_api_object.attrs["NetworkSettings"]["Networks"]
-        # if "none" in attached_networks:
-        #     del attached_networks["none"]
-        #
-        # last_interface = len(attached_networks)
-        #
-
-
-
+        ManagerProxy.get_instance().update_lab(lab)
 
         Setting.get_instance().save_selected(['net_counter'])

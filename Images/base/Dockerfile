@@ -55,3 +55,6 @@ RUN apt clean
 RUN ln -s /etc/init.d/bind9 /etc/init.d/bind
 
 COPY .bashrc /root/.bashrc
+
+VOLUME /hosthome
+VOLUME /shared

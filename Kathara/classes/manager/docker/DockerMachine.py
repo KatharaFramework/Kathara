@@ -51,13 +51,6 @@ class DockerMachine(object):
         self.docker_image = docker_image
 
     def deploy(self, machine):
-        # If a machine with the same name exists, return it instead of creating a new one.
-        container_name = self.get_container_name(machine.name, machine.lab.folder_hash)
-        machine_objects = self.get_machines_by_filters(container_name=container_name)
-        if not machine_objects:
-            machine.api_object = machine_objects.pop()
-            return
-
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options
 
@@ -121,6 +114,7 @@ class DockerMachine(object):
         except Exception as e:
             raise Exception(str(e))
 
+        container_name = self.get_container_name(machine.name, machine.lab.folder_hash)
         machine_container = self.client.containers.create(image=image,
                                                           name=container_name,
                                                           hostname=machine.name,
@@ -159,6 +153,36 @@ class DockerMachine(object):
             machine.bridge.api_object.connect(machine_container)
 
         machine.api_object = machine_container
+
+    def update(self, machine):
+        container_name = self.get_container_name(machine.name, machine.lab.folder_hash)
+        machines = self.get_machines_by_filters(container_name=container_name)
+
+        if not machines:
+            raise Exception("Machine `%s` not found." % machine.name)
+
+        machine.api_object = machines.pop()
+
+        attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
+        last_interface = len(attached_networks) - 1 if "none" in attached_networks else len(attached_networks)
+
+        rp_filter_commands = []
+        # Connect the container to its new networks
+        for (_, machine_link) in machine.interfaces.items():
+            machine_link.api_object.connect(machine.api_object)
+
+            # Add the rp_filter patch for this interface
+            rp_filter_commands.append(SYSCTL_COMMAND % ("eth%d" % last_interface))
+
+            last_interface += 1
+
+        # Execute the rp_filter patch for the new interfaces
+        machine.api_object.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', "; ".join(rp_filter_commands)],
+                                    stdout=False,
+                                    stderr=False,
+                                    privileged=True,
+                                    detach=True
+                                    )
 
     @staticmethod
     def start(machine):
