@@ -40,13 +40,20 @@ class KatharaEntryPoint(object):
         args = parser.parse_args(sys.argv[1:2])
 
         command_object = None
+
+        module_name = ("classes.command", args.command.capitalize() + "Command")
         try:
-            command_class = utils.class_for_name("classes.command", args.command.capitalize() + "Command")
+            command_class = utils.class_for_name(module_name[0], module_name[1])
             command_object = command_class()
-        except ModuleNotFoundError:
-            sys.stderr.write('Unrecognized command.\n')
-            parser.print_help()
-            exit(1)
+        except ModuleNotFoundError as e:
+            if e.name == '.'.join(module_name):
+                sys.stderr.write('Unrecognized command.\n')
+                parser.print_help()
+                exit(1)
+            else:
+                sys.stderr.write(str(e))
+                sys.stderr.write("\nLooks like %s is not installed in your system\n" % e.name)
+                exit(1)
 
         try:
             # Load config file
