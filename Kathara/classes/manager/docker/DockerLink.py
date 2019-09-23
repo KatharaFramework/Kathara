@@ -94,8 +94,11 @@ class DockerLink(object):
         def no_privilege_patch():
             # Directly patch /sys/class opening the files
             for (path, value) in patches.items():
+              try:
                 with open(path.format(net_id=network.id[:12]), 'w') as sys_class:
                     sys_class.write(str(value))
+              except PermissionError as e:
+                privilege_patch()
 
         def privilege_patch():
             # Privilege escalation to patch bridges, since Docker runs in a VM on Windows and MacOS.
