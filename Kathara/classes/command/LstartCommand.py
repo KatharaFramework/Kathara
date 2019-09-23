@@ -28,7 +28,7 @@ class LstartCommand(Command):
             action="store_const",
             dest="terminals",
             const=False,
-            default=True,
+            default=None,
             help='Start the lab without opening terminal windows.'
         )
         group.add_argument(
