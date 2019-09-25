@@ -34,13 +34,13 @@ class Setting(object):
             raise Exception("This class is a singleton!")
         else:
             # TODO: Change to a proper path
-            self.setting_path = "config.json"
+            self.setting_path = "/home/lollo/git/ookathara/Kathara/config.json"
 
             # Default values to use
             self.image = 'kathara/netkit_base'
             self.deployer_type = 'docker'
             self.net_counter = 0
-            self.terminal = 'xterm'
+            self.terminal = '/usr/bin/xterm' # thinking about changing to x-terminal-emulator that is a symlink to the default terminal
             self.open_terminals = True
             self.hosthome_mount = True
             self.machine_shell = "bash"

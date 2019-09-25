@@ -136,14 +136,13 @@ class Machine(object):
 
     def connect(self, terminal_name):
         # TODO: Change executable path
-        connect_command = "./Kathara.py connect %s"
+
+        connect_command = "./Kathara.py connect %s" % self.name
         terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
         def unix_connect():
-            subprocess.Popen([terminal,
-                              '-e',
-                              connect_command % self.name
-                              ],
+            # Remember this https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
+            subprocess.Popen([terminal, "-e", connect_command],
                              cwd=self.lab.path,
                              start_new_session=True
                              )
@@ -152,7 +151,7 @@ class Machine(object):
             subprocess.Popen(["powershell.exe",
                               '-Command',
                               'python',
-                              connect_command % self.name
+                              connect_command
                               ],
                              creationflags=subprocess.CREATE_NEW_CONSOLE,
                              cwd=self.lab.path
