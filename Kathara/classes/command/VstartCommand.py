@@ -110,7 +110,7 @@ class VstartCommand(Command):
             print("Machine configuration is correct. Exiting...")
             exit(0)
         else:
-            print(utils.format_headers("Starting Machine"))
+            logging.info(utils.format_headers("Starting Machine"))
 
         vlab_dir = utils.get_vlab_temp_path()
         lab = Lab(vlab_dir)

@@ -3,6 +3,7 @@
 import argparse
 import os
 import sys
+import coloredlogs, logging
 
 import utils
 from classes.setting.Setting import Setting
@@ -47,12 +48,11 @@ class KatharaEntryPoint(object):
             command_object = command_class()
         except ModuleNotFoundError as e:
             if e.name == '.'.join(module_name):
-                sys.stderr.write('Unrecognized command.\n')
+                logging.error('Unrecognized command.\n')
                 parser.print_help()
                 exit(1)
             else:
-                sys.stderr.write(str(e))
-                sys.stderr.write("\nLooks like %s is not installed in your system\n" % e.name)
+                logging.critical("\nLooks like %s is not installed in your system\n" % e.name)
                 exit(1)
 
         try:
@@ -63,16 +63,18 @@ class KatharaEntryPoint(object):
             current_path = os.getcwd()
             command_object.run(current_path, sys.argv[2:])
         except KeyboardInterrupt:
-            print("You interrupted Kathara during a command. The system may be in an inconsistent state!")
-            print("If you encounter any problem please run `kathara wipe`.")
+            logging.critical("You interrupted Kathara during a command. The system may be in an inconsistent state!")
+            logging.critical("If you encounter any problem please run `kathara wipe`.")
             exit(0)
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            # import traceback
+            # traceback.print_exc()
 
-            sys.stderr.write(str(e) + '\n')
+            logging.critical(str(e) + '\n')
             exit(1)
 
 
 if __name__ == '__main__':
+    coloredlogs.install(fmt='%(levelname)s - %(message)s', level='DEBUG')
+    
     KatharaEntryPoint()

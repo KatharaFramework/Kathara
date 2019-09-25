@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 import utils
 from ..foundation.command.Command import Command

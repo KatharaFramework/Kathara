@@ -1,5 +1,6 @@
 import argparse
 import sys
+import logging
 
 import version
 from ..foundation.command.Command import Command
@@ -32,10 +33,10 @@ class CheckCommand(Command):
         machine.add_meta("image", Setting.get_instance().image)
         try:
             ManagerProxy.get_instance().deploy_lab(lab)
-            print("\t! Container run successfully.")
+            print("*\tContainer run successfully.")
             ManagerProxy.get_instance().undeploy_lab(lab.folder_hash)
         except Exception as e:
-            print("\t! Running `Hello World` failed: %s" % str(e))
+            logging.exception("\t! Running `Hello World` failed: %s" % str(e))
 
         print("*\tPython version is: %s" % sys.version.replace("\n", "- "))
 

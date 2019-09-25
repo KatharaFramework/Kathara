@@ -1,6 +1,7 @@
 import argparse
 import os
 import time
+import logging
 
 import utils
 from ..foundation.command.Command import Command
