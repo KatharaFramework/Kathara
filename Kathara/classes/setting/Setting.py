@@ -5,8 +5,6 @@ import time
 import version
 from ..api.GitHubApi import GitHubApi
 
-VLAB_NAME = "kathara_vlab"
-
 MAX_DOCKER_LAN_NUMBER = 256 * 256
 MAX_K8S_NUMBER = (1 << 24) - 20
 
@@ -15,10 +13,13 @@ K8S = "k8s"
 
 ONE_WEEK = 604800
 
+# TODO: Change to a proper path
+SETTING_PATH = "/home/lollo/git/ookathara/Kathara/config.json"
+
 
 class Setting(object):
-    __slots__ = ['setting_path', 'image', 'deployer_type', 'net_counter', 'terminal', 'open_terminals',
-                 'hosthome_mount', 'machine_shell', 'net_prefix', 'machine_prefix', 'last_checked']
+    __slots__ = ['image', 'deployer_type', 'net_counter', 'terminal', 'open_terminals',
+                 'hosthome_mount', 'machine_shell', 'net_prefix', 'machine_prefix', 'last_checked', 'vlab_folder_name']
 
     __instance = None
 
@@ -33,19 +34,17 @@ class Setting(object):
         if Setting.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
-            # TODO: Change to a proper path
-            self.setting_path = "/home/lollo/git/ookathara/Kathara/config.json"
-
             # Default values to use
             self.image = 'kathara/netkit_base'
             self.deployer_type = 'docker'
             self.net_counter = 0
-            self.terminal = '/usr/bin/xterm' # thinking about changing to x-terminal-emulator that is a symlink to the default terminal
+            self.terminal = '/usr/bin/xterm' #TODO: thinking about changing to x-terminal-emulator that is a symlink to the default terminal
             self.open_terminals = True
             self.hosthome_mount = True
             self.machine_shell = "bash"
             self.net_prefix = 'kathara'
             self.machine_prefix = 'kathara'
+            self.vlab_folder_name = "kathara_vlab"
             self.last_checked = time.time() - ONE_WEEK
 
             self.load()
@@ -53,11 +52,11 @@ class Setting(object):
             Setting.__instance = self
 
     def load(self):
-        if not os.path.exists(self.setting_path):               # If settings file don't exist, create with defaults
+        if not os.path.exists(SETTING_PATH):               # If settings file don't exist, create with defaults
             self.save()
         else:                                                   # If file exists, read it and check values
             settings = {}
-            with open(self.setting_path, 'r') as settings_file:
+            with open(SETTING_PATH, 'r') as settings_file:
                 try:
                     settings = json.load(settings_file)
                 except ValueError:
@@ -66,6 +65,15 @@ class Setting(object):
             for (name, value) in settings.items():
                 setattr(self, name, value)
 
+    @staticmethod
+    def wipe():
+        if os.path.exists(SETTING_PATH):
+            os.remove(SETTING_PATH)
+
+        Setting.__instance = None
+        Setting.get_instance()
+
+
     def save(self, content=None):
         """
         Saves settings to a config.json file in the Kathara path.
@@ -73,7 +81,7 @@ class Setting(object):
         """
         to_save = self._to_dict() if content is None else content
 
-        with open(self.setting_path, 'w') as settings_file:
+        with open(SETTING_PATH, 'w') as settings_file:
             settings_file.write(json.dumps(to_save, indent=True))
 
     def save_selected(self, selected_settings):
@@ -84,7 +92,7 @@ class Setting(object):
         settings = {}
 
         # Open the original JSON file and read it
-        with open(self.setting_path, 'r') as settings_file:
+        with open(SETTING_PATH, 'r') as settings_file:
             try:
                 settings = json.load(settings_file)
             except ValueError:
@@ -160,5 +168,6 @@ class Setting(object):
                 "machine_shell": self.machine_shell,
                 "net_prefix": self.net_prefix,
                 "machine_prefix": self.machine_prefix,
+                "vlab_folder_name" : self.vlab_folder_name,
                 "last_checked": self.last_checked
                 }
