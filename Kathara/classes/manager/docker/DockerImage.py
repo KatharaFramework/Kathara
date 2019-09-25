@@ -24,6 +24,7 @@ class DockerImage(object):
             try:
                 # If the image exists on Docker Hub, pulls it.
                 self.check_remote(image_name)
+                print("Pulling image %s... This may take a while." % image_name)
                 self.pull(image_name)
             except Exception:
                 # If not, raise an exception

@@ -11,7 +11,7 @@ from sys import platform as _platform
 
 from binaryornot.check import is_binary
 
-from classes.setting.Setting import VLAB_NAME
+from classes.setting.Setting import Setting
 
 # Platforms constants definition.
 MAC_OS = "darwin"
@@ -56,7 +56,7 @@ def human_readable_bytes(size_bytes):
 
 
 def get_vlab_temp_path(force_creation=True):
-    vlab_directory = os.path.join(tempfile.gettempdir(), VLAB_NAME)
+    vlab_directory = os.path.join(tempfile.gettempdir(), Setting.get_instance().vlab_folder_name)
     if not os.path.isdir(vlab_directory) and force_creation:
         os.mkdir(vlab_directory)
 
