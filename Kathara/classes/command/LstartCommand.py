@@ -104,9 +104,9 @@ class LstartCommand(Command):
         lab_path = utils.get_absolute_path(lab_path)
 
         if args.dry_mode:
-            print("========================= Checking Lab ==========================")
+            print(utils.format_headers("Checking Lab"))
         else:
-            print("========================= Starting Lab ==========================")
+            print(utils.format_headers("Starting Lab"))
 
         try:
             lab = LabParser.parse(lab_path)
@@ -128,7 +128,7 @@ class LstartCommand(Command):
 
         if lab_meta_information:
             print(lab_meta_information)
-            print("=================================================================")
+            print("=============================================================")
 
         # If dry mode, we just check if the lab.conf is correct.
         if args.dry_mode:

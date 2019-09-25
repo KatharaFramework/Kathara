@@ -33,6 +33,14 @@ def generate_urlsafe_hash(string):
 def get_absolute_path(path):
     return os.path.abspath(path)
 
+def format_headers(message):
+    footer = "=============================="
+    half_message = int((len(message)/2)+1)
+    second_half_message = half_message
+    if len(message) % 2 == 0:
+        second_half_message -= 1
+    return footer[half_message:] + " " + message + " " + footer[second_half_message:]
+
 
 def exec_by_platform(fun_linux, fun_windows, fun_mac):
     if _platform == LINUX or _platform == LINUX2:

@@ -66,14 +66,14 @@ class LinfoCommand(Command):
 
     @staticmethod
     def _get_conf_info(lab_path):
-        print("========================= Lab Information ==========================")
+        print(utils.format_headers("Lab Information"))
 
         lab = LabParser.parse(lab_path)
         lab_meta_information = str(lab)
 
         if lab_meta_information:
             print(lab_meta_information)
-            print("====================================================================")
+            print("=============================================================")
 
         n_machines = len(lab.machines)
         n_links = len(lab.links) if BRIDGE_LINK_NAME not in lab.links else len(lab.links) - 1
@@ -81,4 +81,4 @@ class LinfoCommand(Command):
         print("There are %d machines." % n_machines)
         print("There are %d links." % n_links)
 
-        print("====================================================================")
+        print("=============================================================")

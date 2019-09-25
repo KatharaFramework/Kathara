@@ -3,6 +3,7 @@ import os
 import time
 
 import version
+import utils
 from ..api.GitHubApi import GitHubApi
 
 MAX_DOCKER_LAN_NUMBER = 256 * 256
@@ -118,7 +119,7 @@ class Setting(object):
         current_time = time.time()
         # After 1 week, check if a new image version has been released.
         if current_time - self.last_checked > ONE_WEEK:
-            print("========================= Checking Updates ==============================")
+            print(utils.format_headers("Checking Updates"))
 
             latest_remote_release = GitHubApi.get_release_information()
             latest_version = latest_remote_release["tag_name"]
@@ -134,7 +135,7 @@ class Setting(object):
                 self.last_checked = current_time
                 self.save_selected(['last_checked'])
 
-            print("=========================================================================")
+            print("=============================================================")
 
         try:
             self.net_counter = int(self.net_counter)
