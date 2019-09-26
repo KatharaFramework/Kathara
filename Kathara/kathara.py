@@ -20,7 +20,7 @@ The possible kathara command are:
 \tlrestart\tRestart a Kathara lab
 \tltest\t\tTest a Kathara lab
 \tconnect\t\tConnect to a Kathara machine
-\twipe\t\tDelete all Kathara machines and links
+\twipe\t\tDelete all Kathara machines and links, optionally delete also settings
 \tlist\t\tShow all running Kathara machines
 \tsettings\tShow and edit setting
 \tversion\t\tPrint current version
