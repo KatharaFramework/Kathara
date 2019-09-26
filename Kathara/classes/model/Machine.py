@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import sys
 from glob import glob
 
 import utils
@@ -135,9 +136,7 @@ class Machine(object):
         return tar_data
 
     def connect(self, terminal_name):
-        # TODO: Change executable path
-
-        connect_command = "/home/lollo/git/ookathara/Kathara/dist/kathara connect %s" % self.name
+        connect_command = "%s connect %s" % (sys.argv[0], self.name)
         terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
         def unix_connect():
