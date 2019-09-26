@@ -94,7 +94,10 @@ class DockerManager(IManager):
         machines = self.docker_machine.get_machines_by_filters(lab_hash=lab_hash, container_name=container_name)
 
         if not machines:
-            raise Exception("Lab is not started.")
+            if not lab_hash:
+                raise Exception("No machines running.")
+            else:
+                raise Exception("Lab is not started.")
 
         machines = sorted(machines, key=lambda x: x.name)
 

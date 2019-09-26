@@ -1,0 +1,48 @@
+# -*- mode: python ; coding: utf-8 -*-
+
+block_cipher = None
+
+
+a = Analysis(['kathara.py'],
+             pathex=['/home/lollo/git/ookathara/Kathara'],
+             binaries=[],
+             datas=[],
+             hiddenimports=['classes',
+                            'classes.command',
+                            'classes.command.CheckCommand',
+                            'classes.command.ConnectCommand',
+                            'classes.command.LcleanCommand',
+                            'classes.command.LinfoCommand',
+                            'classes.command.ListCommand',
+                            'classes.command.LrestartCommand',
+                            'classes.command.LstartCommand',
+                            'classes.command.SettingsCommand',
+                            'classes.command.VcleanCommand',
+                            'classes.command.VersionCommand',
+                            'classes.command.VstartCommand',
+                            'classes.command.WipeCommand',
+                            'classes.manager.docker.DockerManager',
+                            'classes.manager.ManagerProxy'],
+             hookspath=[],
+             runtime_hooks=[],
+             excludes=[],
+             win_no_prefer_redirects=False,
+             win_private_assemblies=False,
+             cipher=block_cipher,
+             noarchive=False)
+pyz = PYZ(a.pure, a.zipped_data,
+             cipher=block_cipher)
+exe = EXE(pyz,
+          a.scripts,
+          a.binaries,
+          a.zipfiles,
+          a.datas,
+          [],
+          name='kathara',
+          debug=False,
+          bootloader_ignore_signals=False,
+          strip=False,
+          upx=False,
+          upx_exclude=[],
+          runtime_tmpdir=None,
+          console=True )

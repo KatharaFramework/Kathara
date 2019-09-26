@@ -1,5 +1,6 @@
 import argparse
 import shutil
+import sys
 
 import utils
 from ..foundation.command.Command import Command
@@ -38,7 +39,7 @@ class WipeCommand(Command):
         args = self.parser.parse_args(argv)
 
         if not args.force:
-            utils.confirmation_prompt("Are you sure to wipe Kathara?", lambda: None, exit)
+            utils.confirmation_prompt("Are you sure to wipe Kathara?", lambda: None, sys.exit)
 
         ManagerProxy.get_instance().wipe()
 

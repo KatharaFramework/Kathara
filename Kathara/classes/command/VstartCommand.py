@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 import utils
 from ..foundation.command.Command import Command
@@ -108,7 +109,7 @@ class VstartCommand(Command):
 
         if args.dry_mode:
             print("Machine configuration is correct. Exiting...")
-            exit(0)
+            sys.exit(0)
         else:
             logging.info(utils.format_headers("Starting Machine"))
 

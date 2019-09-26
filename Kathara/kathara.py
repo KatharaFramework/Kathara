@@ -22,7 +22,7 @@ The possible kathara command are:
 \tconnect\t\tConnect to a Kathara machine
 \twipe\t\tDelete all Kathara machines and links
 \tlist\t\tShow all running Kathara machines
-\tsettings\t\tShow and edit setting
+\tsettings\tShow and edit setting
 \tversion\t\tPrint current version
 \tcheck\t\tCheck your system environment
 """
@@ -50,10 +50,10 @@ class KatharaEntryPoint(object):
             if e.name == '.'.join(module_name):
                 logging.error('Unrecognized command.\n')
                 parser.print_help()
-                exit(1)
+                sys.exit(1)
             else:
                 logging.critical("\nLooks like %s is not installed in your system\n" % e.name)
-                exit(1)
+                sys.exit(1)
 
         try:
             # Load config file
@@ -65,16 +65,16 @@ class KatharaEntryPoint(object):
         except KeyboardInterrupt:
             logging.critical("You interrupted Kathara during a command. The system may be in an inconsistent state!")
             logging.critical("If you encounter any problem please run `kathara wipe`.")
-            exit(0)
+            sys.exit(0)
         except Exception as e:
             # import traceback
             # traceback.print_exc()
-
-            logging.critical(str(e) + '\n')
-            exit(1)
+            # Cambiare in logging.critical per non stampare stacktrace
+            logging.exception(str(e) + '\n')
+            sys.exit(1)
 
 
 if __name__ == '__main__':
-    coloredlogs.install(fmt='%(levelname)s - %(message)s', level='DEBUG')
+    coloredlogs.install(fmt='%(levelname)s - %(message)s', level='INFO')
     
     KatharaEntryPoint()
