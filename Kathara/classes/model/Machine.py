@@ -150,14 +150,17 @@ class Machine(object):
         def windows_connect():
             subprocess.Popen(["powershell.exe",
                               '-Command',
-                              'python',
                               connect_command
                               ],
                              creationflags=subprocess.CREATE_NEW_CONSOLE,
                              cwd=self.lab.path
                              )
 
-        utils.exec_by_platform(unix_connect, windows_connect, unix_connect)
+        def osx_connect():
+            import appscript
+            appscript.app('Terminal').do_script("cd " + self.lab.path + " && clear &&" + connect_command + " && exit")
+
+        utils.exec_by_platform(unix_connect, windows_connect, osx_connect)
 
     def __repr__(self):
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)
