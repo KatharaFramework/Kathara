@@ -1,0 +1,6 @@
+kathara (0.47-1) UNRELEASED; urgency=medium
+
+  * Re-written kathara to be Object Oriented
+  * Initial release.
+
+ -- Lorenzo <lorenzoariemma@gmail.com>  Fri, 27 Sep 2019 18:32:59 +0200
