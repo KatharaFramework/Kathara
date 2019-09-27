@@ -159,7 +159,7 @@ class Machine(object):
                              )
 
         def windows_connect():
-            logging.debug("Opening windows terminal")
+            logging.debug("Opening windows terminal with command: " + connect_command)
             subprocess.Popen(["powershell.exe",
                               '-Command',
                               connect_command
@@ -169,9 +169,10 @@ class Machine(object):
                              )
 
         def osx_connect():
-            logging.debug("Opening OSX terminal")
+            complete_osx_command = "cd " + self.lab.path + " && clear &&" + connect_command + " && exit"
+            logging.debug("Opening OSX terminal with command: " + complete_osx_command)
             import appscript
-            appscript.app('Terminal').do_script("cd " + self.lab.path + " && clear &&" + connect_command + " && exit")
+            appscript.app('Terminal').do_script(complete_osx_command)
 
         utils.exec_by_platform(unix_connect, windows_connect, osx_connect)
 
