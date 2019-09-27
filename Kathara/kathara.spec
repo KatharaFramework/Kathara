@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['kathara.py'],
-             pathex=['/home/lollo/git/ookathara/Kathara'],
+             pathex=['./'],
              binaries=[],
              datas=[],
              hiddenimports=['classes',

@@ -5,6 +5,7 @@ import subprocess
 import tarfile
 import tempfile
 import sys
+import logging
 from glob import glob
 
 import utils
@@ -136,10 +137,21 @@ class Machine(object):
         return tar_data
 
     def connect(self, terminal_name):
-        connect_command = "%s connect %s" % (sys.argv[0], self.name)
+        logging.debug("Opening terminal for machine %s", self.name)
+
+        if os.path.exists(utils.get_absolute_path(sys.argv[0])):
+            kat_entry_point = utils.get_absolute_path(sys.argv[0])
+        else:
+            kat_entry_point = shutil.which(sys.argv[0])
+
+        if not kat_entry_point:
+            raise Exception("Unable to find Kathara bin")
+
+        connect_command = "%s connect %s" % (kat_entry_point, self.name)
         terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
         def unix_connect():
+            logging.debug("Opening linux terminal with command: " + connect_command)
             # Remember this https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
             subprocess.Popen([terminal, "-e", connect_command],
                              cwd=self.lab.path,
@@ -147,6 +159,7 @@ class Machine(object):
                              )
 
         def windows_connect():
+            logging.debug("Opening windows terminal")
             subprocess.Popen(["powershell.exe",
                               '-Command',
                               connect_command
@@ -156,6 +169,7 @@ class Machine(object):
                              )
 
         def osx_connect():
+            logging.debug("Opening OSX terminal")
             import appscript
             appscript.app('Terminal').do_script("cd " + self.lab.path + " && clear &&" + connect_command + " && exit")
 
