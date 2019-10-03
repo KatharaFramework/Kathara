@@ -1,11 +1,9 @@
 import sys
 import time
-import select
-import utils as u
 
+import utils as u
 from kubernetes.client.apis import core_v1_api
 from kubernetes.client.rest import ApiException
-from kubernetes.stream import stream
 
 import k8s_utils
 
@@ -25,62 +23,7 @@ def get_pod_name_by_deployment_name(core_api, name, namespace):
     exit(1)
 
 
-# def _find_getch():
-#     try:
-#         import termios
-#     except ImportError:
-#         # Non-POSIX. Return msvcrt's (Windows') getch.
-#         import msvcrt
-#         return msvcrt.getch
-#
-#     # POSIX system. Create and return a getch that manipulates the tty.
-#     import sys, tty
-#     def _getch():
-#
-#         try:
-#
-#
-#         finally:
-#
-#         return ch
-#
-#     return _getch
-
-
 def open_pod_stream(core_api, name, namespace):
-    # # Open a connection to the pod
-    # pod_stream = stream(core_api.connect_get_namespaced_pod_exec,
-    #                     name,
-    #                     namespace,
-    #                     command='/bin/bash',
-    #                     stderr=True,
-    #                     stdin=True,
-    #                     stdout=True,
-    #                     tty=True,
-    #                     _preload_content=False
-    #                     )
-    #
-    # fd = sys.stdin.fileno()
-    # old_settings = termios.tcgetattr(fd)
-    # tty.setraw(fd)
-    #
-    # while pod_stream.is_open():
-    #     pod_stream.update(timeout=1)
-    #
-    #     if pod_stream.peek_stdout():
-    #         sys.stdout.write(pod_stream.read_stdout())
-    #     if pod_stream.peek_stderr():
-    #         sys.stderr.write(pod_stream.read_stderr())
-    #
-    #     if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-    #         user_input = sys.stdin.read(1)
-    #         pod_stream.write_stdin(user_input)
-    #
-    # termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-    #
-    # pod_stream.close()ù
-
-    # TODO: This is a temporary workaround!
     return "kubectl -n %s exec -it %s -- bash" % (namespace, name)
 
 
@@ -101,10 +44,6 @@ def connect_to_pod(name, path):
         if response.status.phase != 'Pending':
             break
 
-        # print "Machine is not ready... Waiting..."
-
         time.sleep(2)
-
-    # print "Machine is ready. Connecting..."
 
     return open_pod_stream(core_api, pod_name, namespace)

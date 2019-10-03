@@ -2,9 +2,8 @@ import importlib
 
 
 def load_scheduler_config():
-    # TODO: Load scheduler from config
     return {
-        "type": "rr",
+        "type": "spectral_clustering",
         "use_semantic": True
     }
 
