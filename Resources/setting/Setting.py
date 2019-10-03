@@ -6,6 +6,7 @@ import time
 from .. import utils
 from .. import version
 from ..api.GitHubApi import GitHubApi
+from ..exceptions import HTTPConnectionError
 
 MAX_DOCKER_LAN_NUMBER = 256 * 256
 MAX_K8S_NUMBER = (1 << 24) - 20
@@ -134,7 +135,8 @@ class Setting(object):
                     print("A new version of Kathara has been released.")
                     print("Current: %s - Latest: %s" % (version.CURRENT_VERSION, latest_version))
                     print("Please update it with `pip install kathara`")
-            except ConnectionError:
+            except HTTPConnectionError:
+                logging.debug("Connection to GitHub failed, passing...")
                 checked = False
 
             if self.deployer_type == DOCKER:
@@ -142,7 +144,8 @@ class Setting(object):
 
                 try:
                     ManagerProxy.get_instance().check_updates(self)
-                except ConnectionError:
+                except HTTPConnectionError:
+                    logging.debug("Connection to DockerHub failed, passing...")
                     checked = False
 
             if checked:
