@@ -150,7 +150,7 @@ class Machine(object):
         if not executable_path:
             raise Exception("Unable to find Kathara.")
 
-        connect_command = "/usr/bin/python3 %s connect %s" % (executable_path, self.name)
+        connect_command = "%s connect %s" % (executable_path, self.name)
         terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
         def unix_connect():
