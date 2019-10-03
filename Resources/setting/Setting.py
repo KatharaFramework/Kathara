@@ -40,8 +40,9 @@ class Setting(object):
             self.image = 'kathara/netkit_base'
             self.deployer_type = 'docker'
             self.net_counter = 0
-            # self.terminal = '/usr/bin/xterm'
-            self.terminal = '/usr/bin/x-terminal-emulator'
+            self.terminal = '/usr/bin/xterm'
+            # TODO: Check how it works!
+            # self.terminal = '/usr/bin/x-terminal-emulator'
             self.open_terminals = True
             self.hosthome_mount = True
             self.machine_shell = "bash"
