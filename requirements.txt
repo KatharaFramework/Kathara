@@ -2,5 +2,5 @@ binaryornot>=0.4.4;
 docker>=4.0.2;
 console-menu>=0.6.0;
 coloredlogs>=10.0;
-pyinstaller>=3.5;
+requests>=2.22.0;
 appscript>=1.1.0; sys_platform == 'darwin'
