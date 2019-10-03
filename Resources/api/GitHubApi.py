@@ -12,7 +12,8 @@ class GitHubApi(object):
         result = requests.get(GITHUB_RELEASES_URL % REPOSITORY_NAME)
 
         if result.status_code != 200:
-            logging.debug("Docker replied with status code %s while looking Kathara project", result.status_code, image_name)
+            logging.debug("GitHub replied with status code %s while looking for Kathara repo.", result.status_code)
+
             raise Exception()
 
         return result.json()

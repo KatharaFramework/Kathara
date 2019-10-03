@@ -107,7 +107,7 @@ class DockerMachine(object):
 
         # Mount the host home only if specified in settings.
         if Setting.get_instance().hosthome_mount:
-            volumes[os.path.expanduser('~')] = {'bind': '/hosthome', 'mode': 'rw'}
+            volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
         try:
             self.docker_image.check_and_pull(image)
@@ -221,6 +221,8 @@ class DockerMachine(object):
             # Else, check if the machine is in the list.
             if not selected_machines or \
                container.labels["name"] in selected_machines:
+                # TODO: shared.shutdown and machine.shutdown execution
+
                 container.remove(force=True)
 
     def wipe(self):

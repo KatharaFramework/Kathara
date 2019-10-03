@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import time
 
@@ -15,6 +16,7 @@ K8S = "k8s"
 ONE_WEEK = 604800
 
 SETTING_PATH = os.path.join(os.path.expanduser('~'), ".kathara.config")
+EXCLUDED_FILES = ['.DS_Store']
 
 
 class Setting(object):
@@ -38,7 +40,8 @@ class Setting(object):
             self.image = 'kathara/netkit_base'
             self.deployer_type = 'docker'
             self.net_counter = 0
-            self.terminal = '/usr/bin/xterm' #TODO: thinking about changing to x-terminal-emulator that is a symlink to the default terminal
+            # self.terminal = '/usr/bin/xterm'
+            self.terminal = '/usr/bin/x-terminal-emulator'
             self.open_terminals = True
             self.hosthome_mount = True
             self.machine_shell = "bash"
@@ -72,7 +75,6 @@ class Setting(object):
 
         Setting.__instance = None
         Setting.get_instance()
-
 
     def save(self, content=None):
         """
@@ -116,25 +118,37 @@ class Setting(object):
             raise Exception(str(e))
 
         current_time = time.time()
-        # After 1 week, check if a new image version has been released.
+        # After 1 week, check if a new image and Kathara version has been released.
         if current_time - self.last_checked > ONE_WEEK:
-            print(utils.format_headers("Checking Updates"))
+            logging.debug(utils.format_headers("Checking Updates"))
+            checked = True
 
-            latest_remote_release = GitHubApi.get_release_information()
-            latest_version = latest_remote_release["tag_name"]
+            try:
+                logging.debug("Checking Kathara release...")
 
-            if version.less_than(version.CURRENT_VERSION, latest_version):
-                print("A new version of Kathara has been released.")
-                print("Current: %s - Latest: %s" % (version.CURRENT_VERSION, latest_version))
-                print("Please update it with `pip install kathara`")
+                latest_remote_release = GitHubApi.get_release_information()
+                latest_version = latest_remote_release["tag_name"]
+
+                if version.less_than(version.CURRENT_VERSION, latest_version):
+                    print("A new version of Kathara has been released.")
+                    print("Current: %s - Latest: %s" % (version.CURRENT_VERSION, latest_version))
+                    print("Please update it with `pip install kathara`")
+            except ConnectionError:
+                checked = False
 
             if self.deployer_type == DOCKER:
-                ManagerProxy.get_instance().check_updates(self)
+                logging.debug("Checking Docker Image version...")
 
+                try:
+                    ManagerProxy.get_instance().check_updates(self)
+                except ConnectionError:
+                    checked = False
+
+            if checked:
                 self.last_checked = current_time
                 self.save_selected(['last_checked'])
 
-            print("=============================================================")
+            logging.debug("=============================================================")
 
         try:
             self.net_counter = int(self.net_counter)

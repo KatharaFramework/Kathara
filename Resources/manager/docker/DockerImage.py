@@ -26,8 +26,10 @@ class DockerImage(object):
                 self.check_remote(image_name)
                 print("Pulling image %s... This may take a while." % image_name)
                 self.pull(image_name)
+            except ConnectionError:
+                raise ConnectionError("Image `%s` does not exists in local and not Internet connection for Docker Hub."
+                                      % image_name)
             except Exception:
-                # If not, raise an exception
                 raise Exception("Image `%s` does not exists neither in local nor on Docker Hub." % image_name)
 
     @staticmethod

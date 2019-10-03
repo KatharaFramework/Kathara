@@ -33,11 +33,12 @@ class Lab(object):
         shared_shutdown_file = os.path.join(self.path, 'shared.shutdown')
         self.shared_shutdown_path = shared_shutdown_file if os.path.exists(shared_shutdown_file) else None
 
-        # TODO: Check if symlink and everything inside if symlink
         try:
             self.shared_folder = os.path.join(self.path, 'shared')
             if not os.path.isdir(self.shared_folder):
                 os.mkdir(self.shared_folder)
+            elif os.path.islink(self.shared_folder):
+                raise Exception("`shared` folder is a symlink, delete it.")
         except OSError:
             # Do not create shared folder if not permitted.
             self.shared_folder = None

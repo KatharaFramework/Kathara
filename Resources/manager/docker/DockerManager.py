@@ -107,19 +107,20 @@ class DockerManager(IManager):
 
         while True:
             all_stats = "TIMESTAMP: %s\n\n" % datetime.now()
-            all_stats += "LAB HASH\t\tMACHINE NAME\tCPU %\tMEM USAGE / LIMIT\tMEM %\tNET I/O\n"
+            all_stats += "LAB HASH\t\tMACHINE NAME\tSTATUS\t\tCPU %\tMEM USAGE / LIMIT\tMEM %\tNET I/O\n"
 
             for (machine, machine_stats) in machine_streams.items():
                 result = next(machine_stats)
                 stats = self._get_aggregate_machine_info(result)
 
-                all_stats += "%s\t%s\t\t%s\t%s\t%s\t%s\n" % (machine.labels['lab_hash'],
-                                                             machine.labels["name"],
-                                                             stats["cpu_usage"],
-                                                             stats["mem_usage"],
-                                                             stats["mem_percent"],
-                                                             stats["net_usage"]
-                                                             )
+                all_stats += "%s\t%s\t\t%s\t\t%s\t%s\t%s\t%s\n" % (machine.labels['lab_hash'],
+                                                                   machine.labels["name"],
+                                                                   machine.status,
+                                                                   stats["cpu_usage"],
+                                                                   stats["mem_usage"],
+                                                                   stats["mem_percent"],
+                                                                   stats["net_usage"]
+                                                                   )
 
             yield(all_stats)
 
@@ -135,7 +136,7 @@ class DockerManager(IManager):
 
         machine = machines[0]
 
-        machine_info = "========================= Machine information ==========================\n"
+        machine_info = utils.format_headers("Machine information") + "\n"
 
         machine_info += "Lab Hash: %s\n" % machine.labels['lab_hash']
         machine_info += "Machine Name: %s\n" % machine_name
@@ -145,7 +146,8 @@ class DockerManager(IManager):
 
         machine_stats = machine.stats(stream=False)
 
-        machine_info += "PIDs: %d\n" % machine_stats['pids_stats']['current']
+        machine_info += "PIDs: %d\n" % (machine_stats["pids_stats"]["current"]
+                                        if "current" in machine_stats["pids_stats"] else 0)
         stats = self._get_aggregate_machine_info(machine_stats)
 
         machine_info += "CPU Usage: %s\n" % stats["cpu_usage"]
@@ -189,13 +191,14 @@ class DockerManager(IManager):
         network_stats = stats["networks"] if "networks" in stats else {}
 
         return {
-            # TODO: Guard if
             "cpu_usage": "{0:.2f}%".format(stats["cpu_stats"]["cpu_usage"]["total_usage"] /
                                            stats["cpu_stats"]["system_cpu_usage"]
-                                           ),
-            "mem_usage": utils.human_readable_bytes(stats["memory_stats"]["usage"]) + " / " + \
-                         utils.human_readable_bytes(stats["memory_stats"]["limit"]),
-            "mem_percent": "{0:.2f}%".format((stats["memory_stats"]["usage"] / stats["memory_stats"]["limit"]) * 100),
+                                           ) if "system_cpu_usage" in stats["cpu_stats"] else "-",
+            "mem_usage": utils.human_readable_bytes(stats["memory_stats"]["usage"]) + " / " +
+                         utils.human_readable_bytes(stats["memory_stats"]["limit"])
+                         if "usage" in stats["memory_stats"] else "- / -\t\t",
+            "mem_percent": "{0:.2f}%".format((stats["memory_stats"]["usage"] / stats["memory_stats"]["limit"]) * 100)
+                           if "usage" in stats["memory_stats"] else "-",
             "net_usage": utils.human_readable_bytes(sum([net_stats["rx_bytes"]
                                                          for (_, net_stats) in network_stats.items()])
                                                     ) + " / " +

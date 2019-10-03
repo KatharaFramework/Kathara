@@ -86,7 +86,9 @@ class Machine(object):
                 machine_files = filter(os.path.isfile, glob("%s/**" % self.folder, recursive=True))
 
                 for file in machine_files:
-                    # TODO: Exclude .DS_Store
+                    if utils.is_excluded_file(file):
+                        continue
+
                     (tarinfo, content) = utils.pack_file_for_tar(file,
                                                                  arcname="hostlab/%s" % os.path.relpath(file,
                                                                                                         self.folder
@@ -138,29 +140,30 @@ class Machine(object):
         return tar_data
 
     def connect(self, terminal_name):
-        logging.debug("Opening terminal for machine %s", self.name)
+        logging.debug("Opening terminal for machine %s.", self.name)
 
         if os.path.exists(utils.get_absolute_path(sys.argv[0])):
-            kat_entry_point = utils.get_absolute_path(sys.argv[0])
+            executable_path = utils.get_absolute_path(sys.argv[0])
         else:
-            kat_entry_point = shutil.which(sys.argv[0])
+            executable_path = shutil.which(sys.argv[0])
 
-        if not kat_entry_point:
-            raise Exception("Unable to find Kathara bin")
+        if not executable_path:
+            raise Exception("Unable to find Kathara.")
 
-        connect_command = "%s connect %s" % (kat_entry_point, self.name)
+        connect_command = "/usr/bin/python3 %s connect %s" % (executable_path, self.name)
         terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
         def unix_connect():
-            logging.debug("Opening linux terminal with command: " + connect_command)
-            # Remember this https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
+            logging.debug("Opening Linux terminal with command: %s." % connect_command)
+            # Command should be passed as an array
+            # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
             subprocess.Popen([terminal, "-e", connect_command],
                              cwd=self.lab.path,
                              start_new_session=True
                              )
 
         def windows_connect():
-            logging.debug("Opening windows terminal with command: " + connect_command)
+            logging.debug("Opening Windows terminal with command: %s." % connect_command)
             subprocess.Popen(["powershell.exe",
                               '-Command',
                               connect_command
@@ -170,9 +173,9 @@ class Machine(object):
                              )
 
         def osx_connect():
-            complete_osx_command = "cd " + self.lab.path + " && clear &&" + connect_command + " && exit"
-            logging.debug("Opening OSX terminal with command: " + complete_osx_command)
             import appscript
+            complete_osx_command = "cd " + self.lab.path + " && clear &&" + connect_command + " && exit"
+            logging.debug("Opening OSX terminal with command: %s." % complete_osx_command)
             appscript.app('Terminal').do_script(complete_osx_command)
 
         utils.exec_by_platform(unix_connect, windows_connect, osx_connect)

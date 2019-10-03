@@ -11,7 +11,7 @@ from sys import platform as _platform
 
 from binaryornot.check import is_binary
 
-from .setting.Setting import Setting
+from .setting.Setting import Setting, EXCLUDED_FILES
 
 # Platforms constants definition.
 MAC_OS = "darwin"
@@ -33,12 +33,15 @@ def generate_urlsafe_hash(string):
 def get_absolute_path(path):
     return os.path.abspath(path)
 
+
 def format_headers(message):
     footer = "=============================="
-    half_message = int((len(message)/2)+1)
+    half_message = int((len(message) / 2) + 1)
     second_half_message = half_message
+
     if len(message) % 2 == 0:
         second_half_message -= 1
+
     return footer[half_message:] + " " + message + " " + footer[second_half_message:]
 
 
@@ -96,3 +99,23 @@ def pack_file_for_tar(filename, arcname):
     tarinfo.size = len(file_content_patched)
 
     return tarinfo, file_content
+
+
+def is_excluded_file(path):
+    _, filename = os.path.split(path)
+
+    return filename in EXCLUDED_FILES
+
+
+def get_current_user_home():
+    def passwd_home():
+        import pwd
+        user_id = os.getuid()
+        user_info = pwd.getpwuid(user_id)
+
+        return user_info.pw_dir
+
+    def default_home():
+        return os.path.expanduser('~')
+
+    return exec_by_platform(passwd_home, default_home, passwd_home)
