@@ -1,0 +1,13 @@
+tar -zcvf kathara_0.47.orig.tar.gz kathara-0.47
+creare cartella debian dentro a kathara-0.47
+dch --create -v 0.47-1 --package kathara
+
+Delete all python compiled folders and dicks
+find . | grep -E "(__pycache__|\.pyc|\.pyo$)" | xargs rm -rf
+
+makefile target da implementare
+clean
+build
+binary
+
+build-arch, build-indep, build, clean, install-indep, install-arch, install, binary-arch, binary-indep, binary

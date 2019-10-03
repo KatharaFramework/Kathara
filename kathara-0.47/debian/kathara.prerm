@@ -1,0 +1,7 @@
+#!/bin/sh
+
+set -e
+
+/usr/lib/kathara/kathara wipe -f
+
+#DEBHELPER#
