@@ -11,3 +11,9 @@ build
 binary
 
 build-arch, build-indep, build, clean, install-indep, install-arch, install, binary-arch, binary-indep, binary
+
+
+
+python3 compile.py build_ext
+cython --embed -3 -o kathara.c kathara.py
+gcc -Os -I /usr/include/python3.7m -o kathara kathara.c -lpython3.7m -lpthread -lm -lutil -ldl
