@@ -3,4 +3,5 @@ docker>=4.0.2;
 console-menu>=0.6.0;
 coloredlogs>=10.0;
 requests>=2.22.0;
+nuitka>=0.6.5;
 appscript>=1.1.0; sys_platform == 'darwin'
