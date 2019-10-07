@@ -1,5 +1,5 @@
 Source: kathara
-Maintainer: Lorenzo Ariemma <lorenzoariemma@gmail.com>
+Maintainer: Kathara team <contact@kathara.org>
 Uploaders: Lorenzo Ariemma <lorenzoariemma@gmail.com>
 Section: misc
 Priority: optional
@@ -13,6 +13,7 @@ Homepage: http://www.kathara.org/
 
 Package: kathara
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, adduser (>=3), docker.io (>= 18.09.1)
+Depends: ${shlibs:Depends}, ${misc:Depends}, adduser (>=3)
+Suggests: docker.io (>= 17.03.2) | docker-ce (>= 17.03.2)
 Description: This is a network emulation tool.
 	Lorem ipsum and complete long description of kat
