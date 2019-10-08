@@ -104,3 +104,6 @@ test/
 .vs/
 
 .idea/
+
+# ISS Compiled file
+scripts/Windows/Output/

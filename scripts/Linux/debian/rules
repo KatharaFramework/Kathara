@@ -4,9 +4,9 @@
 	dh $@
 
 override_dh_auto_clean:
+	find . | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
 	rm -rf kathara.build
 	rm -rf kathara.dist
-	find . | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
 
 override_dh_auto_configure:
 	python3 -m pip install -r requirements.txt
@@ -20,6 +20,7 @@ override_dh_auto_install:
 	chmod 400 $(CURDIR)/debian/kathara/usr/lib/kathara/*.so*
 	ls -al $(CURDIR)/debian/kathara/usr/lib/kathara
 	chmod 555 $(CURDIR)/debian/kathara/usr/lib/kathara/kathara
+	
 
 override_dh_strip:
 	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libbz2.so.1.0
