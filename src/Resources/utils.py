@@ -119,3 +119,12 @@ def get_current_user_home():
         return os.path.expanduser('~')
 
     return exec_by_platform(passwd_home, default_home, passwd_home)
+
+
+def re_search_fail(expression, line):
+    matches = re.search(expression, line)
+
+    if not matches:
+        raise ValueError()
+
+    return matches

@@ -41,6 +41,18 @@ STARTUP_COMMANDS = [
     "{machine_commands}"
 ]
 
+SHUTDOWN_COMMANDS = [
+    # If shared.shutdown file is present
+    "if [ -f \"/hostlab/shared.shutdown\" ]; then "
+    # Give execute permissions to the file and execute it
+    "chmod u+x /hostlab/shared.shutdown; /hostlab/shared.shutdown; fi",
+
+    # If machine.shutdown file is present
+    "if [ -f \"/hostlab/{machine_name}.shutdown\" ]; then "
+    # Give execute permissions to the file and execute it
+    "chmod u+x /hostlab/{machine_name}.shutdown; /hostlab/{machine_name}.shutdown; fi",
+]
+
 
 class DockerMachine(object):
     __slots__ = ['client', 'docker_image']
@@ -214,22 +226,20 @@ class DockerMachine(object):
             machine.connect(Setting.get_instance().terminal)
 
     def undeploy(self, lab_hash, selected_machines=None):
-        containers = self.get_machines_by_filters(lab_hash=lab_hash)
+        machines = self.get_machines_by_filters(lab_hash=lab_hash)
 
-        for container in containers:
+        for machine in machines:
             # If selected machines list is empty, remove everything
             # Else, check if the machine is in the list.
             if not selected_machines or \
-               container.labels["name"] in selected_machines:
-                # TODO: shared.shutdown and machine.shutdown execution
-
-                container.remove(force=True)
+               machine.labels["name"] in selected_machines:
+                self.delete_machine(machine)
 
     def wipe(self):
-        containers = self.get_machines_by_filters()
+        machines = self.get_machines_by_filters()
 
-        for container in containers:
-            container.remove(force=True)
+        for machine in machines:
+            self.delete_machine(machine)
 
     def connect(self, lab_hash, machine_name, shell):
         container_name = self.get_container_name(machine_name, lab_hash)
@@ -287,3 +297,17 @@ class DockerMachine(object):
     def get_container_name(name, lab_hash):
         lab_hash = lab_hash if lab_hash else ""
         return "%s_%s_%s_%s" % (Setting.get_instance().machine_prefix, os.getlogin(), name, lab_hash)
+
+    @staticmethod
+    def delete_machine(machine):
+        # Build the shutdown command string
+        shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine.labels["name"])
+        # Execute the shutdown commands inside the container
+        machine.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', shutdown_commands_string],
+                         stdout=False,
+                         stderr=False,
+                         privileged=True,
+                         detach=True
+                         )
+
+        machine.remove(force=True)

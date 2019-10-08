@@ -160,6 +160,22 @@ class Setting(object):
         except ValueError:
             raise Exception("Network Counter must be an integer.")
 
+        try:
+            utils.re_search_fail(r"^[a-z]+_?[a-z_]+$", self.net_prefix)
+        except ValueError:
+            raise Exception("Network Prefix must only contain lowercase letters and underscore.")
+
+        try:
+            utils.re_search_fail(r"^[a-z]+_?[a-z_]+$", self.machine_prefix)
+        except ValueError:
+            raise Exception("Machine Prefix must only contain lowercase letters and underscore.")
+
+        try:
+            utils.re_search_fail(r"^\w+$", self.vlab_folder_name)
+        except ValueError:
+            raise Exception("VLab Folder Name must contain only characters from a to Z, "
+                            "digits from 0-9, and underscore.")
+
     def inc_net_counter(self):
         self.net_counter += 1
 
