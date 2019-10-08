@@ -94,11 +94,10 @@ Dockerfile~
 *.py~
 
 # builds
-bin/wrapper/bin/netkit_dw
-test/shared/MARACAS_lab2/
-bin/temp/*
+src/kathara.build/
+src/kathara.dist/
 
-bin/python/config
+
 config
 .vscode/
 test/
