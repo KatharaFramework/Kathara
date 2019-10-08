@@ -1,6 +1,10 @@
 from datetime import datetime
 
 import docker
+import sys
+
+if sys.platform == 'win32':
+    import pywintypes
 
 from .DockerImage import DockerImage
 from .DockerLink import DockerLink
@@ -21,9 +25,8 @@ def check_docker_status(method):
             return method(*args, **kw)
         except ConnectionError:
             raise Exception("Can not connect to Docker Daemon. Maybe you have not started it?")
-        # TODO: Handle this
-        # except pywintypes.error:
-        #     raise Exception("Can not connect to Docker Daemon. Maybe you have not started it?")
+        except pywintypes.error as e:
+            raise Exception("Can not connect to Docker Daemon. Maybe you have not started it?")
 
     return check_status
 
