@@ -80,7 +80,7 @@ class DockerManager(IManager):
         self.docker_link.undeploy(lab_hash)
 
     @check_docker_status
-    def wipe(self):
+    def wipe(self, all_users=False):
         self.docker_machine.wipe()
         self.docker_link.wipe()
 

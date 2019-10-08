@@ -195,6 +195,9 @@ class Setting(object):
             raise Exception("VLab Folder Name must contain only characters from a to Z, "
                             "digits from 0-9, and underscore.")
 
+        if self.debug_level not in ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]:
+            raise Exception("Debug Level must be one of the following: CRITICAL, ERROR, WARNING, INFO, DEBUG.")
+
     def inc_net_counter(self):
         self.net_counter += 1
 

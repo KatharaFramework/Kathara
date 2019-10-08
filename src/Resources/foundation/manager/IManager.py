@@ -15,7 +15,7 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `undeploy_lab` method.")
 
     @abstractmethod
-    def wipe(self):
+    def wipe(self, all_users=False):
         raise NotImplementedError("You must implement `wipe` method.")
 
     @abstractmethod

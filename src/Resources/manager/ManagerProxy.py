@@ -36,8 +36,8 @@ class ManagerProxy(IManager):
     def undeploy_lab(self, lab_hash, selected_machines=None):
         self.manager.undeploy_lab(lab_hash, selected_machines)
 
-    def wipe(self):
-        self.manager.wipe()
+    def wipe(self, all_users=False):
+        self.manager.wipe(all_users)
 
     def connect_tty(self, lab_hash, machine_name, shell):
         self.manager.connect_tty(lab_hash, machine_name, shell)

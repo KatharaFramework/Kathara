@@ -33,6 +33,13 @@ class WipeCommand(Command):
             help='Wipe Kathara and all the stored settings.'
         )
 
+        parser.add_argument(
+            '-a', '--all',
+            required=False,
+            action='store_true',
+            help='Wipe Kathara machines and links of all users.'
+        )
+
         self.parser = parser
 
     def run(self, current_path, argv):
@@ -41,7 +48,7 @@ class WipeCommand(Command):
         if not args.force:
             utils.confirmation_prompt("Are you sure to wipe Kathara?", lambda: None, sys.exit)
 
-        ManagerProxy.get_instance().wipe()
+        ManagerProxy.get_instance().wipe(all_users=bool(args.all))
 
         if args.settings:
             Setting.wipe()

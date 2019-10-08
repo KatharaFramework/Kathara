@@ -40,7 +40,7 @@ def get_executable_path(exec_path):
 
     if os.path.exists(exec_abs_path):
         if exec_path.endswith(".py"):
-            return "python %s" % exec_abs_path
+            return exec_by_platform(lambda: exec_abs_path, lambda: "python %s" % exec_abs_path, lambda: exec_abs_path)
 
         return exec_abs_path
     else:
