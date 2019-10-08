@@ -30,6 +30,7 @@ OutputBaseFilename=Kathara-setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+ChangesEnvironment=True
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

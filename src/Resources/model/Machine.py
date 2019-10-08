@@ -153,6 +153,8 @@ class Machine(object):
         connect_command = "%s connect %s" % (executable_path, self.name)
         terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
+        logging.debug("Terminal will open in directory %s." % self.lab.path)
+
         def unix_connect():
             logging.debug("Opening Linux terminal with command: %s." % connect_command)
             # Command should be passed as an array
