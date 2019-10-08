@@ -1,6 +1,7 @@
 import argparse
 import logging
 import sys
+import tempfile
 
 from .. import version
 from ..foundation.command.Command import Command
@@ -28,7 +29,7 @@ class CheckCommand(Command):
         print("*\tManager version is: %s" % ManagerProxy.get_instance().get_release_version())
 
         print("*\tTrying to run `Hello World` container...")
-        lab = Lab("/tmp")
+        lab = Lab(tempfile.gettempdir())
         machine = lab.get_or_new_machine("hello_world")
         machine.add_meta("image", Setting.get_instance().image)
         try:

@@ -302,12 +302,14 @@ class DockerMachine(object):
     def delete_machine(machine):
         # Build the shutdown command string
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine.labels["name"])
-        # Execute the shutdown commands inside the container
-        machine.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', shutdown_commands_string],
-                         stdout=False,
-                         stderr=False,
-                         privileged=True,
-                         detach=True
-                         )
+
+        # Execute the shutdown commands inside the container (only if it's running)
+        if machine.status == "running":
+            machine.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', shutdown_commands_string],
+                             stdout=False,
+                             stderr=False,
+                             privileged=True,
+                             detach=True
+                             )
 
         machine.remove(force=True)

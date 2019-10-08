@@ -16,7 +16,8 @@ K8S = "k8s"
 
 ONE_WEEK = 604800
 
-SETTING_PATH = os.path.join(os.path.expanduser('~'), ".kathara.config")
+SETTING_FOLDER = None
+SETTING_PATH = None
 EXCLUDED_FILES = ['.DS_Store']
 
 
@@ -37,6 +38,10 @@ class Setting(object):
         if Setting.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
+            global SETTING_FOLDER, SETTING_PATH
+            SETTING_FOLDER = os.path.join(utils.get_current_user_home(), ".config")
+            SETTING_PATH = os.path.join(SETTING_FOLDER, "kathara.conf")
+
             # Default values to use
             self.image = 'kathara/netkit_base'
             self.deployer_type = 'docker'
@@ -57,8 +62,20 @@ class Setting(object):
             Setting.__instance = self
 
     def load(self):
-        if not os.path.exists(SETTING_PATH):               # If settings file don't exist, create with defaults
+        if not os.path.exists(SETTING_PATH):                    # If settings file don't exist, create with defaults
+            if not os.path.isdir(SETTING_FOLDER):               # Create .config folder if doesn't exists, create it
+                os.mkdir(SETTING_FOLDER)
+
             self.save()
+
+            def unix_permissions():
+                (uid, gid) = utils.get_current_user_uid_gid()
+
+                os.chmod(SETTING_PATH, 0o600)
+                os.chown(SETTING_PATH, uid, gid)
+
+            # If Linux or Mac, set the right permissions and ownership to the settings file.
+            utils.exec_by_platform(unix_permissions, lambda: None, unix_permissions)
         else:                                                   # If file exists, read it and check values
             settings = {}
             with open(SETTING_PATH, 'r') as settings_file:
