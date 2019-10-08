@@ -1,0 +1,3 @@
+# We use nuitka to compile a python package
+kathara binary: package-has-unnecessary-activation-of-ldconfig-trigger
+
