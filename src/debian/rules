@@ -23,7 +23,7 @@ override_dh_auto_install:
 	
 
 override_dh_strip:
-	rm -f $(CURDIR)/kathara.dist/libbz2.so.1.0
-	rm -f $(CURDIR)/kathara.dist/libexpat.so.1
-	rm -f $(CURDIR)/kathara.dist/libtinfo.so.6
-	rm -f $(CURDIR)/kathara.dist/libz.so.1
+	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libbz2.so.1.0
+	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libexpat.so.1
+	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libtinfo.so.6
+	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libz.so.1
