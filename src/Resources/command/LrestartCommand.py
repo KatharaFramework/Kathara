@@ -68,8 +68,7 @@ class LrestartCommand(Command):
         parser.add_argument(
             '-c', '--counter',
             required=False,
-            help='Start from a specific network counter '
-                 '(overrides whatever was previously initialized).'
+            help='Start from a specific network counter (overrides whatever was previously initialized).'
         )
 
         self.parser = parser

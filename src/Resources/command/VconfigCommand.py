@@ -17,7 +17,7 @@ class VconfigCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara vconfig',
-            description='Attach network interfaces to running Kathara machines.',
+            description='Attach network interfaces to a running Kathara machine.',
             epilog='Example: kathara vconfig -n pc1 --eth A B'
         )
         parser.add_argument(
@@ -30,7 +30,7 @@ class VconfigCommand(Command):
             dest='eths',
             nargs='+',
             required=True,
-            help='Specifies the collision domain for an interface.'
+            help='Specify the collision domain for an interface.'
         )
 
         self.parser = parser

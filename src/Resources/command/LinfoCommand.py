@@ -35,7 +35,7 @@ class LinfoCommand(Command):
         parser.add_argument(
             '-n', '--name',
             required=False,
-            help='Shows only info about specified machine.'
+            help='Show only info about a specified machine.'
         )
 
         self.parser = parser

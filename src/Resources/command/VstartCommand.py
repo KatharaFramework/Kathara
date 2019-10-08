@@ -65,7 +65,7 @@ class VstartCommand(Command):
         parser.add_argument(
             '-i', '--image',
             required=False,
-            help='Run this machine with a specific Docker image.'
+            help='Run this machine with a specific Docker Image.'
         )
         parser.add_argument(
             '-H', '--no-hosthome',

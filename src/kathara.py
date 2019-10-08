@@ -1,31 +1,30 @@
 #!/usr/bin/python3
 
 import argparse
+import logging
 import os
 import sys
 
 import coloredlogs
-import logging
-
 from Resources import utils
 from Resources.setting.Setting import Setting
+from Resources.version import CURRENT_VERSION
 
 description_msg = """kathara <command> [<args>]
 
 The possible kathara command are:
 \tvstart\t\tStart a new Kathara machine
 \tvclean\t\tCleanup Kathara processes and configurations
-\tvconfig\t\tAttach network interfaces to running Kathara machines
+\tvconfig\t\tAttach network interfaces to a running Kathara machine
 \tlstart\t\tStart a Kathara lab
 \tlclean\t\tStop and clean a Kathara lab
 \tlinfo\t\tShow information about a Kathara lab
 \tlrestart\tRestart a Kathara lab
 \tltest\t\tTest a Kathara lab
 \tconnect\t\tConnect to a Kathara machine
-\twipe\t\tDelete all Kathara machines and links, optionally delete also settings
+\twipe\t\tDelete all Kathara machines and links, optionally also delete settings
 \tlist\t\tShow all running Kathara machines
-\tsettings\tShow and edit setting
-\tversion\t\tPrint current version
+\tsettings\tShow and edit Kathara settings
 \tcheck\t\tCheck your system environment
 """
 
@@ -36,11 +35,28 @@ class KatharaEntryPoint(object):
                                          usage=description_msg
                                          )
 
-        parser.add_argument('command', help='Subcommand to run.')
+        parser.add_argument('command',
+                            help='Command to run.',
+                            nargs="?"
+                            )
+
+        parser.add_argument(
+            "-v", "--version",
+            action="store_true",
+            help='Print current Kathara version.',
+            required=False
+        )
 
         # parse_args defaults to [1:] for args, but you need to
         # exclude the rest of the args too, or validation will fail
         args = parser.parse_args(sys.argv[1:2])
+
+        if args.version:
+            print('Current version: %s.' % CURRENT_VERSION)
+            sys.exit(0)
+
+        if args.command is None:
+            args.command = ""
 
         module_name = ("Resources.command", args.command.capitalize() + "Command")
         try:
@@ -73,6 +89,6 @@ class KatharaEntryPoint(object):
 
 
 if __name__ == '__main__':
-    coloredlogs.install(fmt='%(levelname)s - %(message)s', level='INFO')
+    coloredlogs.install(fmt='%(levelname)s - %(message)s', level=Setting.get_instance().debug_level)
     
     KatharaEntryPoint()

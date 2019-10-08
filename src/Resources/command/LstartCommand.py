@@ -18,7 +18,7 @@ class LstartCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara lstart',
-            description='Starts a Kathara lab.'
+            description='Start a Kathara lab.'
         )
 
         group = parser.add_mutually_exclusive_group(required=False)
@@ -74,7 +74,7 @@ class LstartCommand(Command):
             dest="dry_mode",
             required=False,
             action='store_true',
-            help='Opens the lab.conf file and check if it is correct (dry run).'
+            help='Open the lab.conf file and check if it is correct (dry run).'
         )
         parser.add_argument(
             '-H', '--no-hosthome',
@@ -86,8 +86,7 @@ class LstartCommand(Command):
         parser.add_argument(
             '-c', '--counter',
             required=False,
-            help='Start from a specific network counter '
-                 '(overrides whatever was previously initialized).'
+            help='Start from a specific network counter (overrides whatever was previously initialized).'
         )
         parser.add_argument(
             'machine_names',

@@ -13,7 +13,7 @@ class VcleanCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara vclean',
-            description='Stops a Kathara machine.',
+            description='Cleanup Kathara processes and configurations.',
             epilog="Example: kathara vclean -n pc1"
         )
 

@@ -13,7 +13,7 @@ class LcleanCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara lclean',
-            description='Stops a Kathara Lab.'
+            description='Stop and clean a Kathara lab.'
         )
 
         parser.add_argument(
@@ -24,7 +24,7 @@ class LcleanCommand(Command):
         parser.add_argument(
             'machine_names',
             nargs='*',
-            help='Cleans only specified machines.'
+            help='Clean only specified machines.'
         )
 
         self.parser = parser

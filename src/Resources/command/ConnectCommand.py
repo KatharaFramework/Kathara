@@ -35,7 +35,7 @@ class ConnectCommand(Command):
         )
         parser.add_argument(
             'machine_name',
-            help='Name of the machine to connect to'
+            help='Name of the machine to connect to.'
         )
 
         self.parser = parser

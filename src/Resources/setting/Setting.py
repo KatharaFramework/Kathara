@@ -23,7 +23,8 @@ EXCLUDED_FILES = ['.DS_Store']
 
 class Setting(object):
     __slots__ = ['image', 'deployer_type', 'net_counter', 'terminal', 'open_terminals',
-                 'hosthome_mount', 'machine_shell', 'net_prefix', 'machine_prefix', 'last_checked', 'vlab_folder_name']
+                 'hosthome_mount', 'machine_shell', 'net_prefix', 'machine_prefix', 'last_checked', 'vlab_folder_name',
+                 'debug_level']
 
     __instance = None
 
@@ -55,6 +56,7 @@ class Setting(object):
             self.net_prefix = 'kathara'
             self.machine_prefix = 'kathara'
             self.vlab_folder_name = "kathara_vlab"
+            self.debug_level = "INFO"
             self.last_checked = time.time() - ONE_WEEK
 
             self.load()
@@ -219,6 +221,7 @@ class Setting(object):
                 "machine_shell": self.machine_shell,
                 "net_prefix": self.net_prefix,
                 "machine_prefix": self.machine_prefix,
-                "vlab_folder_name" : self.vlab_folder_name,
+                "vlab_folder_name": self.vlab_folder_name,
+                "debug_level": self.debug_level,
                 "last_checked": self.last_checked
                 }

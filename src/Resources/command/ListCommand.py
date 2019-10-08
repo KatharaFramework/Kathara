@@ -12,13 +12,13 @@ class ListCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara list',
-            description='Show running Kathara machines.'
+            description='Show all running Kathara machines.'
         )
 
         parser.add_argument(
             '-n', '--name',
             required=False,
-            help='Shows only info about specified machine.'
+            help='Show only information about a specified machine.'
         )
 
         self.parser = parser
