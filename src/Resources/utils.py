@@ -109,16 +109,40 @@ def is_excluded_file(path):
 
 def get_current_user_home():
     def passwd_home():
-        import pwd
-        user_id = os.getuid()
-        user_info = pwd.getpwuid(user_id)
-
+        user_info = get_current_user_info()
         return user_info.pw_dir
 
     def default_home():
         return os.path.expanduser('~')
 
     return exec_by_platform(passwd_home, default_home, passwd_home)
+
+
+def get_current_user_uid_gid():
+    def unix():
+        user_info = get_current_user_info()
+        return user_info.pw_uid, user_info.pw_gid
+
+    return exec_by_platform(unix, lambda: None, lambda: None)
+
+
+def get_current_user_info():
+    def passwd_info():
+        import pwd
+        user_id = os.getuid()
+
+        # It's root, take the real user from env variable
+        if user_id == 0:
+            # If it's a sudoer, take the SUDO_UID and use it as user_id variable
+            # If not, keep using the user_id = 0
+            real_user_id = os.environ.get("SUDO_UID")
+
+            if real_user_id:
+                user_id = int(real_user_id)
+
+        return pwd.getpwuid(user_id)
+
+    return exec_by_platform(passwd_info, lambda: None, lambda: None)
 
 
 def re_search_fail(expression, line):
