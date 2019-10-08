@@ -142,6 +142,7 @@ class DockerMachine(object):
                                                           volumes=volumes,
                                                           labels={"name": machine.name,
                                                                   "lab_hash": machine.lab.folder_hash,
+                                                                  "user": utils.get_current_user_name(),
                                                                   "app": "kathara"
                                                                   }
                                                           )
@@ -235,8 +236,8 @@ class DockerMachine(object):
                machine.labels["name"] in selected_machines:
                 self.delete_machine(machine)
 
-    def wipe(self):
-        machines = self.get_machines_by_filters()
+    def wipe(self, user=None):
+        machines = self.get_machines_by_filters(user=user)
 
         for machine in machines:
             self.delete_machine(machine)
@@ -284,8 +285,10 @@ class DockerMachine(object):
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
-    def get_machines_by_filters(self, lab_hash=None, container_name=None):
+    def get_machines_by_filters(self, lab_hash=None, container_name=None, user=None):
         filters = {"label": "app=kathara"}
+        if user:
+            filters["label"] = "user=%s" % user
         if lab_hash:
             filters["label"] = "lab_hash=%s" % lab_hash
         if container_name:
@@ -296,7 +299,7 @@ class DockerMachine(object):
     @staticmethod
     def get_container_name(name, lab_hash):
         lab_hash = lab_hash if lab_hash else ""
-        return "%s_%s_%s_%s" % (Setting.get_instance().machine_prefix, os.getlogin(), name, lab_hash)
+        return "%s_%s_%s_%s" % (Setting.get_instance().machine_prefix, utils.get_current_user_name(), name, lab_hash)
 
     @staticmethod
     def delete_machine(machine):

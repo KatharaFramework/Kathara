@@ -55,6 +55,7 @@ class DockerLink(object):
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,
                                                       labels={"lab_hash": link.lab.folder_hash,
+                                                              "user": utils.get_current_user_name(),
                                                               "app": "kathara"
                                                               }
                                                       )
@@ -64,8 +65,12 @@ class DockerLink(object):
     def undeploy(self, lab_hash):
         self.client.networks.prune(filters={"label": "lab_hash=%s" % lab_hash})
 
-    def wipe(self):
-        self.client.networks.prune(filters={"label": "app=kathara"})
+    def wipe(self, user=None):
+        filters = {"label": "app=kathara"}
+        if user:
+            filters["label"] = "user=%s" % user
+
+        self.client.networks.prune(filters=filters)
 
     def get_docker_bridge(self):
         bridge_list = self.client.networks.list(names="bridge")
@@ -125,4 +130,4 @@ class DockerLink(object):
 
     @staticmethod
     def get_network_name(name):
-        return "%s_%s_%s" % (Setting.get_instance().net_prefix, os.getlogin(), name)
+        return "%s_%s_%s" % (Setting.get_instance().net_prefix, utils.get_current_user_name(), name)

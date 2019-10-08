@@ -8,12 +8,20 @@ from .DockerMachine import DockerMachine
 from ... import utils
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
+import sys
 
 
-def win_import():
+def pywin_import_stub():
+    import imp
+    pywintypes = imp.new_module('pywintypes')
+    pywintypes.error = Exception
+    sys.modules["pywintypes"] = pywintypes
+
+
+def pywin_import_win():
     import pywintypes
 
-utils.exec_by_platform(lambda: None, win_import, lambda: None)
+utils.exec_by_platform(pywin_import_stub, pywin_import_win, pywin_import_stub)
 
 
 def check_docker_status(method):
@@ -81,8 +89,10 @@ class DockerManager(IManager):
 
     @check_docker_status
     def wipe(self, all_users=False):
-        self.docker_machine.wipe()
-        self.docker_link.wipe()
+        user_name = utils.get_current_user_name() if not all_users else None
+
+        self.docker_machine.wipe(user=user_name)
+        self.docker_link.wipe(user=user_name)
 
     @check_docker_status
     def connect_tty(self, lab_hash, machine_name, shell):

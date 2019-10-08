@@ -16,7 +16,7 @@ class WipeCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara wipe',
-            description='Delete all Kathara machines and links, optionally also delete settings.'
+            description='Delete all Kathara machines and links for current user, optionally also delete settings.'
         )
 
         parser.add_argument(

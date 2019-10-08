@@ -139,6 +139,18 @@ def get_current_user_uid_gid():
     return exec_by_platform(unix, lambda: None, lambda: None)
 
 
+def get_current_user_name():
+    def unix():
+        user_info = get_current_user_info()
+        return user_info.pw_name
+
+    def windows():
+        import getpass
+        return getpass.getuser()
+
+    return exec_by_platform(unix, windows, unix)
+
+
 def get_current_user_info():
     def passwd_info():
         import pwd
