@@ -56,7 +56,8 @@ class KatharaEntryPoint(object):
             sys.exit(0)
 
         if args.command is None:
-            args.command = ""
+            parser.print_help()
+            sys.exit(1)
 
         module_name = ("Resources.command", args.command.capitalize() + "Command")
         try:
