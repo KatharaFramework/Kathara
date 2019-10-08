@@ -10,15 +10,16 @@ from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
 
 
+def win_import():
+    import pywintypes
+
+utils.exec_by_platform(lambda: None, win_import, lambda: None)
+
+
 def check_docker_status(method):
     """
     Decorator function to check if Docker daemon is up and running.
     """
-    def win_import():
-        import pywintypes
-
-    utils.exec_by_platform(lambda: None, win_import, lambda: None)
-
     def check_status(*args, **kw):
         client = args[0].client
         try:

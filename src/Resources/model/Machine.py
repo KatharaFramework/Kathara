@@ -142,15 +142,7 @@ class Machine(object):
     def connect(self, terminal_name):
         logging.debug("Opening terminal for machine %s.", self.name)
 
-        isPythonFile = False
-
-        if os.path.exists(utils.get_absolute_path(sys.argv[0])):
-            logging.debug("This path exists %s, using as base for the command." % utils.get_absolute_path(sys.argv[0]))
-            executable_path = utils.get_absolute_path(sys.argv[0])
-            if(sys.argv[0].endswith(".py")):
-                isPythonFile = True
-        else:
-            executable_path = shutil.which(sys.argv[0])
+        executable_path = utils.get_executable_path(sys.argv[0])
 
         if not executable_path:
             raise Exception("Unable to find Kathara.")
@@ -170,10 +162,6 @@ class Machine(object):
                              )
 
         def windows_connect():
-            if isPythonFile:
-                connect_command = "python " + connect_command
-            else:
-                connect_command = connect_command
             logging.debug("Opening Windows terminal with command: %s." % connect_command)
             subprocess.Popen(["powershell.exe",
                               '-Command',

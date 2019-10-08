@@ -4,6 +4,7 @@ import importlib
 import math
 import os
 import re
+import shutil
 import tarfile
 import tempfile
 from io import BytesIO
@@ -32,6 +33,18 @@ def generate_urlsafe_hash(string):
 
 def get_absolute_path(path):
     return os.path.abspath(path)
+
+
+def get_executable_path(exec_path):
+    exec_abs_path = get_absolute_path(exec_path)
+
+    if os.path.exists(exec_abs_path):
+        if exec_path.endswith(".py"):
+            return "python %s" % exec_abs_path
+
+        return exec_abs_path
+    else:
+        return shutil.which(exec_path)
 
 
 def format_headers(message):
