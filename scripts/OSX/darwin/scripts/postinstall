@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "Post installation process started"
+
+#Change permissions in home directory
+echo "Change permissions in Kathara directory"
+cd /Library/Kathara
+chmod -R 755 .
+[ -d /usr/local/bin ] || mkdir /usr/local/bin
+
+#Add application shortcut to /usr/local/bin
+rm -f /usr/local/bin/kathara
+ln -s /Library/Kathara/kathara /usr/local/bin/kathara
+echo "Post installation process finished"
