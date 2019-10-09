@@ -9,6 +9,7 @@ override_dh_auto_clean:
 	find . | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
 
 override_dh_auto_configure:
+	python3 -m pip install nuitka
 	python3 -m pip install -r requirements.txt
 
 override_dh_auto_build:
