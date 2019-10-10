@@ -9,6 +9,8 @@ APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
 all: deps binary createInstaller clean
 allSigned: deps binary createInstaller signProduct clean
 
+default: all
+
 deps:
 	python3 -m pip install pyinstaller
 	python3 -m pip install -r ../../src/requirements.txt
