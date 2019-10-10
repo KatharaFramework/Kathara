@@ -167,7 +167,7 @@ def get_current_user_info():
 
         return pwd.getpwuid(user_id)
 
-    return exec_by_platform(passwd_info, lambda: None, lambda: None)
+    return exec_by_platform(passwd_info, lambda: None, passwd_info)
 
 
 def re_search_fail(expression, line):

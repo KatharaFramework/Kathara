@@ -1,7 +1,9 @@
-import os
 from itertools import islice
 from subprocess import Popen
 
+from docker.errors import APIError
+
+from ...exceptions import MountDeniedError, MachineAlreadyExistsError
 from ... import utils
 from ...setting.Setting import Setting
 
@@ -127,25 +129,31 @@ class DockerMachine(object):
             raise Exception(str(e))
 
         container_name = self.get_container_name(machine.name, machine.lab.folder_hash)
-        machine_container = self.client.containers.create(image=image,
-                                                          name=container_name,
-                                                          hostname=machine.name,
-                                                          privileged=True,
-                                                          network=first_network.name if first_network else None,
-                                                          network_mode="bridge" if first_network else "none",
-                                                          sysctls=sysctl_parameters,
-                                                          mem_limit=memory,
-                                                          ports=ports,
-                                                          tty=True,
-                                                          stdin_open=True,
-                                                          detach=True,
-                                                          volumes=volumes,
-                                                          labels={"name": machine.name,
-                                                                  "lab_hash": machine.lab.folder_hash,
-                                                                  "user": utils.get_current_user_name(),
-                                                                  "app": "kathara"
-                                                                  }
-                                                          )
+        try:
+            machine_container = self.client.containers.create(image=image,
+                                                              name=container_name,
+                                                              hostname=machine.name,
+                                                              privileged=True,
+                                                              network=first_network.name if first_network else None,
+                                                              network_mode="bridge" if first_network else "none",
+                                                              sysctls=sysctl_parameters,
+                                                              mem_limit=memory,
+                                                              ports=ports,
+                                                              tty=True,
+                                                              stdin_open=True,
+                                                              detach=True,
+                                                              volumes=volumes,
+                                                              labels={"name": machine.name,
+                                                                      "lab_hash": machine.lab.folder_hash,
+                                                                      "user": utils.get_current_user_name(),
+                                                                      "app": "kathara"
+                                                                      }
+                                                              )
+        except APIError as e:
+            if e.response.status_code == 409 and e.explanation.startswith('Conflict.'):
+                raise MachineAlreadyExistsError("Machine with name `%s` already exists." % machine.name)
+            else:
+                raise e
 
         # Pack machine files into a tar.gz and extract its content inside `/`
         tar_data = machine.pack_data()
@@ -206,7 +214,13 @@ class DockerMachine(object):
         for (iface_num, machine_link) in machine.interfaces.items():
             rp_filter_commands.append(SYSCTL_COMMAND % ("eth%d" % iface_num))
 
-        machine.api_object.start()
+        try:
+            machine.api_object.start()
+        except APIError as e:
+            if e.response.status_code == 500 and e.explanation.startswith('Mounts denied'):
+                raise MountDeniedError("Host drive is not shared with Docker.")
+            else:
+                raise e
 
         # Build the final startup commands string
         startup_commands_string = "; ".join(STARTUP_COMMANDS)\

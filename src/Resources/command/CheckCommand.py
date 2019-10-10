@@ -30,6 +30,7 @@ class CheckCommand(Command):
 
         print("*\tTrying to run `Hello World` container...")
         lab = Lab(tempfile.gettempdir())
+        lab.shared_folder = None
         machine = lab.get_or_new_machine("hello_world")
         machine.add_meta("image", Setting.get_instance().image)
         try:

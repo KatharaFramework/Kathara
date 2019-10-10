@@ -8,7 +8,6 @@ from .DockerMachine import DockerMachine
 from ... import utils
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
-import sys
 
 
 def pywin_import_stub():
@@ -16,21 +15,22 @@ def pywin_import_stub():
     Stub module of pywintypes for Unix systems (so it won't raise any `module not found` exceptions).
     """
     import types
-    pywintypes = types.ModuleType('pywintypes')
-    pywintypes.error = Exception
-    sys.modules["pywintypes"] = pywintypes
+    pywintypes = types.ModuleType("pywintypes")
+    pywintypes.error = ConnectionError
+    return pywintypes
 
 
 def pywin_import_win():
     import pywintypes
-
-utils.exec_by_platform(pywin_import_stub, pywin_import_win, pywin_import_stub)
+    return pywintypes
 
 
 def check_docker_status(method):
     """
     Decorator function to check if Docker daemon is up and running.
     """
+    pywintypes = utils.exec_by_platform(pywin_import_stub, pywin_import_win, pywin_import_stub)
+
     def check_status(*args, **kw):
         client = args[0].client
         try:

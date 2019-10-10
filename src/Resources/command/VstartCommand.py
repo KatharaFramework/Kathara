@@ -116,6 +116,7 @@ class VstartCommand(Command):
 
         vlab_dir = utils.get_vlab_temp_path()
         lab = Lab(vlab_dir)
+        lab.shared_folder = None
 
         machine = lab.get_or_new_machine(args.name)
 
