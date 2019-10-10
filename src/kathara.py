@@ -85,7 +85,7 @@ class KatharaEntryPoint(object):
             sys.exit(0)
         except Exception as e:
             # TODO: Cambiare in logging.critical per non stampare stacktrace
-            logging.critical(str(e) + '\n')
+            logging.exception(str(e) + '\n')
             sys.exit(1)
 
 

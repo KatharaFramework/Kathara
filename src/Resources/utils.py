@@ -32,7 +32,8 @@ def generate_urlsafe_hash(string):
 
 
 def get_absolute_path(path):
-    return os.path.abspath(path)
+    abs_path = os.path.abspath(path)
+    return abs_path if not os.path.islink(abs_path) else os.readlink(abs_path)
 
 
 def get_executable_path(exec_path):
@@ -80,7 +81,7 @@ def human_readable_bytes(size_bytes):
 
 
 def get_vlab_temp_path(force_creation=True):
-    tempdir = exec_by_platform(tempfile.gettempdir, tempfile.gettempdir, lambda: "/tmp")
+    tempdir = exec_by_platform(tempfile.gettempdir, tempfile.gettempdir, lambda: "/%s" % get_absolute_path("/tmp"))
 
     vlab_directory = os.path.join(tempdir, Setting.get_instance().vlab_folder_name)
     if not os.path.isdir(vlab_directory) and force_creation:
