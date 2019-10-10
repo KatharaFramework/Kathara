@@ -128,7 +128,7 @@ def get_current_user_home():
     def default_home():
         return os.path.expanduser('~')
 
-    return exec_by_platform(passwd_home, default_home, passwd_home)
+    return exec_by_platform(passwd_home, default_home, default_home)
 
 
 def get_current_user_uid_gid():
@@ -136,7 +136,7 @@ def get_current_user_uid_gid():
         user_info = get_current_user_info()
         return user_info.pw_uid, user_info.pw_gid
 
-    return exec_by_platform(unix, lambda: None, lambda: None)
+    return exec_by_platform(unix, lambda: (None, None), unix)
 
 
 def get_current_user_name():

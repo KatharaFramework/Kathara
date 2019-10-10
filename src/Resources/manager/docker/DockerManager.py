@@ -12,8 +12,11 @@ import sys
 
 
 def pywin_import_stub():
-    import imp
-    pywintypes = imp.new_module('pywintypes')
+    """
+    Stub module of pywintypes for Unix systems (so it won't raise any `module not found` exceptions).
+    """
+    import types
+    pywintypes = types.ModuleType('pywintypes')
     pywintypes.error = Exception
     sys.modules["pywintypes"] = pywintypes
 
