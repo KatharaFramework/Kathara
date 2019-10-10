@@ -1,10 +1,11 @@
+import logging
 from itertools import islice
 from subprocess import Popen
 
 from docker.errors import APIError
 
-from ...exceptions import MountDeniedError, MachineAlreadyExistsError
 from ... import utils
+from ...exceptions import MountDeniedError, MachineAlreadyExistsError
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
@@ -259,7 +260,11 @@ class DockerMachine(object):
     def connect(self, lab_hash, machine_name, shell):
         container_name = self.get_container_name(machine_name, lab_hash)
 
+        logging.debug("Connect to machine with container name: %s" % container_name)
+
         containers = self.get_machines_by_filters(lab_hash=lab_hash, container_name=container_name)
+
+        logging.debug("Found containers: %s" % str(containers))
 
         if len(containers) != 1:
             raise Exception("Error getting the machine `%s` inside the lab." % machine_name)

@@ -80,7 +80,9 @@ def human_readable_bytes(size_bytes):
 
 
 def get_vlab_temp_path(force_creation=True):
-    vlab_directory = os.path.join(tempfile.gettempdir(), Setting.get_instance().vlab_folder_name)
+    tempdir = exec_by_platform(tempfile.gettempdir, tempfile.gettempdir, lambda: "/tmp")
+
+    vlab_directory = os.path.join(tempdir, Setting.get_instance().vlab_folder_name)
     if not os.path.isdir(vlab_directory) and force_creation:
         os.mkdir(vlab_directory)
 
