@@ -8,6 +8,7 @@ from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
 from ..model.Lab import Lab
 from ..setting.Setting import Setting
+from ..strings import strings, wiki_description
 
 
 class CheckCommand(Command):
@@ -18,7 +19,16 @@ class CheckCommand(Command):
         
         parser = argparse.ArgumentParser(
             prog='kathara check',
-            description='Check your system environment.'
+            description=strings['check'],
+            epilog=wiki_description,
+            add_help=False
+        )
+
+        parser.add_argument(
+            '-h', '--help',
+            action='help',
+            default=argparse.SUPPRESS,
+            help='Show an help message and exit.'
         )
 
         self.parser = parser
@@ -26,9 +36,13 @@ class CheckCommand(Command):
     def run(self, current_path, argv):
         self.parser.parse_args(argv)
 
+        print("*\tCurrent Manager is: %s" % ManagerProxy.get_instance().get_formatted_manager_name())
+
         print("*\tManager version is: %s" % ManagerProxy.get_instance().get_release_version())
 
         print("*\tTrying to run `Hello World` container...")
+
+        Setting.get_instance().open_terminals = False
         lab = Lab(tempfile.gettempdir())
         lab.shared_folder = None
         machine = lab.get_or_new_machine("hello_world")

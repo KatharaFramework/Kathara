@@ -41,3 +41,11 @@ class IManager(ABC):
     @abstractmethod
     def get_release_version(self):
         raise NotImplementedError("You must implement `get_release_version` method.")
+
+    @abstractmethod
+    def get_manager_name(self):
+        raise NotImplementedError("You must implement `get_manager_name` method.")
+
+    @abstractmethod
+    def get_formatted_manager_name(self):
+        raise NotImplementedError("You must implement `get_formatted_manager_name` method.")

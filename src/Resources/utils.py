@@ -5,6 +5,7 @@ import math
 import os
 import re
 import shutil
+import sys
 import tarfile
 import tempfile
 from io import BytesIO
@@ -12,13 +13,19 @@ from sys import platform as _platform
 
 from binaryornot.check import is_binary
 
-from .setting.Setting import Setting, EXCLUDED_FILES
+from .setting.Setting import EXCLUDED_FILES
 
 # Platforms constants definition.
 MAC_OS = "darwin"
 WINDOWS = "win32"
 LINUX = "linux"
 LINUX2 = "linux2"
+
+
+def check_python_version():
+    if sys.version_info < (3, 0):
+        print("Python version should be greater than 3.0")
+        sys.exit(1)
 
 
 def class_for_name(module_name, class_name):
@@ -83,7 +90,7 @@ def human_readable_bytes(size_bytes):
 def get_vlab_temp_path(force_creation=True):
     tempdir = exec_by_platform(tempfile.gettempdir, tempfile.gettempdir, lambda: "/%s" % get_absolute_path("/tmp"))
 
-    vlab_directory = os.path.join(tempdir, Setting.get_instance().vlab_folder_name)
+    vlab_directory = os.path.join(tempdir, "kathara_vlab")
     if not os.path.isdir(vlab_directory) and force_creation:
         os.mkdir(vlab_directory)
 
@@ -91,6 +98,9 @@ def get_vlab_temp_path(force_creation=True):
 
 
 def confirmation_prompt(prompt_string, callback_yes, callback_no):
+    # TODO
+    # #answer = prompt_utils.prompt_for_bilateral_choice('Please enter a value', 'yes', 'no')
+
     answer = None
     while answer not in ["y", "yes", "Y", "YES", "n", "no", "N", "NO"]:
         answer = input("%s [y/n] " % prompt_string)

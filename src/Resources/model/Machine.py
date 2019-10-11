@@ -11,6 +11,7 @@ from glob import glob
 from .Link import BRIDGE_LINK_NAME
 from .. import utils
 from ..setting.Setting import Setting
+from ..exceptions import NonSequentialMachineInterfaceError
 
 
 class Machine(object):
@@ -64,10 +65,8 @@ class Machine(object):
 
         for i in range(1, len(sorted_interfaces)):
             if sorted_interfaces[i - 1][0] != sorted_interfaces[i][0] - 1:
-                # If a number is non sequential, the rest of the list is garbage.
-                # Throw it away.
-                sorted_interfaces = sorted_interfaces[:i]
-                break
+                # If a number is non sequential, raise the exception.
+                raise NonSequentialMachineInterfaceError("Interface %d missing on machine %s." % (i, self.name))
 
         self.interfaces = collections.OrderedDict(sorted_interfaces)
 

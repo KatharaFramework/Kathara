@@ -7,6 +7,7 @@ from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
 from ..model.Lab import Lab
 from ..setting.Setting import Setting
+from ..strings import strings, wiki_description
 
 
 class VstartCommand(Command):
@@ -17,8 +18,16 @@ class VstartCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara vstart',
-            description='Start a new Kathara machine.',
-            epilog='Example: kathara vstart --eth 0:A 1:B -n pc1'
+            description=strings['vstart'],
+            epilog=wiki_description,
+            add_help=False
+        )
+
+        parser.add_argument(
+            '-h', '--help',
+            action='help',
+            default=argparse.SUPPRESS,
+            help='Show an help message and exit.'
         )
 
         group = parser.add_mutually_exclusive_group(required=False)
@@ -40,12 +49,14 @@ class VstartCommand(Command):
         )
         parser.add_argument(
             '-n', '--name',
+            metavar='MACHINE_NAME',
             required=True,
             help='Name of the machine to be started.'
         )
         parser.add_argument(
             '--eth',
             dest='eths',
+            metavar='N:CD',
             nargs='+',
             required=False,
             help='Set a specific interface on a collision domain.'
@@ -80,7 +91,7 @@ class VstartCommand(Command):
             help='Set a different terminal emulator application (Unix only).'
         )
         parser.add_argument(
-            '-p', '--print',
+            '--print',
             dest='dry_mode',
             required=False,
             action='store_true',
@@ -95,7 +106,7 @@ class VstartCommand(Command):
         parser.add_argument(
             '--port',
             required=False,
-            help='Choose a port number to map to the internal port 3000 of the machine.'
+            help='Choose a TCP PORT number to map to the internal port 3000 of the machine.'
         )
         parser.add_argument(
             '--shell',

@@ -8,6 +8,7 @@ from ..parser.netkit.FolderParser import FolderParser
 from ..parser.netkit.LabParser import LabParser
 from ..parser.netkit.OptionParser import OptionParser
 from ..setting.Setting import Setting
+from ..strings import strings, wiki_description
 
 
 class LstartCommand(Command):
@@ -18,7 +19,16 @@ class LstartCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara lstart',
-            description='Start a Kathara lab.'
+            description=strings['lstart'],
+            epilog=wiki_description,
+            add_help=False
+        )
+
+        parser.add_argument(
+            '-h', '--help',
+            action='help',
+            default=argparse.SUPPRESS,
+            help='Show an help message and exit.'
         )
 
         group = parser.add_mutually_exclusive_group(required=False)
@@ -54,15 +64,15 @@ class LstartCommand(Command):
             '-l', '--list',
             required=False,
             action='store_true',
-            help='Show a list of running machines after the lab has been started.'
+            help='Show information about running machines after the lab has been started.'
         )
         parser.add_argument(
             '-o', '--pass',
             dest='options',
+            metavar="OPTION",
             nargs='*',
             required=False,
-            help="Pass options to vstart. Options should be a list of double quoted strings, "
-                 "like '--pass \"mem=64m\" \"image=kathara/netkit_base\"'."
+            help="Apply options to all machines of a lab during startup."
         )
         parser.add_argument(
             '--xterm',
@@ -89,7 +99,8 @@ class LstartCommand(Command):
             help='Start from a specific network counter (overrides whatever was previously initialized).'
         )
         parser.add_argument(
-            'machine_names',
+            'machine_name',
+            metavar='MACHINE_NAME',
             nargs='*',
             help='Launches only specified machines.'
         )
@@ -120,8 +131,8 @@ class LstartCommand(Command):
         if dependencies:
             lab.apply_dependencies(dependencies)
 
-        if args.machine_names:
-            lab.intersect_machines(args.machine_names)
+        if args.machine_name:
+            lab.intersect_machines(args.machine_name)
 
         lab_meta_information = str(lab)
 
@@ -161,4 +172,4 @@ class LstartCommand(Command):
             Setting.get_instance().save_selected(['net_counter'])
 
         if args.list:
-            ManagerProxy.get_instance().get_lab_info(lab.folder_hash)
+            print(next(ManagerProxy.get_instance().get_lab_info(lab.folder_hash)))

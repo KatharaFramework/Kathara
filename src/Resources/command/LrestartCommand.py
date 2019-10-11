@@ -4,6 +4,7 @@ from .LcleanCommand import LcleanCommand
 from .LstartCommand import LstartCommand
 from .. import utils
 from ..foundation.command.Command import Command
+from ..strings import strings, wiki_description
 
 
 class LrestartCommand(Command):
@@ -14,7 +15,16 @@ class LrestartCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara lrestart',
-            description='Restart a Kathara lab.'
+            description=strings['lrestart'],
+            epilog=wiki_description,
+            add_help=False
+        )
+
+        parser.add_argument(
+            '-h', '--help',
+            action='help',
+            default=argparse.SUPPRESS,
+            help='Show an help message and exit.'
         )
 
         group = parser.add_mutually_exclusive_group(required=False)
@@ -50,20 +60,27 @@ class LrestartCommand(Command):
             '-l', '--list',
             required=False,
             action='store_true',
-            help='Show a list of running containers after the lab has been started.'
+            help='Show information about running machines after the lab has been started.'
         )
         parser.add_argument(
             '-o', '--pass',
             dest='options',
+            metavar="OPTION",
             nargs='*',
             required=False,
-            help="Pass options to vstart. Options should be a list of double quoted strings, "
-                 "like '--pass \"mem=64m\" \"image=kathara/netkit_base\"'."
+            help="Apply options to all machines of a lab during startup."
         )
         parser.add_argument(
             '--xterm',
             required=False,
             help='Set a different terminal emulator application (Unix only).'
+        )
+        parser.add_argument(
+            '-H', '--no-hosthome',
+            dest="no_hosthome",
+            required=False,
+            action='store_false',
+            help='/hosthome dir will not be mounted inside the machine.'
         )
         parser.add_argument(
             '-c', '--counter',

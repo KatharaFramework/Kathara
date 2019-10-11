@@ -7,38 +7,38 @@ import sys
 
 import coloredlogs
 from Resources import utils
+from Resources.exceptions import SettingsError, DockerDaemonConnectionError
 from Resources.setting.Setting import Setting
+from Resources.strings import formatted_strings
 from Resources.version import CURRENT_VERSION
 
-description_msg = """kathara <command> [<args>]
+description_msg = """kathara [-v|--version] <command> [<args>]
 
 The possible kathara command are:
-\tvstart\t\tStart a new Kathara machine
-\tvclean\t\tCleanup Kathara processes and configurations
-\tvconfig\t\tAttach network interfaces to a running Kathara machine
-\tlstart\t\tStart a Kathara lab
-\tlclean\t\tStop and clean a Kathara lab
-\tlinfo\t\tShow information about a Kathara lab
-\tlrestart\tRestart a Kathara lab
-\tltest\t\tTest a Kathara lab
-\tconnect\t\tConnect to a Kathara machine
-\twipe\t\tDelete all Kathara machines and links, optionally also delete settings
-\tlist\t\tShow all running Kathara machines
-\tsettings\tShow and edit Kathara settings
-\tcheck\t\tCheck your system environment
-"""
+%s
+""" % formatted_strings()
 
 
 class KatharaEntryPoint(object):
     def __init__(self):
-        parser = argparse.ArgumentParser(description='Pretends to be Kathara',
-                                         usage=description_msg
-                                         )
+        parser = argparse.ArgumentParser(
+            description='A network emulation tool.',
+            usage=description_msg,
+            add_help=False
+        )
 
-        parser.add_argument('command',
-                            help='Command to run.',
-                            nargs="?"
-                            )
+        parser.add_argument(
+            '-h', '--help',
+            action='help',
+            default=argparse.SUPPRESS,
+            help='Show an help message and exit.'
+        )
+
+        parser.add_argument(
+            'command',
+            help='Command to run.',
+            nargs="?"
+        )
 
         parser.add_argument(
             "-v", "--version",
@@ -59,24 +59,32 @@ class KatharaEntryPoint(object):
             parser.print_help()
             sys.exit(1)
 
-        module_name = ("Resources.command", args.command.capitalize() + "Command")
-        try:
-            command_class = utils.class_for_name(module_name[0], module_name[1])
-            command_object = command_class()
-        except ModuleNotFoundError as e:
-            if e.name == '.'.join(module_name):
-                logging.error('Unrecognized command.\n')
-                parser.print_help()
-                sys.exit(1)
-            else:
-                logging.critical("\nLooks like %s is not installed in your system\n" % e.name)
-                sys.exit(1)
+        module_name = {
+            "package": "Resources.command",
+            "class": args.command.capitalize() + "Command"
+        }
 
         try:
             # Load config file
             Setting.get_instance()
             Setting.get_instance().check()
+        except (SettingsError, DockerDaemonConnectionError) as e:
+            logging.critical(str(e))
+            sys.exit(1)
 
+        try:
+            command_class = utils.class_for_name(module_name["package"], module_name["class"])
+            command_object = command_class()
+        except ModuleNotFoundError as e:
+            if e.name == '.'.join(module_name.values()):
+                logging.error('Unrecognized command.\n')
+                parser.print_help()
+                sys.exit(1)
+            else:
+                logging.critical("`%s` is not installed in your system\n" % e.name)
+                sys.exit(1)
+
+        try:
             current_path = os.getcwd()
             command_object.run(current_path, sys.argv[2:])
         except KeyboardInterrupt:
@@ -90,6 +98,13 @@ class KatharaEntryPoint(object):
 
 
 if __name__ == '__main__':
-    coloredlogs.install(fmt='%(levelname)s - %(message)s', level=Setting.get_instance().debug_level)
+    utils.check_python_version()
+
+    try:
+        debug_level = Setting.get_instance().debug_level
+    except SettingsError:
+        debug_level = "INFO"
+
+    coloredlogs.install(fmt='%(levelname)s - %(message)s', level=debug_level)
     
     KatharaEntryPoint()

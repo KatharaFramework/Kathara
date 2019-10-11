@@ -6,8 +6,10 @@ from .DockerImage import DockerImage
 from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
 from ... import utils
+from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
+from requests.exceptions import ConnectionError as RequestsConnectionError
 
 
 def pywin_import_stub():
@@ -16,7 +18,7 @@ def pywin_import_stub():
     """
     import types
     pywintypes = types.ModuleType("pywintypes")
-    pywintypes.error = ConnectionError
+    pywintypes.error = RequestsConnectionError
     return pywintypes
 
 
@@ -36,10 +38,10 @@ def check_docker_status(method):
         try:
             client.ping()
             return method(*args, **kw)
-        except ConnectionError:
-            raise Exception("Can not connect to Docker Daemon. Maybe you have not started it?")
-        except pywintypes.error:
-            raise Exception("Can not connect to Docker Daemon. Maybe you have not started it?")
+        except RequestsConnectionError as e:
+            raise DockerDaemonConnectionError("Can not connect to Docker Daemon. %s" % str(e))
+        except pywintypes.error:    # TODO: Handle exception
+            raise DockerDaemonConnectionError("Can not connect to Docker Daemon. Maybe you have not started it?")
 
     return check_status
 
@@ -178,10 +180,7 @@ class DockerManager(IManager):
 
     @check_docker_status
     def check_image(self, image_name):
-        try:
-            self.docker_image.check_and_pull(image_name)
-        except Exception as e:
-            raise Exception(str(e))
+        self.docker_image.check_and_pull(image_name)
 
     @check_docker_status
     def check_updates(self, settings):
@@ -203,6 +202,12 @@ class DockerManager(IManager):
     @check_docker_status
     def get_release_version(self):
         return self.client.version()["Version"]
+
+    def get_manager_name(self):
+        return "docker"
+
+    def get_formatted_manager_name(self):
+        return "Docker (Kathara)"
 
     @staticmethod
     def _get_aggregate_machine_info(stats):

@@ -1,24 +1,14 @@
-from consolemenu.validators.base import BaseValidator
-
 from ..setting.Setting import Setting
+from ..trdparty.consolemenu.validators.base import BaseValidator
 
 
 class ImageValidator(BaseValidator):
     def __init__(self):
-        """
-        URL Validator class
-        """
         super(ImageValidator, self).__init__()
 
     def validate(self, input_string):
-        """
-        Validate url
-        :return: True if match / False otherwise
-        """
         try:
-            Setting.get_instance().image = input_string
-            Setting.get_instance().check()
-            Setting.get_instance().save_selected(['image'])
+            Setting.get_instance().check_image(input_string)
             return True
-        except:
+        except Exception:
             return False

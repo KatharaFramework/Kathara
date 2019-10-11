@@ -3,6 +3,7 @@ import argparse
 from .. import utils
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
+from ..strings import strings, wiki_description
 
 
 class ConnectCommand(Command):
@@ -13,7 +14,16 @@ class ConnectCommand(Command):
         
         parser = argparse.ArgumentParser(
             prog='kathara connect',
-            description='Connect to a Kathara machine.'
+            description=strings['connect'],
+            epilog=wiki_description,
+            add_help=False
+        )
+
+        parser.add_argument(
+            '-h', '--help',
+            action='help',
+            default=argparse.SUPPRESS,
+            help='Show an help message and exit.'
         )
 
         group = parser.add_mutually_exclusive_group(required=False)
@@ -35,6 +45,7 @@ class ConnectCommand(Command):
         )
         parser.add_argument(
             'machine_name',
+            metavar='MACHINE_NAME',
             help='Name of the machine to connect to.'
         )
 

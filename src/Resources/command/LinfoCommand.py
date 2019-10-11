@@ -7,6 +7,7 @@ from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
 from ..model.Link import BRIDGE_LINK_NAME
 from ..parser.netkit.LabParser import LabParser
+from ..strings import strings, wiki_description
 
 
 class LinfoCommand(Command):
@@ -17,7 +18,16 @@ class LinfoCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara linfo',
-            description='Show information about a Kathara lab.'
+            description=strings['linfo'],
+            epilog=wiki_description,
+            add_help=False
+        )
+
+        parser.add_argument(
+            '-h', '--help',
+            action='help',
+            default=argparse.SUPPRESS,
+            help='Show an help message and exit.'
         )
 
         parser.add_argument(
@@ -34,6 +44,7 @@ class LinfoCommand(Command):
 
         parser.add_argument(
             '-n', '--name',
+            metavar='MACHINE_NAME',
             required=False,
             help='Show only info about a specified machine.'
         )

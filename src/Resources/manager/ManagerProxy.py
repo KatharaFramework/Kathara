@@ -1,3 +1,6 @@
+import pkgutil
+import os
+
 from .. import utils
 from ..foundation.manager.IManager import IManager
 from ..setting.Setting import Setting
@@ -19,10 +22,10 @@ class ManagerProxy(IManager):
         if ManagerProxy.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
-            deployer_type = Setting.get_instance().deployer_type
+            manager_type = Setting.get_instance().manager_type
 
-            self.manager = utils.class_for_name("Resources.manager.%s" % deployer_type,
-                                                 "%sManager" % deployer_type.capitalize()
+            self.manager = utils.class_for_name("Resources.manager.%s" % manager_type,
+                                                 "%sManager" % manager_type.capitalize()
                                                 )()
 
             ManagerProxy.__instance = self
@@ -56,3 +59,26 @@ class ManagerProxy(IManager):
 
     def get_release_version(self):
         return self.manager.get_release_version()
+
+    def get_manager_name(self):
+        return self.manager.get_manager_name()
+
+    def get_formatted_manager_name(self):
+        return self.manager.get_formatted_manager_name()
+
+    @staticmethod
+    def get_available_managers_name():
+        path, file = os.path.split(__file__)
+        manager_modules = pkgutil.walk_packages(path=[path], prefix='Resources.manager.')
+
+        managers = {}
+
+        for manager_module in manager_modules:
+            if manager_module.ispkg:
+                module_name = manager_module.name
+                manager_name = "%sManager" % module_name.split('.')[-1].capitalize()
+
+                manager = utils.class_for_name(module_name, manager_name)()
+                managers[manager.get_manager_name()] = manager.get_formatted_manager_name()
+
+        return managers

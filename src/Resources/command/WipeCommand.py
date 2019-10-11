@@ -7,6 +7,7 @@ from .. import utils
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
 from ..setting.Setting import Setting
+from ..strings import strings, wiki_description
 
 
 class WipeCommand(Command):
@@ -17,7 +18,16 @@ class WipeCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara wipe',
-            description='Delete all Kathara machines and links for current user, optionally also delete settings.'
+            description=strings['wipe'],
+            epilog=wiki_description,
+            add_help=False
+        )
+
+        parser.add_argument(
+            '-h', '--help',
+            action='help',
+            default=argparse.SUPPRESS,
+            help='Show an help message and exit.'
         )
 
         parser.add_argument(
@@ -27,18 +37,20 @@ class WipeCommand(Command):
             help='Force the wipe.'
         )
 
-        parser.add_argument(
+        group = parser.add_mutually_exclusive_group(required=False)
+
+        group.add_argument(
             '-s', '--settings',
             required=False,
             action='store_true',
-            help='Wipe Kathara and all the stored settings.'
+            help='Wipe the stored settings of the current user.'
         )
 
-        parser.add_argument(
+        group.add_argument(
             '-a', '--all',
             required=False,
             action='store_true',
-            help='Wipe Kathara machines and links of all users.'
+            help='Wipe all Kathara machines and links of all users.'
         )
 
         self.parser = parser
@@ -52,11 +64,13 @@ class WipeCommand(Command):
         if args.all and os.getuid() != 0:
             raise Exception("You must be root in order to wipe all Kathara machines of all users.")
 
-        ManagerProxy.get_instance().wipe(all_users=bool(args.all))
-
         if args.settings:
             Setting.wipe()
+
+            sys.exit(0)
         else:
+            ManagerProxy.get_instance().wipe(all_users=bool(args.all))
+
             setting_object = Setting.get_instance()
             setting_object.net_counter = 0
             setting_object.save_selected(['net_counter'])

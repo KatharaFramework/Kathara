@@ -6,13 +6,16 @@ import time
 from .. import utils
 from .. import version
 from ..api.GitHubApi import GitHubApi
-from ..exceptions import HTTPConnectionError
+from ..exceptions import HTTPConnectionError, SettingsError
 
 MAX_DOCKER_LAN_NUMBER = 256 * 256
 MAX_K8S_NUMBER = (1 << 24) - 20
 
 DOCKER = "docker"
 K8S = "k8s"
+
+POSSIBLE_SHELLS = ["bash", "sh", "ash", "ksh", "zsh", "fish", "csh", "tcsh"]
+POSSIBLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
 
 ONE_WEEK = 604800
 
@@ -22,9 +25,8 @@ EXCLUDED_FILES = ['.DS_Store']
 
 
 class Setting(object):
-    __slots__ = ['image', 'deployer_type', 'net_counter', 'terminal', 'open_terminals',
-                 'hosthome_mount', 'machine_shell', 'net_prefix', 'machine_prefix', 'last_checked', 'vlab_folder_name',
-                 'debug_level']
+    __slots__ = ['image', 'manager_type', 'net_counter', 'terminal', 'open_terminals',
+                 'hosthome_mount', 'machine_shell', 'net_prefix', 'machine_prefix', 'last_checked', 'debug_level']
 
     __instance = None
 
@@ -45,7 +47,7 @@ class Setting(object):
 
             # Default values to use
             self.image = 'kathara/netkit_base'
-            self.deployer_type = 'docker'
+            self.manager_type = 'docker'
             self.net_counter = 0
             self.terminal = '/usr/bin/xterm'
             # TODO: Check how it works!
@@ -55,7 +57,6 @@ class Setting(object):
             self.machine_shell = "bash"
             self.net_prefix = 'kathara'
             self.machine_prefix = 'kathara'
-            self.vlab_folder_name = "kathara_vlab"
             self.debug_level = "INFO"
             self.last_checked = time.time() - ONE_WEEK
 
@@ -84,7 +85,7 @@ class Setting(object):
                 try:
                     settings = json.load(settings_file)
                 except ValueError:
-                    raise Exception("Settings file is not a valid JSON. Fix it or delete it before launching.")
+                    raise SettingsError("Not a valid JSON.")
 
             for (name, value) in settings.items():
                 setattr(self, name, value)
@@ -119,7 +120,7 @@ class Setting(object):
             try:
                 settings = json.load(settings_file)
             except ValueError:
-                raise Exception("Settings file is not a valid JSON. Fix it or delete it before launching.")
+                raise SettingsError("Not a valid JSON.")
 
         # Assign to the JSON settings the desired ones
         for setting_name in selected_settings:
@@ -129,14 +130,9 @@ class Setting(object):
         self.save(content=settings)
 
     def check(self):
-        if self.deployer_type not in [DOCKER, K8S]:
-            raise Exception("Deployer Type not allowed.")
+        self.check_manager()
 
-        from ..manager.ManagerProxy import ManagerProxy
-        try:
-            ManagerProxy.get_instance().check_image(self.image)
-        except Exception as e:
-            raise Exception(str(e))
+        self.check_image()
 
         current_time = time.time()
         # After 1 week, check if a new image and Kathara version has been released.
@@ -158,10 +154,11 @@ class Setting(object):
                 logging.debug("Connection to GitHub failed, passing...")
                 checked = False
 
-            if self.deployer_type == DOCKER:
+            if self.manager_type == DOCKER:
                 logging.debug("Checking Docker Image version...")
 
                 try:
+                    from ..manager.ManagerProxy import ManagerProxy
                     ManagerProxy.get_instance().check_updates(self)
                 except HTTPConnectionError:
                     logging.debug("Connection to DockerHub failed, passing...")
@@ -177,46 +174,56 @@ class Setting(object):
             self.net_counter = int(self.net_counter)
             self.check_net_counter()
         except ValueError:
-            raise Exception("Network Counter must be an integer.")
+            raise SettingsError("Network Counter must be an integer.")
+
+        if self.machine_shell not in POSSIBLE_SHELLS:
+            raise SettingsError("Machine Shell must be one of the following: %s." % (", ".join(POSSIBLE_SHELLS)))
 
         try:
             utils.re_search_fail(r"^[a-z]+_?[a-z_]+$", self.net_prefix)
         except ValueError:
-            raise Exception("Network Prefix must only contain lowercase letters and underscore.")
+            raise SettingsError("Networks Prefix must only contain lowercase letters and underscore.")
 
         try:
             utils.re_search_fail(r"^[a-z]+_?[a-z_]+$", self.machine_prefix)
         except ValueError:
-            raise Exception("Machine Prefix must only contain lowercase letters and underscore.")
+            raise SettingsError("Machine Prefix must only contain lowercase letters and underscore.")
 
-        try:
-            utils.re_search_fail(r"^\w+$", self.vlab_folder_name)
-        except ValueError:
-            raise Exception("VLab Folder Name must contain only characters from a to Z, "
-                            "digits from 0-9, and underscore.")
-
-        if self.debug_level not in ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]:
-            raise Exception("Debug Level must be one of the following: CRITICAL, ERROR, WARNING, INFO, DEBUG.")
+        if self.debug_level not in POSSIBLE_DEBUG_LEVELS:
+            raise SettingsError("Debug Level must be one of the following: %s." % (", ".join(POSSIBLE_DEBUG_LEVELS)))
 
     def inc_net_counter(self):
         self.net_counter += 1
 
-        if (self.deployer_type == DOCKER and self.net_counter > MAX_DOCKER_LAN_NUMBER) or \
-           (self.deployer_type == K8S and self.net_counter > MAX_K8S_NUMBER):
+        if (self.manager_type == DOCKER and self.net_counter > MAX_DOCKER_LAN_NUMBER) or \
+           (self.manager_type == K8S and self.net_counter > MAX_K8S_NUMBER):
             self.net_counter = 0
+
+    def check_manager(self):
+        from ..manager.ManagerProxy import ManagerProxy
+        managers = ManagerProxy.get_available_managers_name()
+
+        if self.manager_type not in managers.keys():
+            raise SettingsError("Manager Type not allowed.")
 
     def check_net_counter(self):
         if self.net_counter < 0:
-            raise Exception("Network Counter must be greater or equal than zero.")
+            raise SettingsError("Network Counter must be greater or equal than zero.")
         else:
-            if self.deployer_type == DOCKER and self.net_counter > MAX_DOCKER_LAN_NUMBER:
-                raise Exception("Network Counter must be lesser than %d." % MAX_DOCKER_LAN_NUMBER)
-            elif self.deployer_type == K8S and self.net_counter > MAX_K8S_NUMBER:
-                raise Exception("Network Counter must be lesser than %d." % MAX_K8S_NUMBER)
+            if self.manager_type == DOCKER and self.net_counter > MAX_DOCKER_LAN_NUMBER:
+                raise SettingsError("Network Counter must be lesser than %d." % MAX_DOCKER_LAN_NUMBER)
+            elif self.manager_type == K8S and self.net_counter > MAX_K8S_NUMBER:
+                raise SettingsError("Network Counter must be lesser than %d." % MAX_K8S_NUMBER)
+
+    def check_image(self, image=None):
+        image = self.image if not image else image
+
+        from ..manager.ManagerProxy import ManagerProxy
+        ManagerProxy.get_instance().check_image(image)
 
     def _to_dict(self):
         return {"image": self.image,
-                "deployer_type": self.deployer_type,
+                "manager_type": self.manager_type,
                 "net_counter": self.net_counter,
                 "terminal": self.terminal,
                 "open_terminals": self.open_terminals,
@@ -224,7 +231,6 @@ class Setting(object):
                 "machine_shell": self.machine_shell,
                 "net_prefix": self.net_prefix,
                 "machine_prefix": self.machine_prefix,
-                "vlab_folder_name": self.vlab_folder_name,
                 "debug_level": self.debug_level,
                 "last_checked": self.last_checked
                 }

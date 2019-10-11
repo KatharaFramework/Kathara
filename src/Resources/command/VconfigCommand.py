@@ -7,6 +7,7 @@ from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
 from ..model.Lab import Lab
 from ..setting.Setting import Setting
+from ..strings import strings, wiki_description
 
 
 class VconfigCommand(Command):
@@ -17,17 +18,27 @@ class VconfigCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara vconfig',
-            description='Attach network interfaces to a running Kathara machine.',
-            epilog='Example: kathara vconfig -n pc1 --eth A B'
+            description=strings['vconfig'],
+            epilog=wiki_description,
+            add_help=False
+        )
+
+        parser.add_argument(
+            '-h', '--help',
+            action='help',
+            default=argparse.SUPPRESS,
+            help='Show an help message and exit.'
         )
         parser.add_argument(
             '-n', '--name',
+            metavar='MACHINE_NAME',
             required=True,
             help='Name of the machine to be connected on desired collision domains.'
         )
         parser.add_argument(
             '--eth',
             dest='eths',
+            metavar='N:CD',
             nargs='+',
             required=True,
             help='Specify the collision domain for an interface.'

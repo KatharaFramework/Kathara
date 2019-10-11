@@ -3,6 +3,7 @@ import argparse
 from .. import utils
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
+from ..strings import strings, wiki_description
 
 
 class LcleanCommand(Command):
@@ -13,7 +14,16 @@ class LcleanCommand(Command):
 
         parser = argparse.ArgumentParser(
             prog='kathara lclean',
-            description='Stop and clean a Kathara lab.'
+            description=strings['lclean'],
+            epilog=wiki_description,
+            add_help=False
+        )
+
+        parser.add_argument(
+            '-h', '--help',
+            action='help',
+            default=argparse.SUPPRESS,
+            help='Show an help message and exit.'
         )
 
         parser.add_argument(
@@ -23,6 +33,7 @@ class LcleanCommand(Command):
         )
         parser.add_argument(
             'machine_names',
+            metavar='MACHINE_NAME',
             nargs='*',
             help='Clean only specified machines.'
         )
