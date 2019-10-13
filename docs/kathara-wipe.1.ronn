@@ -1,0 +1,63 @@
+kathara-wipe(1) -- Delete all Kathara machines and links, optionally also delete settings
+=============================================
+
+## SYNOPSIS
+
+`kathara wipe` [`-h`] [`-f`] [`-s` | `-a`]
+
+## DESCRIPTION
+
+The wipe command can be used to gracefully shutdown ALL running Kathara machines of current user. Using optional parameters, it is also possible to delete the current user settings or the Kathara machines of all users in the host.
+
+## OPTIONS
+
+* `-h`, `--help`  
+    Show an help message and exit.
+
+* `-f`, `--force`  
+	Force the wipe.
+
+	If not set, Kathara ask for confirmation before wiping.
+
+* `-s`, `--settings`  
+	Wipe the stored settings of the current user.
+
+	Delete the `kathara.config`(5) file and create it again with default settings.
+
+* `-a`, `--all`  
+	Wipe all Kathara machines and links of all users.
+
+	This option can be run only by `root` user. Cannot be used with `-s` or `--settings`.
+
+## EXAMPLES
+
+    kathara wipe -s
+
+Wipes the current user settings but not the running Kathara machines.
+
+## REPORTING BUGS
+
+Report bugs opening an issue on the [offial GitHub repository](https://github.com/KatharaFramework/Kathara) where the development and maintenance is primarily done.  
+Issues which are security relevant should be disclosed privately to the [Kathara mailing list](mailto:contact@kathara.org). You do not have to be subscribed to the list to send a message there.  
+When reporting a bug remember to write used commands, eventually attach your lab, and include the output of `kathara-check`(1) in order to make possible to reproduce the bug.
+
+## AUTHORS
+
+Kathara was born from a redesign of Netkit. Its first version was developed by Gaetano Bonofiglio and Veronica Iovinella. Currently is mantained by Lorenzo Ariemma and Mariano Scazzariello.
+
+People involved across time also include:
+
++  Giuseppe Di Battista
++  Maurizio Patrignani
++  Maurizio Pizzonia
++  Massimo Rimondini
++  Gabriele Lospoto
+
+## COPYRIGHT
+
+Copyright © 2017-2019 License GPLv3+: [GNU GPL](http://gnu.org/licenses/gpl.html) version 3 or later.
+This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+
+## SEE ALSO
+
+`kathara`(1), `kathara-vstart`(1), `kathara-lstart`(1)

@@ -1,0 +1,30 @@
+
+# Commands man pages
+kathara(1)           kathara.1.ronn
+kathara-vstart(1)    kathara-vstart.1.ronn
+kathara-vclean(1)    kathara-vclean.1.ronn
+kathara-vconfig(1)   kathara-vconfig.1.ronn
+kathara-lstart(1)    kathara-lstart.1.ronn
+kathara-lclean(1)    kathara-lclean.1.ronn
+kathara-linfo(1)     kathara-linfo.1.ronn
+kathara-lrestart(1)  kathara-lrestart.1.ronn
+kathara-ltest(1)     kathara-ltest.1.ronn
+kathara-connect(1)   kathara-connect.1.ronn
+kathara-wipe(1)      kathara-wipe.1.ronn
+kathara-list(1)      kathara-list.1.ronn
+kathara-settings(1)  kathara-settings.1.ronn
+kathara-check(1)     kathara-check.1.ronn
+
+# Files man pages
+kathara.conf(5)      kathara.conf.5.ronn
+kathara-lab.conf(5)  kathara-lab.conf.5.ronn
+kathara-lab.dep(5)   kathara-lab.dep.5.ronn
+
+# Dir man pages
+kathara-lab-dirs(7)  kathara-lab-dirs.7.ronn
+
+#External manuals
+ping(1)              https://man.cx/ping(1)
+traceroute(1)        https://man.cx/traceroute(1)
+tcpdump(1)           https://man.cx/tcpdump(1)
+iptables(8)          https://man.cx/iptables(8)

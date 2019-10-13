@@ -1,0 +1,47 @@
+kathara.conf(5) -- Kathara configuration file
+=============================================
+
+## DESCRIPTION
+
+The vclean command can be used to gracefully shutdown a running machine. MACHINE_NAME is the name of a machine.
+
+## OPTIONS
+
+* `-h`, `--help`
+    Show an help message and exit.
+
+* `-n` MACHINE_NAME, `--name` MACHINE_NAME  
+    Name of the machine to be cleaned.
+
+## EXAMPLES
+
+    kathara vclean -n pc1
+
+Stop a running machine named pc1.
+
+## REPORTING BUGS
+
+Report bugs opening an issue on the [offial GitHub repository](https://github.com/KatharaFramework/Kathara) where the development and maintenance is primarily done.  
+Issues which are security relevant should be disclosed privately to the [Kathara mailing list](mailto:contact@kathara.org). You do not have to be subscribed to the list to send a message there.  
+When reporting a bug remember to write used commands, eventually attach your lab, and include the output of `kathara-check`(1) in order to make possible to reproduce the bug.
+
+## AUTHORS
+
+Kathara was born from a redesign of Netkit. Its first version was developed by Gaetano Bonofiglio and Veronica Iovinella. Currently is mantained by Lorenzo Ariemma and Mariano Scazzariello.
+
+People involved across time also include:
+
++  Giuseppe Di Battista
++  Maurizio Patrignani
++  Maurizio Pizzonia
++  Massimo Rimondini
++  Gabriele Lospoto
+
+## COPYRIGHT
+
+Copyright © 2017-2019 License GPLv3+: [GNU GPL](http://gnu.org/licenses/gpl.html) version 3 or later.
+This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+
+## SEE ALSO
+
+`kathara`(1), `kathara-vstart`(1), `kathara-vconfig`(1)
