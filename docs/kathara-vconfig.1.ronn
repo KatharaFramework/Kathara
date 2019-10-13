@@ -11,13 +11,13 @@ Attach network interfaces to running machines "on the fly". The affected machine
 
 ## OPTIONS
 
-* `-h`, `--help`  
+* `-h`, `--help`:
     Show an help message and exit.
 
-* `-n` MACHINE_NAME, `--name` MACHINE_NAME  
+* `-n` <MACHINE_NAME>, `--name` <MACHINE_NAME>:
     Name of the machine to be connected on desired collision domains.
 
-* `--eth` CD [CD ...]  
+* `--eth` <CD> [<CD> ...]:
 	Specify the collision domain for an interface.
 
     Equip the machine with an additional network interface attached to a (virtual) collision domain whose name is CD. The number of the resulting network interface is generated incrementing the last network interface number of the machine.
@@ -28,29 +28,3 @@ Attach network interfaces to running machines "on the fly". The affected machine
 
 Two new interfaces will be added to the machine pc1: the first one will be attached to the collision domain named X, while the other one to the collision domain named Y. Both the interfaces will have to be configured by hand inside the machine (for example, by using ifconfig).
 
-## REPORTING BUGS
-
-Report bugs opening an issue on the [offial GitHub repository](https://github.com/KatharaFramework/Kathara) where the development and maintenance is primarily done.  
-Issues which are security relevant should be disclosed privately to the [Kathara mailing list](mailto:contact@kathara.org). You do not have to be subscribed to the list to send a message there.  
-When reporting a bug remember to write used commands, eventually attach your lab, and include the output of `kathara-check`(1) in order to make possible to reproduce the bug.
-
-## AUTHORS
-
-Kathara was born from a redesign of Netkit. Its first version was developed by Gaetano Bonofiglio and Veronica Iovinella. Currently is mantained by Lorenzo Ariemma and Mariano Scazzariello.
-
-People involved across time also include:
-
-+  Giuseppe Di Battista
-+  Maurizio Patrignani
-+  Maurizio Pizzonia
-+  Massimo Rimondini
-+  Gabriele Lospoto
-
-## COPYRIGHT
-
-Copyright © 2017-2019 License GPLv3+: [GNU GPL](http://gnu.org/licenses/gpl.html) version 3 or later.
-This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
-
-## SEE ALSO
-
-`kathara`(1), `kathara-vstart`(1), `kathara-vclean`(1)

@@ -12,39 +12,12 @@ By default, stops all the machines of the lab. If a list of MACHINE_NAMEs is pro
 
 ## OPTIONS
 
-* `-h`, `--help`  
+* `-h`, `--help`:
     Show an help message and exit.
 
-* `-d` DIRECTORY, `--directory` DIRECTORY  
+* `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
 	Specify the folder containing the lab.
 
 	Cleans the Kathara lab that is located inside DIRECTORY.  
 	If no `-d` option is provided, assume the lab is located in the current directory.
 
-
-## REPORTING BUGS
-
-Report bugs opening an issue on the [offial GitHub repository](https://github.com/KatharaFramework/Kathara) where the development and maintenance is primarily done.  
-Issues which are security relevant should be disclosed privately to the [Kathara mailing list](mailto:contact@kathara.org). You do not have to be subscribed to the list to send a message there.  
-When reporting a bug remember to write used commands, eventually attach your lab, and include the output of `kathara-check`(1) in order to make possible to reproduce the bug.
-
-## AUTHORS
-
-Kathara was born from a redesign of Netkit. Its first version was developed by Gaetano Bonofiglio and Veronica Iovinella. Currently is mantained by Lorenzo Ariemma and Mariano Scazzariello.
-
-People involved across time also include:
-
-+  Giuseppe Di Battista
-+  Maurizio Patrignani
-+  Maurizio Pizzonia
-+  Massimo Rimondini
-+  Gabriele Lospoto
-
-## COPYRIGHT
-
-Copyright © 2017-2019 License GPLv3+: [GNU GPL](http://gnu.org/licenses/gpl.html) version 3 or later.
-This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
-
-## SEE ALSO
-
-`kathara`(1), `kathara-lstart`(1), `kathara-lrestart`(1), `kathara-linfo`(1), `kathara-lab.conf`(5)
