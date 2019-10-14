@@ -2,7 +2,7 @@ from ..api.DockerHubApi import DockerHubApi
 from ..exceptions import HTTPConnectionError
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
-from ..setting.Setting import Setting, POSSIBLE_SHELLS, POSSIBLE_DEBUG_LEVELS
+from ..setting.Setting import Setting, POSSIBLE_SHELLS, POSSIBLE_DEBUG_LEVELS, EXCLUDED_IMAGES
 from ..trdparty.consolemenu import *
 from ..trdparty.consolemenu.format import MenuBorderStyleType
 from ..trdparty.consolemenu.items import *
@@ -63,6 +63,9 @@ class SettingsCommand(Command):
 
         try:
             for image in DockerHubApi.get_images():
+                if image['name'] in EXCLUDED_IMAGES:
+                    continue
+
                 image_name = "%s/%s" % (image['namespace'], image['name'])
 
                 select_image_menu.append_item(FunctionItem(text=image_name,
@@ -234,6 +237,29 @@ class SettingsCommand(Command):
 
         debug_level_item = SubmenuItem(debug_level_string, debug_level_menu, menu)
 
+        # Print Startup Logs Option
+        print_startup_log_string = "Print Startup Logs on machine startup"
+        print_startup_log_menu = SelectionMenu(strings=[],
+                                               title=open_terminals_string,
+                                               subtitle=current_bool("print_startup_log"),
+                                               formatter=menu_formatter
+                                               )
+
+        print_startup_log_menu.append_item(FunctionItem(text="Yes",
+                                                        function=self.set_setting_value,
+                                                        args=['print_startup_log', True],
+                                                        should_exit=True
+                                                        )
+                                           )
+        print_startup_log_menu.append_item(FunctionItem(text="No",
+                                                        function=self.set_setting_value,
+                                                        args=['print_startup_log', False],
+                                                        should_exit=True
+                                                        )
+                                           )
+
+        print_startup_log_item = SubmenuItem(print_startup_log_string, print_startup_log_menu, menu)
+
         menu.append_item(reset_net_counter_item)
         menu.append_item(submenu_item)
         menu.append_item(manager_item)
@@ -242,6 +268,7 @@ class SettingsCommand(Command):
         menu.append_item(machine_shell_item)
         menu.append_item(prefixes_item)
         menu.append_item(debug_level_item)
+        menu.append_item(print_startup_log_item)
 
         self.menu = menu
 

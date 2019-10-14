@@ -42,8 +42,8 @@ class ManagerProxy(IManager):
     def wipe(self, all_users=False):
         self.manager.wipe(all_users)
 
-    def connect_tty(self, lab_hash, machine_name, shell):
-        self.manager.connect_tty(lab_hash, machine_name, shell)
+    def connect_tty(self, lab_hash, machine_name, shell, logs=False):
+        self.manager.connect_tty(lab_hash, machine_name, shell, logs)
 
     def get_lab_info(self, lab_hash=None, machine_name=None):
         return self.manager.get_lab_info(lab_hash, machine_name)

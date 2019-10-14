@@ -18,30 +18,47 @@ STARTUP_COMMANDS = [
     # In this way, files are all replaced in the container root folder
     # rsync is used to keep symlinks while copying files.
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
-    "chmod -R 777 /hostlab/{machine_name}/*; "
     "rsync -r -K /hostlab/{machine_name}/* /; fi",
 
     # Give proper permissions to /var/www
     "chmod -R 777 /var/www/*",
 
-    # Placeholder for rp_filter patches
-    "{rp_filter}",
+    # Give proper permissions to Quagga files (if present)
+    "if [ -d \"/etc/quagga\" ]; then "
+    "chown quagga:quagga /etc/quagga/*",
+    "chmod 640 /etc/quagga/*; fi",
 
     # If shared.startup file is present
     "if [ -f \"/hostlab/shared.startup\" ]; then "
     # Give execute permissions to the file and execute it
     # We redirect the output "&>" to a debugging file
-    "chmod u+x /hostlab/shared.startup; /hostlab/shared.startup &> /var/log/shared.log; fi",
+    "chmod u+x /hostlab/shared.startup",
+    # Adds a line to enable command output
+    "sed -i \"1s;^;set -x\\n\\n;\" /hostlab/shared.startup",
+    "/hostlab/shared.startup &> /var/log/shared.log; fi",
 
     # If .startup file is present
     "if [ -f \"/hostlab/{machine_name}.startup\" ]; then "
     # Give execute permissions to the file and execute it
     # We redirect the output "&>" to a debugging file
-    "chmod u+x /hostlab/{machine_name}.startup; "
+    "chmod u+x /hostlab/{machine_name}.startup",
+    # Adds a line to enable command output
+    "sed -i \"1s;^;set -x\\n\\n;\" /hostlab/{machine_name}.startup",
     "/hostlab/{machine_name}.startup &> /var/log/startup.log; fi",
 
     # Placeholder for user commands
     "{machine_commands}"
+]
+
+RP_FILTER_COMMANDS = [
+    # Remount /proc/sys in rw to patch rp_filter value
+    "mount -o remount,rw /proc/sys",
+
+    # Placeholder for rp_filter patches
+    "{rp_filter}",
+
+    # Remount /proc/sys in ro after patching rp_filter value
+    "mount -o remount,ro /proc/sys",
 ]
 
 SHUTDOWN_COMMANDS = [
@@ -66,6 +83,8 @@ class DockerMachine(object):
         self.docker_image = docker_image
 
     def deploy(self, machine):
+        logging.debug("Creating machine `%s`..." % machine.name)
+
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options
 
@@ -134,7 +153,7 @@ class DockerMachine(object):
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,
                                                               hostname=machine.name,
-                                                              privileged=True,
+                                                              cap_add=machine.capabilities,
                                                               network=first_network.name if first_network else None,
                                                               network_mode="bridge" if first_network else "none",
                                                               sysctls=sysctl_parameters,
@@ -160,16 +179,6 @@ class DockerMachine(object):
         tar_data = machine.pack_data()
         if tar_data:
             machine_container.put_archive("/", tar_data)
-
-        # Build sysctl rp_filter commands for interfaces (since eth0 is connected above, we already put it here)
-        rp_filter_commands = [SYSCTL_COMMAND % "eth0"]
-
-        # Connect the container to its networks (starting from the second, the first is already connected above)
-        for (iface_num, machine_link) in islice(machine.interfaces.items(), 1, None):
-            machine_link.api_object.connect(machine_container)
-
-            # Add the rp_filter patch for this interface
-            rp_filter_commands.append(SYSCTL_COMMAND % ("eth%d" % iface_num))
 
         if not bridged_connected and machine.bridge:
             machine.bridge.api_object.connect(machine_container)
@@ -208,12 +217,7 @@ class DockerMachine(object):
 
     @staticmethod
     def start(machine):
-        # Build sysctl rp_filter commands for interfaces
-        rp_filter_commands = []
-
-        # Build the rp_filter patch for the interfaces
-        for (iface_num, machine_link) in machine.interfaces.items():
-            rp_filter_commands.append(SYSCTL_COMMAND % ("eth%d" % iface_num))
+        logging.debug("Starting machine `%s`..." % machine.name)
 
         try:
             machine.api_object.start()
@@ -223,18 +227,47 @@ class DockerMachine(object):
             else:
                 raise e
 
-        # Build the final startup commands string
-        startup_commands_string = "; ".join(STARTUP_COMMANDS)\
-                                      .format(machine_name=machine.name,
-                                              rp_filter="; ".join(rp_filter_commands),
-                                              machine_commands="; ".join(machine.startup_commands)
-                                              )
+        # Build sysctl rp_filter patch for interfaces (since eth0 is already connected, we already put it here)
+        rp_filter_commands = [SYSCTL_COMMAND % "eth0"]
 
-        # Execute the startup commands inside the container
-        machine.api_object.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', startup_commands_string],
+        # Connect the container to its networks (starting from the second, the first is already connected in `create`)
+        # This should be done after the container start because Docker causes a non-deterministic order when attaching
+        # networks before container startup.
+        for (iface_num, machine_link) in islice(machine.interfaces.items(), 1, None):
+            logging.debug("Connecting machine `%s` to network `%s` on interface %d..." % (machine.name,
+                                                                                          machine_link.name,
+                                                                                          iface_num
+                                                                                          )
+                          )
+
+            machine_link.api_object.connect(machine.api_object)
+
+            # Add the rp_filter patch for this interface
+            rp_filter_commands.append(SYSCTL_COMMAND % ("eth%d" % iface_num))
+
+        # Create the rp_filter commands string
+        rp_filter_commands_string = "; ".join(RP_FILTER_COMMANDS) \
+                                        .format(rp_filter="; ".join(rp_filter_commands))
+
+        # Execute the rp_filter commands inside the container (with privileged in order to use `mount`)
+        machine.api_object.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', rp_filter_commands_string],
                                     stdout=False,
                                     stderr=False,
                                     privileged=True,
+                                    detach=True
+                                    )
+
+        # Build the final startup commands string
+        startup_commands_string = "; ".join(STARTUP_COMMANDS) \
+                                      .format(machine_name=machine.name,
+                                              machine_commands="; ".join(machine.startup_commands)
+                                              )
+
+        # Execute the startup commands inside the container (without privileged flag so basic permissions are used)
+        machine.api_object.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', startup_commands_string],
+                                    stdout=False,
+                                    stderr=False,
+                                    privileged=False,
                                     detach=True
                                     )
 
@@ -257,7 +290,7 @@ class DockerMachine(object):
         for machine in machines:
             self.delete_machine(machine)
 
-    def connect(self, lab_hash, machine_name, shell):
+    def connect(self, lab_hash, machine_name, shell, logs=False):
         container_name = self.get_container_name(machine_name, lab_hash)
 
         logging.debug("Connect to machine with container name: %s" % container_name)
@@ -277,6 +310,20 @@ class DockerMachine(object):
         if not shell:
             shell = Setting.get_instance().machine_shell
 
+        if logs and Setting.get_instance().print_startup_log:
+            result = container.exec_run(cmd="cat /var/log/shared.log /var/log/startup.log",
+                                        stdout=True,
+                                        stderr=False,
+                                        privileged=False,
+                                        detach=False
+                                        )
+
+            result_string = result.output.decode('utf-8')
+            if result_string:
+                print("--- Startup Commands Log\n")
+                print(result_string)
+                print("--- End Startup Commands Log\n")
+
         def tty_connect():
             # Import PseudoTerminal only on Linux since some libraries are not available on Windows
             from ...trdparty.dockerpty.pty import PseudoTerminal
@@ -288,7 +335,7 @@ class DockerMachine(object):
                                                stderr=True,
                                                stdin=True,
                                                tty=True,
-                                               privileged=True
+                                               privileged=False
                                                )
 
             exec_output = self.client.api.exec_start(resp['Id'],
@@ -300,7 +347,7 @@ class DockerMachine(object):
             PseudoTerminal(self.client, exec_output, resp['Id']).start()
 
         def cmd_connect():
-            Popen(["docker", "exec", "-it", "--privileged", container.id, shell])
+            Popen(["docker", "exec", "-it", container.id, shell])
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 

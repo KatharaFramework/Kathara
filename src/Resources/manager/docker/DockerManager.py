@@ -14,7 +14,7 @@ from requests.exceptions import ConnectionError as RequestsConnectionError
 
 def pywin_import_stub():
     """
-    Stub module of pywintypes for Unix systems (so it won't raise any `module not found` exceptions).
+    Stub module of pywintypes for Unix systems (so it won't raise any `module not found` exception).
     """
     import types
     pywintypes = types.ModuleType("pywintypes")
@@ -40,8 +40,8 @@ def check_docker_status(method):
             return method(*args, **kw)
         except RequestsConnectionError as e:
             raise DockerDaemonConnectionError("Can not connect to Docker Daemon. %s" % str(e))
-        except pywintypes.error:    # TODO: Handle exception
-            raise DockerDaemonConnectionError("Can not connect to Docker Daemon. Maybe you have not started it?")
+        except pywintypes.error as e:
+            raise DockerDaemonConnectionError("Can not connect to Docker Daemon. %s" % str(e))
 
     return check_status
 
@@ -100,10 +100,11 @@ class DockerManager(IManager):
         self.docker_link.wipe(user=user_name)
 
     @check_docker_status
-    def connect_tty(self, lab_hash, machine_name, shell):
+    def connect_tty(self, lab_hash, machine_name, shell, logs=False):
         self.docker_machine.connect(lab_hash=lab_hash,
                                     machine_name=machine_name,
-                                    shell=shell
+                                    shell=shell,
+                                    logs=logs
                                     )
 
     @check_docker_status

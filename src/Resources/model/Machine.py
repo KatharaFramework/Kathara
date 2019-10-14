@@ -16,7 +16,8 @@ from ..exceptions import NonSequentialMachineInterfaceError
 
 class Machine(object):
     __slots__ = ['lab', 'name', 'startup_path', 'shutdown_path', 'folder',
-                 'interfaces', 'bridge', 'meta', 'startup_commands', 'api_object']
+                 'interfaces', 'bridge', 'meta', 'startup_commands', 'api_object',
+                 'capabilities']
 
     def __init__(self, lab, name):
         self.lab = lab
@@ -30,6 +31,8 @@ class Machine(object):
         self.startup_commands = []
 
         self.api_object = None
+
+        self.capabilities = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE"]
 
         startup_file = os.path.join(lab.path, '%s.startup' % self.name)
         self.startup_path = startup_file if os.path.exists(startup_file) else None
@@ -63,6 +66,8 @@ class Machine(object):
         """
         sorted_interfaces = sorted(self.interfaces.items(), key=lambda kv: kv[0])
 
+        logging.debug("`%s` interfaces are %s." % (self.name, sorted_interfaces))
+
         for i in range(1, len(sorted_interfaces)):
             if sorted_interfaces[i - 1][0] != sorted_interfaces[i][0] - 1:
                 # If a number is non sequential, raise the exception.
@@ -88,10 +93,11 @@ class Machine(object):
                     if utils.is_excluded_file(file):
                         continue
 
+                    # Removes the last element of the path
+                    # (because it's the machine folder name and it should be included in the tar archive)
+                    lab_path, machine_folder = os.path.split(self.folder)
                     (tarinfo, content) = utils.pack_file_for_tar(file,
-                                                                 arcname="hostlab/%s" % os.path.relpath(file,
-                                                                                                        self.folder
-                                                                                                        )
+                                                                 arcname="hostlab/%s" % os.path.relpath(file, lab_path)
                                                                  )
                     tar.addfile(tarinfo, content)
 
@@ -146,7 +152,7 @@ class Machine(object):
         if not executable_path:
             raise Exception("Unable to find Kathara.")
 
-        connect_command = "%s connect %s" % (executable_path, self.name)
+        connect_command = "%s connect -l %s" % (executable_path, self.name)
         terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
         logging.debug("Terminal will open in directory %s." % self.lab.path)

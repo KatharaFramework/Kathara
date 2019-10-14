@@ -44,6 +44,11 @@ class ConnectCommand(Command):
             help='Set the shell (sh, bash, etc.) that should be used inside the machine.'
         )
         parser.add_argument(
+            '-l', '--logs',
+            action="store_true",
+            help='Print machine startup logs before launching the shell.',
+        )
+        parser.add_argument(
             'machine_name',
             metavar='MACHINE_NAME',
             help='Name of the machine to connect to.'
@@ -64,5 +69,6 @@ class ConnectCommand(Command):
 
         ManagerProxy.get_instance().connect_tty(lab_hash,
                                                 machine_name=args.machine_name,
-                                                shell=args.shell
+                                                shell=args.shell,
+                                                logs=args.logs
                                                 )

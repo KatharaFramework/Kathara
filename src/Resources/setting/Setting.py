@@ -14,7 +14,7 @@ MAX_K8S_NUMBER = (1 << 24) - 20
 DOCKER = "docker"
 K8S = "k8s"
 
-POSSIBLE_SHELLS = ["bash", "sh", "ash", "ksh", "zsh", "fish", "csh", "tcsh"]
+POSSIBLE_SHELLS = ["/bin/bash", "/bin/sh", "/bin/ash", "/bin/ksh", "/bin/zsh", "/bin/fish", "/bin/csh", "/bin/tcsh"]
 POSSIBLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
 
 ONE_WEEK = 604800
@@ -22,11 +22,13 @@ ONE_WEEK = 604800
 SETTING_FOLDER = None
 SETTING_PATH = None
 EXCLUDED_FILES = ['.DS_Store']
+EXCLUDED_IMAGES = ['megalos-bgp-manager']
 
 
 class Setting(object):
     __slots__ = ['image', 'manager_type', 'net_counter', 'terminal', 'open_terminals',
-                 'hosthome_mount', 'machine_shell', 'net_prefix', 'machine_prefix', 'last_checked', 'debug_level']
+                 'hosthome_mount', 'machine_shell', 'net_prefix', 'machine_prefix', 'debug_level',
+                 'print_startup_log', 'last_checked']
 
     __instance = None
 
@@ -46,18 +48,19 @@ class Setting(object):
             SETTING_PATH = os.path.join(SETTING_FOLDER, "kathara.conf")
 
             # Default values to use
-            self.image = 'kathara/netkit_base'
+            self.image = 'kathara/quagga'
             self.manager_type = 'docker'
             self.net_counter = 0
             self.terminal = '/usr/bin/xterm'
             # TODO: Check how it works!
             # self.terminal = '/usr/bin/x-terminal-emulator'
             self.open_terminals = True
-            self.hosthome_mount = True
-            self.machine_shell = "bash"
+            self.hosthome_mount = False
+            self.machine_shell = "/bin/bash"
             self.net_prefix = 'kathara'
             self.machine_prefix = 'kathara'
             self.debug_level = "INFO"
+            self.print_startup_log = True
             self.last_checked = time.time() - ONE_WEEK
 
             self.load()
@@ -232,5 +235,6 @@ class Setting(object):
                 "net_prefix": self.net_prefix,
                 "machine_prefix": self.machine_prefix,
                 "debug_level": self.debug_level,
+                "print_startup_log": self.print_startup_log,
                 "last_checked": self.last_checked
                 }

@@ -1,9 +1,6 @@
-from __future__ import print_function
-
+import os
 import platform
 import threading
-
-import os
 
 from .menu_formatter import MenuFormatBuilder
 from .screen import Screen
