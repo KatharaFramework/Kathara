@@ -1,3 +1,4 @@
+m4_changequote()
 kathara-vstart(1) -- Start a new Kathara machine
 =============================================
 
@@ -91,3 +92,8 @@ Instead of actually starting a machine, checks if the passed machine parameters 
 
 Start a machine named terminal_test which uses the gnome-terminal terminal.
 
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `vclean`(1), `vconfig`(1), `kathara.conf`(5)

@@ -1,3 +1,4 @@
+m4_changequote()
 kathara-vconfig(1) -- Attach network interfaces to a running Kathara machine
 =============================================
 
@@ -28,3 +29,8 @@ Attach network interfaces to running machines "on the fly". The affected machine
 
 Two new interfaces will be added to the machine pc1: the first one will be attached to the collision domain named X, while the other one to the collision domain named Y. Both the interfaces will have to be configured by hand inside the machine (for example, by using ifconfig).
 
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-vstart`(1), `kathara-vclean`(1)

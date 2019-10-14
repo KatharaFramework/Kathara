@@ -1,3 +1,4 @@
+m4_changequote()
 kathara-lstart(1) --  Start a Kathara lab
 =============================================
 
@@ -67,3 +68,8 @@ The configuration of a Kathara lab consists of some files described in `kathara-
 
     For further information about the network counter see `kathara.conf`(5).
 
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-lclean`(1), `kathara-lrestart`(1), `kathara-linfo`(1), `kathara-lab.conf`(5), `kathara-lab.dep`(5)

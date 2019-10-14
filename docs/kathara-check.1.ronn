@@ -1,3 +1,4 @@
+m4_changequote()
 kathara-check(1) -- Check your system environment
 =============================================
 
@@ -29,3 +30,8 @@ Should give an output like this:
 
 **NOTE:** If you are using the released version, the Python version could be different from the one installed in your system because it is packed into the Kathara binary.
 
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-vstart`(1), `kathara-vconfig`(1)

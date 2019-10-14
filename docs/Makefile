@@ -6,14 +6,14 @@ manual ::= "Kathara manual"
 
 all: $(foreach name,$(shell basename -as .ronn *.ronn),MD/$(name).markdown) $(foreach name,$(shell basename -as .ronn *.ronn),Roff/$(name)) $(foreach name,$(shell basename -as .ronn *.ronn),Html/$(name).html)
 
-MD/%.markdown: %.ronn footer.md | MD/
-	cat $^ | ronn --manual=$(manual) -o $(dir $@) --markdown > $@
+MD/%.markdown: %.ronn | MD/
+	cat $^ | m4 -P | ronn --manual=$(manual) -o $(dir $@) --markdown > $@
 
-Roff/%: %.ronn footer.md | Roff/
-	cat $^ | ronn --manual=$(manual) -o $(dir $@) --roff > $@
+Roff/%: %.ronn | Roff/
+	cat $^ | m4 -P | ronn --manual=$(manual) -o $(dir $@) --roff > $@
 
-Html/%.html: %.ronn footer.md | Html/
-	cat $^ | ronn --manual=$(manual) -o $(dir $@) --html > $@
+Html/%.html: %.ronn | Html/
+	cat $^ | m4 -P | ronn --manual=$(manual) -o $(dir $@) --html > $@
 
 MD/:
 	mkdir $@

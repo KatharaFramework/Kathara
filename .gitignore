@@ -108,3 +108,7 @@ test/
 # ISS Compiled file
 scripts/Windows/Output/
 scripts/OSX/Output/
+
+docs/Html/
+docs/MD/
+docs/Roff/

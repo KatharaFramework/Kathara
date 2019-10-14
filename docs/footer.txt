@@ -20,7 +20,3 @@ People involved also include:
 
 Copyright © 2017-2019 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.  
 This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
-
-## SEE ALSO
-
-`kathara-lab.conf`(5), `kathara-lab.dep`(5), `kathara.conf`(5), [Kathara official site](http://www.kathara.org)

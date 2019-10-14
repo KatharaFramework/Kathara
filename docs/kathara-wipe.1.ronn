@@ -1,3 +1,4 @@
+m4_changequote()
 kathara-wipe(1) -- Delete all Kathara machines and links, optionally also delete settings
 =============================================
 
@@ -35,3 +36,8 @@ The wipe command can be used to gracefully shutdown ALL running Kathara machines
 
 Wipes the current user settings but not the running Kathara machines.
 
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-vstart`(1), `kathara-lstart`(1)

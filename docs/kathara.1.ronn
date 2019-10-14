@@ -1,3 +1,4 @@
+m4_changequote()
 kathara(1) -- A network emulation tool
 =============================================
 
@@ -19,7 +20,6 @@ Each machine can be configured to have an arbitrary number of (virtual) network 
 By default, machines use a Docker Image which includes network oriented software such as routing daemons (RIP, OSPF, etc.), an HTTP server, firewalling utilities (iptables(8)), diagnostic tools (ping(1), traceroute(1), tcpdump(1), etc.).  
 By configuring the appropriate software, it is possible to emulate with a machine a specific network device (e.g., a router).  
 Other applications (such as SDN and P4) can be added using custom Docker Images.
-
 
 Kathara provides two alternative interfaces to start and configure machines. A set of `v`-prefixed commands (vstart, vclean, vconfig), that allow to start and manage single machines while providing finegrained control on their configuration, a set of `l`-prefixed commands (lstart, lclean, linfo, lrestart, ltest), that ease setting up preconfigured network laboratories consisting of several machines, and a set of global commands (connect, info, wipe, settings, check).
 
@@ -70,3 +70,8 @@ The possible kathara command are:
 
 Kathara stores its default configuration settings inside a file named `kathara.conf`. This file is placed in the `~/.config` folder. If it does not exist when Kathara is launched, it will be created with default settings. See `kathara.conf`(5) for information about the location of this file and a description of its format.
 
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara-lab.conf`(5), `kathara-lab.dep`(5), `kathara.conf`(5), [Kathara official site](http://www.kathara.org)
