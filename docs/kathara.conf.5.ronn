@@ -1,21 +1,97 @@
+m4_changequote()
 kathara.conf(5) -- Kathara configuration file
 =============================================
 
 ## DESCRIPTION
 
-The vclean command can be used to gracefully shutdown a running machine. <MACHINE_NAME> is the name of a machine.
+This file is a JSON that contains information about the Kathara configuration. It also stores the default settings to be used when starting new machines. This file is placed in the `~/.config` folder. If it does not exist when Kathara is launched, it will be created with default settings.
 
-## OPTIONS
+Checks on the correctness of the configuration are performed each time a Kathara command is launched. So each value must always be a valid setting.
 
-* `-h`, `--help`:
-    Show an help message and exit.
+## CONFIGURATION PARAMETERS
 
-* `-n` <MACHINE_NAME>, `--name` <MACHINE_NAME>:
-    Name of the machine to be cleaned.
+* `image` (string):
+    Default Docker image used when starting a machine.
 
-## EXAMPLES
+    Default to `kathara/quagga`.
 
-    kathara vclean -n pc1
+* `manager_type` (string):
+    Manager used to launch the lab.
 
-Stop a running machine named pc1.
+    Default to `docker`.
 
+* `net_counter` (int):
+	Incremental counter used to create additional Docker networks to overcome its limitations. **BEWARE: do not edit this number unless you know what you're doing!**
+
+	Default to `0`.
+	
+* `terminal` (string):
+	This parameter determines the terminal emulator application to be used for machine terminals. The application must be correctly installed in the host system.
+
+	Default to `/usr/bin/xterm`.
+
+* `open_terminals` (boolean):
+	This parameter determines if machine terminal should be opened when starting it. 
+
+	Default to `true`.
+
+* `hosthome_mount` (boolean):
+	This parameter specifies if the `/hosthome` dir will be mounted inside the machine. The home directory of the current user is made available for reading/writing inside the machine under the special directory `/hosthome`.  
+
+	Default to `false`.
+
+* `machine_shell` (string):
+	This parameter determines the shell to use inside the machine. The application must be correctly installed in the Docker image used for the machine. Possible examples are: bash, sh, fish, and so on.
+
+	Default to `bash`.
+
+* `net_prefix` (string):
+	The prefix assigned to the network name when deployed.
+
+	Default to `kathara`.
+
+* `machine_prefix` (string):
+	The prefix assigned to the machine name when deployed.
+
+	Default to `kathara`.
+
+* `debug_level` (string):
+	Debug level of Kathara messages. Must be one of the following: CRITICAL, ERROR, WARNING, INFO or DEBUG.
+
+	Default to `INFO`.
+
+* `print_startup_log` (boolean):
+	When opening a machine terminal, first print startup log. This setting is ignored if `open_terminals` is `false`.
+
+	Default to `true`.
+
+* `last_checked` (double):
+	Unix time (in milliseconds) of the last online check for Kathara updates. Each week, when the first Kathara command is launched, the system will check if the system and the default image are up-to-date.
+
+	Default to `time of the file creation - one week`, so the check will always run after a fresh.
+	
+
+## EXAMPLE
+
+		{
+			"image": "kathara/quagga",
+			"deployer_type": "docker",
+			"net_counter": 0,
+			"terminal": "/usr/bin/xterm",
+			"open_terminals": true,
+			"hosthome_mount": true,
+			"machine_shell": "bash",
+			"net_prefix": "kathara",
+			"machine_prefix": "kathara",
+			"debug_level": "INFO",
+			"print_startup_log": true,
+			"last_checked": 1570724309.2402148
+		}
+  
+Example of the default `kathara.conf`(5) file.
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-vstart`(1), `kathara-lstart`(1), [Kathara official site](http://www.kathara.org)

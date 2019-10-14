@@ -1,3 +1,4 @@
+m4_changequote()
 kathara-lrestart(1) --  Restart a Kathara lab
 =============================================
 
@@ -58,3 +59,8 @@ Restarts a Kathara lab. It simply wraps a call to `kathara-lclean`(1) and then `
 
     For further information about the network counter see `kathara.conf`(5).
 
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-lstart`(1), `kathara-lclean`(1), `kathara-linfo`(1), `kathara-lab.conf`(5), `kathara-lab.dep`(5)
