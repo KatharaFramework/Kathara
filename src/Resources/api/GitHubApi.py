@@ -18,7 +18,6 @@ class GitHubApi(object):
 
         if result.status_code != 200:
             logging.debug("GitHub replied with status code %s while looking for Kathara repo.", result.status_code)
-
-            raise Exception()
+            raise HTTPConnectionError("GitHub replied with status code %s." % result.status_code)
 
         return result.json()

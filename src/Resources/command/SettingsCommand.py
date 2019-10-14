@@ -1,3 +1,5 @@
+from ..api.DockerHubApi import DockerHubApi
+from ..exceptions import HTTPConnectionError
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
 from ..setting.Setting import Setting, POSSIBLE_SHELLS, POSSIBLE_DEBUG_LEVELS
@@ -59,23 +61,18 @@ class SettingsCommand(Command):
                                           formatter=menu_formatter
                                           )
 
-        # TODO: FIX
-        # select_image_menu.append_item(FunctionItem(text="kathara/base",
-        #                                            function=self.choose_image,
-        #                                            args=["kathara/base"],
-        #                                            should_exit=True
-        #                                            )
-        #                               )
-        # select_image_menu.append_item(FunctionItem(text="kathara/quagga",
-        #                                            function=self.choose_image,
-        #                                            args=["kathara/quagga"],
-        #                                            should_exit=True
-        #                                            )
-        #                               )
-        # select_image_menu.append_item(FunctionItem("kathara/frr", self.choose_image, args=["kathara/frr"], should_exit=True))
-        # select_image_menu.append_item(FunctionItem("kathara/ovs", self.choose_image, args=["kathara/ovs"], should_exit=True))
-        # select_image_menu.append_item(FunctionItem("kathara/p4", self.choose_image, args=["kathara/p4"], should_exit=True))
-        # select_image_menu.append_item(FunctionItem("kathara/netkit_base", self.choose_image, args=["kathara/netkit_base"], should_exit=True))
+        try:
+            for image in DockerHubApi.get_images():
+                image_name = "%s/%s" % (image['namespace'], image['name'])
+
+                select_image_menu.append_item(FunctionItem(text=image_name,
+                                                           function=self.set_setting_value,
+                                                           args=['image', image_name],
+                                                           should_exit=True
+                                                           )
+                                              )
+        except HTTPConnectionError:
+            pass
 
         select_image_menu.append_item(FunctionItem(text="Choose another image",
                                                    function=self.read_value,
