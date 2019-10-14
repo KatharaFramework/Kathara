@@ -61,7 +61,7 @@ Checks on the correctness of the configuration are performed each time a Kathara
 	Default to `INFO`.
 
 * `print_startup_log` (boolean):
-	When opening a machine terminal, first print startup log. This setting is ignored if `open_terminals` is `false`.
+	When opening a machine terminal, print its startup log. This setting is ignored if `open_terminals` is `false`.
 
 	Default to `true`.
 

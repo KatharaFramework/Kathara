@@ -1,5 +1,5 @@
 m4_changequote()
-kathara-lrestart(1) --  Restart a Kathara lab
+kathara-lrestart(1) -- Restart a Kathara lab
 =============================================
 
 ## SYNOPSIS

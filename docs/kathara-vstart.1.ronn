@@ -39,10 +39,10 @@ Notice: unless differently stated, command line arguments (MACHINE_NAME) and opt
     Network interface will be attached to a (virtual) collision domain whose name is <CD>. Attaching interfaces of different machines to the same collision domain allows them to exchange network traffic. <N> should be declared as a sequential number, starting from 0; if any intermediate number is missing an exception is raised.
 
 * `-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]], `--exec` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]:
-    Run a specific command inside the machine during the boot phase. <EXEC_COMMANDS> are shell commands.
+    Run a specific command inside the machine during the startup phase. <EXEC_COMMANDS> are shell commands.
 
 * `-M` <MEM>, `--mem` <MEM>:
-    Set the amount of available RAM inside the machine to <MEM>. If it is not set, the machine could use as much RAM as the docker daemon can use. If you set this option, the minimum allowed value is 4m (4 megabyte).
+    Set the amount of available RAM inside the machine to <MEM>. If it is not set, the machine could use as much RAM as the Docker daemon can use. If you set this option, the minimum allowed value is 4m (4 megabyte).
 
 * `-i` <IMAGE>, `--image` <IMAGE>:
     Run this machine with a specific Docker Image. This Docker Image could be in the local repository or on the Docker Hub. Overrides the default setting specified in `kathara.conf`(5) file.

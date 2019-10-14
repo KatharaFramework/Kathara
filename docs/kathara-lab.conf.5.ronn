@@ -1,0 +1,73 @@
+m4_changequote()
+kathara-lab.conf(5) -- Lab configuration file
+=============================================
+
+## DESCRIPTION
+
+The main lab configuration file. In this file you can specify the names of machines to be started, any option that should be used when launching them, and the topology of the network that connects them. Optionally, you can also provide some descriptive information for the lab, which will be displayed upon its startup. This file is not explicitly required, but running a lab without a lab.conf file is kind of useless...
+
+This file is a list of `machine[arg]=value` assignments, where `arg` can be an integer value or the name of an option (described below).
+
+If `arg` is an integer value, then `value` is the name of the collision domain to which interface eth`arg` of machine `machine` must be connected (note that the name of the collision domain must not contain spaces (" "), commas (",") and dots ("."). For example, `pc1[0]=CD1` means that interface eth0 of machine pc1 will be connected to collision domain CD1.
+
+If `arg` is an option name, then `machine` will be launched with option `arg` set to value `value`.
+
+In order to establish a uniform convention, comment lines should always start with a hash character (`#`).
+
+## MACHINE OPTIONS
+
+* `image` (string):
+    Docker image used for this machine.
+
+* `mem` (string):
+    Set the amount of available RAM inside the machine. If you set this option, the minimum allowed value is 4m (4 megabyte).
+
+* `port` (string):
+    Choose a TCP number to map to the internal port 3000 of the machine.
+
+* `bridged` (boolean):
+    Connect the machine to the host network by adding an additional network interface. This interface will be connected to the host network through a NAT connection.
+
+* `exec` (string):
+    Run a specific shell command inside the machine during the startup phase.
+
+## LAB META INFORMATION
+
+It is also possible to provide descriptive information about a lab by using one of the following special assignments:
+
++ LAB_DESCRIPTION=string (a brief description of the purpose of the lab)
++ LAB_VERSION=string (the version of the lab)
++ LAB_AUTHOR=string (people who have written the lab)
++ LAB_EMAIL=string (contacts of lab authors)
++ LAB_WEB=string (useful web reources related to the lab)
+
+## EXAMPLE
+
+		LAB_DESCRIPTION="A simple example of lab.conf"
+		LAB_VERSION=1.0
+		LAB_AUTHOR="Kathara Authors"
+		LAB_EMAIL=contact@kathara.org
+		LAB_WEB=http://www.kathara.org/
+
+		r1[0]="A"
+		r1[1]="B"
+		r1[port]=32000
+		r1[image]="namespace/image_name"
+
+		r2[0]="C"
+		r2[1]="B"
+		r2[exec]="echo Hi"
+
+		pc1[0]="A"
+		pc[bridged]=true
+
+		pc2[0]="C"
+		pc2[mem]=128m
+  
+Example of a `lab.conf`(5) file.
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-lstart`(1), [Kathara official site](http://www.kathara.org)
