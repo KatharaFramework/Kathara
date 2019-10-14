@@ -39,7 +39,7 @@ class LabParser(object):
                     # It's an interface, handle it.
                     interface_number = int(arg)
 
-                    if re.search(r"^\w$", value):
+                    if re.search(r"^\w+$", value):
                         lab.connect_machine_to_link(key, interface_number, value)
                     else:
                         raise Exception("[ERROR] In line %d: "

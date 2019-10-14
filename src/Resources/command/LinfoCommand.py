@@ -46,7 +46,7 @@ class LinfoCommand(Command):
             '-n', '--name',
             metavar='MACHINE_NAME',
             required=False,
-            help='Show only info about a specified machine.'
+            help='Show only information about a specified machine.'
         )
 
         self.parser = parser

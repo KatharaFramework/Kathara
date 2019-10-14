@@ -20,6 +20,13 @@ STARTUP_COMMANDS = [
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
     "rsync -r -K /hostlab/{machine_name}/* /; fi",
 
+    # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
+    # If not, clear the content of the file.
+    # This should be patched with "cat" because file is already in use by Docker internal DNS.
+    "if [ -f \"/hostlab/{machine_name}/etc/resolv.conf\" ]; then " \
+    "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else " \
+    "echo \"\" > /etc/resolv.conf; fi",
+
     # Give proper permissions to /var/www
     "chmod -R 777 /var/www/*",
 
@@ -62,15 +69,15 @@ RP_FILTER_COMMANDS = [
 ]
 
 SHUTDOWN_COMMANDS = [
-    # If shared.shutdown file is present
-    "if [ -f \"/hostlab/shared.shutdown\" ]; then "
-    # Give execute permissions to the file and execute it
-    "chmod u+x /hostlab/shared.shutdown; /hostlab/shared.shutdown; fi",
-
     # If machine.shutdown file is present
     "if [ -f \"/hostlab/{machine_name}.shutdown\" ]; then "
     # Give execute permissions to the file and execute it
     "chmod u+x /hostlab/{machine_name}.shutdown; /hostlab/{machine_name}.shutdown; fi",
+
+    # If shared.shutdown file is present
+    "if [ -f \"/hostlab/shared.shutdown\" ]; then "
+    # Give execute permissions to the file and execute it
+    "chmod u+x /hostlab/shared.shutdown; /hostlab/shared.shutdown; fi"
 ]
 
 

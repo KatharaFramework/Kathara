@@ -32,7 +32,7 @@ class Machine(object):
 
         self.api_object = None
 
-        self.capabilities = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE"]
+        self.capabilities = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
 
         startup_file = os.path.join(lab.path, '%s.startup' % self.name)
         self.startup_path = startup_file if os.path.exists(startup_file) else None
