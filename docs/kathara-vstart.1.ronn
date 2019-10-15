@@ -6,7 +6,7 @@ kathara-vstart(1) -- Start a new Kathara machine
 
 `kathara vstart`
 >           [`-h`] [`--noterminals` | `-t`] `-n` <MACHINE_NAME>  
->           [`--eth` <N:CD> [<N:CD> ...]]  
+>           [`--eth` <N:CD> [<N:CD> ...]]
 >           [`-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]] [`--mem` <MEM>]  
 >           [`--cpus` <CPUS>] [`-i` <IMAGE>] [`-H`] [`--xterm` <XTERM>] [`--print`]  
 >           [`--bridged`] [`--port` <PORT>] [`--shell` <SHELL>]
@@ -37,11 +37,11 @@ Notice: unless differently stated, command line arguments (MACHINE_NAME) and opt
 * `-n` <MACHINE_NAME>, `--name` <MACHINE_NAME>:
     Name of the machine to be started.
 
-* `--eth` <N>:<CD> [<N>:<CD> ...]:
+* `--eth` <N:CD> [<N:CD> ...]:
     Set a specific interface on a collision domain.
 
-    Equip the machine with a network interface. <N> is a positive integer starting from 0.  
-    The network interface will be attached to a (virtual) collision domain whose name is <CD>. Attaching interfaces of different machines to the same collision domain allows them to exchange network traffic. <N> should be declared as a sequential number, starting from 0; if any intermediate number is missing an exception is raised.
+    Equip the machine with a network interface. `N` is a positive integer starting from 0.
+    The network interface will be attached to a (virtual) collision domain whose name is `CD`. Attaching interfaces of different machines to the same collision domain allows them to exchange network traffic. <N> should be declared as a sequential number, starting from 0; if any intermediate number is missing an exception is raised.
 
 * `-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]], `--exec` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]:
     Execute a specific command in the machine during startup.

@@ -97,8 +97,8 @@ class DockerLink(object):
         if not current_networks:
             return self.base_ip
 
-        # Order subnets and get the last one
-        last_network = sorted(current_networks)[-1]
+        # Get last subnet defined
+        last_network = max(current_networks)
 
         # Calculate a new subnet by adding a /16 to the last deployed subnet.
         return last_network.network_address + SUBNET_MULTIPLIER
