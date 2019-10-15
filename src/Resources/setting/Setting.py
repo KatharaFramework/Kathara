@@ -8,7 +8,6 @@ from .. import version
 from ..api.GitHubApi import GitHubApi
 from ..exceptions import HTTPConnectionError, SettingsError
 
-MAX_DOCKER_LAN_NUMBER = 256 * 256
 MAX_K8S_NUMBER = (1 << 24) - 20
 
 DOCKER = "docker"
@@ -26,7 +25,7 @@ EXCLUDED_IMAGES = ['megalos-bgp-manager']
 
 
 class Setting(object):
-    __slots__ = ['image', 'manager_type', 'net_counter', 'terminal', 'open_terminals',
+    __slots__ = ['image', 'manager_type', 'terminal', 'open_terminals',
                  'hosthome_mount', 'machine_shell', 'net_prefix', 'machine_prefix', 'debug_level',
                  'print_startup_log', 'last_checked']
 
@@ -50,7 +49,6 @@ class Setting(object):
             # Default values to use
             self.image = 'kathara/quagga'
             self.manager_type = 'docker'
-            self.net_counter = 0
             self.terminal = '/usr/bin/xterm'
             # TODO: Check how it works!
             # self.terminal = '/usr/bin/x-terminal-emulator'
@@ -173,12 +171,6 @@ class Setting(object):
 
             logging.debug("=============================================================")
 
-        try:
-            self.net_counter = int(self.net_counter)
-            self.check_net_counter()
-        except ValueError:
-            raise SettingsError("Network Counter must be an integer.")
-
         if self.machine_shell not in POSSIBLE_SHELLS:
             raise SettingsError("Machine Shell must be one of the following: %s." % (", ".join(POSSIBLE_SHELLS)))
 
@@ -195,28 +187,12 @@ class Setting(object):
         if self.debug_level not in POSSIBLE_DEBUG_LEVELS:
             raise SettingsError("Debug Level must be one of the following: %s." % (", ".join(POSSIBLE_DEBUG_LEVELS)))
 
-    def inc_net_counter(self):
-        self.net_counter += 1
-
-        if (self.manager_type == DOCKER and self.net_counter > MAX_DOCKER_LAN_NUMBER) or \
-           (self.manager_type == K8S and self.net_counter > MAX_K8S_NUMBER):
-            self.net_counter = 0
-
     def check_manager(self):
         from ..manager.ManagerProxy import ManagerProxy
         managers = ManagerProxy.get_available_managers_name()
 
         if self.manager_type not in managers.keys():
             raise SettingsError("Manager Type not allowed.")
-
-    def check_net_counter(self):
-        if self.net_counter < 0:
-            raise SettingsError("Network Counter must be greater or equal than zero.")
-        else:
-            if self.manager_type == DOCKER and self.net_counter > MAX_DOCKER_LAN_NUMBER:
-                raise SettingsError("Network Counter must be lesser than %d." % MAX_DOCKER_LAN_NUMBER)
-            elif self.manager_type == K8S and self.net_counter > MAX_K8S_NUMBER:
-                raise SettingsError("Network Counter must be lesser than %d." % MAX_K8S_NUMBER)
 
     def check_image(self, image=None):
         image = self.image if not image else image
@@ -227,7 +203,6 @@ class Setting(object):
     def _to_dict(self):
         return {"image": self.image,
                 "manager_type": self.manager_type,
-                "net_counter": self.net_counter,
                 "terminal": self.terminal,
                 "open_terminals": self.open_terminals,
                 "hosthome_mount": self.hosthome_mount,

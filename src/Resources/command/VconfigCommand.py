@@ -6,7 +6,6 @@ from .. import utils
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
 from ..model.Lab import Lab
-from ..setting.Setting import Setting
 from ..strings import strings, wiki_description
 
 
@@ -67,5 +66,3 @@ class VconfigCommand(Command):
             iface_number += 1
 
         ManagerProxy.get_instance().update_lab(lab)
-
-        Setting.get_instance().save_selected(['net_counter'])

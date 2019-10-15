@@ -46,12 +46,6 @@ class SettingsCommand(Command):
                            formatter=menu_formatter
                            )
 
-        # Network Counter Reset Option
-        reset_net_counter_item = FunctionItem(text="Reset the network counter",
-                                              function=self.set_setting_value,
-                                              args=['net_counter', 0]
-                                              )
-
         # Image Selection Submenu
         image_string = "Choose default image"
         select_image_menu = SelectionMenu(strings=[],
@@ -260,7 +254,6 @@ class SettingsCommand(Command):
 
         print_startup_log_item = SubmenuItem(print_startup_log_string, print_startup_log_menu, menu)
 
-        menu.append_item(reset_net_counter_item)
         menu.append_item(submenu_item)
         menu.append_item(manager_item)
         menu.append_item(open_terminals_item)

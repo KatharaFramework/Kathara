@@ -45,11 +45,11 @@ class ManagerProxy(IManager):
     def connect_tty(self, lab_hash, machine_name, shell, logs=False):
         self.manager.connect_tty(lab_hash, machine_name, shell, logs)
 
-    def get_lab_info(self, lab_hash=None, machine_name=None):
-        return self.manager.get_lab_info(lab_hash, machine_name)
+    def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
+        return self.manager.get_lab_info(lab_hash, machine_name, all_users)
 
-    def get_machine_info(self, machine_name, lab_hash=None):
-        return self.manager.get_machine_info(machine_name, lab_hash)
+    def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
+        return self.manager.get_machine_info(machine_name, lab_hash, all_users)
 
     def check_image(self, image_name):
         self.manager.check_image(image_name)

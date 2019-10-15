@@ -1,12 +1,15 @@
 import ipaddress
-import os
+import logging
 
 import docker
 from docker import types
 
 from ... import utils
 from ...model.Link import BRIDGE_LINK_NAME
-from ...setting.Setting import Setting, MAX_DOCKER_LAN_NUMBER
+from ...setting.Setting import Setting
+
+SUBNET_DIVIDER = 16
+SUBNET_MULTIPLIER = 256 * 256
 
 
 class DockerLink(object):
@@ -16,7 +19,7 @@ class DockerLink(object):
         self.client = client
 
         # Base IP subnet allocated to Kathara in Docker
-        self.base_ip = u'172.19.0.0'
+        self.base_ip = ipaddress.ip_address(u'172.19.0.0')
 
     def deploy(self, link):
         # Reserved name for bridged connections, ignore.
@@ -30,19 +33,15 @@ class DockerLink(object):
             link.api_object = network_objects.pop()
             return
 
-        network_counter = Setting.get_instance().net_counter
+        logging.debug("Creating subnet for link `%s`..." % link.name)
+        network_subnet = self._get_link_subnet()
+        logging.debug("Subnet IP is %s/%d." % (network_subnet, SUBNET_DIVIDER))
 
-        # Calculate the subnet for this network.
-        # Base IP + network_counter * /16
-        network_subnet = ipaddress.ip_address(self.base_ip) + (network_counter * MAX_DOCKER_LAN_NUMBER)
         # Gateway is the first IP of the subnet
         network_gateway = network_subnet + 1
 
-        # Update the network counter
-        Setting.get_instance().inc_net_counter()
-
         # Create the network IPAM config for Docker
-        network_pool = docker.types.IPAMPool(subnet='%s/16' % str(network_subnet),
+        network_pool = docker.types.IPAMPool(subnet='%s/%d' % (str(network_subnet), SUBNET_DIVIDER),
                                              gateway=str(network_gateway)
                                              )
 
@@ -85,6 +84,25 @@ class DockerLink(object):
 
         return self.client.networks.list(filters=filters)
 
+    def _get_link_subnet(self):
+        # Get current Docker subnets
+        current_networks = []
+        for network in self.get_links_by_filters():
+            ipam_config = network.attrs['IPAM']['Config']
+            first_config = ipam_config.pop()
+
+            current_networks.append(ipaddress.ip_network(first_config['Subnet']))
+
+        # If no networks are deployed, return the base IP.
+        if not current_networks:
+            return self.base_ip
+
+        # Order subnets and get the last one
+        last_network = sorted(current_networks)[-1]
+
+        # Calculate a new subnet by adding a /16 to the last deployed subnet.
+        return last_network.network_address + SUBNET_MULTIPLIER
+
     def _configure_network(self, network):
         """
         Patch to Docker bridges to make them act as hubs.
@@ -99,11 +117,11 @@ class DockerLink(object):
         def no_privilege_patch():
             # Directly patch /sys/class opening the files
             for (path, value) in patches.items():
-              try:
-                with open(path.format(net_id=network.id[:12]), 'w') as sys_class:
-                    sys_class.write(str(value))
-              except PermissionError as e:
-                privilege_patch()
+                try:
+                    with open(path.format(net_id=network.id[:12]), 'w') as sys_class:
+                        sys_class.write(str(value))
+                except PermissionError:
+                    privilege_patch()
 
         def privilege_patch():
             # Privilege escalation to patch bridges, since Docker runs in a VM on Windows and MacOS.

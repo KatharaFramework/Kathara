@@ -82,11 +82,6 @@ class LrestartCommand(Command):
             action='store_false',
             help='/hosthome dir will not be mounted inside the machine.'
         )
-        parser.add_argument(
-            '-c', '--counter',
-            required=False,
-            help='Start from a specific network counter (overrides whatever was previously initialized).'
-        )
 
         self.parser = parser
 

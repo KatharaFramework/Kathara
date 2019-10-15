@@ -1,6 +1,8 @@
 from datetime import datetime
 
 import docker
+from requests.exceptions import ConnectionError as RequestsConnectionError
+from terminaltables import DoubleTable
 
 from .DockerImage import DockerImage
 from .DockerLink import DockerLink
@@ -9,7 +11,6 @@ from ... import utils
 from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
-from requests.exceptions import ConnectionError as RequestsConnectionError
 
 
 def pywin_import_stub():
@@ -108,10 +109,13 @@ class DockerManager(IManager):
                                     )
 
     @check_docker_status
-    def get_lab_info(self, lab_hash=None, machine_name=None):
-        container_name = self.docker_machine.get_container_name(machine_name, lab_hash) if machine_name else None
+    def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
+        user_name = utils.get_current_user_name() if not all_users else None
 
-        machines = self.docker_machine.get_machines_by_filters(lab_hash=lab_hash, container_name=container_name)
+        machines = self.docker_machine.get_machines_by_filters(lab_hash=lab_hash,
+                                                               machine_name=machine_name,
+                                                               user=user_name
+                                                               )
 
         if not machines:
             if not lab_hash:
@@ -126,34 +130,50 @@ class DockerManager(IManager):
         for machine in machines:
             machine_streams[machine] = machine.stats(stream=True, decode=True)
 
+        table_header = ["LAB HASH", "USER", "MACHINE NAME", "STATUS", "CPU %", "MEM USAGE / LIMIT", "MEM %", "NET I/O"]
+        stats_table = DoubleTable([])
+        stats_table.inner_row_border = True
+
         while True:
-            all_stats = "TIMESTAMP: %s\n\n" % datetime.now()
-            all_stats += "LAB HASH\t\tMACHINE NAME\tSTATUS\t\tCPU %\tMEM USAGE / LIMIT\tMEM %\tNET I/O\n"
+            machines_data = [
+                table_header
+            ]
 
             for (machine, machine_stats) in machine_streams.items():
-                result = next(machine_stats)
+                try:
+                    result = next(machine_stats)
+                except StopIteration:
+                    continue
+
                 stats = self._get_aggregate_machine_info(result)
 
-                all_stats += "%s\t%s\t\t%s\t\t%s\t%s\t%s\t%s\n" % (machine.labels['lab_hash'],
-                                                                   machine.labels["name"],
-                                                                   machine.status,
-                                                                   stats["cpu_usage"],
-                                                                   stats["mem_usage"],
-                                                                   stats["mem_percent"],
-                                                                   stats["net_usage"]
-                                                                   )
+                machines_data.append([machine.labels['lab_hash'],
+                                      machine.labels['user'],
+                                      machine.labels["name"],
+                                      machine.status,
+                                      stats["cpu_usage"],
+                                      stats["mem_usage"],
+                                      stats["mem_percent"],
+                                      stats["net_usage"]
+                                      ])
 
-            yield(all_stats)
+            stats_table.table_data = machines_data
+
+            yield("TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table)
 
     @check_docker_status
-    def get_machine_info(self, machine_name, lab_hash=None):
-        container_name = self.docker_machine.get_container_name(machine_name, lab_hash)
-        machines = self.docker_machine.get_machines_by_filters(container_name=container_name, lab_hash=lab_hash)
+    def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
+        user_name = utils.get_current_user_name() if not all_users else None
+
+        machines = self.docker_machine.get_machines_by_filters(machine_name=machine_name,
+                                                               lab_hash=lab_hash,
+                                                               user=user_name
+                                                               )
 
         if not machines:
             raise Exception("The specified machine is not running.")
         elif len(machines) > 1:
-            raise Exception("There are more than one machine matching the name `%d`." % machine_name)
+            raise Exception("There are more than one machine matching the name `%s`." % machine_name)
 
         machine = machines[0]
 

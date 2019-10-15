@@ -94,11 +94,6 @@ class LstartCommand(Command):
             help='/hosthome dir will not be mounted inside the machine.'
         )
         parser.add_argument(
-            '-c', '--counter',
-            required=False,
-            help='Start from a specific network counter (overrides whatever was previously initialized).'
-        )
-        parser.add_argument(
             'machine_name',
             metavar='MACHINE_NAME',
             nargs='*',
@@ -153,13 +148,6 @@ class LstartCommand(Command):
         except:
             raise Exception("--pass parameter not valid.")
 
-        if args.counter:
-            try:
-                Setting.get_instance().net_counter = int(args.counter)
-                Setting.get_instance().check_net_counter()
-            except ValueError:
-                raise Exception("Network Counter must be an integer.")
-
         Setting.get_instance().open_terminals = args.terminals if args.terminals is not None \
                                                 else Setting.get_instance().open_terminals
         Setting.get_instance().terminal = args.xterm or Setting.get_instance().terminal
@@ -167,9 +155,6 @@ class LstartCommand(Command):
                                                 else Setting.get_instance().hosthome_mount
 
         ManagerProxy.get_instance().deploy_lab(lab)
-
-        if not args.counter:
-            Setting.get_instance().save_selected(['net_counter'])
 
         if args.list:
             print(next(ManagerProxy.get_instance().get_lab_info(lab.folder_hash)))

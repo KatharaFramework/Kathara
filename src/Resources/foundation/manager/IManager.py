@@ -23,11 +23,11 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `connect_tty` method.")
 
     @abstractmethod
-    def get_lab_info(self, lab_hash=None, machine_name=None):
+    def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         raise NotImplementedError("You must implement `get_lab_info` method.")
 
     @abstractmethod
-    def get_machine_info(self, machine_name, lab_hash=None):
+    def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
         raise NotImplementedError("You must implement `get_machine_info` method.")
 
     @abstractmethod

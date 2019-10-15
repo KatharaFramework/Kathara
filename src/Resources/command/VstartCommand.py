@@ -164,5 +164,3 @@ class VstartCommand(Command):
                                                 else Setting.get_instance().hosthome_mount
 
         ManagerProxy.get_instance().deploy_lab(lab)
-
-        Setting.get_instance().save_selected(['net_counter'])

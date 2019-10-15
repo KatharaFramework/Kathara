@@ -14,7 +14,7 @@ from Resources.version import CURRENT_VERSION
 
 description_msg = """kathara [-v|--version] <command> [<args>]
 
-The possible kathara command are:
+The possible kathara command are:\n
 %s
 """ % formatted_strings()
 

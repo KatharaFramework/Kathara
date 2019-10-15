@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
@@ -26,6 +27,13 @@ class ListCommand(Command):
         )
 
         parser.add_argument(
+            '-a', '--all',
+            required=False,
+            action='store_true',
+            help='Show all running Kathara machines of all users. MUST BE ROOT FOR THIS OPTION.'
+        )
+
+        parser.add_argument(
             '-n', '--name',
             metavar='MACHINE_NAME',
             required=False,
@@ -37,9 +45,12 @@ class ListCommand(Command):
     def run(self, current_path, argv):
         args = self.parser.parse_args(argv)
 
+        if args.all and os.getuid() != 0:
+            raise Exception("You must be root in order to show all Kathara machines of all users.")
+
         if args.name:
-            print(ManagerProxy.get_instance().get_machine_info(args.name))
+            print(ManagerProxy.get_instance().get_machine_info(args.name, all_users=bool(args.all)))
         else:
-            lab_info = ManagerProxy.get_instance().get_lab_info()
+            lab_info = ManagerProxy.get_instance().get_lab_info(all_users=bool(args.all))
 
             print(next(lab_info))

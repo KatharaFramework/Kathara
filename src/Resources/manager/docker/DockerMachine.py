@@ -193,8 +193,7 @@ class DockerMachine(object):
         machine.api_object = machine_container
 
     def update(self, machine):
-        container_name = self.get_container_name(machine.name, machine.lab.folder_hash)
-        machines = self.get_machines_by_filters(container_name=container_name)
+        machines = self.get_machines_by_filters(machine_name=machine.name, lab_hash=machine.lab.folder_hash)
 
         if not machines:
             raise Exception("Machine `%s` not found." % machine.name)
@@ -298,11 +297,9 @@ class DockerMachine(object):
             self.delete_machine(machine)
 
     def connect(self, lab_hash, machine_name, shell, logs=False):
-        container_name = self.get_container_name(machine_name, lab_hash)
+        logging.debug("Connect to machine with name: %s" % machine_name)
 
-        logging.debug("Connect to machine with container name: %s" % container_name)
-
-        containers = self.get_machines_by_filters(lab_hash=lab_hash, container_name=container_name)
+        containers = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
 
         logging.debug("Found containers: %s" % str(containers))
 
@@ -310,9 +307,6 @@ class DockerMachine(object):
             raise Exception("Error getting the machine `%s` inside the lab." % machine_name)
         else:
             container = containers[0]
-            if container.name != container_name:
-                raise Exception("Error getting the machine `%s` inside the lab. "
-                                "Did you mean %s?" % (machine_name, container.labels["name"]))
 
         if not shell:
             shell = Setting.get_instance().machine_shell
@@ -358,14 +352,14 @@ class DockerMachine(object):
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
-    def get_machines_by_filters(self, lab_hash=None, container_name=None, user=None):
-        filters = {"label": "app=kathara"}
+    def get_machines_by_filters(self, lab_hash=None, machine_name=None, user=None):
+        filters = {"label": ["app=kathara"]}
         if user:
-            filters["label"] = "user=%s" % user
+            filters["label"].append("user=%s" % user)
         if lab_hash:
-            filters["label"] = "lab_hash=%s" % lab_hash
-        if container_name:
-            filters["name"] = container_name
+            filters["label"].append("lab_hash=%s" % lab_hash)
+        if machine_name:
+            filters["label"].append("name=%s" % machine_name)
 
         return self.client.containers.list(all=True, filters=filters)
 

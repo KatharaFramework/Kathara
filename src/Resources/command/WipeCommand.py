@@ -50,7 +50,7 @@ class WipeCommand(Command):
             '-a', '--all',
             required=False,
             action='store_true',
-            help='Wipe all Kathara machines and links of all users.'
+            help='Wipe all Kathara machines and links of all users. MUST BE ROOT FOR THIS OPTION.'
         )
 
         self.parser = parser
@@ -70,10 +70,6 @@ class WipeCommand(Command):
             sys.exit(0)
         else:
             ManagerProxy.get_instance().wipe(all_users=bool(args.all))
-
-            setting_object = Setting.get_instance()
-            setting_object.net_counter = 0
-            setting_object.save_selected(['net_counter'])
 
         vlab_dir = utils.get_vlab_temp_path(force_creation=False)
         shutil.rmtree(vlab_dir, ignore_errors=True)

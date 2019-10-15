@@ -1,3 +1,6 @@
+from terminaltables import SingleTable
+
+
 strings = {
     "vstart": "Start a new Kathara machine",
     "vclean": "Stop a single Kathara machine",
@@ -9,7 +12,7 @@ strings = {
     "ltest": "Test a Kathara lab",
     "connect": "Connect to a Kathara machine",
     "wipe": "Delete all Kathara machines and links, optionally also delete settings",
-    "list": "Show all running Kathara machines",
+    "list": "Show all running Kathara machines of the current user",
     "settings": "Show and edit Kathara settings",
     "check": "Check your system environment"
 }
@@ -18,7 +21,13 @@ wiki_description = "For examples and further information visit: https://github.c
 
 
 def formatted_strings():
-    def tab_formatting(string):
-        return "\t\t" if len(string) < 8 else "\t"
+    commands = []
+    for item in strings.items():
+        commands.append(list(item))
 
-    return "\n".join(["\t%s%s%s" % (k, tab_formatting(k), v) for (k, v) in strings.items()])
+    commands_table = SingleTable(commands)
+    commands_table.inner_heading_row_border = False
+    commands_table.outer_border = False
+    commands_table.inner_column_border = False
+
+    return commands_table.table
