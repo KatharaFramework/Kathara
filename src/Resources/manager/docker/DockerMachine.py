@@ -129,8 +129,8 @@ class DockerMachine(object):
             except ValueError:
                 pass
 
-        # If bridged is required in command line, add it.
-        if "bridged" in options:
+        # If bridged is required in command line but not defined in machine meta, add it.
+        if "bridged" in options and not machine.bridge:
             machine.add_meta("bridged", True)
 
         # If any exec command is passed in command line, add it.
@@ -144,11 +144,10 @@ class DockerMachine(object):
             first_network = machine.interfaces[0].api_object
 
         # If no interfaces are declared in machine, but bridged mode is required, get bridge as first link.
-        # Flag that bridged is already connected (because there's another check below).
-        bridged_connected = False
+        # Flag that bridged is already connected (because there's another check in `start`).
         if first_network is None and machine.bridge:
             first_network = machine.bridge.api_object
-            bridged_connected = True
+            machine.add_meta("bridge_connected", True)
 
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
@@ -202,9 +201,6 @@ class DockerMachine(object):
         tar_data = machine.pack_data()
         if tar_data:
             machine_container.put_archive("/", tar_data)
-
-        if not bridged_connected and machine.bridge:
-            machine.bridge.api_object.connect(machine_container)
 
         machine.api_object = machine_container
 
@@ -278,6 +274,10 @@ class DockerMachine(object):
                                     privileged=True,
                                     detach=True
                                     )
+
+        # Bridged connection required but not added in `deploy` method.
+        if "bridge_connected" not in machine.meta and machine.bridge:
+            machine.bridge.api_object.connect(machine.api_object)
 
         # Build the final startup commands string
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \

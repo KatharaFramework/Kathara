@@ -10,7 +10,7 @@ from .. import utils
 class Lab(object):
     __slots__ = ['description', 'version', 'author', 'email', 'web',
                  'path', 'folder_hash', 'machines', 'links', 'general_options',
-                 'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
+                 'shared_startup_path', 'shared_shutdown_path', 'shared_folder', 'has_dependencies']
 
     def __init__(self, path):
         self.description = None
@@ -26,6 +26,8 @@ class Lab(object):
         self.links = {}
 
         self.general_options = {}
+
+        self.has_dependencies = False
 
         shared_startup_file = os.path.join(self.path, 'shared.startup')
         self.shared_startup_path = shared_startup_file if os.path.exists(shared_startup_file) else None
@@ -85,6 +87,7 @@ class Lab(object):
                     return 0
 
             self.machines = collections.OrderedDict(sorted(self.machines.items(), key=lambda t: dep_sort(t[0])))
+            self.has_dependencies = True
 
     def get_or_new_machine(self, name):
         """

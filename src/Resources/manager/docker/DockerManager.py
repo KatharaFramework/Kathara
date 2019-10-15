@@ -1,4 +1,7 @@
 from datetime import datetime
+from itertools import islice
+from multiprocessing import cpu_count
+from multiprocessing.dummy import Pool
 
 import docker
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -47,6 +50,14 @@ def check_docker_status(method):
     return check_status
 
 
+def chunks(iterable, size):
+    it = iter(iterable)
+    item = list(islice(it, size))
+    while item:
+        yield item
+        item = list(islice(it, size))
+
+
 class DockerManager(IManager):
     __slots__ = ['docker_image', 'docker_machine', 'docker_link', 'client']
 
@@ -70,11 +81,29 @@ class DockerManager(IManager):
         link.api_object = docker_bridge
 
         # Deploy all lab machines.
-        for (_, machine) in lab.machines.items():
-            self.docker_machine.deploy(machine)
+        # If there is no lab.dep file, machines can be deployed using multithreading.
+        # If not, they're started sequentially
+        if not lab.has_dependencies:
+            machines_pool = Pool(cpu_count())
 
-        for (_, machine) in lab.machines.items():
-            self.docker_machine.start(machine)
+            def machine_chunk_process(item):
+                (_, machine) = item
+
+                self.docker_machine.deploy(machine)
+                self.docker_machine.start(machine)
+
+            machines = lab.machines.items()
+            cpus = cpu_count()
+
+            items = machines if len(machines) < cpus else \
+                                chunks(machines, cpus)
+
+            for chunk in items:
+                machines_pool.map(func=machine_chunk_process, iterable=chunk)
+        else:
+            for (_, machine) in lab.machines.items():
+                self.docker_machine.deploy(machine)
+                self.docker_machine.start(machine)
 
     @check_docker_status
     def update_lab(self, lab_diff):

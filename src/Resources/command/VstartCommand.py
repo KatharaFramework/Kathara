@@ -111,7 +111,7 @@ class VstartCommand(Command):
         parser.add_argument(
             '--port',
             required=False,
-            help='Choose a TCP PORT number to map to the internal port 3000 of the machine.'
+            help='Choose a TCP Port number to map localhost port PORT to the internal port 3000 of the machine.'
         )
         parser.add_argument(
             '--shell',
