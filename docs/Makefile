@@ -4,7 +4,11 @@ manual ::= "Kathara manual"
 
 .PHONY: all
 
-all: $(foreach name,$(shell basename -as .ronn *.ronn),MD/$(name).markdown) $(foreach name,$(shell basename -as .ronn *.ronn),Roff/$(name)) $(foreach name,$(shell basename -as .ronn *.ronn),Html/$(name).html)
+all: markdown-build roff-build html-build
+
+markdown-build: $(foreach name,$(shell basename -as .ronn *.ronn),MD/$(name).markdown)
+roff-build: $(foreach name,$(shell basename -as .ronn *.ronn),Roff/$(name))
+html-build: $(foreach name,$(shell basename -as .ronn *.ronn),Html/$(name).html)
 
 MD/%.markdown: %.ronn | MD/
 	cat $^ | m4 -P | ronn --manual=$(manual) -o $(dir $@) --markdown > $@
@@ -25,6 +29,13 @@ Html/:
 	mkdir $@
 
 cleanall:
-	rm -r Html
-	rm -r Roff
-	rm -r MD
+	if [ -d Html ]; then \
+		rm -r Html; \
+	fi
+	if [ -d Roff ]; then \
+		rm -r Roff; \
+	fi
+	if [ -d MD ]; then \
+		rm -r MD; \
+	fi
+
