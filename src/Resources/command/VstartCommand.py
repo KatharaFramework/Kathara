@@ -69,12 +69,12 @@ class VstartCommand(Command):
             help='Execute a specific command in the machine during startup.'
         )
         parser.add_argument(
-            '-M', '--mem',
+            '--mem',
             required=False,
             help='Limit the amount of RAM available for this machine.'
         )
         parser.add_argument(
-            '-C', '--cpus',
+            '--cpus',
             required=False,
             help='Limit the amount of CPU available for this machine.'
         )
