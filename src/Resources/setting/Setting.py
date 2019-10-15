@@ -50,8 +50,6 @@ class Setting(object):
             self.image = 'kathara/quagga'
             self.manager_type = 'docker'
             self.terminal = '/usr/bin/xterm'
-            # TODO: Check how it works!
-            # self.terminal = '/usr/bin/x-terminal-emulator'
             self.open_terminals = True
             self.hosthome_mount = False
             self.machine_shell = "/bin/bash"
@@ -170,9 +168,6 @@ class Setting(object):
                 self.save_selected(['last_checked'])
 
             logging.debug("=============================================================")
-
-        if self.machine_shell not in POSSIBLE_SHELLS:
-            raise SettingsError("Machine Shell must be one of the following: %s." % (", ".join(POSSIBLE_SHELLS)))
 
         try:
             utils.re_search_fail(r"^[a-z]+_?[a-z_]+$", self.net_prefix)

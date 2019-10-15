@@ -218,7 +218,7 @@ class PromptUtils(object):
         """
         if prompt is None:
             prompt = ''
-        prompt = prompt.rstrip() + ' (' + option1 + '/' + option2 + ')'
+        prompt = prompt.rstrip() + ' (' + option1 + '/' + option2 + ') '
         while True:
             user_input = self.__screen.input(prompt)
             if str(user_input).lower() == option1.lower():

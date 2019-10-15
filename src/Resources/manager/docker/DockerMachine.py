@@ -98,9 +98,24 @@ class DockerMachine(object):
         # Container image, if defined in machine meta. If not use default one.
         image = options["image"] if "image" in options else machine.meta["image"] if "image" in machine.meta \
                 else Setting.get_instance().image
-        # Memory limit, if defined in machine meta.
-        memory = options["mem"].upper() if "mem" in options else machine.meta["mem"].upper() if "mem" in machine.meta \
-                 else None
+        # Memory limit, if defined in options. If not use the value from machine meta.
+        memory = options["mem"] if "mem" in options else machine.meta["mem"] if "mem" in machine.meta else None
+
+        # CPU limit, defined as nano CPUs (10*e-9).
+        # User should pass a float value ranging from 0 to max user CPUs.
+        # It is took from options, or machine meta.
+        cpus = None
+        if "cpus" in options:
+            try:
+                cpus = int(float(options["cpus"]) * 1e9)
+            except ValueError:
+                pass
+        elif "cpus" in machine.meta:
+            try:
+                cpus = int(float(machine.meta["cpus"]) * 1e9)
+            except ValueError:
+                pass
+
         # Bind the port 3000 of the container to a defined port (if present).
         ports = None
         if "port" in options:
@@ -165,6 +180,7 @@ class DockerMachine(object):
                                                               network_mode="bridge" if first_network else "none",
                                                               sysctls=sysctl_parameters,
                                                               mem_limit=memory,
+                                                              nano_cpus=cpus,
                                                               ports=ports,
                                                               tty=True,
                                                               stdin_open=True,

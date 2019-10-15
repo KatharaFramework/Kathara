@@ -10,6 +10,7 @@ import tarfile
 import tempfile
 from io import BytesIO
 from sys import platform as _platform
+from .trdparty.consolemenu import PromptUtils, Screen
 
 from binaryornot.check import is_binary
 
@@ -98,15 +99,11 @@ def get_vlab_temp_path(force_creation=True):
 
 
 def confirmation_prompt(prompt_string, callback_yes, callback_no):
-    # TODO
-    # #answer = prompt_utils.prompt_for_bilateral_choice('Please enter a value', 'yes', 'no')
+    prompt_utils = PromptUtils(Screen())
+    answer = prompt_utils.prompt_for_bilateral_choice(prompt_string, 'yes', 'no')
 
-    answer = None
-    while answer not in ["y", "yes", "Y", "YES", "n", "no", "N", "NO"]:
-        answer = input("%s [y/n] " % prompt_string)
-
-        if answer in ["n", "no", "NO"]:
-            return callback_no()
+    if answer == "n":
+        return callback_no()
 
     return callback_yes()
 

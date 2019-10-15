@@ -74,6 +74,11 @@ class VstartCommand(Command):
             help='Limit the amount of RAM available for this machine.'
         )
         parser.add_argument(
+            '-C', '--cpus',
+            required=False,
+            help='Limit the amount of CPU available for this machine.'
+        )
+        parser.add_argument(
             '-i', '--image',
             required=False,
             help='Run this machine with a specific Docker Image.'
@@ -123,7 +128,7 @@ class VstartCommand(Command):
             print("Machine configuration is correct. Exiting...")
             sys.exit(0)
         else:
-            logging.info(utils.format_headers("Starting Machine"))
+            print(utils.format_headers("Starting Machine"))
 
         vlab_dir = utils.get_vlab_temp_path()
         lab = Lab(vlab_dir)
@@ -145,6 +150,9 @@ class VstartCommand(Command):
 
         if args.mem:
             machine.add_meta("mem", args.mem)
+
+        if args.cpus:
+            machine.add_meta("cpus", args.cpus)
 
         if args.image:
             machine.add_meta("image", args.image)
