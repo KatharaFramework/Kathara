@@ -12,7 +12,9 @@ kathara-lrestart(1) -- Restart a Kathara lab
 
 ## DESCRIPTION
 
-Restarts a Kathara lab. It simply wraps a call to `kathara-lclean`(1) and then `kathara-lstart`(1). Mainly it has the same options of `lstart` with the lack of some options (e.g. `--print`).
+Restart a Kathara lab. It simply wraps a call to `kathara-lclean`(1) and then `kathara-lstart`(1).
+
+Mainly it has the same options of `lstart` with the lack of some options (e.g. `--print`).
 
 ## OPTIONS
 

@@ -9,7 +9,7 @@ kathara-linfo(1) -- Show information about a Kathara lab
 
 ## DESCRIPTION
 
-This command can be used to display a variety of information about a Kathara lab.
+Display a variety of information about a Kathara lab.
 
 Without any option, the following information are displayed:
 

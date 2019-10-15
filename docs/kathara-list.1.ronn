@@ -9,7 +9,7 @@ kathara-list(1) -- Show all running Kathara machines of the current user
 
 ## DESCRIPTION
 
-This command displays a variety of information for all the machines of the current user.
+Display a variety of information for all the machines of the current user.
 
 The following information are displayed:
 

@@ -9,7 +9,8 @@ kathara-settings(1) -- Show and edit settings
 
 ## DESCRIPTION
 
-This command displays all the possible Kathara settings. It shows a simple console interface for changing all values in `kathara.conf`(5).
+Display all the possible Kathara settings. It shows a simple console interface for changing all values in `kathara.conf`(5).
+
 For details about the possible settings and possible values please refer to `kathara.conf`(5).
 
 ## OPTIONS

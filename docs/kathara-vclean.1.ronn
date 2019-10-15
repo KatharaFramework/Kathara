@@ -8,7 +8,7 @@ kathara-vclean(1) -- Stop a single Kathara machine
 
 ## DESCRIPTION
 
-Gracefully shutdown a running machine. <MACHINE_NAME> is the name of a machine.
+Gracefully shut down a running machine. <MACHINE_NAME> is the name of a machine.
 
 ## OPTIONS
 

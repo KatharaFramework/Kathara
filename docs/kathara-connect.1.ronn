@@ -41,7 +41,7 @@ Open a shell in machine MACHINE_NAME.
     By default it does not print the startup logs, this behaviour is not customizable by the user.
 
 * `<MACHINE_NAME>:
-    kfjgjfkaskfj
+    Name of the machine to connect to.
 
 
 ## EXAMPLES

@@ -8,7 +8,9 @@ kathara-wipe(1) -- Delete all Kathara machines and links, optionally also delete
 
 ## DESCRIPTION
 
-The wipe command can be used to gracefully shutdown ALL running Kathara machines of current user. Using optional parameters, it is also possible to delete the current user settings or the Kathara machines of all users in the host.
+Gracefully shut down ALL running Kathara machines of current user.
+
+Using optional parameters, it is also possible to delete the current user settings or the Kathara machines of all users in the host.
 
 ## OPTIONS
 
