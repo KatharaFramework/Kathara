@@ -3,33 +3,63 @@
 <html lang="en">
     <head>
         <meta charset="utf-8" />
+
+        <style>
+            body {
+                font-size: 12px;
+            }
+
+            .main-div {
+                font-family: Helvetica, sans-serif;
+                padding-left: 10px;
+                text-align: left;
+            }
+
+            p {
+                color: #020202;
+            }
+
+            span.title {
+                color: #46b9d6;
+                font-weight: bold;
+            }
+
+            code.shell {
+                color: #c6a72b;
+                font-size: 14px;
+            }
+
+            code.shell span.command {
+                color: #7a7e7e;
+            }
+        </style>
     </head>
     <body>
-        <div style="font-family: Helvetica; padding-left: 10px;" align="left">
-            <h3>WSO2 API Manager</h3>
-                <p style="color: #020202; font-size: 11px;">Thank you for installing WSO2 API MAnager.</p>
-            <h5>Run API Manager</h5>
-                <p style="color: #020202; font-size: 11px;">Open a new terminal and run the following command to get start with APIM server:</p>
-                <code style="color: #c6a72b; font-size: 11px;">&nbsp; $ <span style="color: #abb0b0">wso2am-2.6.0 [command]</span></code>
+        <div class="main-div">
+            <h3>Kathar&agrave;</h3>
+
+            <p>Thank you for installing <span class="title">Kathar&agrave; __VERSION__</span>!</p>
         </div>
-        <div style="font-family: Helvetica; padding-left: 10px;" align="left">
-            <br/>
-            <h5>Resources</h5>
-                <p style="color: #020202; font-size: 11px;">Go through following links for additional information.</p>
-                <ul>
-                    <li><a href="https://docs.wso2.com/api-manager/Quick+Start+Guide" style="font-size: 11px;">Quick Start Guide</a></li>
-                    <li><a href="https://docs.wso2.com/api-manager/" style="font-size: 11px;">Documentation</a></li>
-                </ul>
+        <br />
+        <div class="main-div">
+            <h4>Run Kathar&agrave;</h4>
+            <p>Open a new Terminal and run the following command to get started with Kathar&agrave;:</p>
+            <code class="shell">&nbsp; $ <span class="command">kathara [command]</span></code>
         </div>
-        <div style="font-family: Helvetica; padding-left: 10px;" align="left">
-            <br/>
-            <h5>Uninstall WSO2 API Manager</h5>
-                <p style="color: #020202; font-size: 11px;">Run the following command to uninstall WSO2 API Manager. <br />
-                  <code style="color: #c6a72b; font-size: 11px;"><br />&nbsp; $ <span style="color: #abb0b0">sudo bash /Library/__PRODUCT__/__VERSION__/uninstall.sh</span></code>
-                </p>
+        <br />
+        <div class="main-div">
+            <h4>Resources</h4>
+            <p>Go through the following links for additional information:</p>
+            <ul>
+                <li><a href="http://www.kathara.org">Kathar&agrave; Official Site</a></li>
+                <li><a href="https://github.com/KatharaFramework/Kathara/wiki">Kathar&agrave; Wiki</a></li>
+            </ul>
         </div>
-        <div style="font-family: Helvetica; padding-left: 10px;" align="left"><br />
-            <p style="color: #abb0b0; font-size: 10px;">Copyright © 2019 WSO2 Inc. All rights reserved. API Manager and its use subject to a license agreement and are also subject to copyright, trademark patent and/or other laws.</p>
+        <br />
+        <div class="main-div">
+            <h4>Uninstall Kathar&agrave;</h4>
+            <p>Run the following command to uninstall Kathar&agrave;:</p>
+            <code class="shell">&nbsp; $ <span class="command">sudo bash /Library/Kathara/uninstall.sh</span></code>
         </div>
     </body>
 </html>

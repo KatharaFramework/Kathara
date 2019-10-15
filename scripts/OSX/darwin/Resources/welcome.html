@@ -2,13 +2,46 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
+
+    <style>
+        .main-div {
+            font-family: Helvetica, sans-serif;
+            padding-left: 10px;
+            text-align: left;
+        }
+
+        p {
+            color: #020202;
+            font-size: 12px;
+        }
+
+        span.title {
+            color: #46b9d6;
+            font-weight: bold;
+        }
+
+        span.continue {
+            color: #626666;
+        }
+    </style>
 </head>
 <body>
-    <div align="left" style="font-family: Helvetica; padding-left: 10px;">
-    	<br/>
-        <p style="color: #020202; font-size: 12px;">This will install <span style="color: #46b9d6; font-size: 12px;">Kathara __VERSION__</span> on your computer. You will be guided through the steps necessary to install this software.</p>
-        <br/>
-        <p style="color: #abb0b0; font-size: 12px;">Click <span style="color: #626666">“Continue"</span> to continue the setup</p>
+    <div class="main-div">
+        <h3>Kathar&agrave;</h3>
+
+    	<p>
+            <span class="title">Kathar&agrave;</span> is a network emulation tool.<br /><br />
+            It is an implementation of the notorious <a href="https://github.com/maxonthegit/netkit-core">Netkit</a> using Python.
+            <br />
+            Ten times faster than Netkit and more than 100 times lighter, the framework has the performances to run in production.
+        </p>
+        <br />
+        <p>
+            This setup will install <span class="title">Kathar&agrave; __VERSION__</span> on your computer.
+            You will be guided through the steps necessary to install this software.
+        </p>
+        <br />
+        <p>Click <span class="continue">"Continue"</span> to continue the setup.</p>
     </div>
 </body>
 </html>
