@@ -4,18 +4,18 @@ kathara-vclean(1) -- Stop a single Kathara machine
 
 ## SYNOPSIS
 
-`kathara vclean` [-h] -n NAME
+`kathara vclean` [`-h`] `-n` <MACHINE_NAME>
 
 ## DESCRIPTION
 
-The vclean command can be used to gracefully shutdown a running machine. NAME is the name of a machine.
+Gracefully shutdown a running machine. <MACHINE_NAME> is the name of a machine.
 
 ## OPTIONS
 
 * `-h`, `--help`
-    Show an help message and exit.
+    Show a help message and exit.
 
-* `-n` NAME, `--name` NAME  
+* `-n` <MACHINE_NAME>, `--name` <MACHINE_NAME>  
     Name of the machine to be cleaned.
 
 ## EXAMPLES

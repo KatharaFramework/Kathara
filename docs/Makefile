@@ -23,3 +23,8 @@ Roff/:
 
 Html/:
 	mkdir $@
+
+cleanall:
+	rm -r Html
+	rm -r Roff
+	rm -r MD

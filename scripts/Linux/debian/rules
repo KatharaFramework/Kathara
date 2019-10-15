@@ -11,6 +11,7 @@ override_dh_auto_clean:
 override_dh_auto_configure:
 	python3 -m pip install nuitka
 	python3 -m pip install -r requirements.txt
+	gem install ronn-ng
 
 override_dh_auto_build:
 	python3 -m nuitka --follow-imports --standalone --include-plugin-directory=Resources kathara.py

@@ -7,13 +7,13 @@ kathara-vstart(1) -- Start a new Kathara machine
 `kathara vstart`
 >           [`-h`] [`--noterminals` | `-t`] `-n` <MACHINE_NAME>  
 >           [`--eth` <N:CD> [<N:CD> ...]]  
->           [`-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]] [`-M` <MEM>]  
->           [`-i` <IMAGE>] [`-H`] [`--xterm` <XTERM>] [`--print`] [`--bridged`]  
->           [`--port` <PORT>] [`--shell` <SHELL>]
+>           [`-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]] [`--mem` <MEM>]  
+>           [`--cpus` <CPUS>] [`-i` <IMAGE>] [`-H`] [`--xterm` <XTERM>] [`--print`]  
+>           [`--bridged`] [`--port` <PORT>] [`--shell` <SHELL>]
 
 ## DESCRIPTION
 
-The vstart command can be used to start a new machine named MACHINE_NAME. Names of machines must be unique for each user. Yet, different users can run machines having the same name.
+Start a new machine named MACHINE_NAME. Names of machines must be unique for each user. Yet, different users can run machines having the same name.
 
 Without providing options, vstart starts a machine whose configuration reflects the defaults stored inside the `kathara.conf`(5) file. The options described below can be used to adjust the features of a machine upon starting it.
 
@@ -22,48 +22,74 @@ Notice: unless differently stated, command line arguments (MACHINE_NAME) and opt
 ## OPTIONS
 
 * `-h`, `--help`:
-    Show an help message and exit.
+    Show a help message and exit.
 
 * `--noterminals`:
-    Start the machine without opening a terminal window. Overrides the default setting specified in `kathara.conf`(5) file.
+    Start the machine without opening a terminal window.  
+
+    Overrides the default setting specified in `kathara.conf`(5) file.
 
 * `-t`, `--terminals`:
-    Start the machine opening its terminal window. Overrides the default setting specified in `kathara.conf`(5) file.
+    Start the machine opening its terminal window.  
+
+    Overrides the default setting specified in `kathara.conf`(5) file.
 
 * `-n` <MACHINE_NAME>, `--name` <MACHINE_NAME>:
     Name of the machine to be started.
 
 * `--eth` <N>:<CD> [<N>:<CD> ...]:
-    Equip the machine with a network interface. <N> is a positive integer starting from 0.
+    Set a specific interface on a collision domain.
 
-    Network interface will be attached to a (virtual) collision domain whose name is <CD>. Attaching interfaces of different machines to the same collision domain allows them to exchange network traffic. <N> should be declared as a sequential number, starting from 0; if any intermediate number is missing an exception is raised.
+    Equip the machine with a network interface. <N> is a positive integer starting from 0.  
+    The network interface will be attached to a (virtual) collision domain whose name is <CD>. Attaching interfaces of different machines to the same collision domain allows them to exchange network traffic. <N> should be declared as a sequential number, starting from 0; if any intermediate number is missing an exception is raised.
 
 * `-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]], `--exec` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]:
-    Run a specific command inside the machine during the startup phase. <EXEC_COMMANDS> are shell commands.
+    Execute a specific command in the machine during startup.
 
-* `-M` <MEM>, `--mem` <MEM>:
-    Set the amount of available RAM inside the machine to <MEM>. If it is not set, the machine could use as much RAM as the Docker daemon can use. If you set this option, the minimum allowed value is 4m (4 megabyte).
+    Run a specific command inside the machine during the startup phase. <EXEC_COMMANDS> are shell commands executed with the shell defined in `--shell` or with the default shell defined in `kathara.conf`(5).
+
+* `--mem` <MEM>:
+    Limit the amount of RAM available for this machine.
+
+    Set the amount of available RAM inside the machine to <MEM>. If it is not set, the machine could use as much RAM as the Docker daemon can use. If you set this option, the minimum allowed value is 4m (4 megabyte).  
+    This option takes a positive integer, followed by a suffix of "b", "k", "m", "g", to indicate bytes, kilobytes, megabytes, or gigabytes.
+
+* `--cpus` <CPUS>:
+    Limit the amount of CPU available for this machine.
+
+    Set the amount of available CPU inside the machine to <CPUS>. If it is not set, the machine could use as much CPU as the Docker daemon can use.  
+    This option takes a positive float, ranging from 0 to the max number of logical CPUs of the host. For instance, if the host machine has two CPUs and you set `--cpus` 1.5, the container is guaranteed at most one and a half of the CPUs.
 
 * `-i` <IMAGE>, `--image` <IMAGE>:
-    Run this machine with a specific Docker Image. This Docker Image could be in the local repository or on the Docker Hub. Overrides the default setting specified in `kathara.conf`(5) file.
+    Run this machine with a specific Docker Image.
+
+    The specified Docker Image could be in the local repository or on the Docker Hub. Overrides the default setting specified in `kathara.conf`(5) file.
 
 * `-H`, `--no-hosthome`:
+    /hosthome dir will not be mounted inside the machine.
+
     By default, the home directory of the current user is made available for reading/writing inside the machine under the special directory `/hosthome`. This option disables this behaviour, thus not making the host filesystem accessible from inside the machine. Overrides the default setting specified in `kathara.conf`(5) file.
 
 * `--xterm` <XTERM>:
-    Set a different terminal emulator application (Unix only). As an example: `gnome-terminal`(1). Overrides the default setting specified in `kathara.conf`(5) file.
+    Set a different terminal emulator application (Unix only).
+
+    As an example: `gnome-terminal`(1). Overrides the default setting specified in `kathara.conf`(5) file. This option is ignored if used in conjunction with `--noterminals` or if `open_terminals` is set to false.
 
 * `--print`:
     Check if the machine parameters are correct (dry run).
 
 * `--bridged`:
-    Connect the machine to the host network by adding an additional network interface. This interface will be connected to the host network through a NAT connection.
+    Add a bridge interface to the machine.
+
+    Connect the machine to the host network by adding an additional network interface (will be the last one). This interface will be connected to the host network through a NAT connection and will receive its IP configuration automatically via DHCP.
 
 * `--port` <PORT>:
-    Choose a TCP <PORT> number to map to the internal port 3000 of the machine.
+    Choose a TCP <PORT> number to map localhost port <PORT> to the internal port 3000 of the machine.
 
 * `--shell` <SHELL>:
-    Set the shell (sh, bash, etc.) that should be used inside the machine when opening terminals. The requested shell must be installed inside the machine. If the command is started with `--noterminals` or the default behaviour in `kathara.conf`(5) file is to not open terminals, this parameter is ignored. Overrides the default setting specified in `kathara.conf`(5) file.
+    Set the shell (sh, bash, etc.) that should be used inside the machine.
+
+    The requested shell must be installed inside the machine. Overrides the default setting specified in `kathara.conf`(5) file.
 
 ## EXAMPLES
 
@@ -71,7 +97,7 @@ Notice: unless differently stated, command line arguments (MACHINE_NAME) and opt
 
 Start a new machine named pc1.
 
-    kathara vstart -n mypc1 -i my-image -M 128M
+    kathara vstart -n mypc1 -i my-image --mem 128m
 
 Start a new machine named mypc1. The machine will run using local image `my-image` and will be equipped with 128 MB of RAM.
 
@@ -88,7 +114,7 @@ Start a new machine named router. The machine will have two network interfaces. 
 
 Instead of actually starting a machine, checks if the passed machine parameters are correct.
 
-    kathara vstart -n terminal_test --xterm=gnome-terminal
+    kathara vstart -n terminal_test --xterm gnome-terminal
 
 Start a machine named terminal_test which uses the gnome-terminal terminal.
 
@@ -96,4 +122,4 @@ m4_include(footer.txt)
 
 ## SEE ALSO
 
-`kathara`(1), `vclean`(1), `vconfig`(1), `kathara.conf`(5)
+`kathara`(1), `kathara-vclean`(1), `kathara-vconfig`(1), `kathara.conf`(5)

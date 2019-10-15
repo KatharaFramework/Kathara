@@ -1,0 +1,61 @@
+m4_changequote()
+kathara-connect(1) -- Connect to a Kathara machine
+=============================================
+
+## SYNOPSIS
+
+`kathara connect`
+>	[`-h`] [`-d` <DIRECTORY> | `-v`]
+>	[`--shell` <SHELL>] [`-l`]
+>	<MACHINE_NAME>
+
+## DESCRIPTION
+
+Open a shell in machine MACHINE_NAME.
+
+## OPTIONS
+
+* `-h`, `--help`:
+    Show an help message and exit.
+
+* `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
+    Specify the folder containing the lab.
+
+    Connect to a Kathara machine belonging to a lab that is located inside DIRECTORY.  
+	If no `-d` option is provided, assume the lab is located in the current directory.
+	This option cannot be used in conjuction with `-v` or `--vmachine`.
+
+* `-v`, `--vmachine`:
+	The machine has been started with vstart command.
+
+	This option cannot be used in conjuction with `-d` or `--directory`.
+
+* `--shell` <SHELL>:
+    Set the shell (sh, bash, etc.) that should be used inside the machine.
+
+    As an example: `bash`(1). Override the default setting specified in `kathara.conf`(5) file.
+
+* `-l`, `--logs`:
+    Print machine startup logs before launching the shell.
+
+    By default it does not print the startup logs, this behaviour is not customizable by the user.
+
+* `<MACHINE_NAME>:
+    kfjgjfkaskfj
+
+
+## EXAMPLES
+
+	kathara connect -v pc1
+
+Connects to a machine called `pc1`, started with `kathara-vstart`(1).
+
+	kathara connect as1r1
+
+Connects to a machine called `as1r1` belonging to a lab located in current folder and started with `kathara-lstart`(1).
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-vstart`(1), `kathara-lstart`(1)

@@ -9,7 +9,7 @@ kathara-lclean(1) -- Stop a Kathara lab
 ## DESCRIPTION
 
 Gracefully shuts down a running lab.  
-By default, stops all the machines of the lab. If a list of MACHINE_NAMEs is provided, then only machines with a matching name and that are part of the lab will be halted. 
+By default, stops all the machines of the lab. If a list of <MACHINE_NAME>s is provided, then only machines with a matching name and that are part of the lab will be halted. 
 
 ## OPTIONS
 
@@ -19,7 +19,7 @@ By default, stops all the machines of the lab. If a list of MACHINE_NAMEs is pro
 * `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
 	Specify the folder containing the lab.
 
-	Cleans the Kathara lab that is located inside DIRECTORY.  
+	Cleans the Kathara lab that is located inside <DIRECTORY>.  
 	If no `-d` option is provided, assume the lab is located in the current directory.
 
 m4_include(footer.txt)

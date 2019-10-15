@@ -8,12 +8,12 @@ kathara-vconfig(1) -- Attach network interfaces to a running Kathara machine
 
 ## DESCRIPTION
 
-Attach network interfaces to running machines "on the fly". The affected machine is identified by MACHINE_NAME, which is the name of a running machine. 
+Attach network interfaces to running machines "on the fly". The affected machine is identified by <MACHINE_NAME>, which is the name of a running machine. 
 
 ## OPTIONS
 
 * `-h`, `--help`:
-    Show an help message and exit.
+    Show a help message and exit.
 
 * `-n` <MACHINE_NAME>, `--name` <MACHINE_NAME>:
     Name of the machine to be connected on desired collision domains.
@@ -21,7 +21,7 @@ Attach network interfaces to running machines "on the fly". The affected machine
 * `--eth` <CD> [<CD> ...]:
 	Specify the collision domain for an interface.
 
-    Equip the machine with an additional network interface attached to a (virtual) collision domain whose name is CD. The number of the resulting network interface is generated incrementing the last network interface number of the machine.
+    Equip the machine with an additional network interface attached to a (virtual) collision domain whose name is <CD>. The number of the resulting network interface is generated incrementing the number of the last network interface of the machine.
 
 ## EXAMPLES
 

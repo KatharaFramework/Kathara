@@ -19,11 +19,6 @@ Checks on the correctness of the configuration are performed each time a Kathara
     Manager used to launch the lab.
 
     Default to `docker`.
-
-* `net_counter` (int):
-	Incremental counter used to create additional Docker networks to overcome its limitations. **BEWARE: do not edit this number unless you know what you're doing!**
-
-	Default to `0`.
 	
 * `terminal` (string):
 	This parameter determines the terminal emulator application to be used for machine terminals. The application must be correctly installed in the host system.
@@ -76,7 +71,6 @@ Checks on the correctness of the configuration are performed each time a Kathara
 		{
 			"image": "kathara/quagga",
 			"deployer_type": "docker",
-			"net_counter": 0,
 			"terminal": "/usr/bin/xterm",
 			"open_terminals": true,
 			"hosthome_mount": true,

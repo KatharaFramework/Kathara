@@ -26,6 +26,11 @@ The following information are displayed:
 * `-h`, `--help`:
     Show an help message and exit.
 
+* `-a`, `--all`:
+    Show all running Kathara machines of all users. MUST BE ROOT FOR THIS OPTION.
+
+    This option can be run only by `root` user.
+
 * `-n` <MACHINE_NAME>, `--name` <MACHINE_NAME>:
     Show only information about a specified machine.
 

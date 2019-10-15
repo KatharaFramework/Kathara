@@ -54,11 +54,6 @@ Restarts a Kathara lab. It simply wraps a call to `kathara-lclean`(1) and then `
 
     By default, the home directory of the current user is made available for reading/writing inside the machine under the special directory `/hosthome`. This option disables this behaviour, thus not making the host filesystem accessible from inside the machine. Override the default setting specified in `kathara.conf`(5) file.
 
-* `-c` <COUNTER>, `--counter` <COUNTER>:
-    Start from a specific network counter (overrides whatever was previously initialized).
-
-    For further information about the network counter see `kathara.conf`(5).
-
 m4_include(footer.txt)
 
 ## SEE ALSO

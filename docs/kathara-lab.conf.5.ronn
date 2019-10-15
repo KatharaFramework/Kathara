@@ -22,6 +22,13 @@ In order to establish a uniform convention, comment lines should always start wi
 * `mem` (string):
     Set the amount of available RAM inside the machine. If you set this option, the minimum allowed value is 4m (4 megabyte).
 
+    This option takes a positive integer, followed by a suffix of "b", "k", "m", "g", to indicate bytes, kilobytes, megabytes, or gigabytes.
+
+* `cpus` (float):
+    Limit the amount of CPU available for this machine.
+
+    This option takes a positive float, ranging from 0 to max number of host logical CPUs. For instance, if the host machine has two CPUs and you set `machine[cpus]=1.5`, the container is guaranteed at most one and a half of the CPUs.
+
 * `port` (string):
     Choose a TCP number to map to the internal port 3000 of the machine.
 

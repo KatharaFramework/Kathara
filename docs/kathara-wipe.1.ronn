@@ -26,7 +26,7 @@ The wipe command can be used to gracefully shutdown ALL running Kathara machines
     Delete the `kathara.config`(5) file and create it again with default settings.
 
 * `-a`, `--all`:
-    Wipe all Kathara machines and links of all users.
+    Wipe all Kathara machines and links of all users. MUST BE ROOT FOR THIS OPTION.
 
     This option can be run only by `root` user. Cannot be used with `-s` or `--settings`.
 
