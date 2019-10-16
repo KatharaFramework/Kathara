@@ -35,17 +35,11 @@ def check_docker_status(method):
     """
     Decorator function to check if Docker daemon is up and running.
     """
-    pywintypes = utils.exec_by_platform(pywin_import_stub, pywin_import_win, pywin_import_stub)
-
     def check_status(*args, **kw):
-        client = args[0].client
-        try:
-            client.ping()
-            return method(*args, **kw)
-        except RequestsConnectionError as e:
-            raise DockerDaemonConnectionError("Can not connect to Docker Daemon. %s" % str(e))
-        except pywintypes.error as e:
-            raise DockerDaemonConnectionError("Can not connect to Docker Daemon. %s" % str(e))
+        PrivilegeManager.get_instance().raise_privileges()
+        result = method(*args, **kw)
+        PrivilegeManager.get_instance().drop_privileges()
+        return result
 
     return check_status
 
@@ -53,6 +47,9 @@ def init_with_privileges(method):
     """
     Decorator function to start docker client with elevated privileges.
     """
+
+    pywintypes = utils.exec_by_platform(pywin_import_stub, pywin_import_win, pywin_import_stub)
+
     def init(*args, **kw):
         method(*args, **kw)
         

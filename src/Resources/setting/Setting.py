@@ -193,6 +193,7 @@ class Setting(object):
     def check_image(self, image=None):
         image = self.image if not image else image
 
+        # Required to import here because otherwise there is a cyclic dependency
         from ..manager.ManagerProxy import ManagerProxy
         ManagerProxy.get_instance().check_image(image)
 
