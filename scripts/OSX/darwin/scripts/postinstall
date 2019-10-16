@@ -10,5 +10,5 @@ chmod -R 755 .
 
 #Add application shortcut to /usr/local/bin
 rm -f /usr/local/bin/kathara
-ln -s /Library/Kathara/kathara /usr/local/bin/kathara
+ln -s /Library/Kathara/bin/kathara /usr/local/bin/kathara
 echo "Post installation process finished"
