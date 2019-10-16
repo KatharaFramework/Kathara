@@ -59,12 +59,12 @@ copyBuildDirectory: binary manpages
 	sed -i '' -e 's/__VERSION__/'$(VERSION)'/g' $(TARGET_DIRECTORY)/Resources/*.html
 	chmod -R 755 $(TARGET_DIRECTORY)/Resources/
 
-	mkdir -p $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/bin
+	mkdir -p $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)
 	mkdir -p $(TARGET_DIRECTORY)/darwinpkg/usr/local/share/man/
 
 	chmod -R 755 $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)
 
-	cp -a ../../src/kathara.dist/. $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/bin
+	cp -a ../../src/kathara.dist/. $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)
 	cp -a $(ROFF_DIR)/. $(TARGET_DIRECTORY)/darwinpkg/usr/local/share/man/
 
 	chmod -R 755 $(TARGET_DIRECTORY)/darwinpkg/usr/local/share/man/*
