@@ -3,6 +3,7 @@ from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool
 
 import docker
+import logging
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from terminaltables import DoubleTable
 
@@ -13,7 +14,7 @@ from ... import utils
 from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
-
+from ..PrivilegeManager import PrivilegeManager
 
 def pywin_import_stub():
     """
@@ -48,10 +49,32 @@ def check_docker_status(method):
 
     return check_status
 
+def init_with_privileges(method):
+    """
+    Decorator function to start docker client with elevated privileges.
+    """
+    def init(*args, **kw):
+        method(*args, **kw)
+        
+        client = args[0].client
+
+        PrivilegeManager.get_instance().raise_privileges()
+        try:
+            client.ping()
+        except RequestsConnectionError as e:
+            raise DockerDaemonConnectionError("Can not connect to Docker Daemon. %s" % str(e))
+        except pywintypes.error as e:
+            raise DockerDaemonConnectionError("Can not connect to Docker Daemon. %s" % str(e))
+
+        PrivilegeManager.get_instance().drop_privileges()
+
+    return init
+
 
 class DockerManager(IManager):
     __slots__ = ['docker_image', 'docker_machine', 'docker_link', 'client']
 
+    @init_with_privileges
     def __init__(self):
         self.client = docker.from_env()
 

@@ -23,7 +23,6 @@ WINDOWS = "win32"
 LINUX = "linux"
 LINUX2 = "linux2"
 
-
 def check_python_version():
     if sys.version_info < (3, 0):
         print("Python version should be greater than 3.0")
