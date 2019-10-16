@@ -19,7 +19,7 @@ done
 echo "Application uninstalling process started"
 
 # remove running containers
-kathara wipe -a -f
+/Library/Kathara/kathara wipe -a -f
 if [ $? -eq 0 ]
 then
   echo "[1/5] [DONE] Successfully deleted all running Kathara machines"
