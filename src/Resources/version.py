@@ -1,4 +1,4 @@
-CURRENT_VERSION = "0.46.1"
+CURRENT_VERSION = "2.0.0"
 
 
 def parse(version):
