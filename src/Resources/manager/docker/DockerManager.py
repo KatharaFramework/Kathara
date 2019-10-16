@@ -14,7 +14,7 @@ from ... import utils
 from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
-from ..PrivilegeManager import PrivilegeManager
+from ...auth.PrivilegeHandler import PrivilegeHandler
 
 def pywin_import_stub():
     """
@@ -36,9 +36,9 @@ def check_docker_status(method):
     Decorator function to check if Docker daemon is up and running.
     """
     def check_status(*args, **kw):
-        PrivilegeManager.get_instance().raise_privileges()
+        PrivilegeHandler.get_instance().raise_privileges()
         result = method(*args, **kw)
-        PrivilegeManager.get_instance().drop_privileges()
+        PrivilegeHandler.get_instance().drop_privileges()
         return result
 
     return check_status
@@ -55,7 +55,7 @@ def init_with_privileges(method):
         
         client = args[0].client
 
-        PrivilegeManager.get_instance().raise_privileges()
+        PrivilegeHandler.get_instance().raise_privileges()
         try:
             client.ping()
         except RequestsConnectionError as e:
@@ -63,7 +63,7 @@ def init_with_privileges(method):
         except pywintypes.error as e:
             raise DockerDaemonConnectionError("Can not connect to Docker Daemon. %s" % str(e))
 
-        PrivilegeManager.get_instance().drop_privileges()
+        PrivilegeHandler.get_instance().drop_privileges()
 
     return init
 

@@ -3,7 +3,7 @@ from .. import utils
 import os
 import logging
 
-class PrivilegeManager():
+class PrivilegeHandler():
     __slots__ = ['manager', 'user_uid', 'user_gid', 'raised_uid', 'raised_gid']
 
     __instance = None

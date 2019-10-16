@@ -11,7 +11,7 @@ from Resources.exceptions import SettingsError, DockerDaemonConnectionError
 from Resources.setting.Setting import Setting
 from Resources.strings import formatted_strings
 from Resources.version import CURRENT_VERSION
-from Resources.manager.PrivilegeManager import PrivilegeManager
+from Resources.auth.PrivilegeHandler import PrivilegeHandler
 
 description_msg = """kathara [-v|--version] <command> [<args>]
 
@@ -100,7 +100,7 @@ class KatharaEntryPoint(object):
 if __name__ == '__main__':
     utils.check_python_version()
 
-    PrivilegeManager.get_instance().drop_privileges()
+    PrivilegeHandler.get_instance().drop_privileges()
 
     try:
         debug_level = Setting.get_instance().debug_level
