@@ -304,6 +304,8 @@ class DockerMachine(object):
             # Else, check if the machine is in the list.
             if not selected_machines or \
                machine.labels["name"] in selected_machines:
+                logging.debug("Deleting container `%s`..." % machine.name)
+
                 self.delete_machine(machine)
 
     def wipe(self, user=None):

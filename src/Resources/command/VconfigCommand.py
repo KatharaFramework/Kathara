@@ -1,4 +1,5 @@
 import argparse
+import logging
 import re
 import sys
 
@@ -62,6 +63,8 @@ class VconfigCommand(Command):
 
         iface_number = 0
         for eth in args.eths:
+            logging.info("Adding interface to machine `%s` for collision domain `%s`..." % (args.name, eth))
+
             lab.connect_machine_to_link(args.name, iface_number, eth)
             iface_number += 1
 
