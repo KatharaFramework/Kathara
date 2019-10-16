@@ -92,8 +92,7 @@ class KatharaEntryPoint(object):
             logging.critical("If you encounter any problem please run `kathara wipe`.")
             sys.exit(0)
         except Exception as e:
-            # TODO: Cambiare in logging.critical per non stampare stacktrace
-            logging.exception(str(e) + '\n')
+            logging.critical(str(e) + '\n')
             sys.exit(1)
 
 
@@ -103,7 +102,7 @@ if __name__ == '__main__':
     try:
         debug_level = Setting.get_instance().debug_level
     except SettingsError:
-        debug_level = "INFO"
+        debug_level = "DEBUG"
 
     coloredlogs.install(fmt='%(levelname)s - %(message)s', level=debug_level)
     

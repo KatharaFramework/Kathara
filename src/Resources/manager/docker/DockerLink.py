@@ -115,6 +115,10 @@ class DockerLink(object):
         }
 
         def no_privilege_patch():
+            logging.debug("Appying brctl patch without privilege escalation "
+                          "on network `%s`..." % network.name
+                          )
+
             # Directly patch /sys/class opening the files
             for (path, value) in patches.items():
                 try:
@@ -124,6 +128,10 @@ class DockerLink(object):
                     privilege_patch()
 
         def privilege_patch():
+            logging.debug("Appying brctl patch with privilege escalation "
+                          "on network `%s`..." % network.name
+                          )
+
             # Privilege escalation to patch bridges, since Docker runs in a VM on Windows and MacOS.
             # In order to do so, we run an alpine container with host visibility and chroot in the host `/`.
             patch_command = ["echo %d > %s" % (value, path.format(net_id=network.id[:12]))
