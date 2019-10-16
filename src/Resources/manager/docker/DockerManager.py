@@ -84,19 +84,18 @@ class DockerManager(IManager):
         # If there is no lab.dep file, machines can be deployed using multithreading.
         # If not, they're started sequentially
         if not lab.has_dependencies:
-            machines_pool = Pool(cpu_count())
+            cpus = cpu_count()
+            machines_pool = Pool(cpus)
+
+            machines = lab.machines.items()
+            items = [machines] if len(machines) < cpus else \
+                                  chunks(machines, cpus)
 
             def machine_chunk_process(item):
                 (_, machine) = item
 
                 self.docker_machine.deploy(machine)
                 self.docker_machine.start(machine)
-
-            machines = lab.machines.items()
-            cpus = cpu_count()
-
-            items = machines if len(machines) < cpus else \
-                                chunks(machines, cpus)
 
             for chunk in items:
                 machines_pool.map(func=machine_chunk_process, iterable=chunk)

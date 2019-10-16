@@ -68,17 +68,14 @@ class ManagerProxy(IManager):
 
     @staticmethod
     def get_available_managers_name():
-        path, file = os.path.split(__file__)
-        manager_modules = pkgutil.walk_packages(path=[path], prefix='Resources.manager.')
+        available_managers = ['docker']
 
         managers = {}
 
-        for manager_module in manager_modules:
-            if manager_module.ispkg:
-                module_name = manager_module.name
-                manager_name = "%sManager" % module_name.split('.')[-1].capitalize()
+        for manager_module_name in available_managers:
+            manager_name = "%sManager" % manager_module_name.split('.')[-1].capitalize()
 
-                manager = utils.class_for_name(module_name, manager_name)()
-                managers[manager.get_manager_name()] = manager.get_formatted_manager_name()
+            manager = utils.class_for_name("Resources.manager." + manager_module_name, manager_name)()
+            managers[manager.get_manager_name()] = manager.get_formatted_manager_name()
 
         return managers
