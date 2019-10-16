@@ -1,3 +1,8 @@
 # We use nuitka to compile a python package
 kathara binary: package-has-unnecessary-activation-of-ldconfig-trigger
 
+# Nuitka compiles all together, it is impossible to separate the files
+kathara binary: possible-gpl-code-linked-with-openssl
+
+# This package will never be uploaded on public repos
+kathara binary: new-package-should-close-itp-bug

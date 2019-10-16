@@ -4,6 +4,8 @@ VERSION=2.0.0
 
 ARCHITECTURE:=$(shell dpkg --print-architecture)
 
+.PHONY: deb deps clean
+
 deb:
 	mkdir Output
 	cp -r ../../src Output/kathara-$(VERSION)

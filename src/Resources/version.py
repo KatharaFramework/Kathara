@@ -2,9 +2,7 @@ CURRENT_VERSION = "2.0.0"
 
 
 def parse(version):
-    l = [int(x, 10) for x in version.split('.')]
-    l.reverse()
-    return sum(x * (10 ** i) for i, x in enumerate(l))
+    return tuple([int(x) for x in version.split('.')])
 
 
 def less_than(version, other_version):

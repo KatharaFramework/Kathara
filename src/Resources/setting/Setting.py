@@ -149,7 +149,7 @@ class Setting(object):
                 if version.less_than(version.CURRENT_VERSION, latest_version):
                     print("A new version of Kathara has been released.")
                     print("Current: %s - Latest: %s" % (version.CURRENT_VERSION, latest_version))
-                    print("Please update it with `pip install kathara`")
+                    print("Please update it from https://github.com/KatharaFramework/Kathara")
             except HTTPConnectionError:
                 logging.debug("Connection to GitHub failed, passing...")
                 checked = False

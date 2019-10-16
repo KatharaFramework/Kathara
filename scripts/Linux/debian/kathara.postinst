@@ -1,17 +1,19 @@
 #!/bin/sh
 
-$USERNAME=kathara
+USERNAME=kathara
 
 set -e
+set -x
 
-adduser --system --no-create-home --quiet --home /nonexistent $USERNAME
-usermod -aG docker $USERNAME
-
-if id -u $USERNAME > /dev/null 2>&1; then    
-    chown -r ${USERNAME}:${USERNAME} /usr/lib/kathara/
+if ! id -u $USERNAME > /dev/null 2>&1; then 
+	adduser --system --no-create-home --group --quiet --home /nonexistent $USERNAME
+	usermod -aG docker $USERNAME
 fi
 
-# This restarts the shell reading new groups from files
-newgrp -
+if id -u $USERNAME > /dev/null 2>&1; then    
+    chown -R ${USERNAME}:${USERNAME} /usr/lib/kathara/
+fi
+
+chmod u+s /usr/lib/kathara/kathara
 
 #DEBHELPER#
