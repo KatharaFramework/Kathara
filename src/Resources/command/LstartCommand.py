@@ -1,4 +1,7 @@
 import argparse
+import logging
+import re
+import sys
 
 from .. import utils
 from ..foundation.command.Command import Command
@@ -138,7 +141,7 @@ class LstartCommand(Command):
         # If dry mode, we just check if the lab.conf is correct.
         if args.dry_mode:
             print("lab.conf file is correct. Exiting...")
-            exit(0)
+            sys.exit(0)
 
         if len(lab.machines) <= 0:
             raise Exception("No machines in the current lab. Exiting...")

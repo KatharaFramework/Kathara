@@ -15,6 +15,7 @@ K8S = "k8s"
 
 POSSIBLE_SHELLS = ["/bin/bash", "/bin/sh", "/bin/ash", "/bin/ksh", "/bin/zsh", "/bin/fish", "/bin/csh", "/bin/tcsh"]
 POSSIBLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
+POSSIBLE_MANAGERS = ["docker"]
 
 ONE_WEEK = 604800
 

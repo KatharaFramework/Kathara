@@ -1,5 +1,5 @@
 import argparse
-import logging
+import re
 import sys
 
 from .. import utils
@@ -134,7 +134,12 @@ class VstartCommand(Command):
         lab = Lab(vlab_dir)
         lab.shared_folder = None
 
-        machine = lab.get_or_new_machine(args.name)
+        machine_name = args.name.strip()
+        matches = re.search(r"^[a-z0-9_]{1,30}$", machine_name)
+        if not matches:
+            raise Exception("Invalid machine name `%s`." % machine_name)
+
+        machine = lab.get_or_new_machine(machine_name)
 
         if args.eths:
             for eth in args.eths:

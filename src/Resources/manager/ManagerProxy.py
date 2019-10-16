@@ -1,9 +1,6 @@
-import pkgutil
-import os
-
 from .. import utils
 from ..foundation.manager.IManager import IManager
-from ..setting.Setting import Setting
+from ..setting.Setting import Setting, POSSIBLE_MANAGERS
 
 
 class ManagerProxy(IManager):
@@ -68,11 +65,9 @@ class ManagerProxy(IManager):
 
     @staticmethod
     def get_available_managers_name():
-        available_managers = ['docker']
-
         managers = {}
 
-        for manager_module_name in available_managers:
+        for manager_module_name in POSSIBLE_MANAGERS:
             manager_name = "%sManager" % manager_module_name.split('.')[-1].capitalize()
 
             manager = utils.class_for_name("Resources.manager." + manager_module_name, manager_name)()

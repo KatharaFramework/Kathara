@@ -1,5 +1,4 @@
 from datetime import datetime
-from itertools import islice
 from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool
 
@@ -50,14 +49,6 @@ def check_docker_status(method):
     return check_status
 
 
-def chunks(iterable, size):
-    it = iter(iterable)
-    item = list(islice(it, size))
-    while item:
-        yield item
-        item = list(islice(it, size))
-
-
 class DockerManager(IManager):
     __slots__ = ['docker_image', 'docker_machine', 'docker_link', 'client']
 
@@ -89,20 +80,19 @@ class DockerManager(IManager):
 
             machines = lab.machines.items()
             items = [machines] if len(machines) < cpus else \
-                                  chunks(machines, cpus)
-
-            def machine_chunk_process(item):
-                (_, machine) = item
-
-                self.docker_machine.deploy(machine)
-                self.docker_machine.start(machine)
+                                  utils.list_chunks(machines, cpus)
 
             for chunk in items:
-                machines_pool.map(func=machine_chunk_process, iterable=chunk)
+                machines_pool.map(func=self._deploy_and_start_machine, iterable=chunk)
         else:
-            for (_, machine) in lab.machines.items():
-                self.docker_machine.deploy(machine)
-                self.docker_machine.start(machine)
+            for item in lab.machines.items():
+                self._deploy_and_start_machine(item)
+
+    def _deploy_and_start_machine(self, machine_item):
+        (_, machine) = machine_item
+
+        self.docker_machine.deploy(machine)
+        self.docker_machine.start(machine)
 
     @check_docker_status
     def update_lab(self, lab_diff):

@@ -9,12 +9,13 @@ import sys
 import tarfile
 import tempfile
 from io import BytesIO
+from itertools import islice
 from sys import platform as _platform
-from .trdparty.consolemenu import PromptUtils, Screen
 
 from binaryornot.check import is_binary
 
 from .setting.Setting import EXCLUDED_FILES
+from .trdparty.consolemenu import PromptUtils, Screen
 
 # Platforms constants definition.
 MAC_OS = "darwin"
@@ -100,7 +101,7 @@ def get_vlab_temp_path(force_creation=True):
 
 def confirmation_prompt(prompt_string, callback_yes, callback_no):
     prompt_utils = PromptUtils(Screen())
-    answer = prompt_utils.prompt_for_bilateral_choice(prompt_string, 'yes', 'no')
+    answer = prompt_utils.prompt_for_bilateral_choice(prompt_string, 'y', 'n')
 
     if answer == "n":
         return callback_no()
@@ -187,3 +188,11 @@ def re_search_fail(expression, line):
         raise ValueError()
 
     return matches
+
+
+def list_chunks(iterable, size):
+    it = iter(iterable)
+    item = list(islice(it, size))
+    while item:
+        yield item
+        item = list(islice(it, size))
