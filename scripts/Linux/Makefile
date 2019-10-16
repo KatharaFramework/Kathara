@@ -1,6 +1,6 @@
 #!/usr/bin/make
 
-VERSION=0.47
+VERSION=2.0.0
 
 ARCHITECTURE:=$(shell dpkg --print-architecture)
 
