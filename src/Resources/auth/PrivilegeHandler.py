@@ -18,11 +18,14 @@ class PrivilegeHandler(object):
         if PrivilegeHandler.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
-            self.user_uid = os.getuid()
-            self.user_gid = os.getgid()
+            try:
+                self.user_uid = os.getuid()
+                self.user_gid = os.getgid()
 
-            self.effective_user_uid = os.geteuid()
-            self.effective_user_gid = os.getegid()
+                self.effective_user_uid = os.geteuid()
+                self.effective_user_gid = os.getegid()
+            except AttributeError:
+                pass
 
             PrivilegeHandler.__instance = self
 

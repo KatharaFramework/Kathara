@@ -100,7 +100,7 @@ class KatharaEntryPoint(object):
 if __name__ == '__main__':
     utils.check_python_version()
 
-    PrivilegeHandler.get_instance().drop_privileges()
+    utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
 
     try:
         debug_level = Setting.get_instance().debug_level
