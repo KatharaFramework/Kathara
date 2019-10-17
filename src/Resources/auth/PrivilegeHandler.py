@@ -1,53 +1,45 @@
-from .. import utils
-
-import os
 import logging
+import os
 
-class PrivilegeHandler():
-    __slots__ = ['manager', 'user_uid', 'user_gid', 'raised_uid', 'raised_gid']
+
+class PrivilegeHandler(object):
+    __slots__ = ['user_uid', 'user_gid', 'effective_user_uid', 'effective_user_gid']
 
     __instance = None
 
     @staticmethod
     def get_instance():
-        if PrivilegeManager.__instance is None:
-            PrivilegeManager()
+        if PrivilegeHandler.__instance is None:
+            PrivilegeHandler()
 
-        return PrivilegeManager.__instance
+        return PrivilegeHandler.__instance
 
     def __init__(self):
-        if PrivilegeManager.__instance is not None:
+        if PrivilegeHandler.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
             self.user_uid = os.getuid()
             self.user_gid = os.getgid()
 
-            self.raised_uid = os.geteuid()
-            self.raised_gid = os.getegid()
+            self.effective_user_uid = os.geteuid()
+            self.effective_user_gid = os.getegid()
 
-            PrivilegeManager.__instance = self
-
+            PrivilegeHandler.__instance = self
 
     def drop_privileges(self):
-        logging.debug("Dropping privileges...")
-        try:
-            os.setgid(self.user_gid)
-        except Exception:
-            pass
+        logging.debug("Dropping privileges to UID=%d and GID=%d..." % (self.user_uid, self.user_gid))
 
         try:
             os.setuid(self.user_uid)
-        except Exception:
+            os.setgid(self.user_gid)
+        except OSError:
             pass
 
     def raise_privileges(self):
-        logging.debug("Raising privileges...")
-        try:
-            os.setgid(self.raised_gid)
-        except Exception:
-            pass
+        logging.debug("Raising privileges to UID=%d and GID=%d..." % (self.effective_user_uid, self.effective_user_gid))
 
         try:
-            os.setuid(self.raised_uid)
-        except Exception:
+            os.setuid(self.effective_user_uid)
+            os.setgid(self.effective_user_gid)
+        except OSError:
             pass

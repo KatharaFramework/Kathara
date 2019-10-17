@@ -3,7 +3,6 @@ from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool
 
 import docker
-import logging
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from terminaltables import DoubleTable
 
@@ -11,10 +10,11 @@ from .DockerImage import DockerImage
 from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
 from ... import utils
+from ...auth.PrivilegeHandler import PrivilegeHandler
 from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
-from ...auth.PrivilegeHandler import PrivilegeHandler
+
 
 def pywin_import_stub():
     """
@@ -31,31 +31,36 @@ def pywin_import_win():
     return pywintypes
 
 
-def check_docker_status(method):
+def privileged(method):
     """
-    Decorator function to check if Docker daemon is up and running.
+    Decorator function to execute Docker daemon with proper privileges.
+    They are then dropped when method is executed.
     """
-    def check_status(*args, **kw):
-        PrivilegeHandler.get_instance().raise_privileges()
+    def exec_with_privileges(*args, **kw):
+        utils.exec_by_platform(PrivilegeHandler.get_instance().raise_privileges, lambda: None, lambda: None)
         result = method(*args, **kw)
-        PrivilegeHandler.get_instance().drop_privileges()
+        utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
+
         return result
 
-    return check_status
+    return exec_with_privileges
 
-def init_with_privileges(method):
+
+def check_docker_status(method):
     """
     Decorator function to start docker client with elevated privileges.
     """
-
     pywintypes = utils.exec_by_platform(pywin_import_stub, pywin_import_win, pywin_import_stub)
 
-    def init(*args, **kw):
+    @privileged
+    def check_docker(*args, **kw):
+        # Call the constructor first
         method(*args, **kw)
-        
+
+        # Client is initialized after constructor call
         client = args[0].client
 
-        PrivilegeHandler.get_instance().raise_privileges()
+        # Try to ping Docker, to see if it's running and raise an exception on failure
         try:
             client.ping()
         except RequestsConnectionError as e:
@@ -63,15 +68,13 @@ def init_with_privileges(method):
         except pywintypes.error as e:
             raise DockerDaemonConnectionError("Can not connect to Docker Daemon. %s" % str(e))
 
-        PrivilegeHandler.get_instance().drop_privileges()
-
-    return init
+    return check_docker
 
 
 class DockerManager(IManager):
     __slots__ = ['docker_image', 'docker_machine', 'docker_link', 'client']
 
-    @init_with_privileges
+    @check_docker_status
     def __init__(self):
         self.client = docker.from_env()
 
@@ -80,7 +83,7 @@ class DockerManager(IManager):
         self.docker_machine = DockerMachine(self.client, self.docker_image)
         self.docker_link = DockerLink(self.client)
 
-    @check_docker_status
+    @privileged
     def deploy_lab(self, lab):
         # Deploy all lab links.
         for (_, link) in lab.links.items():
@@ -114,7 +117,7 @@ class DockerManager(IManager):
         self.docker_machine.deploy(machine)
         self.docker_machine.start(machine)
 
-    @check_docker_status
+    @privileged
     def update_lab(self, lab_diff):
         # Deploy new links (if present)
         for (_, link) in lab_diff.links.items():
@@ -124,21 +127,21 @@ class DockerManager(IManager):
         for (_, machine) in lab_diff.machines.items():
             self.docker_machine.update(machine)
 
-    @check_docker_status
+    @privileged
     def undeploy_lab(self, lab_hash, selected_machines=None):
         self.docker_machine.undeploy(lab_hash,
                                      selected_machines=selected_machines
                                      )
         self.docker_link.undeploy(lab_hash)
 
-    @check_docker_status
+    @privileged
     def wipe(self, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
 
         self.docker_machine.wipe(user=user_name)
         self.docker_link.wipe(user=user_name)
 
-    @check_docker_status
+    @privileged
     def connect_tty(self, lab_hash, machine_name, shell, logs=False):
         self.docker_machine.connect(lab_hash=lab_hash,
                                     machine_name=machine_name,
@@ -146,7 +149,7 @@ class DockerManager(IManager):
                                     logs=logs
                                     )
 
-    @check_docker_status
+    @privileged
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
 
@@ -199,7 +202,7 @@ class DockerManager(IManager):
 
             yield("TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table)
 
-    @check_docker_status
+    @privileged
     def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
 
@@ -237,11 +240,11 @@ class DockerManager(IManager):
 
         return machine_info
 
-    @check_docker_status
+    @privileged
     def check_image(self, image_name):
         self.docker_image.check_and_pull(image_name)
 
-    @check_docker_status
+    @privileged
     def check_updates(self, settings):
         local_image_info = self.docker_image.check_local(settings.image)
         remote_image_info = self.docker_image.check_remote(settings.image)
@@ -258,7 +261,7 @@ class DockerManager(IManager):
                                       lambda: None
                                       )
 
-    @check_docker_status
+    @privileged
     def get_release_version(self):
         return self.client.version()["Version"]
 

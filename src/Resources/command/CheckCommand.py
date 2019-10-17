@@ -1,8 +1,8 @@
 import argparse
 import logging
 import sys
-import tempfile
 
+from .. import utils
 from .. import version
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
@@ -40,20 +40,22 @@ class CheckCommand(Command):
 
         print("*\tManager version is: %s" % ManagerProxy.get_instance().get_release_version())
 
+        print("*\tPython version is: %s" % sys.version.replace("\n", "- "))
+
+        print("*\tKathara version is: %s" % version.CURRENT_VERSION)
+
         print("*\tTrying to run `Hello World` container...")
 
         Setting.get_instance().open_terminals = False
-        lab = Lab(tempfile.gettempdir())
+
+        vlab_dir = utils.get_vlab_temp_path()
+        lab = Lab(vlab_dir)
         lab.shared_folder = None
-        machine = lab.get_or_new_machine("hello_world")
-        machine.add_meta("image", Setting.get_instance().image)
+        lab.get_or_new_machine("hello_world")
+
         try:
             ManagerProxy.get_instance().deploy_lab(lab)
             print("*\tContainer run successfully.")
             ManagerProxy.get_instance().undeploy_lab(lab.folder_hash)
         except Exception as e:
             logging.exception("\t! Running `Hello World` failed: %s" % str(e))
-
-        print("*\tPython version is: %s" % sys.version.replace("\n", "- "))
-
-        print("*\tKathara version is: %s" % version.CURRENT_VERSION)
