@@ -1,19 +1,12 @@
 #!/bin/sh
 
-USERNAME=kathara
-
 set -e
 set -x
 
-if ! id -u $USERNAME > /dev/null 2>&1; then 
-	adduser --system --no-create-home --group --quiet --home /nonexistent $USERNAME
-	usermod -aG docker $USERNAME
+if id -g docker > /dev/null 2>&1; then    
+    chown root:docker /usr/lib/kathara/kathara
 fi
 
-if id -u $USERNAME > /dev/null 2>&1; then    
-    chown -R ${USERNAME}:${USERNAME} /usr/lib/kathara/
-fi
-
-chmod u+s /usr/lib/kathara/kathara
+chmod g+s /usr/lib/kathara/kathara
 
 #DEBHELPER#
