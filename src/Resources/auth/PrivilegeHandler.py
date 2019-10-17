@@ -31,6 +31,10 @@ class PrivilegeHandler(object):
 
         try:
             os.setuid(self.user_uid)
+        except OSError:
+            pass
+
+        try:
             os.setgid(self.user_gid)
         except OSError:
             pass
@@ -40,6 +44,10 @@ class PrivilegeHandler(object):
 
         try:
             os.setuid(self.effective_user_uid)
+        except OSError:
+            pass
+
+        try:
             os.setgid(self.effective_user_gid)
         except OSError:
             pass
