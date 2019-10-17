@@ -48,7 +48,7 @@ def privileged(method):
 
 def check_docker_status(method):
     """
-    Decorator function to start docker client with elevated privileges.
+    Decorator function to check if Docker daemon is running properly.
     """
     pywintypes = utils.exec_by_platform(pywin_import_stub, pywin_import_win, pywin_import_stub)
 
