@@ -2,14 +2,15 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Kathara"
-#define MyAppVersion "0.47"
+#define MyAppVersion "2.0"
 #define MyAppPublisher "Kathara Team"
 #define MyAppURL "http://www.kathara.org"
 #define MyAppExeName "kathara.exe"
 
-#include "environment.iss"
+#include "Assets\environment.iss"
 
 [Setup]
+DisableWelcomePage=no
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{58CBACC8-FC29-4D5A-9C4D-3AD345884720}
@@ -27,10 +28,16 @@ LicenseFile=..\..\LICENSE
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 OutputBaseFilename=Kathara-setup
+SetupIconFile=Assets\app_icon.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 ChangesEnvironment=True
+ArchitecturesInstallIn64BitMode=x64
+UninstallDisplayIcon={app}\Kathara.exe
+
+[Messages]
+WelcomeLabel2=Kathara is a network emulation tool.%n%nThis will install [name/ver] on your computer.%n%nYou will be guided through the steps necessary to install this software.
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
