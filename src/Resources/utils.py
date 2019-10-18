@@ -23,6 +23,7 @@ WINDOWS = "win32"
 LINUX = "linux"
 LINUX2 = "linux2"
 
+
 def check_python_version():
     if sys.version_info < (3, 0):
         print("Python version should be greater than 3.0")
@@ -45,20 +46,21 @@ def get_absolute_path(path):
 
 
 def get_executable_path(exec_path):
-    # If kathara is in the path, everything is ok
+    # If it is in the path, everything is ok
     if shutil.which(exec_path):
         return exec_path
 
     exec_abs_path = get_absolute_path(exec_path)
 
     if os.path.exists(exec_abs_path):
-        # If kathara is launched as a python script
+        # If it is launched as a python script
         if exec_path.endswith(".py"):
             # Prepend python in windows because it has no shebang
             return exec_by_platform(lambda: exec_abs_path, lambda: "python %s" % exec_abs_path, lambda: exec_abs_path)
         else:
             # Maybe the executable is not in path, but is still a binary file
-            return  exec_abs_path
+            return exec_abs_path
+
     return None
 
 
@@ -124,7 +126,7 @@ def pack_file_for_tar(filename, arcname):
     file_content_patched = convert_win_2_linux(filename)
 
     file_content = BytesIO(file_content_patched)
-    tarinfo = tarfile.TarInfo(arcname)
+    tarinfo = tarfile.TarInfo(arcname.replace("\\", "/"))   # Tar files must have Linux-style paths
     tarinfo.size = len(file_content_patched)
 
     return tarinfo, file_content

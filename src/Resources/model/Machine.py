@@ -152,13 +152,14 @@ class Machine(object):
         if not executable_path:
             raise Exception("Unable to find Kathara.")
 
-        
+        connect_command = utils.exec_by_platform(lambda: "", lambda: "& ", lambda: "") + \
+                          "\"%s\" connect -l %s" % (executable_path, self.name)
+
         terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
         logging.debug("Terminal will open in directory %s." % self.lab.path)
 
         def unix_connect():
-            connect_command = "%s connect -l %s" % (executable_path, self.name)
             logging.debug("Opening Linux terminal with command: %s." % connect_command)
             # Command should be passed as an array
             # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
@@ -168,7 +169,6 @@ class Machine(object):
                              )
 
         def windows_connect():
-            connect_command = "& \"%s\" connect -l %s" % (executable_path, self.name)
             logging.debug("Opening Windows terminal with command: %s." % connect_command)
             subprocess.Popen(["powershell.exe",
                               '-Command',
@@ -179,7 +179,6 @@ class Machine(object):
                              )
 
         def osx_connect():
-            connect_command = "%s connect -l %s" % (executable_path, self.name)
             import appscript
             complete_osx_command = "cd %s && clear && %s && exit" % (self.lab.path, connect_command)
             logging.debug("Opening OSX terminal with command: %s." % complete_osx_command)
