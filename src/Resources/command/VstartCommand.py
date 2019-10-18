@@ -130,9 +130,10 @@ class VstartCommand(Command):
         else:
             print(utils.format_headers("Starting Machine"))
 
+        Setting.get_instance().shared_mount = False
+
         vlab_dir = utils.get_vlab_temp_path()
         lab = Lab(vlab_dir)
-        lab.shared_folder = None
 
         machine_name = args.name.strip()
         matches = re.search(r"^[a-z0-9_]{1,30}$", machine_name)

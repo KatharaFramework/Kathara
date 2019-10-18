@@ -1,6 +1,4 @@
 import argparse
-import logging
-import re
 import sys
 
 from .. import utils
@@ -97,6 +95,13 @@ class LstartCommand(Command):
             help='/hosthome dir will not be mounted inside the machine.'
         )
         parser.add_argument(
+            '-S', '--no-shared',
+            dest="no_shared",
+            required=False,
+            action='store_false',
+            help='/shared dir will not be mounted inside the machine.'
+        )
+        parser.add_argument(
             'machine_name',
             metavar='MACHINE_NAME',
             nargs='*',
@@ -110,6 +115,14 @@ class LstartCommand(Command):
 
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
         lab_path = utils.get_absolute_path(lab_path)
+
+        Setting.get_instance().open_terminals = args.terminals if args.terminals is not None \
+                                                else Setting.get_instance().open_terminals
+        Setting.get_instance().terminal = args.xterm or Setting.get_instance().terminal
+        Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
+                                                else Setting.get_instance().hosthome_mount
+        Setting.get_instance().shared_mount = args.no_shared if args.no_shared is not None \
+                                              else Setting.get_instance().shared_mount
 
         if args.dry_mode:
             print(utils.format_headers("Checking Lab"))
@@ -150,12 +163,6 @@ class LstartCommand(Command):
             lab.general_options = OptionParser.parse(args.options)
         except:
             raise Exception("--pass parameter not valid.")
-
-        Setting.get_instance().open_terminals = args.terminals if args.terminals is not None \
-                                                else Setting.get_instance().open_terminals
-        Setting.get_instance().terminal = args.xterm or Setting.get_instance().terminal
-        Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
-                                                else Setting.get_instance().hosthome_mount
 
         ManagerProxy.get_instance().deploy_lab(lab)
 

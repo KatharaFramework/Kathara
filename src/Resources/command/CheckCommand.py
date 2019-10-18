@@ -47,10 +47,10 @@ class CheckCommand(Command):
         print("*\tTrying to run `Hello World` container...")
 
         Setting.get_instance().open_terminals = False
+        Setting.get_instance().shared_mount = False
 
         vlab_dir = utils.get_vlab_temp_path()
         lab = Lab(vlab_dir)
-        lab.shared_folder = None
         lab.get_or_new_machine("hello_world")
 
         try:

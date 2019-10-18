@@ -128,7 +128,7 @@ class DockerMachine(object):
 
         volumes = {}
 
-        if machine.lab.shared_folder:
+        if Setting.get_instance().shared_mount and machine.lab.shared_folder:
             volumes = {machine.lab.shared_folder: {'bind': '/shared', 'mode': 'rw'}}
 
         # Mount the host home only if specified in settings.

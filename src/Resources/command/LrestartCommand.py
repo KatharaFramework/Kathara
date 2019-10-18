@@ -82,6 +82,13 @@ class LrestartCommand(Command):
             action='store_false',
             help='/hosthome dir will not be mounted inside the machine.'
         )
+        parser.add_argument(
+            '-S', '--no-shared',
+            dest="no_shared",
+            required=False,
+            action='store_false',
+            help='/shared dir will not be mounted inside the machine.'
+        )
 
         self.parser = parser
 

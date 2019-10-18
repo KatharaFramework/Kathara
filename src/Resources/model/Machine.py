@@ -238,12 +238,7 @@ class Machine(object):
         return None
 
     def get_ports(self):
-        if "port" in self.lab.general_options:
-            try:
-                return {'3000/tcp': int(self.lab.general_options["port"])}
-            except ValueError:
-                raise MachineOptionError("Port value not valid.")
-        elif "port" in self.meta:
+        if "port" in self.meta:
             try:
                 return {'3000/tcp': int(self.meta["port"])}
             except ValueError:

@@ -151,6 +151,29 @@ class SettingsCommand(Command):
 
         hosthome_item = SubmenuItem(hosthome_string, hosthome_menu, menu)
 
+        # Shared Mount Option
+        shared_string = "Automatically mount /shared on startup"
+        shared_menu = SelectionMenu(strings=[],
+                                    title=shared_string,
+                                    subtitle=current_bool("shared_mount"),
+                                    formatter=menu_formatter
+                                    )
+
+        shared_menu.append_item(FunctionItem(text="Yes",
+                                             function=self.set_setting_value,
+                                             args=["shared_mount", True],
+                                             should_exit=True
+                                             )
+                                )
+        shared_menu.append_item(FunctionItem(text="No",
+                                             function=self.set_setting_value,
+                                             args=["shared_mount", False],
+                                             should_exit=True
+                                             )
+                                )
+
+        shared_item = SubmenuItem(shared_string, shared_menu, menu)
+
         # Machine Shell Submenu
         machine_shell_string = "Choose machine shell to be used"
         machine_shell_menu = SelectionMenu(strings=[],
@@ -258,6 +281,7 @@ class SettingsCommand(Command):
         menu.append_item(manager_item)
         menu.append_item(open_terminals_item)
         menu.append_item(hosthome_item)
+        menu.append_item(shared_item)
         menu.append_item(machine_shell_item)
         menu.append_item(prefixes_item)
         menu.append_item(debug_level_item)
