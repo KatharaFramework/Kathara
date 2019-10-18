@@ -12,7 +12,7 @@ Homepage: http://www.kathara.org/
 
 Package: kathara
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, adduser (>=3)
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Suggests: docker.io (>= 17.03.2) | docker-ce (>= 17.03.2)
 Description: Network emulation tool.
 	It is an implementation of the notorious Netkit using Python.  

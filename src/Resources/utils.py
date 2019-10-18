@@ -46,20 +46,21 @@ def get_absolute_path(path):
 
 
 def get_executable_path(exec_path):
-    # If it is in the path, everything is ok
-    if shutil.which(exec_path):
-        return exec_path
-
     exec_abs_path = get_absolute_path(exec_path)
 
     if os.path.exists(exec_abs_path):
-        # If it is launched as a python script
+        # If kathara is launched as a python script
         if exec_path.endswith(".py"):
             # Prepend python in windows because it has no shebang
             return exec_by_platform(lambda: exec_abs_path, lambda: "python %s" % exec_abs_path, lambda: exec_abs_path)
         else:
             # Maybe the executable is not in path, but is still a binary file
-            return exec_abs_path
+            return  exec_abs_path
+    else:
+        # If kathara is in the path, return the absolute path of kathara
+        which_path = shutil.which(exec_path)
+        if which_path:
+            return which_path
 
     return None
 
