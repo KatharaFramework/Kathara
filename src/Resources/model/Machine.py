@@ -152,9 +152,7 @@ class Machine(object):
         if not executable_path:
             raise Exception("Unable to find Kathara.")
 
-        connect_command = utils.exec_by_platform(lambda: "", lambda: "& ", lambda: "") + \
-                          "\"%s\" connect -l %s" % (executable_path, self.name)
-
+        connect_command = "\"%s\" connect -l %s" % (executable_path, self.name)
         terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
         logging.debug("Terminal will open in directory %s." % self.lab.path)
@@ -169,10 +167,11 @@ class Machine(object):
                              )
 
         def windows_connect():
-            logging.debug("Opening Windows terminal with command: %s." % connect_command)
+            complete_win_command = "& %s" % connect_command
+            logging.debug("Opening Windows terminal with command: %s." % complete_win_command)
             subprocess.Popen(["powershell.exe",
                               '-Command',
-                              connect_command
+                              complete_win_command
                               ],
                              creationflags=subprocess.CREATE_NEW_CONSOLE,
                              cwd=self.lab.path
