@@ -35,6 +35,11 @@ Checks on the correctness of the configuration are performed each time a Kathara
 
 	Default to `false`.
 
+* `shared_mount` (boolean):
+	This parameter specifies if the `/shared` dir will be mounted inside the machine. The "shared" folder inside the lab folder is made available for reading/writing inside the machine under the special directory `/shared`.  
+
+	Default to `true`.
+
 * `machine_shell` (string):
 	This parameter determines the shell to use inside the machine. The application must be correctly installed in the Docker image used for the machine. Possible examples are: bash, sh, fish, and so on.
 
