@@ -1,0 +1,45 @@
+m4_changequote()
+kathara-wipe(1) -- Delete all Kathara machines and links, optionally also delete settings
+=============================================
+
+## SYNOPSIS
+
+`kathara wipe` [`-h`] [`-f`] [`-s` | `-a`]
+
+## DESCRIPTION
+
+Gracefully shut down ALL running Kathara machines of current user.
+
+Using optional parameters, it is also possible to delete the current user settings or the Kathara machines of all users in the host.
+
+## OPTIONS
+
+* `-h`, `--help`:
+    Show an help message and exit.
+
+* `-f`, `--force`:
+    Force the wipe.
+
+    If not set, Kathara ask for confirmation before wiping.
+
+* `-s`, `--settings`:
+    Wipe the stored settings of the current user.
+
+    Delete the `kathara.config`(5) file and create it again with default settings.
+
+* `-a`, `--all`:
+    Wipe all Kathara machines and links of all users. MUST BE ROOT FOR THIS OPTION.
+
+    This option can be run only by `root` user. Cannot be used with `-s` or `--settings`.
+
+## EXAMPLES
+
+    kathara wipe -s
+
+Wipes the current user settings but not the running Kathara machines.
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-vstart`(1), `kathara-lstart`(1)

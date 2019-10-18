@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<installer-script minSpecVersion="1.000000">
+    <title>Kathara</title>
+    <background mime-type="image/png" file="banner.png" scaling="proportional"/>
+    <welcome file="welcome.html" mime-type="text/html" />
+    <license file="LICENSE" />
+    <conclusion file="conclusion.html" mime-type="text/html" />
+    <options customize="never" allow-external-scripts="no"/>
+    <domains enable_localSystem="true" />
+    <installation-check script="installCheck();"/>
+    <script>
+function installCheck() {
+    if(!(system.compareVersions(system.version.ProductVersion, '10.6.0') >= 0)) {
+        my.result.title = 'Unable to install';
+        my.result.message = 'Kathara requires Mac OS X 10.6 or later.';
+        my.result.type = 'Fatal';
+        return false;
+    }
+    if(system.files.fileExistsAtPath('/Library/Kathara/')) {
+        my.result.title = 'Previous Installation Detected';
+        my.result.message = 'A previous installation of Kathara exists at /Library/Kathara/. This installer will remove the previous installation prior to installing. Please back up any data before proceeding.';
+        my.result.type = 'Warning';
+        return false;
+    }
+    return true;
+}
+    </script>
+    <choices-outline>
+        <line choice="Kathara"/>
+    </choices-outline>
+    <choice id="Kathara" title="Kathara">
+        <pkg-ref id="Kathara.pkg"/>
+    </choice>
+    <pkg-ref id="Kathara.pkg" auth="Root">Kathara.pkg</pkg-ref>
+</installer-script>

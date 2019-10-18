@@ -1,0 +1,36 @@
+m4_changequote()
+kathara-vconfig(1) -- Attach network interfaces to a running Kathara machine
+=============================================
+
+## SYNOPSIS
+
+`kathara vconfig` [`-h`] `-n` <MACHINE_NAME> `--eth` <CD> [<CD> ...]
+
+## DESCRIPTION
+
+Attach network interfaces to running machines "on the fly". The affected machine is identified by <MACHINE_NAME>, which is the name of a running machine. 
+
+## OPTIONS
+
+* `-h`, `--help`:
+    Show a help message and exit.
+
+* `-n` <MACHINE_NAME>, `--name` <MACHINE_NAME>:
+    Name of the machine to be connected on desired collision domains.
+
+* `--eth` <CD> [<CD> ...]:
+	Specify the collision domain for an interface.
+
+    Equip the machine with an additional network interface attached to a (virtual) collision domain whose name is <CD>. The number of the resulting network interface is generated incrementing the number of the last network interface of the machine.
+
+## EXAMPLES
+
+    kathara vconfig -n pc1 --eth X Y
+
+Two new interfaces will be added to the machine pc1: the first one will be attached to the collision domain named X, while the other one to the collision domain named Y. Both the interfaces will have to be configured by hand inside the machine (for example, by using ifconfig).
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-vstart`(1), `kathara-vclean`(1)

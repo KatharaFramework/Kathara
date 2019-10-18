@@ -1,0 +1,25 @@
+m4_changequote()
+kathara-settings(1) -- Show and edit settings
+=============================================
+
+## SYNOPSIS
+
+`kathara settings` [`-h`]
+
+
+## DESCRIPTION
+
+Display all the possible Kathara settings. It shows a simple console interface for changing all values in `kathara.conf`(5).
+
+For details about the possible settings and possible values please refer to `kathara.conf`(5).
+
+## OPTIONS
+
+* `-h`, `--help`:
+    Show an help message and exit.
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara.conf`(5)

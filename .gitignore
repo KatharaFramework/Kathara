@@ -28,7 +28,7 @@ var/
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+
 
 # Installer logs
 pip-log.txt
@@ -87,3 +87,29 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# temp files
+*.sh~
+Dockerfile~
+*.py~
+
+# builds
+src/kathara.build/
+src/kathara.dist/
+
+
+config
+.vscode/
+test/
+.vs/
+
+.idea/
+
+# ISS Compiled file
+scripts/Windows/Output/
+scripts/OSX/Output/
+
+docs/Html/
+docs/MD/
+docs/Roff/
+.DS_Store

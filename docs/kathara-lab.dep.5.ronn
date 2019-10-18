@@ -1,0 +1,28 @@
+m4_changequote()
+kathara-lab.dep(5) -- Lab dependencies file
+=============================================
+
+## DESCRIPTION
+
+It is simply a list of rules, with the following syntax:
+
+	MACHINE: MACHINE1 MACHINE2 ...
+
+Where `MACHINE`, `MACHINE1`, `MACHINE2`, ... are names of machines.
+
+The rule states that `MACHINE` can only be started after `MACHINE1`, `MACHINE2`, ...
+
+Lines starting with a hash character (`#`) are assumed to be comments and simply ignored.
+
+## EXAMPLE
+
+		pc1: pc2 pc3
+		pc3: pc2
+  
+Example of a `lab.dep`(5) file.
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-lstart`(1), [Kathara official site](http://www.kathara.org)

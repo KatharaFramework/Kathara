@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -e
+
+if ! id -g docker > /dev/null 2>&1; then    
+    chown root:docker /usr/lib/kathara/kathara
+fi
+
+chmod g+s /usr/lib/kathara/kathara
+
+#DEBHELPER#
