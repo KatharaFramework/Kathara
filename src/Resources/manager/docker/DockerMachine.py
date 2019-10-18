@@ -304,7 +304,7 @@ class DockerMachine(object):
             # Else, check if the machine is in the list.
             if not selected_machines or \
                machine.labels["name"] in selected_machines:
-                logging.debug("Deleting container `%s`..." % machine.name)
+                logging.info("Deleting machine %s." % machine.labels["name"])
 
                 self.delete_machine(machine)
 

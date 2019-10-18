@@ -3,6 +3,7 @@ from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool
 
 import docker
+import logging
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from terminaltables import DoubleTable
 
@@ -87,6 +88,7 @@ class DockerManager(IManager):
     def deploy_lab(self, lab):
         # Deploy all lab links.
         for (_, link) in lab.links.items():
+            logging.info("Deploying link %s." % link.name)
             self.docker_link.deploy(link)
 
         # Create a docker bridge link in the lab object and assign the Docker Network object associated to it.
@@ -115,6 +117,8 @@ class DockerManager(IManager):
         (_, machine) = machine_item
 
         self.docker_machine.deploy(machine)
+
+        logging.info("Starting machine %s." % machine.name)
         self.docker_machine.start(machine)
 
     @privileged
