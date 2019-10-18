@@ -15,7 +15,7 @@ from Resources.auth.PrivilegeHandler import PrivilegeHandler
 
 description_msg = """kathara [-v|--version] <command> [<args>]
 
-The possible kathara command are:\n
+The possible Kathara command are:\n
 %s
 """ % formatted_strings()
 
@@ -44,7 +44,7 @@ class KatharaEntryPoint(object):
         parser.add_argument(
             "-v", "--version",
             action="store_true",
-            help='Print current Kathara version.',
+            help='Print the current Kathara version.',
             required=False
         )
 
