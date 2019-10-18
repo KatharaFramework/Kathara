@@ -96,9 +96,6 @@ class Setting(object):
         if os.path.exists(SETTING_PATH):
             os.remove(SETTING_PATH)
 
-        Setting.__instance = None
-        Setting.get_instance()
-
     def save(self, content=None):
         """
         Saves settings to a config.json file in the Kathara path.
