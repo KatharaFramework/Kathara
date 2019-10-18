@@ -7,7 +7,7 @@ kathara-lrestart(1) -- Restart a Kathara lab
 `kathara lrestart`
 >           [`-h`] [`-n` | `-t`] [`-d` <DIRECTORY>] [`-F`] [`-l`]  
 >           [`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>]  
->           [`-H`] [`-c` <COUNTER>]
+>           [`-H`] [`-S`]
 
 
 ## DESCRIPTION
@@ -55,6 +55,11 @@ Mainly it has the same options of `lstart` with the lack of some options (e.g. `
     `/hosthome` dir will not be mounted inside the machine.
 
     By default, the home directory of the current user is made available for reading/writing inside the machine under the special directory `/hosthome`. This option disables this behaviour, thus not making the host filesystem accessible from inside the machine. Override the default setting specified in `kathara.conf`(5) file.
+
+* `-S`, `--no-shared`:
+    `/shared` dir will not be mounted inside the machine.
+
+    By default, the shared directory inside the lab folder is made available for reading/writing inside the machine under the special directory `/shared`. This option disables this behaviour, thus not making the host filesystem accessible from inside the machine. Override the default setting specified in `kathara.conf`(5) file.
 
 m4_include(footer.txt)
 
