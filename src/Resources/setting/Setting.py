@@ -52,8 +52,8 @@ class Setting(object):
             self.manager_type = 'docker'
             self.terminal = '/usr/bin/xterm'
             self.open_terminals = True
-            self.shared_mount = True
             self.hosthome_mount = False
+            self.shared_mount = True
             self.machine_shell = "/bin/bash"
             self.net_prefix = 'kathara'
             self.machine_prefix = 'kathara'
@@ -203,8 +203,8 @@ class Setting(object):
                 "manager_type": self.manager_type,
                 "terminal": self.terminal,
                 "open_terminals": self.open_terminals,
-                "shared_mount": self.shared_mount,
                 "hosthome_mount": self.hosthome_mount,
+                "shared_mount": self.shared_mount,
                 "machine_shell": self.machine_shell,
                 "net_prefix": self.net_prefix,
                 "machine_prefix": self.machine_prefix,

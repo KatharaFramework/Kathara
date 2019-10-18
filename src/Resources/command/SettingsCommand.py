@@ -42,7 +42,7 @@ class SettingsCommand(Command):
 
         # Main Menu
         menu = ConsoleMenu(title="Kathara Settings",
-                           prologue_text="Choose the option to change",
+                           prologue_text="Choose the option to change.",
                            formatter=menu_formatter
                            )
 
@@ -51,7 +51,9 @@ class SettingsCommand(Command):
         select_image_menu = SelectionMenu(strings=[],
                                           title=image_string,
                                           subtitle=current_string("image"),
-                                          prologue_text="Default Docker image when you start a lab or a single machine",
+                                          prologue_text="""Default Docker image when you start a lab or """
+                                                        """a single machine.
+                                                        Default is `kathara/quagga`.""",
                                           formatter=menu_formatter
                                           )
 
@@ -92,6 +94,8 @@ class SettingsCommand(Command):
         manager_menu = SelectionMenu(strings=[],
                                      title=choose_manager_string,
                                      subtitle=lambda: "Current: %s" % managers[manager_type],
+                                     prologue_text="""Manager in the Engine used to run Kathara machines.
+                                                   Default is `Docker`.""",
                                      formatter=menu_formatter
                                      )
 
@@ -110,6 +114,8 @@ class SettingsCommand(Command):
         open_terminals_menu = SelectionMenu(strings=[],
                                             title=open_terminals_string,
                                             subtitle=current_bool("open_terminals"),
+                                            prologue_text="""Determines if machine terminal should be opened when starting it.
+                                                          Default is Yes.""",
                                             formatter=menu_formatter
                                             )
 
@@ -133,6 +139,10 @@ class SettingsCommand(Command):
         hosthome_menu = SelectionMenu(strings=[],
                                       title=hosthome_string,
                                       subtitle=current_bool("hosthome_mount"),
+                                      prologue_text="""The home directory of the current user is made available for """
+                                                    """reading/writing inside the machine under the special """
+                                                    """directory `/hosthome`. 
+                                                    Default is No.""",
                                       formatter=menu_formatter
                                       )
 
@@ -156,6 +166,11 @@ class SettingsCommand(Command):
         shared_menu = SelectionMenu(strings=[],
                                     title=shared_string,
                                     subtitle=current_bool("shared_mount"),
+                                    prologue_text="""The shared directory inside the lab folder is made available """
+                                                  """for reading/writing inside the machine under the special """
+                                                  """directory `/shared`.
+                                                  
+                                                  Default is Yes.""",
                                     formatter=menu_formatter
                                     )
 
@@ -180,7 +195,11 @@ class SettingsCommand(Command):
                                            title=machine_shell_string,
                                            subtitle=current_string("machine_shell"),
                                            formatter=menu_formatter,
-                                           prologue_text="ATTENZIONE CHE DEVE ESISTERE NELLA IMAGE IMPOSTATA!"
+                                           prologue_text="""The shell to use inside the machine. 
+                                           ***The application must be correctly installed in the Docker image used """
+                                           """for the machine!***
+                                           Default is `/bin/bash`, but it depends on the used Docker image.
+                                           """
                                            )
 
         for shell in POSSIBLE_SHELLS:
@@ -208,7 +227,8 @@ class SettingsCommand(Command):
         prefixes_menu = SelectionMenu(strings=[],
                                       title=prefixes_string,
                                       formatter=menu_formatter,
-                                      prologue_text="Text Here"
+                                      prologue_text="""Prefixes assigned to the network and machine names when deployed.
+                                                    Default is `kathara`."""
                                       )
 
         net_prefix_item = FunctionItem(text=current_string("net_prefix", text="Insert Kathara networks prefix"),
@@ -236,12 +256,13 @@ class SettingsCommand(Command):
         prefixes_item = SubmenuItem(prefixes_string, prefixes_menu, menu)
 
         # Debug Level Submenu
-        debug_level_string = "Choose debug level to be used"
+        debug_level_string = "Choose logging level to be used"
         debug_level_menu = SelectionMenu(strings=[],
                                          title=debug_level_string,
                                          subtitle=current_string("debug_level"),
                                          formatter=menu_formatter,
-                                         prologue_text="Text here"
+                                         prologue_text="""Logging level of Kathara messages.
+                                                       Default is `INFO`."""
                                          )
 
         for debug_level in POSSIBLE_DEBUG_LEVELS:
@@ -259,7 +280,9 @@ class SettingsCommand(Command):
         print_startup_log_menu = SelectionMenu(strings=[],
                                                title=open_terminals_string,
                                                subtitle=current_bool("print_startup_log"),
-                                               formatter=menu_formatter
+                                               formatter=menu_formatter,
+                                               prologue_text="""When opening a machine terminal, print its startup log.
+                                                             Default is Yes."""
                                                )
 
         print_startup_log_menu.append_item(FunctionItem(text="Yes",

@@ -56,7 +56,7 @@ Checks on the correctness of the configuration are performed each time a Kathara
 	Default to `kathara`.
 
 * `debug_level` (string):
-	Debug level of Kathara messages. Must be one of the following: CRITICAL, ERROR, WARNING, INFO or DEBUG.
+	Logging level of Kathara messages. Must be one of the following: CRITICAL, ERROR, WARNING, INFO or DEBUG.
 
 	Default to `INFO`.
 
