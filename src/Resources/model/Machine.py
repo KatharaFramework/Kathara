@@ -10,8 +10,8 @@ from glob import glob
 
 from .Link import BRIDGE_LINK_NAME
 from .. import utils
+from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError
 from ..setting.Setting import Setting
-from ..exceptions import NonSequentialMachineInterfaceError
 
 
 class Machine(object):
@@ -184,6 +184,72 @@ class Machine(object):
             appscript.app('Terminal').do_script(complete_osx_command)
 
         utils.exec_by_platform(unix_connect, windows_connect, osx_connect)
+
+    def get_image(self):
+        """
+        Docker image, if defined in options or machine meta. If not use default one.
+        :return: The Docker image to be used
+        """
+        return self.lab.general_options["image"] if "image" in self.lab.general_options else \
+               self.meta["image"] if "image" in self.meta \
+               else Setting.get_instance().image
+
+    def get_mem(self):
+        """
+        Memory limit, if defined in options. If not use the value from machine meta.
+        :return: The memory limit of the image.
+        """
+        memory = self.lab.general_options["mem"] if "mem" in self.lab.general_options else \
+                 self.meta["mem"] if "mem" in self.meta else None
+
+        if memory:
+            unit = memory[-1].lower()
+            if unit not in ["b", "k", "m", "g"]:
+                try:
+                    return "%sm" % int(memory)
+                except ValueError:
+                    raise MachineOptionError("Memory value not valid.")
+
+            try:
+                return "%s%s" % (int(memory[:-1]), unit)
+            except ValueError:
+                raise MachineOptionError("Memory value not valid.")
+
+        return memory
+
+    def get_cpu(self):
+        """
+        CPU limit, defined as nano CPUs (10*e-9).
+        User should pass a float value ranging from 0 to max user CPUs.
+        It is took from options, or machine meta.
+        :return: 
+        """
+        if "cpus" in self.lab.general_options:
+            try:
+                return int(float(self.lab.general_options["cpus"]) * 1e9)
+            except ValueError:
+                raise MachineOptionError("CPU value not valid.")
+        elif "cpus" in self.meta:
+            try:
+                return int(float(self.meta["cpus"]) * 1e9)
+            except ValueError:
+                raise MachineOptionError("CPU value not valid.")
+
+        return None
+
+    def get_ports(self):
+        if "port" in self.lab.general_options:
+            try:
+                return {'3000/tcp': int(self.lab.general_options["port"])}
+            except ValueError:
+                raise MachineOptionError("Port value not valid.")
+        elif "port" in self.meta:
+            try:
+                return {'3000/tcp': int(self.meta["port"])}
+            except ValueError:
+                raise MachineOptionError("Port value not valid.")
+
+        return None
 
     def __repr__(self):
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

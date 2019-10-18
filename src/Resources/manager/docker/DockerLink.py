@@ -115,20 +115,21 @@ class DockerLink(object):
         }
 
         def no_privilege_patch():
-            logging.debug("Appying brctl patch without privilege escalation "
-                          "on network `%s`..." % network.name
-                          )
-
             # Directly patch /sys/class opening the files
             for (path, value) in patches.items():
                 try:
                     with open(path.format(net_id=network.id[:12]), 'w') as sys_class:
+                        logging.debug("Applying brctl patch without privilege escalation "
+                                      "on network `%s`..." % network.name
+                                      )
+
                         sys_class.write(str(value))
                 except PermissionError:
+                    logging.debug("Failed to patch `%s`." % network.name)
                     privilege_patch()
 
         def privilege_patch():
-            logging.debug("Appying brctl patch with privilege escalation "
+            logging.debug("Applying brctl patch with privilege escalation "
                           "on network `%s`..." % network.name
                           )
 

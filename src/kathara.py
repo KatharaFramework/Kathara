@@ -7,15 +7,15 @@ import sys
 
 import coloredlogs
 from Resources import utils
+from Resources.auth.PrivilegeHandler import PrivilegeHandler
 from Resources.exceptions import SettingsError, DockerDaemonConnectionError
 from Resources.setting.Setting import Setting
 from Resources.strings import formatted_strings
 from Resources.version import CURRENT_VERSION
-from Resources.auth.PrivilegeHandler import PrivilegeHandler
 
 description_msg = """kathara [-v|--version] <command> [<args>]
 
-The possible Kathara command are:\n
+Possible Kathara commands are:\n
 %s
 """ % formatted_strings()
 

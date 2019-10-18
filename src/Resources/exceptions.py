@@ -24,3 +24,7 @@ class MachineAlreadyExistsError(Exception):
 
 class NonSequentialMachineInterfaceError(Exception):
     pass
+
+
+class MachineOptionError(Exception):
+    pass

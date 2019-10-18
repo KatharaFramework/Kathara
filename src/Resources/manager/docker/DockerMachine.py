@@ -92,42 +92,13 @@ class DockerMachine(object):
     def deploy(self, machine):
         logging.debug("Creating machine `%s`..." % machine.name)
 
+        image = machine.get_image()
+        memory = machine.get_mem()
+        cpus = machine.get_cpu()
+        ports = machine.get_ports()
+
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options
-
-        # Container image, if defined in machine meta. If not use default one.
-        image = options["image"] if "image" in options else machine.meta["image"] if "image" in machine.meta \
-                else Setting.get_instance().image
-        # Memory limit, if defined in options. If not use the value from machine meta.
-        memory = options["mem"] if "mem" in options else machine.meta["mem"] if "mem" in machine.meta else None
-
-        # CPU limit, defined as nano CPUs (10*e-9).
-        # User should pass a float value ranging from 0 to max user CPUs.
-        # It is took from options, or machine meta.
-        cpus = None
-        if "cpus" in options:
-            try:
-                cpus = int(float(options["cpus"]) * 1e9)
-            except ValueError:
-                pass
-        elif "cpus" in machine.meta:
-            try:
-                cpus = int(float(machine.meta["cpus"]) * 1e9)
-            except ValueError:
-                pass
-
-        # Bind the port 3000 of the container to a defined port (if present).
-        ports = None
-        if "port" in options:
-            try:
-                ports = {'3000/tcp': int(options["port"])}
-            except ValueError:
-                pass
-        elif "port" in machine.meta:
-            try:
-                ports = {'3000/tcp': int(machine.meta["port"])}
-            except ValueError:
-                pass
 
         # If bridged is required in command line but not defined in machine meta, add it.
         if "bridged" in options and not machine.bridge:
