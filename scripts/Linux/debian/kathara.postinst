@@ -2,7 +2,7 @@
 
 set -e
 
-if ! id -g docker > /dev/null 2>&1; then    
+if [ $(getent group docker) ]; then    
     chown root:docker /usr/lib/kathara/kathara
 fi
 
