@@ -13,7 +13,7 @@ from Resources.setting.Setting import Setting
 from Resources.strings import formatted_strings
 from Resources.version import CURRENT_VERSION
 
-description_msg = """kathara [-v|--version] <command> [<args>]
+description_msg = """kathara [-h] [-v] <command> [<args>]
 
 Possible Kathara commands are:\n
 %s
@@ -99,6 +99,7 @@ class KatharaEntryPoint(object):
 
 if __name__ == '__main__':
     utils.check_python_version()
+    
     utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
 
     try:
