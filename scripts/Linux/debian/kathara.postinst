@@ -2,8 +2,8 @@
 
 set -e
 
-if [ $(getent group pincopanco) ]; then    
-    chown root:docker /usr/lib/kathara/kathara;
+if [ $(getent group docker) ]; then    
+    chown root:docker /usr/lib/kathara/kathara
 fi
 
 chmod g+s /usr/lib/kathara/kathara
