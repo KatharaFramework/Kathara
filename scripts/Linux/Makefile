@@ -4,7 +4,10 @@ VERSION=2.0.0
 
 ARCHITECTURE:=$(shell dpkg --print-architecture)
 
-.PHONY: deb deps clean
+.PHONY: deb deps clean docker
+
+docker:
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make clean && make deb"
 
 deb:
 	mkdir Output
