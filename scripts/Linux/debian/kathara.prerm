@@ -2,6 +2,6 @@
 
 set -e
 
-/usr/lib/kathara/kathara wipe -f -a
+/usr/lib/kathara/kathara wipe -f -a 2> /dev/null || true
 
 #DEBHELPER#
