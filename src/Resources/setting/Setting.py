@@ -14,6 +14,7 @@ DOCKER = "docker"
 K8S = "k8s"
 
 POSSIBLE_SHELLS = ["/bin/bash", "/bin/sh", "/bin/ash", "/bin/ksh", "/bin/zsh", "/bin/fish", "/bin/csh", "/bin/tcsh"]
+POSSIBLE_TERMINALS = ["/usr/bin/xterm", "/usr/bin/konsole"]
 POSSIBLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
 POSSIBLE_MANAGERS = ["docker"]
 
@@ -21,6 +22,19 @@ ONE_WEEK = 604800
 
 SETTING_FOLDER = None
 SETTING_PATH = None
+DEFAULTS = {
+    "image": 'kathara/quagga',
+    "manager_type": 'docker',
+    "terminal": '/usr/bin/xterm',
+    "open_terminals": True,
+    "hosthome_mount": False,
+    "shared_mount": True,
+    "machine_shell": '/bin/bash',
+    "net_prefix": 'kathara',
+    "machine_prefix": 'kathara',
+    "debug_level": 'INFO',
+    "print_startup_log": True
+}
 EXCLUDED_FILES = ['.DS_Store']
 EXCLUDED_IMAGES = ['megalos-bgp-manager']
 
@@ -47,18 +61,10 @@ class Setting(object):
             SETTING_FOLDER = os.path.join(utils.get_current_user_home(), ".config")
             SETTING_PATH = os.path.join(SETTING_FOLDER, "kathara.conf")
 
-            # Default values to use
-            self.image = 'kathara/quagga'
-            self.manager_type = 'docker'
-            self.terminal = '/usr/bin/xterm'
-            self.open_terminals = True
-            self.hosthome_mount = False
-            self.shared_mount = True
-            self.machine_shell = "/bin/bash"
-            self.net_prefix = 'kathara'
-            self.machine_prefix = 'kathara'
-            self.debug_level = "INFO"
-            self.print_startup_log = True
+            # Load default settings to use
+            for (name, value) in DEFAULTS.items():
+                setattr(self, name, value)
+
             self.last_checked = time.time() - ONE_WEEK
 
             self.load()

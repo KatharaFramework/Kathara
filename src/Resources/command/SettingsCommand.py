@@ -2,7 +2,8 @@ from ..api.DockerHubApi import DockerHubApi
 from ..exceptions import HTTPConnectionError
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
-from ..setting.Setting import Setting, POSSIBLE_SHELLS, POSSIBLE_DEBUG_LEVELS, EXCLUDED_IMAGES
+from ..setting.Setting import Setting, DEFAULTS, POSSIBLE_SHELLS, POSSIBLE_TERMINALS, POSSIBLE_DEBUG_LEVELS, \
+                              EXCLUDED_IMAGES
 from ..trdparty.consolemenu import *
 from ..trdparty.consolemenu.format import MenuBorderStyleType
 from ..trdparty.consolemenu.items import *
@@ -13,9 +14,13 @@ SAVED_STRING = "Saved successfully!\n"
 PRESS_ENTER_STRING = "Press [Enter] to continue."
 
 
+def format_bool(value):
+    return "Yes" if value else "No"
+
+
 def current_bool(attribute_name, text=None):
     return lambda: "%sCurrent: %s%s" % (text + " (" if text else "",
-                                        ("Yes" if getattr(Setting.get_instance(), attribute_name) else "No"),
+                                        (format_bool(getattr(Setting.get_instance(), attribute_name))),
                                         ")" if text else ""
                                         )
 
@@ -53,7 +58,7 @@ class SettingsCommand(Command):
                                           subtitle=current_string("image"),
                                           prologue_text="""Default Docker image when you start a lab or """
                                                         """a single machine.
-                                                        Default is `kathara/quagga`.""",
+                                                        Default is `%s`.""" % DEFAULTS['image'],
                                           formatter=menu_formatter
                                           )
 
@@ -95,7 +100,7 @@ class SettingsCommand(Command):
                                      title=choose_manager_string,
                                      subtitle=lambda: "Current: %s" % managers[manager_type],
                                      prologue_text="""Manager in the Engine used to run Kathara machines.
-                                                   Default is `Docker`.""",
+                                                   Default is `%s`.""" % DEFAULTS['manager_type'],
                                      formatter=menu_formatter
                                      )
 
@@ -115,7 +120,7 @@ class SettingsCommand(Command):
                                             title=open_terminals_string,
                                             subtitle=current_bool("open_terminals"),
                                             prologue_text="""Determines if machine terminal should be opened when starting it.
-                                                          Default is Yes.""",
+                                                          Default is %s.""" % format_bool(DEFAULTS['open_terminals']),
                                             formatter=menu_formatter
                                             )
 
@@ -142,7 +147,7 @@ class SettingsCommand(Command):
                                       prologue_text="""The home directory of the current user is made available for """
                                                     """reading/writing inside the machine under the special """
                                                     """directory `/hosthome`. 
-                                                    Default is No.""",
+                                                    Default is %s.""" % format_bool(DEFAULTS['hosthome_mount']),
                                       formatter=menu_formatter
                                       )
 
@@ -170,7 +175,7 @@ class SettingsCommand(Command):
                                                   """for reading/writing inside the machine under the special """
                                                   """directory `/shared`.
                                                   
-                                                  Default is Yes.""",
+                                                  Default is %s.""" % format_bool(DEFAULTS['shared_mount']),
                                     formatter=menu_formatter
                                     )
 
@@ -196,10 +201,10 @@ class SettingsCommand(Command):
                                            subtitle=current_string("machine_shell"),
                                            formatter=menu_formatter,
                                            prologue_text="""The shell to use inside the machine. 
-                                           ***The application must be correctly installed in the Docker image used """
-                                           """for the machine!***
-                                           Default is `/bin/bash`, but it depends on the used Docker image.
-                                           """
+                                           **The application must be correctly installed in the Docker image used """
+                                           """for the machine!**
+                                           Default is `%s`, but it depends on the used Docker image.
+                                           """ % DEFAULTS['machine_shell']
                                            )
 
         for shell in POSSIBLE_SHELLS:
@@ -222,13 +227,47 @@ class SettingsCommand(Command):
 
         machine_shell_item = SubmenuItem(machine_shell_string, machine_shell_menu, menu)
 
+        # Terminal Emulator Submenu
+        terminal_string = "Choose terminal emulator to be used"
+        terminal_menu = SelectionMenu(strings=[],
+                                      title=terminal_string,
+                                      subtitle=current_string("terminal"),
+                                      formatter=menu_formatter,
+                                      prologue_text="""The terminal emulator application to be used for machine terminals.
+                                                    **The application must be correctly installed in the host system!**
+                                                    This setting is only used on Linux systems.
+                                                    Default is `%s`.
+                                                    """ % DEFAULTS['terminal']
+                                      )
+
+        for terminal in POSSIBLE_TERMINALS:
+            terminal_menu.append_item(FunctionItem(text=terminal,
+                                                   function=self.set_setting_value,
+                                                   args=["terminal", terminal],
+                                                   should_exit=True
+                                                   )
+                                      )
+        terminal_menu.append_item(FunctionItem(text="Choose another terminal emulator",
+                                               function=self.read_value,
+                                               args=['terminal',
+                                                     RegexValidator(r"^(\w|/)+$"),
+                                                     'Write the name of a terminal emulator:',
+                                                     'Terminal emulator is not valid!'
+                                                     ],
+                                               should_exit=True
+                                               )
+                                  )
+
+        terminal_item = SubmenuItem(terminal_string, terminal_menu, menu)
+
         # Prefixes Submenu
         prefixes_string = "Choose Kathara prefixes"
         prefixes_menu = SelectionMenu(strings=[],
                                       title=prefixes_string,
                                       formatter=menu_formatter,
                                       prologue_text="""Prefixes assigned to the network and machine names when deployed.
-                                                    Default is `kathara`."""
+                                                    Default is `%s` and `%s`.""" % (DEFAULTS['net_prefix'],
+                                                                                    DEFAULTS['machine_prefix'])
                                       )
 
         net_prefix_item = FunctionItem(text=current_string("net_prefix", text="Insert Kathara networks prefix"),
@@ -262,7 +301,7 @@ class SettingsCommand(Command):
                                          subtitle=current_string("debug_level"),
                                          formatter=menu_formatter,
                                          prologue_text="""Logging level of Kathara messages.
-                                                       Default is `INFO`."""
+                                                       Default is `%s`.""" % DEFAULTS['debug_level']
                                          )
 
         for debug_level in POSSIBLE_DEBUG_LEVELS:
@@ -282,7 +321,8 @@ class SettingsCommand(Command):
                                                subtitle=current_bool("print_startup_log"),
                                                formatter=menu_formatter,
                                                prologue_text="""When opening a machine terminal, print its startup log.
-                                                             Default is Yes."""
+                                                             Default is %s.""" % format_bool(
+                                                                                          DEFAULTS['print_startup_log'])
                                                )
 
         print_startup_log_menu.append_item(FunctionItem(text="Yes",
@@ -306,6 +346,7 @@ class SettingsCommand(Command):
         menu.append_item(hosthome_item)
         menu.append_item(shared_item)
         menu.append_item(machine_shell_item)
+        menu.append_item(terminal_item)
         menu.append_item(prefixes_item)
         menu.append_item(debug_level_item)
         menu.append_item(print_startup_log_item)
