@@ -76,7 +76,7 @@ class KatharaEntryPoint(object):
         try:
             command_class = utils.class_for_name(module_name["package"], module_name["class"])
             command_object = command_class()
-        except ModuleNotFoundError as e:
+        except ImportError as e:
             if e.name == '.'.join(module_name.values()):
                 logging.error('Unrecognized command.\n')
                 parser.print_help()

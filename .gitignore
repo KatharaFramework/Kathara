@@ -108,8 +108,10 @@ test/
 # ISS Compiled file
 scripts/Windows/Output/
 scripts/OSX/Output/
+scripts/Linux/Output/
 
 docs/Html/
 docs/MD/
 docs/Roff/
 .DS_Store
+
