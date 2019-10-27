@@ -1,5 +1,5 @@
 m4_changequote()
-kathara-wipe(1) -- Delete all Kathara machines and links, optionally also delete settings
+kathara-wipe(1) -- Delete all Kathara devices and links, optionally also delete settings
 =============================================
 
 ## SYNOPSIS
@@ -8,9 +8,9 @@ kathara-wipe(1) -- Delete all Kathara machines and links, optionally also delete
 
 ## DESCRIPTION
 
-Gracefully shut down ALL running Kathara machines of current user.
+Gracefully shut down ALL running Kathara devices of current user.
 
-Using optional parameters, it is also possible to delete the current user settings or the Kathara machines of all users in the host.
+Using optional parameters, it is also possible to delete the current user settings or the Kathara devices of all users in the host.
 
 ## OPTIONS
 
@@ -28,7 +28,7 @@ Using optional parameters, it is also possible to delete the current user settin
     Delete the `kathara.config`(5) file and create it again with default settings.
 
 * `-a`, `--all`:
-    Wipe all Kathara machines and links of all users. MUST BE ROOT FOR THIS OPTION.
+    Wipe all Kathara devices and links of all users. MUST BE ROOT FOR THIS OPTION.
 
     This option can be run only by `root` user. Cannot be used with `-s` or `--settings`.
 
@@ -36,7 +36,7 @@ Using optional parameters, it is also possible to delete the current user settin
 
     kathara wipe -s
 
-Wipes the current user settings but not the running Kathara machines.
+Wipes the current user settings but not the running Kathara devices.
 
 m4_include(footer.txt)
 

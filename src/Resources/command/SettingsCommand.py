@@ -57,7 +57,7 @@ class SettingsCommand(Command):
                                           title=image_string,
                                           subtitle=current_string("image"),
                                           prologue_text="""Default Docker image when you start a lab or """
-                                                        """a single machine.
+                                                        """a single Kathara device.
                                                         Default is `%s`.""" % DEFAULTS['image'],
                                           formatter=menu_formatter
                                           )
@@ -119,7 +119,7 @@ class SettingsCommand(Command):
         open_terminals_menu = SelectionMenu(strings=[],
                                             title=open_terminals_string,
                                             subtitle=current_bool("open_terminals"),
-                                            prologue_text="""Determines if machine terminal should be opened when starting it.
+                                            prologue_text="""Determines if the device terminal should be opened when starting it.
                                                           Default is %s.""" % format_bool(DEFAULTS['open_terminals']),
                                             formatter=menu_formatter
                                             )
@@ -145,7 +145,7 @@ class SettingsCommand(Command):
                                       title=hosthome_string,
                                       subtitle=current_bool("hosthome_mount"),
                                       prologue_text="""The home directory of the current user is made available for """
-                                                    """reading/writing inside the machine under the special """
+                                                    """reading/writing inside the device under the special """
                                                     """directory `/hosthome`. 
                                                     Default is %s.""" % format_bool(DEFAULTS['hosthome_mount']),
                                       formatter=menu_formatter
@@ -172,7 +172,7 @@ class SettingsCommand(Command):
                                     title=shared_string,
                                     subtitle=current_bool("shared_mount"),
                                     prologue_text="""The shared directory inside the lab folder is made available """
-                                                  """for reading/writing inside the machine under the special """
+                                                  """for reading/writing inside the device under the special """
                                                   """directory `/shared`.
                                                   
                                                   Default is %s.""" % format_bool(DEFAULTS['shared_mount']),
@@ -195,28 +195,28 @@ class SettingsCommand(Command):
         shared_item = SubmenuItem(shared_string, shared_menu, menu)
 
         # Machine Shell Submenu
-        machine_shell_string = "Choose machine shell to be used"
+        machine_shell_string = "Choose device shell to be used"
         machine_shell_menu = SelectionMenu(strings=[],
                                            title=machine_shell_string,
-                                           subtitle=current_string("machine_shell"),
+                                           subtitle=current_string("device_shell"),
                                            formatter=menu_formatter,
-                                           prologue_text="""The shell to use inside the machine. 
+                                           prologue_text="""The shell to use inside the device. 
                                            **The application must be correctly installed in the Docker image used """
-                                           """for the machine!**
+                                           """for the device!**
                                            Default is `%s`, but it depends on the used Docker image.
-                                           """ % DEFAULTS['machine_shell']
+                                           """ % DEFAULTS['device_shell']
                                            )
 
         for shell in POSSIBLE_SHELLS:
             machine_shell_menu.append_item(FunctionItem(text=shell,
                                                         function=self.set_setting_value,
-                                                        args=["machine_shell", shell],
+                                                        args=["device_shell", shell],
                                                         should_exit=True
                                                         )
                                            )
         machine_shell_menu.append_item(FunctionItem(text="Choose another shell",
                                                     function=self.read_value,
-                                                    args=['machine_shell',
+                                                    args=['device_shell',
                                                           RegexValidator(r"^(\w|/)+$"),
                                                           'Write the name of a shell:',
                                                           'Shell name is not valid!'
@@ -233,7 +233,7 @@ class SettingsCommand(Command):
                                       title=terminal_string,
                                       subtitle=current_string("terminal"),
                                       formatter=menu_formatter,
-                                      prologue_text="""The terminal emulator application to be used for machine terminals.
+                                      prologue_text="""The terminal emulator application to be used for device terminals.
                                                     **The application must be correctly installed in the host system!**
                                                     This setting is only used on Linux systems.
                                                     Default is `%s`.
@@ -265,9 +265,9 @@ class SettingsCommand(Command):
         prefixes_menu = SelectionMenu(strings=[],
                                       title=prefixes_string,
                                       formatter=menu_formatter,
-                                      prologue_text="""Prefixes assigned to the network and machine names when deployed.
+                                      prologue_text="""Prefixes assigned to the network and device names when deployed.
                                                     Default is `%s` and `%s`.""" % (DEFAULTS['net_prefix'],
-                                                                                    DEFAULTS['machine_prefix'])
+                                                                                    DEFAULTS['device_prefix'])
                                       )
 
         net_prefix_item = FunctionItem(text=current_string("net_prefix", text="Insert Kathara networks prefix"),
@@ -281,12 +281,12 @@ class SettingsCommand(Command):
                                        )
         prefixes_menu.append_item(net_prefix_item)
 
-        machine_prefix_item = FunctionItem(text=current_string("machine_prefix", text="Insert Kathara machines prefix"),
+        machine_prefix_item = FunctionItem(text=current_string("device_prefix", text="Insert Kathara devices prefix"),
                                            function=self.read_value,
-                                           args=['machine_prefix',
+                                           args=['device_prefix',
                                                  RegexValidator(r"^[a-z]+_?[a-z_]+$"),
-                                                 'Write a Kathara machines prefix:',
-                                                 'Machine Prefix must only contain lowercase letters and underscore.'
+                                                 'Write a Kathara devices prefix:',
+                                                 'Device Prefix must only contain lowercase letters and underscore.'
                                                  ],
                                            should_exit=True
                                            )
@@ -315,12 +315,12 @@ class SettingsCommand(Command):
         debug_level_item = SubmenuItem(debug_level_string, debug_level_menu, menu)
 
         # Print Startup Logs Option
-        print_startup_log_string = "Print Startup Logs on machine startup"
+        print_startup_log_string = "Print Startup Logs on device startup"
         print_startup_log_menu = SelectionMenu(strings=[],
                                                title=open_terminals_string,
                                                subtitle=current_bool("print_startup_log"),
                                                formatter=menu_formatter,
-                                               prologue_text="""When opening a machine terminal, print its startup log.
+                                               prologue_text="""When opening a device terminal, print its startup log.
                                                              Default is %s.""" % format_bool(
                                                                                           DEFAULTS['print_startup_log'])
                                                )

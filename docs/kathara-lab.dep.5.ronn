@@ -6,11 +6,11 @@ kathara-lab.dep(5) -- Lab dependencies file
 
 It is simply a list of rules, with the following syntax:
 
-	MACHINE: MACHINE1 MACHINE2 ...
+	device: device1 device2 ...
 
-Where `MACHINE`, `MACHINE1`, `MACHINE2`, ... are names of machines.
+Where `device`, `device1`, `device2`, ... are names of devices.
 
-The rule states that `MACHINE` can only be started after `MACHINE1`, `MACHINE2`, ...
+The rule states that `device` can only be started after `device1`, `device2`, ...
 
 Lines starting with a hash character (`#`) are assumed to be comments and simply ignored.
 

@@ -6,33 +6,33 @@ kathara-lab-dirs(7) -- Lab directory structure
 
 A generic lab directory `lab-path` should have the following structure.
 
-* `lab-path/machine/`:
-	Each subdirectory inside `lab-path` represents a machine to be started, whose name will be the same as the one of the subdirectory.
+* `lab-path/device/`:
+	Each subdirectory inside `lab-path` represents a device to be started, whose name will be the same as the one of the subdirectory.
 
-	Optionally, this subdirectory may contain files that you wish to copy inside the machine filesystem. You can also put a full hierarchy of directories here. When organizing files inside `lab-path/machine/`, think of it as if it were the root (`/`) directory of the machine. For example, a file `lab-path/machine/foo` will be copied into `/foo` inside the machine.
+	Optionally, this subdirectory may contain files that you wish to copy inside the device filesystem. You can also put a full hierarchy of directories here. When organizing files inside `lab-path/device/`, think of it as if it were the root (`/`) directory of the device. For example, a file `lab-path/device/foo` will be copied into `/foo` inside the device.
 
-* `lab-path/machine.startup`:
-	This file is a shell script that will be launched during the startup of the machine. This file may be useful, for example, to automatically setup IP addresses for network interfaces. It is not required to assign this script the executable permission.
+* `lab-path/device.startup`:
+	This file is a shell script that will be launched during the startup of the device. This file may be useful, for example, to automatically setup IP addresses for network interfaces. It is not required to assign this script the executable permission.
 
-	Note that this script is executed by using the `machine_shell` value specified in `kathara.conf`(5) as interpreter. If you would like to use a different interpreter, change it inside `kathara.conf`(5) or with `kathara-settings`(1).
+	Note that this script is executed by using the `device_shell` value specified in `kathara.conf`(5) as interpreter. If you would like to use a different interpreter, change it inside `kathara.conf`(5) or with `kathara-settings`(1).
 
-* `lab-path/machine.shutdown`:
-	This file is a shell script that will be executed when the machine is halted. It is not required to assign this script the executable permission. 
+* `lab-path/device.shutdown`:
+	This file is a shell script that will be executed when the device is halted. It is not required to assign this script the executable permission. 
 
-	Note that this script is executed by using the `machine_shell` value specified in `kathara.conf`(5) as interpreter. If you would like to use a different interpreter, change it inside `kathara.conf`(5) or with `kathara-settings`(1).
+	Note that this script is executed by using the `device_shell` value specified in `kathara.conf`(5) as interpreter. If you would like to use a different interpreter, change it inside `kathara.conf`(5) or with `kathara-settings`(1).
 
 * `lab-path/shared/`:
-	This is a shared folder between the host and all the lab machines. This could be useful to transfer files between the host and a machine or viceversa.
+	This is a shared folder between the host and all the lab devices. This could be useful to transfer files between the host and a device or viceversa.
 
 * `lab-path/shared.startup`
-	This is a shell script that will be run on every machine just before `lab-path/machine.startup`. It is not required to assign this script the executable permission.
+	This is a shell script that will be run on every device just before `lab-path/device.startup`. It is not required to assign this script the executable permission.
 
-	Note that this script is executed by using the `machine_shell` value specified in `kathara.conf`(5) as interpreter. If you would like to use a different interpreter, change it inside `kathara.conf`(5) or with `kathara-settings`(1).
+	Note that this script is executed by using the `device_shell` value specified in `kathara.conf`(5) as interpreter. If you would like to use a different interpreter, change it inside `kathara.conf`(5) or with `kathara-settings`(1).
 
 * `lab-path/shared.shutdown`
-	This is a shell script that will be run on every machine just after `lab-path/machine.shutdown`. It is not required to assign this script the executable permission.
+	This is a shell script that will be run on every device just after `lab-path/device.shutdown`. It is not required to assign this script the executable permission.
 	
-	Note that this script is executed by using the `machine_shell` value specified in `kathara.conf`(5) as interpreter. If you would like to use a different interpreter, change it inside `kathara.conf`(5) or with `kathara-settings`(1).
+	Note that this script is executed by using the `device_shell` value specified in `kathara.conf`(5) as interpreter. If you would like to use a different interpreter, change it inside `kathara.conf`(5) or with `kathara-settings`(1).
 
 * `lab-path/_test/`
 	This subdirectory contains information for performing a test of the lab. It may be automatically created by `kathara-ltest`(1) or may contain user created files describing customized tests. For more information about this directory, see `kathara-ltest`(1).

@@ -33,7 +33,7 @@ class LcleanCommand(Command):
         )
         parser.add_argument(
             'machine_names',
-            metavar='MACHINE_NAME',
+            metavar='DEVICE_NAME',
             nargs='*',
             help='Clean only specified machines.'
         )

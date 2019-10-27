@@ -4,14 +4,14 @@ kathara.conf(5) -- Kathara configuration file
 
 ## DESCRIPTION
 
-This file is a JSON that contains information about the Kathara configuration. It also stores the default settings to be used when starting new machines. This file is placed in the `~/.config` folder. If it does not exist when Kathara is launched, it will be created with default settings.
+This file is a JSON that contains information about the Kathara configuration. It also stores the default settings to be used when starting new devices. This file is placed in the `~/.config` folder. If it does not exist when Kathara is launched, it will be created with default settings.
 
 Checks on the correctness of the configuration are performed each time a Kathara command is launched. So each value must always be a valid setting.
 
 ## CONFIGURATION PARAMETERS
 
 * `image` (string):
-    Default Docker image used when starting a machine.
+    Default Docker image used when starting a device.
 
     Default to `kathara/quagga`.
 
@@ -21,27 +21,27 @@ Checks on the correctness of the configuration are performed each time a Kathara
     Default to `docker`.
 	
 * `terminal` (string):
-	This parameter determines the terminal emulator application to be used for machine terminals. The application must be correctly installed in the host system.
+	This parameter determines the terminal emulator application to be used for device terminals. The application must be correctly installed in the host system.
 
 	Default to `/usr/bin/xterm`.
 
 * `open_terminals` (boolean):
-	This parameter determines if machine terminal should be opened when starting it. 
+	This parameter determines if device terminal should be opened when starting it. 
 
 	Default to `true`.
 
 * `hosthome_mount` (boolean):
-	This parameter specifies if the `/hosthome` dir will be mounted inside the machine. The home directory of the current user is made available for reading/writing inside the machine under the special directory `/hosthome`.  
+	This parameter specifies if the `/hosthome` dir will be mounted inside the device. The home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`.  
 
 	Default to `false`.
 
 * `shared_mount` (boolean):
-	This parameter specifies if the `/shared` dir will be mounted inside the machine. The "shared" folder inside the lab folder is made available for reading/writing inside the machine under the special directory `/shared`.  
+	This parameter specifies if the `/shared` dir will be mounted inside the device. The "shared" folder inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`.  
 
 	Default to `true`.
 
-* `machine_shell` (string):
-	This parameter determines the shell to use inside the machine. The application must be correctly installed in the Docker image used for the machine. Possible examples are: bash, sh, fish, and so on.
+* `device_shell` (string):
+	This parameter determines the shell to use inside the device. The application must be correctly installed in the Docker image used for the device. Possible examples are: bash, sh, fish, and so on.
 
 	Default to `bash`.
 
@@ -50,8 +50,8 @@ Checks on the correctness of the configuration are performed each time a Kathara
 
 	Default to `kathara`.
 
-* `machine_prefix` (string):
-	The prefix assigned to the machine name when deployed.
+* `device_prefix` (string):
+	The prefix assigned to the device name when deployed.
 
 	Default to `kathara`.
 
@@ -61,7 +61,7 @@ Checks on the correctness of the configuration are performed each time a Kathara
 	Default to `INFO`.
 
 * `print_startup_log` (boolean):
-	When opening a machine terminal, print its startup log. This setting is ignored if `open_terminals` is `false`.
+	When opening a device terminal, print its startup log. This setting is ignored if `open_terminals` is `false`.
 
 	Default to `true`.
 
@@ -79,9 +79,9 @@ Checks on the correctness of the configuration are performed each time a Kathara
 			"terminal": "/usr/bin/xterm",
 			"open_terminals": true,
 			"hosthome_mount": true,
-			"machine_shell": "bash",
+			"device_shell": "bash",
 			"net_prefix": "kathara",
-			"machine_prefix": "kathara",
+			"device_prefix": "kathara",
 			"debug_level": "INFO",
 			"print_startup_log": true,
 			"last_checked": 1570724309.2402148

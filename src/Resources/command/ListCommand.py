@@ -35,7 +35,7 @@ class ListCommand(Command):
 
         parser.add_argument(
             '-n', '--name',
-            metavar='MACHINE_NAME',
+            metavar='DEVICE_NAME',
             required=False,
             help='Show only information about a specified machine.'
         )

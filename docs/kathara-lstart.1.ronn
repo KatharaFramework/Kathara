@@ -8,15 +8,15 @@ kathara-lstart(1) -- Start a Kathara lab
 >           [`-h`] [`-n` | `-t`] [`-d` <DIRECTORY>] [`-F`] [`-l`]  
 >           [`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>] [`--print`]  
 >           [`-H`] [`-S`]  
->           [<MACHINE_NAME> [<MACHINE_NAME> ...]]
+>           [<DEVICE_NAME> [<DEVICE_NAME> ...]]
 
 
 ## DESCRIPTION
 
 In order to ease setting up complex network with Kathara it is possible to completely describe it into special configuration files, creating a so-called **lab**. The lab can be started with a single command as if it were a virtual network 'laboratory'.
 
-Start a set of machines that are part of a Kathara lab and configures them according to the parameters contained in the lab description.
-By default, all the machines that make up the lab are started. If a list of <MACHINE_NAME>s is provided, then only machines with a matching name and that are part of the lab are started.
+Start a set of devices that are part of a Kathara lab and configures them according to the parameters contained in the lab description.
+By default, all the devices that make up the lab are started. If a list of <DEVICE_NAME>s is provided, then only devices with a matching name and that are part of the lab are started.
 
 The configuration of a Kathara lab consists of some files described in `kathara-lab.conf`(5) and `kathara-lab.dep`(5) and directories whose names, locations and contents are described in `kathara-lab-dirs`(7).
 
@@ -26,12 +26,12 @@ The configuration of a Kathara lab consists of some files described in `kathara-
     Show a help message and exit.
 
 * `--noterminals`:
-    Start the lab machines without opening terminal windows.
+    Start the lab devices without opening terminal windows.
 
     Override the default setting specified in `kathara.conf`(5) file.
 
 * `-t`, `--terminals`:
-    Start the lab machines opening their terminal windows.
+    Start the lab devices opening their terminal windows.
 
     Override the default setting specified in `kathara.conf`(5) file.
 
@@ -44,13 +44,13 @@ The configuration of a Kathara lab consists of some files described in `kathara-
 * `-F`, `--force-lab`:
     Force the lab to start without a lab.conf or lab.dep file.
 
-    As a native behaviour, Kathara starts a machine for each directory that it finds in a designated path, by default the current directory. In order to prevent the user from accidentally starting random machines from a directory that does not contain a lab, lstart requires the presence of the `kathara-lab.conf`(5) file in the affected directory. If this file is not required for your setting, and you still want to launch your lab without creating it, you can use this option to force Kathara starting a lab in the affected directory.
+    As a native behaviour, Kathara starts a device for each directory that it finds in a designated path, by default the current directory. In order to prevent the user from accidentally starting random devices from a directory that does not contain a lab, lstart requires the presence of the `kathara-lab.conf`(5) file in the affected directory. If this file is not required for your setting, and you still want to launch your lab without creating it, you can use this option to force Kathara starting a lab in the affected directory.
 
 * `-l`, `--list`:
-    Show information about running machines after the lab has been started.
+    Show information about running devices after the lab has been started.
 
 * `-o` [<OPTION> [<OPTION> ...]], `--pass` [<OPTION> [<OPTION> ...]]:
-    Apply options to all machines of a lab during startup.
+    Apply options to all devices of a lab during startup.
 
     Should be a list of double quoted strings, like `--pass "mem=64m" "image=kathara/netkit_base"`.
 
@@ -63,17 +63,17 @@ The configuration of a Kathara lab consists of some files described in `kathara-
     Open the lab.conf file and check if it is correct (dry run).
 
 * `-H`, `--no-hosthome`:
-    `/hosthome` dir will not be mounted inside the machine.
+    `/hosthome` dir will not be mounted inside the device.
 
-    By default, the home directory of the current user is made available for reading/writing inside the machine under the special directory `/hosthome`. This option disables this behaviour, thus not making the host filesystem accessible from inside the machine. Override the default setting specified in `kathara.conf`(5) file.
+    By default, the home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
 
 * `-S`, `--no-shared`:
-    `/shared` dir will not be mounted inside the machine.
+    `/shared` dir will not be mounted inside the device.
 
-    By default, the "shared" directory inside the lab folder is made available for reading/writing inside the machine under the special directory `/shared`. This option disables this behaviour, thus not making the host filesystem accessible from inside the machine. Override the default setting specified in `kathara.conf`(5) file.
+    By default, the "shared" directory inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
 
-* `MACHINE_NAME`:
-    A list of machine names. Instead of starting the whole lab, only specified machines are started.
+* `DEVICE_NAME`:
+    A list of device names. Instead of starting the whole lab, only specified devices are started.
 
 m4_include(footer.txt)
 

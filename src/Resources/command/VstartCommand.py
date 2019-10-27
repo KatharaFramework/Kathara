@@ -49,7 +49,7 @@ class VstartCommand(Command):
         )
         parser.add_argument(
             '-n', '--name',
-            metavar='MACHINE_NAME',
+            metavar='DEVICE_NAME',
             required=True,
             help='Name of the machine to be started.'
         )
@@ -173,7 +173,7 @@ class VstartCommand(Command):
                                                 else Setting.get_instance().open_terminals
 
         Setting.get_instance().terminal = args.xterm or Setting.get_instance().terminal
-        Setting.get_instance().machine_shell = args.shell or Setting.get_instance().machine_shell
+        Setting.get_instance().device_shell = args.shell or Setting.get_instance().device_shell
         Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
                                                 else Setting.get_instance().hosthome_mount
 

@@ -22,10 +22,10 @@ Mainly it has the same options of `lstart` with the lack of some options (e.g. `
     Show an help message and exit.
 
 * `--noterminals`:
-    Start the lab machines without opening terminal windows. Override the default setting specified in `kathara.conf`(5) file.
+    Start the lab devices without opening terminal windows. Override the default setting specified in `kathara.conf`(5) file.
 
 * `-t`, `--terminals`:
-    Start the lab machines opening their terminal windows. Override the default setting specified in `kathara.conf`(5) file.
+    Start the lab devices opening their terminal windows. Override the default setting specified in `kathara.conf`(5) file.
 
 * `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
     Specify the folder containing the lab.
@@ -36,13 +36,13 @@ Mainly it has the same options of `lstart` with the lack of some options (e.g. `
 * `-F`, `--force-lab`:
     Force the lab to start without a lab.conf or lab.dep file.
 
-    As a native behaviour, Kathara starts a machine for each directory that it finds in a designated path, by default the current directory. In order to prevent the user from accidentally starting random machines from a directory that does not contain a lab, lstart requires the presence of the `kathara-lab.conf`(5) file in the affected directory. If this file is not required for your setting, and you still want to launch your lab without creating it, you can use this option to force Kathara starting a lab in the affected directory.
+    As a native behaviour, Kathara starts a device for each directory that it finds in a designated path, by default the current directory. In order to prevent the user from accidentally starting random devices from a directory that does not contain a lab, lstart requires the presence of the `kathara-lab.conf`(5) file in the affected directory. If this file is not required for your setting, and you still want to launch your lab without creating it, you can use this option to force Kathara starting a lab in the affected directory.
 
 * `-l`, `--list`:
-    Show informarion about running machines after the lab has been started.
+    Show informarion about running devices after the lab has been started.
 
 * `-o` [<OPTION> [<OPTION> ...]], `--pass` [<OPTION> [<OPTION> ...]]:
-    Apply options to all machines of a lab during startup.
+    Apply options to all devices of a lab during startup.
 
     Should be a list of double quoted strings, like `--pass "mem=64m" "image=kathara/netkit_base"`.
 
@@ -52,14 +52,14 @@ Mainly it has the same options of `lstart` with the lack of some options (e.g. `
     As an example: `gnome-terminal`(1). Override the default setting specified in `kathara.conf`(5) file.
 
 * `-H`, `--no-hosthome`:
-    `/hosthome` dir will not be mounted inside the machine.
+    `/hosthome` dir will not be mounted inside the device.
 
-    By default, the home directory of the current user is made available for reading/writing inside the machine under the special directory `/hosthome`. This option disables this behaviour, thus not making the host filesystem accessible from inside the machine. Override the default setting specified in `kathara.conf`(5) file.
+    By default, the home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
 
 * `-S`, `--no-shared`:
-    `/shared` dir will not be mounted inside the machine.
+    `/shared` dir will not be mounted inside the device.
 
-    By default, the "shared" directory inside the lab folder is made available for reading/writing inside the machine under the special directory `/shared`. This option disables this behaviour, thus not making the host filesystem accessible from inside the machine. Override the default setting specified in `kathara.conf`(5) file.
+    By default, the "shared" directory inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
 
 m4_include(footer.txt)
 

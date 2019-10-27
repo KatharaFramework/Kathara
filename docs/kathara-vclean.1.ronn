@@ -1,28 +1,28 @@
 m4_changequote()
-kathara-vclean(1) -- Stop a single Kathara machine
+kathara-vclean(1) -- Stop a single Kathara device
 =============================================
 
 ## SYNOPSIS
 
-`kathara vclean` [`-h`] `-n` <MACHINE_NAME>
+`kathara vclean` [`-h`] `-n` <DEVICE_NAME>
 
 ## DESCRIPTION
 
-Gracefully shut down a running machine. <MACHINE_NAME> is the name of a machine.
+Gracefully shut down a running device. <DEVICE_NAME> is the name of a device.
 
 ## OPTIONS
 
 * `-h`, `--help`
     Show a help message and exit.
 
-* `-n` <MACHINE_NAME>, `--name` <MACHINE_NAME>  
-    Name of the machine to be cleaned.
+* `-n` <DEVICE_NAME>, `--name` <DEVICE_NAME>  
+    Name of the device to be cleaned.
 
 ## EXAMPLES
 
 	kathara vclean -n pc1
 
-Stop a running machine named pc1.
+Stop a running device named pc1.
 
 m4_include(footer.txt)
 

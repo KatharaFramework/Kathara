@@ -4,39 +4,39 @@ kathara-lab.conf(5) -- Lab configuration file
 
 ## DESCRIPTION
 
-The main lab configuration file. In this file you can specify the names of machines to be started, any option that should be used when launching them, and the topology of the network that connects them. Optionally, you can also provide some descriptive information for the lab, which will be displayed upon its startup. This file is not explicitly required, but running a lab without a lab.conf file is kind of useless...
+The main lab configuration file. In this file you can specify the names of devices to be started, any option that should be used when launching them, and the topology of the network that connects them. Optionally, you can also provide some descriptive information for the lab, which will be displayed upon its startup. This file is not explicitly required, but running a lab without a lab.conf file is kind of useless...
 
-This file is a list of `machine[arg]=value` assignments, where `arg` can be an integer value or the name of an option (described below).
+This file is a list of `device[arg]=value` assignments, where `arg` can be an integer value or the name of an option (described below).
 
-If `arg` is an integer value, then `value` is the name of the collision domain to which interface eth`arg` of machine `machine` must be connected (note that the name of the collision domain must not contain spaces (" "), commas (",") and dots ("."). For example, `pc1[0]=CD1` means that interface eth0 of machine pc1 will be connected to collision domain CD1.
+If `arg` is an integer value, then `value` is the name of the collision domain to which interface eth`arg` of device `device` must be connected (note that the name of the collision domain must not contain spaces (" "), commas (",") and dots ("."). For example, `pc1[0]=CD1` means that interface eth0 of device pc1 will be connected to collision domain CD1.
 
-If `arg` is an option name, then `machine` will be launched with option `arg` set to value `value`.
+If `arg` is an option name, then `device` will be launched with option `arg` set to value `value`.
 
 In order to establish a uniform convention, comment lines should always start with a hash character (`#`).
 
 ## MACHINE OPTIONS
 
 * `image` (string):
-    Docker image used for this machine.
+    Docker image used for this device.
 
 * `mem` (string):
-    Set the amount of available RAM inside the machine. If you set this option, the minimum allowed value is 4m (4 megabyte).
+    Set the amount of available RAM inside the device. If you set this option, the minimum allowed value is 4m (4 megabyte).
 
     This option takes a positive integer, followed by a suffix of "b", "k", "m", "g", to indicate bytes, kilobytes, megabytes, or gigabytes.
 
 * `cpus` (float):
-    Limit the amount of CPU available for this machine.
+    Limit the amount of CPU available for this device.
 
-    This option takes a positive float, ranging from 0 to max number of host logical CPUs. For instance, if the host machine has two CPUs and you set `machine[cpus]=1.5`, the container is guaranteed at most one and a half of the CPUs.
+    This option takes a positive float, ranging from 0 to max number of host logical CPUs. For instance, if the host device has two CPUs and you set `device[cpus]=1.5`, the container is guaranteed at most one and a half of the CPUs.
 
 * `port` (string):
-    Choose a TCP number to map to the internal port 3000 of the machine.
+    Choose a TCP number to map to the internal port 3000 of the device.
 
 * `bridged` (boolean):
-    Connect the machine to the host network by adding an additional network interface. This interface will be connected to the host network through a NAT connection.
+    Connect the device to the host network by adding an additional network interface. This interface will be connected to the host network through a NAT connection.
 
 * `exec` (string):
-    Run a specific shell command inside the machine during the startup phase.
+    Run a specific shell command inside the device during the startup phase.
 
 ## LAB META INFORMATION
 

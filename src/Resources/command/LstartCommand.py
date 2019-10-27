@@ -103,7 +103,7 @@ class LstartCommand(Command):
         )
         parser.add_argument(
             'machine_name',
-            metavar='MACHINE_NAME',
+            metavar='DEVICE_NAME',
             nargs='*',
             help='Launches only specified machines.'
         )

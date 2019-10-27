@@ -29,7 +29,7 @@ class VcleanCommand(Command):
 
         parser.add_argument(
             '-n', '--name',
-            metavar='MACHINE_NAME',
+            metavar='DEVICE_NAME',
             required=True,
             help='Name of the machine to be cleaned.'
         )

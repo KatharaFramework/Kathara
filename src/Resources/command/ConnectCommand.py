@@ -50,7 +50,7 @@ class ConnectCommand(Command):
         )
         parser.add_argument(
             'machine_name',
-            metavar='MACHINE_NAME',
+            metavar='DEVICE_NAME',
             help='Name of the machine to connect to.'
         )
 

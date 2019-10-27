@@ -197,7 +197,7 @@ class DockerMachine(object):
             last_interface += 1
 
         # Execute the rp_filter patch for the new interfaces
-        machine.api_object.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', "; ".join(rp_filter_commands)],
+        machine.api_object.exec_run(cmd=[Setting.get_instance().device_shell, '-c', "; ".join(rp_filter_commands)],
                                     stdout=False,
                                     stderr=False,
                                     privileged=True,
@@ -239,7 +239,7 @@ class DockerMachine(object):
                                         .format(rp_filter="; ".join(rp_filter_commands))
 
         # Execute the rp_filter commands inside the container (with privileged in order to use `mount`)
-        machine.api_object.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', rp_filter_commands_string],
+        machine.api_object.exec_run(cmd=[Setting.get_instance().device_shell, '-c', rp_filter_commands_string],
                                     stdout=False,
                                     stderr=False,
                                     privileged=True,
@@ -257,7 +257,7 @@ class DockerMachine(object):
                                               )
 
         # Execute the startup commands inside the container (without privileged flag so basic permissions are used)
-        machine.api_object.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', startup_commands_string],
+        machine.api_object.exec_run(cmd=[Setting.get_instance().device_shell, '-c', startup_commands_string],
                                     stdout=False,
                                     stderr=False,
                                     privileged=False,
@@ -298,7 +298,7 @@ class DockerMachine(object):
             container = containers[0]
 
         if not shell:
-            shell = Setting.get_instance().machine_shell
+            shell = Setting.get_instance().device_shell
 
         if logs and Setting.get_instance().print_startup_log:
             result = container.exec_run(cmd="cat /var/log/shared.log /var/log/startup.log",
@@ -355,7 +355,7 @@ class DockerMachine(object):
     @staticmethod
     def get_container_name(name, lab_hash):
         lab_hash = lab_hash if lab_hash else ""
-        return "%s_%s_%s_%s" % (Setting.get_instance().machine_prefix, utils.get_current_user_name(), name, lab_hash)
+        return "%s_%s_%s_%s" % (Setting.get_instance().device_prefix, utils.get_current_user_name(), name, lab_hash)
 
     @staticmethod
     def delete_machine(machine):
@@ -364,7 +364,7 @@ class DockerMachine(object):
 
         # Execute the shutdown commands inside the container (only if it's running)
         if machine.status == "running":
-            machine.exec_run(cmd=[Setting.get_instance().machine_shell, '-c', shutdown_commands_string],
+            machine.exec_run(cmd=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
                              stdout=False,
                              stderr=False,
                              privileged=True,

@@ -29,9 +29,9 @@ DEFAULTS = {
     "open_terminals": True,
     "hosthome_mount": False,
     "shared_mount": True,
-    "machine_shell": '/bin/bash',
+    "device_shell": '/bin/bash',
     "net_prefix": 'kathara',
-    "machine_prefix": 'kathara',
+    "device_prefix": 'kathara',
     "debug_level": 'INFO',
     "print_startup_log": True
 }
@@ -41,7 +41,7 @@ EXCLUDED_IMAGES = ['megalos-bgp-manager']
 
 class Setting(object):
     __slots__ = ['image', 'manager_type', 'terminal', 'open_terminals',
-                 'hosthome_mount', 'shared_mount', 'machine_shell', 'net_prefix', 'machine_prefix', 'debug_level',
+                 'hosthome_mount', 'shared_mount', 'device_shell', 'net_prefix', 'device_prefix', 'debug_level',
                  'print_startup_log', 'last_checked']
 
     __instance = None
@@ -180,7 +180,7 @@ class Setting(object):
             raise SettingsError("Networks Prefix must only contain lowercase letters and underscore.")
 
         try:
-            utils.re_search_fail(r"^[a-z]+_?[a-z_]+$", self.machine_prefix)
+            utils.re_search_fail(r"^[a-z]+_?[a-z_]+$", self.device_prefix)
         except ValueError:
             raise SettingsError("Machine Prefix must only contain lowercase letters and underscore.")
 
@@ -208,9 +208,9 @@ class Setting(object):
                 "open_terminals": self.open_terminals,
                 "hosthome_mount": self.hosthome_mount,
                 "shared_mount": self.shared_mount,
-                "machine_shell": self.machine_shell,
+                "device_shell": self.device_shell,
                 "net_prefix": self.net_prefix,
-                "machine_prefix": self.machine_prefix,
+                "device_prefix": self.device_prefix,
                 "debug_level": self.debug_level,
                 "print_startup_log": self.print_startup_log,
                 "last_checked": self.last_checked

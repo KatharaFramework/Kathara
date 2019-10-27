@@ -13,15 +13,15 @@ Kathara is a network emulation tool.
 It is an implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-core) using Python.  
 Ten times faster than Netkit and more than 100 times lighter, the framework has the performances to run in production.
 
-Within the Kathara environment each network device, called machine, is implemented by a container, and each interconnection link is emulated by using a virtual network.
+Within the Kathara environment each network device, called device, is implemented by a container, and each interconnection link is emulated by using a virtual network.
 
-Each machine can be configured to have an arbitrary number of (virtual) network interfaces.
+Each device can be configured to have an arbitrary number of (virtual) network interfaces.
 
-By default, machines use a Docker Image which includes network oriented software such as routing daemons (RIP, OSPF, etc.), an HTTP server, firewalling utilities (`iptables`(8)), and diagnostic tools (`ping`(1), `traceroute`(1), `tcpdump`(1), etc.).  
-By configuring the appropriate software, it is possible to emulate with a machine a specific network device (e.g., a router).  
+By default, devices use a Docker Image which includes network oriented software such as routing daemons (RIP, OSPF, etc.), an HTTP server, firewalling utilities (`iptables`(8)), and diagnostic tools (`ping`(1), `traceroute`(1), `tcpdump`(1), etc.).  
+By configuring the appropriate software, it is possible to emulate with a device a specific network device (e.g., a router).  
 Other applications (such as SDN and P4) can be added using custom Docker Images.
 
-Kathara provides two alternative interfaces to start and configure machines. A set of `v`-prefixed commands (vstart, vclean, vconfig), that allow to start and manage single machines while providing finegrained control on their configuration; and a set of `l`-prefixed commands (lstart, lclean, linfo, lrestart, ltest), that ease setting up preconfigured network laboratories consisting of several machines.
+Kathara provides two alternative interfaces to start and configure devices. A set of `v`-prefixed commands (vstart, vclean, vconfig), that allow to start and manage single devices while providing finegrained control on their configuration; and a set of `l`-prefixed commands (lstart, lclean, linfo, lrestart, ltest), that ease setting up preconfigured network laboratories consisting of several devices.
 
 Kathara also provides a set of global commands (connect, info, wipe, settings, check).
 
@@ -30,13 +30,13 @@ Kathara also provides a set of global commands (connect, info, wipe, settings, c
 The possible kathara commands are:
 
 * `kathara-vstart`(1):
-    Start a new Kathara machine
+    Start a new Kathara device
 
 * `kathara-vclean`(1):
-    Stop a single Kathara machine
+    Stop a single Kathara device
 
 * `kathara-vconfig`(1):
-    Attach network interfaces to a running Kathara machine
+    Attach network interfaces to a running Kathara device
 
 * `kathara-lstart`(1):
     Start a Kathara lab
@@ -54,13 +54,13 @@ The possible kathara commands are:
     Test a Kathara lab
 
 * `kathara-connect`(1):
-    Connect to a Kathara machine
+    Connect to a Kathara device
 
 * `kathara-wipe`(1):
-    Delete all Kathara machines and links, optionally also delete settings
+    Delete all Kathara devices and links, optionally also delete settings
 
 * `kathara-list`(1):
-    Show all running Kathara machines
+    Show all running Kathara devices
 
 * `kathara-settings`(1):
     Show and edit settings
