@@ -253,8 +253,14 @@ class DockerManager(IManager):
         local_image_info = self.docker_image.check_local(settings.image)
         remote_image_info = self.docker_image.check_remote(settings.image)
 
+        # Image has been built locally, so there's nothing to compare.
+        local_repo_digests = local_image_info.attrs["RepoDigests"]
+        if not local_repo_digests:
+            return
+
+        local_repo_digest = local_repo_digests[0]
         remote_image_digest = remote_image_info["images"][0]["digest"]
-        local_repo_digest = local_image_info.attrs["RepoDigests"][0]
+
         # Format is image_name@sha256, so we strip the first part.
         (_, local_image_digest) = local_repo_digest.split("@")
 

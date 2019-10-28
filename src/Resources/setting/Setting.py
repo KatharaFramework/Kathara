@@ -138,6 +138,8 @@ class Setting(object):
 
         self.check_image()
 
+        self.check_terminal()
+
         current_time = time.time()
         # After 1 week, check if a new image and Kathara version has been released.
         if current_time - self.last_checked > ONE_WEEK:
@@ -200,6 +202,17 @@ class Setting(object):
         # Required to import here because otherwise there is a cyclic dependency
         from ..manager.ManagerProxy import ManagerProxy
         ManagerProxy.get_instance().check_image(image)
+
+    def check_terminal(self, terminal=None):
+        terminal = self.terminal if not terminal else terminal
+
+        def check_unix():
+            return os.path.isfile(terminal) and os.access(terminal, os.X_OK)
+
+        if not utils.exec_by_platform(check_unix, lambda: True, lambda: True):
+            raise SettingsError("Terminal Emulator not valid!")
+
+        return True
 
     def _to_dict(self):
         return {"image": self.image,

@@ -1,14 +1,16 @@
 from ..api.DockerHubApi import DockerHubApi
 from ..exceptions import HTTPConnectionError
+from ..exceptions import SettingsError
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
 from ..setting.Setting import Setting, DEFAULTS, POSSIBLE_SHELLS, POSSIBLE_TERMINALS, POSSIBLE_DEBUG_LEVELS, \
-                              EXCLUDED_IMAGES
+    EXCLUDED_IMAGES
 from ..trdparty.consolemenu import *
 from ..trdparty.consolemenu.format import MenuBorderStyleType
 from ..trdparty.consolemenu.items import *
 from ..trdparty.consolemenu.validators.regex import RegexValidator
 from ..validator.ImageValidator import ImageValidator
+from ..validator.TerminalValidator import TerminalValidator
 
 SAVED_STRING = "Saved successfully!\n"
 PRESS_ENTER_STRING = "Press [Enter] to continue."
@@ -250,7 +252,7 @@ class SettingsCommand(Command):
         terminal_menu.append_item(FunctionItem(text="Choose another terminal emulator",
                                                function=self.read_value,
                                                args=['terminal',
-                                                     RegexValidator(r"^(\w|/)+$"),
+                                                     TerminalValidator(),
                                                      'Write the name of a terminal emulator:',
                                                      'Terminal emulator is not valid!'
                                                      ],
@@ -359,10 +361,14 @@ class SettingsCommand(Command):
     @staticmethod
     def set_setting_value(attribute_name, value):
         setattr(Setting.get_instance(), attribute_name, value)
-        Setting.get_instance().check()
-        Setting.get_instance().save_selected([attribute_name])
+        try:
+            Setting.get_instance().check()
 
-        print(SAVED_STRING)
+            Setting.get_instance().save_selected([attribute_name])
+
+            print(SAVED_STRING)
+        except SettingsError as e:
+            print(str(e))
 
         Screen().input(PRESS_ENTER_STRING)
 
