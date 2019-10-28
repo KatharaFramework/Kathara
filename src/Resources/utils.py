@@ -50,8 +50,8 @@ def get_executable_path(exec_path):
 
     if os.path.exists(exec_abs_path):
         # If kathara is launched as a python script
-        if exec_path.endswith(".py"):
-            exec_abs_path = "\"" + exec_abs_path + "\""
+        exec_abs_path = "\"" + exec_abs_path + "\""
+        if exec_path.endswith(".py"):   
             # Prepend python in windows because it has no shebang
             return exec_by_platform(lambda: exec_abs_path, lambda: "python %s" % exec_abs_path, lambda: exec_abs_path)
         else:
