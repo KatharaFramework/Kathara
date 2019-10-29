@@ -5,13 +5,16 @@ LAUNCHPAD_NAME=user
 
 ARCHITECTURE:=$(shell dpkg --print-architecture)
 
-.PHONY: deb deps clean docker docker-build compile ppa
+.PHONY: debUnsigned debSigned deps clean dockerSigned dockerUnsigned docker-build compile ppa prepareDeb
 
 docker-build:
-	cd Docker-Linux-Build && sudo docker build -t kathara/linux-build .
+	cd Docker-Linux-Build && docker build -t kathara/linux-build .
 
-docker: docker-build
-	sudo docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make clean && make deps && make deb && make ppa"
+dockerSigned: docker-build
+	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make clean && make deps && make debSigned && make ppa"
+
+dockerUnsigned: docker-build
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make clean && make deps && make debUnsigned"
 
 compile:
 	cd ../../src && python3 -m nuitka --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Resources kathara.py
@@ -22,7 +25,7 @@ compile:
 	rm -f ../../src/kathara.dist/libtinfo.so.5
 	rm -f ../../src/kathara.dist/libcrypto.so.1.1
 
-deb: compile
+prepareDeb: compile
 	mkdir -p Output/kathara-$(VERSION)
 	cp -r ../../src/kathara.dist Output/kathara-$(VERSION)
 	cd Output && tar -zcf kathara_$(VERSION).orig.tar.gz kathara-$(VERSION)
@@ -31,7 +34,14 @@ deb: compile
 	cp -r ../../docs/Roff Output/kathara-$(VERSION)/debian/manpages
 	cd ../../docs && make cleanall
 	ls Output/kathara-$(VERSION)/debian/manpages/ | awk '{print "debian/manpages/"$$0}' > Output/kathara-$(VERSION)/debian/kathara.manpages
+
+
+debSigned: prepareDeb
 	cd Output/kathara-$(VERSION); debuild -S -sa
+	rm -Rf Output/kathara-$(VERSION)
+
+debUnsigned: prepareDeb
+	cd Output/kathara-$(VERSION); debuild -uc -us
 	rm -Rf Output/kathara-$(VERSION)
 
 ppa:
