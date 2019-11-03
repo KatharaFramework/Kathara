@@ -1,0 +1,125 @@
+m4_changequote()
+kathara-vstart(1) -- Start a new Kathara device
+=============================================
+
+## SYNOPSIS
+
+`kathara vstart`
+>           [`-h`] [`--noterminals` | `-t`] `-n` <DEVICE_NAME>  
+>           [`--eth` <N\:CD> [<N\:CD> ...]]
+>           [`-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]] [`--mem` <MEM>]  
+>           [`--cpus` <CPUS>] [`-i` <IMAGE>] [`-H`] [`--xterm` <XTERM>] [`--print`]  
+>           [`--bridged`] [`--port` <PORT>] [`--shell` <SHELL>]
+
+## DESCRIPTION
+
+Start a new device named DEVICE_NAME. Names of devices must be unique for each user. Yet, different users can run devices having the same name.
+
+Without providing options, vstart starts a device whose configuration reflects the defaults stored inside the `kathara.conf`(5) file. The options described below can be used to adjust the features of a device upon starting it.
+
+Notice: unless differently stated, command line arguments (DEVICE_NAME) and option arguments (e.g., names of collision domains) should not contain space characters. Not complying to this causes vstart to raise an error.
+
+## OPTIONS
+
+* `-h`, `--help`:
+    Show a help message and exit.
+
+* `--noterminals`:
+    Start the device without opening a terminal window.  
+
+    Overrides the default setting specified in `kathara.conf`(5) file.
+
+* `-t`, `--terminals`:
+    Start the device opening its terminal window.  
+
+    Overrides the default setting specified in `kathara.conf`(5) file.
+
+* `-n` <DEVICE_NAME>, `--name` <DEVICE_NAME>:
+    Name of the device to be started.
+
+* `--eth` <N\:CD> [<N\:CD> ...]:
+    Set a specific interface on a collision domain.
+
+    Equip the device with a network interface. `N` is a positive integer starting from 0.
+    The network interface will be attached to a (virtual) collision domain whose name is `CD`. Attaching interfaces of different devices to the same collision domain allows them to exchange network traffic. <N> should be declared as a sequential number, starting from 0; if any intermediate number is missing an exception is raised.
+
+* `-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]], `--exec` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]:
+    Execute a specific command in the device during startup.
+
+    Run a specific command inside the device during the startup phase. <EXEC_COMMANDS> are shell commands executed with the shell defined in `--shell` or with the default shell defined in `kathara.conf`(5).
+
+* `--mem` <MEM>:
+    Limit the amount of RAM available for this device.
+
+    Set the amount of available RAM inside the device to <MEM>. If it is not set, the device could use as much RAM as the Docker daemon can use. If you set this option, the minimum allowed value is 4m (4 megabyte).  
+    This option takes a positive integer, followed by a suffix of "b", "k", "m", "g", to indicate bytes, kilobytes, megabytes, or gigabytes.
+
+* `--cpus` <CPUS>:
+    Limit the amount of CPU available for this device.
+
+    Set the amount of available CPU inside the device to <CPUS>. If it is not set, the device could use as much CPU as the Docker daemon can use.  
+    This option takes a positive float, ranging from 0 to the max number of logical CPUs of the host. For instance, if the host device has two CPUs and you set `--cpus` 1.5, the container is guaranteed at most one and a half of the CPUs.
+
+* `-i` <IMAGE>, `--image` <IMAGE>:
+    Run this device with a specific Docker Image.
+
+    The specified Docker Image could be in the local repository or on the Docker Hub. Overrides the default setting specified in `kathara.conf`(5) file.
+
+* `-H`, `--no-hosthome`:
+    /hosthome dir will not be mounted inside the device.
+
+    By default, the home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Overrides the default setting specified in `kathara.conf`(5) file.
+
+* `--xterm` <XTERM>:
+    Set a different terminal emulator application (Unix only).
+
+    As an example: `gnome-terminal`(1). Overrides the default setting specified in `kathara.conf`(5) file. This option is ignored if used in conjunction with `--noterminals` or if `open_terminals` is set to false.
+
+* `--print`:
+    Check if the device parameters are correct (dry run).
+
+* `--bridged`:
+    Add a bridge interface to the device.
+
+    Connect the device to the host network by adding an additional network interface (will be the last one). This interface will be connected to the host network through a NAT connection and will receive its IP configuration automatically via DHCP.
+
+* `--port` <PORT>:
+    Choose a TCP <PORT> number to map localhost port <PORT> to the internal port 3000 of the device.
+
+* `--shell` <SHELL>:
+    Set the shell (sh, bash, etc.) that should be used inside the device.
+
+    The requested shell must be installed inside the device. Overrides the default setting specified in `kathara.conf`(5) file.
+
+## EXAMPLES
+
+    kathara vstart -n pc1
+
+Start a new device named pc1.
+
+    kathara vstart -n mypc1 -i my-image --mem 128m
+
+Start a new device named mypc1. The device will run using local image `my-image` and will be equipped with 128 MB of RAM.
+
+    kathara vstart -n producer --eth 0:A
+    kathara vstart -n consumer --eth 0:A
+
+Start two devices named producer and consumer, which will be able to exchange data with each other by using their network interfaces eth0. Such interfaces will have to be configured with an IP address before the communication can actually take place.
+
+    kathara vstart -n router --bridged --eth 0:A
+
+Start a new device named router. The device will have two network interfaces. Interface eth0 will be attached to the virtual collision domain named A and will have to be configured by hand inside the device (for example, by using ifconfig). Interface eth1 will be connected to the host network through a NAT connection.
+
+    kathara vstart -n test --eth 0:A 1:B --print
+
+Instead of actually starting a device, checks if the passed device parameters are correct.
+
+    kathara vstart -n terminal_test --xterm gnome-terminal
+
+Start a device named terminal_test which uses the gnome-terminal terminal.
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-vclean`(1), `kathara-vconfig`(1), `kathara.conf`(5)

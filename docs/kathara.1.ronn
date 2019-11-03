@@ -1,0 +1,79 @@
+m4_changequote()
+kathara(1) -- A network emulation tool
+=============================================
+
+## SYNOPSIS
+
+`kathara` [`-h`] [`-v`] <command> [<args>]
+
+## DESCRIPTION
+
+Kathara is a network emulation tool.
+
+It is an implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-core) using Python.  
+Ten times faster than Netkit and more than 100 times lighter, the framework has the performances to run in production.
+
+Within the Kathara environment each network device, called device, is implemented by a container, and each interconnection link is emulated by using a virtual network.
+
+Each device can be configured to have an arbitrary number of (virtual) network interfaces.
+
+By default, devices use a Docker Image which includes network oriented software such as routing daemons (RIP, OSPF, etc.), an HTTP server, firewalling utilities (`iptables`(8)), and diagnostic tools (`ping`(1), `traceroute`(1), `tcpdump`(1), etc.).  
+By configuring the appropriate software, it is possible to emulate with a device a specific network device (e.g., a router).  
+Other applications (such as SDN and P4) can be added using custom Docker Images.
+
+Kathara provides two alternative interfaces to start and configure devices. A set of `v`-prefixed commands (vstart, vclean, vconfig), that allow to start and manage single devices while providing finegrained control on their configuration; and a set of `l`-prefixed commands (lstart, lclean, linfo, lrestart, ltest), that ease setting up preconfigured network laboratories consisting of several devices.
+
+Kathara also provides a set of global commands (connect, info, wipe, settings, check).
+
+## KATHARA COMMANDS
+
+The possible kathara commands are:
+
+* `kathara-vstart`(1):
+    Start a new Kathara device
+
+* `kathara-vclean`(1):
+    Stop a single Kathara device
+
+* `kathara-vconfig`(1):
+    Attach network interfaces to a running Kathara device
+
+* `kathara-lstart`(1):
+    Start a Kathara lab
+
+* `kathara-lclean`(1):
+    Stop a Kathara lab
+
+* `kathara-linfo`(1):
+    Show information about a Kathara lab
+
+* `kathara-lrestart`(1):
+    Restart a Kathara lab
+
+* `kathara-ltest`(1):
+    Test a Kathara lab
+
+* `kathara-connect`(1):
+    Connect to a Kathara device
+
+* `kathara-wipe`(1):
+    Delete all Kathara devices and links, optionally also delete settings
+
+* `kathara-list`(1):
+    Show all running Kathara devices
+
+* `kathara-settings`(1):
+    Show and edit settings
+
+* `kathara-check`(1):
+    Check your system environment
+
+## FILES
+
+Kathara stores its default configuration settings inside a file named `kathara.conf`. This file is placed in the `~/.config` folder. If it does not exist when Kathara is launched, it will be created with default settings. See `kathara.conf`(5) for information about the location of this file and for a description of its format.
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara-lab.conf`(5), `kathara-lab.dep`(5), `kathara.conf`(5), [Kathara official site](http://www.kathara.org)

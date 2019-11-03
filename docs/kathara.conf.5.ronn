@@ -1,0 +1,96 @@
+m4_changequote()
+kathara.conf(5) -- Kathara configuration file
+=============================================
+
+## DESCRIPTION
+
+This file is a JSON that contains information about the Kathara configuration. It also stores the default settings to be used when starting new devices. This file is placed in the `~/.config` folder. If it does not exist when Kathara is launched, it will be created with default settings.
+
+Checks on the correctness of the configuration are performed each time a Kathara command is launched. So each value must always be a valid setting.
+
+## CONFIGURATION PARAMETERS
+
+* `image` (string):
+    Default Docker image used when starting a device.
+
+    Default to `kathara/quagga`.
+
+* `manager_type` (string):
+    Manager used to launch the lab.
+
+    Default to `docker`.
+	
+* `terminal` (string):
+	This parameter determines the terminal emulator application to be used for device terminals. The application must be correctly installed in the host system.
+
+	Default to `/usr/bin/xterm`.
+
+* `open_terminals` (boolean):
+	This parameter determines if device terminal should be opened when starting it. 
+
+	Default to `true`.
+
+* `hosthome_mount` (boolean):
+	This parameter specifies if the `/hosthome` dir will be mounted inside the device. The home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`.  
+
+	Default to `false`.
+
+* `shared_mount` (boolean):
+	This parameter specifies if the `/shared` dir will be mounted inside the device. The "shared" folder inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`.  
+
+	Default to `true`.
+
+* `device_shell` (string):
+	This parameter determines the shell to use inside the device. The application must be correctly installed in the Docker image used for the device. Possible examples are: bash, sh, fish, and so on.
+
+	Default to `bash`.
+
+* `net_prefix` (string):
+	The prefix assigned to the network name when deployed.
+
+	Default to `kathara`.
+
+* `device_prefix` (string):
+	The prefix assigned to the device name when deployed.
+
+	Default to `kathara`.
+
+* `debug_level` (string):
+	Logging level of Kathara messages. Must be one of the following: CRITICAL, ERROR, WARNING, INFO or DEBUG.
+
+	Default to `INFO`.
+
+* `print_startup_log` (boolean):
+	When opening a device terminal, print its startup log. This setting is ignored if `open_terminals` is `false`.
+
+	Default to `true`.
+
+* `last_checked` (double):
+	Unix time (in milliseconds) of the last online check for Kathara updates. Each week, when the first Kathara command is launched, the system will check if the system and the default image are up-to-date.
+
+	Default to `time of the file creation - one week`, so the check will always run after a fresh.
+	
+
+## EXAMPLE
+
+		{
+			"image": "kathara/quagga",
+			"deployer_type": "docker",
+			"terminal": "/usr/bin/xterm",
+			"open_terminals": true,
+			"hosthome_mount": true,
+			"device_shell": "bash",
+			"net_prefix": "kathara",
+			"device_prefix": "kathara",
+			"debug_level": "INFO",
+			"print_startup_log": true,
+			"last_checked": 1570724309.2402148
+		}
+  
+Example of the default `kathara.conf`(5) file.
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-vstart`(1), `kathara-lstart`(1), [Kathara official site](http://www.kathara.org)

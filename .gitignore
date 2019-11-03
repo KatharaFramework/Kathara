@@ -28,7 +28,7 @@ var/
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+
 
 # Installer logs
 pip-log.txt
@@ -94,12 +94,23 @@ Dockerfile~
 *.py~
 
 # builds
-bin/wrapper/bin/netkit_dw
-test/shared/MARACAS_lab2/
-bin/temp/*
+src/kathara.build/
+src/kathara.dist/
 
-bin/python/config
+
 config
 .vscode/
 test/
-logs.txt
+.vs/
+
+.idea/
+
+# ISS Compiled file
+scripts/Windows/Output/
+scripts/OSX/Output/
+scripts/Linux/Output/
+
+docs/Html/
+docs/MD/
+docs/Roff/
+.DS_Store

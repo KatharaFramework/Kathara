@@ -1,0 +1,22 @@
+## REPORTING BUGS
+
+Report bugs opening an issue on the [official GitHub repository](https://github.com/KatharaFramework/Kathara) where the development and maintenance is primarily done.  
+Issues which are security relevant should be disclosed privately to the [Kathara mailing list](mailto:contact@kathara.org). You do not have to be subscribed to the list to send a message there.  
+When reporting a bug, remember to write used commands, eventually attach your lab, and include the output of `kathara-check`(1) in order to make possible to reproduce the bug.
+
+## AUTHORS
+
+Kathara was born from Netkit. Its first version was developed by Gaetano Bonofiglio and Veronica Iovinella. Currently it is mantained by Lorenzo Ariemma and Mariano Scazzariello.
+
+People involved also include:
+
++  Giuseppe Di Battista
++  Gabriele Lospoto
++  Maurizio Patrignani
++  Maurizio Pizzonia
++  Massimo Rimondini
+
+## COPYRIGHT
+
+Copyright © 2017-2019 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.  
+This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

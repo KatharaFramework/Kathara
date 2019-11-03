@@ -1,0 +1,82 @@
+m4_changequote()
+kathara-lstart(1) -- Start a Kathara lab
+=============================================
+
+## SYNOPSIS
+
+`kathara lstart`
+>           [`-h`] [`-n` | `-t`] [`-d` <DIRECTORY>] [`-F`] [`-l`]  
+>           [`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>] [`--print`]  
+>           [`-H`] [`-S`]  
+>           [<DEVICE_NAME> [<DEVICE_NAME> ...]]
+
+
+## DESCRIPTION
+
+In order to ease setting up complex network with Kathara it is possible to completely describe it into special configuration files, creating a so-called **lab**. The lab can be started with a single command as if it were a virtual network 'laboratory'.
+
+Start a set of devices that are part of a Kathara lab and configures them according to the parameters contained in the lab description.
+By default, all the devices that make up the lab are started. If a list of <DEVICE_NAME>s is provided, then only devices with a matching name and that are part of the lab are started.
+
+The configuration of a Kathara lab consists of some files described in `kathara-lab.conf`(5) and `kathara-lab.dep`(5) and directories whose names, locations and contents are described in `kathara-lab-dirs`(7).
+
+## OPTIONS
+
+* `-h`, `--help`:
+    Show a help message and exit.
+
+* `--noterminals`:
+    Start the lab devices without opening terminal windows.
+
+    Override the default setting specified in `kathara.conf`(5) file.
+
+* `-t`, `--terminals`:
+    Start the lab devices opening their terminal windows.
+
+    Override the default setting specified in `kathara.conf`(5) file.
+
+* `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
+    Specify the folder containing the lab.
+
+    Start the Kathara lab that is located inside <DIRECTORY>.  
+    If no `-d` option is provided, assume the lab is located in the current directory.
+
+* `-F`, `--force-lab`:
+    Force the lab to start without a lab.conf or lab.dep file.
+
+    As a native behaviour, Kathara starts a device for each directory that it finds in a designated path, by default the current directory. In order to prevent the user from accidentally starting random devices from a directory that does not contain a lab, lstart requires the presence of the `kathara-lab.conf`(5) file in the affected directory. If this file is not required for your setting, and you still want to launch your lab without creating it, you can use this option to force Kathara starting a lab in the affected directory.
+
+* `-l`, `--list`:
+    Show information about running devices after the lab has been started.
+
+* `-o` [<OPTION> [<OPTION> ...]], `--pass` [<OPTION> [<OPTION> ...]]:
+    Apply options to all devices of a lab during startup.
+
+    Should be a list of double quoted strings, like `--pass "mem=64m" "image=kathara/netkit_base"`.
+
+* `--xterm` <XTERM>:
+    Set a different terminal emulator application (Unix only).
+
+    As an example: `gnome-terminal`(1). Override the default setting specified in `kathara.conf`(5) file. This option is ignored if used in conjunction with `--noterminals` or if `open_terminals` is set to false.
+
+* `--print`:
+    Open the lab.conf file and check if it is correct (dry run).
+
+* `-H`, `--no-hosthome`:
+    `/hosthome` dir will not be mounted inside the device.
+
+    By default, the home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
+
+* `-S`, `--no-shared`:
+    `/shared` dir will not be mounted inside the device.
+
+    By default, the "shared" directory inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
+
+* `DEVICE_NAME`:
+    A list of device names. Instead of starting the whole lab, only specified devices are started.
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-lclean`(1), `kathara-lrestart`(1), `kathara-linfo`(1), `kathara-lab.conf`(5), `kathara-lab.dep`(5)

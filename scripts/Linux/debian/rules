@@ -1,0 +1,9 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	cp -r $(CURDIR)/kathara.dist/* $(CURDIR)/debian/kathara/usr/lib/kathara/
+	chmod 400 $(CURDIR)/debian/kathara/usr/lib/kathara/*.so*
+	chmod 755 $(CURDIR)/debian/kathara/usr/lib/kathara/kathara

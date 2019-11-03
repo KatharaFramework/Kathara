@@ -1,0 +1,20 @@
+Source: kathara
+Maintainer: Kathara Team <contact@kathara.org>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.8
+Build-Depends: debhelper (>= 10),
+    libexpat1 (>= 2.2.0),
+    libmpdec2 (>= 2.4.2)
+Vcs-Git: https://github.com/KatharaFramework/Kathara.git
+Vcs-Browser: https://github.com/KatharaFramework/Kathara
+Homepage: http://www.kathara.org/
+
+Package: kathara
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Suggests: docker.io (>= 17.03.2) | docker-ce (>= 17.03.2), xterm
+Description: Network emulation tool.
+	It is an implementation of the notorious Netkit using Python.  
+	Ten times faster than Netkit and more than 100 times lighter,
+	the framework has the performances to run in production.
