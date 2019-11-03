@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo -e "\033[0;33mDeprecated, will run vclean instead. To run the old vhalt specifically use vhalt_legacy\033[0m"
+$NETKIT_HOME/vclean "$@"

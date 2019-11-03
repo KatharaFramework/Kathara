@@ -1,0 +1,54 @@
+#!/bin/bash
+
+NETKIT_TERMINAL_STRING="xterm -T "
+NETKIT_PRINT=0
+for i in "$@"
+do
+case $i in
+    --xterm=*)
+    NETKIT_TERMINAL_STRING="${i#*=} --title="
+    #shift 
+    ;;
+    --print)
+    NETKIT_PRINT=1
+    #shift
+    ;;
+    *)
+    # unknown option
+    ;;
+esac
+done
+
+mkdir -p $HOME/netkit_temp/labs
+
+python $NETKIT_HOME/python/check.py "$PWD/" -f "$@"
+
+export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
+
+export RC=$?
+if [ "$RC" = "0" ]; then
+    python $NETKIT_HOME/python/print_metadata.py "$PWD/" "$@"
+
+    M=_machines
+
+    python $NETKIT_HOME/python/folder_hash.py "$PWD/" "$@"| 
+    while IFS=';' read -ra in; do ( 
+        if [ "$NETKIT_PRINT" = "0" ];
+        then
+		if [ -f "$HOME/netkit_temp/$in$M" ]; then 
+            echo -e "\033[0;33mPrevious status found: will try to resume containers instead of creating them\033[0m"
+		    $ADAPTER_BIN start `cat "$HOME/netkit_temp/$in$M"`; 
+			python $NETKIT_HOME/python/lstart.py --execbash "$PWD/" "$@" | 
+			(while IFS=';' read -ra in; do ($NETKIT_TERMINAL_STRING"${in[0]}" -e "${in[1]}" &); done)
+		else 
+		    python $NETKIT_HOME/python/lstart.py "$PWD/" "$@" | while IFS=';' read -ra in; do ($NETKIT_TERMINAL_STRING"${in[0]}" -e "${in[1]}" &); done  
+		fi
+        else
+		python $NETKIT_HOME/python/lstart.py "$PWD/" "$@" | while read in; do (echo "$in &"); done  
+        fi
+    ); 
+    done
+
+else
+    echo FAILED
+fi

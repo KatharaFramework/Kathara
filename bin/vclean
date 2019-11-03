@@ -1,0 +1,29 @@
+#!/bin/bash
+
+if [ $# -lt 1 ]; then
+	echo Usage: $0 machine_name
+	exit 1
+fi
+
+export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
+
+NETKIT_NET=0
+for i in "$@"
+do
+case $i in
+    --network)
+    NETKIT_NET=1
+    #shift 
+    ;;
+    *)
+    #shift
+    ;;
+esac
+done
+
+echo -e "\033[0;33mAny network still in use by another machine will not be deleted (and will raise an error instead)\033[0m"
+
+if [ "$NETKIT_NET" = "0" ]; then
+	$NETKIT_HOME/lclean -d "$HOME/netkit_temp/labs/netkit_${UID}_${@: -1}" 
+else $ADAPTER_BIN network rm netkit_${UID}_${@: -1}
+fi

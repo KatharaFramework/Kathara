@@ -1,0 +1,51 @@
+#!/bin/bash
+
+python $NETKIT_HOME/python/check.py "$PWD/" "$@"
+
+export ADAPTER_BIN=$(python $NETKIT_HOME/python/adapter.py)
+
+NETKIT_ALL=1
+NETKIT_LIST=0
+NETKIT_APP_PREV=$0
+for i in "$@"
+do
+case $i in
+    --list)
+    NETKIT_APP_PREV=$i
+    NETKIT_LIST=1
+    #shift 
+    ;;
+    -*)
+    NETKIT_APP_PREV=$i
+    #shift 
+    ;;
+    *)
+    if [ "$NETKIT_APP_PREV" != "-d" ]; then
+        $ADAPTER_BIN stop netkit_${UID}_$i; NETKIT_ALL=0
+    fi
+    NETKIT_APP_PREV=$i
+    #shift
+    ;;
+esac
+done
+
+export RC=$?
+if [ "$RC" = "0" ]; then
+    echo -e "\033[0;33mContainers will be stopped (gracefully) but not deleted\033[0m"
+    M=_machines
+    L=_links
+    if [ "$NETKIT_ALL" = "1" ]; then
+        python $NETKIT_HOME/python/folder_hash.py "$PWD/" "$@" | while read in; do (
+                if [ -f "$HOME/netkit_temp/$in$M" ]; then
+                    $ADAPTER_BIN stop `cat "$HOME/netkit_temp/$in$M"`
+                fi
+            ); done
+    fi
+
+    if [ "$NETKIT_LIST" = "1" ]; then
+        $ADAPTER_BIN stats --no-stream ; $ADAPTER_BIN network list
+    fi
+    
+else
+    echo FAILED
+fi
