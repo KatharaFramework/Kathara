@@ -1,4 +1,0 @@
-#!/bin/bash
-
-echo -e "\033[0;33mDeprecated, will run lclean instead. To run the old lhalt specifically use lhalt_legacy\033[0m"
-$NETKIT_HOME/lclean "$@"

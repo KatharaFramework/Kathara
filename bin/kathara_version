@@ -1,3 +1,0 @@
-#!/bin/bash
-
-cat $NETKIT_HOME/kathara_version.txt

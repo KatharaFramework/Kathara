@@ -1,3 +1,0 @@
-#!/bin/bash
-
-$NETKIT_HOME/lclean "$@"; $NETKIT_HOME/lstart "$@"
