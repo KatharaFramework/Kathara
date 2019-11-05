@@ -37,15 +37,10 @@ class DockerLink(object):
 
         logging.debug("Creating subnet for link `%s`..." % link.name)
         network_subnet = self._get_link_subnet()
-        logging.debug("Subnet IP is %s/%d." % (network_subnet, SUBNET_DIVIDER))
-
-        # Gateway is the first IP of the subnet
-        network_gateway = network_subnet + 1
+        logging.debug("Subnet IP is %s." % network_subnet)
 
         # Create the network IPAM config for Docker
-        network_pool = docker.types.IPAMPool(subnet='%s/%d' % (str(network_subnet), SUBNET_DIVIDER),
-                                             gateway=str(network_gateway)
-                                             )
+        network_pool = docker.types.IPAMPool(subnet='%s' % network_subnet)
 
         network_ipam_config = docker.types.IPAMConfig(driver='default',
                                                       pool_configs=[network_pool]
@@ -89,7 +84,8 @@ class DockerLink(object):
     def _get_link_subnet(self):
         # Get current Docker subnets
         current_networks = []
-        for network in self.get_links_by_filters():
+
+        for network in self.client.networks.list(filters={"driver": "bridge"}):
             ipam_config = network.attrs['IPAM']['Config']
             first_config = ipam_config.pop()
 
@@ -102,8 +98,18 @@ class DockerLink(object):
         # Get last subnet defined
         last_network = max(current_networks)
 
-        # Calculate a new subnet by adding a /16 to the last deployed subnet.
-        return last_network.network_address + SUBNET_MULTIPLIER
+        # Create a /16 starting from the last Docker network
+        new_network = ipaddress.IPv4Network("%s/%d" % (last_network.broadcast_address + 1, SUBNET_DIVIDER),
+                                            strict=False
+                                            )
+
+        # If the new network overlaps the last one, add a /16 to it.
+        if new_network.overlaps(last_network):
+            new_network = ipaddress.IPv4Network("%s/%d" % (new_network.network_address + SUBNET_MULTIPLIER,
+                                                           SUBNET_DIVIDER)
+                                                )
+
+        return new_network
 
     def _configure_network(self, network):
         """
