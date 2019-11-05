@@ -13,7 +13,7 @@ class DockerImage(object):
         return self.client.images.get(image_name)
 
     def pull(self, image_name):
-        return self.client.images.pull(image_name)
+        return self.client.images.pull(image_name, tag="latest")
 
     def check_and_pull(self, image_name):
         try:

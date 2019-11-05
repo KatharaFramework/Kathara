@@ -13,10 +13,12 @@ SUBNET_MULTIPLIER = 256 * 256
 
 
 class DockerLink(object):
-    __slots__ = ['client', 'base_ip']
+    __slots__ = ['client', 'docker_image', 'base_ip']
 
-    def __init__(self, client):
+    def __init__(self, client, docker_image):
         self.client = client
+
+        self.docker_image = docker_image
 
         # Base IP subnet allocated to Kathara in Docker
         self.base_ip = ipaddress.ip_address(u'172.19.0.0')
@@ -140,6 +142,7 @@ class DockerLink(object):
             patch_command = "; ".join(patch_command)
             privilege_patch_command = "/usr/sbin/chroot /host /bin/sh -c \"%s\"" % patch_command
 
+            self.docker_image.check_and_pull("library/alpine")
             self.client.containers.run(image="alpine",
                                        command=privilege_patch_command,
                                        network_mode="host",
