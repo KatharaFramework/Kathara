@@ -1,7 +1,8 @@
 kathara (2.0.4-1) __UBUNTU_VERSION__; urgency=low
 
- * libreadline7 fix
- * Fix network overlap if cidr greater than 16
- * Autopull alpine image if needed
+  * kathara.dist/kathara
+    - libreadline7 fix
+    - Fix network overlap if cidr greater than 16
+    - Autopull alpine image if needed
 
- -- Lorenzo Ariemma <lorenzoariemma@gmail.com> __DATE__
+ -- Lorenzo Ariemma <fakemail@gmail.com>  __DATE__
