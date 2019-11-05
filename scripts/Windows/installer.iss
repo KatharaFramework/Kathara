@@ -27,7 +27,7 @@ DisableProgramGroupPage=yes
 LicenseFile=..\..\LICENSE
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-OutputBaseFilename=Kathara-setup
+OutputBaseFilename=Kathara-windows-installer-x64-{#MyAppVersion}
 SetupIconFile=Assets\app_icon.ico
 Compression=lzma
 SolidCompression=yes

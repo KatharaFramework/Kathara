@@ -64,7 +64,7 @@ def get_executable_path(exec_path):
         # If kathara is in the path, return the absolute path of kathara
         which_path = shutil.which(exec_path)
         if which_path:
-            return which_path
+            return "\"" + which_path + "\""
 
     return None
 
@@ -102,7 +102,11 @@ def human_readable_bytes(size_bytes):
 
 
 def get_vlab_temp_path(force_creation=True):
-    tempdir = exec_by_platform(tempfile.gettempdir, tempfile.gettempdir, lambda: "/%s" % get_absolute_path("/tmp"))
+    def windows_path():
+        import win32file
+        return win32file.GetLongPathName(tempfile.gettempdir())
+
+    tempdir = exec_by_platform(tempfile.gettempdir, windows_path, lambda: "/%s" % get_absolute_path("/tmp"))
 
     vlab_directory = os.path.join(tempdir, "kathara_vlab")
     if not os.path.isdir(vlab_directory) and force_creation:
