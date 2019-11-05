@@ -5,16 +5,25 @@ LAUNCHPAD_NAME=user
 
 ARCHITECTURE:=$(shell dpkg --print-architecture)
 
-.PHONY: debUnsigned debSigned deps clean dockerSigned dockerUnsigned docker-build compile ppa prepareDeb
+.PHONY: debUnsigned debSigned deps clean dockerSignedDebian dockerUnsignedDebian docker-build-debian dockerSignedUbuntu dockerUnsignedUbuntu docker-build-ubuntu compile ppa prepareDeb
 
-docker-build:
-	cd Docker-Linux-Build && docker build -t kathara/linux-build .
+docker-build-debian:
+	cd Docker-Linux-Build-Debian-9 && docker build -t kathara/debian-9-build .
 
-dockerSigned: docker-build
-	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make clean && make deps && make debSigned && make ppa"
+dockerSignedDebian: docker-build-debian
+	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/debian-9-build /bin/bash -c "make clean && make deps && make prepareDebForDebian && make debSigned && make ppa"
 
-dockerUnsigned: docker-build
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make clean && make deps && make debUnsigned"
+dockerUnsignedDebian: docker-build-debian
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/debian-9-build /bin/bash -c "make clean && make deps && make prepareDebForDebian && make debUnsigned"
+
+docker-build-ubuntu:
+	cd Docker-Linux-Build-Ubuntu-1904 && docker build -t kathara/ubuntu-1904-build .
+
+dockerSignedUbuntu: docker-build-ubuntu
+	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/ubuntu-1904-build /bin/bash -c "make clean && make deps && make prepareDebForUbuntu && make debSigned && make ppa"
+
+dockerUnsignedUbuntu: docker-build-ubuntu
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/ubuntu-1904-build /bin/bash -c "make clean && make deps && make prepareDebForUbuntu && make debUnsigned"
 
 compile:
 	cd ../../src && python3 -m nuitka --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Resources kathara.py
@@ -34,13 +43,19 @@ prepareDeb: compile
 	cp -r ../../docs/Roff Output/kathara-$(VERSION)/debian/manpages
 	cd ../../docs && make cleanall
 	ls Output/kathara-$(VERSION)/debian/manpages/ | awk '{print "debian/manpages/"$$0}' > Output/kathara-$(VERSION)/debian/kathara.manpages
+	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog
 
+prepareDebForDebian: prepareDeb
+	sed -i -e 's/__UBUNTU_VERSION__/bionic/g' Output/kathara-$(VERSION)/debian/changelog
 
-debSigned: prepareDeb
+prepareDebForUbuntu: prepareDeb
+	sed -i -e 's/__UBUNTU_VERSION__/disco/g' Output/kathara-$(VERSION)/debian/changelog
+
+debSigned:
 	cd Output/kathara-$(VERSION); debuild -S -sa
 	rm -Rf Output/kathara-$(VERSION)
 
-debUnsigned: prepareDeb
+debUnsigned:
 	cd Output/kathara-$(VERSION); debuild -uc -us
 	rm -Rf Output/kathara-$(VERSION)
 

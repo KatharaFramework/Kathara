@@ -1,5 +1,5 @@
-kathara (2.0.3-1) bionic; urgency=low
+kathara (2.0.3-2) __UBUNTU_VERSION__; urgency=low
 
   * Dep fix.
 
- -- Mariano Scazzariello <m******************@gmail.com>  Mon, 28 Oct 2019 18:32:59 +0200
+ -- An User <mail@mail.mail> __DATE__
