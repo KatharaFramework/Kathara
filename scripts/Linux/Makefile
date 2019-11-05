@@ -1,6 +1,6 @@
 #!/usr/bin/make
 
-VERSION=2.0.3
+VERSION=2.0.4
 LAUNCHPAD_NAME=user
 
 ARCHITECTURE:=$(shell dpkg --print-architecture)

@@ -1,5 +1,7 @@
-kathara (2.0.3-2) __UBUNTU_VERSION__; urgency=low
+kathara (2.0.4-1) __UBUNTU_VERSION__; urgency=low
 
-  * Dep fix.
+ * libreadline7 fix
+ * Fix network overlap if cidr greater than 16
+ * Autopull alpine image if needed
 
- -- An User <mail@mail.mail> __DATE__
+ -- Lorenzo Ariemma <lorenzoariemma@gmail.com> __DATE__
