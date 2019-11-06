@@ -1,5 +1,5 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-  * The upload is now done with real source
+  * Current User Name (used for Docker Container name) is slugified to avoid spaces and special chars.
 
- -- Lorenzo Ariemma <l******************a@gmail.com>  __DATE__
+ -- Mariano Scazzariello <***@gmail.com>  __DATE__

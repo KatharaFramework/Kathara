@@ -1,23 +1,20 @@
 #!/usr/bin/make -f
 
-VERSION=2.0.6
-DEBIAN_PACKAGE_VERSION=6
+VERSION=2.0.7
+DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 
 ARCHITECTURE:=$(shell dpkg --print-architecture)
 
-.PHONY: allSigned docker-unsigned docker-signed-bionic docker-signed-disco docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed-bionic build-deb-signed-disco ppa deps clean
+.PHONY: allSigned docker-unsigned docker-signed_% docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean
 
-allSigned: clean prepare-deb-source clean-output-folder docker-signed-bionic docker-signed-disco
+allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_disco
 
 docker-unsigned: docker-build-image
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make build-deb-unsigned"
 
-docker-signed-bionic: docker-build-image
-	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make unpack-deb-source && make build-deb-signed-bionic && make ppa && make clean-output-folder"
-
-docker-signed-disco: docker-build-image
-	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make unpack-deb-source && make build-deb-signed-disco && make ppa && make clean-output-folder"
+docker-signed_%:
+	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make unpack-deb-source && make build-deb-signed distro=$* && make ppa && make clean-output-folder distro=$*"
 
 docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build .
@@ -32,11 +29,11 @@ unpack-deb-source:
 
 clean-output-folder:
 	rm -rf Output/kathara-$(VERSION)
-	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION).debian.tar.xz
-	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION).dsc
-	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)_source.build
-	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)_source.buildinfo
-	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)_source.changes
+	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro).debian.tar.xz
+	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro).dsc
+	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro)_source.build
+	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro)_source.buildinfo
+	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro)_source.changes
 
 copy-debian-folder: 
 	cp -r debian Output/kathara-$(VERSION)/
@@ -60,12 +57,8 @@ build-deb-unsigned: build-man download-pip
 	sed -i -e 's/__UBUNTU_VERSION__/bionic/g' Output/kathara-$(VERSION)/debian/changelog
 	cd Output/kathara-$(VERSION); debuild -us -uc
 
-build-deb-signed-bionic: build-man download-pip
-	sed -i -e 's/__UBUNTU_VERSION__/bionic/g' Output/kathara-$(VERSION)/debian/changelog
-	cd Output/kathara-$(VERSION); debuild -S -sa
-
-build-deb-signed-disco: build-man download-pip
-	sed -i -e 's/__UBUNTU_VERSION__/disco/g' Output/kathara-$(VERSION)/debian/changelog
+build-deb-signed: build-man download-pip
+	sed -i -e 's/__UBUNTU_VERSION__/$(distro)/g' Output/kathara-$(VERSION)/debian/changelog
 	cd Output/kathara-$(VERSION); debuild -S -sa
 
 ppa:
@@ -77,5 +70,5 @@ deps:
 
 clean:
 	if [ -d Output ]; then \
-		rm -r Output; \
+		rm -rf Output; \
 	fi
