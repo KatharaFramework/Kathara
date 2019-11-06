@@ -1,5 +1,5 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-  * Current User Name (used for Docker Container name) is slugified to avoid spaces and special chars.
+  * Fix slugify dependency.
 
- -- Mariano Scazzariello <***@gmail.com>  __DATE__
+ -- Lorenzo Ariemma <******@gmail.com>  __DATE__
