@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Kathara"
-#define MyAppVersion "2.0.4"
+#define MyAppVersion "2.0.6"
 #define MyAppPublisher "Kathara Team"
 #define MyAppURL "http://www.kathara.org"
 #define MyAppExeName "kathara.exe"

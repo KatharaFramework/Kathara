@@ -3,7 +3,29 @@
 %:
 	dh $@
 
+override_dh_auto_clean:
+	rm -rf kathara.build
+	rm -rf kathara.dist
+	find . | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
+
+override_dh_auto_configure:
+	mkdir $(CURDIR)/debian/pythonModules
+	python3 -m pip install --system -t $(CURDIR)/debian/pythonModules $(CURDIR)/debian/pythonLibs/*
+
+override_dh_auto_build: 
+	export PYTHONPATH=$$PYTHONPATH:$(CURDIR)/debian/pythonModules && python3 -m nuitka --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Resources kathara.py
+
+
 override_dh_auto_install:
+	rm -rf $(CURDIR)/debian/kathara/usr/lib/kathara/*
 	cp -r $(CURDIR)/kathara.dist/* $(CURDIR)/debian/kathara/usr/lib/kathara/
 	chmod 400 $(CURDIR)/debian/kathara/usr/lib/kathara/*.so*
 	chmod 755 $(CURDIR)/debian/kathara/usr/lib/kathara/kathara
+
+override_dh_strip:
+	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libbz2.so.1.0
+	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libexpat.so.1
+	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libtinfo.so.6
+	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libz.so.1
+	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libtinfo.so.5
+	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libcrypto.so.1.1

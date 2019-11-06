@@ -1,77 +1,81 @@
-#!/usr/bin/make
+#!/usr/bin/make -f
 
-VERSION=2.0.4
+VERSION=2.0.6
+DEBIAN_PACKAGE_VERSION=6
 LAUNCHPAD_NAME=user
 
 ARCHITECTURE:=$(shell dpkg --print-architecture)
 
-.PHONY: debUnsigned debSigned deps clean dockerSignedDebian dockerUnsignedDebian docker-build-debian dockerSignedUbuntu dockerUnsignedUbuntu docker-build-ubuntu compile ppa prepareDeb
+.PHONY: allSigned docker-unsigned docker-signed-bionic docker-signed-disco docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed-bionic build-deb-signed-disco ppa deps clean
 
-docker-build-debian:
-	cd Docker-Linux-Build-Debian-9 && docker build -t kathara/debian-9-build .
+allSigned: clean prepare-deb-source clean-output-folder docker-signed-bionic docker-signed-disco
 
-dockerSignedDebian: docker-build-debian
-	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/debian-9-build /bin/bash -c "make clean && make deps && make prepareDebForDebian && make debSigned && make ppa"
+docker-unsigned: docker-build-image
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make build-deb-unsigned"
 
-dockerUnsignedDebian: docker-build-debian
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/debian-9-build /bin/bash -c "make clean && make deps && make prepareDebForDebian && make debUnsigned"
+docker-signed-bionic: docker-build-image
+	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make unpack-deb-source && make build-deb-signed-bionic && make ppa && make clean-output-folder"
 
-docker-build-ubuntu:
-	cd Docker-Linux-Build-Ubuntu-1904 && docker build -t kathara/ubuntu-1904-build .
+docker-signed-disco: docker-build-image
+	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make unpack-deb-source && make build-deb-signed-disco && make ppa && make clean-output-folder"
 
-dockerSignedUbuntu: docker-build-ubuntu
-	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/ubuntu-1904-build /bin/bash -c "make clean && make deps && make prepareDebForUbuntu && make debSigned && make ppa"
+docker-build-image:
+	cd Docker-Linux-Build && docker build -t kathara/linux-build .
 
-dockerUnsignedUbuntu: docker-build-ubuntu
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/ubuntu-1904-build /bin/bash -c "make clean && make deps && make prepareDebForUbuntu && make debUnsigned"
+prepare-deb-source:
+	mkdir Output
+	cp -r ../../src Output/kathara-$(VERSION)
+	cd Output; tar -zcf kathara_$(VERSION).orig.tar.gz kathara-$(VERSION)
 
-compile:
-	cd ../../src && python3 -m nuitka --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Resources kathara.py
-	rm -f ../../src/kathara.dist/libbz2.so.1.0
-	rm -f ../../src/kathara.dist/libexpat.so.1
-	rm -f ../../src/kathara.dist/libtinfo.so.6
-	rm -f ../../src/kathara.dist/libz.so.1
-	rm -f ../../src/kathara.dist/libtinfo.so.5
-	rm -f ../../src/kathara.dist/libcrypto.so.1.1
+unpack-deb-source:
+	cd Output; tar -xvf kathara_$(VERSION).orig.tar.gz
 
-prepareDeb: compile
-	mkdir -p Output/kathara-$(VERSION)
-	cp -r ../../src/kathara.dist Output/kathara-$(VERSION)
-	cd Output && tar -zcf kathara_$(VERSION).orig.tar.gz kathara-$(VERSION)
+clean-output-folder:
+	rm -rf Output/kathara-$(VERSION)
+	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION).debian.tar.xz
+	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION).dsc
+	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)_source.build
+	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)_source.buildinfo
+	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)_source.changes
+
+copy-debian-folder: 
 	cp -r debian Output/kathara-$(VERSION)/
+	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog
+	sed -i -e 's/__DEBIAN_PACKAGE_VERSION__/$(DEBIAN_PACKAGE_VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
+	sed -i -e 's/__VERSION__/$(VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
+
+download-pip: copy-debian-folder
+	mkdir Output/kathara-$(VERSION)/debian/pythonLibs
+	cd Output/kathara-$(VERSION)/debian/pythonLibs; python3 -m pip download -r ../../requirements.txt
+	cd Output/kathara-$(VERSION)/debian/pythonLibs; python3 -m pip download nuitka
+	ls Output/kathara-$(VERSION)/debian/pythonLibs/ | awk '{print "debian/pythonLibs/"$$0}' > Output/kathara-$(VERSION)/debian/source/include-binaries
+
+build-man: copy-debian-folder
 	cd ../../docs && make roff-build
 	cp -r ../../docs/Roff Output/kathara-$(VERSION)/debian/manpages
 	cd ../../docs && make cleanall
 	ls Output/kathara-$(VERSION)/debian/manpages/ | awk '{print "debian/manpages/"$$0}' > Output/kathara-$(VERSION)/debian/kathara.manpages
-	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog
 
-prepareDebForDebian: prepareDeb
+build-deb-unsigned: build-man download-pip
 	sed -i -e 's/__UBUNTU_VERSION__/bionic/g' Output/kathara-$(VERSION)/debian/changelog
+	cd Output/kathara-$(VERSION); debuild -us -uc
 
-prepareDebForUbuntu: prepareDeb
-	sed -i -e 's/__UBUNTU_VERSION__/disco/g' Output/kathara-$(VERSION)/debian/changelog
-
-debSigned:
+build-deb-signed-bionic: build-man download-pip
+	sed -i -e 's/__UBUNTU_VERSION__/bionic/g' Output/kathara-$(VERSION)/debian/changelog
 	cd Output/kathara-$(VERSION); debuild -S -sa
-	rm -Rf Output/kathara-$(VERSION)
 
-debUnsigned:
-	cd Output/kathara-$(VERSION); debuild -uc -us
-	rm -Rf Output/kathara-$(VERSION)
+build-deb-signed-disco: build-man download-pip
+	sed -i -e 's/__UBUNTU_VERSION__/disco/g' Output/kathara-$(VERSION)/debian/changelog
+	cd Output/kathara-$(VERSION); debuild -S -sa
 
 ppa:
 	sed -i -e 's/__LAUNCHPAD_NAME__/$(LAUNCHPAD_NAME)/g' $(HOME)/.dput.cf
-	dput -u ppa:katharaframework/kathara Output/*.changes
+	dput -U ppa:katharaframework/kathara Output/*.changes
 
 deps:
-	python3 -m pip install nuitka
-	cd ../../src && python3 -m pip install -r requirements.txt
 	gem install ronn-ng
 
 clean:
-	rm -rf ../../src/kathara.build
-	rm -rf ../../src/kathara.dist
-	find ../../src | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
 	if [ -d Output ]; then \
 		rm -r Output; \
 	fi

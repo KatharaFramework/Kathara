@@ -8,6 +8,7 @@ RUN apt update \
 		python3 \
 		python3-dev \
 		python3-pip \
+		python3-setuptools \
 		libxml2-dev \
 		zlib1g-dev \
 		build-essential \
@@ -15,8 +16,6 @@ RUN apt update \
 		devscripts \
 		git \
 		ruby-full
-
-RUN python3 -m pip install nuitka
 
 RUN gem install nokogiri mustache kramdown rubocop sinatra rack rake test-unit
 
