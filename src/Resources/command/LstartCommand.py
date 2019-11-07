@@ -142,6 +142,11 @@ class LstartCommand(Command):
         if dependencies:
             lab.apply_dependencies(dependencies)
 
+        # TODO: ExtParser
+        # If exists, check if Linux
+        # Check if root
+        # Parse
+
         if args.machine_name:
             lab.intersect_machines(args.machine_name)
 
