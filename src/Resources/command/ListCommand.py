@@ -1,6 +1,6 @@
 import argparse
-import os
 
+from .. import utils
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
 from ..strings import strings, wiki_description
@@ -45,7 +45,7 @@ class ListCommand(Command):
     def run(self, current_path, argv):
         args = self.parser.parse_args(argv)
 
-        if args.all and os.getuid() != 0:
+        if args.all and utils.is_admin():
             raise Exception("You must be root in order to show all Kathara machines of all users.")
 
         if args.name:

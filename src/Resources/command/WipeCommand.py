@@ -1,5 +1,4 @@
 import argparse
-import os
 import shutil
 import sys
 
@@ -61,7 +60,7 @@ class WipeCommand(Command):
         if not args.force:
             utils.confirmation_prompt("Are you sure to wipe Kathara?", lambda: None, sys.exit)
 
-        if args.all and os.getuid() != 0:
+        if args.all and utils.is_admin():
             raise Exception("You must be root in order to wipe all Kathara machines of all users.")
 
         if args.settings:
