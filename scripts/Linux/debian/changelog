@@ -1,5 +1,5 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-  * Fix slugify dependency.
+  * Fix slug dependency.
 
  -- Lorenzo Ariemma <******@gmail.com>  __DATE__

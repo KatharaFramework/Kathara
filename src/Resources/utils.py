@@ -5,15 +5,15 @@ import math
 import os
 import re
 import shutil
+import sys
 import tarfile
 import tempfile
 from io import BytesIO
 from itertools import islice
-
-import sys
-from binaryornot.check import is_binary
-from slugify import slugify
 from sys import platform as _platform
+
+from binaryornot.check import is_binary
+from slug import slug
 
 from .setting.Setting import EXCLUDED_FILES
 from .trdparty.consolemenu import PromptUtils, Screen
@@ -176,7 +176,7 @@ def get_current_user_name():
         import getpass
         return getpass.getuser()
 
-    return slugify(exec_by_platform(unix, windows, unix))
+    return slug(exec_by_platform(unix, windows, unix))
 
 
 def get_current_user_info():
