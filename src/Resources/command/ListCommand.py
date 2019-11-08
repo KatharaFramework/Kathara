@@ -45,7 +45,7 @@ class ListCommand(Command):
     def run(self, current_path, argv):
         args = self.parser.parse_args(argv)
 
-        if args.all and utils.is_admin():
+        if args.all and not utils.is_admin():
             raise Exception("You must be root in order to show all Kathara machines of all users.")
 
         if args.name:
