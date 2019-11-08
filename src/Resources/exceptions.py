@@ -5,8 +5,7 @@ class HTTPConnectionError(Exception):
 
 class SettingsError(Exception):
     def __init__(self, message):
-        super().__init__("Settings file is not valid: %s\nFix it or delete it before launching. "
-                         "To delete it use `kathara wipe -s`." % message)
+        super().__init__("Settings file is not valid: %s\nFix it or delete it before launching." % message)
 
 
 class DockerDaemonConnectionError(Exception):

@@ -198,6 +198,17 @@ def get_current_user_info():
     return exec_by_platform(passwd_info, lambda: None, passwd_info)
 
 
+def is_admin():
+    def unix_root():
+        return os.getuid() == 0
+
+    def windows_admin():
+        import ctypes
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+
+    return exec_by_platform(unix_root, windows_admin, unix_root)
+
+
 def re_search_fail(expression, line):
     matches = re.search(expression, line)
 
