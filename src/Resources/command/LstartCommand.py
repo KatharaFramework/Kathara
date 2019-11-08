@@ -1,10 +1,12 @@
 import argparse
+import os
 import sys
 
 from .. import utils
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
 from ..parser.netkit.DepParser import DepParser
+from ..parser.netkit.ExtParser import ExtParser
 from ..parser.netkit.FolderParser import FolderParser
 from ..parser.netkit.LabParser import LabParser
 from ..parser.netkit.OptionParser import OptionParser
@@ -142,10 +144,19 @@ class LstartCommand(Command):
         if dependencies:
             lab.apply_dependencies(dependencies)
 
-        # TODO: ExtParser
-        # If exists, check if Linux
-        # Check if root
-        # Parse
+        lab_ext_path = os.path.join(lab_path, 'lab.ext')
+
+        if os.path.exists(lab_ext_path):
+            if utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2):
+                if utils.is_admin():
+                    external_links = ExtParser.parse(lab_path)
+
+                    if external_links:
+                        lab.attach_external_links(external_links)
+                else:
+                    raise Exception("You must be root in order to use lab.ext file.")
+            else:
+                raise Exception("lab.ext is only available on UNIX systems.")
 
         if args.machine_name:
             lab.intersect_machines(args.machine_name)

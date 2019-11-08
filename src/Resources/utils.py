@@ -25,6 +25,7 @@ LINUX = "linux"
 LINUX2 = "linux2"
 
 
+# Generic Functions
 def check_python_version():
     if sys.version_info < (3, 0):
         print("Python version should be greater than 3.0")
@@ -52,7 +53,7 @@ def get_executable_path(exec_path):
     if os.path.exists(exec_abs_path):
         # If kathara is launched as a python script
         exec_abs_path = "\"" + exec_abs_path + "\""
-        if exec_path.endswith(".py"):   
+        if exec_path.endswith(".py"):
             # Prepend python in windows because it has no shebang
             return exec_by_platform(lambda: exec_abs_path,
                                     lambda: "python %s" % exec_abs_path,
@@ -60,7 +61,7 @@ def get_executable_path(exec_path):
                                     )
         else:
             # Maybe the executable is not in path, but is still a binary file
-            return  exec_abs_path
+            return exec_abs_path
     else:
         # If kathara is in the path, return the absolute path of kathara
         which_path = shutil.which(exec_path)
@@ -70,50 +71,21 @@ def get_executable_path(exec_path):
     return None
 
 
-def format_headers(message):
-    footer = "=============================="
-    half_message = int((len(message) / 2) + 1)
-    second_half_message = half_message
+def re_search_fail(expression, line):
+    matches = re.search(expression, line)
 
-    if len(message) % 2 == 0:
-        second_half_message -= 1
+    if not matches:
+        raise ValueError()
 
-    return footer[half_message:] + " " + message + " " + footer[second_half_message:]
+    return matches
 
 
-def exec_by_platform(fun_linux, fun_windows, fun_mac):
-    if _platform == LINUX or _platform == LINUX2:
-        return fun_linux()
-    elif _platform == WINDOWS:
-        return fun_windows()
-    elif _platform == MAC_OS:
-        return fun_mac()
-
-
-def human_readable_bytes(size_bytes):
-    if size_bytes == 0:
-        return "0 B"
-
-    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-    i = int(math.floor(math.log(size_bytes, 1024)))
-    p = math.pow(1024, i)
-    s = round(size_bytes / p, 2)
-
-    return "%s %s" % (s, size_name[i])
-
-
-def get_vlab_temp_path(force_creation=True):
-    def windows_path():
-        import win32file
-        return win32file.GetLongPathName(tempfile.gettempdir())
-
-    tempdir = exec_by_platform(tempfile.gettempdir, windows_path, lambda: "/%s" % get_absolute_path("/tmp"))
-
-    vlab_directory = os.path.join(tempdir, "kathara_vlab")
-    if not os.path.isdir(vlab_directory) and force_creation:
-        os.mkdir(vlab_directory)
-
-    return vlab_directory
+def list_chunks(iterable, size):
+    it = iter(iterable)
+    item = list(islice(it, size))
+    while item:
+        yield item
+        item = list(islice(it, size))
 
 
 def confirmation_prompt(prompt_string, callback_yes, callback_no):
@@ -126,26 +98,36 @@ def confirmation_prompt(prompt_string, callback_yes, callback_no):
     return callback_yes()
 
 
+# Platform Specific Functions
+def is_platform(desired_platform):
+    platforms = [LINUX, LINUX2, WINDOWS, MAC_OS]
+    return desired_platform in platforms
+
+
+def exec_by_platform(fun_linux, fun_windows, fun_mac):
+    if _platform == LINUX or _platform == LINUX2:
+        return fun_linux()
+    elif _platform == WINDOWS:
+        return fun_windows()
+    elif _platform == MAC_OS:
+        return fun_mac()
+
+
 def convert_win_2_linux(filename):
     if not is_binary(filename):
         file_content = open(filename, mode='r', encoding='utf-8-sig').read()
         return file_content.replace("\n\r", "\n").encode('utf-8')
 
 
-def pack_file_for_tar(filename, arcname):
-    file_content_patched = convert_win_2_linux(filename)
+def is_admin():
+    def unix_root():
+        return os.getuid() == 0
 
-    file_content = BytesIO(file_content_patched)
-    tarinfo = tarfile.TarInfo(arcname.replace("\\", "/"))   # Tar files must have Linux-style paths
-    tarinfo.size = len(file_content_patched)
+    def windows_admin():
+        import ctypes
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
 
-    return tarinfo, file_content
-
-
-def is_excluded_file(path):
-    _, filename = os.path.split(path)
-
-    return filename in EXCLUDED_FILES
+    return exec_by_platform(unix_root, windows_admin, unix_root)
 
 
 def get_current_user_home():
@@ -198,29 +180,56 @@ def get_current_user_info():
     return exec_by_platform(passwd_info, lambda: None, passwd_info)
 
 
-def is_admin():
-    def unix_root():
-        return os.getuid() == 0
+# Formatting Functions
+def format_headers(message):
+    footer = "=============================="
+    half_message = int((len(message) / 2) + 1)
+    second_half_message = half_message
 
-    def windows_admin():
-        import ctypes
-        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    if len(message) % 2 == 0:
+        second_half_message -= 1
 
-    return exec_by_platform(unix_root, windows_admin, unix_root)
-
-
-def re_search_fail(expression, line):
-    matches = re.search(expression, line)
-
-    if not matches:
-        raise ValueError()
-
-    return matches
+    return footer[half_message:] + " " + message + " " + footer[second_half_message:]
 
 
-def list_chunks(iterable, size):
-    it = iter(iterable)
-    item = list(islice(it, size))
-    while item:
-        yield item
-        item = list(islice(it, size))
+def human_readable_bytes(size_bytes):
+    if size_bytes == 0:
+        return "0 B"
+
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+
+    return "%s %s" % (s, size_name[i])
+
+
+# Lab Functions
+def get_vlab_temp_path(force_creation=True):
+    def windows_path():
+        import win32file
+        return win32file.GetLongPathName(tempfile.gettempdir())
+
+    tempdir = exec_by_platform(tempfile.gettempdir, windows_path, lambda: "/%s" % get_absolute_path("/tmp"))
+
+    vlab_directory = os.path.join(tempdir, "kathara_vlab")
+    if not os.path.isdir(vlab_directory) and force_creation:
+        os.mkdir(vlab_directory)
+
+    return vlab_directory
+
+
+def pack_file_for_tar(filename, arcname):
+    file_content_patched = convert_win_2_linux(filename)
+
+    file_content = BytesIO(file_content_patched)
+    tarinfo = tarfile.TarInfo(arcname.replace("\\", "/"))   # Tar files must have Linux-style paths
+    tarinfo.size = len(file_content_patched)
+
+    return tarinfo, file_content
+
+
+def is_excluded_file(path):
+    _, filename = os.path.split(path)
+
+    return filename in EXCLUDED_FILES
