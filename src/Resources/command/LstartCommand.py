@@ -153,6 +153,9 @@ class LstartCommand(Command):
 
                     if external_links:
                         lab.attach_external_links(external_links)
+
+                        # Since xterm does not work with "sudo", we do not open terminals when lab.ext is present.
+                        Setting.get_instance().open_terminals = False
                 else:
                     raise Exception("You must be root in order to use lab.ext file.")
             else:

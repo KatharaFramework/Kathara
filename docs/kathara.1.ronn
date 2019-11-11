@@ -76,4 +76,4 @@ m4_include(footer.txt)
 
 ## SEE ALSO
 
-`kathara-lab.conf`(5), `kathara-lab.dep`(5), `kathara.conf`(5), [Kathara official site](http://www.kathara.org)
+`kathara-lab.conf`(5), `kathara-lab.dep`(5), `kathara-lab.ext`(5), `kathara.conf`(5), [Kathara official site](http://www.kathara.org)
