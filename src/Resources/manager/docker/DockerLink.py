@@ -1,11 +1,13 @@
 import ipaddress
 import logging
+import re
 
 import docker
 from docker import types
 
 from ... import utils
 from ...model.Link import BRIDGE_LINK_NAME
+from ...os.Networking import Networking
 from ...setting.Setting import Setting
 
 SUBNET_DIVIDER = 16
@@ -51,9 +53,10 @@ class DockerLink(object):
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,
                                                       labels={"lab_hash": link.lab.folder_hash,
+                                                              "name": link.name,
                                                               "user": utils.get_current_user_name(),
                                                               "app": "kathara",
-                                                              "external": ",".join([x.get_name()
+                                                              "external": ";".join([x.get_name()
                                                                                     for x in link.external
                                                                                     ]
                                                                                    )
@@ -61,28 +64,33 @@ class DockerLink(object):
                                                       )
 
         self._configure_network(link.api_object)
+
         if link.external:
             logging.debug("External Interfaces required, connecting them...")
             self._attach_external_interfaces(link.external, link.api_object)
 
     def undeploy(self, lab_hash):
-        self.client.networks.prune(filters={"label": "lab_hash=%s" % lab_hash})
+        links = self.get_links_by_filters(lab_hash=lab_hash)
+        for link in links:
+            logging.info("Deleting link %s." % link.attrs['Labels']["name"])
+
+            self.delete_link(link)
 
     def wipe(self, user=None):
-        filters = {"label": "app=kathara"}
-        if user:
-            filters["label"] = "user=%s" % user
-
-        self.client.networks.prune(filters=filters)
+        links = self.get_links_by_filters(user=user)
+        for link in links:
+            self.delete_link(link)
 
     def get_docker_bridge(self):
         bridge_list = self.client.networks.list(names="bridge")
         return bridge_list.pop() if bridge_list else None
 
-    def get_links_by_filters(self, lab_hash=None, link_name=None):
-        filters = {"label": "app=kathara"}
+    def get_links_by_filters(self, lab_hash=None, link_name=None, user=None):
+        filters = {"label": ["app=kathara"]}
+        if user:
+            filters["label"].append("user=%s" % user)
         if lab_hash:
-            filters["label"] = "lab_hash=%s" % lab_hash
+            filters["label"].append("lab_hash=%s" % lab_hash)
         if link_name:
             filters["name"] = link_name
 
@@ -172,69 +180,14 @@ class DockerLink(object):
         utils.exec_by_platform(no_privilege_patch, privilege_patch, privilege_patch)
 
     def _attach_external_interfaces(self, external_links, network):
-        from pyroute2 import IPRoute
-        ip = IPRoute()
-
         for external_link in external_links:
-            logging.debug("Searching for interface `%s`..." % external_link.interface)
+            logging.info("Attaching external interface `%s` to link %s." % (external_link.get_name(),
+                                                                            network.attrs['Labels']['name']
+                                                                            )
+                         )
 
-            # Search the interface
-            external_link_indexes = ip.link_lookup(ifname=external_link.interface)
-            # If not present, raise an error
-            if not external_link_indexes:
-                raise Exception("Interface `%s` not found." % external_link.interface)
-
-            external_link_index = external_link_indexes[0]
-            logging.debug("Interface found with ID = %d" % external_link_index)
-
-            if external_link.vlan:
-                external_name = external_link.get_name()
-
-                logging.debug("VLAN Interface required... Creating `%s`..." % external_name)
-
-                # Search the VLAN interface
-                vlan_link_indexes = ip.link_lookup(ifname=external_name)
-
-                if not vlan_link_indexes:
-                    # A VLAN interface should be created before attaching it to bridge.
-                    ip.link(
-                        "add",
-                        ifname=external_name,
-                        kind="vlan",
-                        link=external_link_index,
-                        vlan_id=external_link.vlan
-                    )
-
-                    # Set the new interface up
-                    ip.link(
-                        "set",
-                        index=external_link_index,
-                        state="up"
-                    )
-
-                    logging.debug("Interface `%s` set UP." % external_name)
-
-                    # Refresh the VLAN interface information
-                    vlan_link_indexes = ip.link_lookup(ifname=external_name)
-                    external_link_index = vlan_link_indexes[0]
-                else:
-                    external_link_index = vlan_link_indexes[0]
-
-                logging.debug("Interface created with ID = %d" % external_link_index)
-
-            # Search the bridge
-            bridge_name = self._get_bridge_name(network)
-
-            logging.debug("Attaching interface to bridge `%s`..." % bridge_name)
-            bridge_index = ip.link_lookup(ifname=bridge_name)[0]
-
-            ip.link(
-                "set",
-                index=external_link_index,
-                master=bridge_index
-            )
-
-            logging.debug("Interface ID = %d attached to bridge %s." % (external_link_index, bridge_name))
+            interface_index = Networking.get_or_new_interface(external_link.interface, external_link.vlan)
+            Networking.attach_interface_to_bridge(interface_index, self._get_bridge_name(network))
 
     @staticmethod
     def _get_bridge_name(network):
@@ -243,3 +196,21 @@ class DockerLink(object):
     @staticmethod
     def get_network_name(name):
         return "%s_%s_%s" % (Setting.get_instance().net_prefix, utils.get_current_user_name(), name)
+
+    @staticmethod
+    def delete_link(link):
+        external_label = link.attrs['Labels']["external"]
+        external_links = external_label.split(";") if external_label else None
+
+        if external_links:
+            for external_link in external_links:
+                logging.info("Detaching external interface `%s` from link %s." % (external_link,
+                                                                                  link.attrs['Labels']['name']
+                                                                                  )
+                             )
+
+                if re.search(r"^\w+\.\d+$", external_link):
+                    # Only remove VLAN interfaces, physical ones cannot be removed.
+                    Networking.remove_interface(external_link)
+
+        link.remove()

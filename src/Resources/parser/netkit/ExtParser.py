@@ -33,6 +33,11 @@ class ExtParser(object):
                 interface = matches.group("interface").strip()
                 vlan = int(matches.group("vlan").strip().replace(".", "")) if matches.group("vlan") else None
 
+                if vlan:
+                    if 0 <= vlan >= 4095:
+                        raise Exception("[ERROR] In line %d: "
+                                        "VLAN ID must be in range [1, 4094]." % line_number)
+
                 if link not in external_links:
                     external_links[link] = []
 
@@ -42,11 +47,3 @@ class ExtParser(object):
             line = ext_mem_file.readline().decode('utf-8')
 
         return external_links
-
-        # if eth0 => add eth0 to bridge
-        # if eth0.VLAN =>
-        #   $(ip link add link $PREFIX_INTERFACE name $INTERFACE type vlan id $VLAN)
-        #   $(ip link set dev $INTERFACE up)
-        #   $(brctl addif br-$BRCTL_NET $INTERFACE)
-
-        # Clean
