@@ -79,8 +79,8 @@ celerybeat-schedule
 .env
 
 # virtualenv
-venv/
-ENV/
+/venv/
+/ENV/
 
 # Spyder project settings
 .spyderproject
@@ -94,23 +94,22 @@ Dockerfile~
 *.py~
 
 # builds
-src/kathara.build/
-src/kathara.dist/
+/src/kathara.build/
+/src/kathara.dist/
 
 
-config
-.vscode/
-test/
-.vs/
+/config
+/.vscode/
+/.vs/
 
-.idea/
+/.idea/
 
 # ISS Compiled file
-scripts/Windows/Output/
-scripts/OSX/Output/
-scripts/Linux/Output/
+/scripts/Windows/Output/
+/scripts/OSX/Output/
+/scripts/Linux/Output/
 
-docs/Html/
-docs/MD/
-docs/Roff/
+/docs/Html/
+/docs/MD/
+/docs/Roff/
 .DS_Store
