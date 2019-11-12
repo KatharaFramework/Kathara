@@ -27,3 +27,12 @@ class NonSequentialMachineInterfaceError(Exception):
 
 class MachineOptionError(Exception):
     pass
+
+
+# Test Exceptions
+class TestError(Exception):
+    pass
+
+
+class MachineSignatureNotFoundError(TestError):
+    pass

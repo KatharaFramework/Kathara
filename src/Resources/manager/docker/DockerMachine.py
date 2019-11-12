@@ -285,27 +285,15 @@ class DockerMachine(object):
     def connect(self, lab_hash, machine_name, shell, logs=False):
         logging.debug("Connect to machine with name: %s" % machine_name)
 
-        containers = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
-
-        logging.debug("Found containers: %s" % str(containers))
-
-        if len(containers) != 1:
-            raise Exception("Error getting the machine `%s` inside the lab." % machine_name)
-        else:
-            container = containers[0]
+        container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
         if not shell:
             shell = Setting.get_instance().device_shell
 
         if logs and Setting.get_instance().print_startup_log:
-            result = container.exec_run(cmd="cat /var/log/shared.log /var/log/startup.log",
-                                        stdout=True,
-                                        stderr=False,
-                                        privileged=False,
-                                        detach=False
-                                        )
-
-            result_string = result.output.decode('utf-8')
+            result_string = self.exec(container,
+                                      command="cat /var/log/shared.log /var/log/startup.log"
+                                      )
             if result_string:
                 print("--- Startup Commands Log\n")
                 print(result_string)
@@ -338,6 +326,19 @@ class DockerMachine(object):
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
+    @staticmethod
+    def exec(container, command):
+        logging.debug("Executing command `%s` to machine with name: %s" % (command, container.name))
+
+        result = container.exec_run(cmd=command,
+                                    stdout=True,
+                                    stderr=False,
+                                    privileged=False,
+                                    detach=False
+                                    )
+
+        return result.output.decode('utf-8')
+
     def get_machines_by_filters(self, lab_hash=None, machine_name=None, user=None):
         filters = {"label": ["app=kathara"]}
         if user:
@@ -348,6 +349,16 @@ class DockerMachine(object):
             filters["label"].append("name=%s" % machine_name)
 
         return self.client.containers.list(all=True, filters=filters)
+
+    def get_machine(self, lab_hash, machine_name):
+        containers = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+
+        logging.debug("Found containers: %s" % str(containers))
+
+        if len(containers) != 1:
+            raise Exception("Error getting the machine `%s` inside the lab." % machine_name)
+        else:
+            return containers[0]
 
     @staticmethod
     def get_container_name(name, lab_hash):

@@ -154,6 +154,12 @@ class DockerManager(IManager):
                                     )
 
     @privileged
+    def exec(self, machine, command):
+        return self.docker_machine.exec(machine.api_object,
+                                        command=command
+                                        )
+
+    @privileged
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
 
