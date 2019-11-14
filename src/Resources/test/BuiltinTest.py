@@ -1,9 +1,8 @@
 import json
 import logging
 import os
-import re
 
-from ..exceptions import MachineSignatureNotFoundError, TestError
+from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
 from ..manager.ManagerProxy import ManagerProxy
 
@@ -37,42 +36,50 @@ class BuiltInTest(Test):
                 raise MachineSignatureNotFoundError("Signature for machine `%s` not found! Exiting..." % machine_name)
 
             # Save machine state into result file
-            machine_result_path = "%s/%s.default" % (self.results_path, machine.name)
+            machine_result_path = "%s/%s.default.result" % (self.results_path, machine.name)
             with open(machine_result_path, 'w') as machine_result_file:
                 machine_result_file.write(json.dumps(machine_status, indent=True))
 
             # Check each signature element with the current status
-            for (signature_type, signature) in machine_signature.items():
-                result = self.check_signature(signature, machine_status[signature_type])
-
-                # Array is not empty, a test failed. Throw exception.
-                if result:
-                    raise TestError("`builtin` test failed for machine `%s`." % machine_name)
+            # for (signature_type, signature) in machine_signature.items():
+            #     result = self.check_signature(signature, machine_status[signature_type])
+            #
+            #     # Array is not empty, a test failed. Throw exception.
+            #     if result:
+            #         raise TestError("`builtin` test failed for machine `%s`." % machine_name)
+            # TODO: Test with jsons
 
     @staticmethod
     def _get_machine_status(machine):
         # Machine interfaces
-        ip_addr = ManagerProxy.get_instance().exec(machine=machine,
-                                                   command="ip -br addr show"
-                                                   )
-        # We remove the @ifaceXYZ because this varies in each container creation
-        ip_addr = re.sub(r"@(.\w+)", "", ip_addr)
+        ip_addr = json.loads(ManagerProxy.get_instance().exec(machine=machine,
+                                                              command="ip -j addr show"
+                                                              )
+                             )
+        # Get only relevant information (interface name, state and list of address/prefix)
+        ip_addr = [dict((k, iface[k]) for k in ('ifname', 'operstate', 'addr_info')) for iface in ip_addr]
+        for info in ip_addr:
+            info["addr_info"] = [x["local"] + "/" + str(x["prefixlen"]) for x in info["addr_info"]]
 
         # Machine routes
-        ip_route = ManagerProxy.get_instance().exec(machine=machine,
-                                                    command="ip -br route show"
-                                                    )
+        ip_route = json.loads(ManagerProxy.get_instance().exec(machine=machine,
+                                                               command="ip -j route show"
+                                                               )
+                              )
 
         # Machine opened ports
         net_stat = ManagerProxy.get_instance().exec(machine=machine,
                                                     command="netstat -tuwln"
                                                     )
-        net_stat = "\n".join(filter(lambda x: "127.0.0.11" not in x, net_stat.splitlines()))
+        # Remove Docker ports and header lines. Sort the array alphabetically.
+        net_stat = sorted([filter(lambda x: "127.0.0.11" not in x, net_stat.splitlines())][2:])
 
         # Machine processes
         processes = ManagerProxy.get_instance().exec(machine=machine,
                                                      command="ps -e -o uid,command"
                                                      )
+        # Remove header line and sort the array alphabetically.
+        processes = sorted([x.strip() for x in processes.splitlines()[1:]])
 
         return {
             "interfaces": ip_addr,

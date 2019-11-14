@@ -123,8 +123,7 @@ class DockerMachine(object):
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
         sysctl_parameters["net.ipv4.ip_forward"] = 1
-        # TODO: ipv6_forward not found?
-        # sysctl_parameters["net.ipv6.ip_forward"] = 1
+        sysctl_parameters["net.ipv6.conf.all.forwarding"] = 1
 
         volumes = {}
 
@@ -168,7 +167,7 @@ class DockerMachine(object):
         # Pack machine files into a tar.gz and extract its content inside `/`
         tar_data = machine.pack_data()
         if tar_data:
-            machine_container.put_archive("/", tar_data)
+            self.copy_files(machine_container, "/", tar_data)
 
         machine.api_object = machine_container
 
@@ -338,6 +337,10 @@ class DockerMachine(object):
                                     )
 
         return result.output.decode('utf-8')
+
+    @staticmethod
+    def copy_files(machine, path, tar_data):
+        machine.put_archive(path, tar_data)
 
     def get_machines_by_filters(self, lab_hash=None, machine_name=None, user=None):
         filters = {"label": ["app=kathara"]}

@@ -50,7 +50,7 @@ class LtestCommand(Command):
         parser.add_argument(
             '-s', '--sleep',
             required=False,
-            help='Seconds to wait from lab startup before running the tests.'
+            help='Minutes to wait from lab startup before running the tests.'
         )
         parser.add_argument(
             '--verify',
@@ -75,12 +75,12 @@ class LtestCommand(Command):
 
         if args.sleep:
             try:
-                sleep_secs = int(args.sleep)
-                if sleep_secs < 0:
+                sleep_minutes = int(args.sleep)
+                if sleep_minutes < 0:
                     raise ValueError()
 
-                logging.info("Waiting %s seconds before running tests..." % sleep_secs)
-                time.sleep(sleep_secs)
+                logging.info("Waiting %s minutes before running tests..." % sleep_minutes)
+                time.sleep(sleep_minutes * 60)
             except ValueError:
                 raise ValueError("--sleep value is not valid!")
 
