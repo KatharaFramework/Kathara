@@ -123,7 +123,7 @@ class DockerMachine(object):
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
         sysctl_parameters["net.ipv4.ip_forward"] = 1
-        sysctl_parameters["net.ipv6.conf.all.forwarding"] = 1
+        sysctl_parameters["net.ipv4.icmp_ratelimit"] = 0
 
         volumes = {}
 
