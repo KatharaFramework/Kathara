@@ -45,15 +45,17 @@ class UserTest(Test):
                                                         )
 
                 # Save machine state into result file
-                machine_result_path = "%s/%s.user.result" % (self.results_path, machine.name)
+                machine_result_path = "%s/%s.user" % (self.results_path, machine.name)
                 with open(machine_result_path, 'w') as machine_result_file:
                     machine_result_file.write(machine_state)
 
                 diff = self.check_signature(machine_signature, machine_state)
 
-                machine_diff_path = "%s/%s.user.diff" % (self.results_path, machine.name)
-                with open(machine_diff_path, 'w') as machine_diff_file:
-                    machine_diff_file.write("\n".join(diff) if diff else "OK")
+                machine_diff_path = "%s/%s.diff" % (self.results_path, machine.name)
+                with open(machine_diff_path, 'w+') as machine_diff_file:
+                    machine_diff_file.write(utils.format_headers("User Test Result") + '\n')
+                    machine_diff_file.write("\n".join(diff) if diff else "OK\n")
+                    machine_diff_file.write("=============================================================\n")
 
     def _copy_machine_test_file(self, machine):
         machine_test_file = os.path.join(self.test_path, "%s.test" % machine.name)
