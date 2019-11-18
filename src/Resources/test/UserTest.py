@@ -1,3 +1,4 @@
+import difflib
 import logging
 import os
 import tarfile
@@ -52,10 +53,19 @@ class UserTest(Test):
                 diff = self.check_signature(machine_signature, machine_state)
 
                 machine_diff_path = "%s/%s.diff" % (self.results_path, machine.name)
-                with open(machine_diff_path, 'w+') as machine_diff_file:
+                with open(machine_diff_path, 'a') as machine_diff_file:
                     machine_diff_file.write(utils.format_headers("User Test Result") + '\n')
                     machine_diff_file.write("\n".join(diff) if diff else "OK\n")
-                    machine_diff_file.write("=============================================================\n")
+                    machine_diff_file.write("=============================================================")
+
+    def check_signature(self, signature, status):
+        signature = signature.splitlines()
+        status = status.splitlines()
+
+        # Do the diff between the arrays, n=0 removes context strings
+        diff = difflib.unified_diff(signature, status, n=0, lineterm="")
+        # Remove headers of the diff from the result
+        return [x for x in filter(lambda x: not x.startswith(('---', '+++', '@@')), diff)]
 
     def _copy_machine_test_file(self, machine):
         machine_test_file = os.path.join(self.test_path, "%s.test" % machine.name)

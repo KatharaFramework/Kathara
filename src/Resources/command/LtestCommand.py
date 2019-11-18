@@ -2,6 +2,8 @@ import argparse
 import logging
 import os
 import shutil
+import sys
+
 import time
 
 from .LcleanCommand import LcleanCommand
@@ -67,6 +69,14 @@ class LtestCommand(Command):
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
         lab_path = utils.get_absolute_path(lab_path)
 
+        signature_test_path = None
+        if not args.verify:
+            signature_test_path = os.path.join(lab_path, "_test", "signature")
+
+            if os.path.exists(signature_test_path) and not args.rebuild_signature:
+                logging.error("Signature for current lab already exists. Exiting...")
+                sys.exit(1)
+
         # Tests run without terminals, no shared and /hosthome dirs.
         new_argv = ["--noterminals", "--no-shared", "--no-hosthome"]
 
@@ -75,7 +85,7 @@ class LtestCommand(Command):
 
         if args.sleep:
             try:
-                sleep_minutes = int(args.sleep)
+                sleep_minutes = float(args.sleep)
                 if sleep_minutes < 0:
                     raise ValueError()
 
@@ -89,16 +99,12 @@ class LtestCommand(Command):
         user_test = UserTest(lab)
 
         if not args.verify:
-            signature_test_path = os.path.join(lab.path, "_test", "signature")
-
             if not os.path.exists(signature_test_path) or args.rebuild_signature:
                 shutil.rmtree(signature_test_path, ignore_errors=True)
                 os.makedirs(signature_test_path, exist_ok=True)
 
                 builtin_test.create_signature()
                 user_test.create_signature()
-            else:
-                logging.error("Signature for current lab already exists. Exiting...")
         else:
             result_test_path = os.path.join(lab.path, "_test", "results")
 

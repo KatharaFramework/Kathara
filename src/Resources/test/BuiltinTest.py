@@ -1,8 +1,8 @@
 import json
 import logging
 import os
-import re
-from deepdiff import DeepDiff 
+
+from deepdiff import DeepDiff
 
 from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
@@ -22,13 +22,13 @@ class BuiltInTest(Test):
 
             # Write the signature into the proper file
             with open("%s/%s.default" % (self.signature_path, machine_name), 'w') as machine_signature_file:
-                machine_signature_file.write(json.dumps(machine_status, indent=True))
+                machine_signature_file.write(json.dumps(machine_status, indent=4))
 
     def test(self):
         for (machine_name, machine) in self.lab.machines.items():
             logging.info("Executing `builtin` tests for machine %s..." % machine_name)
 
-            machine_status = self._get_machine_status(machine)
+            machine_state = self._get_machine_status(machine)
 
             # Read the signature from machine file
             machine_signature_path = "%s/%s.default" % (self.signature_path, machine.name)
@@ -41,21 +41,26 @@ class BuiltInTest(Test):
             # Save machine state into result file
             machine_result_path = "%s/%s.default" % (self.results_path, machine.name)
             with open(machine_result_path, 'w') as machine_result_file:
-                machine_result_file.write(json.dumps(machine_status, indent=True))
+                machine_result_file.write(json.dumps(machine_state, indent=4))
 
-            # Check each signature element with the current status
-            ddiff = DeepDiff(machine_status, machine_signature, ignore_order=True)
-
-            if "iterable_item_added" in ddiff:
-                ddiff["it_is"] = ddiff.pop("iterable_item_added")
-            if "iterable_item_removed" in ddiff:
-                ddiff["should_be"] = ddiff.pop("iterable_item_removed")
+            diff = self.check_signature(machine_signature, machine_state)
 
             machine_diff_path = "%s/%s.diff" % (self.results_path, machine.name)
+
             with open(machine_diff_path, 'w') as machine_diff_file:
-                machine_diff_file.write(utils.format_headers("Builtin Test Result")+'\n')
-                machine_diff_file.write(json.dumps(ddiff, indent=4) + "\n" if ddiff else "OK\n")
+                machine_diff_file.write(utils.format_headers("Built-In Test Result") + '\n')
+                machine_diff_file.write(json.dumps(diff, indent=4) + "\n" if diff else "OK\n")
                 machine_diff_file.write("=============================================================\n\n")
+
+    def check_signature(self, signature, status):
+        diff = DeepDiff(status, signature, ignore_order=True)
+
+        if "iterable_item_added" in diff:
+            diff["it_is"] = diff.pop("iterable_item_added")
+        if "iterable_item_removed" in diff:
+            diff["should_be"] = diff.pop("iterable_item_removed")
+
+        return diff
 
     @staticmethod
     def _get_machine_status(machine):
@@ -68,9 +73,11 @@ class BuiltInTest(Test):
         # Get only relevant information (interface name, state and list of address/prefix)
         ip_addr_clean = {}
         for info in ip_addr:
-            ip_addr_clean[info['ifname']] = {'ip_addresses' : [x["local"] + "/" + str(x["prefixlen"]) for x in info["addr_info"]],
-                                           'state' : info['operstate']
-                                           }
+            ip_addr_clean[info['ifname']] = {'ip_addresses': [x["local"] + "/" + str(x["prefixlen"])
+                                                              for x in info["addr_info"]
+                                                              ],
+                                             'state': info['operstate']
+                                             }
 
         # Machine routes
         ip_route = json.loads(ManagerProxy.get_instance().exec(machine=machine,
