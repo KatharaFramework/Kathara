@@ -18,7 +18,9 @@ In order to ease setting up complex network with Kathara it is possible to compl
 Start a set of devices that are part of a Kathara lab and configures them according to the parameters contained in the lab description.
 By default, all the devices that make up the lab are started. If a list of <DEVICE_NAME>s is provided, then only devices with a matching name and that are part of the lab are started.
 
-The configuration of a Kathara lab consists of some files described in `kathara-lab.conf`(5) and `kathara-lab.dep`(5) and directories whose names, locations and contents are described in `kathara-lab-dirs`(7).
+The configuration of a Kathara lab consists of some files described in `kathara-lab.conf`(5), `kathara-lab.dep`(5), `kathara-lab.ext`(5) and directories whose names, locations and contents are described in `kathara-lab-dirs`(7).
+
+`kathara-lab.ext`(5) is only available on Linux platforms and need root permissions to be used. In addition, terminals are not open automatically when this file is present. To connect to a device, use `kathara-connect`(1).
 
 ## OPTIONS
 
@@ -79,4 +81,4 @@ m4_include(footer.txt)
 
 ## SEE ALSO
 
-`kathara`(1), `kathara-lclean`(1), `kathara-lrestart`(1), `kathara-linfo`(1), `kathara-lab.conf`(5), `kathara-lab.dep`(5)
+`kathara`(1), `kathara-lclean`(1), `kathara-lrestart`(1), `kathara-linfo`(1), `kathara-lab.conf`(5), `kathara-lab.dep`(5), `kathara-lab.ext`(5)

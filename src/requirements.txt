@@ -4,5 +4,6 @@ coloredlogs>=10.0;
 terminaltables>=3.1.0;
 requests>=2.22.0;
 slug>=2.0;
+pyroute2>=0.5.7;
 appscript>=1.1.0; sys_platform == 'darwin'
 pypiwin32>=223; sys_platform == 'win32'

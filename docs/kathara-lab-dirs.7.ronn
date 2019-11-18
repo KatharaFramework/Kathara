@@ -6,6 +6,15 @@ kathara-lab-dirs(7) -- Lab directory structure
 
 A generic lab directory `lab-path` should have the following structure.
 
+* `lab-path/lab.conf`:
+	See `kathara-lab.conf`(5)
+
+* `lab-path/lab.dep`:
+	See `kathara-lab.dep`(5)
+
+* `lab-path/lab.ext`:
+	See `kathara-lab.ext`(5)
+
 * `lab-path/device/`:
 	Each subdirectory inside `lab-path` represents a device to be started, whose name will be the same as the one of the subdirectory.
 
