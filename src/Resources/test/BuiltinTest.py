@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from deepdiff import DeepDiff 
 
 from .. import utils
@@ -43,36 +44,18 @@ class BuiltInTest(Test):
                 machine_result_file.write(json.dumps(machine_status, indent=True))
 
             # Check each signature element with the current status
-            ddiff = DeepDiff(machine_signature, machine_status, ignore_order=True)
+            ddiff = DeepDiff(machine_status, machine_signature, ignore_order=True)
+
+            if "iterable_item_added" in ddiff:
+                ddiff["it_is"] = ddiff.pop("iterable_item_added")
+            if "iterable_item_removed" in ddiff:
+                ddiff["should_be"] = ddiff.pop("iterable_item_removed")
 
             machine_diff_path = "%s/%s.diff" % (self.results_path, machine.name)
             with open(machine_diff_path, 'w') as machine_diff_file:
                 machine_diff_file.write(utils.format_headers("Builtin Test Result")+'\n')
-                machine_diff_file.write(self._prettify_ddiff(ddiff) if ddiff else "OK\n")
+                machine_diff_file.write(json.dumps(ddiff, indent=4) + "\n" if ddiff else "OK\n")
                 machine_diff_file.write("=============================================================\n\n")
-            
-    @staticmethod
-    def _prettify_ddiff(ddiff):
-        pretty_message = ""
-        if ddiff['values_changed']:
-            for k,value in ddiff['values_changed'].items():
-                pretty_message += "%s is wrong: should it be %s but it is %s.\n" % (_read_tree(k), value['old_value'], value['new_value'])
-
-        if ddiff['iterable_item_added']:
-            for k,value in ddiff['iterable_item_added'].items():
-                pretty_message += "%s is wrong: shouldn't appear %s.\n" % (_read_tree(k), value)
-
-        if ddiff['iterable_item_removed']:
-            for k,value in ddiff['iterable_item_removed'].items():
-                pretty_message += "%s is wrong: should appear %s.\n" % (_read_tree(k), value)
-
-        return pretty_message
-
-    @staticmethod
-    def _read_tree(path):
-        # This method needs to understand something like "root['interfaces']['lo']['addr_info'][0]" or "root['route'][0]" and output
-        # something like "The address of the interface lo" or "The route"
-        return path
 
     @staticmethod
     def _get_machine_status(machine):
@@ -85,8 +68,8 @@ class BuiltInTest(Test):
         # Get only relevant information (interface name, state and list of address/prefix)
         ip_addr_clean = {}
         for info in ip_addr:
-            ip_addr_clean[info['ifname']] = {'addr_info' : [x["local"] + "/" + str(x["prefixlen"]) for x in info["addr_info"]],
-                                           'operstate' : info['operstate']
+            ip_addr_clean[info['ifname']] = {'ip_addresses' : [x["local"] + "/" + str(x["prefixlen"]) for x in info["addr_info"]],
+                                           'state' : info['operstate']
                                            }
 
         # Machine routes
