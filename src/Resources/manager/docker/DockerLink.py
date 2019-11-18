@@ -1,11 +1,13 @@
 import ipaddress
 import logging
+import re
 
 import docker
 from docker import types
 
 from ... import utils
 from ...model.Link import BRIDGE_LINK_NAME
+from ...os.Networking import Networking
 from ...setting.Setting import Setting
 
 SUBNET_DIVIDER = 16
@@ -51,31 +53,44 @@ class DockerLink(object):
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,
                                                       labels={"lab_hash": link.lab.folder_hash,
+                                                              "name": link.name,
                                                               "user": utils.get_current_user_name(),
-                                                              "app": "kathara"
+                                                              "app": "kathara",
+                                                              "external": ";".join([x.get_name()
+                                                                                    for x in link.external
+                                                                                    ]
+                                                                                   )
                                                               }
                                                       )
 
         self._configure_network(link.api_object)
 
+        if link.external:
+            logging.debug("External Interfaces required, connecting them...")
+            self._attach_external_interfaces(link.external, link.api_object)
+
     def undeploy(self, lab_hash):
-        self.client.networks.prune(filters={"label": "lab_hash=%s" % lab_hash})
+        links = self.get_links_by_filters(lab_hash=lab_hash)
+        for link in links:
+            logging.info("Deleting link %s." % link.attrs['Labels']["name"])
+
+            self.delete_link(link)
 
     def wipe(self, user=None):
-        filters = {"label": "app=kathara"}
-        if user:
-            filters["label"] = "user=%s" % user
-
-        self.client.networks.prune(filters=filters)
+        links = self.get_links_by_filters(user=user)
+        for link in links:
+            self.delete_link(link)
 
     def get_docker_bridge(self):
         bridge_list = self.client.networks.list(names="bridge")
         return bridge_list.pop() if bridge_list else None
 
-    def get_links_by_filters(self, lab_hash=None, link_name=None):
-        filters = {"label": "app=kathara"}
+    def get_links_by_filters(self, lab_hash=None, link_name=None, user=None):
+        filters = {"label": ["app=kathara"]}
+        if user:
+            filters["label"].append("user=%s" % user)
         if lab_hash:
-            filters["label"] = "lab_hash=%s" % lab_hash
+            filters["label"].append("lab_hash=%s" % lab_hash)
         if link_name:
             filters["name"] = link_name
 
@@ -118,19 +133,19 @@ class DockerLink(object):
         :param network: The Docker Network object to patch
         """
         patches = {
-            "/sys/class/net/br-{net_id}/bridge/ageing_time": 0,
-            "/sys/class/net/br-{net_id}/bridge/group_fwd_mask": 65528
+            "/sys/class/net/{br_name}/bridge/ageing_time": 0,
+            "/sys/class/net/{br_name}/bridge/group_fwd_mask": 65528
         }
 
         def no_privilege_patch():
+            logging.debug("Applying brctl patch without privilege escalation "
+                          "on network `%s`..." % network.name
+                          )
+
             # Directly patch /sys/class opening the files
             for (path, value) in patches.items():
                 try:
-                    with open(path.format(net_id=network.id[:12]), 'w') as sys_class:
-                        logging.debug("Applying brctl patch without privilege escalation "
-                                      "on network `%s`..." % network.name
-                                      )
-
+                    with open(path.format(br_name=self._get_bridge_name(network)), 'w') as sys_class:
                         sys_class.write(str(value))
                 except PermissionError:
                     logging.debug("Failed to patch `%s`." % network.name)
@@ -143,7 +158,7 @@ class DockerLink(object):
 
             # Privilege escalation to patch bridges, since Docker runs in a VM on Windows and MacOS.
             # In order to do so, we run an alpine container with host visibility and chroot in the host `/`.
-            patch_command = ["echo %d > %s" % (value, path.format(net_id=network.id[:12]))
+            patch_command = ["echo %d > %s" % (value, path.format(br_name=self._get_bridge_name(network)))
                              for (path, value) in patches.items()]
             patch_command = "; ".join(patch_command)
             privilege_patch_command = "/usr/sbin/chroot /host /bin/sh -c \"%s\"" % patch_command
@@ -164,6 +179,38 @@ class DockerLink(object):
 
         utils.exec_by_platform(no_privilege_patch, privilege_patch, privilege_patch)
 
+    def _attach_external_interfaces(self, external_links, network):
+        for external_link in external_links:
+            logging.info("Attaching external interface `%s` to link %s." % (external_link.get_name(),
+                                                                            network.attrs['Labels']['name']
+                                                                            )
+                         )
+
+            interface_index = Networking.get_or_new_interface(external_link.interface, external_link.vlan)
+            Networking.attach_interface_to_bridge(interface_index, self._get_bridge_name(network))
+
+    @staticmethod
+    def _get_bridge_name(network):
+        return "br-%s" % network.id[:12]
+
     @staticmethod
     def get_network_name(name):
         return "%s_%s_%s" % (Setting.get_instance().net_prefix, utils.get_current_user_name(), name)
+
+    @staticmethod
+    def delete_link(link):
+        external_label = link.attrs['Labels']["external"]
+        external_links = external_label.split(";") if external_label else None
+
+        if external_links:
+            for external_link in external_links:
+                logging.info("Detaching external interface `%s` from link %s." % (external_link,
+                                                                                  link.attrs['Labels']['name']
+                                                                                  )
+                             )
+
+                if re.search(r"^\w+\.\d+$", external_link):
+                    # Only remove VLAN interfaces, physical ones cannot be removed.
+                    Networking.remove_interface(external_link)
+
+        link.remove()

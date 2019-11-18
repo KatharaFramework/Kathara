@@ -1,0 +1,44 @@
+m4_changequote()
+kathara-lab.ext(5) -- Lab external networks file
+=============================================
+
+## DESCRIPTION
+
+This feature allows Kathara to outsource collision domains to external networks by sending network traffic created by devices to the host's physical interfaces.
+
+It is possible to separate traffic of different collision domains using VLANs. Many sub-interfaces, one for each VLAN tag used, of a physical network interface are created to separate the various domains.
+
+This feature is only available on Linux platforms and need root permissions to be used.
+
+## SYNTAX
+
+It is necessary to write a configuration file named lab.ext, with the following syntax: 
+
+	collision_domain physical_interface.VLAN_ID
+
+Each line requires two parameters: collision domain and physical network interface on which traffic is sent.
+
+Optionally, the second parameter can have a syntax like: `physical_interface.VLAN_ID`. In this way, the traffic of the specified collision domain will be tagged with the specified VLAN ID. It is also possible to use the same physical network interface to generate different sub-interfaces, each one with a different VLAN ID.
+
+Lines starting with a hash character (`#`) are assumed to be comments and simply ignored.
+
+VLAN ID 0 and 4095 are reserved and can not be used.
+
+** Keep in mind that these operations could damage your network if performed incorrectly. Use them with caution. **
+
+## EXAMPLE
+
+		# Collision domain A, on interface enp9s0
+		A enp9s0
+		# Collision domain A, on interface enp9s0 with VLAN ID = 20
+		B enp9s0.20
+		# Collision domain C, on interface eth1 with VLAN ID = 4001
+		C eth1.4001
+  
+Example of a `lab.ext`(5) file.
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-lstart`(1), [Kathara official site](http://www.kathara.org)

@@ -24,7 +24,7 @@ class DepParser(object):
         while line:
             # E.g. MACHINE: MACHINE1 MACHINE2 MACHINE3
             # Or MACHINE:MACHINE1 MACHINE2 MACHINE3
-            matches = re.search(r"^(?P<key>\w+): ?(?P<deps>(\w+ ?)+)$",
+            matches = re.search(r"^(?P<key>\w+):\s?(?P<deps>(\w+ ?)+)$",
                                 line.strip()
                                 )
 
