@@ -27,6 +27,8 @@ class UserTest(Test):
                     machine_signature_file.write(machine_state)
 
     def test(self):
+        test_passed = True
+
         for (machine_name, machine) in self.lab.machines.items():
             machine_test_file = self._copy_machine_test_file(machine)
 
@@ -51,12 +53,15 @@ class UserTest(Test):
                     machine_result_file.write(machine_state)
 
                 diff = self.check_signature(machine_signature, machine_state)
+                test_passed = False if diff else test_passed
 
                 machine_diff_path = "%s/%s.diff" % (self.results_path, machine.name)
                 with open(machine_diff_path, 'a') as machine_diff_file:
                     machine_diff_file.write(utils.format_headers("User Test Result") + '\n')
-                    machine_diff_file.write("\n".join(diff) if diff else "OK\n")
-                    machine_diff_file.write("=============================================================")
+                    machine_diff_file.write("\n".join(diff) + "\n" if diff else "OK\n")
+                    machine_diff_file.write("=============================================================\n\n")
+
+        return test_passed
 
     def check_signature(self, signature, status):
         signature = signature.splitlines()
@@ -104,5 +109,5 @@ class UserTest(Test):
 
         # Run the test file inside the container
         return ManagerProxy.get_instance().exec(machine=machine,
-                                                command="./%s.test" % machine.name
+                                                command="bash -c /%s.test" % machine.name
                                                 )

@@ -25,6 +25,8 @@ class BuiltInTest(Test):
                 machine_signature_file.write(json.dumps(machine_status, indent=4))
 
     def test(self):
+        test_passed = True
+
         for (machine_name, machine) in self.lab.machines.items():
             logging.info("Executing `builtin` tests for machine %s..." % machine_name)
 
@@ -44,13 +46,15 @@ class BuiltInTest(Test):
                 machine_result_file.write(json.dumps(machine_state, indent=4))
 
             diff = self.check_signature(machine_signature, machine_state)
+            test_passed = False if diff else test_passed
 
             machine_diff_path = "%s/%s.diff" % (self.results_path, machine.name)
-
             with open(machine_diff_path, 'w') as machine_diff_file:
                 machine_diff_file.write(utils.format_headers("Built-In Test Result") + '\n')
                 machine_diff_file.write(json.dumps(diff, indent=4) + "\n" if diff else "OK\n")
                 machine_diff_file.write("=============================================================\n\n")
+
+        return test_passed
 
     def check_signature(self, signature, status):
         diff = DeepDiff(status, signature, ignore_order=True)

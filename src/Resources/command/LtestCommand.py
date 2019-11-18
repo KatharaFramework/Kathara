@@ -50,9 +50,9 @@ class LtestCommand(Command):
                  'Overwrites any existing signature.'
         )
         parser.add_argument(
-            '-s', '--sleep',
+            '--wait',
             required=False,
-            help='Minutes to wait from lab startup before running the tests.'
+            help='Minutes to wait from lab startup before running the tests (can be a decimal number).'
         )
         parser.add_argument(
             '--verify',
@@ -83,16 +83,16 @@ class LtestCommand(Command):
         # Start the lab
         lab = LstartCommand().run(lab_path, new_argv)
 
-        if args.sleep:
+        if args.wait:
             try:
-                sleep_minutes = float(args.sleep)
+                sleep_minutes = float(args.wait)
                 if sleep_minutes < 0:
                     raise ValueError()
 
                 logging.info("Waiting %s minutes before running tests..." % sleep_minutes)
                 time.sleep(sleep_minutes * 60)
             except ValueError:
-                raise ValueError("--sleep value is not valid!")
+                raise ValueError("--wait value is not valid!")
 
         # Run Tests and store in signature
         builtin_test = BuiltInTest(lab)
@@ -111,13 +111,19 @@ class LtestCommand(Command):
             shutil.rmtree(result_test_path, ignore_errors=True)
             os.makedirs(result_test_path, exist_ok=True)
 
+            builtin_test_passed = True
+            user_test_passed = True
             try:
                 if args.verify == "builtin" or args.verify == "both":
-                    builtin_test.test()
+                    builtin_test_passed = builtin_test.test()
                 if args.verify == "user" or args.verify == "both":
-                    user_test.test()
+                    user_test_passed = user_test.test()
             except TestError as e:
                 logging.error(str(e))
 
         # Clean the lab at the end of the test.
         LcleanCommand().run(lab_path, [])
+
+        if args.verify:
+            if not builtin_test_passed or not user_test_passed:
+                sys.exit(1)
