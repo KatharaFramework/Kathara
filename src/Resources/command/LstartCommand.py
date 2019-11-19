@@ -187,3 +187,5 @@ class LstartCommand(Command):
 
         if args.list:
             print(next(ManagerProxy.get_instance().get_lab_info(lab.folder_hash)))
+
+        return lab

@@ -42,6 +42,12 @@ class ManagerProxy(IManager):
     def connect_tty(self, lab_hash, machine_name, shell, logs=False):
         self.manager.connect_tty(lab_hash, machine_name, shell, logs)
 
+    def exec(self, machine, command):
+        return self.manager.exec(machine, command)
+
+    def copy_files(self, machine, path, tar_data):
+        self.manager.copy_files(machine, path, tar_data)
+
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         return self.manager.get_lab_info(lab_hash, machine_name, all_users)
 

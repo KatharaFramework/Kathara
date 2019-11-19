@@ -81,4 +81,4 @@ m4_include(footer.txt)
 
 ## SEE ALSO
 
-`kathara`(1), `kathara-lclean`(1), `kathara-lrestart`(1), `kathara-linfo`(1), `kathara-lab.conf`(5), `kathara-lab.dep`(5), `kathara-lab.ext`(5)
+`kathara`(1), `kathara-lclean`(1), `kathara-lrestart`(1), `kathara-ltest`(1), `kathara-linfo`(1), `kathara-lab.conf`(5), `kathara-lab.dep`(5), `kathara-lab.ext`(5)

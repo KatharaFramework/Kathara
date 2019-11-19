@@ -23,6 +23,14 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `connect_tty` method.")
 
     @abstractmethod
+    def exec(self, machine, command):
+        raise NotImplementedError("You must implement `exec` method.")
+
+    @abstractmethod
+    def copy_files(self, machine, path, tar_data):
+        raise NotImplementedError("You must implement `copy_files` method.")
+
+    @abstractmethod
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         raise NotImplementedError("You must implement `get_lab_info` method.")
 

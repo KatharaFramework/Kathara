@@ -1,0 +1,92 @@
+m4_changequote()
+kathara-ltest(1) -- Test a Kathara lab
+=============================================
+
+## SYNOPSIS
+
+`kathara ltest`
+>           [`-h`] [`-d` <DIRECTORY>] [`-R`] [`--wait` <MINUTES>]
+>           [--verify {builtin,user,both}]
+
+
+## DESCRIPTION
+
+Tool for retrieving and saving information about the state of running devices inside a Kathara lab. These information can then be distributed with the lab itself, so that users can easily test whether the lab still behaves in the expected way when it is being launched on a different host.
+
+Takes care of launching the lab in a test mode, running an ad-hoc set of scripts on devices, and storing their output on the host filesystem. If the test is being run for the first time, creates a signature of the test results that is used as a fingerprint of a correctly behaving lab. 
+
+When `ltest` is run with the `--verify` option, test results are compared with the signature to check that the lab still behaves as expected. After running the test, the lab is then automatically stopped.
+
+A directory `lab-path/_test` is created inside and the results of the test are stored inside it. Any existing results of previous tests are overwritten. Subdirectory `lab-path/_test/signature` and `lab-path/_test/results` will contain the signature of the lab test and the outcome of the last executed test, respectively.
+
+**NOTE**: `ltest` runs devices without a terminal window. Therefore, no window will pop up and no output will be shown during a test.
+
+## OPTIONS
+
+* `-h`, `--help`:
+    Show an help message and exit.
+
+* `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
+    Specify the folder containing the lab.
+
+    If no `-d` option is provided, assume the lab is located in the current directory.
+
+* `-R`, `--rebuild-signature`:
+    Force generating a new signature for the lab, even if one already exists. Overwrites any existing signature.
+
+* `--wait` <MINUTES>:
+    Minutes to wait from lab startup before running the tests (can be a decimal number).
+
+* `--verify` {builtin,user,both}:
+    Compares current lab state with stored signature.
+
+    After a signature has been generated, the outcome of any following tests is compared with information in the signature. Possible values are as follows:
+
+        + **user**: consider only user-defined test scripts. 
+        + **builtin**: consider only predefined built-in tests. 
+        + **both**: consider both kinds of test scripts (i.e., takes into account the built-in test even when a user-defined test exists for a certain device).
+
+## HOW TO PERFORM A TEST
+
+A Kathara test consists of two kinds of scripts: **builtin** and **user**.
+
+The builtin script cannot be changed by the user. It runs some commands inside the device in order to store the state of its network interfaces, routing table, listening TCP and UDP ports, and running processes.
+
+The output of the builtin script is saved into `lab-path/_test/results/device.builtin`, where `device` is the name of the device the test has been performed on. The file format for the output of the builtin test is JSON. The content of each JSON key is the output of a specific command. The following list describes both the keys and the corresponding commands:
+
+    {
+        "interfaces": (essentially) the output of `ip -j addr show`,
+        "route": (essentially) the output of `ip -j route show`,
+        "listening_ports": (essentially) the output of `netstat -tuwln`,
+        "processes": (essentially) the output of `ps -e -o command`
+    }
+
+The user script may be used to customize the test procedure. In particular, it can be used to dump information that are defined by a user through a personal script.
+
+`ltest` reads the user test script for a device from `lab-path/_test/device.test` and writes the output to `lab-path/_test/results/device.user`. Remember that the user test script is executed using the `device_shell` shell specified in `kathara.conf`(5) file.
+
+Notice: every time you launch `ltest` with `--verify` any existing output of previous tests is overwritten. Hence, remember to move output files elsewhere before performing other instances of the test.
+
+## RETURN VALUE
+
+`ltest` has a zero return value if and only if the test completed successfully or a new signature has been generated.
+
+## FILES
+
+* `lab-path/_test/device.test`:
+    This is an executable script created by the user. Actually, it can be any kind of executable file (i.e., binary files are allowed as well) and, in case it is a script, it can be written in any scripting language supported by the `device_shell` shell specified in `kathara.conf`(5) file.
+
+* `lab-path/_test/results/device.builtin`:
+    This file contains the output of the execution of the builtin test operations.
+
+* `lab-path/_test/results/device.user`:
+    This file contains the output of the execution of `lab-path/_test/device.test`.
+
+* `lab-path/_test/results/device.diff`:
+    This file contains differences between signature and executed test (both for builtin and user tests).
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-lstart`(1), `kathara.conf`(5), `kathara-lab.conf`(5)
