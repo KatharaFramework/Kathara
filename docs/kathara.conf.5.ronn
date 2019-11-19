@@ -43,7 +43,7 @@ Checks on the correctness of the configuration are performed each time a Kathara
 * `device_shell` (string):
 	This parameter determines the shell to use inside the device. The application must be correctly installed in the Docker image used for the device. Possible examples are: bash, sh, fish, and so on.
 
-	Default to `bash`.
+	Default to `/bin/bash`.
 
 * `net_prefix` (string):
 	The prefix assigned to the network name when deployed.

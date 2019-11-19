@@ -7,6 +7,7 @@ from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
 from ..manager.ManagerProxy import ManagerProxy
+from ..setting.Setting import Setting
 
 
 class UserTest(Test):
@@ -109,5 +110,7 @@ class UserTest(Test):
 
         # Run the test file inside the container
         return ManagerProxy.get_instance().exec(machine=machine,
-                                                command="bash -c /%s.test" % machine.name
+                                                command="%s -c /%s.test" % (Setting.get_instance().device_shell,
+                                                                            machine.name
+                                                                            )
                                                 )

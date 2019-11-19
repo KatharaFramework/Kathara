@@ -21,7 +21,7 @@ class BuiltInTest(Test):
             machine_status = self._get_machine_status(machine)
 
             # Write the signature into the proper file
-            with open("%s/%s.default" % (self.signature_path, machine_name), 'w') as machine_signature_file:
+            with open("%s/%s.builtin" % (self.signature_path, machine_name), 'w') as machine_signature_file:
                 machine_signature_file.write(json.dumps(machine_status, indent=4))
 
     def test(self):
@@ -33,7 +33,7 @@ class BuiltInTest(Test):
             machine_state = self._get_machine_status(machine)
 
             # Read the signature from machine file
-            machine_signature_path = "%s/%s.default" % (self.signature_path, machine.name)
+            machine_signature_path = "%s/%s.builtin" % (self.signature_path, machine.name)
             if os.path.exists(machine_signature_path):
                 with open(machine_signature_path, 'r') as machine_signature_file:
                     machine_signature = json.loads(machine_signature_file.read())
@@ -41,7 +41,7 @@ class BuiltInTest(Test):
                 raise MachineSignatureNotFoundError("Signature for machine `%s` not found! Exiting..." % machine_name)
 
             # Save machine state into result file
-            machine_result_path = "%s/%s.default" % (self.results_path, machine.name)
+            machine_result_path = "%s/%s.builtin" % (self.results_path, machine.name)
             with open(machine_result_path, 'w') as machine_result_file:
                 machine_result_file.write(json.dumps(machine_state, indent=4))
 
@@ -50,7 +50,7 @@ class BuiltInTest(Test):
 
             machine_diff_path = "%s/%s.diff" % (self.results_path, machine.name)
             with open(machine_diff_path, 'w') as machine_diff_file:
-                machine_diff_file.write(utils.format_headers("Built-In Test Result") + '\n')
+                machine_diff_file.write(utils.format_headers("Builtin Test Result") + '\n')
                 machine_diff_file.write(json.dumps(diff, indent=4) + "\n" if diff else "OK\n")
                 machine_diff_file.write("=============================================================\n\n")
 

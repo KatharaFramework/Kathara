@@ -52,6 +52,7 @@ class LtestCommand(Command):
         parser.add_argument(
             '--wait',
             required=False,
+            metavar='MINUTES',
             help='Minutes to wait from lab startup before running the tests (can be a decimal number).'
         )
         parser.add_argument(
