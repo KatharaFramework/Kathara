@@ -165,6 +165,7 @@ class DockerLink(object):
 
             self.docker_image.check_and_pull("library/alpine")
             self.client.containers.run(image="alpine",
+                                       labels=network.attrs['Labels'],
                                        command=privilege_patch_command,
                                        network_mode="host",
                                        ipc_mode="host",
