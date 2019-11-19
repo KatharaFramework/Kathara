@@ -4,8 +4,8 @@ kathara-ltest(1) -- Test a Kathara lab
 
 ## SYNOPSIS
 
-`kathara ltest`
->           [`-h`] [`-d` <DIRECTORY>] [`-R`] [`--wait` <MINUTES>]
+`kathara ltest`  
+>           [`-h`] [`-d` <DIRECTORY>] [`-R`] [`--wait` <MINUTES>]  
 >           [--verify {builtin,user,both}]
 
 
@@ -42,9 +42,9 @@ A directory `lab-path/_test` is created inside and the results of the test are s
 
     After a signature has been generated, the outcome of any following tests is compared with information in the signature. Possible values are as follows:
 
-        + **user**: consider only user-defined test scripts. 
-        + **builtin**: consider only predefined built-in tests. 
-        + **both**: consider both kinds of test scripts (i.e., takes into account the built-in test even when a user-defined test exists for a certain device).
+    + **user**: consider only user-defined test scripts. 
+    + **builtin**: consider only predefined built-in tests. 
+    + **both**: consider both kinds of test scripts (i.e., takes into account the built-in test even when a user-defined test exists for a certain device).
 
 ## HOW TO PERFORM A TEST
 

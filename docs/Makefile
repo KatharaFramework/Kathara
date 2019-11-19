@@ -4,7 +4,13 @@ manual ::= "Kathara manual"
 
 .PHONY: all
 
-all: markdown-build roff-build html-build
+all: markdown-build roff-build html-build docker-build-image build-%
+
+build-%: docker-build-image
+	docker run -ti --rm -v `pwd`:/opt/kathara kathara/linux-build /bin/bash -c "cd ../../ && make $*-build"
+
+docker-build-image:
+	cd ../scripts/Linux/Docker-Linux-Build && docker build -t kathara/linux-build .
 
 markdown-build: $(foreach name,$(shell basename -as .ronn *.ronn),MD/$(name).markdown)
 roff-build: $(foreach name,$(shell basename -as .ronn *.ronn),Roff/$(name))
