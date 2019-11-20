@@ -19,6 +19,7 @@ kathara-check(1)     kathara-check.1.ronn
 kathara.conf(5)      kathara.conf.5.ronn
 kathara-lab.conf(5)  kathara-lab.conf.5.ronn
 kathara-lab.dep(5)   kathara-lab.dep.5.ronn
+kathara-lab.ext(5)   kathara-lab.ext.5.ronn
 
 # Dir man pages
 kathara-lab-dirs(7)  kathara-lab-dirs.7.ronn
