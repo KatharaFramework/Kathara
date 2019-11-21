@@ -304,7 +304,7 @@ class DockerManager(IManager):
                                            ) if "system_cpu_usage" in stats["cpu_stats"] else "-",
             "mem_usage": utils.human_readable_bytes(stats["memory_stats"]["usage"]) + " / " +
                          utils.human_readable_bytes(stats["memory_stats"]["limit"])
-                         if "usage" in stats["memory_stats"] else "- / -\t\t",
+                         if "usage" in stats["memory_stats"] else "- / -",
             "mem_percent": "{0:.2f}%".format((stats["memory_stats"]["usage"] / stats["memory_stats"]["limit"]) * 100)
                            if "usage" in stats["memory_stats"] else "-",
             "net_usage": utils.human_readable_bytes(sum([net_stats["rx_bytes"]
