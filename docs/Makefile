@@ -44,4 +44,6 @@ cleanall:
 	if [ -d MD ]; then \
 		rm -r MD; \
 	fi
-
+	if [ -d scripts ]; then \
+		rm -r scripts; \
+	fi
