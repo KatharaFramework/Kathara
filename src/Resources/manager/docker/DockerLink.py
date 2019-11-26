@@ -141,6 +141,9 @@ class DockerLink(object):
             # Directly patch /sys/class opening the files
             try:
                 for (_, link) in links.items():
+                    if link.name == BRIDGE_LINK_NAME:
+                        continue
+
                     for (path, value) in patches.items():
                         with open(path.format(br_name=self._get_bridge_name(link.api_object)), 'w') as sys_class:
                             sys_class.write(str(value))
@@ -154,7 +157,8 @@ class DockerLink(object):
             # Privilege escalation to patch bridges, since Docker runs in a VM on Windows and MacOS.
             # In order to do so, we run an alpine container with host visibility and chroot in the host `/`.
             patch_command = ["echo %d > %s" % (value, path.format(br_name=self._get_bridge_name(link.api_object)))
-                             for (path, value) in patches.items() for (_, link) in links.items()]
+                             for (path, value) in patches.items() for (_, link) in links.items()
+                             if link.name != BRIDGE_LINK_NAME]
             patch_command = "; ".join(patch_command)
 
             privilege_patch_command = "/usr/sbin/chroot /host /bin/sh -c \"%s\"" % patch_command

@@ -1,6 +1,5 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-  * Fix rp_filter with AppArmor
-  * Bridge Patch is done once.
+  * Fix Bridge Patch with bridged flag.
 
  -- Mariano Scazzariello <******@gmail.com>  __DATE__

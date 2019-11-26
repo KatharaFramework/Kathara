@@ -1,9 +1,9 @@
+import logging
 from datetime import datetime
 from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool
 
 import docker
-import logging
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from terminaltables import DoubleTable
 
@@ -88,6 +88,9 @@ class DockerManager(IManager):
     def deploy_lab(self, lab):
         # Deploy all lab links.
         for (_, link) in lab.links.items():
+            if link.name == BRIDGE_LINK_NAME:
+                continue
+
             logging.info("Deploying link %s." % link.name)
             self.docker_link.deploy(link)
 
@@ -127,6 +130,9 @@ class DockerManager(IManager):
     def update_lab(self, lab_diff):
         # Deploy new links (if present)
         for (_, link) in lab_diff.links.items():
+            if link.name == BRIDGE_LINK_NAME:
+                continue
+
             self.docker_link.deploy(link)
 
         # Update lab machines.
