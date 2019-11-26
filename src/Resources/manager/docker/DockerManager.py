@@ -91,6 +91,8 @@ class DockerManager(IManager):
             logging.info("Deploying link %s." % link.name)
             self.docker_link.deploy(link)
 
+        self.docker_link.configure_networks(lab.links)
+
         # Create a docker bridge link in the lab object and assign the Docker Network object associated to it.
         docker_bridge = self.docker_link.get_docker_bridge()
         link = lab.get_or_new_link(BRIDGE_LINK_NAME)

@@ -63,8 +63,6 @@ class DockerLink(object):
                                                               }
                                                       )
 
-        self._configure_network(link.api_object)
-
         if link.external:
             logging.debug("External Interfaces required, connecting them...")
             self._attach_external_interfaces(link.external, link.api_object)
@@ -126,11 +124,11 @@ class DockerLink(object):
 
         return new_network
 
-    def _configure_network(self, network):
+    def configure_networks(self, links):
         """
         Patch to Docker bridges to make them act as hubs.
-        We patch ageing_time and group_fwd_mask of the passed network.
-        :param network: The Docker Network object to patch
+        We patch ageing_time and group_fwd_mask of the passed links.
+        :param links: Links to patch
         """
         patches = {
             "/sys/class/net/{br_name}/bridge/ageing_time": 0,
@@ -138,34 +136,35 @@ class DockerLink(object):
         }
 
         def no_privilege_patch():
-            logging.debug("Applying brctl patch without privilege escalation "
-                          "on network `%s`..." % network.name
-                          )
+            logging.debug("Applying brctl patch without privilege escalation...")
 
             # Directly patch /sys/class opening the files
-            for (path, value) in patches.items():
-                try:
-                    with open(path.format(br_name=self._get_bridge_name(network)), 'w') as sys_class:
-                        sys_class.write(str(value))
-                except PermissionError:
-                    logging.debug("Failed to patch `%s`." % network.name)
-                    privilege_patch()
+            try:
+                for (_, link) in links.items():
+                    for (path, value) in patches.items():
+                        with open(path.format(br_name=self._get_bridge_name(link.api_object)), 'w') as sys_class:
+                            sys_class.write(str(value))
+            except PermissionError:
+                logging.debug("Failed to patch without privilege escalation.")
+                privilege_patch()
 
         def privilege_patch():
-            logging.debug("Applying brctl patch with privilege escalation "
-                          "on network `%s`..." % network.name
-                          )
+            logging.debug("Applying brctl patch with privilege escalation...")
 
             # Privilege escalation to patch bridges, since Docker runs in a VM on Windows and MacOS.
             # In order to do so, we run an alpine container with host visibility and chroot in the host `/`.
-            patch_command = ["echo %d > %s" % (value, path.format(br_name=self._get_bridge_name(network)))
-                             for (path, value) in patches.items()]
+            patch_command = ["echo %d > %s" % (value, path.format(br_name=self._get_bridge_name(link.api_object)))
+                             for (path, value) in patches.items() for (_, link) in links.items()]
             patch_command = "; ".join(patch_command)
+
             privilege_patch_command = "/usr/sbin/chroot /host /bin/sh -c \"%s\"" % patch_command
+
+            # Use this only to set labels on container.
+            first_link = list(links.values())[0]
 
             self.docker_image.check_and_pull("library/alpine")
             self.client.containers.run(image="alpine",
-                                       labels=network.attrs['Labels'],
+                                       labels=first_link.api_object.attrs['Labels'],
                                        command=privilege_patch_command,
                                        network_mode="host",
                                        ipc_mode="host",

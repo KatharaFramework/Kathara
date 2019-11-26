@@ -9,10 +9,9 @@ from ...exceptions import MountDeniedError, MachineAlreadyExistsError
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
-SYSCTL_COMMAND = "sysctl %s=0" % RP_FILTER_NAMESPACE
 
 # Known commands that each container should execute
-# Run order: rp_filters, shared.startup, machine.startup and machine.startup_commands
+# Run order: shared.startup, machine.startup and machine.startup_commands
 STARTUP_COMMANDS = [
     # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
     # In this way, files are all replaced in the container root folder
@@ -55,17 +54,6 @@ STARTUP_COMMANDS = [
 
     # Placeholder for user commands
     "{machine_commands}"
-]
-
-RP_FILTER_COMMANDS = [
-    # Remount /proc/sys in rw to patch rp_filter value
-    "mount -o remount,rw /proc/sys",
-
-    # Placeholder for rp_filter patches
-    "{rp_filter}",
-
-    # Remount /proc/sys in ro after patching rp_filter value
-    "mount -o remount,ro /proc/sys",
 ]
 
 SHUTDOWN_COMMANDS = [
@@ -122,6 +110,10 @@ class DockerMachine(object):
 
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
+
+        if first_network:
+            sysctl_parameters[RP_FILTER_NAMESPACE % "eth0"] = 0
+
         sysctl_parameters["net.ipv4.ip_forward"] = 1
         sysctl_parameters["net.ipv4.icmp_ratelimit"] = 0
 
@@ -182,23 +174,11 @@ class DockerMachine(object):
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
         last_interface = len(attached_networks) - 1 if "none" in attached_networks else len(attached_networks)
 
-        rp_filter_commands = []
         # Connect the container to its new networks
         for (_, machine_link) in machine.interfaces.items():
             machine_link.api_object.connect(machine.api_object)
 
-            # Add the rp_filter patch for this interface
-            rp_filter_commands.append(SYSCTL_COMMAND % ("eth%d" % last_interface))
-
             last_interface += 1
-
-        # Execute the rp_filter patch for the new interfaces
-        machine.api_object.exec_run(cmd=[Setting.get_instance().device_shell, '-c', "; ".join(rp_filter_commands)],
-                                    stdout=False,
-                                    stderr=False,
-                                    privileged=True,
-                                    detach=True
-                                    )
 
     @staticmethod
     def start(machine):
@@ -212,9 +192,6 @@ class DockerMachine(object):
             else:
                 raise e
 
-        # Build sysctl rp_filter patch for interfaces (since eth0 is already connected, we already put it here)
-        rp_filter_commands = [SYSCTL_COMMAND % "eth0"]
-
         # Connect the container to its networks (starting from the second, the first is already connected in `create`)
         # This should be done after the container start because Docker causes a non-deterministic order when attaching
         # networks before container startup.
@@ -226,21 +203,6 @@ class DockerMachine(object):
                           )
 
             machine_link.api_object.connect(machine.api_object)
-
-            # Add the rp_filter patch for this interface
-            rp_filter_commands.append(SYSCTL_COMMAND % ("eth%d" % iface_num))
-
-        # Create the rp_filter commands string
-        rp_filter_commands_string = "; ".join(RP_FILTER_COMMANDS) \
-                                        .format(rp_filter="; ".join(rp_filter_commands))
-
-        # Execute the rp_filter commands inside the container (with privileged in order to use `mount`)
-        machine.api_object.exec_run(cmd=[Setting.get_instance().device_shell, '-c', rp_filter_commands_string],
-                                    stdout=False,
-                                    stderr=False,
-                                    privileged=True,
-                                    detach=True
-                                    )
 
         # Bridged connection required but not added in `deploy` method.
         if "bridge_connected" not in machine.meta and machine.bridge:
