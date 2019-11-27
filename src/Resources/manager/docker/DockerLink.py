@@ -130,6 +130,9 @@ class DockerLink(object):
         We patch ageing_time and group_fwd_mask of the passed links.
         :param links: Links to patch
         """
+        if not links:
+            return
+
         patches = {
             "/sys/class/net/{br_name}/bridge/ageing_time": 0,
             "/sys/class/net/{br_name}/bridge/group_fwd_mask": 65528
