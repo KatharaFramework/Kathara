@@ -4,7 +4,7 @@
 #define MyAppName "Kathara"
 #define MyAppVersion "2.1.3"
 #define MyAppPublisher "Kathara Team"
-#define MyAppURL "http://www.kathara.org"
+#define MyAppURL "https://www.kathara.org"
 #define MyAppExeName "kathara.exe"
 
 #include "Assets\environment.iss"

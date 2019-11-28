@@ -1,14 +1,15 @@
-# [![Kathará](https://github.com/KatharaFramework/Kathara/wiki/logo_kathara_small.png)](http://www.kathara.org)
+# [![Kathará](https://github.com/KatharaFramework/Kathara/wiki/logo_kathara_small.png)](https://www.kathara.org)
 <p align="right">
     <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg" alt="License: GPL v3" target="_blank" /></a>
 </p>
 <ul>
+	<li><a href="https://www.kathara.org">Official Website</a></li>
     <li><a href="#installation">Installation</a></li>
     <li><a href="#graphical-user-interface">Graphical User Interface</a></li>
     <li><a href="https://github.com/KatharaFramework/Docker-Images">Docker Images and Dockerfiles</a></li>
-    <li><a href="https://github.com/KatharaFramework/Kathara/wiki/Man-Pages">Man Pages</a></li>
+    <li><a href="https://www.kathara.org/man-pages/kathara.1.html">Man Pages</a></li>
     <li><a href="#example">Example</a></li>
-    <li><a href="https://github.com/KatharaFramework/Kathara-Labs">Examples and Tutorials</a></li>
+    <li><a href="https://github.com/KatharaFramework/Kathara-Labs/wiki">Examples and Tutorials</a></li>
 </ul>
 
 From the Greek Καθαρά.  

@@ -41,4 +41,4 @@ m4_include(footer.txt)
 
 ## SEE ALSO
 
-`kathara`(1), `kathara-lstart`(1), [Kathara official site](http://www.kathara.org)
+`kathara`(1), `kathara-lstart`(1), [Kathara official site](https://www.kathara.org)
