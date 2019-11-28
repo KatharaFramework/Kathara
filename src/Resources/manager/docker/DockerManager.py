@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool
+from functools import partial
 
 import docker
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -85,7 +86,7 @@ class DockerManager(IManager):
         self.docker_link = DockerLink(self.client, self.docker_image)
 
     @privileged
-    def deploy_lab(self, lab):
+    def deploy_lab(self, lab, privileged_mode=False):
         # Deploy all lab links.
         for (_, link) in lab.links.items():
             if link.name == BRIDGE_LINK_NAME:
@@ -113,15 +114,15 @@ class DockerManager(IManager):
                                   utils.list_chunks(machines, cpus)
 
             for chunk in items:
-                machines_pool.map(func=self._deploy_and_start_machine, iterable=chunk)
+                machines_pool.map(func=partial(self._deploy_and_start_machine, privileged_mode), iterable=chunk)
         else:
             for item in lab.machines.items():
-                self._deploy_and_start_machine(item)
+                self._deploy_and_start_machine(privileged_mode, item)
 
-    def _deploy_and_start_machine(self, machine_item):
+    def _deploy_and_start_machine(self, privileged_mode, machine_item):
         (_, machine) = machine_item
 
-        self.docker_machine.deploy(machine)
+        self.docker_machine.deploy(machine, privileged=privileged_mode)
 
         logging.info("Starting machine %s." % machine.name)
         self.docker_machine.start(machine)

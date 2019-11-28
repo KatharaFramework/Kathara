@@ -77,7 +77,7 @@ class DockerMachine(object):
 
         self.docker_image = docker_image
 
-    def deploy(self, machine):
+    def deploy(self, machine, privileged=False):
         logging.debug("Creating machine `%s`..." % machine.name)
 
         image = machine.get_image()
@@ -133,7 +133,8 @@ class DockerMachine(object):
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,
                                                               hostname=machine.name,
-                                                              cap_add=machine.capabilities,
+                                                              cap_add=machine.capabilities if not privileged else None,
+                                                              privileged=privileged,
                                                               network=first_network.name if first_network else None,
                                                               network_mode="bridge" if first_network else "none",
                                                               sysctls=sysctl_parameters,

@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import sys
 
@@ -103,6 +104,12 @@ class LstartCommand(Command):
             action='store_false',
             help='/shared dir will not be mounted inside the machine.'
         )
+        group.add_argument(
+            "--privileged",
+            action="store_true",
+            required=False,
+            help='Start the devices in privileged mode. MUST BE ROOT FOR THIS OPTION.'
+        )
         parser.add_argument(
             'machine_name',
             metavar='DEVICE_NAME',
@@ -125,6 +132,13 @@ class LstartCommand(Command):
                                                 else Setting.get_instance().hosthome_mount
         Setting.get_instance().shared_mount = args.no_shared if args.no_shared is not None \
                                               else Setting.get_instance().shared_mount
+
+        if args.privileged:
+            if not utils.is_admin():
+                raise Exception("You must be root in order to start Kathara devices in privileged mode.")
+            else:
+                logging.warning("Running devices with privileged capabilities, terminals won't open!")
+                Setting.get_instance().open_terminals = False
 
         if args.dry_mode:
             print(utils.format_headers("Checking Lab"))
@@ -183,7 +197,7 @@ class LstartCommand(Command):
         except:
             raise Exception("--pass parameter not valid.")
 
-        ManagerProxy.get_instance().deploy_lab(lab)
+        ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args.privileged)
 
         if args.list:
             print(next(ManagerProxy.get_instance().get_lab_info(lab.folder_hash)))

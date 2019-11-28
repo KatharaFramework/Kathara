@@ -27,8 +27,8 @@ class ManagerProxy(IManager):
 
             ManagerProxy.__instance = self
 
-    def deploy_lab(self, lab):
-        self.manager.deploy_lab(lab)
+    def deploy_lab(self, lab, privileged_mode=False):
+        self.manager.deploy_lab(lab, privileged_mode)
 
     def update_lab(self, lab_diff):
         self.manager.update_lab(lab_diff)

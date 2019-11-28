@@ -89,6 +89,12 @@ class LrestartCommand(Command):
             action='store_false',
             help='/shared dir will not be mounted inside the machine.'
         )
+        group.add_argument(
+            "--privileged",
+            action="store_true",
+            required=False,
+            help='Start the devices in privileged mode. MUST BE ROOT FOR THIS OPTION.'
+        )
 
         self.parser = parser
 

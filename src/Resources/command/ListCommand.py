@@ -46,7 +46,7 @@ class ListCommand(Command):
         args = self.parser.parse_args(argv)
 
         if args.all and not utils.is_admin():
-            raise Exception("You must be root in order to show all Kathara machines of all users.")
+            raise Exception("You must be root in order to show all Kathara devices of all users.")
 
         if args.name:
             print(ManagerProxy.get_instance().get_machine_info(args.name, all_users=bool(args.all)))

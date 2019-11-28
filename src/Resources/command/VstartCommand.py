@@ -1,4 +1,5 @@
 import argparse
+import logging
 import re
 import sys
 
@@ -90,6 +91,12 @@ class VstartCommand(Command):
             action='store_false',
             help='/hosthome dir will not be mounted inside the machine.'
         )
+        group.add_argument(
+            "--privileged",
+            action="store_true",
+            required=False,
+            help='Start the device in privileged mode. MUST BE ROOT FOR THIS OPTION.'
+        )
         parser.add_argument(
             '--xterm',
             required=False,
@@ -132,6 +139,20 @@ class VstartCommand(Command):
 
         Setting.get_instance().shared_mount = False
 
+        Setting.get_instance().open_terminals = args.terminals if args.terminals is not None \
+                                                else Setting.get_instance().open_terminals
+        Setting.get_instance().terminal = args.xterm or Setting.get_instance().terminal
+        Setting.get_instance().device_shell = args.shell or Setting.get_instance().device_shell
+        Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
+                                                else Setting.get_instance().hosthome_mount
+
+        if args.privileged:
+            if not utils.is_admin():
+                raise Exception("You must be root in order to start this Kathara device in privileged mode.")
+            else:
+                logging.warning("Running device with privileged capabilities, terminal won't open!")
+                Setting.get_instance().open_terminals = False
+
         vlab_dir = utils.get_vlab_temp_path()
         lab = Lab(vlab_dir)
 
@@ -168,13 +189,5 @@ class VstartCommand(Command):
 
         if args.port:
             machine.add_meta("port", args.port)
-
-        Setting.get_instance().open_terminals = args.terminals if args.terminals is not None \
-                                                else Setting.get_instance().open_terminals
-
-        Setting.get_instance().terminal = args.xterm or Setting.get_instance().terminal
-        Setting.get_instance().device_shell = args.shell or Setting.get_instance().device_shell
-        Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
-                                                else Setting.get_instance().hosthome_mount
 
         ManagerProxy.get_instance().deploy_lab(lab)
