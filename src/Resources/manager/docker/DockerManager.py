@@ -88,6 +88,7 @@ class DockerManager(IManager):
     @privileged
     def deploy_lab(self, lab, privileged_mode=False):
         # Deploy all lab links.
+        # Cannot be done multithread because we need to read the last created IP subnet sequentially.
         for (_, link) in lab.links.items():
             if link.name == BRIDGE_LINK_NAME:
                 continue

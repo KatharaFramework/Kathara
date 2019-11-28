@@ -1,6 +1,9 @@
 import ipaddress
 import logging
 import re
+from functools import partial
+from multiprocessing import cpu_count
+from multiprocessing.dummy import Pool
 
 import docker
 from docker import types
@@ -69,15 +72,38 @@ class DockerLink(object):
 
     def undeploy(self, lab_hash):
         links = self.get_links_by_filters(lab_hash=lab_hash)
-        for link in links:
-            logging.info("Deleting link %s." % link.attrs['Labels']["name"])
 
-            self.delete_link(link)
+        cpus = cpu_count()
+        links_pool = Pool(cpus)
+
+        items = [links] if len(links) < cpus else \
+                        utils.list_chunks(links, cpus)
+
+        for chunk in items:
+            links_pool.map(func=partial(self._undeploy_link, True), iterable=chunk)
 
     def wipe(self, user=None):
         links = self.get_links_by_filters(user=user)
-        for link in links:
-            self.delete_link(link)
+
+        cpus = cpu_count()
+        links_pool = Pool(cpus)
+
+        items = [links] if len(links) < cpus else \
+                        utils.list_chunks(links, cpus)
+
+        for chunk in items:
+            links_pool.map(func=partial(self._undeploy_link, False), iterable=chunk)
+
+    def _undeploy_link(self, log, link_item):
+        link_item.reload()
+
+        if len(link_item.containers) > 0:
+            return
+
+        if log:
+            logging.info("Deleting link %s." % link_item.attrs['Labels']["name"])
+
+        self.delete_link(link_item)
 
     def get_docker_bridge(self):
         bridge_list = self.client.networks.list(names="bridge")

@@ -1,5 +1,8 @@
 import logging
+from functools import partial
 from itertools import islice
+from multiprocessing import cpu_count
+from multiprocessing.dummy import Pool
 from subprocess import Popen
 
 from docker.errors import APIError
@@ -229,20 +232,36 @@ class DockerMachine(object):
     def undeploy(self, lab_hash, selected_machines=None):
         machines = self.get_machines_by_filters(lab_hash=lab_hash)
 
-        for machine in machines:
-            # If selected machines list is empty, remove everything
-            # Else, check if the machine is in the list.
-            if not selected_machines or \
-               machine.labels["name"] in selected_machines:
-                logging.info("Deleting machine %s." % machine.labels["name"])
+        cpus = cpu_count()
+        machines_pool = Pool(cpus)
 
-                self.delete_machine(machine)
+        items = [machines] if len(machines) < cpus else \
+                              utils.list_chunks(machines, cpus)
+
+        for chunk in items:
+            machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True), iterable=chunk)
 
     def wipe(self, user=None):
         machines = self.get_machines_by_filters(user=user)
 
-        for machine in machines:
-            self.delete_machine(machine)
+        cpus = cpu_count()
+        machines_pool = Pool(cpus)
+
+        items = [machines] if len(machines) < cpus else \
+            utils.list_chunks(machines, cpus)
+
+        for chunk in items:
+            machines_pool.map(func=partial(self._undeploy_machine, [], False), iterable=chunk)
+
+    def _undeploy_machine(self, selected_machines, log, machine_item):
+        # If selected machines list is empty, remove everything
+        # Else, check if the machine is in the list.
+        if not selected_machines or \
+           machine_item.labels["name"] in selected_machines:
+            if log:
+                logging.info("Deleting machine %s." % machine_item.labels["name"])
+
+            self.delete_machine(machine_item)
 
     def connect(self, lab_hash, machine_name, shell, logs=False):
         logging.debug("Connect to machine with name: %s" % machine_name)
