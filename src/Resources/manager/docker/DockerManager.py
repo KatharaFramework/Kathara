@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime
 from functools import partial
-from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool
 
 import docker
@@ -92,14 +91,14 @@ class DockerManager(IManager):
     @privileged
     def deploy_lab(self, lab, privileged_mode=False):
         # Deploy all lab links.
-        cpus = cpu_count()
-        machines_pool = Pool(cpus)
+        pool_size = utils.get_pool_size()
+        link_pool = Pool(pool_size)
 
         links = lab.links.items()
-        items = [links] if len(links) < cpus else utils.list_chunks(links, cpus)
+        items = [links] if len(links) < pool_size else utils.list_chunks(links, pool_size)
 
         for chunk in items:
-            machines_pool.map(func=self._deploy_link, iterable=chunk)
+            link_pool.map(func=self._deploy_link, iterable=chunk)
 
         # Create a docker bridge link in the lab object and assign the Docker Network object associated to it.
         docker_bridge = self.docker_link.get_docker_bridge()
@@ -110,8 +109,10 @@ class DockerManager(IManager):
         # If there is no lab.dep file, machines can be deployed using multithreading.
         # If not, they're started sequentially
         if not lab.has_dependencies:
+            machines_pool = Pool(pool_size)
+
             machines = lab.machines.items()
-            items = [machines] if len(machines) < cpus else utils.list_chunks(machines, cpus)
+            items = [machines] if len(machines) < pool_size else utils.list_chunks(machines, pool_size)
 
             for chunk in items:
                 machines_pool.map(func=partial(self._deploy_and_start_machine, privileged_mode), iterable=chunk)

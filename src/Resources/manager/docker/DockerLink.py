@@ -1,7 +1,6 @@
 import logging
 import re
 from functools import partial
-from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool
 
 import docker
@@ -56,11 +55,10 @@ class DockerLink(object):
     def undeploy(self, lab_hash):
         links = self.get_links_by_filters(lab_hash=lab_hash)
 
-        cpus = cpu_count()
-        links_pool = Pool(cpus)
+        pool_size = utils.get_pool_size()
+        links_pool = Pool(pool_size)
 
-        items = [links] if len(links) < cpus else \
-                        utils.list_chunks(links, cpus)
+        items = [links] if len(links) < pool_size else utils.list_chunks(links, pool_size)
 
         for chunk in items:
             links_pool.map(func=partial(self._undeploy_link, True), iterable=chunk)
@@ -68,11 +66,10 @@ class DockerLink(object):
     def wipe(self, user=None):
         links = self.get_links_by_filters(user=user)
 
-        cpus = cpu_count()
-        links_pool = Pool(cpus)
+        pool_size = utils.get_pool_size()
+        links_pool = Pool(pool_size)
 
-        items = [links] if len(links) < cpus else \
-                        utils.list_chunks(links, cpus)
+        items = [links] if len(links) < pool_size else utils.list_chunks(links, pool_size)
 
         for chunk in items:
             links_pool.map(func=partial(self._undeploy_link, False), iterable=chunk)

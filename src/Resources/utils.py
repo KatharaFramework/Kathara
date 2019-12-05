@@ -5,15 +5,16 @@ import math
 import os
 import re
 import shutil
-import sys
 import tarfile
 import tempfile
 from io import BytesIO
 from itertools import islice
-from sys import platform as _platform
+from multiprocessing import cpu_count
 
+import sys
 from binaryornot.check import is_binary
 from slug import slug
+from sys import platform as _platform
 
 from .setting.Setting import EXCLUDED_FILES
 from .trdparty.consolemenu import PromptUtils, Screen
@@ -96,6 +97,12 @@ def confirmation_prompt(prompt_string, callback_yes, callback_no):
         return callback_no()
 
     return callback_yes()
+
+
+def get_pool_size():
+    # Pool Size is limited to 10 due to urllib3 (used by DockerPy)
+    cpus = cpu_count()
+    return min(10, cpus)
 
 
 # Platform Specific Functions

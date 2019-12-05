@@ -1,7 +1,6 @@
 import logging
 from functools import partial
 from itertools import islice
-from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool
 from subprocess import Popen
 
@@ -236,11 +235,10 @@ class DockerMachine(object):
     def undeploy(self, lab_hash, selected_machines=None):
         machines = self.get_machines_by_filters(lab_hash=lab_hash)
 
-        cpus = cpu_count()
-        machines_pool = Pool(cpus)
+        pool_size = utils.get_pool_size()
+        machines_pool = Pool(pool_size)
 
-        items = [machines] if len(machines) < cpus else \
-                              utils.list_chunks(machines, cpus)
+        items = [machines] if len(machines) < pool_size else utils.list_chunks(machines, pool_size)
 
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True), iterable=chunk)
@@ -248,11 +246,10 @@ class DockerMachine(object):
     def wipe(self, user=None):
         machines = self.get_machines_by_filters(user=user)
 
-        cpus = cpu_count()
-        machines_pool = Pool(cpus)
+        pool_size = utils.get_pool_size()
+        machines_pool = Pool(pool_size)
 
-        items = [machines] if len(machines) < cpus else \
-            utils.list_chunks(machines, cpus)
+        items = [machines] if len(machines) < pool_size else utils.list_chunks(machines, pool_size)
 
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, [], False), iterable=chunk)
