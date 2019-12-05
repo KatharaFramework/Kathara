@@ -1,4 +1,3 @@
-import ipaddress
 import logging
 import re
 from functools import partial
@@ -8,25 +7,18 @@ from multiprocessing.dummy import Pool
 import docker
 from docker import types
 
+from .DockerPlugin import PLUGIN_NAME
 from ... import utils
 from ...model.Link import BRIDGE_LINK_NAME
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
 
-SUBNET_DIVIDER = 16
-SUBNET_MULTIPLIER = 256 * 256
-
 
 class DockerLink(object):
-    __slots__ = ['client', 'docker_image', 'base_ip']
+    __slots__ = ['client']
 
-    def __init__(self, client, docker_image):
+    def __init__(self, client):
         self.client = client
-
-        self.docker_image = docker_image
-
-        # Base IP subnet allocated to Kathara in Docker
-        self.base_ip = ipaddress.ip_address(u'172.19.0.0')
 
     def deploy(self, link):
         # Reserved name for bridged connections, ignore.
@@ -40,19 +32,10 @@ class DockerLink(object):
             link.api_object = network_objects.pop()
             return
 
-        logging.debug("Creating subnet for link `%s`..." % link.name)
-        network_subnet = self._get_link_subnet()
-        logging.debug("Subnet IP is %s." % network_subnet)
-
-        # Create the network IPAM config for Docker
-        network_pool = docker.types.IPAMPool(subnet='%s' % network_subnet)
-
-        network_ipam_config = docker.types.IPAMConfig(driver='default',
-                                                      pool_configs=[network_pool]
-                                                      )
+        network_ipam_config = docker.types.IPAMConfig(driver='null')
 
         link.api_object = self.client.networks.create(name=link_name,
-                                                      driver='bridge',
+                                                      driver=PLUGIN_NAME,
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,
                                                       labels={"lab_hash": link.lab.folder_hash,
@@ -120,98 +103,6 @@ class DockerLink(object):
 
         return self.client.networks.list(filters=filters)
 
-    def _get_link_subnet(self):
-        # Get current Docker subnets
-        current_networks = []
-
-        for network in self.client.networks.list(filters={"driver": "bridge"}):
-            ipam_config = network.attrs['IPAM']['Config']
-            first_config = ipam_config.pop()
-
-            current_networks.append(ipaddress.ip_network(first_config['Subnet']))
-
-        # If no networks are deployed, return the base IP.
-        if not current_networks:
-            return self.base_ip
-
-        # Get last subnet defined
-        last_network = max(current_networks)
-
-        # Create a /16 starting from the last Docker network
-        new_network = ipaddress.IPv4Network("%s/%d" % (last_network.broadcast_address + 1, SUBNET_DIVIDER),
-                                            strict=False
-                                            )
-
-        # If the new network overlaps the last one, add a /16 to it.
-        if new_network.overlaps(last_network):
-            new_network = ipaddress.IPv4Network("%s/%d" % (new_network.network_address + SUBNET_MULTIPLIER,
-                                                           SUBNET_DIVIDER)
-                                                )
-
-        return new_network
-
-    def configure_networks(self, links):
-        """
-        Patch to Docker bridges to make them act as hubs.
-        We patch ageing_time and group_fwd_mask of the passed links.
-        :param links: Links to patch
-        """
-        if not links:
-            return
-
-        patches = {
-            "/sys/class/net/{br_name}/bridge/ageing_time": 0,
-            "/sys/class/net/{br_name}/bridge/group_fwd_mask": 65528
-        }
-
-        def no_privilege_patch():
-            logging.debug("Applying brctl patch without privilege escalation...")
-
-            # Directly patch /sys/class opening the files
-            try:
-                for (_, link) in links.items():
-                    if link.name == BRIDGE_LINK_NAME:
-                        continue
-
-                    for (path, value) in patches.items():
-                        with open(path.format(br_name=self._get_bridge_name(link.api_object)), 'w') as sys_class:
-                            sys_class.write(str(value))
-            except PermissionError:
-                logging.debug("Failed to patch without privilege escalation.")
-                privilege_patch()
-
-        def privilege_patch():
-            logging.debug("Applying brctl patch with privilege escalation...")
-
-            # Privilege escalation to patch bridges, since Docker runs in a VM on Windows and MacOS.
-            # In order to do so, we run an alpine container with host visibility and chroot in the host `/`.
-            patch_command = ["echo %d > %s" % (value, path.format(br_name=self._get_bridge_name(link.api_object)))
-                             for (path, value) in patches.items() for (_, link) in links.items()
-                             if link.name != BRIDGE_LINK_NAME]
-            patch_command = "; ".join(patch_command)
-
-            privilege_patch_command = "/usr/sbin/chroot /host /bin/sh -c \"%s\"" % patch_command
-
-            # Use this only to set labels on container.
-            first_link = list(links.values())[0]
-
-            self.docker_image.check_and_pull("library/alpine")
-            self.client.containers.run(image="alpine",
-                                       labels=first_link.api_object.attrs['Labels'],
-                                       command=privilege_patch_command,
-                                       network_mode="host",
-                                       ipc_mode="host",
-                                       uts_mode="host",
-                                       pid_mode="host",
-                                       security_opt=["seccomp=unconfined"],
-                                       privileged=True,
-                                       remove=True,
-                                       # "/../" because runs in a VM, so root is one level above
-                                       volumes={"/../": {'bind': '/host', 'mode': 'rw'}}
-                                       )
-
-        utils.exec_by_platform(no_privilege_patch, privilege_patch, privilege_patch)
-
     def _attach_external_interfaces(self, external_links, network):
         for external_link in external_links:
             logging.info("Attaching external interface `%s` to link %s." % (external_link.get_name(),
@@ -224,7 +115,7 @@ class DockerLink(object):
 
     @staticmethod
     def _get_bridge_name(network):
-        return "br-%s" % network.id[:12]
+        return "kt-%s" % network.id[:12]
 
     @staticmethod
     def get_network_name(name):

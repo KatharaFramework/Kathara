@@ -1,8 +1,8 @@
 import logging
 from datetime import datetime
+from functools import partial
 from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool
-from functools import partial
 
 import docker
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -11,6 +11,7 @@ from terminaltables import DoubleTable
 from .DockerImage import DockerImage
 from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
+from .DockerPlugin import DockerPlugin
 from ... import utils
 from ...auth.PrivilegeHandler import PrivilegeHandler
 from ...exceptions import DockerDaemonConnectionError
@@ -80,23 +81,25 @@ class DockerManager(IManager):
     def __init__(self):
         self.client = docker.from_env()
 
+        docker_plugin = DockerPlugin(self.client)
+        docker_plugin.check_and_download_plugin()
+
         self.docker_image = DockerImage(self.client)
 
         self.docker_machine = DockerMachine(self.client, self.docker_image)
-        self.docker_link = DockerLink(self.client, self.docker_image)
+        self.docker_link = DockerLink(self.client)
 
     @privileged
     def deploy_lab(self, lab, privileged_mode=False):
         # Deploy all lab links.
-        # Cannot be done multithread because we need to read the last created IP subnet sequentially.
-        for (_, link) in lab.links.items():
-            if link.name == BRIDGE_LINK_NAME:
-                continue
+        cpus = cpu_count()
+        machines_pool = Pool(cpus)
 
-            logging.info("Deploying link %s." % link.name)
-            self.docker_link.deploy(link)
+        links = lab.links.items()
+        items = [links] if len(links) < cpus else utils.list_chunks(links, cpus)
 
-        self.docker_link.configure_networks(lab.links)
+        for chunk in items:
+            machines_pool.map(func=self._deploy_link, iterable=chunk)
 
         # Create a docker bridge link in the lab object and assign the Docker Network object associated to it.
         docker_bridge = self.docker_link.get_docker_bridge()
@@ -107,18 +110,23 @@ class DockerManager(IManager):
         # If there is no lab.dep file, machines can be deployed using multithreading.
         # If not, they're started sequentially
         if not lab.has_dependencies:
-            cpus = cpu_count()
-            machines_pool = Pool(cpus)
-
             machines = lab.machines.items()
-            items = [machines] if len(machines) < cpus else \
-                                  utils.list_chunks(machines, cpus)
+            items = [machines] if len(machines) < cpus else utils.list_chunks(machines, cpus)
 
             for chunk in items:
                 machines_pool.map(func=partial(self._deploy_and_start_machine, privileged_mode), iterable=chunk)
         else:
             for item in lab.machines.items():
                 self._deploy_and_start_machine(privileged_mode, item)
+
+    def _deploy_link(self, link_item):
+        (_, link) = link_item
+
+        if link.name == BRIDGE_LINK_NAME:
+            return
+
+        logging.info("Deploying link %s." % link.name)
+        self.docker_link.deploy(link)
 
     def _deploy_and_start_machine(self, privileged_mode, machine_item):
         (_, machine) = machine_item
