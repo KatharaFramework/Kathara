@@ -32,6 +32,10 @@ class DockerImage(object):
             except Exception:
                 raise Exception("Image `%s` does not exists neither in local nor on Docker Hub." % image_name)
 
+    def multiple_check_and_pull(self, images):
+        for image in images:
+            self.check_and_pull(image)
+
     @staticmethod
     def check_remote(image_name):
         return DockerHubApi.get_image_information(image_name)

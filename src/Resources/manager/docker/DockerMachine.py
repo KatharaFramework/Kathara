@@ -132,8 +132,6 @@ class DockerMachine(object):
         if Setting.get_instance().hosthome_mount:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
-        # self.docker_image.check_and_pull(image)
-
         container_name = self.get_container_name(machine.name, machine.lab.folder_hash)
         try:
             machine_container = self.client.containers.create(image=image,
