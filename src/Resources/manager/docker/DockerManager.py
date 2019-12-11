@@ -105,6 +105,14 @@ class DockerManager(IManager):
         link = lab.get_or_new_link(BRIDGE_LINK_NAME)
         link.api_object = docker_bridge
 
+        # Check and pulling machine images
+        pulled_images = []
+        for machine in set(lab.machines.values()):
+            image_name = machine.get_image()
+            if image_name not in pulled_images:
+                self.check_image(image_name)
+                pulled_images.append(image_name)
+                
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
         # If not, they're started sequentially
