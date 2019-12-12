@@ -58,7 +58,7 @@ class DockerLink(object):
         pool_size = utils.get_pool_size()
         links_pool = Pool(pool_size)
 
-        items = [links] if len(links) < pool_size else utils.list_chunks(links, pool_size)
+        items = utils.chunk_list(links, pool_size)
 
         for chunk in items:
             links_pool.map(func=partial(self._undeploy_link, True), iterable=chunk)
@@ -69,7 +69,7 @@ class DockerLink(object):
         pool_size = utils.get_pool_size()
         links_pool = Pool(pool_size)
 
-        items = [links] if len(links) < pool_size else utils.list_chunks(links, pool_size)
+        items = utils.chunk_list(links, pool_size)
 
         for chunk in items:
             links_pool.map(func=partial(self._undeploy_link, False), iterable=chunk)

@@ -89,6 +89,10 @@ def list_chunks(iterable, size):
         item = list(islice(it, size))
 
 
+def chunk_list(iterable, size):
+    return [iterable] if len(iterable) < size else list_chunks(iterable, size)
+
+
 def confirmation_prompt(prompt_string, callback_yes, callback_no):
     prompt_utils = PromptUtils(Screen())
     answer = prompt_utils.prompt_for_bilateral_choice(prompt_string, 'y', 'n')

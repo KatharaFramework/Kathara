@@ -236,7 +236,7 @@ class DockerMachine(object):
         pool_size = utils.get_pool_size()
         machines_pool = Pool(pool_size)
 
-        items = [machines] if len(machines) < pool_size else utils.list_chunks(machines, pool_size)
+        items = utils.chunk_list(machines, pool_size)
 
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True), iterable=chunk)
@@ -247,7 +247,7 @@ class DockerMachine(object):
         pool_size = utils.get_pool_size()
         machines_pool = Pool(pool_size)
 
-        items = [machines] if len(machines) < pool_size else utils.list_chunks(machines, pool_size)
+        items = utils.chunk_list(machines, pool_size)
 
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, [], False), iterable=chunk)

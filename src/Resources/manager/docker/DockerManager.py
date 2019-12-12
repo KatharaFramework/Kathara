@@ -95,7 +95,7 @@ class DockerManager(IManager):
         link_pool = Pool(pool_size)
 
         links = lab.links.items()
-        items = [links] if len(links) < pool_size else utils.list_chunks(links, pool_size)
+        items = utils.chunk_list(links, pool_size)
 
         for chunk in items:
             link_pool.map(func=self._deploy_link, iterable=chunk)
@@ -116,7 +116,7 @@ class DockerManager(IManager):
             machines_pool = Pool(pool_size)
 
             machines = lab.machines.items()
-            items = [machines] if len(machines) < pool_size else utils.list_chunks(machines, pool_size)
+            items = utils.chunk_list(machines, pool_size)
 
             for chunk in items:
                 machines_pool.map(func=partial(self._deploy_and_start_machine, privileged_mode), iterable=chunk)
