@@ -17,6 +17,8 @@ from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
 
+MAX_CONNECTION_TIMEOUT = 180
+
 
 def pywin_import_stub():
     """
@@ -78,7 +80,9 @@ class DockerManager(IManager):
 
     @check_docker_status
     def __init__(self):
-        self.client = docker.from_env()
+        self.client = docker.from_env(timeout=MAX_CONNECTION_TIMEOUT, 
+                                      max_pool_size=utils.get_pool_size()
+                                      )
 
         docker_plugin = DockerPlugin(self.client)
         docker_plugin.check_and_download_plugin()

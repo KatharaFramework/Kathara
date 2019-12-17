@@ -105,8 +105,7 @@ def confirmation_prompt(prompt_string, callback_yes, callback_no):
 
 def get_pool_size():
     # Pool Size is limited to 10 due to urllib3 (used by DockerPy)
-    cpus = cpu_count()
-    return min(10, cpus)
+    return cpu_count()
 
 
 # Platform Specific Functions
