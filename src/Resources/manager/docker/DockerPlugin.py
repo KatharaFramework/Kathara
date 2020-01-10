@@ -15,6 +15,8 @@ class DockerPlugin(object):
             logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)
 
             plugin = self.client.plugins.get(PLUGIN_NAME)
+            plugin.upgrade(PLUGIN_NAME)
+
         except NotFound:
             logging.info("Installing Kathara Network Plugin...")
             plugin = self.client.plugins.install(PLUGIN_NAME)
