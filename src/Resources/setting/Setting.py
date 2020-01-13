@@ -158,16 +158,6 @@ class Setting(object):
                 logging.debug("Connection to GitHub failed, passing...")
                 checked = False
 
-            # if self.manager_type == DOCKER:
-            #     logging.debug("Checking Docker Image version...")
-            #
-            #     try:
-            #         from ..manager.ManagerProxy import ManagerProxy
-            #         ManagerProxy.get_instance().check_updates(self)
-            #     except HTTPConnectionError:
-            #         logging.debug("Connection to DockerHub failed, passing...")
-            #         checked = False
-
             if checked:
                 self.last_checked = current_time
                 self.save_selected(['last_checked'])

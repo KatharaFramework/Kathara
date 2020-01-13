@@ -1,3 +1,4 @@
+import logging
 from docker.errors import APIError
 
 from ...api.DockerHubApi import DockerHubApi
@@ -17,12 +18,14 @@ class DockerImage(object):
         return self.client.images.pull(image_name, tag="latest")
 
     def check_update(self, image_name):
+        logging.debug("Check update for %s" % image_name)
         local_image_info = self.check_local(image_name)
         remote_image_info = self.check_remote(image_name)
 
         # Image has been built locally, so there's nothing to compare.
         local_repo_digests = local_image_info.attrs["RepoDigests"]
         if not local_repo_digests:
+            logging.debug("Image %s is build locally" % image_name)
             return
 
         local_repo_digest = local_repo_digests[0]
@@ -34,7 +37,7 @@ class DockerImage(object):
         if remote_image_digest != local_image_digest:
             utils.confirmation_prompt("A new version of image `%s` has been found on Docker Hub. "
                                       "Do you want to pull it?" % image_name,
-                                      lambda: self.docker_image.pull(image_name),
+                                      lambda: self.pull(image_name),
                                       lambda: None
                                       )
 
