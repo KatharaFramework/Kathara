@@ -179,7 +179,7 @@ class Machine(object):
 
         def osx_connect():
             import appscript
-            complete_osx_command = "cd %s && clear && %s && exit" % (self.lab.path, connect_command)
+            complete_osx_command = "cd \"%s\" && clear && %s && exit" % (self.lab.path, connect_command)
             logging.debug("Opening OSX terminal with command: %s." % complete_osx_command)
             appscript.app('Terminal').do_script(complete_osx_command)
 
