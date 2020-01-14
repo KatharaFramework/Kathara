@@ -21,7 +21,6 @@ class DockerImage(object):
     def check_update(self, image_name):
         logging.debug("Check update for %s" % image_name)
         local_image_info = self.check_local(image_name)
-        remote_image_info = self.check_remote(image_name)
 
         # Image has been built locally, so there's nothing to compare.
         local_repo_digests = local_image_info.attrs["RepoDigests"]
@@ -29,6 +28,7 @@ class DockerImage(object):
             logging.debug("Image %s is build locally" % image_name)
             return
 
+        remote_image_info = self.check_remote(image_name)
         local_repo_digest = local_repo_digests[0]
         remote_image_digest = remote_image_info["images"][0]["digest"]
 
