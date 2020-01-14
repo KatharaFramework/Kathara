@@ -16,7 +16,6 @@ from binaryornot.check import is_binary
 from slug import slug
 from sys import platform as _platform
 
-from .setting.Setting import EXCLUDED_FILES
 from .trdparty.consolemenu import PromptUtils, Screen
 
 # Platforms constants definition.
@@ -24,6 +23,9 @@ MAC_OS = "darwin"
 WINDOWS = "win32"
 LINUX = "linux"
 LINUX2 = "linux2"
+
+# List of ignored files
+EXCLUDED_FILES = ['.DS_Store']
 
 
 # Generic Functions
@@ -104,7 +106,6 @@ def confirmation_prompt(prompt_string, callback_yes, callback_no):
 
 
 def get_pool_size():
-    # Pool Size is limited to 10 due to urllib3 (used by DockerPy)
     return cpu_count()
 
 

@@ -7,6 +7,8 @@ from ..exceptions import HTTPConnectionError
 DOCKER_HUB_IMAGE_URL = "https://hub.docker.com/v2/repositories/%s/tags/latest/"
 DOCKER_HUB_KATHARA_URL = "https://hub.docker.com/v2/repositories/kathara/?page_size=-1"
 
+EXCLUDED_IMAGES = ['megalos-bgp-manager', 'katharanp']
+
 
 class DockerHubApi(object):
     @staticmethod
@@ -36,4 +38,4 @@ class DockerHubApi(object):
             logging.debug("DockerHub replied with status code %s.", result.status_code)
             raise HTTPConnectionError("DockerHub replied with status code %s." % result.status_code)
 
-        return filter(lambda x: not x['is_private'], result.json()['results'])
+        return filter(lambda x: not x['is_private'] and x['name'] not in EXCLUDED_IMAGES, result.json()['results'])

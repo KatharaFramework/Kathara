@@ -66,8 +66,7 @@ class KatharaEntryPoint(object):
         }
 
         try:
-            # Load config file
-            Setting.get_instance()
+            # Check settings
             Setting.get_instance().check()
         except (SettingsError, DockerDaemonConnectionError) as e:
             logging.critical(str(e))

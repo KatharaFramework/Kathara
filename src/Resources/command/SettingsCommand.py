@@ -3,8 +3,7 @@ from ..exceptions import HTTPConnectionError
 from ..exceptions import SettingsError
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
-from ..setting.Setting import Setting, DEFAULTS, POSSIBLE_SHELLS, POSSIBLE_TERMINALS, POSSIBLE_DEBUG_LEVELS, \
-    EXCLUDED_IMAGES
+from ..setting.Setting import Setting, DEFAULTS, POSSIBLE_SHELLS, POSSIBLE_TERMINALS, POSSIBLE_DEBUG_LEVELS
 from ..trdparty.consolemenu import *
 from ..trdparty.consolemenu.format import MenuBorderStyleType
 from ..trdparty.consolemenu.items import *
@@ -66,9 +65,6 @@ class SettingsCommand(Command):
 
         try:
             for image in DockerHubApi.get_images():
-                if image['name'] in EXCLUDED_IMAGES:
-                    continue
-
                 image_name = "%s/%s" % (image['namespace'], image['name'])
 
                 select_image_menu.append_item(FunctionItem(text=image_name,

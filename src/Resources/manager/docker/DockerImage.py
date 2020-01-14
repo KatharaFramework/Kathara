@@ -15,6 +15,7 @@ class DockerImage(object):
         return self.client.images.get(image_name)
 
     def pull(self, image_name):
+        print("Pulling image `%s`... This may take a while." % image_name)
         return self.client.images.pull(image_name, tag="latest")
 
     def check_update(self, image_name):
@@ -51,7 +52,6 @@ class DockerImage(object):
             try:
                 # If the image exists on Docker Hub, pulls it.
                 self.check_remote(image_name)
-                print("Pulling image %s... This may take a while." % image_name)
                 self.pull(image_name)
             except ConnectionError:
                 raise ConnectionError("Image `%s` does not exists in local and not Internet connection for Docker Hub."

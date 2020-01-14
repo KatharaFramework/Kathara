@@ -8,11 +8,6 @@ from .. import version
 from ..api.GitHubApi import GitHubApi
 from ..exceptions import HTTPConnectionError, SettingsError
 
-MAX_K8S_NUMBER = (1 << 24) - 20
-
-DOCKER = "docker"
-K8S = "k8s"
-
 POSSIBLE_SHELLS = ["/bin/bash", "/bin/sh", "/bin/ash", "/bin/ksh", "/bin/zsh", "/bin/fish", "/bin/csh", "/bin/tcsh"]
 POSSIBLE_TERMINALS = ["/usr/bin/xterm", "/usr/bin/konsole"]
 POSSIBLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
@@ -35,8 +30,6 @@ DEFAULTS = {
     "debug_level": 'INFO',
     "print_startup_log": True
 }
-EXCLUDED_FILES = ['.DS_Store']
-EXCLUDED_IMAGES = ['megalos-bgp-manager']
 
 
 class Setting(object):
@@ -139,7 +132,7 @@ class Setting(object):
         self.check_terminal()
 
         current_time = time.time()
-        # After 1 week, check if a new image and Kathara version has been released.
+        # After 1 week, check if a new Kathara version has been released.
         if current_time - self.last_checked > ONE_WEEK:
             logging.debug(utils.format_headers("Checking Updates"))
             checked = True
