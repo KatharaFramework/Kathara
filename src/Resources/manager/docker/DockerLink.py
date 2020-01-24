@@ -14,10 +14,12 @@ from ...setting.Setting import Setting
 
 
 class DockerLink(object):
-    __slots__ = ['client']
+    __slots__ = ['client', 'network_plugin_name']
 
-    def __init__(self, client):
+    def __init__(self, client, network_plugin_name):
         self.client = client
+        self.network_plugin_name = network_plugin_name
+        
 
     def deploy(self, link):
         # Reserved name for bridged connections, ignore.
@@ -34,7 +36,7 @@ class DockerLink(object):
         network_ipam_config = docker.types.IPAMConfig(driver='null')
 
         link.api_object = self.client.networks.create(name=link_name,
-                                                      driver=PLUGIN_NAME,
+                                                      driver=self.network_plugin_name,
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,
                                                       labels={"lab_hash": link.lab.folder_hash,
