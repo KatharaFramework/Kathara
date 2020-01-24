@@ -15,7 +15,7 @@
 From the Greek Καθαρά.  
 Implementation of the notorious [Netkit](https://github.com/maxonthegit/netkit-core) using Python. 10 times faster than Netkit and more than 100 times lighter, allows easy configuration and deploy of arbitrary virtual networks with SDN, NFV and traditional routing protocols. The framework has the performances to run in production and our images can emulate most network equipments.
 
-Kathará comes with **P4**, **OpenVSwitch**, **Quagga**, **Bind**, and more, but can also be extended with your own container images. For more information about Kathará images please visit the dedicated [repo](https://github.com/KatharaFramework/Docker-Images).
+Kathará comes with **P4**, **OpenVSwitch**, **Quagga**, **FRRouting**, **Bind**, and more, but can also be extended with your own container images. For more information about Kathará images please visit the dedicated [repo](https://github.com/KatharaFramework/Docker-Images).
 
 ## Installation
 Install Docker and then run the installer. For a step by step guide check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki).
