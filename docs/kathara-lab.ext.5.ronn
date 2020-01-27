@@ -30,7 +30,7 @@ VLAN ID 0 and 4095 are reserved and can not be used.
 
 		# Collision domain A, on interface enp9s0
 		A enp9s0
-		# Collision domain A, on interface enp9s0 with VLAN ID = 20
+		# Collision domain B, on interface enp9s0 with VLAN ID = 20
 		B enp9s0.20
 		# Collision domain C, on interface eth1 with VLAN ID = 4001
 		C eth1.4001
