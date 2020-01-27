@@ -6,7 +6,6 @@ from multiprocessing.dummy import Pool
 import docker
 from docker import types
 
-from .DockerPlugin import PLUGIN_NAME
 from ... import utils
 from ...model.Link import BRIDGE_LINK_NAME
 from ...os.Networking import Networking
@@ -14,12 +13,12 @@ from ...setting.Setting import Setting
 
 
 class DockerLink(object):
-    __slots__ = ['client', 'network_plugin_name']
+    __slots__ = ['client', 'docker_plugin']
 
-    def __init__(self, client, network_plugin_name):
+    def __init__(self, client, docker_plugin):
         self.client = client
-        self.network_plugin_name = network_plugin_name
-        
+
+        self.docker_plugin = docker_plugin
 
     def deploy(self, link):
         # Reserved name for bridged connections, ignore.
@@ -36,7 +35,7 @@ class DockerLink(object):
         network_ipam_config = docker.types.IPAMConfig(driver='null')
 
         link.api_object = self.client.networks.create(name=link_name,
-                                                      driver=self.network_plugin_name,
+                                                      driver=self.docker_plugin.plugin_name,
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,
                                                       labels={"lab_hash": link.lab.folder_hash,
