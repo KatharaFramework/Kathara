@@ -23,9 +23,7 @@ class DepParser(object):
         line = dep_mem_file.readline().decode('utf-8')
         while line:
             line = line.strip()
-            if len(line) == 0:
-                continue
-            if line[0] == '#':
+            if len(line) == 0 or line[0] == '#':
                 continue
             # E.g. MACHINE: MACHINE1 MACHINE2 MACHINE3
             # Or MACHINE:MACHINE1 MACHINE2 MACHINE3
