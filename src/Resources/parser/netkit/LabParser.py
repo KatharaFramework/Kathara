@@ -22,7 +22,7 @@ class LabParser(object):
         line_number = 1
         line = lab_mem_file.readline().decode('utf-8')
         while line:
-            matches = re.search(r"^(?P<key>[a-zA-Z0-9_]{1,30})\[(?P<arg>\w+)\]=(?P<value>\".+\"|\'.+\'|\w+)$",
+            matches = re.search(r"^(?P<key>[a-z0-9_]{1,30})\[(?P<arg>\w+)\]=(?P<value>\".+\"|\'.+\'|\w+)$",
                                 line.strip()
                                 )
 
