@@ -15,8 +15,7 @@ default: all
 deps:
 	python3 -m pip install pyinstaller
 	python3 -m pip install -r ../../src/requirements.txt
-	brew tap apjanke/ronn-ng
-	brew install ronn-ng
+	gem install ronn-ng
 
 manpages:
 	cd ../../docs && make roff-build;
