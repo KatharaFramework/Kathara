@@ -16,6 +16,9 @@ from ...setting.Setting import Setting
 SUBNET_DIVIDER = 16
 SUBNET_MULTIPLIER = 256 * 256
 
+SUBNET_V6_DIVIDER = 64
+SUBNET_V6_MULTIPLIER = 2**64
+
 
 class DockerLink(object):
     __slots__ = ['client', 'docker_image', 'base_ip']
@@ -32,7 +35,7 @@ class DockerLink(object):
         # Reserved name for bridged connections, ignore.
         if link.name == BRIDGE_LINK_NAME:
             return
-
+        
         # If a network with the same name exists, return it instead of creating a new one.
         link_name = self.get_network_name(link.name)
         network_objects = self.get_links_by_filters(link_name=link_name)
@@ -41,17 +44,26 @@ class DockerLink(object):
             return
 
         logging.debug("Creating subnet for link `%s`..." % link.name)
-        network_subnet = self._get_link_subnet()
-        logging.debug("Subnet IP is %s." % network_subnet)
+        network_v4_subnet, network_v6_subnet = self._get_link_subnet()
+        logging.debug("Subnet IPv4 is %s." % network_v4_subnet)
+
+        ipv6enabled = network_v6_subnet is not None
+        if ipv6enabled:
+            logging.debug("Subnet IPv6 is %s." % network_v6_subnet)
 
         # Create the network IPAM config for Docker
-        network_pool = docker.types.IPAMPool(subnet='%s' % network_subnet)
+        pool_configs = [
+            docker.types.IPAMPool(subnet='%s' % network_v4_subnet)
+        ]
+        if ipv6enabled:
+            pool_configs.append(docker.types.IPAMPool(subnet='%s' % network_v6_subnet))
 
         network_ipam_config = docker.types.IPAMConfig(driver='default',
-                                                      pool_configs=[network_pool]
+                                                      pool_configs=pool_configs
                                                       )
 
         link.api_object = self.client.networks.create(name=link_name,
+                                                      enable_ipv6=ipv6enabled,
                                                       driver='bridge',
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,
@@ -122,33 +134,54 @@ class DockerLink(object):
 
     def _get_link_subnet(self):
         # Get current Docker subnets
-        current_networks = []
+        current_v4_networks = []
+        current_v6_networks = []
 
         for network in self.client.networks.list(filters={"driver": "bridge"}):
             ipam_config = network.attrs['IPAM']['Config']
-            first_config = ipam_config.pop()
-
-            current_networks.append(ipaddress.ip_network(first_config['Subnet']))
+            for ipam_net_cfg in ipam_config:
+                if "Subnet" in ipam_net_cfg:
+                    ipaddr = ipaddress.ip_network(ipam_net_cfg['Subnet'])
+                    if type(ipaddr) is ipaddress.IPv4Network:
+                        current_v4_networks.append(ipaddr)
+                    else:
+                        current_v6_networks.append(ipaddr)
 
         # If no networks are deployed, return the base IP.
-        if not current_networks:
-            return self.base_ip
+        new_network4 = self.base_ip
+        new_network6 = None
 
-        # Get last subnet defined
-        last_network = max(current_networks)
+        if len(current_v4_networks) > 0:
+            # Get last subnet defined
+            last_network = max(current_v4_networks)
 
-        # Create a /16 starting from the last Docker network
-        new_network = ipaddress.IPv4Network("%s/%d" % (last_network.broadcast_address + 1, SUBNET_DIVIDER),
-                                            strict=False
-                                            )
-
-        # If the new network overlaps the last one, add a /16 to it.
-        if new_network.overlaps(last_network):
-            new_network = ipaddress.IPv4Network("%s/%d" % (new_network.network_address + SUBNET_MULTIPLIER,
-                                                           SUBNET_DIVIDER)
+            # Create a /16 starting from the last Docker network
+            new_network4 = ipaddress.IPv4Network("%s/%d" % (last_network.broadcast_address + 1, SUBNET_DIVIDER),
+                                                strict=False
                                                 )
 
-        return new_network
+            # If the new network overlaps the last one, add a /16 to it.
+            if new_network4.overlaps(last_network):
+                new_network4 = ipaddress.IPv4Network("%s/%d" % (new_network4.network_address + SUBNET_MULTIPLIER,
+                                                            SUBNET_DIVIDER)
+                                                    )
+        
+        if len(current_v6_networks) > 0:
+            # Get last subnet defined
+            last_network = max(current_v6_networks)
+
+            # Create a /64 starting from the last Docker network
+            new_network6 = ipaddress.IPv6Network("%s/%d" % (last_network.broadcast_address + 1, SUBNET_V6_DIVIDER),
+                                                strict=False
+                                                )
+
+            # If the new network overlaps the last one, add a /64 to it.
+            if new_network6.overlaps(last_network):
+                new_network6 = ipaddress.IPv6Network("%s/%d" % (new_network6.network_address + SUBNET_V6_MULTIPLIER,
+                                                            SUBNET_V6_DIVIDER)
+                                                    )
+
+        return new_network4, new_network6
 
     def configure_networks(self, links):
         """
