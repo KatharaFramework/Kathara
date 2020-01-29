@@ -22,10 +22,13 @@ class DepParser(object):
         line_number = 1
         line = dep_mem_file.readline().decode('utf-8')
         while line:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
             # E.g. MACHINE: MACHINE1 MACHINE2 MACHINE3
             # Or MACHINE:MACHINE1 MACHINE2 MACHINE3
             matches = re.search(r"^(?P<key>\w+):\s?(?P<deps>(\w+ ?)+)$",
-                                line.strip()
+                                line
                                 )
 
             if matches:
