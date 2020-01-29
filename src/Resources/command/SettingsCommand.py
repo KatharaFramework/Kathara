@@ -338,6 +338,33 @@ class SettingsCommand(Command):
 
         print_startup_log_item = SubmenuItem(print_startup_log_string, print_startup_log_menu, menu)
 
+
+        # Enable ipv6 Option
+        enable_ipv6_string = "Enable IPv6"
+        enable_ipv6_menu = SelectionMenu(strings=[],
+                                         title=enable_ipv6_string,
+                                         subtitle=current_bool("enable_ipv6"),
+                                         formatter=menu_formatter,
+                                         prologue_text="""This option enables IPv6 inside the devices.
+                                                          Default is %s.""" % format_bool(
+                                                          DEFAULTS['enable_ipv6'])
+                                        )
+
+        enable_ipv6_menu.append_item(FunctionItem(text="Yes",
+                                                  function=self.set_setting_value,
+                                                  args=['enable_ipv6', True],
+                                                  should_exit=True
+                                                  )
+                                     )
+        enable_ipv6_menu.append_item(FunctionItem(text="No",
+                                                  function=self.set_setting_value,
+                                                  args=['enable_ipv6', False],
+                                                  should_exit=True
+                                                  )
+                                    )
+
+        enable_ipv6_item = SubmenuItem(enable_ipv6_string, enable_ipv6_menu, menu)
+
         menu.append_item(submenu_item)
         menu.append_item(manager_item)
         menu.append_item(open_terminals_item)
@@ -348,6 +375,7 @@ class SettingsCommand(Command):
         menu.append_item(prefixes_item)
         menu.append_item(debug_level_item)
         menu.append_item(print_startup_log_item)
+        menu.append_item(enable_ipv6_item)
 
         self.menu = menu
 

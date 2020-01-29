@@ -28,14 +28,15 @@ DEFAULTS = {
     "net_prefix": 'kathara',
     "device_prefix": 'kathara',
     "debug_level": 'INFO',
-    "print_startup_log": True
+    "print_startup_log": True,
+    "enable_ipv6": False
 }
 
 
 class Setting(object):
     __slots__ = ['image', 'manager_type', 'terminal', 'open_terminals',
                  'hosthome_mount', 'shared_mount', 'device_shell', 'net_prefix', 'device_prefix', 'debug_level',
-                 'print_startup_log', 'last_checked']
+                 'print_startup_log', 'enable_ipv6', 'last_checked']
 
     __instance = None
 
@@ -207,5 +208,6 @@ class Setting(object):
                 "device_prefix": self.device_prefix,
                 "debug_level": self.debug_level,
                 "print_startup_log": self.print_startup_log,
-                "last_checked": self.last_checked
+                "last_checked": self.last_checked,
+                "enable_ipv6": self.enable_ipv6
                 }

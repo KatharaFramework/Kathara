@@ -154,10 +154,12 @@ class DockerMachine(object):
 
         sysctl_parameters["net.ipv4.ip_forward"] = 1
         sysctl_parameters["net.ipv4.icmp_ratelimit"] = 0
-        sysctl_parameters["net.ipv6.conf.all.forwarding"] = 1
-        sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
-        sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
-        sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
+
+        if Setting.get_instance().enable_ipv6:
+            sysctl_parameters["net.ipv6.conf.all.forwarding"] = 1
+            sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
+            sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
+            sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
 
         volumes = {}
 
