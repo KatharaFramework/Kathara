@@ -106,7 +106,7 @@ def confirmation_prompt(prompt_string, callback_yes, callback_no):
 
 
 def get_pool_size():
-    return cpu_count()
+    return min(10, cpu_count())
 
 
 # Platform Specific Functions

@@ -5,6 +5,7 @@ from multiprocessing.dummy import Pool
 from subprocess import Popen
 
 from docker.errors import APIError
+from progress.bar import IncrementalBar
 
 from ... import utils
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
@@ -79,7 +80,42 @@ class DockerMachine(object):
 
         self.docker_image = docker_image
 
-    def deploy(self, machine, privileged=False):
+    def deploy_machines(self, lab, privileged_mode=False):
+        # Check and pulling machine images
+        lab_images = set(map(lambda x: x.get_image(), lab.machines.values()))
+        self.docker_image.multiple_check_and_pull(lab_images)
+
+        machines = lab.machines.items()
+        progress_bar = IncrementalBar('Deploying machines...', max=len(machines))
+
+        # Deploy all lab machines.
+        # If there is no lab.dep file, machines can be deployed using multithreading.
+        # If not, they're started sequentially
+        if not lab.has_dependencies:
+            pool_size = utils.get_pool_size()
+            machines_pool = Pool(pool_size)
+
+            items = utils.chunk_list(machines, pool_size)
+
+            for chunk in items:
+                machines_pool.map(func=partial(self._deploy_and_start_machine, progress_bar, privileged_mode),
+                                  iterable=chunk
+                                  )
+        else:
+            for item in machines:
+                self._deploy_and_start_machine(progress_bar, privileged_mode, item)
+
+        progress_bar.finish()
+
+    def _deploy_and_start_machine(self, progress_bar, privileged_mode, machine_item):
+        (_, machine) = machine_item
+
+        self.create(machine, privileged=privileged_mode)
+        self.start(machine)
+
+        progress_bar.next()
+
+    def create(self, machine, privileged=False):
         logging.debug("Creating machine `%s`..." % machine.name)
 
         image = machine.get_image()
@@ -238,8 +274,14 @@ class DockerMachine(object):
 
         items = utils.chunk_list(machines, pool_size)
 
+        progress_bar = IncrementalBar("Deleting machines...", max=len(machines))
+
         for chunk in items:
-            machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True), iterable=chunk)
+            machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True, progress_bar),
+                              iterable=chunk
+                              )
+
+        progress_bar.finish()
 
     def wipe(self, user=None):
         machines = self.get_machines_by_filters(user=user)
@@ -250,17 +292,17 @@ class DockerMachine(object):
         items = utils.chunk_list(machines, pool_size)
 
         for chunk in items:
-            machines_pool.map(func=partial(self._undeploy_machine, [], False), iterable=chunk)
+            machines_pool.map(func=partial(self._undeploy_machine, [], False, None), iterable=chunk)
 
-    def _undeploy_machine(self, selected_machines, log, machine_item):
+    def _undeploy_machine(self, selected_machines, log, progress_bar, machine_item):
         # If selected machines list is empty, remove everything
         # Else, check if the machine is in the list.
         if not selected_machines or \
            machine_item.labels["name"] in selected_machines:
-            if log:
-                logging.info("Deleting machine %s." % machine_item.labels["name"])
-
             self.delete_machine(machine_item)
+
+            if log:
+                progress_bar.next()
 
     def connect(self, lab_hash, machine_name, shell, logs=False):
         logging.debug("Connect to machine with name: %s" % machine_name)

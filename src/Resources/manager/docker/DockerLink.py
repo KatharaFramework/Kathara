@@ -5,8 +5,10 @@ from multiprocessing.dummy import Pool
 
 import docker
 from docker import types
+from progress.bar import IncrementalBar
 
 from ... import utils
+from ...exceptions import PrivilegeError
 from ...model.Link import BRIDGE_LINK_NAME
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
@@ -20,7 +22,36 @@ class DockerLink(object):
 
         self.docker_plugin = docker_plugin
 
-    def deploy(self, link):
+    def deploy_links(self, lab):
+        pool_size = utils.get_pool_size()
+        link_pool = Pool(pool_size)
+
+        links = lab.links.items()
+        items = utils.chunk_list(links, pool_size)
+
+        progress_bar = IncrementalBar('Deploying links...', max=len(links))
+
+        for chunk in items:
+            link_pool.map(func=partial(self._deploy_link, progress_bar), iterable=chunk)
+
+        progress_bar.finish()
+
+        # Create a docker bridge link in the lab object and assign the Docker Network object associated to it.
+        docker_bridge = self.get_docker_bridge()
+        link = lab.get_or_new_link(BRIDGE_LINK_NAME)
+        link.api_object = docker_bridge
+
+    def _deploy_link(self, progress_bar, link_item):
+        (_, link) = link_item
+
+        if link.name == BRIDGE_LINK_NAME:
+            return
+
+        self.create(link)
+
+        progress_bar.next()
+
+    def create(self, link):
         # Reserved name for bridged connections, ignore.
         if link.name == BRIDGE_LINK_NAME:
             return
@@ -42,7 +73,7 @@ class DockerLink(object):
                                                               "name": link.name,
                                                               "user": utils.get_current_user_name(),
                                                               "app": "kathara",
-                                                              "external": ";".join([x.get_name()
+                                                              "external": ";".join([x.get_full_name()
                                                                                     for x in link.external
                                                                                     ]
                                                                                    )
@@ -61,8 +92,12 @@ class DockerLink(object):
 
         items = utils.chunk_list(links, pool_size)
 
+        progress_bar = IncrementalBar("Deleting links...", max=len(links))
+
         for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, True), iterable=chunk)
+            links_pool.map(func=partial(self._undeploy_link, True, progress_bar), iterable=chunk)
+
+        progress_bar.finish()
 
     def wipe(self, user=None):
         links = self.get_links_by_filters(user=user)
@@ -73,18 +108,18 @@ class DockerLink(object):
         items = utils.chunk_list(links, pool_size)
 
         for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, False), iterable=chunk)
+            links_pool.map(func=partial(self._undeploy_link, False, None), iterable=chunk)
 
-    def _undeploy_link(self, log, link_item):
+    def _undeploy_link(self, log, progress_bar, link_item):
         link_item.reload()
 
         if len(link_item.containers) > 0:
             return
 
-        if log:
-            logging.info("Deleting link %s." % link_item.attrs['Labels']["name"])
+        self._delete_link(link_item)
 
-        self.delete_link(link_item)
+        if log:
+            progress_bar.next()
 
     def get_docker_bridge(self):
         bridge_list = self.client.networks.list(names="bridge")
@@ -103,12 +138,9 @@ class DockerLink(object):
 
     def _attach_external_interfaces(self, external_links, network):
         for external_link in external_links:
-            logging.info("Attaching external interface `%s` to link %s." % (external_link.get_name(),
-                                                                            network.attrs['Labels']['name']
-                                                                            )
-                         )
+            (name, vlan) = external_link.get_name_and_vlan()
 
-            interface_index = Networking.get_or_new_interface(external_link.interface, external_link.vlan)
+            interface_index = Networking.get_or_new_interface(name, vlan)
             Networking.attach_interface_to_bridge(interface_index, self._get_bridge_name(network))
 
     @staticmethod
@@ -120,19 +152,20 @@ class DockerLink(object):
         return "%s_%s_%s" % (Setting.get_instance().net_prefix, utils.get_current_user_name(), name)
 
     @staticmethod
-    def delete_link(link):
+    def _delete_link(link):
         external_label = link.attrs['Labels']["external"]
         external_links = external_label.split(";") if external_label else None
 
         if external_links:
             for external_link in external_links:
-                logging.info("Detaching external interface `%s` from link %s." % (external_link,
-                                                                                  link.attrs['Labels']['name']
-                                                                                  )
-                             )
-
                 if re.search(r"^\w+\.\d+$", external_link):
-                    # Only remove VLAN interfaces, physical ones cannot be removed.
-                    Networking.remove_interface(external_link)
+                    if utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2):
+                        if utils.is_admin():
+                            # Only remove VLAN interfaces, physical ones cannot be removed.
+                            Networking.remove_interface(external_link)
+                        else:
+                            raise PrivilegeError("You must be root in order to delete a VLAN Interface.")
+                    else:
+                        raise OSError("VLAN Interfaces are only available on UNIX systems.")
 
         link.remove()

@@ -1,9 +1,9 @@
 import logging
-import os
 
 from docker.errors import NotFound
 
 from ... import utils
+from ...os.Networking import Networking
 
 PLUGIN_NAME = "kathara/katharanp"
 BUSTER_TAG = "buster"
@@ -17,7 +17,7 @@ class DockerPlugin(object):
         self.client = client
 
         def _select_plugin_name_linux():
-            iptables_version = os.popen("/sbin/iptables --version").read().strip()
+            iptables_version = Networking.get_iptables_version()
 
             return "%s:%s" % (PLUGIN_NAME, BUSTER_TAG) if 'nf_tables' in iptables_version else \
                    "%s:%s" % (PLUGIN_NAME, STRETCH_TAG)
