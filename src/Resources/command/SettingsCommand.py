@@ -338,8 +338,7 @@ class SettingsCommand(Command):
 
         print_startup_log_item = SubmenuItem(print_startup_log_string, print_startup_log_menu, menu)
 
-
-        # Enable ipv6 Option
+        # Enable IPv6 Option
         enable_ipv6_string = "Enable IPv6"
         enable_ipv6_menu = SelectionMenu(strings=[],
                                          title=enable_ipv6_string,
@@ -348,7 +347,7 @@ class SettingsCommand(Command):
                                          prologue_text="""This option enables IPv6 inside the devices.
                                                           Default is %s.""" % format_bool(
                                                           DEFAULTS['enable_ipv6'])
-                                        )
+                                         )
 
         enable_ipv6_menu.append_item(FunctionItem(text="Yes",
                                                   function=self.set_setting_value,
@@ -361,7 +360,7 @@ class SettingsCommand(Command):
                                                   args=['enable_ipv6', False],
                                                   should_exit=True
                                                   )
-                                    )
+                                     )
 
         enable_ipv6_item = SubmenuItem(enable_ipv6_string, enable_ipv6_menu, menu)
 

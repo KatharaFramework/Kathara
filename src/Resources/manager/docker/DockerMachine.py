@@ -5,7 +5,7 @@ from multiprocessing.dummy import Pool
 from subprocess import Popen
 
 from docker.errors import APIError
-from progress.bar import IncrementalBar
+from progress.bar import Bar
 
 from ... import utils
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
@@ -86,7 +86,7 @@ class DockerMachine(object):
         self.docker_image.multiple_check_and_pull(lab_images)
 
         machines = lab.machines.items()
-        progress_bar = IncrementalBar('Deploying machines...', max=len(machines))
+        progress_bar = Bar('Deploying machines...', max=len(machines))
 
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
@@ -276,7 +276,7 @@ class DockerMachine(object):
 
         items = utils.chunk_list(machines, pool_size)
 
-        progress_bar = IncrementalBar("Deleting machines...", max=len(machines))
+        progress_bar = Bar("Deleting machines...", max=len(machines))
 
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True, progress_bar),

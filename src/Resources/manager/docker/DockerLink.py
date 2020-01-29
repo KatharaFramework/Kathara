@@ -5,7 +5,7 @@ from multiprocessing.dummy import Pool
 
 import docker
 from docker import types
-from progress.bar import IncrementalBar
+from progress.bar import Bar
 
 from ... import utils
 from ...exceptions import PrivilegeError
@@ -29,7 +29,7 @@ class DockerLink(object):
         links = lab.links.items()
         items = utils.chunk_list(links, pool_size)
 
-        progress_bar = IncrementalBar('Deploying links...', max=len(links))
+        progress_bar = Bar('Deploying links...', max=len(links))
 
         for chunk in items:
             link_pool.map(func=partial(self._deploy_link, progress_bar), iterable=chunk)
@@ -92,7 +92,7 @@ class DockerLink(object):
 
         items = utils.chunk_list(links, pool_size)
 
-        progress_bar = IncrementalBar("Deleting links...", max=len(links))
+        progress_bar = Bar("Deleting links...", max=len(links))
 
         for chunk in items:
             links_pool.map(func=partial(self._undeploy_link, True, progress_bar), iterable=chunk)
