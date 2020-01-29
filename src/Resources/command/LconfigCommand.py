@@ -9,6 +9,7 @@ from ..manager.ManagerProxy import ManagerProxy
 from ..model.Lab import Lab
 from ..strings import strings, wiki_description
 
+
 class LconfigCommand(Command):
     __slots__ = []
 
