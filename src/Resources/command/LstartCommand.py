@@ -4,6 +4,7 @@ import os
 import sys
 
 from .. import utils
+from ..exceptions import PrivilegeError
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
 from ..parser.netkit.DepParser import DepParser
@@ -171,9 +172,9 @@ class LstartCommand(Command):
                         # Since xterm does not work with "sudo", we do not open terminals when lab.ext is present.
                         Setting.get_instance().open_terminals = False
                 else:
-                    raise Exception("You must be root in order to use lab.ext file.")
+                    raise PrivilegeError("You must be root in order to use lab.ext file.")
             else:
-                raise Exception("lab.ext is only available on UNIX systems.")
+                raise OSError("lab.ext is only available on UNIX systems.")
 
         if args.machine_name:
             lab.intersect_machines(args.machine_name)

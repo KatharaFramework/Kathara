@@ -8,11 +8,6 @@ from .. import version
 from ..api.GitHubApi import GitHubApi
 from ..exceptions import HTTPConnectionError, SettingsError
 
-MAX_K8S_NUMBER = (1 << 24) - 20
-
-DOCKER = "docker"
-K8S = "k8s"
-
 POSSIBLE_SHELLS = ["/bin/bash", "/bin/sh", "/bin/ash", "/bin/ksh", "/bin/zsh", "/bin/fish", "/bin/csh", "/bin/tcsh"]
 POSSIBLE_TERMINALS = ["/usr/bin/xterm", "/usr/bin/konsole"]
 POSSIBLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
@@ -33,16 +28,15 @@ DEFAULTS = {
     "net_prefix": 'kathara',
     "device_prefix": 'kathara',
     "debug_level": 'INFO',
-    "print_startup_log": True
+    "print_startup_log": True,
+    "enable_ipv6": False
 }
-EXCLUDED_FILES = ['.DS_Store']
-EXCLUDED_IMAGES = ['megalos-bgp-manager']
 
 
 class Setting(object):
     __slots__ = ['image', 'manager_type', 'terminal', 'open_terminals',
                  'hosthome_mount', 'shared_mount', 'device_shell', 'net_prefix', 'device_prefix', 'debug_level',
-                 'print_startup_log', 'last_checked']
+                 'print_startup_log', 'enable_ipv6', 'last_checked']
 
     __instance = None
 
@@ -136,12 +130,10 @@ class Setting(object):
     def check(self):
         self.check_manager()
 
-        self.check_image()
-
         self.check_terminal()
 
         current_time = time.time()
-        # After 1 week, check if a new image and Kathara version has been released.
+        # After 1 week, check if a new Kathara version has been released.
         if current_time - self.last_checked > ONE_WEEK:
             logging.debug(utils.format_headers("Checking Updates"))
             checked = True
@@ -159,16 +151,6 @@ class Setting(object):
             except HTTPConnectionError:
                 logging.debug("Connection to GitHub failed, passing...")
                 checked = False
-
-            if self.manager_type == DOCKER:
-                logging.debug("Checking Docker Image version...")
-
-                try:
-                    from ..manager.ManagerProxy import ManagerProxy
-                    ManagerProxy.get_instance().check_updates(self)
-                except HTTPConnectionError:
-                    logging.debug("Connection to DockerHub failed, passing...")
-                    checked = False
 
             if checked:
                 self.last_checked = current_time
@@ -226,5 +208,6 @@ class Setting(object):
                 "device_prefix": self.device_prefix,
                 "debug_level": self.debug_level,
                 "print_startup_log": self.print_startup_log,
-                "last_checked": self.last_checked
+                "last_checked": self.last_checked,
+                "enable_ipv6": self.enable_ipv6
                 }

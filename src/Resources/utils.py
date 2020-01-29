@@ -5,17 +5,17 @@ import math
 import os
 import re
 import shutil
-import sys
 import tarfile
 import tempfile
 from io import BytesIO
 from itertools import islice
-from sys import platform as _platform
+from multiprocessing import cpu_count
 
+import sys
 from binaryornot.check import is_binary
 from slug import slug
+from sys import platform as _platform
 
-from .setting.Setting import EXCLUDED_FILES
 from .trdparty.consolemenu import PromptUtils, Screen
 
 # Platforms constants definition.
@@ -23,6 +23,9 @@ MAC_OS = "darwin"
 WINDOWS = "win32"
 LINUX = "linux"
 LINUX2 = "linux2"
+
+# List of ignored files
+EXCLUDED_FILES = ['.DS_Store']
 
 
 # Generic Functions
@@ -88,6 +91,10 @@ def list_chunks(iterable, size):
         item = list(islice(it, size))
 
 
+def chunk_list(iterable, size):
+    return [iterable] if len(iterable) < size else list_chunks(iterable, size)
+
+
 def confirmation_prompt(prompt_string, callback_yes, callback_no):
     prompt_utils = PromptUtils(Screen())
     answer = prompt_utils.prompt_for_bilateral_choice(prompt_string, 'y', 'n')
@@ -96,6 +103,10 @@ def confirmation_prompt(prompt_string, callback_yes, callback_no):
         return callback_no()
 
     return callback_yes()
+
+
+def get_pool_size():
+    return min(10, cpu_count())
 
 
 # Platform Specific Functions

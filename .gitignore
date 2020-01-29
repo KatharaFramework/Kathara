@@ -102,7 +102,7 @@ Dockerfile~
 /.vscode/
 /.vs/
 
-/.idea/
+.idea/
 
 # ISS Compiled file
 /scripts/Windows/Output/

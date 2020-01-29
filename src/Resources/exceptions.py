@@ -12,6 +12,11 @@ class DockerDaemonConnectionError(Exception):
     pass
 
 
+# OS Exceptions
+class PrivilegeError(Exception):
+    pass
+
+
 # Machine Exceptions
 class MountDeniedError(Exception):
     pass

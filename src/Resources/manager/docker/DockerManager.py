@@ -1,8 +1,4 @@
-import logging
 from datetime import datetime
-from multiprocessing import cpu_count
-from multiprocessing.dummy import Pool
-from functools import partial
 
 import docker
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -11,6 +7,7 @@ from terminaltables import DoubleTable
 from .DockerImage import DockerImage
 from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
+from .DockerPlugin import DockerPlugin
 from ... import utils
 from ...auth.PrivilegeHandler import PrivilegeHandler
 from ...exceptions import DockerDaemonConnectionError
@@ -78,55 +75,23 @@ class DockerManager(IManager):
 
     @check_docker_status
     def __init__(self):
-        self.client = docker.from_env()
+        self.client = docker.from_env(timeout=None)
+
+        docker_plugin = DockerPlugin(self.client)
+        docker_plugin.check_and_download_plugin()
 
         self.docker_image = DockerImage(self.client)
 
         self.docker_machine = DockerMachine(self.client, self.docker_image)
-        self.docker_link = DockerLink(self.client, self.docker_image)
+        self.docker_link = DockerLink(self.client, docker_plugin)
 
     @privileged
     def deploy_lab(self, lab, privileged_mode=False):
         # Deploy all lab links.
-        # Cannot be done multithread because we need to read the last created IP subnet sequentially.
-        for (_, link) in lab.links.items():
-            if link.name == BRIDGE_LINK_NAME:
-                continue
-
-            logging.info("Deploying link %s." % link.name)
-            self.docker_link.deploy(link)
-
-        self.docker_link.configure_networks(lab.links)
-
-        # Create a docker bridge link in the lab object and assign the Docker Network object associated to it.
-        docker_bridge = self.docker_link.get_docker_bridge()
-        link = lab.get_or_new_link(BRIDGE_LINK_NAME)
-        link.api_object = docker_bridge
+        self.docker_link.deploy_links(lab)
 
         # Deploy all lab machines.
-        # If there is no lab.dep file, machines can be deployed using multithreading.
-        # If not, they're started sequentially
-        if not lab.has_dependencies:
-            cpus = cpu_count()
-            machines_pool = Pool(cpus)
-
-            machines = lab.machines.items()
-            items = [machines] if len(machines) < cpus else \
-                                  utils.list_chunks(machines, cpus)
-
-            for chunk in items:
-                machines_pool.map(func=partial(self._deploy_and_start_machine, privileged_mode), iterable=chunk)
-        else:
-            for item in lab.machines.items():
-                self._deploy_and_start_machine(privileged_mode, item)
-
-    def _deploy_and_start_machine(self, privileged_mode, machine_item):
-        (_, machine) = machine_item
-
-        self.docker_machine.deploy(machine, privileged=privileged_mode)
-
-        logging.info("Starting machine %s." % machine.name)
-        self.docker_machine.start(machine)
+        self.docker_machine.deploy_machines(lab, privileged_mode=privileged_mode)
 
     @privileged
     def update_lab(self, lab_diff):
@@ -135,7 +100,7 @@ class DockerManager(IManager):
             if link.name == BRIDGE_LINK_NAME:
                 continue
 
-            self.docker_link.deploy(link)
+            self.docker_link.create(link)
 
         # Update lab machines.
         for (_, machine) in lab_diff.machines.items():
@@ -143,9 +108,8 @@ class DockerManager(IManager):
 
     @privileged
     def undeploy_lab(self, lab_hash, selected_machines=None):
-        self.docker_machine.undeploy(lab_hash,
-                                     selected_machines=selected_machines
-                                     )
+        self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines)
+
         self.docker_link.undeploy(lab_hash)
 
     @privileged
@@ -227,7 +191,7 @@ class DockerManager(IManager):
 
             stats_table.table_data = machines_data
 
-            yield("TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table)
+            yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
 
     @privileged
     def get_machine_info(self, machine_name, lab_hash=None, all_users=False):

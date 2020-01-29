@@ -1,4 +1,5 @@
 import logging
+import os
 
 
 class Networking(object):
@@ -63,7 +64,8 @@ class Networking(object):
         ip.link(
             "set",
             index=interface_index,
-            master=bridge_index
+            master=bridge_index,
+            state="up"
         )
 
         logging.debug("Interface ID = %d attached to bridge %s." % (interface_index, bridge_name))
@@ -94,3 +96,7 @@ class Networking(object):
         )
 
         ip.close()
+
+    @staticmethod
+    def get_iptables_version():
+        return os.popen("/sbin/iptables --version").read().strip()

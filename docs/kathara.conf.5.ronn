@@ -65,6 +65,11 @@ Checks on the correctness of the configuration are performed each time a Kathara
 
 	Default to `true`.
 
+* `enable_ipv6` (boolean):
+	This option enables IPv6 inside the devices.
+
+	Default to `false`.
+
 * `last_checked` (double):
 	Unix time (in milliseconds) of the last online check for Kathara updates. Each week, when the first Kathara command is launched, the system will check if the system and the default image are up-to-date.
 
@@ -84,6 +89,7 @@ Checks on the correctness of the configuration are performed each time a Kathara
 			"device_prefix": "kathara",
 			"debug_level": "INFO",
 			"print_startup_log": true,
+			"enable_ipv6": false,
 			"last_checked": 1570724309.2402148
 		}
   
