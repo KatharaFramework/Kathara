@@ -53,6 +53,9 @@ The possible kathara commands are:
 * `kathara-ltest`(1):
     Test a Kathara lab
 
+* `kathara-lconfig`(1):
+    Attach network interfaces to a running Kathara device in a Kathara lab
+
 * `kathara-connect`(1):
     Connect to a Kathara device
 
