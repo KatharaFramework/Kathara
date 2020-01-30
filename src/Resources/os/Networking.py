@@ -4,36 +4,36 @@ import os
 
 class Networking(object):
     @staticmethod
-    def get_or_new_interface(interface_name, vlan=None):
+    def get_or_new_interface(full_interface_name, vlan_interface_name, vlan_id=None):
         from pyroute2 import IPRoute
         ip = IPRoute()
 
-        logging.debug("Searching for interface `%s`..." % interface_name)
+        logging.debug("Searching for interface `%s`..." % full_interface_name)
 
         # Search the interface
-        link_indexes = ip.link_lookup(ifname=interface_name)
+        link_indexes = ip.link_lookup(ifname=full_interface_name)
         # If not present, raise an error
         if not link_indexes:
-            raise Exception("Interface `%s` not found." % interface_name)
+            raise Exception("Interface `%s` not found." % full_interface_name)
 
         link_index = link_indexes[0]
         logging.debug("Interface found with ID = %d" % link_index)
 
-        if vlan:
-            vlan_iface_name = "%s.%s" % (interface_name, vlan)
-            logging.debug("VLAN Interface required... Creating `%s`..." % vlan_iface_name)
+        if vlan_id:
+            full_vlan_iface_name = "%s.%s" % (vlan_interface_name, vlan_id)
+            logging.debug("VLAN Interface required... Creating `%s`..." % full_vlan_iface_name)
 
             # Search the VLAN interface
-            vlan_link_indexes = ip.link_lookup(ifname=vlan_iface_name)
+            vlan_link_indexes = ip.link_lookup(ifname=full_vlan_iface_name)
 
             if not vlan_link_indexes:
                 # A VLAN interface should be created before attaching it to bridge.
                 ip.link(
                     "add",
-                    ifname=vlan_iface_name,
+                    ifname=full_vlan_iface_name,
                     kind="vlan",
                     link=link_index,
-                    vlan_id=vlan
+                    vlan_id=vlan_id
                 )
 
                 # Set the new interface up
@@ -43,10 +43,10 @@ class Networking(object):
                     state="up"
                 )
 
-                logging.debug("Interface `%s` set UP." % vlan_iface_name)
+                logging.debug("Interface `%s` set UP." % full_vlan_iface_name)
 
                 # Refresh the VLAN interface information
-                vlan_link_indexes = ip.link_lookup(ifname=vlan_iface_name)
+                vlan_link_indexes = ip.link_lookup(ifname=full_vlan_iface_name)
                 link_index = vlan_link_indexes[0]
 
         ip.close()

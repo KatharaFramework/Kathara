@@ -140,7 +140,7 @@ class DockerLink(object):
         for external_link in external_links:
             (name, vlan) = external_link.get_name_and_vlan()
 
-            interface_index = Networking.get_or_new_interface(name, vlan)
+            interface_index = Networking.get_or_new_interface(external_link.interface, name, vlan)
             Networking.attach_interface_to_bridge(interface_index, self._get_bridge_name(network))
 
     @staticmethod
