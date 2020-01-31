@@ -39,8 +39,10 @@ class KubernetesManager(IManager):
         self.k8s_machine.wipe()
         self.k8s_link.wipe()
 
-    def get_manager_name(self):
+    @staticmethod
+    def get_manager_name():
         return "kubernetes"
 
-    def get_formatted_manager_name(self):
+    @staticmethod
+    def get_formatted_manager_name():
         return "Kubernetes (Megalos)"

@@ -301,6 +301,7 @@ class KubernetesMachine(object):
         else:
             security_context = client.V1SecurityContext(capabilities=client.V1Capabilities(add=machine.capabilities))
 
+        # TODO: FIX
         container_ports = None
         if "port" in machine.meta:
             container_ports = [
@@ -312,6 +313,7 @@ class KubernetesMachine(object):
                 )
             ]
 
+        # TODO: FIX
         resources = None
         memory = machine.get_mem()
         cpus = machine.get_cpu()

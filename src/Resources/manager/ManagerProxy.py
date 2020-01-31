@@ -76,7 +76,7 @@ class ManagerProxy(IManager):
         for manager_module_name in POSSIBLE_MANAGERS:
             manager_name = "%sManager" % manager_module_name.split('.')[-1].capitalize()
 
-            manager = utils.class_for_name("Resources.manager." + manager_module_name, manager_name)()
+            manager = utils.class_for_name("Resources.manager." + manager_module_name, manager_name)
             managers[manager.get_manager_name()] = manager.get_formatted_manager_name()
 
         return managers

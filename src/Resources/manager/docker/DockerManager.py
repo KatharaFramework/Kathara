@@ -247,10 +247,12 @@ class DockerManager(IManager):
     def get_release_version(self):
         return self.client.version()["Version"]
 
-    def get_manager_name(self):
+    @staticmethod
+    def get_manager_name():
         return "docker"
 
-    def get_formatted_manager_name(self):
+    @staticmethod
+    def get_formatted_manager_name():
         return "Docker (Kathara)"
 
     @staticmethod
