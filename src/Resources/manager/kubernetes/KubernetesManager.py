@@ -29,7 +29,11 @@ class KubernetesManager(IManager):
 
     @privileged
     def update_lab(self, lab_diff):
-        raise NotSupportedError("vconfig and lconfig not supported on Kubernetes.")
+        raise NotSupportedError("Not supported on Kubernetes.")
+
+    @privileged
+    def undeploy_lab(self, lab_hash, selected_machines=None):
+        pass
 
     @privileged
     def wipe(self, all_users=False):
@@ -38,6 +42,38 @@ class KubernetesManager(IManager):
 
         self.k8s_machine.wipe()
         self.k8s_link.wipe()
+
+    @privileged
+    def connect_tty(self, lab_hash, machine_name, shell, logs=False):
+        pass
+
+    @privileged
+    def exec(self, machine, command):
+        pass
+
+    @privileged
+    def copy_files(self, machine, path, tar_data):
+        pass
+
+    @privileged
+    def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
+        pass
+
+    @privileged
+    def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
+        pass
+
+    @privileged
+    def check_image(self, image_name):
+        pass
+
+    @privileged
+    def check_updates(self, settings):
+        pass
+
+    @privileged
+    def get_release_version(self):
+        pass
 
     @staticmethod
     def get_manager_name():
