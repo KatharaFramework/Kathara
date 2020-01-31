@@ -5,6 +5,7 @@ from .KubernetesNamespace import KubernetesNamespace
 from ...decorators import privileged
 from ...exceptions import NotSupportedError
 from ...foundation.manager.IManager import IManager
+from kubernetes import client
 
 
 class KubernetesManager(IManager):
@@ -24,29 +25,29 @@ class KubernetesManager(IManager):
         lab.folder_hash = lab.folder_hash.lower()
 
         self.k8s_namespace.create(lab)
-
         self.k8s_link.deploy_links(lab)
 
         # TODO: Scheduler
-
         self.k8s_machine.deploy_machines(lab, privileged_mode)
 
     @privileged
     def update_lab(self, lab_diff):
-        raise NotSupportedError("Not supported on Kubernetes.")
+        raise NotSupportedError("Unable to update a running lab.")
 
     @privileged
     def undeploy_lab(self, lab_hash, selected_machines=None):
+        if selected_machines:
+            raise NotSupportedError("Cannot delete specific devices from running lab.")
+
         lab_hash = lab_hash.lower()
 
         self.k8s_machine.undeploy(lab_hash, selected_machines=selected_machines)
-
         self.k8s_link.undeploy(lab_hash)
 
     @privileged
     def wipe(self, all_users=False):
         if all_users:
-            raise NotSupportedError("--all flag not supported on Kubernetes.")
+            raise NotSupportedError("Cannot use `--all` flag.")
 
         self.k8s_machine.wipe()
         self.k8s_link.wipe()
@@ -81,7 +82,12 @@ class KubernetesManager(IManager):
 
     @privileged
     def get_release_version(self):
-        pass
+        core_client = client.CoreApi()
+        versions = core_client.get_api_versions()
+
+        print(versions)
+
+        return 1
 
     @staticmethod
     def get_manager_name():

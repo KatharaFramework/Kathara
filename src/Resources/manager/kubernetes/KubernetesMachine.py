@@ -227,7 +227,7 @@ class KubernetesMachine(object):
             filters.append("name=%s" % machine_name)
 
         return self.client.list_namespaced_deployment(namespace=lab_hash if lab_hash else "default",
-                                                      label_selector="&".join(filters)
+                                                      label_selector=",".join(filters)
                                                       ).items
 
     def get_machine(self, lab_hash, machine_name):

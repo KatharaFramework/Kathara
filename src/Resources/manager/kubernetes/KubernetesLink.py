@@ -2,6 +2,7 @@ import re
 from functools import partial
 from multiprocessing.dummy import Pool
 
+from kubernetes import client
 from kubernetes.client.apis import custom_objects_api
 from progress.bar import Bar
 
@@ -83,13 +84,14 @@ class KubernetesLink(object):
             links_pool.map(func=partial(self._undeploy_link, False, None), iterable=chunk)
 
     def _undeploy_link(self, log, progress_bar, link_item):
-        # TODO: FIX ME
-        # link_item.reload()
-        #
-        # if len(link_item.containers) > 0:
-        #     return
-        #
-        # self._delete_link(link_item)
+        self.client.delete_namespaced_custom_object(group=K8S_NET_GROUP,
+                                                    version=K8S_NET_VERSION,
+                                                    namespace=link_item.lab.folder_hash,
+                                                    plural=K8S_NET_PLURAL,
+                                                    name=link_item["metadata"]["name"],
+                                                    body=client.V1DeleteOptions(grace_period_seconds=0),
+                                                    grace_period_seconds=0
+                                                    )
 
         if log:
             progress_bar.next()
@@ -103,7 +105,7 @@ class KubernetesLink(object):
                                                          version=K8S_NET_VERSION,
                                                          namespace=lab_hash if lab_hash else "default",
                                                          plural=K8S_NET_PLURAL,
-                                                         label_selector="&".join(filters)
+                                                         label_selector=",".join(filters)
                                                          )["items"]
 
     def _build_definition(self, link):

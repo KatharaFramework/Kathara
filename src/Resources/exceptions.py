@@ -13,7 +13,8 @@ class DockerDaemonConnectionError(Exception):
 
 
 class NotSupportedError(Exception):
-    pass
+    def __init__(self, message):
+        super().__init__("Not Supported: %s" % message)
 
 
 # OS Exceptions
