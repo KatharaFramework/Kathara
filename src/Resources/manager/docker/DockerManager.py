@@ -9,7 +9,7 @@ from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
 from .DockerPlugin import DockerPlugin
 from ... import utils
-from ...auth.PrivilegeHandler import PrivilegeHandler
+from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
@@ -28,21 +28,6 @@ def pywin_import_stub():
 def pywin_import_win():
     import pywintypes
     return pywintypes
-
-
-def privileged(method):
-    """
-    Decorator function to execute Docker daemon with proper privileges.
-    They are then dropped when method is executed.
-    """
-    def exec_with_privileges(*args, **kw):
-        utils.exec_by_platform(PrivilegeHandler.get_instance().raise_privileges, lambda: None, lambda: None)
-        result = method(*args, **kw)
-        utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
-
-        return result
-
-    return exec_with_privileges
 
 
 def check_docker_status(method):

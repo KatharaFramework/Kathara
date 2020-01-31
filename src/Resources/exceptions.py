@@ -12,8 +12,17 @@ class DockerDaemonConnectionError(Exception):
     pass
 
 
+class NotSupportedError(Exception):
+    pass
+
+
 # OS Exceptions
 class PrivilegeError(Exception):
+    pass
+
+
+# Lab Exceptions
+class LabAlreadyExistsError(Exception):
     pass
 
 
