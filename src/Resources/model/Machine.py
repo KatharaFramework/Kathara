@@ -217,7 +217,7 @@ class Machine(object):
 
         return memory
 
-    def get_cpu(self):
+    def get_cpu(self, multiplier=1):
         """
         CPU limit, defined as nano CPUs (10*e-9).
         User should pass a float value ranging from 0 to max user CPUs.
@@ -226,12 +226,12 @@ class Machine(object):
         """
         if "cpus" in self.lab.general_options:
             try:
-                return int(float(self.lab.general_options["cpus"]) * 1e9)
+                return int(float(self.lab.general_options["cpus"]) * multiplier)
             except ValueError:
                 raise MachineOptionError("CPU value not valid.")
         elif "cpus" in self.meta:
             try:
-                return int(float(self.meta["cpus"]) * 1e9)
+                return int(float(self.meta["cpus"]) * multiplier)
             except ValueError:
                 raise MachineOptionError("CPU value not valid.")
 
@@ -240,7 +240,7 @@ class Machine(object):
     def get_ports(self):
         if "port" in self.meta:
             try:
-                return {'3000/tcp': int(self.meta["port"])}
+                return 3000, 'tcp', int(self.meta["port"])
             except ValueError:
                 raise MachineOptionError("Port value not valid.")
 

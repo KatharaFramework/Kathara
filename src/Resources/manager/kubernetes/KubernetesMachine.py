@@ -211,65 +211,15 @@ class KubernetesMachine(object):
                 progress_bar.next()
 
     def connect(self, lab_hash, machine_name, shell, logs=False):
-        logging.debug("Connect to machine with name: %s" % machine_name)
-
-        container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
-
-        if not shell:
-            shell = Setting.get_instance().device_shell
-
-        if logs and Setting.get_instance().print_startup_log:
-            result_string = self.exec(container,
-                                      command="cat /var/log/shared.log /var/log/startup.log"
-                                      )
-            if result_string:
-                print("--- Startup Commands Log\n")
-                print(result_string)
-                print("--- End Startup Commands Log\n")
-
-        def tty_connect():
-            # Import PseudoTerminal only on Linux since some libraries are not available on Windows
-            from ...trdparty.dockerpty.pty import PseudoTerminal
-
-            # Needed with low level api because we need the id of the exec_create
-            resp = self.client.api.exec_create(container.id,
-                                               shell,
-                                               stdout=True,
-                                               stderr=True,
-                                               stdin=True,
-                                               tty=True,
-                                               privileged=False
-                                               )
-
-            exec_output = self.client.api.exec_start(resp['Id'],
-                                                     tty=True,
-                                                     socket=True,
-                                                     demux=True
-                                                     )
-
-            PseudoTerminal(self.client, exec_output, resp['Id']).start()
-
-        def cmd_connect():
-            Popen(["docker", "exec", "-it", container.id, shell])
-
-        utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
+        pass
 
     @staticmethod
     def exec(container, command):
-        logging.debug("Executing command `%s` to machine with name: %s" % (command, container.name))
-
-        result = container.exec_run(cmd=command,
-                                    stdout=True,
-                                    stderr=False,
-                                    privileged=False,
-                                    detach=False
-                                    )
-
-        return result.output.decode('utf-8')
+        pass
 
     @staticmethod
     def copy_files(machine, path, tar_data):
-        machine.put_archive(path, tar_data)
+        pass
 
     def get_machines_by_filters(self, lab_hash=None, machine_name=None):
         filters = ["app=kathara"]
@@ -296,33 +246,33 @@ class KubernetesMachine(object):
             # Define volume mounts for hostlab if a ConfigMap is defined.
             volume_mounts.append(client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara"))
 
-        if machine.meta.privileged:
+        if machine.meta["privileged"]:
             security_context = client.V1SecurityContext(privileged=True)
         else:
             security_context = client.V1SecurityContext(capabilities=client.V1Capabilities(add=machine.capabilities))
 
-        # TODO: FIX
+        port_info = machine.get_ports()
         container_ports = None
-        if "port" in machine.meta:
+        if port_info:
+            (internal_port, protocol, host_port) = port_info
             container_ports = [
                 client.V1ContainerPort(
                     name="kathara",
-                    container_port=3000,
-                    host_port=int(machine.meta.port),
-                    protocol="tcp"
+                    container_port=internal_port,
+                    host_port=host_port,
+                    protocol=protocol
                 )
             ]
 
-        # TODO: FIX
         resources = None
         memory = machine.get_mem()
-        cpus = machine.get_cpu()
+        cpus = machine.get_cpu(multiplier=1000)
         if memory or cpus:
             limits = dict()
             if memory:
                 limits["memory"] = memory.upper()
             if cpus:
-                limits["cpu"] = cpus
+                limits["cpu"] = "%dm" % cpus
 
             resources = client.V1ResourceRequirements(limits=limits)
 

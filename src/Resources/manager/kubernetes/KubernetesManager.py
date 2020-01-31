@@ -19,6 +19,10 @@ class KubernetesManager(IManager):
         self.k8s_machine = KubernetesMachine()
 
     def deploy_lab(self, lab, privileged_mode=False):
+        # Kubernetes needs only lowercase letters for resources.
+        # We force the folder_hash to be lowercase
+        lab.folder_hash = lab.folder_hash.lower()
+
         self.k8s_namespace.create(lab)
 
         self.k8s_link.deploy_links(lab)
@@ -33,7 +37,11 @@ class KubernetesManager(IManager):
 
     @privileged
     def undeploy_lab(self, lab_hash, selected_machines=None):
-        pass
+        lab_hash = lab_hash.lower()
+
+        self.k8s_machine.undeploy(lab_hash, selected_machines=selected_machines)
+
+        self.k8s_link.undeploy(lab_hash)
 
     @privileged
     def wipe(self, all_users=False):

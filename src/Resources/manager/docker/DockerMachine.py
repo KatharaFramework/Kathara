@@ -120,8 +120,13 @@ class DockerMachine(object):
 
         image = machine.get_image()
         memory = machine.get_mem()
-        cpus = machine.get_cpu()
-        ports = machine.get_ports()
+        cpus = machine.get_cpu(multiplier=1e9)
+
+        port_info = machine.get_ports()
+        ports = None
+        if port_info:
+            (internal_port, protocol, host_port) = port_info
+            ports = {'%d/%s' % (internal_port, protocol): host_port}
 
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options
