@@ -226,9 +226,9 @@ class KubernetesMachine(object):
         if machine_name:
             filters.append("name=%s" % machine_name)
 
-        return self.client.list_namespaced_deployment(namespace=lab_hash if lab_hash else "default",
-                                                      label_selector=",".join(filters)
-                                                      ).items
+        return self.core_client.list_namespaced_pod(namespace=lab_hash if lab_hash else "default",
+                                                    label_selector=",".join(filters)
+                                                    ).items
 
     def get_machine(self, lab_hash, machine_name):
         containers = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
@@ -402,9 +402,12 @@ class KubernetesMachine(object):
         # Build the shutdown command string
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine_name)
 
+        # Retrieve the pod of current Deployment
+        container = self.get_machine(lab_hash=machine_namespace, machine_name=machine_name)
+
         # Execute the shutdown commands inside the Pod
         stream(self.core_client.connect_get_namespaced_pod_exec,
-               name="%s-pod" % self.get_full_name(machine_name),
+               name=container.metadata.name,
                namespace=machine_namespace,
                command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
                stderr=False,
