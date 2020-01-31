@@ -86,9 +86,9 @@ class KubernetesLink(object):
     def _undeploy_link(self, log, progress_bar, link_item):
         self.client.delete_namespaced_custom_object(group=K8S_NET_GROUP,
                                                     version=K8S_NET_VERSION,
-                                                    namespace=link_item.lab.folder_hash,
+                                                    namespace=link_item["metadata"]["namespace"],
                                                     plural=K8S_NET_PLURAL,
-                                                    name=link_item["metadata"]["name"],
+                                                    name=self.get_network_name(link_item["metadata"]["name"]),
                                                     body=client.V1DeleteOptions(grace_period_seconds=0),
                                                     grace_period_seconds=0
                                                     )
@@ -109,7 +109,6 @@ class KubernetesLink(object):
                                                          )["items"]
 
     def _build_definition(self, link):
-        # Creates a dict which contains the "link" network definition to deploy in k8s
         # TODO: FIND A WAY TO HANDLE VLAN_ID
         vlan_id = 0
         return {

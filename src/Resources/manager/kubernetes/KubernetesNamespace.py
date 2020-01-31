@@ -2,8 +2,6 @@ from kubernetes import client
 from kubernetes.client.apis import core_v1_api
 from kubernetes.client.rest import ApiException
 
-from ...exceptions import LabAlreadyExistsError
-
 
 class KubernetesNamespace(object):
     __slots__ = ['client']
@@ -17,4 +15,4 @@ class KubernetesNamespace(object):
         try:
             self.client.create_namespace(namespace_definition)
         except ApiException:
-            raise LabAlreadyExistsError("Lab is already deployed.")
+            return

@@ -36,9 +36,6 @@ class KubernetesManager(IManager):
 
     @privileged
     def undeploy_lab(self, lab_hash, selected_machines=None):
-        if selected_machines:
-            raise NotSupportedError("Cannot delete specific devices from running lab.")
-
         lab_hash = lab_hash.lower()
 
         self.k8s_machine.undeploy(lab_hash, selected_machines=selected_machines)

@@ -164,13 +164,15 @@ class KubernetesMachine(object):
         machine.add_meta("sysctls", sysctl_parameters)
         machine.add_meta("privileged", privileged)
 
-        config_map = self.kubernetes_config_map.deploy_for_machine(machine)
-        machine_definition = self._build_definition(machine, config_map)
+        try:
+            config_map = self.kubernetes_config_map.deploy_for_machine(machine)
+            machine_definition = self._build_definition(machine, config_map)
 
-        # TODO: Exception Already exists
-        machine.api_object = self.client.create_namespaced_deployment(body=machine_definition,
-                                                                      namespace=machine.lab.folder_hash
-                                                                      )
+            machine.api_object = self.client.create_namespaced_deployment(body=machine_definition,
+                                                                          namespace=machine.lab.folder_hash
+                                                                          )
+        except ApiException as e:
+            print(e)
 
     def undeploy(self, lab_hash, selected_machines=None):
         machines = self.get_machines_by_filters(lab_hash=lab_hash)
@@ -324,8 +326,7 @@ class KubernetesMachine(object):
                       "app": "kathara"
                       }
 
-        pod_metadata = client.V1ObjectMeta(name="%s-pod" % self.get_full_name(machine.name),
-                                           deletion_grace_period_seconds=0,
+        pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
                                            annotations=pod_annotations,
                                            labels=pod_labels
                                            )
@@ -410,12 +411,12 @@ class KubernetesMachine(object):
                name=container.metadata.name,
                namespace=machine_namespace,
                command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
-               stderr=False,
+               stderr=True,
                stdin=False,
-               stdout=False,
+               stdout=True,
                tty=False
                )
 
-        self.client.delete_namespaced_deployment(name=machine_name,
+        self.client.delete_namespaced_deployment(name=self.get_full_name(machine_name),
                                                  namespace=machine_namespace
                                                  )

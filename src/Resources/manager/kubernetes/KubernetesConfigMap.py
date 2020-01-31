@@ -17,10 +17,7 @@ class KubernetesConfigMap(object):
         if config_map is None:
             return None
 
-        try:
-            return self.client.create_namespaced_config_map(body=config_map, namespace=machine.lab.folder_hash)
-        except Exception as e:
-            raise ApiException("ERROR: could not deploy config map for `%s`: %s" % (machine.name, str(e)))
+        return self.client.create_namespaced_config_map(body=config_map, namespace=machine.lab.folder_hash)
 
     @staticmethod
     def _build_for_machine(machine):
