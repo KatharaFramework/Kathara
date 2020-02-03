@@ -1,3 +1,5 @@
+from kubernetes import client
+
 from .KubernetesConfig import KubernetesConfig
 from .KubernetesLink import KubernetesLink
 from .KubernetesMachine import KubernetesMachine
@@ -5,7 +7,6 @@ from .KubernetesNamespace import KubernetesNamespace
 from ...decorators import privileged
 from ...exceptions import NotSupportedError
 from ...foundation.manager.IManager import IManager
-from kubernetes import client
 
 
 class KubernetesManager(IManager):
@@ -14,6 +15,7 @@ class KubernetesManager(IManager):
     # @check_k8s_status
     def __init__(self):
         KubernetesConfig.load_kube_config()
+        KubernetesConfig.get_config()
 
         self.k8s_namespace = KubernetesNamespace()
         self.k8s_link = KubernetesLink()
@@ -28,6 +30,7 @@ class KubernetesManager(IManager):
         self.k8s_link.deploy_links(lab)
 
         # TODO: Scheduler
+
         self.k8s_machine.deploy_machines(lab, privileged_mode)
 
     @privileged
@@ -36,6 +39,8 @@ class KubernetesManager(IManager):
 
     @privileged
     def undeploy_lab(self, lab_hash, selected_machines=None):
+        # Kubernetes needs only lowercase letters for resources.
+        # We force the folder_hash to be lowercase
         lab_hash = lab_hash.lower()
 
         self.k8s_machine.undeploy(lab_hash, selected_machines=selected_machines)
@@ -55,11 +60,17 @@ class KubernetesManager(IManager):
 
     @privileged
     def exec(self, machine, command):
-        pass
+        self.k8s_machine.exec(machine,
+                              command=command,
+                              stderr=False
+                              )
 
     @privileged
     def copy_files(self, machine, path, tar_data):
-        pass
+        self.k8s_machine.copy_files(machine.api_object,
+                                    path=path,
+                                    tar_data=tar_data
+                                    )
 
     @privileged
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
@@ -74,17 +85,8 @@ class KubernetesManager(IManager):
         pass
 
     @privileged
-    def check_updates(self, settings):
-        pass
-
-    @privileged
     def get_release_version(self):
-        core_client = client.CoreApi()
-        versions = core_client.get_api_versions()
-
-        print(versions)
-
-        return 1
+        return client.VersionApi().get_code().git_version
 
     @staticmethod
     def get_manager_name():

@@ -3,6 +3,12 @@ from kubernetes import config, client
 
 class KubernetesConfig(object):
     @staticmethod
+    def get_config():
+        _, current_context = config.kube_config.list_kube_config_contexts()
+
+        print(current_context)
+
+    @staticmethod
     def load_kube_config():
         try:
             config.load_kube_config()           # Try to load configuration if Kathara is launched on a k8s master.

@@ -43,9 +43,7 @@ class KubernetesLink(object):
 
     def create(self, link):
         # If a network with the same name exists, return it instead of creating a new one.
-        link_name = self.get_network_name(link.name)
-
-        network_objects = self.get_links_by_filters(lab_hash=link.lab.folder_hash, link_name=link_name)
+        network_objects = self.get_links_by_filters(link_name=link.name)
         if network_objects:
             link.api_object = network_objects.pop()
             return
@@ -84,6 +82,8 @@ class KubernetesLink(object):
             links_pool.map(func=partial(self._undeploy_link, False, None), iterable=chunk)
 
     def _undeploy_link(self, log, progress_bar, link_item):
+        # TODO: Delete only if containers = 0
+
         self.client.delete_namespaced_custom_object(group=K8S_NET_GROUP,
                                                     version=K8S_NET_VERSION,
                                                     namespace=link_item["metadata"]["namespace"],
@@ -134,4 +134,4 @@ class KubernetesLink(object):
     @staticmethod
     def get_network_name(name):
         link_name = "%s-%s" % (Setting.get_instance().net_prefix, name)
-        return re.sub(r'[^0-9a-z\-.]+', '', link_name.lower())
+        return re.sub(r'[^0-9a-z\-.]+', '', link_name.lower())[0:5]

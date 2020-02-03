@@ -1,22 +1,20 @@
+import json
 import logging
+import re
 from functools import partial
-from itertools import islice
 from multiprocessing.dummy import Pool
-from subprocess import Popen
 
+from kubernetes import client
+from kubernetes.client.apis import apps_v1_api
+from kubernetes.client.apis import core_v1_api
+from kubernetes.client.rest import ApiException
+from kubernetes.stream import stream
 from progress.bar import Bar
 
+from .KubernetesConfigMap import KubernetesConfigMap
 from ... import utils
 from ...exceptions import MachineAlreadyExistsError
 from ...setting.Setting import Setting
-
-from kubernetes.client.apis import apps_v1_api
-from kubernetes import client
-from kubernetes.client.apis import core_v1_api
-from kubernetes.client.rest import ApiException
-from .KubernetesConfigMap import KubernetesConfigMap
-import json
-from kubernetes.stream import stream
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 
@@ -172,75 +170,10 @@ class KubernetesMachine(object):
                                                                           namespace=machine.lab.folder_hash
                                                                           )
         except ApiException as e:
-            print(e)
-
-    def undeploy(self, lab_hash, selected_machines=None):
-        machines = self.get_machines_by_filters(lab_hash=lab_hash)
-
-        pool_size = utils.get_pool_size()
-        machines_pool = Pool(pool_size)
-
-        items = utils.chunk_list(machines, pool_size)
-
-        progress_bar = Bar("Deleting machines...", max=len(machines))
-
-        for chunk in items:
-            machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True, progress_bar),
-                              iterable=chunk
-                              )
-
-        progress_bar.finish()
-
-    def wipe(self):
-        machines = self.get_machines_by_filters()
-
-        pool_size = utils.get_pool_size()
-        machines_pool = Pool(pool_size)
-
-        items = utils.chunk_list(machines, pool_size)
-
-        for chunk in items:
-            machines_pool.map(func=partial(self._undeploy_machine, [], False, None), iterable=chunk)
-
-    def _undeploy_machine(self, selected_machines, log, progress_bar, machine_item):
-        # If selected machines list is empty, remove everything
-        # Else, check if the machine is in the list.
-        if not selected_machines or \
-           machine_item.metadata.labels["name"] in selected_machines:
-            self.delete_machine(machine_item)
-
-            if log:
-                progress_bar.next()
-
-    def connect(self, lab_hash, machine_name, shell, logs=False):
-        pass
-
-    @staticmethod
-    def exec(container, command):
-        pass
-
-    @staticmethod
-    def copy_files(machine, path, tar_data):
-        pass
-
-    def get_machines_by_filters(self, lab_hash=None, machine_name=None):
-        filters = ["app=kathara"]
-        if machine_name:
-            filters.append("name=%s" % machine_name)
-
-        return self.core_client.list_namespaced_pod(namespace=lab_hash if lab_hash else "default",
-                                                    label_selector=",".join(filters)
-                                                    ).items
-
-    def get_machine(self, lab_hash, machine_name):
-        containers = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
-
-        logging.debug("Found containers: %s" % str(containers))
-
-        if len(containers) != 1:
-            raise Exception("Error getting the machine `%s` inside the lab." % machine_name)
-        else:
-            return containers[0]
+            if 'Conflict' in e.reason:
+                raise MachineAlreadyExistsError("Machine with name `%s` already exists." % machine.name)
+            else:
+                raise e
 
     def _build_definition(self, machine, config_map):
         volume_mounts = []
@@ -294,7 +227,6 @@ class KubernetesMachine(object):
         )
         lifecycle = client.V1Lifecycle(post_start=post_start)
 
-        # Main Container definition
         container_definition = client.V1Container(
             name=machine.name,
             image=machine.get_image(),
@@ -308,17 +240,13 @@ class KubernetesMachine(object):
             security_context=security_context
         )
 
-        # Create annotations
         pod_annotations = {}
-
         network_interfaces = []
         for (_, machine_link) in machine.interfaces.items():
             network_interfaces.append({
                 "name": machine_link.api_object["metadata"]["name"],
                 "namespace": machine.lab.folder_hash
             })
-
-        # Convert the dict into a JSON string and assign it to the Pod annotation
         pod_annotations["k8s.v1.cni.cncf.io/networks"] = json.dumps(network_interfaces)
 
         # Create labels (so Deployment can match them)
@@ -334,7 +262,6 @@ class KubernetesMachine(object):
         # Add fake DNS just to override k8s one
         dns_config = client.V1PodDNSConfig(nameservers=["127.0.0.1"])
 
-        # Define volumes
         volumes = []
         if config_map:
             # Hostlab is the lab base64 encoded .tar.gz of the machine files, deployed as a ConfigMap in the cluster
@@ -346,7 +273,6 @@ class KubernetesMachine(object):
                 )
             ))
 
-        # Create PodSpec containing all the info associated with this machine
         pod_spec = client.V1PodSpec(containers=[container_definition],
                                     dns_policy="None",
                                     dns_config=dns_config,
@@ -371,19 +297,12 @@ class KubernetesMachine(object):
         #             preferred_during_scheduling_ignored_during_execution=[node_preference])
         #     )
 
-        # Create PodTemplate which is used by Deployment
         pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
-
-        # Defines selection rules for the Deployment, labels to match are the same as the ones defined in PodSpec
         selector_rules = client.V1LabelSelector(match_labels=pod_labels)
-
-        # Create Deployment Spec, here we set the previous PodTemplate and the selector rules
         deployment_spec = client.V1DeploymentSpec(replicas=1,
                                                   template=pod_template,
                                                   selector=selector_rules
                                                   )
-
-        # Create Deployment metadata, also this object is marked with the same labels of the Pod
         deployment_metadata = client.V1ObjectMeta(name=self.get_full_name(machine.name), labels=pod_labels)
 
         return client.V1Deployment(api_version="apps/v1",
@@ -392,31 +311,130 @@ class KubernetesMachine(object):
                                    spec=deployment_spec
                                    )
 
-    @staticmethod
-    def get_full_name(name):
-        return "%s-%s" % (Setting.get_instance().device_prefix, name)
+    def undeploy(self, lab_hash, selected_machines=None):
+        machines = self.get_machines_by_filters(lab_hash=lab_hash)
 
-    def delete_machine(self, machine):
+        pool_size = utils.get_pool_size()
+        machines_pool = Pool(pool_size)
+
+        items = utils.chunk_list(machines, pool_size)
+
+        progress_bar = Bar("Deleting machines...", max=len(machines))
+
+        for chunk in items:
+            machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True, progress_bar),
+                              iterable=chunk
+                              )
+
+        progress_bar.finish()
+
+    def wipe(self):
+        machines = self.get_machines_by_filters()
+
+        pool_size = utils.get_pool_size()
+        machines_pool = Pool(pool_size)
+
+        items = utils.chunk_list(machines, pool_size)
+
+        for chunk in items:
+            machines_pool.map(func=partial(self._undeploy_machine, [], False, None), iterable=chunk)
+
+    def _undeploy_machine(self, selected_machines, log, progress_bar, machine_item):
+        # If selected machines list is empty, remove everything
+        # Else, check if the machine is in the list.
+        if not selected_machines or \
+           machine_item.metadata.labels["name"] in selected_machines:
+            self._delete_machine(machine_item)
+
+            if log:
+                progress_bar.next()
+
+    def _delete_machine(self, machine):
         machine_name = machine.metadata.labels["name"]
         machine_namespace = machine.metadata.namespace
 
         # Build the shutdown command string
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine_name)
 
-        # Retrieve the pod of current Deployment
-        container = self.get_machine(lab_hash=machine_namespace, machine_name=machine_name)
-
-        # Execute the shutdown commands inside the Pod
-        stream(self.core_client.connect_get_namespaced_pod_exec,
-               name=container.metadata.name,
-               namespace=machine_namespace,
-               command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
-               stderr=True,
-               stdin=False,
-               stdout=True,
-               tty=False
-               )
+        self.exec(machine,
+                  command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
+                  )
 
         self.client.delete_namespaced_deployment(name=self.get_full_name(machine_name),
                                                  namespace=machine_namespace
                                                  )
+
+    def connect(self, lab_hash, machine_name, shell, logs=False):
+        pass
+
+    def exec(self, deployment, command, stdin=False, stderr=False, tty=False, input_params=None):
+        logging.debug("Executing command `%s` to machine with name: %s" % (command, deployment.metadata.name))
+
+        machine_name = deployment.metadata.labels["name"]
+        machine_namespace = deployment.metadata.namespace
+
+        # Retrieve the pod of current Deployment
+        pod = self.get_machine(lab_hash=machine_namespace, machine_name=machine_name)
+
+        response = stream(self.core_client.connect_get_namespaced_pod_exec,
+                          name=pod.metadata.name,
+                          namespace=machine_namespace,
+                          command=command,
+                          stdout=True,
+                          stderr=stderr,
+                          stdin=stdin,
+                          tty=tty
+                          )
+
+        if input_params is None:
+            input_params = []
+
+        result = {
+            'stdout': '',
+            'stderr': ''
+        }
+        while response.is_open():
+            response.update(timeout=1)
+            if response.peek_stdout():
+                result['stdout'] += response.read_stdout().decode('utf-8')
+            if stderr and response.peek_stderr():
+                result['stderr'] += response.read_stderr().decode('utf-8')
+            if stdin and input_params:
+                param = input_params.pop()
+                response.write_stdin(param)
+            else:
+                break
+        response.close()
+
+        return result['stdout'] if not stderr else result
+
+    def copy_files(self, deployment, path, tar_data):
+        self.exec(deployment,
+                  command=['tar', 'xvfz', '-', '-C', path],
+                  stdin=True,
+                  input_params=[tar_data]
+                  )
+
+    def get_machines_by_filters(self, lab_hash=None, machine_name=None):
+        filters = ["app=kathara"]
+        if machine_name:
+            filters.append("name=%s" % machine_name)
+
+        return self.core_client.list_namespaced_pod(namespace=lab_hash if lab_hash else "default",
+                                                    label_selector=",".join(filters)
+                                                    ).items
+
+    def get_machine(self, lab_hash, machine_name):
+        pods = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+
+        logging.debug("Found pods: %s" % str(pods))
+
+        if len(pods) != 1:
+            raise Exception("Error getting the machine `%s` inside the lab." % machine_name)
+        else:
+            return pods[0]
+
+    @staticmethod
+    def get_full_name(name):
+        machine_name = "%s-%s" % (Setting.get_instance().device_prefix, name)
+        return re.sub(r'[^0-9a-z\-.]+', '', machine_name.lower())
