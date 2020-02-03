@@ -1,3 +1,4 @@
+import hashlib
 import re
 from functools import partial
 from multiprocessing.dummy import Pool
@@ -8,6 +9,9 @@ from progress.bar import Bar
 
 from ... import utils
 from ...setting.Setting import Setting
+from .KubernetesConfig import KubernetesConfig
+
+MAX_K8S_LINK_NUMBER = (1 << 24) - 20
 
 K8S_NET_GROUP = "k8s.cni.cncf.io"
 K8S_NET_VERSION = "v1"
@@ -15,10 +19,12 @@ K8S_NET_PLURAL = "network-attachment-definitions"
 
 
 class KubernetesLink(object):
-    __slots__ = ['client']
+    __slots__ = ['client', 'seed']
 
     def __init__(self):
         self.client = custom_objects_api.CustomObjectsApi()
+
+        self._get_link_number_seed()
 
     def deploy_links(self, lab):
         pool_size = utils.get_pool_size()
@@ -109,8 +115,8 @@ class KubernetesLink(object):
                                                          )["items"]
 
     def _build_definition(self, link):
-        # TODO: FIND A WAY TO HANDLE VLAN_ID
-        vlan_id = 0
+        network_id = self._get_link_identifier(link.name)
+
         return {
             "apiVersion": "k8s.cni.cncf.io/v1",
             "kind": "NetworkAttachmentDefinition",
@@ -127,9 +133,18 @@ class KubernetesLink(object):
                             "type": "megalos",
                             "suffix": "%s",
                             "vlanId": %d
-                        }""" % (link.lab.folder_hash[0:6], 10 + vlan_id)
+                        }""" % (link.lab.folder_hash[0:6], network_id)
             }
         }
+
+    def _get_link_number_seed(self):
+        cluster_user = KubernetesConfig.get_cluster_user()
+        self.seed = int(hashlib.sha1(cluster_user.encode('utf-8')).hexdigest(), 16)
+
+    def _get_link_identifier(self, name):
+        name_seed = int(hashlib.sha1(name.encode('utf-8')).hexdigest(), 16)
+        name_seed = (self.seed + name_seed) % MAX_K8S_LINK_NUMBER
+        return name_seed if name_seed >= 10 else 10 + name_seed
 
     @staticmethod
     def get_network_name(name):

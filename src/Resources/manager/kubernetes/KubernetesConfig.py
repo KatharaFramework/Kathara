@@ -3,10 +3,9 @@ from kubernetes import config, client
 
 class KubernetesConfig(object):
     @staticmethod
-    def get_config():
+    def get_cluster_user():
         _, current_context = config.kube_config.list_kube_config_contexts()
-
-        print(current_context)
+        return current_context['name']
 
     @staticmethod
     def load_kube_config():
