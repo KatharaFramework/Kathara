@@ -1,6 +1,7 @@
 import logging
 import os
-
+import subprocess
+import docker
 
 class Networking(object):
     @staticmethod
@@ -100,3 +101,53 @@ class Networking(object):
     @staticmethod
     def get_iptables_version():
         return os.popen("/sbin/iptables --version").read().strip()
+
+    @staticmethod
+    def create_veth(name1,name2,i):
+        if name1 == "":
+            name1 = "host"+str(i)
+        if name2 == "":
+            name2 = "host"+str(i+10)
+        from pyroute2 import IPRoute
+        ip = IPRoute()
+        ip.link('add', ifname=name1, peer=name2, kind='veth')
+
+
+    @staticmethod
+    def move_veth(machine,pid):
+        from pyroute2 import IPRoute
+        ip = IPRoute()
+        idx = ip.link_lookup(ifname=machine)[0]
+        ip.link('set',
+                index=idx,
+                net_ns_fd=str(pid))
+
+    @staticmethod
+    def up_network(machine,bridge,i):
+        if machine == "":
+            machine = "host"+str(i)
+        from pyroute2 import IPRoute
+        ip = IPRoute()
+        idx_veth = ip.link_lookup(ifname=machine)[0]
+        idx_br = ip.link_lookup(ifname='br-'+bridge)[0]
+        ip.link('set',
+            index=idx_veth,
+            state='up')
+        ip.link('set', index=idx_veth, master=idx_br)
+    
+    @staticmethod
+    def delete_veth(name1,name2):
+        if name1 == "":
+            name1 = "host"
+        if name2 == "":
+            name2 = "host"
+        from pyroute2 import IPRoute
+        ip = IPRoute()
+        ip.link('del', ifname=name1, peer=name2, kind='veth')
+
+    @staticmethod
+    def create_namespace(list_container):
+        subprocess.call(["sudo","mkdir","-p","/var/run/netns"])
+        for container in list_container:
+            pid = docker.APIClient().inspect_container(container.name)["State"]["Pid"]
+            subprocess.call(["sudo","ln","-s", "/proc/"+str(pid)+"/ns/net", "/var/run/netns/"+str(pid)])

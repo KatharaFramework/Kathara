@@ -34,6 +34,13 @@ class ListCommand(Command):
         )
 
         parser.add_argument(
+            '-r', '--recursive',
+            required=False,
+            action='store_true',
+            help='Show information of multilab'
+        )
+
+        parser.add_argument(
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=False,
@@ -43,14 +50,18 @@ class ListCommand(Command):
         self.parser = parser
 
     def run(self, current_path, argv):
+        recursive = False
         args = self.parser.parse_args(argv)
 
         if args.all and not utils.is_admin():
             raise Exception("You must be root in order to show all Kathara devices of all users.")
 
         if args.name:
-            print(ManagerProxy.get_instance().get_machine_info(args.name, all_users=bool(args.all)))
+            print(ManagerProxy.get_instance().get_machine_info(args.name,all_users=bool(args.all)))
+        elif args.recursive:
+            recursive = True
+            lab_info = ManagerProxy.get_instance().get_lab_info(recursive,all_users=bool(args.all))
+            print(next(lab_info))
         else:
-            lab_info = ManagerProxy.get_instance().get_lab_info(all_users=bool(args.all))
-
+            lab_info = ManagerProxy.get_instance().get_lab_info(recursive,all_users=bool(args.all))
             print(next(lab_info))

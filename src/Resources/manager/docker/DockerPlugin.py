@@ -30,7 +30,6 @@ class DockerPlugin(object):
     def check_and_download_plugin(self):
         try:
             logging.debug("Checking plugin `%s`..." % self.plugin_name)
-
             plugin = self.client.plugins.get(self.plugin_name)
             # Check for plugin updates.
             plugin.upgrade()

@@ -244,3 +244,30 @@ def is_excluded_file(path):
     _, filename = os.path.split(path)
 
     return filename in EXCLUDED_FILES
+
+#Ritorna true se il valore passato è un fqdn locale alla macchina (lab.conf di it --> A.it. true, A.com. false)
+def check_value(value):
+    hostname = getHostname()
+    value_split = value.split('.')[1:]
+    if value_split == [""]:
+        value = '.'
+    else:
+        value = '.'.join(value_split)
+    if value == hostname:
+        return True
+    return False
+
+def getHostname():
+    f = open( "/etc/hostname", 'r' )
+    hostname = f.read()
+    hostname_split = hostname.split('.')
+    if len(hostname_split) == 1:
+        return "."
+    strange = hostname[-1]
+    hostname = hostname.replace(strange,"")
+    return hostname
+
+def check_common_ancestor(key,value):
+    if key.endswith(getHostname()) and value.endswith(getHostname()):
+        return True
+    return False

@@ -3,7 +3,7 @@ import os
 import re
 
 from ...model.ExternalLink import ExternalLink
-
+from ...utils import check_value,getHostname
 
 class ExtParser(object):
     @staticmethod
@@ -38,6 +38,16 @@ class ExtParser(object):
                         raise Exception("[ERROR] In line %d: "
                                         "VLAN ID must be in range [1, 4094]." % line_number)
 
+                if not(re.search(r"^\w+$", link) or check_value(link)):
+                    raise Exception("[ERROR] In line %d: "
+                                        "Link `%s` contains non-alphanumeric characters" % (line_number, link))
+                else:
+                    if re.search(r"^\w+$", link):
+                        if getHostname() == '.':
+                            link = link+getHostname()
+                        else:
+                            link = link+'.'+getHostname()
+                
                 if link not in external_links:
                     external_links[link] = []
 
