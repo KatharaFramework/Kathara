@@ -156,7 +156,7 @@ class Setting(object):
                 self.last_checked = current_time
                 self.save_selected(['last_checked'])
 
-            logging.debug("=============================================================")
+            logging.debug(utils.format_headers())
 
         try:
             utils.re_search_fail(r"^[a-z]+_?[a-z_]+$", self.net_prefix)

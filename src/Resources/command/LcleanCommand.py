@@ -49,5 +49,5 @@ class LcleanCommand(Command):
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
         ManagerProxy.get_instance().undeploy_lab(lab_hash,
-                                                 selected_machines=args.machine_names
+                                                 selected_machines=set(args.machine_names)
                                                  )

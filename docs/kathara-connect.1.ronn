@@ -30,10 +30,10 @@ Open a shell in device DEVICE_NAME.
 
 	This option cannot be used in conjuction with `-d` or `--directory`.
 
-* `--shell` <SHELL>:
-    Set the shell (sh, bash, etc.) that should be used inside the device.
+* `--command` <SHELL>:
+    Command that should be executed inside the device.
 
-    As an example: `bash`(1). Override the default setting specified in `kathara.conf`(5) file.
+    By default, the shell specified in `kathara.conf`(5) file is executed. This option overrides this setting.
 
 * `-l`, `--logs`:
     Print device startup logs before launching the shell.

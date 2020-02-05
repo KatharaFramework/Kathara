@@ -84,7 +84,7 @@ class LinfoCommand(Command):
 
         if lab_meta_information:
             print(lab_meta_information)
-            print("=============================================================")
+            print(utils.format_headers())
 
         n_machines = len(lab.machines)
         n_links = len(lab.links) if BRIDGE_LINK_NAME not in lab.links else len(lab.links) - 1
@@ -92,4 +92,4 @@ class LinfoCommand(Command):
         print("There are %d machines." % n_machines)
         print("There are %d links." % n_links)
 
-        print("=============================================================")
+        print(utils.format_headers())

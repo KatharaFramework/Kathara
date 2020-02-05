@@ -60,7 +60,7 @@ class UserTest(Test):
                 with open(machine_diff_path, 'a') as machine_diff_file:
                     machine_diff_file.write(utils.format_headers("User Test Result") + '\n')
                     machine_diff_file.write("\n".join(diff) + "\n" if diff else "OK\n")
-                    machine_diff_file.write("=============================================================\n\n")
+                    machine_diff_file.write(utils.format_headers() + "\n\n")
 
         return test_passed
 

@@ -10,9 +10,24 @@ class KubernetesNamespace(object):
         self.client = core_v1_api.CoreV1Api()
 
     def create(self, lab):
-        namespace_definition = client.V1Namespace(metadata=client.V1ObjectMeta(name=lab.folder_hash))
+        namespace_definition = client.V1Namespace(metadata=client.V1ObjectMeta(name=lab.folder_hash,
+                                                                               labels={'app': 'kathara'}
+                                                                               )
+                                                  )
 
         try:
             self.client.create_namespace(namespace_definition)
         except ApiException:
             return
+
+    def undeploy(self, lab_hash=None):
+        try:
+            self.client.delete_namespace(lab_hash)
+        except ApiException:
+            return
+
+    def wipe(self):
+        namespaces = self.client.list_namespace(label_selector="app=kathara")
+
+        for namespace in namespaces.items:
+            self.client.delete_namespace(namespace.metadata.name)

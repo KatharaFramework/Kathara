@@ -105,10 +105,10 @@ class DockerManager(IManager):
         self.docker_link.wipe(user=user_name)
 
     @privileged
-    def connect_tty(self, lab_hash, machine_name, shell, logs=False):
+    def connect_tty(self, lab_hash, machine_name, command, logs=False):
         self.docker_machine.connect(lab_hash=lab_hash,
                                     machine_name=machine_name,
-                                    shell=shell,
+                                    command=command,
                                     logs=logs
                                     )
 
@@ -212,7 +212,7 @@ class DockerManager(IManager):
         machine_info += "Memory Usage: %s\n" % stats["mem_usage"]
         machine_info += "Network Usage (DL/UL): %s\n" % stats["net_usage"]
 
-        machine_info += "======================================================================="
+        machine_info += utils.format_headers()
 
         return machine_info
 

@@ -192,7 +192,7 @@ def get_current_user_info():
 
 
 # Formatting Functions
-def format_headers(message):
+def format_headers(message=""):
     footer = "=============================="
     half_message = int((len(message) / 2) + 1)
     second_half_message = half_message
@@ -200,7 +200,8 @@ def format_headers(message):
     if len(message) % 2 == 0:
         second_half_message -= 1
 
-    return footer[half_message:] + " " + message + " " + footer[second_half_message:]
+    message = " " + message + " " if message != "" else "=="
+    return footer[half_message:] + message + footer[second_half_message:]
 
 
 def human_readable_bytes(size_bytes):

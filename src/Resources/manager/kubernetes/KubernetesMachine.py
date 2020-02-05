@@ -15,6 +15,7 @@ from .KubernetesConfigMap import KubernetesConfigMap
 from ... import utils
 from ...exceptions import MachineAlreadyExistsError
 from ...setting.Setting import Setting
+from ...trdparty.k8spty.Interceptor import Interceptor
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 
@@ -25,14 +26,15 @@ STARTUP_COMMANDS = [
     # If not flag the startup execution with a file
     "if [ -f \"/tmp/post_start\" ]; then exit; else touch /tmp/post_start; fi",
 
+    "{sysctl_commands}",
+
     # Removes /etc/bind already existing configuration from k8s internal DNS
     "rm -Rf /etc/bind/*",
 
     # Parse hostlab.b64
     "base64 -d /tmp/kathara/hostlab.b64 > /hostlab.tar.gz",
-    # Extract hostlab.tar.gz data into /hostlab
-    "mkdir /hostlab",
-    "tar xmfz /hostlab.tar.gz -C /hostlab; rm -f hostlab.tar.gz",
+    # Extract hostlab.tar.gz data into /
+    "tar xmfz /hostlab.tar.gz -C /; rm -f hostlab.tar.gz",
 
     # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
     # In this way, files are all replaced in the container root folder
@@ -146,7 +148,6 @@ class KubernetesMachine(object):
         if "exec" in options:
             machine.add_meta("exec", options["exec"])
 
-        # TODO: ADD TO K8S
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
 
@@ -160,7 +161,6 @@ class KubernetesMachine(object):
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
 
         machine.add_meta("sysctls", sysctl_parameters)
-        machine.add_meta("privileged", privileged)
 
         try:
             config_map = self.kubernetes_config_map.deploy_for_machine(machine)
@@ -170,7 +170,7 @@ class KubernetesMachine(object):
                                                                           namespace=machine.lab.folder_hash
                                                                           )
         except ApiException as e:
-            if 'Conflict' in e.reason:
+            if e.status == 409 and 'Conflict' in e.reason:
                 raise MachineAlreadyExistsError("Machine with name `%s` already exists." % machine.name)
             else:
                 raise e
@@ -181,10 +181,7 @@ class KubernetesMachine(object):
             # Define volume mounts for hostlab if a ConfigMap is defined.
             volume_mounts.append(client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara"))
 
-        if machine.meta["privileged"]:
-            security_context = client.V1SecurityContext(privileged=True)
-        else:
-            security_context = client.V1SecurityContext(capabilities=client.V1Capabilities(add=machine.capabilities))
+        security_context = client.V1SecurityContext(privileged=True)
 
         port_info = machine.get_ports()
         container_ports = None
@@ -215,8 +212,10 @@ class KubernetesMachine(object):
         # On Ready state, the pod has volumes and network interfaces up, so this hook is used
         # to execute custom commands coming from .startup file and "exec" option
         # Build the final startup commands string
+        sysctl_commands = "; ".join(["sysctl %s=%d" % item for item in machine.meta["sysctls"].items()])
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
                                       .format(machine_name=machine.name,
+                                              sysctl_commands=sysctl_commands,
                                               machine_commands="; ".join(machine.startup_commands)
                                               )
 
@@ -242,10 +241,11 @@ class KubernetesMachine(object):
 
         pod_annotations = {}
         network_interfaces = []
-        for (_, machine_link) in machine.interfaces.items():
+        for (idx, machine_link) in machine.interfaces.items():
             network_interfaces.append({
                 "name": machine_link.api_object["metadata"]["name"],
-                "namespace": machine.lab.folder_hash
+                "namespace": machine.lab.folder_hash,
+                "interface": "net%d" % idx
             })
         pod_annotations["k8s.v1.cni.cncf.io/networks"] = json.dumps(network_interfaces)
 
@@ -319,7 +319,9 @@ class KubernetesMachine(object):
 
         items = utils.chunk_list(machines, pool_size)
 
-        progress_bar = Bar("Deleting machines...", max=len(machines))
+        progress_bar = Bar("Deleting machines...", max=len(machines) if not selected_machines
+                                                                     else len(selected_machines)
+                           )
 
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True, progress_bar),
@@ -360,34 +362,78 @@ class KubernetesMachine(object):
                   command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
                   )
 
-        self.client.delete_namespaced_deployment(name=self.get_full_name(machine_name),
-                                                 namespace=machine_namespace
-                                                 )
+        try:
+            self.kubernetes_config_map.delete_for_machine(machine_name, machine_namespace)
 
-    def connect(self, lab_hash, machine_name, shell, logs=False):
-        pass
+            self.client.delete_namespaced_deployment(name=self.get_full_name(machine_name),
+                                                     namespace=machine_namespace
+                                                     )
+        except ApiException:
+            return
 
-    def exec(self, deployment, command, stdin=False, stderr=False, tty=False, input_params=None):
-        logging.debug("Executing command `%s` to machine with name: %s" % (command, deployment.metadata.name))
+    def connect(self, lab_hash, machine_name, command=None, logs=False):
+        logging.debug("Connect to machine with name: %s" % machine_name)
 
-        machine_name = deployment.metadata.labels["name"]
-        machine_namespace = deployment.metadata.namespace
+        pod = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
-        # Retrieve the pod of current Deployment
-        pod = self.get_machine(lab_hash=machine_namespace, machine_name=machine_name)
+        if 'Running' not in pod.status.phase:
+            raise Exception('Machine `%s` is not ready.' % machine_name)
 
-        response = stream(self.core_client.connect_get_namespaced_pod_exec,
-                          name=pod.metadata.name,
-                          namespace=machine_namespace,
-                          command=command,
-                          stdout=True,
-                          stderr=stderr,
-                          stdin=stdin,
-                          tty=tty
-                          )
+        if not command:
+            command = Setting.get_instance().device_shell
+        else:
+            command = command.split(' ')
 
-        if input_params is None:
-            input_params = []
+        if logs and Setting.get_instance().print_startup_log:
+            result_string = self.exec(pod,
+                                      command="/bin/cat /var/log/shared.log /var/log/startup.log"
+                                      )
+            if result_string:
+                print("--- Startup Commands Log\n")
+                print(result_string)
+                print("--- End Startup Commands Log\n")
+
+        resp = stream(self.core_client.connect_get_namespaced_pod_exec,
+                      name=pod.metadata.name,
+                      namespace=lab_hash,
+                      command=command,
+                      stdout=True,
+                      stderr=True,
+                      stdin=True,
+                      tty=True,
+                      _preload_content=False
+                      )
+
+        pty = Interceptor(k8s_stream=resp)
+        pty.start()
+
+    def exec(self, pod, command, stdin=False, stderr=False, tty=False, stdin_buffer=None):
+        logging.debug("Executing command `%s` to machine with name: %s" % (command, pod.metadata.name))
+
+        machine_name = pod.metadata.labels["name"]
+        machine_namespace = pod.metadata.namespace
+
+        command = command.split(' ') if type(command) == 'str' else command
+
+        try:
+            # Retrieve the pod of current Deployment
+            pod = self.get_machine(lab_hash=machine_namespace, machine_name=machine_name)
+
+            response = stream(self.core_client.connect_get_namespaced_pod_exec,
+                              name=pod.metadata.name,
+                              namespace=machine_namespace,
+                              command=command,
+                              stdout=True,
+                              stderr=stderr,
+                              stdin=stdin,
+                              tty=tty,
+                              _preload_content=False
+                              )
+        except ApiException:
+            return
+
+        if stdin_buffer is None:
+            stdin_buffer = []
 
         result = {
             'stdout': '',
@@ -396,14 +442,12 @@ class KubernetesMachine(object):
         while response.is_open():
             response.update(timeout=1)
             if response.peek_stdout():
-                result['stdout'] += response.read_stdout().decode('utf-8')
+                result['stdout'] += response.read_stdout()
             if stderr and response.peek_stderr():
-                result['stderr'] += response.read_stderr().decode('utf-8')
-            if stdin and input_params:
-                param = input_params.pop()
+                result['stderr'] += response.read_stderr()
+            if stdin and stdin_buffer:
+                param = stdin_buffer.pop()
                 response.write_stdin(param)
-            else:
-                break
         response.close()
 
         return result['stdout'] if not stderr else result
@@ -412,7 +456,7 @@ class KubernetesMachine(object):
         self.exec(deployment,
                   command=['tar', 'xvfz', '-', '-C', path],
                   stdin=True,
-                  input_params=[tar_data]
+                  stdin_buffer=[tar_data]
                   )
 
     def get_machines_by_filters(self, lab_hash=None, machine_name=None):
@@ -427,7 +471,7 @@ class KubernetesMachine(object):
     def get_machine(self, lab_hash, machine_name):
         pods = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
 
-        logging.debug("Found pods: %s" % str(pods))
+        logging.debug("Found pods: %s" % len(pods))
 
         if len(pods) != 1:
             raise Exception("Error getting the machine `%s` inside the lab." % machine_name)

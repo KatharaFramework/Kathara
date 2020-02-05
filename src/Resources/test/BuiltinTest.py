@@ -52,7 +52,7 @@ class BuiltInTest(Test):
             with open(machine_diff_path, 'w') as machine_diff_file:
                 machine_diff_file.write(utils.format_headers("Builtin Test Result") + '\n')
                 machine_diff_file.write(json.dumps(diff, indent=4) + "\n" if diff else "OK\n")
-                machine_diff_file.write("=============================================================\n\n")
+                machine_diff_file.write(utils.format_headers() + "\n\n")
 
         return test_passed
 

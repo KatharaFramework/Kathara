@@ -39,9 +39,9 @@ class ConnectCommand(Command):
             help='The machine has been started with vstart command.',
         )
         parser.add_argument(
-            '--shell',
+            '--command',
             required=False,
-            help='Set the shell (sh, bash, etc.) that should be used inside the machine.'
+            help='Command that should be executed inside the machine.'
         )
         parser.add_argument(
             '-l', '--logs',
@@ -69,6 +69,6 @@ class ConnectCommand(Command):
 
         ManagerProxy.get_instance().connect_tty(lab_hash,
                                                 machine_name=args.machine_name,
-                                                shell=args.shell,
+                                                command=args.command,
                                                 logs=args.logs
                                                 )

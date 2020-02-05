@@ -183,7 +183,7 @@ class LstartCommand(Command):
 
         if lab_meta_information:
             print(lab_meta_information)
-            print("=============================================================")
+            print(utils.format_headers())
 
         # If dry mode, we just check if the lab.conf is correct.
         if args.dry_mode:

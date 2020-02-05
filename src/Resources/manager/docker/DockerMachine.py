@@ -281,7 +281,9 @@ class DockerMachine(object):
 
         items = utils.chunk_list(machines, pool_size)
 
-        progress_bar = Bar("Deleting machines...", max=len(machines))
+        progress_bar = Bar("Deleting machines...", max=len(machines) if not selected_machines
+                                                                     else len(selected_machines)
+                           )
 
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True, progress_bar),
@@ -311,13 +313,13 @@ class DockerMachine(object):
             if log:
                 progress_bar.next()
 
-    def connect(self, lab_hash, machine_name, shell, logs=False):
+    def connect(self, lab_hash, machine_name, command=None, logs=False):
         logging.debug("Connect to machine with name: %s" % machine_name)
 
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
-        if not shell:
-            shell = Setting.get_instance().device_shell
+        if not command:
+            command = Setting.get_instance().device_shell
 
         if logs and Setting.get_instance().print_startup_log:
             result_string = self.exec(container,
@@ -334,7 +336,7 @@ class DockerMachine(object):
 
             # Needed with low level api because we need the id of the exec_create
             resp = self.client.api.exec_create(container.id,
-                                               shell,
+                                               command,
                                                stdout=True,
                                                stderr=True,
                                                stdin=True,
@@ -351,7 +353,7 @@ class DockerMachine(object):
             PseudoTerminal(self.client, exec_output, resp['Id']).start()
 
         def cmd_connect():
-            Popen(["docker", "exec", "-it", container.id, shell])
+            Popen(["docker", "exec", "-it", container.id, command])
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 

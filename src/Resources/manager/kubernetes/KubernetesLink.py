@@ -5,11 +5,12 @@ from multiprocessing.dummy import Pool
 
 from kubernetes import client
 from kubernetes.client.apis import custom_objects_api
+from kubernetes.client.rest import ApiException
 from progress.bar import Bar
 
+from .KubernetesConfig import KubernetesConfig
 from ... import utils
 from ...setting.Setting import Setting
-from .KubernetesConfig import KubernetesConfig
 
 MAX_K8S_LINK_NUMBER = (1 << 24) - 20
 
@@ -49,7 +50,7 @@ class KubernetesLink(object):
 
     def create(self, link):
         # If a network with the same name exists, return it instead of creating a new one.
-        network_objects = self.get_links_by_filters(link_name=link.name)
+        network_objects = self.get_links_by_filters(lab_hash=link.lab.folder_hash, link_name=link.name)
         if network_objects:
             link.api_object = network_objects.pop()
             return
@@ -61,7 +62,7 @@ class KubernetesLink(object):
                                                                       body=self._build_definition(link)
                                                                       )
 
-    def undeploy(self, lab_hash):
+    def undeploy(self, lab_hash, networks_to_delete=None):
         links = self.get_links_by_filters(lab_hash=lab_hash)
 
         pool_size = utils.get_pool_size()
@@ -69,10 +70,12 @@ class KubernetesLink(object):
 
         items = utils.chunk_list(links, pool_size)
 
-        progress_bar = Bar("Deleting links...", max=len(links))
+        progress_bar = Bar("Deleting links...", max=len(links) if not networks_to_delete
+                                                               else len(networks_to_delete)
+                           )
 
         for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, True, progress_bar), iterable=chunk)
+            links_pool.map(func=partial(self._undeploy_link, networks_to_delete, True, progress_bar), iterable=chunk)
 
         progress_bar.finish()
 
@@ -85,22 +88,28 @@ class KubernetesLink(object):
         items = utils.chunk_list(links, pool_size)
 
         for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, False, None), iterable=chunk)
+            links_pool.map(func=partial(self._undeploy_link, [], False, None), iterable=chunk)
 
-    def _undeploy_link(self, log, progress_bar, link_item):
-        # TODO: Delete only if containers = 0
+    def _undeploy_link(self, networks_to_delete, log, progress_bar, link_item):
+        namespace = link_item["metadata"]["namespace"]
 
-        self.client.delete_namespaced_custom_object(group=K8S_NET_GROUP,
-                                                    version=K8S_NET_VERSION,
-                                                    namespace=link_item["metadata"]["namespace"],
-                                                    plural=K8S_NET_PLURAL,
-                                                    name=self.get_network_name(link_item["metadata"]["name"]),
-                                                    body=client.V1DeleteOptions(grace_period_seconds=0),
-                                                    grace_period_seconds=0
-                                                    )
+        if networks_to_delete is not None and link_item["metadata"]["name"] not in networks_to_delete:
+            return
 
-        if log:
-            progress_bar.next()
+        try:
+            self.client.delete_namespaced_custom_object(group=K8S_NET_GROUP,
+                                                        version=K8S_NET_VERSION,
+                                                        namespace=namespace,
+                                                        plural=K8S_NET_PLURAL,
+                                                        name=link_item["metadata"]["name"],
+                                                        body=client.V1DeleteOptions(grace_period_seconds=0),
+                                                        grace_period_seconds=0
+                                                        )
+
+            if log:
+                progress_bar.next()
+        except ApiException:
+            return
 
     def get_links_by_filters(self, lab_hash=None, link_name=None):
         filters = ["app=kathara"]
@@ -144,9 +153,9 @@ class KubernetesLink(object):
     def _get_link_identifier(self, name):
         name_seed = int(hashlib.sha1(name.encode('utf-8')).hexdigest(), 16)
         name_seed = (self.seed + name_seed) % MAX_K8S_LINK_NUMBER
-        return name_seed if name_seed >= 10 else 10 + name_seed
+        return 10 + name_seed
 
     @staticmethod
     def get_network_name(name):
-        link_name = "%s-%s" % (Setting.get_instance().net_prefix, name)
-        return re.sub(r'[^0-9a-z\-.]+', '', link_name.lower())[0:5]
+        link_name = "%s-%s" % (Setting.get_instance().net_prefix, name[0:5])
+        return re.sub(r'[^0-9a-z\-.]+', '', link_name.lower())
