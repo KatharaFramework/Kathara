@@ -129,7 +129,7 @@ class Networking(object):
         from pyroute2 import IPRoute
         ip = IPRoute()
         idx_veth = ip.link_lookup(ifname=machine)[0]
-        idx_br = ip.link_lookup(ifname='br-'+bridge)[0]
+        idx_br = ip.link_lookup(ifname='kt-'+bridge)[0]
         ip.link('set',
             index=idx_veth,
             state='up')

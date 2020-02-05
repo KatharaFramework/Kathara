@@ -752,12 +752,10 @@ class DockerManager(IManager):
         list_container = self.client.containers.list()
         networking = Networking()
         path_image = self.getPathImage(lab)
-        id_plugin = self.client.plugins.get("kathara/katharanp:buster").id
         if len(self.getHostname().split('.')) > 1:
             for container in list_container:
                 pid = docker.APIClient().inspect_container(container.name)["State"]["Pid"]
                 bash('ln -s /proc/'+str(pid)+'/ns/net /var/run/netns/'+str(pid))
-                #bash('cp -a /var/lib/docker/plugins/'+id_plugin+' /proc/'+str(pid)+'/root/var/lib/docker/plugins/'+id_plugin)
                 if os.path.isdir('/sublab/'+container.labels['name']+'/sublab'):
                     bash("cp -a /shared /sublab")
                     client = self.getClient(container.labels['name'])
@@ -771,7 +769,6 @@ class DockerManager(IManager):
                 path_container = "./" + container.labels['name'] + "/sublab"
                 if os.path.exists(path_container):
                     pid = docker.APIClient().inspect_container(container.name)["State"]["Pid"]
-                    #bash('cp -a /var/lib/docker/plugins/'+id_plugin+' /proc/'+str(pid)+'/root/var/lib/docker/plugins/'+id_plugin)
                     client = self.getClient(container.labels['name'])
                     with open(path_image, 'rb') as f:
                         client.images.load(f)
