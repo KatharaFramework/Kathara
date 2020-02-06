@@ -313,7 +313,7 @@ class DockerMachine(object):
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
         if not shell:
-            shell = Setting.get_instance().device_shell
+            shell = [Setting.get_instance().device_shell]
         else:
             shell = shlex.split(shell) if type(shell) == str else shell
 
