@@ -180,7 +180,6 @@ class DockerManager(IManager):
 
     @privileged
     def get_lab_info(self,recursive,lab_hash=None, machine_name=None, all_users=False):
-        print(recursive)
         dict_container_machine = self.getDictMachineContainer()
         user_name = utils.get_current_user_name() if not all_users else None
         if recursive == False:
@@ -657,7 +656,7 @@ class DockerManager(IManager):
         return list_path
 
     #Crea un collegamento tra due domini di collisione
-    def connect_domain(self,network1,network2,i):
+    def connect_domain(self,network1,network2):
         dict_machine_container = self.getDictMachineContainer()
         dict_machine_folder = self.getDictMachineFolder()
         machine1 = self.getMachineByNetwork(network1)
@@ -667,29 +666,28 @@ class DockerManager(IManager):
         if (self.checkPath(list(reversed(machine1)),self.client) or machine1 == []) and \
         (self.checkPath(list(reversed(machine2)),self.client) or machine2 == []):
             networking = Networking()
+            name_veth1 = networking.random_veth_name()
+            name_veth2 = networking.random_veth_name()
             machine1 = ('.'.join(machine1))
             machine2 = ('.'.join(machine2))
+            networking.create_veth(name_veth1,name_veth2)
             if machine1 == "" and machine2 == "":
-                networking.create_veth(machine1+self.getHostname()[:-1],machine2+self.getHostname()[:-1],i)
-                networking.up_network(machine1+self.getHostname()[:-1],self.getBridgeClient(network1),i)
-                networking.up_network(machine2+self.getHostname()[:-1],self.getBridgeClient(network2),i+10)
+                networking.up_network(name_veth1,self.getBridgeClient(network1))
+                networking.up_network(name_veth2,self.getBridgeClient(network2))
             else:
                 if machine1 == "":
-                    networking.create_veth(machine1+self.getHostname()[:-1],machine2,i)
-                    self.move_veth(machine2,dict_machine_container,dict_machine_folder) 
-                    networking.up_network(machine1+self.getHostname()[:-1],self.getBridgeClient(network1),i)
-                    self.up_veth(machine2,dict_machine_container[machine2],network2)
+                    self.move_veth(machine2,name_veth2,dict_machine_container,dict_machine_folder) 
+                    networking.up_network(name_veth1,self.getBridgeClient(network1))
+                    self.up_veth(name_veth2,dict_machine_container[machine2],network2)
                 if machine2 == "":
-                    networking.create_veth(machine1,machine2+self.getHostname()[:-1],i)
-                    self.move_veth(machine1,dict_machine_container,dict_machine_folder)
-                    networking.up_network(machine2+self.getHostname()[:-1],self.getBridgeClient(network2),i)
-                    self.up_veth(machine1,dict_machine_container[machine1],network1)
+                    self.move_veth(machine1,name_veth1,dict_machine_container,dict_machine_folder)
+                    networking.up_network(name_veth2,self.getBridgeClient(network2))
+                    self.up_veth(name_veth1,dict_machine_container[machine1],network1)
                 if machine1 != "" and machine2 != "":
-                    networking.create_veth(machine1,machine2,i)
-                    self.move_veth(machine1,dict_machine_container,dict_machine_folder)
-                    self.move_veth(machine2,dict_machine_container,dict_machine_folder)
-                    self.up_veth(machine1,dict_machine_container[machine1],network1)
-                    self.up_veth(machine2,dict_machine_container[machine2],network2)
+                    self.move_veth(machine1,name_veth1,dict_machine_container,dict_machine_folder)
+                    self.move_veth(machine2,name_veth2,dict_machine_container,dict_machine_folder)
+                    self.up_veth(name_veth1,dict_machine_container[machine1],network1)
+                    self.up_veth(name_veth2,dict_machine_container[machine2],network2)
         else:
             raise Exception("Invalid path")
     
@@ -726,12 +724,12 @@ class DockerManager(IManager):
         return machine
     
     #Sposta la veth fino alla macchina passata come parametro
-    def move_veth(self,machine1,dict_machine_container,dict_machine_folder):
+    def move_veth(self,machine1,name_veth1,dict_machine_container,dict_machine_folder):
         networking = Networking()
         list_path1 = self.getListPath(self.reverseOfPath(machine1))
         container = dict_machine_container[list_path1[0]]
         pid = docker.APIClient().inspect_container(container.name)["State"]["Pid"]
-        networking.move_veth(machine1,pid)
+        networking.move_veth(name_veth1,pid)
         list_path1.pop(0)
         if len(list_path1) > 0:
             for path1 in list_path1:
@@ -739,12 +737,12 @@ class DockerManager(IManager):
                 container = dict_machine_container[path1]
                 pid1 = docker.APIClient(base_url="unix://"+ folder_container_parent + "run/docker.sock").inspect_container(container.name)["State"]["Pid"]
                 parent_container = dict_machine_container[self.getParentMachine(path1)]
-                parent_container.exec_run(['python3','/shared/move_veth.py',machine1,str(pid1)])
+                parent_container.exec_run(['python3','/shared/move_veth.py',name_veth1,str(pid1)])
         
     #Uppa la veth delle 2 macchine passate come parametro
-    def up_veth(self,machine1,container1,network1):
+    def up_veth(self,name_veth1,container1,network1):
         bridge1 = self.getBridgeClient(network1)
-        container1.exec_run(['python3','/shared/up_network.py',machine1,bridge1])
+        container1.exec_run(['python3','/shared/up_network.py',name_veth1,bridge1])
 
     #Runna il multilab
     def runNestedLab(self,lab):
@@ -814,7 +812,7 @@ class DockerManager(IManager):
                     key = matches.group("key").replace('"', '').replace("'", '')
                     #Dominio diverso da quello della macchina che legge il lab.int
                     value = matches.group("value").replace('"', '').replace("'", '')
-                    self.connect_domain(key,value,line_number)
+                    self.connect_domain(key,value)
                 
                 line_number += 1
                 line = lab_mem_file.readline().decode('utf-8')

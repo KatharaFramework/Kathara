@@ -2,7 +2,7 @@ import logging
 import os
 import subprocess
 import docker
-
+import uuid
 class Networking(object):
     @staticmethod
     def get_or_new_interface(full_interface_name, vlan_interface_name, vlan_id=None):
@@ -103,11 +103,7 @@ class Networking(object):
         return os.popen("/sbin/iptables --version").read().strip()
 
     @staticmethod
-    def create_veth(name1,name2,i):
-        if name1 == "":
-            name1 = "host"+str(i)
-        if name2 == "":
-            name2 = "host"+str(i+10)
+    def create_veth(name1,name2):
         from pyroute2 import IPRoute
         ip = IPRoute()
         ip.link('add', ifname=name1, peer=name2, kind='veth')
@@ -123,9 +119,7 @@ class Networking(object):
                 net_ns_fd=str(pid))
 
     @staticmethod
-    def up_network(machine,bridge,i):
-        if machine == "":
-            machine = "host"+str(i)
+    def up_network(machine,bridge):
         from pyroute2 import IPRoute
         ip = IPRoute()
         idx_veth = ip.link_lookup(ifname=machine)[0]
@@ -137,10 +131,6 @@ class Networking(object):
     
     @staticmethod
     def delete_veth(name1,name2):
-        if name1 == "":
-            name1 = "host"
-        if name2 == "":
-            name2 = "host"
         from pyroute2 import IPRoute
         ip = IPRoute()
         ip.link('del', ifname=name1, peer=name2, kind='veth')
@@ -151,3 +141,9 @@ class Networking(object):
         for container in list_container:
             pid = docker.APIClient().inspect_container(container.name)["State"]["Pid"]
             subprocess.call(["sudo","ln","-s", "/proc/"+str(pid)+"/ns/net", "/var/run/netns/"+str(pid)])
+
+    @staticmethod
+    def random_veth_name():
+        random = str(uuid.uuid4())
+        random = random.replace("-", "")
+        return "veth" + random[0:8]
