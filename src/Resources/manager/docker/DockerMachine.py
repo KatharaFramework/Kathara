@@ -1,4 +1,5 @@
 import logging
+import shlex
 from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
@@ -313,6 +314,8 @@ class DockerMachine(object):
 
         if not shell:
             shell = Setting.get_instance().device_shell
+        else:
+            shell = shlex.split(shell) if type(shell) == str else shell
 
         if logs and Setting.get_instance().print_startup_log:
             result_string = self.exec(container,
@@ -346,7 +349,10 @@ class DockerMachine(object):
             PseudoTerminal(self.client, exec_output, resp['Id']).start()
 
         def cmd_connect():
-            Popen(["docker", "exec", "-it", container.id, shell])
+            exec_command = ["docker", "exec", "-it", container.id]
+            exec_command.extend(shell)
+
+            Popen(exec_command)
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
