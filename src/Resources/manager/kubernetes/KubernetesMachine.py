@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import shlex
 from functools import partial
 from multiprocessing.dummy import Pool
 
@@ -181,6 +182,12 @@ class KubernetesMachine(object):
             # Define volume mounts for hostlab if a ConfigMap is defined.
             volume_mounts.append(client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara"))
 
+        if Setting.get_instance().hosthome_mount:
+            volume_mounts.append(client.V1VolumeMount(name="hosthome", mount_path="/hosthome"))
+
+        if Setting.get_instance().shared_mount:
+            volume_mounts.append(client.V1VolumeMount(name="shared", mount_path="/shared"))
+
         security_context = client.V1SecurityContext(privileged=True)
 
         port_info = machine.get_ports()
@@ -271,6 +278,19 @@ class KubernetesMachine(object):
                 config_map=client.V1ConfigMapVolumeSource(
                     name="%s-%s-files" % (machine.name, machine.lab.folder_hash)
                 )
+            ))
+
+        # Hosthome and Shared both mount the /home folder in k8s
+        if Setting.get_instance().hosthome_mount:
+            volumes.append(client.V1Volume(
+                name="hosthome",
+                host_path=client.V1HostPathVolumeSource(path='/home')
+            ))
+
+        if Setting.get_instance().shared_mount:
+            volumes.append(client.V1Volume(
+                name="shared",
+                host_path=client.V1HostPathVolumeSource(path='/home')
             ))
 
         pod_spec = client.V1PodSpec(containers=[container_definition],
@@ -382,7 +402,7 @@ class KubernetesMachine(object):
         if not command:
             command = Setting.get_instance().device_shell
         else:
-            command = command.split(' ')
+            command = shlex.split(command)
 
         if logs and Setting.get_instance().print_startup_log:
             result_string = self.exec(pod,
@@ -413,7 +433,7 @@ class KubernetesMachine(object):
         machine_name = pod.metadata.labels["name"]
         machine_namespace = pod.metadata.namespace
 
-        command = command.split(' ') if type(command) == 'str' else command
+        command = shlex.split(command) if type(command) == 'str' else command
 
         try:
             # Retrieve the pod of current Deployment
