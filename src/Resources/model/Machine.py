@@ -17,7 +17,7 @@ from ..setting.Setting import Setting
 class Machine(object):
     __slots__ = ['lab', 'name', 'startup_path', 'shutdown_path', 'folder',
                  'interfaces', 'bridge', 'meta', 'startup_commands', 'api_object',
-                 'capabilities', 'sysctls']
+                 'capabilities']
 
     def __init__(self, lab, name):
         self.lab = lab
@@ -26,8 +26,7 @@ class Machine(object):
         self.interfaces = {}
         self.bridge = None
 
-        self.meta = {}
-        self.sysctls = {}
+        self.meta = {'sysctls': {}}
 
         self.startup_commands = []
 
@@ -62,7 +61,7 @@ class Machine(object):
         if name == "sysctl":
             # Assume format [str]=[int]
             parts = value.split('=')
-            self.sysctls[parts[0].strip()] = int(parts[1].strip())
+            self.meta['sysctls'][parts[0].strip()] = int(parts[1].strip())
             return
 
         self.meta[name] = value

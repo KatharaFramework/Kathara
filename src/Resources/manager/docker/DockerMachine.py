@@ -163,7 +163,7 @@ class DockerMachine(object):
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
         
         # Merge machine sysctls
-        sysctl_parameters = {**sysctl_parameters, **machine.sysctls}
+        sysctl_parameters = {**sysctl_parameters, **machine.meta['sysctls']}
 
         volumes = {}
 
