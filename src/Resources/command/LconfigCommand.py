@@ -44,7 +44,7 @@ class LconfigCommand(Command):
         parser.add_argument(
             '--eth',
             dest='eths',
-            metavar='N:CD',
+            metavar='CD',
             nargs='+',
             required=True,
             help='Specify the collision domain for an interface.'
