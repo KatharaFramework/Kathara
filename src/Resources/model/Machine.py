@@ -26,7 +26,7 @@ class Machine(object):
         self.interfaces = {}
         self.bridge = None
 
-        self.meta = {}
+        self.meta = {'sysctls': {}}
 
         self.startup_commands = []
 
@@ -56,6 +56,20 @@ class Machine(object):
 
         if name == "bridged":
             self.bridge = self.lab.get_or_new_link(BRIDGE_LINK_NAME)
+            return
+
+        if name == "sysctl":
+            # Check for valid kv-pair
+            if '=' in value:
+                parts = value.split('=')
+                key = parts[0].strip()
+                val = parts[1].strip()
+                # Only allow `net.` namespace
+                if key.startswith('net.'):
+                    # Convert to int if possible
+                    self.meta['sysctls'][key] = int(val) if val.isdigit() else val
+            else:
+                raise MachineOptionError("Invalid 'sysctl' value ('%s'), missing '='" % value)
             return
 
         self.meta[name] = value
