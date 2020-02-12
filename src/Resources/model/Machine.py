@@ -62,9 +62,14 @@ class Machine(object):
             # Check for valid kv-pair
             if '=' in value:
                 parts = value.split('=')
-                # Only allow `net.` namespace with int value
-                if parts[0].strip().startswith('net.') and parts[1].strip().isdigit():
-                    self.meta['sysctls'][parts[0].strip()] = int(parts[1].strip())
+                key = parts[0].strip()
+                val = parts[1].strip()
+                # Only allow `net.` namespace
+                if key.startswith('net.'):
+                    # Convert to int if possible
+                    self.meta['sysctls'][key] = int(val) if val.isdigit() else val
+            else:
+                raise MachineOptionError("Invalid 'sysctl' value ('%s'), missing '='" % value)
             return
 
         self.meta[name] = value
