@@ -27,6 +27,7 @@ class Machine(object):
         self.bridge = None
 
         self.meta = {}
+        self.sysctls = {}
 
         self.startup_commands = []
 
@@ -56,6 +57,12 @@ class Machine(object):
 
         if name == "bridged":
             self.bridge = self.lab.get_or_new_link(BRIDGE_LINK_NAME)
+            return
+
+        if name == "sysctl":
+            # Assume format [str]=[int]
+            parts = value.split('=')
+            self.sysctls[parts[0].strip()] = int(parts[1].strip())
             return
 
         self.meta[name] = value
