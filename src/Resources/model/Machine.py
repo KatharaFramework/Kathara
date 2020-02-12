@@ -17,7 +17,7 @@ from ..setting.Setting import Setting
 class Machine(object):
     __slots__ = ['lab', 'name', 'startup_path', 'shutdown_path', 'folder',
                  'interfaces', 'bridge', 'meta', 'startup_commands', 'api_object',
-                 'capabilities']
+                 'capabilities', 'sysctls']
 
     def __init__(self, lab, name):
         self.lab = lab
