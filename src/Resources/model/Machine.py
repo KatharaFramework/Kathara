@@ -59,9 +59,12 @@ class Machine(object):
             return
 
         if name == "sysctl":
-            # Assume format [str]=[int]
-            parts = value.split('=')
-            self.meta['sysctls'][parts[0].strip()] = int(parts[1].strip())
+            # Check for valid kv-pair
+            if '=' in value:
+                parts = value.split('=')
+                # Only allow `net.` namespace with int value
+                if parts[0].strip().startswith('net.') and parts[1].strip().isdigit():
+                    self.meta['sysctls'][parts[0].strip()] = int(parts[1].strip())
             return
 
         self.meta[name] = value
