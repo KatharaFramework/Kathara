@@ -68,8 +68,10 @@ class Machine(object):
                 if key.startswith('net.'):
                     # Convert to int if possible
                     self.meta['sysctls'][key] = int(val) if val.isdigit() else val
+                else:
+                    raise MachineOptionError("Invalid sysctl value (`%s`), only `net.` namespace is allowed." % value)
             else:
-                raise MachineOptionError("Invalid 'sysctl' value ('%s'), missing '='" % value)
+                raise MachineOptionError("Invalid sysctl value (`%s`), missing `=`." % value)
             return
 
         self.meta[name] = value
