@@ -15,8 +15,8 @@ class ExternalLink(object):
 
             # If the length of interface name + vlan tag is more than 15 chars, we truncate the interface name to
             # 15 - VLAN_NAME_LENGTH in order to fit the whole string in 15 chars
-            return self.interface, self.vlan if len(self.interface) + vlan_name_length <= MAX_INTERFACE_NAME_LENGTH \
-                   else self.interface[0:(MAX_INTERFACE_NAME_LENGTH - vlan_name_length)], self.vlan
+            return (self.interface, self.vlan) if len(self.interface) + vlan_name_length <= MAX_INTERFACE_NAME_LENGTH \
+                   else (self.interface[0:(MAX_INTERFACE_NAME_LENGTH - vlan_name_length)], self.vlan)
 
         return self.interface, None
 

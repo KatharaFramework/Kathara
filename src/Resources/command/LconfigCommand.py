@@ -10,15 +10,15 @@ from ..model.Lab import Lab
 from ..strings import strings, wiki_description
 
 
-class VconfigCommand(Command):
+class LconfigCommand(Command):
     __slots__ = []
 
     def __init__(self):
         Command.__init__(self)
 
         parser = argparse.ArgumentParser(
-            prog='kathara vconfig',
-            description=strings['vconfig'],
+            prog='kathara lconfig',
+            description=strings['lconfig'],
             epilog=wiki_description,
             add_help=False
         )
@@ -28,6 +28,12 @@ class VconfigCommand(Command):
             action='help',
             default=argparse.SUPPRESS,
             help='Show an help message and exit.'
+        )
+        parser.add_argument(
+            '-d', '--directory',
+            metavar='LAB_PATH',
+            required=False,
+            help='Path of the lab to configure, if not specified the current path is used'
         )
         parser.add_argument(
             '-n', '--name',
@@ -49,6 +55,9 @@ class VconfigCommand(Command):
     def run(self, current_path, argv):
         args = self.parser.parse_args(argv)
 
+        lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+        lab_path = utils.get_absolute_path(lab_path)
+
         for eth in args.eths:
             # Only alphanumeric characters are allowed
             matches = re.search(r"^\w+$", eth)
@@ -58,8 +67,7 @@ class VconfigCommand(Command):
                 self.parser.print_help()
                 exit(1)
 
-        vlab_dir = utils.get_vlab_temp_path()
-        lab = Lab(vlab_dir)
+        lab = Lab(lab_path)
 
         iface_number = 0
         for eth in args.eths:

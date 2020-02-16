@@ -1,4 +1,5 @@
 import logging
+import shlex
 from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
@@ -165,6 +166,9 @@ class DockerMachine(object):
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
+        
+        # Merge machine sysctls
+        sysctl_parameters = {**sysctl_parameters, **machine.meta['sysctls']}
 
         volumes = {}
 
@@ -319,7 +323,9 @@ class DockerMachine(object):
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
         if not command:
-            command = Setting.get_instance().device_shell
+            command = [Setting.get_instance().device_shell]
+        else:
+            command = shlex.split(command) if type(command) == str else command
 
         if logs and Setting.get_instance().print_startup_log:
             result_string = self.exec(container,
@@ -353,7 +359,10 @@ class DockerMachine(object):
             PseudoTerminal(self.client, exec_output, resp['Id']).start()
 
         def cmd_connect():
-            Popen(["docker", "exec", "-it", container.id, command])
+            exec_command = ["docker", "exec", "-it", container.id]
+            exec_command.extend(command)
+
+            Popen(exec_command)
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 

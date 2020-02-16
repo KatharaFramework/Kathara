@@ -1,23 +1,5 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-  * Limit thread to 10 due to urllib3 limitations
-  * Fix multithread pull
-  * Removed duplicated code on list chunks
-  * Docker max_pool_size set to cpu_count
-  * remove check on default image on starting and add check update for docker_network_plugin
-  * add check update to docker images
-  * Moved few stuff from settings + Fix image pull
-  * fix quotes on mac connect command
-  * fix machine check update
-  * add check update to docker images
-  * fix quotes on mac connect command
-  * fix machine check update
-  * add plugin selection for linux platforms
-  * Fix iptables parsing (for network plugin) + Minor fixes
-  * Loading bar instead of text when starting/cleaning lab
-  * Fix to lab.ext interface names greater than 15 chars
-  * Fix to lclean when trying to clean an external interface without sudo
-  * Manager code polishing (moved deployment methods in Link/Machine, like undeploy)
-  * Add setting to enable ipv6
+  * Minor fix for lab.ext
 
- -- Lorenzo Ariemma <******@gmail.com>  __DATE__
+ -- Mariano Scazzariello <******@gmail.com>  __DATE__

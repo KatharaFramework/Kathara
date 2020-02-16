@@ -1,0 +1,42 @@
+m4_changequote()
+kathara-lconfig(1) -- Attach network interfaces to a running Kathara device of a Kathara lab
+=============================================
+
+## SYNOPSIS
+
+`kathara lconfig` [`-h`] [`-d` <DIRECTORY>] `-n` <DEVICE_NAME> `--eth` <CD> [<CD> ...]
+
+## DESCRIPTION
+
+Attach network interfaces to running devices of a Kathara lab "on the fly". The affected device is identified by <DEVICE_NAME>, which is the name of a running device.
+
+## OPTIONS
+
+* `-h`, `--help`:
+    Show a help message and exit.
+
+* `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
+    Specify the folder containing the lab.
+
+    Attach network interfaces to running devices of the Kathara lab that is located inside <DIRECTORY>.
+    If no `-d` option is provided, assume the lab is located in the current directory.
+
+* `-n` <DEVICE_NAME>, `--name` <DEVICE_NAME>:
+    Name of the device to be connected on desired collision domains.
+
+* `--eth` <CD> [<CD> ...]:
+	Specify the collision domain for an interface.
+
+    Equip the device with an additional network interface attached to a (virtual) collision domain whose name is <CD>. The number of the resulting network interface is generated incrementing the number of the last network interface of the device.
+
+## EXAMPLES
+
+    kathara lconfig -d path/to/lab -n pc1 --eth X Y
+
+Two new interfaces will be added to the device pc1 of the lab: the first one will be attached to the collision domain named X, while the other one to the collision domain named Y. Both the interfaces will have to be configured by hand inside the device (for example, by using ifconfig).
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-lstart`(1), `kathara-lclean`(1)

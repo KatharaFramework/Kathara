@@ -3,6 +3,7 @@ from docker.errors import APIError
 
 from ...api.DockerHubApi import DockerHubApi
 from ... import utils
+from ...exceptions import HTTPConnectionError
 
 
 class DockerImage(object):
@@ -28,9 +29,13 @@ class DockerImage(object):
             logging.debug("Image %s is build locally" % image_name)
             return
 
-        remote_image_info = self.check_remote(image_name)
-        local_repo_digest = local_repo_digests[0]
-        remote_image_digest = remote_image_info["images"][0]["digest"]
+        try:
+            remote_image_info = self.check_remote(image_name)
+            local_repo_digest = local_repo_digests[0]
+            remote_image_digest = remote_image_info["images"][0]["digest"]
+        except HTTPConnectionError:
+            logging.debug("Unable to connect to DockerHub")
+            return
 
         # Format is image_name@sha256, so we strip the first part.
         (_, local_image_digest) = local_repo_digest.split("@")

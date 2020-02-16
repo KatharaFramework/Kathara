@@ -161,7 +161,8 @@ class KubernetesMachine(object):
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
 
-        machine.add_meta("sysctls", sysctl_parameters)
+        # Merge machine sysctls
+        machine.meta['sysctls'] = {**sysctl_parameters, **machine.meta['sysctls']}
 
         try:
             config_map = self.kubernetes_config_map.deploy_for_machine(machine)
