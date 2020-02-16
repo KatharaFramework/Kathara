@@ -18,7 +18,7 @@ END_ALTERNATE_MODE = set('\x1b[?{0}l'.format(i) for i in ('1049', '47', '1047'))
 ALTERNATE_MODE_FLAGS = tuple(START_ALTERNATE_MODE) + tuple(END_ALTERNATE_MODE)
 
 
-class Interceptor(object):
+class KubernetesTerminal(object):
     """
     This class does the actual work of the pseudo terminal.
     """

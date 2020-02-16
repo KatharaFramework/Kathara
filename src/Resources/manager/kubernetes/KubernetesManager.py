@@ -42,7 +42,7 @@ class KubernetesManager(IManager):
             self.k8s_machine.deploy_machines(lab, privileged_mode)
         except ApiException as e:
             if e.status == 403 and 'Forbidden' in e.reason:
-                raise Exception("Previous lab execution is still terminating. Please wait a bit.")
+                raise Exception("Previous lab execution is still terminating. Please wait.")
             else:
                 raise e
 
@@ -54,18 +54,18 @@ class KubernetesManager(IManager):
     def undeploy_lab(self, lab_hash, selected_machines=None):
         lab_hash = lab_hash.lower()
 
-        # When only some machines should be undeployed. Special checks are required.
+        # When only some machines should be undeployed, special checks are required.
         if selected_machines:
             # Get all current deployed networks and save only their name
             networks = self.k8s_link.get_links_by_filters(lab_hash=lab_hash)
             all_networks = set([network["metadata"]["name"] for network in networks])
 
-            # Get all current running machine networks (not Terminating)
+            # Get all current running machines (not Terminating)
             running_machines = [machine for machine in self.k8s_machine.get_machines_by_filters(lab_hash=lab_hash)
                                         if 'Terminating' not in machine.status.phase
                                 ]
 
-            # From machines, save a set with all the attached networks still needed
+            # From machines, save a set with all the attached networks (still needed)
             running_networks = set()
             for machine in running_machines:
                 network_annotation = json.loads(machine.metadata.annotations["k8s.v1.cni.cncf.io/networks"])
@@ -201,7 +201,7 @@ class KubernetesManager(IManager):
         try:
             DockerHubApi.get_image_information(image_name)
         except Exception:
-            raise Exception("Image `%s` does not exists on Docker Hub or not Internet connection." % image_name)
+            raise Exception("Image `%s` does not exists on Docker Hub or no Internet connection." % image_name)
 
     @privileged
     def get_release_version(self):

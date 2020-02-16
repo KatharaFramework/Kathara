@@ -16,7 +16,7 @@ from .KubernetesConfigMap import KubernetesConfigMap
 from ... import utils
 from ...exceptions import MachineAlreadyExistsError
 from ...setting.Setting import Setting
-from ...trdparty.k8spty.Interceptor import Interceptor
+from ...trdparty.k8spty.terminal import KubernetesTerminal
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 
@@ -400,9 +400,9 @@ class KubernetesMachine(object):
             raise Exception('Machine `%s` is not ready.' % machine_name)
 
         if not command:
-            command = Setting.get_instance().device_shell
+            command = [Setting.get_instance().device_shell]
         else:
-            command = shlex.split(command)
+            command = shlex.split(command) if type(command) == str else command
 
         if logs and Setting.get_instance().print_startup_log:
             result_string = self.exec(pod,
@@ -424,7 +424,7 @@ class KubernetesMachine(object):
                       _preload_content=False
                       )
 
-        pty = Interceptor(k8s_stream=resp)
+        pty = KubernetesTerminal(k8s_stream=resp)
         pty.start()
 
     def exec(self, pod, command, stdin=False, stderr=False, tty=False, stdin_buffer=None):
@@ -462,11 +462,11 @@ class KubernetesMachine(object):
         while response.is_open():
             response.update(timeout=1)
             if response.peek_stdout():
-                result['stdout'] += response.read_stdout()
+                result['stdout'] += response.read_stdout().decode('utf-8')
             if stderr and response.peek_stderr():
-                result['stderr'] += response.read_stderr()
+                result['stderr'] += response.read_stderr().decode('utf-8')
             if stdin and stdin_buffer:
-                param = stdin_buffer.pop()
+                param = stdin_buffer.pop(0)
                 response.write_stdin(param)
         response.close()
 
