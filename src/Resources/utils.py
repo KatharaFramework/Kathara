@@ -129,6 +129,8 @@ def convert_win_2_linux(filename):
         file_content = open(filename, mode='r', encoding='utf-8-sig').read()
         return file_content.replace("\n\r", "\n").encode('utf-8')
 
+    return open(filename, mode='rb').read()
+
 
 def is_admin():
     def unix_root():
