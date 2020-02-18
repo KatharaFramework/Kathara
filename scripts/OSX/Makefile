@@ -1,7 +1,7 @@
 #!/usr/bin/make -s
 
 PRODUCT=Kathara
-VERSION=2.2.1
+VERSION=2.2.2
 TARGET_DIRECTORY=Output
 APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
 ROFF_DIR=../../docs/Roff

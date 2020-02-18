@@ -280,7 +280,9 @@ class DockerMachine(object):
 
         items = utils.chunk_list(machines, pool_size)
 
-        progress_bar = Bar("Deleting machines...", max=len(machines))
+        progress_bar = Bar("Deleting machines...", max=len(machines) if not selected_machines
+                                                       else len(selected_machines)
+                           )
 
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True, progress_bar),
