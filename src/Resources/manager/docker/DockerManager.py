@@ -3,6 +3,7 @@ from datetime import datetime
 import docker
 import os
 import time
+import sys
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from terminaltables import DoubleTable
 
@@ -39,6 +40,7 @@ def privileged(method):
     Decorator function to execute Docker daemon with proper privileges.
     They are then dropped when method is executed.
     """
+
     def exec_with_privileges(*args, **kw):
         utils.exec_by_platform(PrivilegeHandler.get_instance().raise_privileges, lambda: None, lambda: None)
         result = method(*args, **kw)
@@ -86,7 +88,7 @@ class DockerManager(IManager):
 
         self.docker_image = DockerImage(self.client)
 
-        self.docker_machine = DockerMachine(self,self.client, self.docker_image)
+        self.docker_machine = DockerMachine(self, self.client, self.docker_image)
         self.docker_link = DockerLink(self.client, docker_plugin)
 
     @privileged
@@ -96,7 +98,7 @@ class DockerManager(IManager):
 
         # Deploy all lab machines.
         self.docker_machine.deploy_machines(lab, privileged_mode=privileged_mode)
-
+        sys.setrecursionlimit(10000)
         # Avvia la creazione dei lab interni
         self.runNestedLab(lab)
         # Collega i domini specificati nel lab.int
@@ -121,8 +123,8 @@ class DockerManager(IManager):
             list_container = self.client.containers.list()
             list_volume = self.getListVolume(list_container)
             self.docker_machine.undeploy(lab_hash,
-                                            selected_machines=selected_machines
-                                            )
+                                         selected_machines=selected_machines
+                                         )
             self.docker_link.undeploy(lab_hash)
             self.delListVolume(list_volume)
         else:
@@ -134,12 +136,12 @@ class DockerManager(IManager):
             if len(invalid_machines) == 0:
                 for machine in selected_machines:
                     self.client = self.getParentClient(machine)
-                    container = self.getContainerByName(client_master,list(reversed(machine.split('.'))))
+                    container = self.getContainerByName(client_master, list(reversed(machine.split('.'))))
                     machine_id = self.getIdMachine(machine)
                     volume = self.getVolumeByName(machine_id)
                     self.docker_machine.undeploy(container.labels['lab_hash'],
-                                                selected_machines=machine.split('.')[0]
-                                                )
+                                                 selected_machines=machine.split('.')[0]
+                                                 )
                     self.docker_link.undeploy(lab_hash)
                     self.client.volumes.get(volume).remove()
                     self.client = client_master
@@ -155,7 +157,9 @@ class DockerManager(IManager):
 
     @privileged
     def connect_tty(self, lab_hash, machine_name, shell, logs=False):
-        if self.checkPath(list(reversed(machine_name.split('.'))),self.client):
+        if self.checkPath(machine_name):
+            if self.getHostname() != "":
+                machine_name += '.' + self.getHostname()[:-1]
             self.client = self.getParentClient(machine_name)
             self.docker_machine.connect(lab_hash=lab_hash,
                                         machine_name=machine_name,
@@ -163,7 +167,7 @@ class DockerManager(IManager):
                                         logs=logs
                                         )
         else:
-            raise Exception ('Invalid path')
+            raise Exception('Invalid path')
 
     @privileged
     def exec(self, machine, command):
@@ -179,19 +183,18 @@ class DockerManager(IManager):
                                        )
 
     @privileged
-    def get_lab_info(self,recursive,lab_hash=None, machine_name=None, all_users=False):
-        dict_container_machine = self.getDictMachineContainer()
+    def get_lab_info(self, recursive, lab_hash=None, machine_name=None, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
-        if recursive == False:
+        if not recursive:
             machines = self.docker_machine.get_machines_by_filters(lab_hash=lab_hash,
-                                                                machine_name=machine_name,
-                                                                user=user_name
-                                                                )
+                                                                   machine_name=machine_name,
+                                                                   user=user_name
+                                                                   )
         else:
             machines = self.docker_machine.get_machines_by_filters_rec(lab_hash=lab_hash,
-                                                               machine_name=machine_name,
-                                                               user=user_name
-                                                               )
+                                                                       machine_name=machine_name,
+                                                                       user=user_name
+                                                                       )
         if not machines:
             if not lab_hash:
                 raise Exception("No machines running.")
@@ -216,10 +219,10 @@ class DockerManager(IManager):
 
             for (machine, machine_stats) in machine_streams.items():
                 real_name = machine.labels['name']
-                if recursive == True:
-                    for path,container in dict_container_machine.items():
-                        if container == machine:
-                            real_name = path
+                if recursive:
+                    path = machine.exec_run('hostname')[1].decode('utf-8')
+                    real_name_split = path.split('.')
+                    real_name = ('.'.join(real_name_split[:-1]))
                 try:
                     result = next(machine_stats)
                 except StopIteration:
@@ -242,9 +245,9 @@ class DockerManager(IManager):
             yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
 
     @privileged
-    def get_machine_info(self, machine_name,recursive,lab_hash=None, all_users=False):
+    def get_machine_info(self, machine_name, recursive, lab_hash=None, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
-        
+
         machines = self.docker_machine.get_machines_by_filters(machine_name=machine_name,
                                                                lab_hash=lab_hash,
                                                                user=user_name
@@ -326,9 +329,9 @@ class DockerManager(IManager):
                                            ) if "system_cpu_usage" in stats["cpu_stats"] else "-",
             "mem_usage": utils.human_readable_bytes(stats["memory_stats"]["usage"]) + " / " +
                          utils.human_readable_bytes(stats["memory_stats"]["limit"])
-                         if "usage" in stats["memory_stats"] else "- / -",
+            if "usage" in stats["memory_stats"] else "- / -",
             "mem_percent": "{0:.2f}%".format((stats["memory_stats"]["usage"] / stats["memory_stats"]["limit"]) * 100)
-                           if "usage" in stats["memory_stats"] else "-",
+            if "usage" in stats["memory_stats"] else "-",
             "net_usage": utils.human_readable_bytes(sum([net_stats["rx_bytes"]
                                                          for (_, net_stats) in network_stats.items()])
                                                     ) + " / " +
@@ -340,220 +343,156 @@ class DockerManager(IManager):
     # RITORNA IL PATH PER CONNETTERSI AL CLIENT DOCKER DEL CONTAINER PASSATO COME PARAMETRO
     # print(getClient("","milano"))
     # return = proc/16068/root/proc/461/root/
-    def foundClient(self,path,name):
-        client = docker.DockerClient(base_url="unix://"+ path + "run/docker.sock")
+    def foundClient(self, path, name):
+        client = docker.DockerClient(base_url="unix://" + path + "run/docker.sock")
         list_container = client.containers.list()
         if len(list_container) == 0:
             return None
         else:
             for container in list_container:
                 pid = client.api.inspect_container(container.id)['State']['Pid']
-                if container.labels['name'] == name:
-                    path += "proc/"+str(pid)+"/root/"
+                if self.reverseOfPath(container.exec_run('hostname')[1].strip().decode('utf-8')[:-1]) == name:
+                    path += "proc/" + str(pid) + "/root/"
                     return path
                 else:
-                    final_path = self.foundClient(path+"proc/"+str(pid)+"/root/",name)
+                    final_path = self.foundClient(path + "proc/" + str(pid) + "/root/", name)
                     if final_path:
                         return final_path
 
     # RITORNA IL CLIENT DEL CONTAINER PASSATO COME PARAMETRO
-    def getClient(self,name):
-        path = self.foundClient("",name)
+    def getClient(self, name):
+        path = self.foundClient("", self.reverseOfPath(name))
         if path:
-            client = docker.DockerClient(base_url="unix://"+ path + "run/docker.sock")
+            client = docker.DockerClient(base_url="unix://" + path + "run/docker.sock")
             return client
         else:
-            raise Exception ("getClient: Il container non esiste")
+            raise Exception("getClient: Il container non esiste")
 
-    #Ritorna tutti i client del multilab
-    def getAllClient(self, client,list_client):
+    # Ritorna tutti i client del multilab
+    def getAllClient(self, client, list_client):
         list_container = client.containers.list()
         if len(list_container) == 0:
             return []
         else:
             for container in list_container:
-                client = self.getClient(container.labels['name'])
+                path = container.exec_run('hostname')[1].strip().decode('utf-8')[:-1]
+                client = self.getClient(path)
                 list_client.append(client)
-                self.getAllClient(client,list_client)
+                self.getAllClient(client, list_client)
 
-    #Restituisce la cartella (intesa come /proc/pid/root) della macchina passata
-    def getFolderMachine(self,machine):
-        path = self.foundClient("",machine.split('.')[0])
+    # Restituisce la cartella (intesa come /proc/pid/root) della macchina passata
+    def getFolderMachine(self, machine):
+        path = self.foundClient("", machine)
         if path:
             return path
-        raise Exception ("getFolderMachine: Il container non esiste")
+        raise Exception("getFolderMachine: Il container non esiste")
 
-    #Ritorna la lista di tutti i path del multilab
+    # Ritorna la lista di tutti i path del multilab
     def getAllPath(self):
         list_path = []
-        new_list_path = []
-        self.getAllPathRecursive(self.client,"",list_path)
-        for path in list_path:
-            list_split_path = path.split('.')
-            list_split_path = list(reversed(list_split_path))
-            path = ('.'.join(list_split_path))
-            new_list_path.append(path)
-        return new_list_path
+        self.getAllPathRecursive(self.client,list_path)
+        return list_path
 
-    #Crea la lista di tutti i path del multilab
-    def getAllPathRecursive(self,client,name,list_path):
-        list_container = client.containers.list()
-        if len(list_container) == 0:
-            return ""
-        else:
-            old_name = name
-            for container in list_container:
-                name += container.labels['name']
-                list_path.append(name)
-                client = self.getClient(container.labels['name'])
-                name += '.'
-                self.getAllPathRecursive(client,name,list_path)
-                name = old_name
-                 
-    #Ritorna il path di container fino alla macchina passata come parametro
-    def getPathContainer(self,client,machine,list_client):
+    # Crea la lista di tutti i path del multilab
+    def getAllPathRecursive(self,client,list_path):
         list_container = client.containers.list()
         if len(list_container) == 0:
             return []
         else:
             for container in list_container:
-                if len(machine) == 0: return []
-                if machine[0] == container.labels['name']:
-                    client = self.getClient(container.labels['name'])
-                    list_client.append(container)
-                    machine.pop(0)
-                    self.getPathContainer(client,machine,list_client)
-                    
-    #Ritorna il path di client fino alla macchina passata come parametro
-    def getPathClient(self,client,machine,list_client):
-        list_container = client.containers.list()
-        if len(list_container) == 0:
-            return []
-        else:
-            for container in list_container:
-                if len(machine) == 0: return []
-                if machine[0] == container.labels['name']:
-                    client = self.getClient(container.labels['name'])
-                    list_client.append(client)
-                    machine.pop(0)
-                    self.getPathClient(client,machine,list_client)
+                path = container.exec_run('hostname')[1].strip().decode('utf-8')[:-1]
+                list_path.append(path)
+                client = self.getClient(path)
+                self.getAllPathRecursive(client, list_path)
 
-    #Ritorna il client che ha come figlio il container passato come parametro
-    #getParentClient(du.mi.com) ritorna il client di milano 
+    # Ritorna il client che ha come figlio il container passato come parametro
+    # getParentClient(du.mi.com) ritorna il client di milano
     def getParentClient(self, machine):
-        list_client= []
-        list_client.append(self.client)
         machine_split = machine.split('.')
-        self.getPathClient(self.client,list(reversed(machine_split)),list_client)
-        for client in list_client:
-            list_container = client.containers.list()
-            for container in list_container:
-                if machine_split[0] == container.labels['name']:
-                    return client
-        raise Exception("getParenteClient: Error getting the machine `%s` inside the lab." % machine)
-    
-    #Ritorna la lista dei parent client dei container (nome della macchina) passati come parametro
-    def getListClient(self, list_machines):
-        list_client = []
-        for machine in list_machines:
-            client = self.getParentClient(machine)
-            list_client.append(client)
-        return list_client
+        machine_parent = machine_split[1:]
+        machine_parent = '.'.join(machine_parent)
+        try:
+            client = self.getClient(machine_parent)
+            return client
+        except Exception as e:
+            return self.client
 
-    #Ritorna true se il path (lista di nomi splittati sul punto -> ["com","milano"]) è corretto, false altrimenti
-    def checkPath(self,machine_name,client):
+    # Ritorna true se il path è corretto, false altrimenti
+    def checkPath(self, machine_name):
+        if self.getHostname() != "":
+            machine_name += '.' + self.getHostname()
+            machine_name = machine_name[:-1]
+        client = self.getParentClient(machine_name)
         list_container = client.containers.list()
-        if len(machine_name) == 0:
-            return True
         for container in list_container:
-            if container.labels['name'] == machine_name[0]:
-                client = self.getClient(container.labels['name'])
-                machine_name.pop(0)
-                return True and self.checkPath(machine_name,client)
+            if machine_name == container.exec_run('hostname')[1].decode('utf-8').strip()[:-1]:
+                return True
         return False
 
-    #Elimina tutti i volumi passati come parametro:
-    def delListVolume(self,list_volume):
+    # Elimina tutti i volumi passati come parametro:
+    def delListVolume(self, list_volume):
         for volume in list_volume:
             self.client.volumes.get(volume).remove()
-    
-    #Prende tutti i volumi dei container passati come parametro
-    def getListVolume(self,list_container):
+
+    # Prende tutti i volumi dei container passati come parametro
+    def getListVolume(self, list_container):
         list_volume = []
         for container in list_container:
             volume = self.getVolumeById(container.id)
             list_volume.append(volume)
         return list_volume
 
-    #Prende il volume di un container (potrebbe essere una lista?)
-    def getVolumeById(self,containerID):
+    # Prende il volume di un container (potrebbe essere una lista?)
+    def getVolumeById(self, containerID):
         list_dict = self.client.api.inspect_container(containerID)['Mounts']
         for dictonary in list_dict:
             if dictonary['Type'] == 'volume':
                 return dictonary['Name']
 
-    #Prende il volume di un container (potrebbe essere una lista?)
-    def getVolumeByName(self,containerName):
+    # Prende il volume di un container (potrebbe essere una lista?)
+    def getVolumeByName(self, containerName):
         list_dict = self.client.api.inspect_container(containerName)['Mounts']
         for dictonary in list_dict:
             if dictonary['Type'] == 'volume':
                 return dictonary['Name']
 
-    #Ritorna un dizionario con i path corretti e path non corretti
-    def checkListPath(self,list_path):
-        dict_path={'Correct':[],'Invalid':[]}
+    # Ritorna un dizionario con i path corretti e path non corretti
+    def checkListPath(self, list_path):
+        dict_path = {'Correct': [], 'Invalid': []}
         client = self.client
         for path in list_path:
-            if self.checkPath(list(reversed(path.split('.'))),client):
+            if self.checkPath(list(reversed(path.split('.'))), client):
                 dict_path['Correct'].append(path)
             else:
                 dict_path['Invalid'].append(path)
         return dict_path
 
-    #Data una lista di path, crea una lista dei container-genitore corrispondenti
-    def getListContainerPath(self,list_path):
-        list_container = []
-        for path in list_path:
-            container_client_parent = self.getParentClient(path)
-            list_son_client = container_client_parent.containers.list()
-            for son in list_son_client:
-                if son.labels['name'] == path.split('.')[0]:
-                    list_container.append(son)
-        return list_container
-
-    #Dato il nome di una machina (firenze.it) ritorna l'id di quella macchina
-    def getIdMachine(self,machine):
+    # Dato il nome di una machina (firenze.it) ritorna l'id di quella macchina
+    def getIdMachine(self, machine):
         name_machine = machine.split('.')[0]
         list_container = self.client.containers.list()
         for container in list_container:
             if name_machine == container.labels['name']:
                 return container.id
 
-    #Dato il nome di una macchina (firenze.it) ritorna il container corrispondente
-    def getContainerByName(self,client,machine):
+    # Dato il nome di una macchina (firenze.it) ritorna il container corrispondente
+    def getContainerByName(self,machine):
+        client = self.getParentClient(machine)
         list_container = client.containers.list()
-        if len(list_container) == 0:
-            return None
         for container in list_container:
-            if container.labels['name'] == machine[0]:
-                if len(machine) == 1:
-                    return container
-                else:
-                    client = self.getClient(container.labels['name'])
-                    machine.pop(0)
-                    final_container = self.getContainerByName(client,machine)
-                    if final_container:
-                        return final_container
+            if machine == container.exec_run('hostname')[1].strip().decode('utf-8')[:-1]:
+                return container
+        raise Exception("getContainerByName, container non trovato")
 
-    #Restituisce il grado di una macchina, dove per grado si intende il numero di macchine che compongono
-    #il path --> duomo.milano.com ha grado 3, com ha grado 1
-    @staticmethod   
+    # Restituisce il grado di una macchina, dove per grado si intende il numero di macchine che compongono
+    # il path --> duomo.milano.com ha grado 3, com ha grado 1
+    @staticmethod
     def getDegree(machine):
         return len(machine.split('.'))
 
-    #Restituisce True se due macchine fanno parte dello stesso path --> duomo.milano.com e milano.com si.
-    #False altrimenti --> firenze.it e roma.com no
-    def samePath(self,machine1,machine2):
+    # Restituisce True se due macchine fanno parte dello stesso path --> duomo.milano.com e milano.com si.
+    # False altrimenti --> firenze.it e roma.com no
+    def samePath(self, machine1, machine2):
         degree1 = self.getDegree(machine1)
         degree2 = self.getDegree(machine2)
         def_degree = degree1 - degree2
@@ -561,37 +500,25 @@ class DockerManager(IManager):
             return True
         return False
 
-    #Effettua l'eliminazione di una macchina se nella lista c'è una macchina con grado minore e stesso path
-    def filterMachinePath(self,first_machine,list_machine,copy_list):
+    # Effettua l'eliminazione di una macchina se nella lista c'è una macchina con grado minore e stesso path
+    def filterMachinePath(self, first_machine, list_machine, copy_list):
         for machine in copy_list:
-            if self.samePath(first_machine,machine):
+            if self.samePath(first_machine, machine):
                 if self.getDegree(first_machine) > self.getDegree(machine):
                     list_machine.remove(first_machine)
                     break
         return list_machine
-    
-    #Data una lista di macchine da eliminare, toglie dalla lista quelle macchine che vengono già eliminate
-    #dalla cancellazione di un loro antenato. (firenze.it,milano.com,duomo.milano.com,com) --> (firenze.it,com)
-    def getFilterMachinePath(self,list_machine):
+
+    # Data una lista di macchine da eliminare, toglie dalla lista quelle macchine che vengono già eliminate
+    # dalla cancellazione di un loro antenato. (firenze.it,milano.com,duomo.milano.com,com) --> (firenze.it,com)
+    def getFilterMachinePath(self, list_machine):
         copy_list = []
         copy_list.extend(list_machine)
         for machine in copy_list:
-            self.filterMachinePath(machine,list_machine,copy_list)
+            self.filterMachinePath(machine, list_machine, copy_list)
         return list_machine
 
-    #Data una lista di macchine(duomo.milano.com,firenze.it,com) ritorna una mappa con chiave la macchina 
-    #e valore il container corrispondente
-    def getDictMachineContainer(self):
-        dict_machine_container = {}
-        list_path = self.getAllPath()
-        for path in list_path:
-            list_split_path = path.split('.')
-            list_split_path = list(reversed(list_split_path))
-            path = ('.'.join(list_split_path))
-            dict_machine_container[self.reverseOfPath(path)] = self.getContainerByName(self.client,list_split_path)
-        return dict_machine_container
-
-    #Inverte un path (com.milano.duomo -> duomo.milano.com)
+    # Inverte un path (com.milano.duomo -> duomo.milano.com)
     @staticmethod
     def reverseOfPath(path):
         list_split_path = path.split('.')
@@ -599,41 +526,19 @@ class DockerManager(IManager):
         path = ('.'.join(list_split_path))
         return path
 
-    #Data una lista di macchine(duomo.milano.com,firenze.it,com) ritorna una mappa con chiave la macchina
-    #e valore il client corrispondente
-    def getDictMachineClient(self):
-        dict_machine_client = {}
-        list_path = self.getAllPath()
-        for path in list_path:
-            path_split = path.split('.')
-            client = self.getClient(path_split[0])
-            dict_machine_client[path] = client
-        return dict_machine_client
-
-    #Data una lista di macchine(duomo.milano.com,firenze.it,com) ritorna una mappa con chiave la macchina
-    #e valore il path(inteso come /proc/pid/root) corrispondente
-    def getDictMachineFolder(self):
-        dict_machine_folder = {}
-        list_path = self.getAllPath()
-        dict_machine_folder[""] = ""
-        for path in list_path:
-            path_container = self.getFolderMachine(path.split('.')[0])
-            dict_machine_folder[path] = path_container
-        return dict_machine_folder
-
-    #Ritorna l'hostname della macchina
+    # Ritorna l'hostname della macchina
     def getHostname(self):
-        f = open( "/etc/hostname", 'r' )
+        f = open("/etc/hostname", 'r')
         hostname = f.read()
         hostname_split = hostname.split('.')
         if len(hostname_split) == 1:
             return ""
         hostname = ('.'.join(hostname_split))
         strange = hostname[-1]
-        hostname = hostname.replace(strange,"")
+        hostname = hostname.replace(strange, "")
         return hostname
 
-    #Data una network A.milano.com ritorna la macchina corrispondente milano.com
+    # Data una network A.milano.com ritorna la macchina corrispondente milano.com
     @staticmethod
     def getMachineByNetwork(network):
         network_split = network.split('.')
@@ -641,69 +546,68 @@ class DockerManager(IManager):
         machine = ('.'.join(network_split))
         return machine
 
-    #Data una macchina, ritorna la lista di macchine che compongono il path della macchina in input
-    #duomo.milano.com -> [duomo.milano.com,milano.com,com]
-    def getListPath(self,machine):
+    # Data una macchina, ritorna la lista di macchine che compongono il path della macchina in input
+    # duomo.milano.com -> [duomo.milano.com,milano.com,com]
+    def getListPath(self, machine):
         list_path = []
         if machine == "":
             return list_path
         path = ""
         for c in machine:
-            path+=c
+            path += c
             if c == '.':
                 list_path.append(self.reverseOfPath(path[:-1]))
         list_path.append(self.reverseOfPath(path))
         return list_path
 
-    #Crea un collegamento tra due domini di collisione
-    def connect_domain(self,network1,network2):
-        dict_machine_container = self.getDictMachineContainer()
-        dict_machine_folder = self.getDictMachineFolder()
+    # Crea un collegamento tra due domini di collisione
+    def connect_domain(self, network1, network2):
         machine1 = self.getMachineByNetwork(network1)
         machine2 = self.getMachineByNetwork(network2)
         machine1 = [item for item in machine1.split('.') if item not in utils.getHostname().split('.')]
         machine2 = [item for item in machine2.split('.') if item not in utils.getHostname().split('.')]
-        if (self.checkPath(list(reversed(machine1)),self.client) or machine1 == []) and \
-        (self.checkPath(list(reversed(machine2)),self.client) or machine2 == []):
+        machine1 = ('.'.join(machine1))
+        machine2 = ('.'.join(machine2))
+        if (self.checkPath(machine1) or machine1 == []) and \
+                (self.checkPath(machine2) or machine2 == []):
             networking = Networking()
             name_veth1 = networking.random_veth_name()
             name_veth2 = networking.random_veth_name()
-            machine1 = ('.'.join(machine1))
-            machine2 = ('.'.join(machine2))
-            networking.create_veth(name_veth1,name_veth2)
+            networking.create_veth(name_veth1, name_veth2)
             if machine1 == "" and machine2 == "":
-                networking.up_network(name_veth1,self.getBridgeClient(network1))
-                networking.up_network(name_veth2,self.getBridgeClient(network2))
+                networking.up_network(name_veth1, self.getBridgeClient(network1))
+                networking.up_network(name_veth2, self.getBridgeClient(network2))
             else:
                 if machine1 == "":
-                    self.move_veth(machine2,name_veth2,dict_machine_container,dict_machine_folder) 
-                    networking.up_network(name_veth1,self.getBridgeClient(network1))
-                    self.up_veth(name_veth2,dict_machine_container[machine2],network2)
+                    container2 = self.getContainerByName(machine2)
+                    self.move_veth(machine2, name_veth2, container2)
+                    networking.up_network(name_veth1, self.getBridgeClient(network1))
+                    self.up_veth(name_veth2, container2, network2)
                 if machine2 == "":
-                    self.move_veth(machine1,name_veth1,dict_machine_container,dict_machine_folder)
-                    networking.up_network(name_veth2,self.getBridgeClient(network2))
-                    self.up_veth(name_veth1,dict_machine_container[machine1],network1)
+                    container1 = self.getContainerByName(machine1)
+                    self.move_veth(machine1, name_veth1, container1)
+                    networking.up_network(name_veth2, self.getBridgeClient(network2))
+                    self.up_veth(name_veth1, container1, network1)
                 if machine1 != "" and machine2 != "":
-                    self.move_veth(machine1,name_veth1,dict_machine_container,dict_machine_folder)
-                    self.move_veth(machine2,name_veth2,dict_machine_container,dict_machine_folder)
-                    self.up_veth(name_veth1,dict_machine_container[machine1],network1)
-                    self.up_veth(name_veth2,dict_machine_container[machine2],network2)
+                    container1 = self.getContainerByName(machine1)
+                    container2 = self.getContainerByName(machine2)
+                    self.move_veth(machine1, name_veth1, container1)
+                    self.move_veth(machine2, name_veth2, container2)
+                    self.up_veth(name_veth1, container1, network1)
+                    self.up_veth(name_veth2, container2, network2)
         else:
             raise Exception("Invalid path")
-    
-    #Ritorna il bridge del dominio passato
-    def getBridgeClient(self,network):
-        dict_client_machine = self.getDictMachineClient()
-        machine=('.'.join(network.split('.')[1:-1]))
+
+    # Ritorna il bridge del dominio passato
+    def getBridgeClient(self, network):
+        machine = ('.'.join(network.split('.')[1:-1]))
         if self.getHostname()[:-1] == machine:
             client = self.client
         else:
-            machine = [item for item in machine.split('.') if item not in utils.getHostname().split('.')]
-            machine = ('.'.join(machine))
-            client = dict_client_machine[machine]
+            client = self.getClient(machine)
         complete_network = self.docker_link.get_network_name(network)
         if len(machine.split('.')) > 0 and machine != "":
-            complete_network = complete_network.replace(utils.get_current_user_name(),"root")
+            complete_network = complete_network.replace(utils.get_current_user_name(), "root")
         list_network = client.networks.list()
         id_network = ""
         for net in list_network:
@@ -713,7 +617,7 @@ class DockerManager(IManager):
         if bridge:
             return bridge
         else:
-            raise Exception("Il dominio %s non esiste",network)
+            raise Exception("Il dominio %s non esiste", network)
 
     @staticmethod
     def getParentMachine(machine):
@@ -722,30 +626,30 @@ class DockerManager(IManager):
             return ""
         machine = ('.'.join(machine_split[1:]))
         return machine
-    
-    #Sposta la veth fino alla macchina passata come parametro
-    def move_veth(self,machine1,name_veth1,dict_machine_container,dict_machine_folder):
+
+    # Sposta la veth fino alla macchina passata come parametro
+    def move_veth(self, machine1, name_veth1, container):
         networking = Networking()
         list_path1 = self.getListPath(self.reverseOfPath(machine1))
-        container = dict_machine_container[list_path1[0]]
         pid = docker.APIClient().inspect_container(container.name)["State"]["Pid"]
-        networking.move_veth(name_veth1,pid)
+        networking.move_veth(name_veth1, pid)
         list_path1.pop(0)
         if len(list_path1) > 0:
             for path1 in list_path1:
-                folder_container_parent = dict_machine_folder[self.getParentMachine(path1)]
-                container = dict_machine_container[path1]
-                pid1 = docker.APIClient(base_url="unix://"+ folder_container_parent + "run/docker.sock").inspect_container(container.name)["State"]["Pid"]
-                parent_container = dict_machine_container[self.getParentMachine(path1)]
-                parent_container.exec_run(['python3','/shared/move_veth.py',name_veth1,str(pid1)])
-        
-    #Uppa la veth delle 2 macchine passate come parametro
-    def up_veth(self,name_veth1,container1,network1):
-        bridge1 = self.getBridgeClient(network1)
-        container1.exec_run(['python3','/shared/up_network.py',name_veth1,bridge1])
+                folder_container_parent = self.getFolderMachine(self.getParentMachine(path1))
+                container = self.getContainerByName(path1)
+                pid1 = docker.APIClient(base_url="unix://" + folder_container_parent + \
+                                                 "run/docker.sock").inspect_container(container.name)["State"]["Pid"]
+                parent_container = self.getContainerByName(self.getParentMachine(path1))
+                parent_container.exec_run(['python3', '/shared/move_veth.py', name_veth1, str(pid1)])
 
-    #Runna il multilab
-    def runNestedLab(self,lab):
+    # Uppa la veth delle 2 macchine passate come parametro
+    def up_veth(self, name_veth1, container1, network1):
+        bridge1 = self.getBridgeClient(network1)
+        container1.exec_run(['python3', '/shared/up_network.py', name_veth1, bridge1])
+
+    # Runna il multilab
+    def runNestedLab(self, lab):
         time.sleep(2)
         list_container = self.client.containers.list()
         networking = Networking()
@@ -753,14 +657,15 @@ class DockerManager(IManager):
         if len(self.getHostname().split('.')) > 1:
             for container in list_container:
                 pid = docker.APIClient().inspect_container(container.name)["State"]["Pid"]
-                bash('ln -s /proc/'+str(pid)+'/ns/net /var/run/netns/'+str(pid))
-                if os.path.isdir('/sublab/'+container.labels['name']+'/sublab'):
+                bash('ln -s /proc/' + str(pid) + '/ns/net /var/run/netns/' + str(pid))
+                if os.path.isdir('/sublab/' + container.labels['name'] + '/sublab'):
                     bash("cp -a /shared /sublab")
-                    client = self.getClient(container.labels['name'])
+                    container_connect = container.exec_run('hostname')[1].strip().decode('utf-8')
+                    client = self.getClient(container_connect[:-1])
                     with open(path_image, 'rb') as f:
                         client.images.load(f)
-                    container.exec_run(['python3','/shared/src/kathara.py','lstart','-d','/sublab','--privileged'])
-                    
+                    container.exec_run(['python3', '/shared/src/kathara.py', 'lstart', '-d', '/sublab', '--privileged'])
+
         else:
             networking.create_namespace(self.client.containers.list())
             for container in list_container:
@@ -770,10 +675,10 @@ class DockerManager(IManager):
                     client = self.getClient(container.labels['name'])
                     with open(path_image, 'rb') as f:
                         client.images.load(f)
-                    container.exec_run(['python3','/shared/src/kathara.py','lstart','-d','/sublab','--privileged'])
-                    
-    #ritorna il path dell'immagine docker
-    def getPathImage(self,lab):
+                    container.exec_run(['python3', '/shared/src/kathara.py', 'lstart', '-d', '/sublab', '--privileged'])
+
+    # ritorna il path dell'immagine docker
+    def getPathImage(self, lab):
         len_split = len(self.getHostname().split('.'))
         if len_split == 1:
             return lab.path + '/image/dind-kathara.tar'
@@ -782,16 +687,16 @@ class DockerManager(IManager):
         else:
             return "/hosthome/dind-kathara.tar"
 
-    #Data una lista di container, ritorna una lista dei nomi delle macchine
+    # Data una lista di container, ritorna una lista dei nomi delle macchine
     @staticmethod
     def getNameContainerByList(list_container):
         list_name = []
         for container in list_container:
             list_name.append(container.labels['name'])
         return list_name
-    
-    #Metodo che crea i collegamenti tra domini espressi in lab.int
-    def createDomain(self,lab):
+
+    # Metodo che crea i collegamenti tra domini espressi in lab.int
+    def createDomain(self, lab):
         import mmap
         import re
         path = lab.path
@@ -802,30 +707,18 @@ class DockerManager(IManager):
                 lab_mem_file = mmap.mmap(lab_file.fileno(), 0, access=mmap.ACCESS_READ)
             line_number = 1
             line = lab_mem_file.readline().decode('utf-8')
-            
+
             while line:
                 matches = re.search(r"^(?P<key>\"(\w+.)+\")=(?P<value>\"(\w+.)+\")$",
                                     line.strip()
                                     )
                 if matches:
-                    #Deve essere locale alla macchina che legge il lab.int
+                    # Deve essere locale alla macchina che legge il lab.int
                     key = matches.group("key").replace('"', '').replace("'", '')
-                    #Dominio diverso da quello della macchina che legge il lab.int
+                    # Dominio diverso da quello della macchina che legge il lab.int
                     value = matches.group("value").replace('"', '').replace("'", '')
-                    self.connect_domain(key,value)
-                
+                    self.connect_domain(key, value)
+
                 line_number += 1
                 line = lab_mem_file.readline().decode('utf-8')
-        
-    #Ritorna il livello massimo nel multilab
-    def getLevelMultilab(self,client):
-        level = 0
-        list_container = client.containers.list()
-        if len(list_container) == 0:
-            return 0
-        for container in list_container:
-            client = self.getClient(container.labels['name'])
-            cur_level = self.getLevelMultilab(client)
-            if cur_level > level:
-                level = cur_level
-        return level+1
+
