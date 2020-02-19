@@ -568,8 +568,7 @@ class DockerManager(IManager):
         machine2 = [item for item in machine2.split('.') if item not in utils.getHostname().split('.')]
         machine1 = ('.'.join(machine1))
         machine2 = ('.'.join(machine2))
-        if (self.checkPath(machine1) or machine1 == []) and \
-                (self.checkPath(machine2) or machine2 == []):
+        if (self.checkPath(machine1) or machine1 == "") and (self.checkPath(machine2) or machine2 == ""):
             networking = Networking()
             name_veth1 = networking.random_veth_name()
             name_veth2 = networking.random_veth_name()
