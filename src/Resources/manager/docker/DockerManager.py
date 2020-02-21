@@ -681,10 +681,8 @@ class DockerManager(IManager):
         len_split = len(self.getHostname().split('.'))
         if len_split == 1:
             return lab.path + '/image/dind-kathara.tar'
-        if len_split == 2:
-            return "/root/dind-kathara.tar"
         else:
-            return "/hosthome/dind-kathara.tar"
+            return "/root/dind-kathara.tar"
 
     # Data una lista di container, ritorna una lista dei nomi delle macchine
     @staticmethod

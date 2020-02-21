@@ -170,10 +170,14 @@ class DockerMachine(object):
         if Setting.get_instance().hosthome_mount:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
-        volumes[machine.lab.path+"/image"] = {'bind': '/root', 'mode': 'rw'}
+        my_hostname = self.manager.getHostname()
+        if len(my_hostname.split('.')) == 1:
+            volumes[machine.lab.path+"/image"] = {'bind': '/root', 'mode': 'rw'}
+        else:
+            volumes["/root"] = {'bind': '/root', 'mode': 'rw'}
 
         container_name = self.get_container_name(machine.name, machine.lab.folder_hash)
-        my_hostname = self.manager.getHostname()
+
         try:
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,
