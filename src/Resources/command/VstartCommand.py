@@ -87,8 +87,8 @@ class VstartCommand(Command):
         parser.add_argument(
             '-H', '--no-hosthome',
             dest="no_hosthome",
-            required=False,
-            action='store_false',
+            action="store_const",
+            const=False,
             help='/hosthome dir will not be mounted inside the machine.'
         )
         group.add_argument(
