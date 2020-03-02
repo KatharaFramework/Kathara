@@ -78,15 +78,15 @@ class LrestartCommand(Command):
         parser.add_argument(
             '-H', '--no-hosthome',
             dest="no_hosthome",
-            required=False,
-            action='store_false',
+            action="store_const",
+            const=False,
             help='/hosthome dir will not be mounted inside the machine.'
         )
         parser.add_argument(
             '-S', '--no-shared',
             dest="no_shared",
-            required=False,
-            action='store_false',
+            action="store_const",
+            const=False,
             help='/shared dir will not be mounted inside the machine.'
         )
         group.add_argument(
