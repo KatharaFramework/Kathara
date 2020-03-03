@@ -39,8 +39,9 @@ class ConnectCommand(Command):
             help='The machine has been started with vstart command.',
         )
         parser.add_argument(
-            '--command',
+            '--shell',
             required=False,
+            dest='command',
             help='Command that should be executed inside the machine.'
         )
         parser.add_argument(

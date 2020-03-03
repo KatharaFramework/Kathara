@@ -4,6 +4,7 @@ from kubernetes import config, client
 class KubernetesConfig(object):
     @staticmethod
     def get_cluster_user():
+#        print(config.kube_config.list_kube_config_contexts())
         _, current_context = config.kube_config.list_kube_config_contexts()
         return current_context['name']
 
