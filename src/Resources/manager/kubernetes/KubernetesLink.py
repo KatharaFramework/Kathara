@@ -51,9 +51,8 @@ class KubernetesLink(object):
 
     def create(self, link):
         if '_' in link.name:
-            old_link_name = link.name
-            link.name = link.name.replace('_', '-')
-            logging.warning("Link name `%s` not valid, changed to `%s`..." % (old_link_name, link.name))
+            logging.warning("Link name `%s` not valid for Kubernetes API Server, changed to `%s`." %
+                            (link.name, link.name.replace('_', '-')))
 
         # If a network with the same name exists, return it instead of creating a new one.
         network_objects = self.get_links_by_filters(lab_hash=link.lab.folder_hash, link_name=link.name)
@@ -164,4 +163,5 @@ class KubernetesLink(object):
     @staticmethod
     def get_network_name(name):
         link_name = "%s-%s" % (Setting.get_instance().net_prefix, name[0:5])
+        link_name = link_name.replace('_', '-') if '_' in link_name else link_name
         return re.sub(r'[^0-9a-z\-.]+', '', link_name.lower())

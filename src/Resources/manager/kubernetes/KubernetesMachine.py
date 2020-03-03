@@ -167,7 +167,7 @@ class KubernetesMachine(object):
         machine.meta['sysctls'] = {**sysctl_parameters, **machine.meta['sysctls']}
 
         if '_' in machine.name:
-            logging.warning("Machine name `%s` not valid, changed to `%s` for Kubernetes API Server." %
+            logging.warning("Machine name `%s` not valid for Kubernetes API Server, changed to `%s`." %
                             (machine.name, machine.name.replace('_', '-')))
 
         try:
@@ -241,7 +241,7 @@ class KubernetesMachine(object):
         lifecycle = client.V1Lifecycle(post_start=post_start)
 
         container_definition = client.V1Container(
-            name=machine.name,
+            name=machine.name.replace('_', '-') if '_' in machine.name else machine.name,
             image=machine.get_image(),
             lifecycle=lifecycle,
             stdin=True,
@@ -283,7 +283,7 @@ class KubernetesMachine(object):
             volumes.append(client.V1Volume(
                 name="hostlab",
                 config_map=client.V1ConfigMapVolumeSource(
-                    name="%s-%s-files" % (machine.name, machine.lab.folder_hash)
+                    name=self.kubernetes_config_map.build_name_for_machine(machine.name, machine.lab.folder_hash)
                 )
             ))
 

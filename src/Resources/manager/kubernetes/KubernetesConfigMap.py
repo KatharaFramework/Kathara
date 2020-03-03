@@ -19,9 +19,14 @@ class KubernetesConfigMap(object):
         return self.client.create_namespaced_config_map(body=config_map, namespace=machine.lab.folder_hash)
 
     def delete_for_machine(self, machine_name, machine_namespace):
-        self.client.delete_namespaced_config_map(name=self._build_name_for_machine(machine_name, machine_namespace),
+        self.client.delete_namespaced_config_map(name=self.build_name_for_machine(machine_name, machine_namespace),
                                                  namespace=machine_namespace
                                                  )
+
+    @staticmethod
+    def build_name_for_machine(machine_name, machine_namespace):
+        machine_name = machine_name.replace('_', '-') if '_' in machine_name else machine_name
+        return "%s-%s-files" % (machine_name, machine_namespace)
 
     def _build_for_machine(self, machine):
         tar_data = machine.pack_data()
@@ -30,7 +35,7 @@ class KubernetesConfigMap(object):
         # This will be decoded and extracted in the postStart hook of the pod
         if tar_data:
             data = {"hostlab.b64": base64.b64encode(tar_data).decode('utf-8')}
-            metadata = client.V1ObjectMeta(name=self._build_name_for_machine(machine.name, machine.lab.folder_hash),
+            metadata = client.V1ObjectMeta(name=self.build_name_for_machine(machine.name, machine.lab.folder_hash),
                                            deletion_grace_period_seconds=0
                                            )
 
@@ -43,8 +48,3 @@ class KubernetesConfigMap(object):
             return config_map
 
         return None
-
-    @staticmethod
-    def _build_name_for_machine(machine_name, machine_namespace):
-        machine_name = machine_name.replace('_', '-') if '_' in machine_name else machine_name
-        return "%s-%s-files" % (machine_name, machine_namespace)
