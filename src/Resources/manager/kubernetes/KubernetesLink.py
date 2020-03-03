@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import re
 from functools import partial
 from multiprocessing.dummy import Pool
@@ -49,6 +50,11 @@ class KubernetesLink(object):
         progress_bar.next()
 
     def create(self, link):
+        if '_' in link.name:
+            old_link_name = link.name
+            link.name = link.name.replace('_', '-')
+            logging.warning("Link name `%s` not valid, changed to `%s`..." % (old_link_name, link.name))
+
         # If a network with the same name exists, return it instead of creating a new one.
         network_objects = self.get_links_by_filters(lab_hash=link.lab.folder_hash, link_name=link.name)
         if network_objects:

@@ -139,9 +139,9 @@ class KubernetesMachine(object):
         logging.debug("Creating machine `%s`..." % machine.name)
 
         if '_' in machine.name:
-          old_machine_name = machine.name
-          machine.name = machine.name.replace('_', '-')
-          logging.warning("Machine name `%s` not valid, changed to `%s`..." % (old_machine_name, machine.name))
+            old_machine_name = machine.name
+            machine.name = machine.name.replace('_', '-')
+            logging.warning("Machine name `%s` not valid, changed to `%s`..." % (old_machine_name, machine.name))
 
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options

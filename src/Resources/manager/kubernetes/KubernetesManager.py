@@ -32,7 +32,6 @@ class KubernetesManager(IManager):
         # Kubernetes needs only lowercase letters for resources.
         # We force the folder_hash to be lowercase
         lab.folder_hash = lab.folder_hash.lower()
-        print(lab.folder_hash)
 
         self.k8s_namespace.create(lab)
         try:
