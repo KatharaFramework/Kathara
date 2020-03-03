@@ -25,7 +25,7 @@ class KubernetesManager(IManager):
         KubernetesConfig.get_cluster_user()
 
         self.k8s_namespace = KubernetesNamespace()
-        self.k8s_machine = KubernetesMachine()
+        self.k8s_machine = KubernetesMachine(self.k8s_namespace)
         self.k8s_link = KubernetesLink()
 
     def deploy_lab(self, lab, privileged_mode=False):

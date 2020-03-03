@@ -27,7 +27,10 @@ class KubernetesNamespace(object):
             return
 
     def wipe(self):
-        namespaces = self.client.list_namespace(label_selector="app=kathara")
+        namespaces = self.get_all()
 
-        for namespace in namespaces.items:
+        for namespace in namespaces:
             self.client.delete_namespace(namespace.metadata.name)
+
+    def get_all(self):
+        return self.client.list_namespace(label_selector="app=kathara").items

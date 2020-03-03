@@ -97,13 +97,15 @@ SHUTDOWN_COMMANDS = [
 
 
 class KubernetesMachine(object):
-    __slots__ = ['client', 'core_client', 'kubernetes_config_map']
+    __slots__ = ['client', 'core_client', 'kubernetes_config_map', 'kubernetes_namespace']
 
-    def __init__(self):
+    def __init__(self, kubernetes_namespace):
         self.client = apps_v1_api.AppsV1Api()
         self.core_client = core_v1_api.CoreV1Api()
 
         self.kubernetes_config_map = KubernetesConfigMap()
+
+        self.kubernetes_namespace = kubernetes_namespace
 
     def deploy_machines(self, lab, privileged_mode=False):
         machines = lab.machines.items()
@@ -490,9 +492,18 @@ class KubernetesMachine(object):
         if machine_name:
             filters.append("name=%s" % machine_name)
 
-        return self.core_client.list_namespaced_pod(namespace=lab_hash if lab_hash else "default",
-                                                    label_selector=",".join(filters)
-                                                    ).items
+        # Get all Kathara namespaces if lab_hash is None
+        namespaces = list(map(lambda x: x.metadata.name, self.kubernetes_namespace.get_all())) \
+                     if not lab_hash else [lab_hash]
+
+        machines = []
+        for namespace in namespaces:
+            machines.extend(self.core_client.list_namespaced_pod(namespace=namespace,
+                                                                 label_selector=",".join(filters)
+                                                                 ).items
+                            )
+
+        return machines
 
     def get_machine(self, lab_hash, machine_name):
         pods = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
