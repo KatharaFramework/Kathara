@@ -140,11 +140,6 @@ class KubernetesMachine(object):
     def create(self, machine, privileged=False):
         logging.debug("Creating machine `%s`..." % machine.name)
 
-        if '_' in machine.name:
-            old_machine_name = machine.name
-            machine.name = machine.name.replace('_', '-')
-            logging.warning("Machine name `%s` not valid, changed to `%s`..." % (old_machine_name, machine.name))
-
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options
 
@@ -170,6 +165,10 @@ class KubernetesMachine(object):
 
         # Merge machine sysctls
         machine.meta['sysctls'] = {**sysctl_parameters, **machine.meta['sysctls']}
+
+        if '_' in machine.name:
+            logging.warning("Machine name `%s` not valid, changed to `%s` for Kubernetes API Server." %
+                            (machine.name, machine.name.replace('_', '-')))
 
         try:
             config_map = self.kubernetes_config_map.deploy_for_machine(machine)
@@ -518,4 +517,5 @@ class KubernetesMachine(object):
     @staticmethod
     def get_full_name(name):
         machine_name = "%s-%s" % (Setting.get_instance().device_prefix, name)
+        machine_name = machine_name.replace('_', '-') if '_' in machine_name else machine_name
         return re.sub(r'[^0-9a-z\-.]+', '', machine_name.lower())

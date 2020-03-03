@@ -46,4 +46,5 @@ class KubernetesConfigMap(object):
 
     @staticmethod
     def _build_name_for_machine(machine_name, machine_namespace):
+        machine_name = machine_name.replace('_', '-') if '_' in machine_name else machine_name
         return "%s-%s-files" % (machine_name, machine_namespace)
