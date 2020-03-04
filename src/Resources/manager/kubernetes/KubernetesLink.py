@@ -144,10 +144,11 @@ class KubernetesLink(object):
             "spec": {
                 "config": """{
                             "cniVersion": "0.3.0",
+                            "name": "%s",
                             "type": "megalos",
                             "suffix": "%s",
                             "vlanId": %d
-                        }""" % (link.lab.folder_hash[0:6], network_id)
+                        }""" % (link.name.lower(), link.lab.folder_hash[0:6], network_id)
             }
         }
 

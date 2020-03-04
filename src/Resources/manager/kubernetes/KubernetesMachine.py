@@ -45,7 +45,7 @@ STARTUP_COMMANDS = [
 
     # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
     # If not, clear the content of the file.
-    # This should be patched with "cat" because file is already in use by Docker internal DNS.
+    # This should be patched with "cat" because file is already in use by Kubernetes internal DNS.
     "if [ -f \"/hostlab/{machine_name}/etc/resolv.conf\" ]; then " \
     "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else " \
     "echo \"\" > /etc/resolv.conf; fi",
@@ -120,6 +120,9 @@ class KubernetesMachine(object):
 
             items = utils.chunk_list(machines, pool_size)
 
+            if any(['_' in machine for machine, _ in machines]):
+                logging.warning("`_` character in machine names not valid for Kubernetes. It is replaced with `-`.")
+
             for chunk in items:
                 machines_pool.map(func=partial(self._deploy_machine, progress_bar, privileged_mode),
                                   iterable=chunk
@@ -166,10 +169,6 @@ class KubernetesMachine(object):
         # Merge machine sysctls
         machine.meta['sysctls'] = {**sysctl_parameters, **machine.meta['sysctls']}
 
-        if '_' in machine.name:
-            logging.warning("Machine name `%s` not valid for Kubernetes API Server, changed to `%s`." %
-                            (machine.name, machine.name.replace('_', '-')))
-
         try:
             config_map = self.kubernetes_config_map.deploy_for_machine(machine)
             machine_definition = self._build_definition(machine, config_map)
@@ -189,12 +188,11 @@ class KubernetesMachine(object):
             # Define volume mounts for hostlab if a ConfigMap is defined.
             volume_mounts.append(client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara"))
 
-        if Setting.get_instance().hosthome_mount:
-            volume_mounts.append(client.V1VolumeMount(name="hosthome", mount_path="/hosthome"))
-
         if Setting.get_instance().shared_mount:
             volume_mounts.append(client.V1VolumeMount(name="shared", mount_path="/shared"))
 
+        # Machine must be executed in privileged mode to run sysctls,
+        # and k8s python API does not support sysctls in Pod definition.
         security_context = client.V1SecurityContext(privileged=True)
 
         port_info = machine.get_ports()
@@ -287,17 +285,14 @@ class KubernetesMachine(object):
                 )
             ))
 
-        # Hosthome and Shared both mount the /home folder in k8s
-        if Setting.get_instance().hosthome_mount:
-            volumes.append(client.V1Volume(
-                name="hosthome",
-                host_path=client.V1HostPathVolumeSource(path='/home')
-            ))
-
+        # /shared mounts in /home/shared folder on k8s
         if Setting.get_instance().shared_mount:
             volumes.append(client.V1Volume(
                 name="shared",
-                host_path=client.V1HostPathVolumeSource(path='/home')
+                host_path=client.V1HostPathVolumeSource(
+                    path='/home/shared',
+                    type='DirectoryOrCreate'
+                )
             ))
 
         pod_spec = client.V1PodSpec(containers=[container_definition],
@@ -330,7 +325,7 @@ class KubernetesMachine(object):
                                                   template=pod_template,
                                                   selector=selector_rules
                                                   )
-        deployment_metadata = client.V1ObjectMeta(name=self.get_full_name(machine.name), labels=pod_labels)
+        deployment_metadata = client.V1ObjectMeta(name=self.get_deployment_name(machine.name), labels=pod_labels)
 
         return client.V1Deployment(api_version="apps/v1",
                                    kind="Deployment",
@@ -392,7 +387,7 @@ class KubernetesMachine(object):
         try:
             self.kubernetes_config_map.delete_for_machine(machine_name, machine_namespace)
 
-            self.client.delete_namespaced_deployment(name=self.get_full_name(machine_name),
+            self.client.delete_namespaced_deployment(name=self.get_deployment_name(machine_name),
                                                      namespace=machine_namespace
                                                      )
         except ApiException:
@@ -515,7 +510,7 @@ class KubernetesMachine(object):
             return pods[0]
 
     @staticmethod
-    def get_full_name(name):
+    def get_deployment_name(name):
         machine_name = "%s-%s" % (Setting.get_instance().device_prefix, name)
         machine_name = machine_name.replace('_', '-') if '_' in machine_name else machine_name
         return re.sub(r'[^0-9a-z\-.]+', '', machine_name.lower())
