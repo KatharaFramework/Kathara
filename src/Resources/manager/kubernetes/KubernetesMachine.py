@@ -101,7 +101,7 @@ def generate_mac_address(machine_name, machine_interface_name):
     # Generate the interface MAC Address by concatenating the machine name and the network name
     mac_address_id = machine_name + "-" + machine_interface_name
     # Generate an hash from the previous string and truncate it to 6 bytes (48 bits = MAC Length)
-    mac_address_hash = hashlib.md5(mac_address_id).digest()[:6]
+    mac_address_hash = hashlib.md5(mac_address_id.encode('utf-8')).digest()[:6]
 
     # Convert the byte array into an hex encoded string separated by `:`
     # This will be the MAC Address of the interface
