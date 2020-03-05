@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 import re
@@ -94,6 +95,25 @@ SHUTDOWN_COMMANDS = [
     # Give execute permissions to the file and execute it
     "chmod u+x /hostlab/shared.shutdown; /hostlab/shared.shutdown; fi"
 ]
+
+
+def generate_mac_address(machine_name, machine_interface_name):
+    # Generate the interface MAC Address by concatenating the machine name and the network name
+    mac_address_id = machine_name + "-" + machine_interface_name
+    # Generate an hash from the previous string and truncate it to 6 bytes (48 bits = MAC Length)
+    mac_address_hash = hashlib.md5(mac_address_id).digest()[:6]
+
+    # Convert the byte array into an hex encoded string separated by `:`
+    # This will be the MAC Address of the interface
+    try:                    # Python 2
+        mac_address_list = [x.encode("hex") for x in mac_address_hash]
+    except AttributeError:   # Python 3
+        mac_address_list = ["%02x" % x for x in mac_address_hash]
+    # Steps to obtain a locally administered unicast MAC
+    # See http://www.noah.org/wiki/MAC_address
+    mac_address_list[0] = "%02x" % ((int(mac_address_list[0], 16) | 0x02) & 0xfe)
+
+    return ':'.join(mac_address_list)
 
 
 class KubernetesMachine(object):
@@ -254,10 +274,16 @@ class KubernetesMachine(object):
         pod_annotations = {}
         network_interfaces = []
         for (idx, machine_link) in machine.interfaces.items():
+            # Generate name for the interface
+            machine_interface_name = "net%d" % idx
+            # Generate the MAC Address for current interface
+            mac_address = generate_mac_address(machine.name, machine_interface_name)
+
             network_interfaces.append({
                 "name": machine_link.api_object["metadata"]["name"],
                 "namespace": machine.lab.folder_hash,
-                "interface": "net%d" % idx
+                "interface": machine_interface_name,
+                "mac": mac_address
             })
         pod_annotations["k8s.v1.cni.cncf.io/networks"] = json.dumps(network_interfaces)
 

@@ -147,7 +147,7 @@ class KubernetesLink(object):
                             "name": "%s",
                             "type": "megalos",
                             "suffix": "%s",
-                            "vlanId": %d
+                            "vxlanId": %d
                         }""" % (link.name.lower(), link.lab.folder_hash[0:6], network_id)
             }
         }
