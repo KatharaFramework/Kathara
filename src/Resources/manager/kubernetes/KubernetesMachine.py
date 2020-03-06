@@ -126,6 +126,7 @@ class KubernetesMachine(object):
 
     def deploy_machines(self, lab, privileged_mode=False):
         machines = lab.machines.items()
+
         progress_bar = Bar('Deploying machines...', max=len(machines))
 
         # Deploy all lab machines.
@@ -136,9 +137,6 @@ class KubernetesMachine(object):
             machines_pool = Pool(pool_size)
 
             items = utils.chunk_list(machines, pool_size)
-
-            if any(['_' in machine for machine, _ in machines]):
-                logging.warning("`_` character in machine names not valid for Kubernetes. It is replaced with `-`.")
 
             for chunk in items:
                 machines_pool.map(func=partial(self._deploy_machine, progress_bar, privileged_mode),
@@ -256,7 +254,7 @@ class KubernetesMachine(object):
         lifecycle = client.V1Lifecycle(post_start=post_start)
 
         container_definition = client.V1Container(
-            name=machine.name.replace('_', '-') if '_' in machine.name else machine.name,
+            name=self.get_deployment_name(machine.name),
             image=machine.get_image(),
             lifecycle=lifecycle,
             stdin=True,
@@ -534,6 +532,11 @@ class KubernetesMachine(object):
 
     @staticmethod
     def get_deployment_name(name):
-        machine_name = "%s-%s" % (Setting.get_instance().device_prefix, name)
-        machine_name = machine_name.replace('_', '-') if '_' in machine_name else machine_name
+        suffix = ''
+        # Underscore is replaced with -, but to keep name uniqueness append 8 chars of hash from the original name
+        if '_' in name:
+            suffix = '-%s' % hashlib.md5(name.encode('utf-8', errors='ignore')).hexdigest()[:8]
+            name = name.replace('_', '-')
+
+        machine_name = "%s-%s%s" % (Setting.get_instance().device_prefix, name, suffix)
         return re.sub(r'[^0-9a-z\-.]+', '', machine_name.lower())

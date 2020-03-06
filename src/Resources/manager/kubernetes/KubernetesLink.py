@@ -163,6 +163,11 @@ class KubernetesLink(object):
 
     @staticmethod
     def get_network_name(name):
-        link_name = "%s-%s" % (Setting.get_instance().net_prefix, name[0:5])
-        link_name = link_name.replace('_', '-') if '_' in link_name else link_name
+        suffix = ''
+        # Underscore is replaced with -, but to keep name uniqueness append 8 chars of hash from the original name
+        if '_' in name:
+            suffix = '-%s' % hashlib.md5(name.encode('utf-8', errors='ignore')).hexdigest()[:8]
+            name = name.replace('_', '-')
+
+        link_name = "%s-%s%s" % (Setting.get_instance().net_prefix, name, suffix)
         return re.sub(r'[^0-9a-z\-.]+', '', link_name.lower())
