@@ -1,0 +1,3 @@
+NOTA:
+Manca la cartella del Docker plugin da inserire. Bisogna prenderla da: /var/lib/docker/plugins/cartella-plugin
+Va modificato il Dockerfile inserendo il nome della cartella del plugin

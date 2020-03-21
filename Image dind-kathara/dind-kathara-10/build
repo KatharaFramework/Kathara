@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec docker load -i /home/dind/dind.tar
