@@ -47,8 +47,8 @@ STARTUP_COMMANDS = [
     # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
     # If not, clear the content of the file.
     # This should be patched with "cat" because file is already in use by Kubernetes internal DNS.
-    "if [ -f \"/hostlab/{machine_name}/etc/resolv.conf\" ]; then " \
-    "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else " \
+    "if [ -f \"/hostlab/{machine_name}/etc/resolv.conf\" ]; then "
+    "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else "
     "echo \"\" > /etc/resolv.conf; fi",
 
     # Give proper permissions to /var/www
@@ -95,22 +95,6 @@ SHUTDOWN_COMMANDS = [
     # Give execute permissions to the file and execute it
     "chmod u+x /hostlab/shared.shutdown; /hostlab/shared.shutdown; fi"
 ]
-
-
-def generate_mac_address(machine_name, machine_interface_name):
-    # Generate the interface MAC Address by concatenating the machine name and the network name
-    mac_address_id = machine_name + "-" + machine_interface_name
-    # Generate an hash from the previous string and truncate it to 6 bytes (48 bits = MAC Length)
-    mac_address_hash = hashlib.md5(mac_address_id.encode('utf-8')).digest()[:6]
-
-    # Convert the byte array into an hex encoded string separated by `:`
-    # This will be the MAC Address of the interface
-    mac_address_list = ["%02x" % x for x in mac_address_hash]
-    # Steps to obtain a locally administered unicast MAC
-    # See http://www.noah.org/wiki/MAC_address
-    mac_address_list[0] = "%02x" % ((int(mac_address_list[0], 16) | 0x02) & 0xfe)
-
-    return ':'.join(mac_address_list)
 
 
 class KubernetesMachine(object):
@@ -186,7 +170,7 @@ class KubernetesMachine(object):
 
         try:
             config_map = self.kubernetes_config_map.deploy_for_machine(machine)
-            machine_definition = self._build_definition(machine, config_map)
+            machine_definition = self._build_definition(machine, config_map, privileged)
 
             machine.api_object = self.client.create_namespaced_deployment(body=machine_definition,
                                                                           namespace=machine.lab.folder_hash
@@ -197,7 +181,7 @@ class KubernetesMachine(object):
             else:
                 raise e
 
-    def _build_definition(self, machine, config_map):
+    def _build_definition(self, machine, config_map, privileged):
         volume_mounts = []
         if config_map:
             # Define volume mounts for hostlab if a ConfigMap is defined.
@@ -206,9 +190,18 @@ class KubernetesMachine(object):
         if Setting.get_instance().shared_mount:
             volume_mounts.append(client.V1VolumeMount(name="shared", mount_path="/shared"))
 
-        # Machine must be executed in privileged mode to run sysctls,
-        # and k8s python API does not support sysctls in Pod definition.
-        security_context = client.V1SecurityContext(privileged=True)
+        # If privileged is not required, assign proper capabilities to the Pod.
+        if privileged:
+            security_context = client.V1SecurityContext(privileged=True)
+        else:
+            security_context = client.V1SecurityContext(capabilities=client.V1Capabilities(add=machine.capabilities))
+
+        # Convert the sysctl map into V1Sysctl objects suitable for k8s.
+        pod_sysctls = []
+        for sysctl_name, sysctl_value in machine.meta['sysctls']:
+            pod_sysctls.append(client.V1Sysctl(name=sysctl_name, value=sysctl_value))
+
+        pod_security_context = client.V1PodSecurityContext(sysctls=pod_sysctls)
 
         port_info = machine.get_ports()
         container_ports = None
@@ -271,14 +264,11 @@ class KubernetesMachine(object):
         for (idx, machine_link) in machine.interfaces.items():
             # Generate name for the interface
             machine_interface_name = "net%d" % idx
-            # Generate the MAC Address for current interface
-            mac_address = generate_mac_address(machine.name, machine_interface_name)
 
             network_interfaces.append({
                 "name": machine_link.api_object["metadata"]["name"],
                 "namespace": machine.lab.folder_hash,
-                "interface": machine_interface_name,
-                "mac": mac_address
+                "interface": machine_interface_name
             })
         pod_annotations["k8s.v1.cni.cncf.io/networks"] = json.dumps(network_interfaces)
 
@@ -320,6 +310,7 @@ class KubernetesMachine(object):
                                     dns_policy="None",
                                     dns_config=dns_config,
                                     volumes=volumes,
+                                    security_context=pod_security_context
                                     )
 
         # TODO: SCHEDULER

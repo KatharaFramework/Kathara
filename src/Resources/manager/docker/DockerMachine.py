@@ -26,8 +26,8 @@ STARTUP_COMMANDS = [
     # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
     # If not, clear the content of the file.
     # This should be patched with "cat" because file is already in use by Docker internal DNS.
-    "if [ -f \"/hostlab/{machine_name}/etc/resolv.conf\" ]; then " \
-    "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else " \
+    "if [ -f \"/hostlab/{machine_name}/etc/resolv.conf\" ]; then "
+    "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else "
     "echo \"\" > /etc/resolv.conf; fi",
 
     # Give proper permissions to /var/www
