@@ -3,22 +3,20 @@ import logging
 import os
 import sys
 
-from .. import utils
-from ..exceptions import PrivilegeError
-from ..foundation.command.Command import Command
-from ..manager.ManagerProxy import ManagerProxy
-from ..parser.netkit.DepParser import DepParser
-from ..parser.netkit.ExtParser import ExtParser
-from ..parser.netkit.FolderParser import FolderParser
-from ..parser.netkit.LabParser import LabParser
-from ..parser.netkit.OptionParser import OptionParser
-from ..setting.Setting import Setting
-from ..strings import strings, wiki_description
+from ... import utils
+from ...exceptions import PrivilegeError
+from ...foundation.cli.command.Command import Command
+from ...manager.ManagerProxy import ManagerProxy
+from ...parser.netkit.DepParser import DepParser
+from ...parser.netkit.ExtParser import ExtParser
+from ...parser.netkit.FolderParser import FolderParser
+from ...parser.netkit.LabParser import LabParser
+from ...parser.netkit.OptionParser import OptionParser
+from ...setting.Setting import Setting
+from ...strings import strings, wiki_description
 
 
 class LstartCommand(Command):
-    __slots__ = ['parser']
-
     def __init__(self):
         Command.__init__(self)
 
@@ -121,7 +119,8 @@ class LstartCommand(Command):
         self.parser = parser
 
     def run(self, current_path, argv):
-        args = self.parser.parse_args(argv)
+        self.parse_args(argv)
+        args = self.get_args()
 
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
         lab_path = utils.get_absolute_path(lab_path)
@@ -129,10 +128,6 @@ class LstartCommand(Command):
         Setting.get_instance().open_terminals = args.terminals if args.terminals is not None \
                                                 else Setting.get_instance().open_terminals
         Setting.get_instance().terminal = args.xterm or Setting.get_instance().terminal
-        Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
-                                                else Setting.get_instance().hosthome_mount
-        Setting.get_instance().shared_mount = args.no_shared if args.no_shared is not None \
-                                              else Setting.get_instance().shared_mount
 
         if args.privileged:
             if not utils.is_admin():

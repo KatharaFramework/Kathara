@@ -10,6 +10,7 @@ from progress.bar import Bar
 
 from ... import utils
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
+from ...foundation.cli.CliArgs import CliArgs
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
@@ -85,6 +86,16 @@ class DockerMachine(object):
         # Check and pulling machine images
         lab_images = set(map(lambda x: x.get_image(), lab.machines.values()))
         self.docker_image.multiple_check_and_pull(lab_images)
+
+        # Read additional CLI args and settings
+        args = CliArgs.get_instance().args
+        Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
+                                                else Setting.get_instance().hosthome_mount
+        Setting.get_instance().shared_mount = args.no_shared if args.no_shared is not None \
+                                              else Setting.get_instance().shared_mount
+
+        if Setting.get_instance().shared_mount:
+            lab.create_shared_folder()
 
         machines = lab.machines.items()
         progress_bar = Bar('Deploying machines...', max=len(machines))
@@ -166,7 +177,7 @@ class DockerMachine(object):
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
-        
+
         # Merge machine sysctls
         sysctl_parameters = {**sysctl_parameters, **machine.meta['sysctls']}
 
@@ -262,9 +273,9 @@ class DockerMachine(object):
 
         # Build the final startup commands string
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
-                                      .format(machine_name=machine.name,
-                                              machine_commands="; ".join(machine.startup_commands)
-                                              )
+            .format(machine_name=machine.name,
+                    machine_commands="; ".join(machine.startup_commands)
+                    )
 
         # Execute the startup commands inside the container (without privileged flag so basic permissions are used)
         machine.api_object.exec_run(cmd=[Setting.get_instance().device_shell, '-c', startup_commands_string],
@@ -286,7 +297,7 @@ class DockerMachine(object):
         items = utils.chunk_list(machines, pool_size)
 
         progress_bar = Bar("Deleting machines...", max=len(machines) if not selected_machines
-                                                                     else len(selected_machines)
+        else len(selected_machines)
                            )
 
         for chunk in items:
@@ -311,7 +322,7 @@ class DockerMachine(object):
         # If selected machines list is empty, remove everything
         # Else, check if the machine is in the list.
         if not selected_machines or \
-           machine_item.labels["name"] in selected_machines:
+                machine_item.labels["name"] in selected_machines:
             self.delete_machine(machine_item)
 
             if log:

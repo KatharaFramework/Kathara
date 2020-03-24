@@ -30,16 +30,6 @@ Checks on the correctness of the configuration are performed each time a Kathara
 
 	Default to `true`.
 
-* `hosthome_mount` (boolean):
-	This parameter specifies if the `/hosthome` dir will be mounted inside the device. The home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`.  
-
-	Default to `false`.
-
-* `shared_mount` (boolean):
-	This parameter specifies if the `/shared` dir will be mounted inside the device. The "shared" folder inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`.  
-
-	Default to `true`.
-
 * `device_shell` (string):
 	This parameter determines the shell to use inside the device. The application must be correctly installed in the Docker image used for the device. Possible examples are: bash, sh, fish, and so on.
 
@@ -74,7 +64,21 @@ Checks on the correctness of the configuration are performed each time a Kathara
 	Unix time (in milliseconds) of the last online check for Kathara updates. Each week, when the first Kathara command is launched, the system will check if the system and the default image are up-to-date.
 
 	Default to `time of the file creation - one week`, so the check will always run after a fresh.
-	
+
+## ADDITIONAL MANAGER PARAMETERS
+
+Each Manager specifies additional parameters which are used only when that Manager is current active.
+
+### DOCKER
+* `hosthome_mount` (boolean):
+	This parameter specifies if the `/hosthome` dir will be mounted inside the device. The home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`.
+
+	Default to `false`.
+
+* `shared_mount` (boolean):
+	This parameter specifies if the `/shared` dir will be mounted inside the device. The "shared" folder inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`.
+
+	Default to `true`.
 
 ## EXAMPLE
 

@@ -1,15 +1,13 @@
 import argparse
 import logging
 
-from .. import utils
-from ..foundation.command.Command import Command
-from ..manager.ManagerProxy import ManagerProxy
-from ..strings import strings, wiki_description
+from ... import utils
+from ...foundation.cli.command.Command import Command
+from ...manager.ManagerProxy import ManagerProxy
+from ...strings import strings, wiki_description
 
 
 class VcleanCommand(Command):
-    __slots__ = []
-
     def __init__(self):
         Command.__init__(self)
 
@@ -37,7 +35,8 @@ class VcleanCommand(Command):
         self.parser = parser
 
     def run(self, current_path, argv):
-        args = self.parser.parse_args(argv)
+        self.parse_args(argv)
+        args = self.get_args()
 
         vlab_dir = utils.get_vlab_temp_path()
         lab_hash = utils.generate_urlsafe_hash(vlab_dir)

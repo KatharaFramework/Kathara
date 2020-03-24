@@ -5,7 +5,6 @@ from itertools import chain
 from .Link import Link
 from .Machine import Machine
 from .. import utils
-from ..setting.Setting import Setting
 
 
 class Lab(object):
@@ -36,18 +35,7 @@ class Lab(object):
         shared_shutdown_file = os.path.join(self.path, 'shared.shutdown')
         self.shared_shutdown_path = shared_shutdown_file if os.path.exists(shared_shutdown_file) else None
 
-        if Setting.get_instance().shared_mount:
-            try:
-                self.shared_folder = os.path.join(self.path, 'shared')
-                if not os.path.isdir(self.shared_folder):
-                    os.mkdir(self.shared_folder)
-                elif os.path.islink(self.shared_folder):
-                    raise Exception("`shared` folder is a symlink, delete it.")
-            except OSError:
-                # Do not create shared folder if not permitted.
-                self.shared_folder = None
-        else:
-            self.shared_folder = None
+        self.shared_folder = None
 
     def connect_machine_to_link(self, machine_name, machine_iface_number, link_name):
         machine = self.get_or_new_machine(machine_name)
@@ -121,6 +109,17 @@ class Lab(object):
             self.links[name] = Link(self, name)
 
         return self.links[name]
+
+    def create_shared_folder(self):
+        try:
+            self.shared_folder = os.path.join(self.path, 'shared')
+            if not os.path.isdir(self.shared_folder):
+                os.mkdir(self.shared_folder)
+            elif os.path.islink(self.shared_folder):
+                raise Exception("`shared` folder is a symlink, delete it.")
+        except OSError:
+            # Do not create shared folder if not permitted.
+            return
 
     def __repr__(self):
         return "Lab(%s, %s, %s, %s)" % (self.path, self.folder_hash, self.machines, self.links)

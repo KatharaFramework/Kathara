@@ -61,7 +61,7 @@ class KatharaEntryPoint(object):
             sys.exit(1)
 
         module_name = {
-            "package": "Resources.command",
+            "package": "Resources.cli.command",
             "class": args.command.capitalize() + "Command"
         }
 

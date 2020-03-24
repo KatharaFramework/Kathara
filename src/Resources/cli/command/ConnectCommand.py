@@ -1,14 +1,12 @@
 import argparse
 
-from .. import utils
-from ..foundation.command.Command import Command
-from ..manager.ManagerProxy import ManagerProxy
-from ..strings import strings, wiki_description
+from ... import utils
+from ...foundation.cli.command.Command import Command
+from ...manager.ManagerProxy import ManagerProxy
+from ...strings import strings, wiki_description
 
 
 class ConnectCommand(Command):
-    __slots__ = ['parser']
-
     def __init__(self):
         Command.__init__(self)
         
@@ -58,7 +56,8 @@ class ConnectCommand(Command):
         self.parser = parser
 
     def run(self, current_path, argv):
-        args = self.parser.parse_args(argv)
+        self.parse_args(argv)
+        args = self.get_args()
 
         if args.vmachine:
             lab_path = utils.get_vlab_temp_path()

@@ -2,16 +2,14 @@ import argparse
 import shutil
 import sys
 
-from .. import utils
-from ..foundation.command.Command import Command
-from ..manager.ManagerProxy import ManagerProxy
-from ..setting.Setting import Setting
-from ..strings import strings, wiki_description
+from ... import utils
+from ...foundation.cli.command.Command import Command
+from ...manager.ManagerProxy import ManagerProxy
+from ...setting.Setting import Setting
+from ...strings import strings, wiki_description
 
 
 class WipeCommand(Command):
-    __slots__ = ['parser']
-
     def __init__(self):
         Command.__init__(self)
 
@@ -55,7 +53,8 @@ class WipeCommand(Command):
         self.parser = parser
 
     def run(self, current_path, argv):
-        args = self.parser.parse_args(argv)
+        self.parse_args(argv)
+        args = self.get_args()
 
         if not args.force:
             utils.confirmation_prompt("Are you sure to wipe Kathara?", lambda: None, sys.exit)

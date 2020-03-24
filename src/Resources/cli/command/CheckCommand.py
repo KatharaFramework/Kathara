@@ -2,18 +2,16 @@ import argparse
 import logging
 import sys
 
-from .. import utils
-from .. import version
-from ..foundation.command.Command import Command
-from ..manager.ManagerProxy import ManagerProxy
-from ..model.Lab import Lab
-from ..setting.Setting import Setting
-from ..strings import strings, wiki_description
+from ... import utils
+from ... import version
+from ...foundation.cli.command.Command import Command
+from ...manager.ManagerProxy import ManagerProxy
+from ...model.Lab import Lab
+from ...setting.Setting import Setting
+from ...strings import strings, wiki_description
 
 
 class CheckCommand(Command):
-    __slots__ = ['parser']
-
     def __init__(self):
         Command.__init__(self)
         
@@ -34,7 +32,8 @@ class CheckCommand(Command):
         self.parser = parser
 
     def run(self, current_path, argv):
-        self.parser.parse_args(argv)
+        self.parse_args(argv)
+        args = self.get_args()
 
         print("*\tCurrent Manager is: %s" % ManagerProxy.get_instance().get_formatted_manager_name())
 
@@ -47,7 +46,8 @@ class CheckCommand(Command):
         print("*\tTrying to run `Hello World` container...")
 
         Setting.get_instance().open_terminals = False
-        Setting.get_instance().shared_mount = False
+        args.no_shared = False
+        args.no_hosthome = False
 
         vlab_dir = utils.get_vlab_temp_path()
         lab = Lab(vlab_dir)

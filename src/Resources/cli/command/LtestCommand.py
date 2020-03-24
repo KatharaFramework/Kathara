@@ -8,17 +8,15 @@ import time
 
 from .LcleanCommand import LcleanCommand
 from .LstartCommand import LstartCommand
-from .. import utils
-from ..exceptions import TestError
-from ..foundation.command.Command import Command
-from ..strings import strings, wiki_description
-from ..test.BuiltinTest import BuiltInTest
-from ..test.UserTest import UserTest
+from ... import utils
+from ...exceptions import TestError
+from ...foundation.cli.command.Command import Command
+from ...strings import strings, wiki_description
+from ...test.BuiltinTest import BuiltInTest
+from ...test.UserTest import UserTest
 
 
 class LtestCommand(Command):
-    __slots__ = ['parser']
-
     def __init__(self):
         Command.__init__(self)
 
@@ -65,7 +63,8 @@ class LtestCommand(Command):
         self.parser = parser
 
     def run(self, current_path, argv):
-        args = self.parser.parse_args(argv)
+        self.parse_args(argv)
+        args = self.get_args()
 
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
         lab_path = utils.get_absolute_path(lab_path)

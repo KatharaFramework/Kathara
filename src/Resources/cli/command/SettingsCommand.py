@@ -1,15 +1,15 @@
-from ..api.DockerHubApi import DockerHubApi
-from ..exceptions import HTTPConnectionError
-from ..exceptions import SettingsError
-from ..foundation.command.Command import Command
-from ..manager.ManagerProxy import ManagerProxy
-from ..setting.Setting import Setting, DEFAULTS, POSSIBLE_SHELLS, POSSIBLE_TERMINALS, POSSIBLE_DEBUG_LEVELS
-from ..trdparty.consolemenu import *
-from ..trdparty.consolemenu.format import MenuBorderStyleType
-from ..trdparty.consolemenu.items import *
-from ..trdparty.consolemenu.validators.regex import RegexValidator
-from ..validator.ImageValidator import ImageValidator
-from ..validator.TerminalValidator import TerminalValidator
+from ...api.DockerHubApi import DockerHubApi
+from ...exceptions import HTTPConnectionError
+from ...exceptions import SettingsError
+from ...foundation.cli.command.Command import Command
+from ...manager.ManagerProxy import ManagerProxy
+from ...setting.Setting import Setting, DEFAULTS, POSSIBLE_SHELLS, POSSIBLE_TERMINALS, POSSIBLE_DEBUG_LEVELS
+from ...trdparty.consolemenu import *
+from ...trdparty.consolemenu.format import MenuBorderStyleType
+from ...trdparty.consolemenu.items import *
+from ...trdparty.consolemenu.validators.regex import RegexValidator
+from ...validator.ImageValidator import ImageValidator
+from ...validator.TerminalValidator import TerminalValidator
 
 SAVED_STRING = "Saved successfully!\n"
 PRESS_ENTER_STRING = "Press [Enter] to continue."
@@ -52,6 +52,29 @@ class SettingsCommand(Command):
                            formatter=menu_formatter
                            )
 
+        # Manager Submenu
+        managers = ManagerProxy.get_available_managers_name()
+        manager_type = Setting.get_instance().manager_type
+
+        choose_manager_string = "Choose default manager"
+        manager_menu = SelectionMenu(strings=[],
+                                     title=choose_manager_string,
+                                     subtitle=lambda: "Current: %s" % managers[manager_type],
+                                     prologue_text="""Manager is the Engine used to run Kathara labs.
+                                                   Default is `%s`.""" % DEFAULTS['manager_type'],
+                                     formatter=menu_formatter
+                                     )
+
+        for name, formatted_name in managers.items():
+            manager_menu.append_item(FunctionItem(text=formatted_name,
+                                                  function=self.set_setting_value,
+                                                  args=['manager_type', name],
+                                                  should_exit=True
+                                                  )
+                                     )
+
+        manager_item = SubmenuItem(choose_manager_string, manager_menu, menu)
+
         # Image Selection Submenu
         image_string = "Choose default image"
         select_image_menu = SelectionMenu(strings=[],
@@ -89,35 +112,13 @@ class SettingsCommand(Command):
                                       )
         submenu_item = SubmenuItem(image_string, select_image_menu, menu)
 
-        # Manager Submenu
-        managers = ManagerProxy.get_available_managers_name()
-        manager_type = Setting.get_instance().manager_type
-
-        choose_manager_string = "Choose default manager"
-        manager_menu = SelectionMenu(strings=[],
-                                     title=choose_manager_string,
-                                     subtitle=lambda: "Current: %s" % managers[manager_type],
-                                     prologue_text="""Manager in the Engine used to run Kathara machines.
-                                                   Default is `%s`.""" % DEFAULTS['manager_type'],
-                                     formatter=menu_formatter
-                                     )
-
-        for (name, formatted_name) in managers.items():
-            manager_menu.append_item(FunctionItem(text=formatted_name,
-                                                  function=self.set_setting_value,
-                                                  args=['manager_type', name],
-                                                  should_exit=True
-                                                  )
-                                     )
-
-        manager_item = SubmenuItem(choose_manager_string, manager_menu, menu)
-
         # Open Terminals Option
         open_terminals_string = "Automatically open terminals on startup"
         open_terminals_menu = SelectionMenu(strings=[],
                                             title=open_terminals_string,
                                             subtitle=current_bool("open_terminals"),
-                                            prologue_text="""Determines if the device terminal should be opened when starting it.
+                                            prologue_text="""Determines if the device terminal should be opened """
+                                                          """when starting it.
                                                           Default is %s.""" % format_bool(DEFAULTS['open_terminals']),
                                             formatter=menu_formatter
                                             )
@@ -138,59 +139,59 @@ class SettingsCommand(Command):
         open_terminals_item = SubmenuItem(open_terminals_string, open_terminals_menu, menu)
 
         # Hosthome Mount Option
-        hosthome_string = "Automatically mount /hosthome on startup"
-        hosthome_menu = SelectionMenu(strings=[],
-                                      title=hosthome_string,
-                                      subtitle=current_bool("hosthome_mount"),
-                                      prologue_text="""The home directory of the current user is made available for """
-                                                    """reading/writing inside the device under the special """
-                                                    """directory `/hosthome`. 
-                                                    Default is %s.""" % format_bool(DEFAULTS['hosthome_mount']),
-                                      formatter=menu_formatter
-                                      )
-
-        hosthome_menu.append_item(FunctionItem(text="Yes",
-                                               function=self.set_setting_value,
-                                               args=["hosthome_mount", True],
-                                               should_exit=True
-                                               )
-                                  )
-        hosthome_menu.append_item(FunctionItem(text="No",
-                                               function=self.set_setting_value,
-                                               args=["hosthome_mount", False],
-                                               should_exit=True
-                                               )
-                                  )
-
-        hosthome_item = SubmenuItem(hosthome_string, hosthome_menu, menu)
-
-        # Shared Mount Option
-        shared_string = "Automatically mount /shared on startup"
-        shared_menu = SelectionMenu(strings=[],
-                                    title=shared_string,
-                                    subtitle=current_bool("shared_mount"),
-                                    prologue_text="""The shared directory inside the lab folder is made available """
-                                                  """for reading/writing inside the device under the special """
-                                                  """directory `/shared`.
-                                                  
-                                                  Default is %s.""" % format_bool(DEFAULTS['shared_mount']),
-                                    formatter=menu_formatter
-                                    )
-
-        shared_menu.append_item(FunctionItem(text="Yes",
-                                             function=self.set_setting_value,
-                                             args=["shared_mount", True],
-                                             should_exit=True
-                                             )
-                                )
-        shared_menu.append_item(FunctionItem(text="No",
-                                             function=self.set_setting_value,
-                                             args=["shared_mount", False],
-                                             should_exit=True
-                                             )
-                                )
-
-        shared_item = SubmenuItem(shared_string, shared_menu, menu)
+        # hosthome_string = "Automatically mount /hosthome on startup"
+        # hosthome_menu = SelectionMenu(strings=[],
+        #                               title=hosthome_string,
+        #                               subtitle=current_bool("hosthome_mount"),
+        #                               prologue_text="""The home directory of the current user is made available for """
+        #                                             """reading/writing inside the device under the special """
+        #                                             """directory `/hosthome`.
+        #                                             Default is %s.""" % format_bool(DEFAULTS['hosthome_mount']),
+        #                               formatter=menu_formatter
+        #                               )
+        #
+        # hosthome_menu.append_item(FunctionItem(text="Yes",
+        #                                        function=self.set_setting_value,
+        #                                        args=["hosthome_mount", True],
+        #                                        should_exit=True
+        #                                        )
+        #                           )
+        # hosthome_menu.append_item(FunctionItem(text="No",
+        #                                        function=self.set_setting_value,
+        #                                        args=["hosthome_mount", False],
+        #                                        should_exit=True
+        #                                        )
+        #                           )
+        #
+        # hosthome_item = SubmenuItem(hosthome_string, hosthome_menu, menu)
+        #
+        # # Shared Mount Option
+        # shared_string = "Automatically mount /shared on startup"
+        # shared_menu = SelectionMenu(strings=[],
+        #                             title=shared_string,
+        #                             subtitle=current_bool("shared_mount"),
+        #                             prologue_text="""The shared directory inside the lab folder is made available """
+        #                                           """for reading/writing inside the device under the special """
+        #                                           """directory `/shared`.
+        #
+        #                                           Default is %s.""" % format_bool(DEFAULTS['shared_mount']),
+        #                             formatter=menu_formatter
+        #                             )
+        #
+        # shared_menu.append_item(FunctionItem(text="Yes",
+        #                                      function=self.set_setting_value,
+        #                                      args=["shared_mount", True],
+        #                                      should_exit=True
+        #                                      )
+        #                         )
+        # shared_menu.append_item(FunctionItem(text="No",
+        #                                      function=self.set_setting_value,
+        #                                      args=["shared_mount", False],
+        #                                      should_exit=True
+        #                                      )
+        #                         )
+        #
+        # shared_item = SubmenuItem(shared_string, shared_menu, menu)
 
         # Machine Shell Submenu
         machine_shell_string = "Choose device shell to be used"
@@ -200,9 +201,9 @@ class SettingsCommand(Command):
                                            formatter=menu_formatter,
                                            prologue_text="""The shell to use inside the device. 
                                            **The application must be correctly installed in the Docker image used """
-                                           """for the device!**
-                                           Default is `%s`, but it depends on the used Docker image.
-                                           """ % DEFAULTS['device_shell']
+                                                         """for the device!**
+                                                         Default is `%s`, but it depends on the used Docker image.
+                                                         """ % DEFAULTS['device_shell']
                                            )
 
         for shell in POSSIBLE_SHELLS:
@@ -231,7 +232,7 @@ class SettingsCommand(Command):
                                       title=terminal_string,
                                       subtitle=current_string("terminal"),
                                       formatter=menu_formatter,
-                                      prologue_text="""The terminal emulator application to be used for device terminals.
+                                      prologue_text="""Terminal emulator application to be used for device terminals.
                                                     **The application must be correctly installed in the host system!**
                                                     This setting is only used on Linux systems.
                                                     Default is `%s`.
@@ -320,7 +321,7 @@ class SettingsCommand(Command):
                                                formatter=menu_formatter,
                                                prologue_text="""When opening a device terminal, print its startup log.
                                                              Default is %s.""" % format_bool(
-                                                                                          DEFAULTS['print_startup_log'])
+                                                   DEFAULTS['print_startup_log'])
                                                )
 
         print_startup_log_menu.append_item(FunctionItem(text="Yes",
@@ -346,7 +347,7 @@ class SettingsCommand(Command):
                                          formatter=menu_formatter,
                                          prologue_text="""This option enables IPv6 inside the devices.
                                                           Default is %s.""" % format_bool(
-                                                          DEFAULTS['enable_ipv6'])
+                                             DEFAULTS['enable_ipv6'])
                                          )
 
         enable_ipv6_menu.append_item(FunctionItem(text="Yes",
@@ -364,11 +365,11 @@ class SettingsCommand(Command):
 
         enable_ipv6_item = SubmenuItem(enable_ipv6_string, enable_ipv6_menu, menu)
 
-        menu.append_item(submenu_item)
         menu.append_item(manager_item)
+        menu.append_item(submenu_item)
         menu.append_item(open_terminals_item)
-        menu.append_item(hosthome_item)
-        menu.append_item(shared_item)
+        # menu.append_item(hosthome_item)
+        # menu.append_item(shared_item)
         menu.append_item(machine_shell_item)
         menu.append_item(terminal_item)
         menu.append_item(prefixes_item)
@@ -383,11 +384,19 @@ class SettingsCommand(Command):
 
     @staticmethod
     def set_setting_value(attribute_name, value):
+        reload_addons = False
+
+        if attribute_name == "manager_type" and Setting.get_instance().manager_type != value:
+            reload_addons = True
+
         setattr(Setting.get_instance(), attribute_name, value)
         try:
+            if reload_addons:
+                Setting.get_instance().load_settings_addon()
+
             Setting.get_instance().check()
 
-            Setting.get_instance().save_selected([attribute_name])
+            Setting.get_instance().save()
 
             print(SAVED_STRING)
         except SettingsError as e:
@@ -418,7 +427,7 @@ class SettingsCommand(Command):
                                                               )
 
         setattr(Setting.get_instance(), attribute_name, answer.input_string)
-        Setting.get_instance().save_selected([attribute_name])
+        Setting.get_instance().save()
 
         print(SAVED_STRING)
 

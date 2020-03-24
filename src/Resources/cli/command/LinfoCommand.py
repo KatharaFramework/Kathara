@@ -2,17 +2,15 @@ import argparse
 import os
 import time
 
-from .. import utils
-from ..foundation.command.Command import Command
-from ..manager.ManagerProxy import ManagerProxy
-from ..model.Link import BRIDGE_LINK_NAME
-from ..parser.netkit.LabParser import LabParser
-from ..strings import strings, wiki_description
+from ... import utils
+from ...foundation.cli.command.Command import Command
+from ...manager.ManagerProxy import ManagerProxy
+from ...model.Link import BRIDGE_LINK_NAME
+from ...parser.netkit.LabParser import LabParser
+from ...strings import strings, wiki_description
 
 
 class LinfoCommand(Command):
-    __slots__ = ['parser']
-
     def __init__(self):
         Command.__init__(self)
 
@@ -52,7 +50,8 @@ class LinfoCommand(Command):
         self.parser = parser
 
     def run(self, current_path, argv):
-        args = self.parser.parse_args(argv)
+        self.parse_args(argv)
+        args = self.get_args()
 
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
         lab_path = utils.get_absolute_path(lab_path)

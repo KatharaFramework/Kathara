@@ -3,16 +3,14 @@ import logging
 import re
 import sys
 
-from .. import utils
-from ..foundation.command.Command import Command
-from ..manager.ManagerProxy import ManagerProxy
-from ..model.Lab import Lab
-from ..strings import strings, wiki_description
+from ... import utils
+from ...foundation.cli.command.Command import Command
+from ...manager.ManagerProxy import ManagerProxy
+from ...model.Lab import Lab
+from ...strings import strings, wiki_description
 
 
 class LconfigCommand(Command):
-    __slots__ = []
-
     def __init__(self):
         Command.__init__(self)
 
@@ -53,7 +51,8 @@ class LconfigCommand(Command):
         self.parser = parser
 
     def run(self, current_path, argv):
-        args = self.parser.parse_args(argv)
+        self.parse_args(argv)
+        args = self.get_args()
 
         lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
         lab_path = utils.get_absolute_path(lab_path)

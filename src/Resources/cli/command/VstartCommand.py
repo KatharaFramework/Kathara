@@ -3,17 +3,15 @@ import logging
 import re
 import sys
 
-from .. import utils
-from ..foundation.command.Command import Command
-from ..manager.ManagerProxy import ManagerProxy
-from ..model.Lab import Lab
-from ..setting.Setting import Setting
-from ..strings import strings, wiki_description
+from ... import utils
+from ...foundation.cli.command.Command import Command
+from ...manager.ManagerProxy import ManagerProxy
+from ...model.Lab import Lab
+from ...setting.Setting import Setting
+from ...strings import strings, wiki_description
 
 
 class VstartCommand(Command):
-    __slots__ = []
-
     def __init__(self):
         Command.__init__(self)
 
@@ -129,7 +127,8 @@ class VstartCommand(Command):
         self.parser = parser
 
     def run(self, current_path, argv):
-        args = self.parser.parse_args(argv)
+        self.parse_args(argv)
+        args = self.get_args()
 
         if args.dry_mode:
             print("Machine configuration is correct. Exiting...")
@@ -137,14 +136,12 @@ class VstartCommand(Command):
         else:
             print(utils.format_headers("Starting Machine"))
 
-        Setting.get_instance().shared_mount = False
+        args.no_shared = False
 
         Setting.get_instance().open_terminals = args.terminals if args.terminals is not None \
                                                 else Setting.get_instance().open_terminals
         Setting.get_instance().terminal = args.xterm or Setting.get_instance().terminal
         Setting.get_instance().device_shell = args.shell or Setting.get_instance().device_shell
-        Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
-                                                else Setting.get_instance().hosthome_mount
 
         if args.privileged:
             if not utils.is_admin():

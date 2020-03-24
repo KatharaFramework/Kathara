@@ -187,7 +187,7 @@ class KubernetesMachine(object):
             # Define volume mounts for hostlab if a ConfigMap is defined.
             volume_mounts.append(client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara"))
 
-        if Setting.get_instance().shared_mount:
+        if Setting.get_instance().host_shared:
             volume_mounts.append(client.V1VolumeMount(name="shared", mount_path="/shared"))
 
         # If privileged is not required, assign proper capabilities to the Pod.
@@ -296,8 +296,8 @@ class KubernetesMachine(object):
                 )
             ))
 
-        # /shared mounts in /home/shared folder on k8s
-        if Setting.get_instance().shared_mount:
+        # Container /shared mounts in /home/shared folder
+        if Setting.get_instance().host_shared:
             volumes.append(client.V1Volume(
                 name="shared",
                 host_path=client.V1HostPathVolumeSource(
