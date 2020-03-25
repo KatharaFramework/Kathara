@@ -1,5 +1,10 @@
 from ...foundation.setting.SettingsAddon import SettingsAddon
 
+DEFAULTS = {
+    "hosthome_mount": False,
+    "shared_mount": True
+}
+
 
 class DockerSettingsAddon(SettingsAddon):
     __slots__ = ['hosthome_mount', 'shared_mount']

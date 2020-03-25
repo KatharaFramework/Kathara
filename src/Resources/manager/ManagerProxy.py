@@ -1,5 +1,5 @@
-from .. import utils
 from ..foundation.manager.IManager import IManager
+from ..foundation.manager.ManagerFactory import ManagerFactory
 from ..setting.Setting import Setting, POSSIBLE_MANAGERS
 
 
@@ -21,9 +21,9 @@ class ManagerProxy(IManager):
         else:
             manager_type = Setting.get_instance().manager_type
 
-            self.manager = utils.class_for_name("Resources.manager.%s" % manager_type,
-                                                 "%sManager" % manager_type.capitalize()
-                                                )()
+            self.manager = ManagerFactory().create_instance(module_args=(manager_type, ),
+                                                            class_args=(manager_type.capitalize(), )
+                                                            )
 
             ManagerProxy.__instance = self
 
@@ -60,20 +60,19 @@ class ManagerProxy(IManager):
     def get_release_version(self):
         return self.manager.get_release_version()
 
-    def get_manager_name(self):
-        return self.manager.get_manager_name()
-
     def get_formatted_manager_name(self):
         return self.manager.get_formatted_manager_name()
 
     @staticmethod
     def get_available_managers_name():
         managers = {}
+        manager_factory = ManagerFactory()
 
-        for manager_module_name in POSSIBLE_MANAGERS:
-            manager_name = "%sManager" % manager_module_name.split('.')[-1].capitalize()
+        for manager_name in POSSIBLE_MANAGERS:
+            manager = manager_factory.get_class(module_args=(manager_name, ),
+                                                class_args=(manager_name.capitalize(), )
+                                                )
 
-            manager = utils.class_for_name("Resources.manager." + manager_module_name, manager_name)
-            managers[manager.get_manager_name()] = manager.get_formatted_manager_name()
+            managers[manager_name] = manager.get_formatted_manager_name()
 
         return managers

@@ -7,6 +7,7 @@ from .. import utils
 from .. import version
 from ..api.GitHubApi import GitHubApi
 from ..exceptions import HTTPConnectionError, SettingsError
+from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
 
 POSSIBLE_SHELLS = ["/bin/bash", "/bin/sh", "/bin/ash", "/bin/ksh", "/bin/zsh", "/bin/fish", "/bin/csh", "/bin/tcsh"]
 POSSIBLE_TERMINALS = ["/usr/bin/xterm", "/usr/bin/konsole"]
@@ -188,9 +189,7 @@ class Setting(object):
         return True
 
     def load_settings_addon(self):
-        self.addons = utils.class_for_name("Resources.setting.addon",
-                                           "%sSettingsAddon" % self.manager_type.capitalize()
-                                           )()
+        self.addons = SettingsAddonFactory().create_instance(class_args=(self.manager_type.capitalize(), ))
 
     def _to_dict(self):
         return {"image": self.image,

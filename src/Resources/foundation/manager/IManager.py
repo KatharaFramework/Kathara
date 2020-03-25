@@ -47,9 +47,5 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `get_release_version` method.")
 
     @staticmethod
-    def get_manager_name():
-        raise NotImplementedError("You must implement `get_manager_name` method.")
-
-    @staticmethod
     def get_formatted_manager_name():
         raise NotImplementedError("You must implement `get_formatted_manager_name` method.")

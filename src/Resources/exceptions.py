@@ -1,4 +1,8 @@
 # Generic Exceptions
+class ClassNotFoundError(Exception):
+    pass
+
+
 class HTTPConnectionError(Exception):
     pass
 

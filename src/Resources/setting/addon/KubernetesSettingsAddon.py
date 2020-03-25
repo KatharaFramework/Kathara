@@ -1,5 +1,11 @@
 from ...foundation.setting.SettingsAddon import SettingsAddon
 
+DEFAULTS = {
+    "api_server_url": "Empty String",
+    "api_token": "Empty String",
+    "host_shared": True
+}
+
 
 class KubernetesSettingsAddon(SettingsAddon):
     __slots__ = ['api_server_url', 'api_token', 'host_shared']

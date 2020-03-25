@@ -208,9 +208,5 @@ class KubernetesManager(IManager):
         return client.VersionApi().get_code().git_version
 
     @staticmethod
-    def get_manager_name():
-        return "kubernetes"
-
-    @staticmethod
     def get_formatted_manager_name():
         return "Kubernetes (Megalos)"
