@@ -53,7 +53,7 @@ class KatharaEntryPoint(object):
         args = parser.parse_args(sys.argv[1:2])
 
         if args.version:
-            print('Current version: %s.' % CURRENT_VERSION)
+            print('Current version: %s' % CURRENT_VERSION)
             sys.exit(0)
 
         if args.command is None:

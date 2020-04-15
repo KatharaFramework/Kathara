@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=2.2.3
+VERSION=2.2.4
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 
