@@ -5,10 +5,10 @@ kathara-vstart(1) -- Start a new Kathara device
 ## SYNOPSIS
 
 `kathara vstart`
->           [`-h`] [`--noterminals` | `-t`] `-n` <DEVICE_NAME>  
+>           [`-h`] [`--noterminals` | `--terminals` | `--privileged`] `-n` <DEVICE_NAME>
 >           [`--eth` <N\:CD> [<N\:CD> ...]]
 >           [`-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]] [`--mem` <MEM>]  
->           [`--cpus` <CPUS>] [`-i` <IMAGE>] [`-H`] [`--privileged`]  
+>           [`--cpus` <CPUS>] [`-i` <IMAGE>] [`-H`]
 >           [`--xterm` <XTERM>] [`--print`] [`--bridged`] [`--port` <PORT>]  
 >           [`--shell` <SHELL>]
 
@@ -30,10 +30,13 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
 
     Overrides the default setting specified in `kathara.conf`(5) file.
 
-* `-t`, `--terminals`:
+* `--terminals`:
     Start the device opening its terminal window.  
 
     Overrides the default setting specified in `kathara.conf`(5) file.
+
+* `--privileged`:
+    Start the devices in privileged mode. MUST BE ROOT FOR THIS OPTION.
 
 * `-n` <DEVICE_NAME>, `--name` <DEVICE_NAME>:
     Name of the device to be started.
@@ -70,9 +73,6 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
     /hosthome dir will not be mounted inside the device.
 
     By default, the home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Overrides the default setting specified in `kathara.conf`(5) file.
-
-* `--privileged`:
-    Start the devices in privileged mode. MUST BE ROOT FOR THIS OPTION.
 
 * `--xterm` <XTERM>:
     Set a different terminal emulator application (Unix only).

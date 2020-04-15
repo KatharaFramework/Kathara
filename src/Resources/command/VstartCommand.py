@@ -42,11 +42,17 @@ class VstartCommand(Command):
             help='Start the machine without opening a terminal window.'
         )
         group.add_argument(
-            "-t", "--terminals",
+            "--terminals",
             action="store_const",
             dest="terminals",
             const=True,
             help='Start the machine opening its terminal window.'
+        )
+        group.add_argument(
+            "--privileged",
+            action="store_true",
+            required=False,
+            help='Start the device in privileged mode. MUST BE ROOT FOR THIS OPTION.'
         )
         parser.add_argument(
             '-n', '--name',
@@ -90,12 +96,6 @@ class VstartCommand(Command):
             action="store_const",
             const=False,
             help='/hosthome dir will not be mounted inside the machine.'
-        )
-        group.add_argument(
-            "--privileged",
-            action="store_true",
-            required=False,
-            help='Start the device in privileged mode. MUST BE ROOT FOR THIS OPTION.'
         )
         parser.add_argument(
             '--xterm',
@@ -190,4 +190,4 @@ class VstartCommand(Command):
         if args.port:
             machine.add_meta("port", args.port)
 
-        ManagerProxy.get_instance().deploy_lab(lab)
+        ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args.privileged)
