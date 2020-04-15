@@ -8,7 +8,7 @@ ARCHITECTURE:=$(shell dpkg --print-architecture)
 
 .PHONY: allSigned docker-unsigned docker-signed_% docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean
 
-allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_disco
+allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_eoan
 
 docker-unsigned: docker-build-image
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make build-deb-unsigned"

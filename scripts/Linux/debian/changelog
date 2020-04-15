@@ -1,8 +1,7 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-  * Fix Windows Connect
-  * Add custom machine sysctls
-  * Add lconfig command
-  * Fix machine binary files copy
+  * Fix no_shared and no_hosthome flags
+  * Fix lrestart
+  * Fix privileged flag in vstart
 
  -- Mariano Scazzariello <******@gmail.com>  __DATE__
