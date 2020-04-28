@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=2.2.4
+VERSION=2.2.5
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 
@@ -8,7 +8,7 @@ ARCHITECTURE:=$(shell dpkg --print-architecture)
 
 .PHONY: allSigned docker-unsigned docker-signed_% docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean
 
-allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_eoan
+allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_eoan docker-signed_focal
 
 docker-unsigned: docker-build-image
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make build-deb-unsigned"
