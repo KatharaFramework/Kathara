@@ -234,10 +234,10 @@ class KubernetesMachine(object):
         # Build the final startup commands string
         sysctl_commands = "; ".join(["sysctl %s=%d" % item for item in machine.meta["sysctls"].items()])
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
-                                      .format(machine_name=machine.name,
-                                              sysctl_commands=sysctl_commands,
-                                              machine_commands="; ".join(machine.startup_commands)
-                                              )
+            .format(machine_name=machine.name,
+                    sysctl_commands=sysctl_commands,
+                    machine_commands="; ".join(machine.startup_commands)
+                    )
 
         post_start = client.V1Handler(
             _exec=client.V1ExecAction(
@@ -313,24 +313,6 @@ class KubernetesMachine(object):
                                     security_context=pod_security_context
                                     )
 
-        # TODO: SCHEDULER
-        # # Assign node selector only if there's a constraint given by the scheduler
-        # if machine["node_selector"] is not None:
-        #     node_expression = client.V1NodeSelectorRequirement(key="kubernetes.io/hostname",
-        #                                                        operator="In",
-        #                                                        values=[machine["node_selector"]]
-        #                                                        )
-        #
-        #     node_preference = client.V1PreferredSchedulingTerm(
-        #         preference=client.V1NodeSelectorTerm(match_expressions=[node_expression]),
-        #         weight=100
-        #     )
-        #
-        #     pod_spec.affinity = client.V1Affinity(
-        #         node_affinity=client.V1NodeAffinity(
-        #             preferred_during_scheduling_ignored_during_execution=[node_preference])
-        #     )
-
         pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
         selector_rules = client.V1LabelSelector(match_labels=pod_labels)
         deployment_spec = client.V1DeploymentSpec(replicas=1,
@@ -354,7 +336,7 @@ class KubernetesMachine(object):
         items = utils.chunk_list(machines, pool_size)
 
         progress_bar = Bar("Deleting machines...", max=len(machines) if not selected_machines
-                                                                     else len(selected_machines)
+        else len(selected_machines)
                            )
 
         for chunk in items:
@@ -379,7 +361,7 @@ class KubernetesMachine(object):
         # If selected machines list is empty, remove everything
         # Else, check if the machine is in the list.
         if not selected_machines or \
-           machine_item.metadata.labels["name"] in selected_machines:
+                machine_item.metadata.labels["name"] in selected_machines:
             self._delete_machine(machine_item)
 
             if log:
@@ -392,7 +374,8 @@ class KubernetesMachine(object):
         # Build the shutdown command string
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine_name)
 
-        self.exec(machine,
+        self.exec(machine_namespace,
+                  machine_name,
                   command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
                   )
 
@@ -405,7 +388,7 @@ class KubernetesMachine(object):
         except ApiException:
             return
 
-    def connect(self, lab_hash, machine_name, command=None, logs=False):
+    def connect(self, lab_hash, machine_name, shell=None, logs=False):
         logging.debug("Connect to machine with name: %s" % machine_name)
 
         pod = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
@@ -413,15 +396,16 @@ class KubernetesMachine(object):
         if 'Running' not in pod.status.phase:
             raise Exception('Machine `%s` is not ready.' % machine_name)
 
-        if not command:
-            command = [Setting.get_instance().device_shell]
+        if not shell:
+            shell = [Setting.get_instance().device_shell]
         else:
-            command = shlex.split(command) if type(command) == str else command
+            shell = shlex.split(shell) if type(shell) == str else shell
 
         if logs and Setting.get_instance().print_startup_log:
-            result_string = self.exec(pod,
-                                      command="/bin/cat /var/log/shared.log /var/log/startup.log"
-                                      )
+            (result_string, _) = self.exec(lab_hash,
+                                           machine_name,
+                                           command="/bin/cat /var/log/shared.log /var/log/startup.log"
+                                           )
             if result_string:
                 print("--- Startup Commands Log\n")
                 print(result_string)
@@ -430,7 +414,7 @@ class KubernetesMachine(object):
         resp = stream(self.core_client.connect_get_namespaced_pod_exec,
                       name=pod.metadata.name,
                       namespace=lab_hash,
-                      command=command,
+                      command=shell,
                       stdout=True,
                       stderr=True,
                       stdin=True,
@@ -441,10 +425,11 @@ class KubernetesMachine(object):
         pty = KubernetesTerminal(k8s_stream=resp)
         pty.start()
 
-    def exec(self, pod, command, stdin=False, stderr=False, tty=False, stdin_buffer=None):
-        logging.debug("Executing command `%s` to machine with name: %s" % (command, pod.metadata.name))
+    def exec(self, lab_hash, machine_name, command, stdin=False, stderr=False, tty=False, stdin_buffer=None):
+        logging.debug("Executing command `%s` to machine with name: %s" % (command, machine_name))
 
-        machine_name = pod.metadata.labels["name"]
+        pod = self.get_machine(lab_hash, machine_name)
+
         machine_namespace = pod.metadata.namespace
 
         command = shlex.split(command) if type(command) == 'str' else command
@@ -484,10 +469,14 @@ class KubernetesMachine(object):
                 response.write_stdin(param)
         response.close()
 
-        return result['stdout'] if not stderr else result
+        return result['stdout'], result['stderr']
 
     def copy_files(self, deployment, path, tar_data):
-        self.exec(deployment,
+        machine_name = deployment.metadata.labels["name"]
+        machine_namespace = deployment.metadata.namespace
+
+        self.exec(machine_namespace,
+                  machine_name,
                   command=['tar', 'xvfz', '-', '-C', path],
                   stdin=True,
                   stdin_buffer=[tar_data]
@@ -500,7 +489,7 @@ class KubernetesMachine(object):
 
         # Get all Kathara namespaces if lab_hash is None
         namespaces = list(map(lambda x: x.metadata.name, self.kubernetes_namespace.get_all())) \
-                     if not lab_hash else [lab_hash]
+            if not lab_hash else [lab_hash]
 
         machines = []
         for namespace in namespaces:

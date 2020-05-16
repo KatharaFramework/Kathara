@@ -4,12 +4,12 @@ from datetime import datetime
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from terminaltables import DoubleTable
-from ... import utils
 
 from .KubernetesConfig import KubernetesConfig
 from .KubernetesLink import KubernetesLink
 from .KubernetesMachine import KubernetesMachine
 from .KubernetesNamespace import KubernetesNamespace
+from ... import utils
 from ...api.DockerHubApi import DockerHubApi
 from ...decorators import privileged
 from ...exceptions import NotSupportedError
@@ -37,8 +37,6 @@ class KubernetesManager(IManager):
         try:
             self.k8s_link.deploy_links(lab)
 
-            # TODO: Scheduler
-
             self.k8s_machine.deploy_machines(lab, privileged_mode)
         except ApiException as e:
             if e.status == 403 and 'Forbidden' in e.reason:
@@ -62,7 +60,7 @@ class KubernetesManager(IManager):
 
             # Get all current running machines (not Terminating)
             running_machines = [machine for machine in self.k8s_machine.get_machines_by_filters(lab_hash=lab_hash)
-                                        if 'Terminating' not in machine.status.phase
+                                if 'Terminating' not in machine.status.phase
                                 ]
 
             # From machines, save a set with all the attached networks (still needed)
@@ -101,21 +99,20 @@ class KubernetesManager(IManager):
         self.k8s_namespace.wipe()
 
     @privileged
-    def connect_tty(self, lab_hash, machine_name, command, logs=False):
+    def connect_tty(self, lab_hash, machine_name, shell, logs=False):
         lab_hash = lab_hash.lower()
 
         self.k8s_machine.connect(lab_hash=lab_hash,
                                  machine_name=machine_name,
-                                 command=command,
+                                 shell=shell,
                                  logs=logs
                                  )
 
     @privileged
-    def exec(self, machine, command):
-        self.k8s_machine.exec(machine,
-                              command=command,
-                              stderr=False
-                              )
+    def exec(self, lab_hash, machine_name, command):
+        lab_hash = lab_hash.lower()
+
+        return self.k8s_machine.exec(lab_hash, machine_name, command, stderr=True)
 
     @privileged
     def copy_files(self, machine, path, tar_data):

@@ -90,9 +90,9 @@ class DockerMachine(object):
         # Read additional CLI args and settings
         args = CliArgs.get_instance().args
         Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
-                                                else Setting.get_instance().hosthome_mount
+            else Setting.get_instance().hosthome_mount
         Setting.get_instance().shared_mount = args.no_shared if args.no_shared is not None \
-                                              else Setting.get_instance().shared_mount
+            else Setting.get_instance().shared_mount
 
         if Setting.get_instance().shared_mount:
             lab.create_shared_folder()
@@ -328,20 +328,21 @@ class DockerMachine(object):
             if log:
                 progress_bar.next()
 
-    def connect(self, lab_hash, machine_name, command=None, logs=False):
+    def connect(self, lab_hash, machine_name, shell=None, logs=False):
         logging.debug("Connect to machine with name: %s" % machine_name)
 
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
-        if not command:
-            command = [Setting.get_instance().device_shell]
+        if not shell:
+            shell = [Setting.get_instance().device_shell]
         else:
-            command = shlex.split(command) if type(command) == str else command
+            shell = shlex.split(shell) if type(shell) == str else shell
 
         if logs and Setting.get_instance().print_startup_log:
-            result_string = self.exec(container,
-                                      command="cat /var/log/shared.log /var/log/startup.log"
-                                      )
+            (result_string, _) = self.exec(lab_hash,
+                                           container.name,
+                                           command="cat /var/log/shared.log /var/log/startup.log"
+                                           )
             if result_string:
                 print("--- Startup Commands Log\n")
                 print(result_string)
@@ -353,7 +354,7 @@ class DockerMachine(object):
 
             # Needed with low level api because we need the id of the exec_create
             resp = self.client.api.exec_create(container.id,
-                                               command,
+                                               shell,
                                                stdout=True,
                                                stderr=True,
                                                stdin=True,
@@ -371,24 +372,26 @@ class DockerMachine(object):
 
         def cmd_connect():
             exec_command = ["docker", "exec", "-it", container.id]
-            exec_command.extend(command)
+            exec_command.extend(shell)
 
             Popen(exec_command)
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
-    @staticmethod
-    def exec(container, command):
-        logging.debug("Executing command `%s` to machine with name: %s" % (command, container.name))
+    def exec(self, lab_hash, machine_name, command):
+        logging.debug("Executing command `%s` to machine with name: %s" % (command, machine_name))
 
-        result = container.exec_run(cmd=command,
-                                    stdout=True,
-                                    stderr=False,
-                                    privileged=False,
-                                    detach=False
-                                    )
+        container = self.get_machine(lab_hash, machine_name)
 
-        return result.output.decode('utf-8')
+        (exit_code, (stdout, stderr)) = container.exec_run(cmd=command,
+                                                           stdout=True,
+                                                           stderr=True,
+                                                           privileged=False,
+                                                           demux=True,
+                                                           detach=False
+                                                           )
+
+        return stdout.decode('utf-8') if stdout else "", stderr.decode('utf-8') if stderr else ""
 
     @staticmethod
     def copy_files(machine, path, tar_data):

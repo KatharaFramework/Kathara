@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 from ... import utils
 from ...foundation.cli.command.Command import Command
@@ -6,13 +7,13 @@ from ...manager.ManagerProxy import ManagerProxy
 from ...strings import strings, wiki_description
 
 
-class ConnectCommand(Command):
+class ExecCommand(Command):
     def __init__(self):
         Command.__init__(self)
-        
+
         parser = argparse.ArgumentParser(
-            prog='kathara connect',
-            description=strings['connect'],
+            prog='kathara exec',
+            description=strings['exec'],
             epilog=wiki_description,
             add_help=False
         )
@@ -37,19 +38,14 @@ class ConnectCommand(Command):
             help='The machine has been started with vstart command.',
         )
         parser.add_argument(
-            '--shell',
-            required=False,
-            help='Shell that should be used inside the machine.'
-        )
-        parser.add_argument(
-            '-l', '--logs',
-            action="store_true",
-            help='Print machine startup logs before launching the shell.',
-        )
-        parser.add_argument(
             'machine_name',
             metavar='DEVICE_NAME',
             help='Name of the machine to connect to.'
+        )
+        parser.add_argument(
+            'command',
+            metavar='COMMAND',
+            help='Command that should be executed inside the machine.'
         )
 
         self.parser = parser
@@ -66,8 +62,10 @@ class ConnectCommand(Command):
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        ManagerProxy.get_instance().connect_tty(lab_hash,
-                                                machine_name=args.machine_name,
-                                                shell=args.shell,
-                                                logs=args.logs
-                                                )
+        (stdout, stderr) = ManagerProxy.get_instance().exec(lab_hash, args.machine_name, args.command)
+
+        if stderr:
+            sys.stderr.write(stderr)
+            return
+
+        sys.stdout.write(stdout)

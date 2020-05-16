@@ -39,11 +39,11 @@ class ManagerProxy(IManager):
     def wipe(self, all_users=False):
         self.manager.wipe(all_users)
 
-    def connect_tty(self, lab_hash, machine_name, command, logs=False):
-        self.manager.connect_tty(lab_hash, machine_name, command, logs)
+    def connect_tty(self, lab_hash, machine_name, shell, logs=False):
+        self.manager.connect_tty(lab_hash, machine_name, shell, logs)
 
-    def exec(self, machine, command):
-        return self.manager.exec(machine, command)
+    def exec(self, lab_hash, machine_name, command):
+        return self.manager.exec(lab_hash, machine_name, command)
 
     def copy_files(self, machine, path, tar_data):
         self.manager.copy_files(machine, path, tar_data)

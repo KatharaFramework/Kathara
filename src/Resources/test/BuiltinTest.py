@@ -1,9 +1,9 @@
 import json
 import logging
-import os
 
 from deepdiff import DeepDiff
 
+import os
 from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
@@ -69,10 +69,10 @@ class BuiltInTest(Test):
     @staticmethod
     def _get_machine_status(machine):
         # Machine interfaces
-        ip_addr = json.loads(ManagerProxy.get_instance().exec(machine=machine,
-                                                              command="ip -j addr show"
-                                                              )
-                             )
+        (ip_addr, _) = json.loads(ManagerProxy.get_instance().exec(machine_name=machine,
+                                                                   command="ip -j addr show"
+                                                                   )
+                                  )
 
         # Get only relevant information (interface name, state and list of address/prefix)
         ip_addr_clean = {}
@@ -84,22 +84,22 @@ class BuiltInTest(Test):
                                              }
 
         # Machine routes
-        ip_route = json.loads(ManagerProxy.get_instance().exec(machine=machine,
-                                                               command="ip -j route show"
-                                                               )
-                              )
+        (ip_route, _) = json.loads(ManagerProxy.get_instance().exec(machine_name=machine,
+                                                                    command="ip -j route show"
+                                                                    )
+                                   )
 
         # Machine opened ports
-        net_stat = ManagerProxy.get_instance().exec(machine=machine,
-                                                    command="netstat -tuwln"
-                                                    )
+        (net_stat, _) = ManagerProxy.get_instance().exec(machine_name=machine,
+                                                         command="netstat -tuwln"
+                                                         )
         # Remove Docker ports and header lines. Sort the array alphabetically.
         net_stat = sorted([filter(lambda x: "127.0.0.11" not in x, net_stat.splitlines())][2:])
 
         # Machine processes
-        processes = ManagerProxy.get_instance().exec(machine=machine,
-                                                     command="ps -e -o command"
-                                                     )
+        (processes, _) = ManagerProxy.get_instance().exec(machine_name=machine,
+                                                          command="ps -e -o command"
+                                                          )
         # Remove header line and sort the array alphabetically.
         processes = sorted([x.strip() for x in processes.splitlines()[1:]])
 

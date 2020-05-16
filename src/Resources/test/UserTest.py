@@ -1,8 +1,8 @@
 import difflib
 import logging
-import os
 import tarfile
 
+import os
 from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
@@ -104,13 +104,15 @@ class UserTest(Test):
     @staticmethod
     def _run_machine_test_file(machine):
         # Give execution permissions to test file
-        ManagerProxy.get_instance().exec(machine=machine,
+        ManagerProxy.get_instance().exec(machine_name=machine,
                                          command="chmod u+x /%s.test" % machine.name
                                          )
 
         # Run the test file inside the container
-        return ManagerProxy.get_instance().exec(machine=machine,
-                                                command="%s -c /%s.test" % (Setting.get_instance().device_shell,
-                                                                            machine.name
-                                                                            )
-                                                )
+        (result_stdout, _) = ManagerProxy.get_instance().exec(machine_name=machine,
+                                                              command="%s -c /%s.test" % (
+                                                                  Setting.get_instance().device_shell,
+                                                                  machine.name
+                                                              ))
+
+        return result_stdout

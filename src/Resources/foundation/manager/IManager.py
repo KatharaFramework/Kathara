@@ -19,11 +19,11 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `wipe` method.")
 
     @abstractmethod
-    def connect_tty(self, lab_hash, machine_name, command, logs=False):
+    def connect_tty(self, lab_hash, machine_name, shell, logs=False):
         raise NotImplementedError("You must implement `connect_tty` method.")
 
     @abstractmethod
-    def exec(self, machine, command):
+    def exec(self, lab_hash, machine_name, command):
         raise NotImplementedError("You must implement `exec` method.")
 
     @abstractmethod

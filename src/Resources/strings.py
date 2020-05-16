@@ -12,6 +12,7 @@ strings = {
     "ltest": "Test a Kathara lab",
     "lconfig": "Attach network interfaces to a running Kathara machine in a Kathara lab",
     "connect": "Connect to a Kathara machine",
+    "exec": "Execute a command in a Kathara machine",
     "wipe": "Delete all Kathara machines and links, optionally also delete settings",
     "list": "Show all running Kathara machines of the current user",
     "settings": "Show and edit Kathara settings",

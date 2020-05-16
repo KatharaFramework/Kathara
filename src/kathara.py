@@ -86,7 +86,7 @@ class KatharaEntryPoint(object):
             logging.critical("If you encounter any problem please run `kathara wipe`.")
             sys.exit(0)
         except Exception as e:
-            logging.critical(str(e) + '\n')
+            logging.exception(str(e) + '\n')
             sys.exit(1)
 
 

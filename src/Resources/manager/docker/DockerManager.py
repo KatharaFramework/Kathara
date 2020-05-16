@@ -105,18 +105,16 @@ class DockerManager(IManager):
         self.docker_link.wipe(user=user_name)
 
     @privileged
-    def connect_tty(self, lab_hash, machine_name, command, logs=False):
+    def connect_tty(self, lab_hash, machine_name, shell, logs=False):
         self.docker_machine.connect(lab_hash=lab_hash,
                                     machine_name=machine_name,
-                                    command=command,
+                                    shell=shell,
                                     logs=logs
                                     )
 
     @privileged
-    def exec(self, machine, command):
-        return self.docker_machine.exec(machine.api_object,
-                                        command=command
-                                        )
+    def exec(self, lab_hash, machine_name, command):
+        return self.docker_machine.exec(lab_hash, machine_name, command)
 
     @privileged
     def copy_files(self, machine, path, tar_data):
@@ -238,9 +236,9 @@ class DockerManager(IManager):
                                            ) if "system_cpu_usage" in stats["cpu_stats"] else "-",
             "mem_usage": utils.human_readable_bytes(stats["memory_stats"]["usage"]) + " / " +
                          utils.human_readable_bytes(stats["memory_stats"]["limit"])
-                         if "usage" in stats["memory_stats"] else "- / -",
+            if "usage" in stats["memory_stats"] else "- / -",
             "mem_percent": "{0:.2f}%".format((stats["memory_stats"]["usage"] / stats["memory_stats"]["limit"]) * 100)
-                           if "usage" in stats["memory_stats"] else "-",
+            if "usage" in stats["memory_stats"] else "-",
             "net_usage": utils.human_readable_bytes(sum([net_stats["rx_bytes"]
                                                          for (_, net_stats) in network_stats.items()])
                                                     ) + " / " +
