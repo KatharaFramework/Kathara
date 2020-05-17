@@ -451,9 +451,9 @@ class KubernetesMachine(object):
         while response.is_open():
             response.update(timeout=1)
             if response.peek_stdout():
-                result['stdout'] += response.read_stdout().decode('utf-8')
+                result['stdout'] += response.read_stdout()
             if stderr and response.peek_stderr():
-                result['stderr'] += response.read_stderr().decode('utf-8')
+                result['stderr'] += response.read_stderr()
             if stdin and stdin_buffer:
                 param = stdin_buffer.pop(0)
                 response.write_stdin(param)
