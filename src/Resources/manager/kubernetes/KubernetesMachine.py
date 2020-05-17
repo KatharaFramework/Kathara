@@ -190,18 +190,9 @@ class KubernetesMachine(object):
         if Setting.get_instance().host_shared:
             volume_mounts.append(client.V1VolumeMount(name="shared", mount_path="/shared"))
 
-        # If privileged is not required, assign proper capabilities to the Pod.
-        if privileged:
-            security_context = client.V1SecurityContext(privileged=True)
-        else:
-            security_context = client.V1SecurityContext(capabilities=client.V1Capabilities(add=machine.capabilities))
-
-        # Convert the sysctl map into V1Sysctl objects suitable for k8s.
-        pod_sysctls = []
-        for sysctl_name, sysctl_value in machine.meta['sysctls']:
-            pod_sysctls.append(client.V1Sysctl(name=sysctl_name, value=sysctl_value))
-
-        pod_security_context = client.V1PodSecurityContext(sysctls=pod_sysctls)
+        # Machine must be executed in privileged mode to run sysctls,
+        # and k8s python API does not support sysctls in Pod definition.
+        security_context = client.V1SecurityContext(privileged=True)
 
         port_info = machine.get_ports()
         container_ports = None
@@ -234,10 +225,10 @@ class KubernetesMachine(object):
         # Build the final startup commands string
         sysctl_commands = "; ".join(["sysctl %s=%d" % item for item in machine.meta["sysctls"].items()])
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
-            .format(machine_name=machine.name,
-                    sysctl_commands=sysctl_commands,
-                    machine_commands="; ".join(machine.startup_commands)
-                    )
+                                      .format(machine_name=machine.name,
+                                              sysctl_commands=sysctl_commands,
+                                              machine_commands="; ".join(machine.startup_commands)
+                                              )
 
         post_start = client.V1Handler(
             _exec=client.V1ExecAction(
@@ -309,8 +300,7 @@ class KubernetesMachine(object):
         pod_spec = client.V1PodSpec(containers=[container_definition],
                                     dns_policy="None",
                                     dns_config=dns_config,
-                                    volumes=volumes,
-                                    security_context=pod_security_context
+                                    volumes=volumes
                                     )
 
         pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
