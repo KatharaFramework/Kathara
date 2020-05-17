@@ -38,6 +38,18 @@ class ExecCommand(Command):
             help='The machine has been started with vstart command.',
         )
         parser.add_argument(
+            '--no-stdout',
+            dest="no_stdout",
+            action="store_true",
+            help='Disable stdout of the executed command.',
+        )
+        parser.add_argument(
+            '--no-stderr',
+            dest="no_stderr",
+            action="store_true",
+            help='Disable stderr of the executed command.',
+        )
+        parser.add_argument(
             'machine_name',
             metavar='DEVICE_NAME',
             help='Name of the machine to connect to.'
@@ -45,6 +57,7 @@ class ExecCommand(Command):
         parser.add_argument(
             'command',
             metavar='COMMAND',
+            nargs='+',
             help='Command that should be executed inside the machine.'
         )
 
@@ -64,8 +77,8 @@ class ExecCommand(Command):
 
         (stdout, stderr) = ManagerProxy.get_instance().exec(lab_hash, args.machine_name, args.command)
 
-        if stderr:
-            sys.stderr.write(stderr)
-            return
+        if not args.no_stdout:
+            sys.stdout.write(stdout)
 
-        sys.stdout.write(stdout)
+        if stderr and not args.no_stderr:
+            sys.stderr.write(stderr)
