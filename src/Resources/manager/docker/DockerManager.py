@@ -114,7 +114,7 @@ class DockerManager(IManager):
 
     @privileged
     def exec(self, lab_hash, machine_name, command):
-        return self.docker_machine.exec(lab_hash, machine_name, command)
+        return self.docker_machine.exec(lab_hash, machine_name, command, tty=False)
 
     @privileged
     def copy_files(self, machine, path, tar_data):

@@ -331,8 +331,6 @@ class DockerMachine(object):
     def connect(self, lab_hash, machine_name, shell=None, logs=False):
         logging.debug("Connect to machine with name: %s" % machine_name)
 
-        container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
-
         if not shell:
             shell = [Setting.get_instance().device_shell]
         else:
@@ -340,13 +338,17 @@ class DockerMachine(object):
 
         if logs and Setting.get_instance().print_startup_log:
             (result_string, _) = self.exec(lab_hash,
-                                           container.name,
-                                           command="cat /var/log/shared.log /var/log/startup.log"
+                                           machine_name,
+                                           command="cat /var/log/shared.log /var/log/startup.log",
+                                           tty=False
                                            )
+
             if result_string:
                 print("--- Startup Commands Log\n")
                 print(result_string)
                 print("--- End Startup Commands Log\n")
+
+        container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
         def tty_connect():
             # Import PseudoTerminal only on Linux since some libraries are not available on Windows
@@ -378,7 +380,7 @@ class DockerMachine(object):
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
-    def exec(self, lab_hash, machine_name, command):
+    def exec(self, lab_hash, machine_name, command, tty=True):
         logging.debug("Executing command `%s` to machine with name: %s" % (command, machine_name))
 
         container = self.get_machine(lab_hash, machine_name)
@@ -386,6 +388,7 @@ class DockerMachine(object):
         (exit_code, (stdout, stderr)) = container.exec_run(cmd=command,
                                                            stdout=True,
                                                            stderr=True,
+                                                           tty=tty,
                                                            privileged=False,
                                                            demux=True,
                                                            detach=False
@@ -409,6 +412,8 @@ class DockerMachine(object):
         return self.client.containers.list(all=True, filters=filters)
 
     def get_machine(self, lab_hash, machine_name):
+        logging.debug("Searching container `%s` with lab hash `%s`" % (machine_name, lab_hash))
+
         containers = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
 
         logging.debug("Found containers: %s" % str(containers))

@@ -415,22 +415,18 @@ class KubernetesMachine(object):
         pty = KubernetesTerminal(k8s_stream=resp)
         pty.start()
 
-    def exec(self, lab_hash, machine_name, command, stdin=False, stderr=False, tty=False, stdin_buffer=None):
+    def exec(self, lab_hash, machine_name, command, tty=False, stdin=False, stdin_buffer=None, stderr=False):
         logging.debug("Executing command `%s` to machine with name: %s" % (command, machine_name))
 
-        pod = self.get_machine(lab_hash, machine_name)
-
-        machine_namespace = pod.metadata.namespace
-
-        command = shlex.split(command) if type(command) == 'str' else command
+        command = shlex.split(command) if type(command) == str else command
 
         try:
             # Retrieve the pod of current Deployment
-            pod = self.get_machine(lab_hash=machine_namespace, machine_name=machine_name)
+            pod = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
             response = stream(self.core_client.connect_get_namespaced_pod_exec,
                               name=pod.metadata.name,
-                              namespace=machine_namespace,
+                              namespace=lab_hash,
                               command=command,
                               stdout=True,
                               stderr=stderr,

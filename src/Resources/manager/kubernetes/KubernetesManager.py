@@ -112,7 +112,7 @@ class KubernetesManager(IManager):
     def exec(self, lab_hash, machine_name, command):
         lab_hash = lab_hash.lower()
 
-        return self.k8s_machine.exec(lab_hash, machine_name, command, stderr=True)
+        return self.k8s_machine.exec(lab_hash, machine_name, command, stderr=True, tty=False)
 
     @privileged
     def copy_files(self, machine, path, tar_data):
