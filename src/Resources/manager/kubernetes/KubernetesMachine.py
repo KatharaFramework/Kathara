@@ -223,7 +223,7 @@ class KubernetesMachine(object):
         # On Ready state, the pod has volumes and network interfaces up, so this hook is used
         # to execute custom commands coming from .startup file and "exec" option
         # Build the final startup commands string
-        sysctl_commands = "; ".join(["sysctl %s=%d" % item for item in machine.meta["sysctls"].items()])
+        sysctl_commands = "; ".join(["sysctl -w -q %s=%d" % item for item in machine.meta["sysctls"].items()])
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
                                       .format(machine_name=machine.name,
                                               sysctl_commands=sysctl_commands,
