@@ -7,14 +7,14 @@ ADD ./requirements.txt /
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 21805A48E6CBBA6B991ABE76646193862B759810
 COPY kathara.list /etc/apt/sources.list.d
 RUN apt update
-RUN apt install kathara -y
+RUN apt install python3-pip xterm kathara -y
 RUN python3 -m pip install -r requirements.txt
 
 ####################DIND###################################
 # Install Docker from Docker Inc. repositories.
 RUN curl -sSL https://get.docker.com/ | sh
 
-ADD ./ef66521f2fe7ae92ed9c1868391f79631c28a63c2e6e7afbcfd4a8a6ba537680 /var/lib/docker/plugins/ef66521f2fe7ae92ed9c1868391f79631c28a63c2e6e7afbcfd4a8a6ba537680/
+ADD ./katharanp /var/lib/docker/plugins/7e2438b0d2dc2316a820469416abe782f87e1e4009d4606a47255f2a45db833e/
 
 # Install the magic wrapper.
 ADD ./wrapdocker /usr/local/bin/wrapdocker

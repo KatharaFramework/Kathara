@@ -1,0 +1,4 @@
+- Manca la cartella del Docker plugin da inserire. Bisogna prenderla da: /var/lib/docker/plugins/cartella-plugin
+- Va modificato il Dockerfile inserendo il nome della cartella del plugin
+- Mettere all'interno di shared il codice di kathara e gli script network
+- Dentro la cartella image mettere il tar dell'immagine salvata dind-kathara

@@ -668,7 +668,7 @@ class DockerManager(IManager):
         else:
             networking.create_namespace(self.client.containers.list())
             for container in list_container:
-                path_container = "./" + container.labels['name'] + "/sublab"
+                path_container = os.path.join(lab.path, container.labels['name'], "sublab")
                 if os.path.exists(path_container):
                     pid = docker.APIClient().inspect_container(container.name)["State"]["Pid"]
                     client = self.getClient(container.labels['name'])
