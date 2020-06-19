@@ -67,7 +67,7 @@ Checks on the correctness of the configuration are performed each time a Kathara
 
 ## ADDITIONAL MANAGER PARAMETERS
 
-Each Manager specifies additional parameters which are used only when that Manager is current active.
+Each Manager specifies additional parameters which are used only when the Manager is currently active.
 
 ### DOCKER
 * `hosthome_mount` (boolean):
@@ -84,7 +84,7 @@ Each Manager specifies additional parameters which are used only when that Manag
 
 		{
 			"image": "kathara/quagga",
-			"deployer_type": "docker",
+			"manager_type": "docker",
 			"terminal": "/usr/bin/xterm",
 			"open_terminals": true,
 			"hosthome_mount": true,

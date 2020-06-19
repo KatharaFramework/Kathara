@@ -35,6 +35,9 @@ In order to establish a uniform convention, comment lines should always start wi
 * `bridged` (boolean):
     Connect the device to the host network by adding an additional network interface. This interface will be connected to the host network through a NAT connection.
 
+* `ipv6` (boolean):
+    Enable or disable IPv6 on this machine.
+
 * `exec` (string):
     Run a specific shell command inside the device during the startup phase.
 

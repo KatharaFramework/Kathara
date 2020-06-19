@@ -1,13 +1,14 @@
 import collections
 import logging
-import os
 import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
 from glob import glob
+from distutils.util import strtobool
 
+import os
 from .Link import BRIDGE_LINK_NAME
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError
@@ -207,8 +208,7 @@ class Machine(object):
         :return: The Docker image to be used
         """
         return self.lab.general_options["image"] if "image" in self.lab.general_options else \
-               self.meta["image"] if "image" in self.meta \
-               else Setting.get_instance().image
+                self.meta["image"] if "image" in self.meta else Setting.get_instance().image
 
     def get_mem(self):
         """
@@ -216,7 +216,7 @@ class Machine(object):
         :return: The memory limit of the image.
         """
         memory = self.lab.general_options["mem"] if "mem" in self.lab.general_options else \
-                 self.meta["mem"] if "mem" in self.meta else None
+            self.meta["mem"] if "mem" in self.meta else None
 
         if memory:
             unit = memory[-1].lower()
@@ -235,7 +235,7 @@ class Machine(object):
 
     def get_cpu(self, multiplier=1):
         """
-        CPU limit, defined as nano CPUs (10*e-9).
+        CPU limit, multiplied by a specific multiplier.
         User should pass a float value ranging from 0 to max user CPUs.
         It is took from options, or machine meta.
         :return: 
@@ -261,6 +261,13 @@ class Machine(object):
                 raise MachineOptionError("Port value not valid.")
 
         return None
+
+    def is_ipv6_enabled(self):
+        try:
+            return bool(strtobool(self.lab.general_options["ipv6"])) if "ipv6" in self.lab.general_options else \
+                    bool(strtobool(self.meta["ipv6"])) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
+        except ValueError:
+            raise MachineOptionError("IPv6 value not valid.")
 
     def __repr__(self):
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

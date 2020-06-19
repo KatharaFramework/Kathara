@@ -5,7 +5,7 @@ from functools import partial
 from multiprocessing.dummy import Pool
 
 from kubernetes import client
-from kubernetes.client.apis import custom_objects_api
+from kubernetes.client.api import custom_objects_api
 from kubernetes.client.rest import ApiException
 from progress.bar import Bar
 
@@ -93,7 +93,7 @@ class KubernetesLink(object):
         items = utils.chunk_list(links, pool_size)
 
         for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, [], False, None), iterable=chunk)
+            links_pool.map(func=partial(self._undeploy_link, None, False, None), iterable=chunk)
 
     def _undeploy_link(self, networks_to_delete, log, progress_bar, link_item):
         namespace = link_item["metadata"]["namespace"]

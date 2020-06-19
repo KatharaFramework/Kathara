@@ -7,8 +7,8 @@ from functools import partial
 from multiprocessing.dummy import Pool
 
 from kubernetes import client
-from kubernetes.client.apis import apps_v1_api
-from kubernetes.client.apis import core_v1_api
+from kubernetes.client.api import apps_v1_api
+from kubernetes.client.api import core_v1_api
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
 from progress.bar import Bar
@@ -190,8 +190,7 @@ class KubernetesMachine(object):
         if Setting.get_instance().host_shared:
             volume_mounts.append(client.V1VolumeMount(name="shared", mount_path="/shared"))
 
-        # Machine must be executed in privileged mode to run sysctls,
-        # and k8s python API does not support sysctls in Pod definition.
+        # Machine must be executed in privileged mode to run sysctls.
         security_context = client.V1SecurityContext(privileged=True)
 
         port_info = machine.get_ports()
@@ -243,7 +242,7 @@ class KubernetesMachine(object):
             lifecycle=lifecycle,
             stdin=True,
             tty=True,
-            image_pull_policy="Always",
+            image_pull_policy=Setting.get_instance().image_pull_policy,
             ports=container_ports,
             resources=resources,
             volume_mounts=volume_mounts,
@@ -253,13 +252,10 @@ class KubernetesMachine(object):
         pod_annotations = {}
         network_interfaces = []
         for (idx, machine_link) in machine.interfaces.items():
-            # Generate name for the interface
-            machine_interface_name = "net%d" % idx
-
             network_interfaces.append({
                 "name": machine_link.api_object["metadata"]["name"],
                 "namespace": machine.lab.folder_hash,
-                "interface": machine_interface_name
+                "interface": "net%d" % idx
             })
         pod_annotations["k8s.v1.cni.cncf.io/networks"] = json.dumps(network_interfaces)
 

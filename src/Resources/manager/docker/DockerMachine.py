@@ -172,7 +172,7 @@ class DockerMachine(object):
         sysctl_parameters["net.ipv4.ip_forward"] = 1
         sysctl_parameters["net.ipv4.icmp_ratelimit"] = 0
 
-        if Setting.get_instance().enable_ipv6:
+        if machine.is_ipv6_enabled():
             sysctl_parameters["net.ipv6.conf.all.forwarding"] = 1
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
@@ -297,7 +297,7 @@ class DockerMachine(object):
         items = utils.chunk_list(machines, pool_size)
 
         progress_bar = Bar("Deleting machines...", max=len(machines) if not selected_machines
-        else len(selected_machines)
+                                                                     else len(selected_machines)
                            )
 
         for chunk in items:

@@ -103,6 +103,39 @@ class KubernetesOptionsHandler(OptionsHandler):
 
         host_shared_item = SubmenuItem(host_shared_string, host_shared_menu, current_menu)
 
+        # Image Pull Policy Option
+        image_pull_policy_string = "Image Pull Policy"
+        image_pull_policy_menu = SelectionMenu(strings=[],
+                                               title=image_pull_policy_string,
+                                               subtitle=setting_utils.current_string("image_pull_policy"),
+                                               prologue_text="""Specify the image pull policy for Docker images """
+                                                             """used by devices. 
+                                                             Default is %s.""" % DEFAULTS['image_pull_policy'],
+                                               formatter=menu_formatter
+                                               )
+
+        image_pull_policy_menu.append_item(FunctionItem(text="Always",
+                                                        function=setting_utils.update_setting_value,
+                                                        args=["image_pull_policy", "Always"],
+                                                        should_exit=True
+                                                        )
+                                           )
+        image_pull_policy_menu.append_item(FunctionItem(text="If Not Present",
+                                                        function=setting_utils.update_setting_value,
+                                                        args=["image_pull_policy", "IfNotPresent"],
+                                                        should_exit=True
+                                                        )
+                                           )
+        image_pull_policy_menu.append_item(FunctionItem(text="Never",
+                                                        function=setting_utils.update_setting_value,
+                                                        args=["image_pull_policy", "Never"],
+                                                        should_exit=True
+                                                        )
+                                           )
+
+        image_pull_policy_item = SubmenuItem(image_pull_policy_string, image_pull_policy_menu, current_menu)
+
         current_menu.append_item(api_url_item)
         current_menu.append_item(api_token_item)
         current_menu.append_item(host_shared_item)
+        current_menu.append_item(image_pull_policy_item)
