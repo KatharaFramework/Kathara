@@ -3,7 +3,6 @@ import shlex
 from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
-from subprocess import Popen
 
 from docker.errors import APIError
 from progress.bar import Bar
@@ -11,6 +10,7 @@ from progress.bar import Bar
 from ... import utils
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
 from ...foundation.cli.CliArgs import CliArgs
+from ...os.TTY import Terminal
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
@@ -350,35 +350,36 @@ class DockerMachine(object):
 
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
-        def tty_connect():
-            # Import PseudoTerminal only on Linux since some libraries are not available on Windows
-            from ...trdparty.dockerpty.pty import PseudoTerminal
+        # def tty_connect():
+        # Import PseudoTerminal only on Linux since some libraries are not available on Windows
+        # from ...trdparty.dockerpty.pty import PseudoTerminal
 
-            # Needed with low level api because we need the id of the exec_create
-            resp = self.client.api.exec_create(container.id,
-                                               shell,
-                                               stdout=True,
-                                               stderr=True,
-                                               stdin=True,
-                                               tty=True,
-                                               privileged=False
-                                               )
+        # Needed with low level api because we need the id of the exec_create
+        resp = self.client.api.exec_create(container.id,
+                                           shell,
+                                           stdout=True,
+                                           stderr=True,
+                                           stdin=True,
+                                           tty=True,
+                                           privileged=False
+                                           )
 
-            exec_output = self.client.api.exec_start(resp['Id'],
-                                                     tty=True,
-                                                     socket=True,
-                                                     demux=True
-                                                     )
+        exec_output = self.client.api.exec_start(resp['Id'],
+                                                 tty=True,
+                                                 socket=True,
+                                                 demux=True
+                                                 )
 
-            PseudoTerminal(self.client, exec_output, resp['Id']).start()
+        Terminal(exec_output.fileno()).start()
+        # PseudoTerminal(self.client, exec_output, resp['Id']).start()
 
-        def cmd_connect():
-            exec_command = ["docker", "exec", "-it", container.id]
-            exec_command.extend(shell)
+        # def cmd_connect():
+        #     exec_command = ["docker", "exec", "-it", container.id]
+        #     exec_command.extend(shell)
+        #
+        #     Popen(exec_command)
 
-            Popen(exec_command)
-
-        utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
+        # utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
     def exec(self, lab_hash, machine_name, command, tty=True):
         logging.debug("Executing command `%s` to machine with name: %s" % (command, machine_name))
