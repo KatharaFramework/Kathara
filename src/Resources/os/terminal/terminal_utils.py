@@ -47,8 +47,8 @@ def get_terminal_size_linux():  # pragma: no cover
         # This works for Python 3, but not Pypy3. Probably the best method if
         # it's supported so let's always try
         import shutil
-        h, w = shutil.get_terminal_size((0, 0))
-        if h and w:
+        w, h = shutil.get_terminal_size((0, 0))
+        if w and h:
             return w, h
     except:
         pass
