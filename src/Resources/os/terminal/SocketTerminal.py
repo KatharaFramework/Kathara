@@ -1,6 +1,7 @@
 import pyuv
 
 from .Terminal import Terminal
+from ...utils import exec_by_platform
 
 
 class SocketTerminal(Terminal):
@@ -9,7 +10,10 @@ class SocketTerminal(Terminal):
         self._external_tty.start(self._handle_external_tty(), 0.1, 0.1)
 
     def _on_close(self):
-        pass
+        def unix_close():
+            self._system_stdin.set_mode(0)
+
+        exec_by_platform(unix_close, lambda: None, unix_close)
 
     def _write_on_external_tty(self):
         def write_on_external_tty(handle, data, error):
