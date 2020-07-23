@@ -88,7 +88,6 @@ class DockerMachine(object):
 
         machines = lab.machines.items()
         progress_bar = Bar('Deploying machines...', max=len(machines))
-
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
         # If not, they're started sequentially
@@ -161,7 +160,7 @@ class DockerMachine(object):
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
-        
+
         # Merge machine sysctls
         sysctl_parameters = {**sysctl_parameters, **machine.meta['sysctls']}
 
@@ -194,7 +193,8 @@ class DockerMachine(object):
                                                               labels={"name": machine.name,
                                                                       "lab_hash": machine.lab.folder_hash,
                                                                       "user": utils.get_current_user_name(),
-                                                                      "app": "kathara"
+                                                                      "app": "kathara",
+                                                                      "shell": machine.meta["shell"] if "shell" in machine.meta else Setting.get_instance().device_shell
                                                                       }
                                                               )
         except APIError as e:
@@ -313,14 +313,14 @@ class DockerMachine(object):
                 progress_bar.next()
 
     def connect(self, lab_hash, machine_name, shell, logs=False):
-        logging.debug("Connect to machine with name: %s" % machine_name)
-
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
         if not shell:
-            shell = [Setting.get_instance().device_shell]
+            shell = container.labels['shell']
         else:
             shell = shlex.split(shell) if type(shell) == str else shell
+
+        logging.debug("Connect to machine `%s` with shell: %s" % (machine_name,shell))
 
         if logs and Setting.get_instance().print_startup_log:
             result_string = self.exec(container,
