@@ -13,7 +13,6 @@ class SocketTerminal(Terminal):
 
     def _write_on_external_tty(self):
         def write_on_external_tty(handle, data, error):
-            print("Input", data)
             self.handler.write_stdin(data)
 
         return write_on_external_tty
@@ -22,9 +21,6 @@ class SocketTerminal(Terminal):
         def handle_external_tty(timer_handle):
             if self.handler.peek_stdout():
                 data = self.handler.read_stdout()
-
-                print("Dati", data)
-
                 self._system_stdout.write(data.encode('utf-8'))
 
                 if data.strip() == 'exit':
