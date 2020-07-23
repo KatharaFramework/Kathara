@@ -10,7 +10,6 @@ from progress.bar import Bar
 from ... import utils
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
 from ...foundation.cli.CliArgs import CliArgs
-from ...os.TTY import Terminal
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
@@ -297,7 +296,7 @@ class DockerMachine(object):
         items = utils.chunk_list(machines, pool_size)
 
         progress_bar = Bar("Deleting machines...", max=len(machines) if not selected_machines
-                                                                     else len(selected_machines)
+        else len(selected_machines)
                            )
 
         for chunk in items:
@@ -350,11 +349,6 @@ class DockerMachine(object):
 
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
-        # def tty_connect():
-        # Import PseudoTerminal only on Linux since some libraries are not available on Windows
-        # from ...trdparty.dockerpty.pty import PseudoTerminal
-
-        # Needed with low level api because we need the id of the exec_create
         resp = self.client.api.exec_create(container.id,
                                            shell,
                                            stdout=True,
@@ -367,19 +361,18 @@ class DockerMachine(object):
         exec_output = self.client.api.exec_start(resp['Id'],
                                                  tty=True,
                                                  socket=True,
-                                                 demux=True
+                                                 stream=True
                                                  )
 
-        Terminal(exec_output.fileno()).start()
-        # PseudoTerminal(self.client, exec_output, resp['Id']).start()
+        def tty_connect():
+            from ...os.terminal.TTYTerminal import TTYTerminal
+            TTYTerminal(exec_output).start()
 
-        # def cmd_connect():
-        #     exec_command = ["docker", "exec", "-it", container.id]
-        #     exec_command.extend(shell)
-        #
-        #     Popen(exec_command)
+        def cmd_connect():
+            from ...os.terminal.PipeTerminal import PipeTerminal
+            PipeTerminal(exec_output).start()
 
-        # utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
+        utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
     def exec(self, lab_hash, machine_name, command, tty=True):
         logging.debug("Executing command `%s` to machine with name: %s" % (command, machine_name))

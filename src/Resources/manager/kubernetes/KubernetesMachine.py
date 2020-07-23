@@ -17,7 +17,6 @@ from .KubernetesConfigMap import KubernetesConfigMap
 from ... import utils
 from ...exceptions import MachineAlreadyExistsError
 from ...setting.Setting import Setting
-from ...trdparty.k8spty.terminal import KubernetesTerminal
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 
@@ -408,6 +407,7 @@ class KubernetesMachine(object):
                       _preload_content=False
                       )
 
+        from ...trdparty.k8spty.terminal import KubernetesTerminal
         pty = KubernetesTerminal(k8s_stream=resp)
         pty.start()
 
