@@ -5,6 +5,7 @@ import pyuv
 import win32pipe
 
 from .Terminal import Terminal
+from .terminal_utils import get_terminal_size_windows
 
 
 class PipeTerminal(Terminal):
@@ -34,28 +35,5 @@ class PipeTerminal(Terminal):
 
         return write_on_external_tty
 
-    # @staticmethod
-    # def _handle_resize_terminal_win():
-    #     res = None
-    #     try:
-    #         from ctypes import windll, create_string_buffer
-    #
-    #         # stdin handle is -10
-    #         # stdout handle is -11
-    #         # stderr handle is -12
-    #
-    #         h = windll.kernel32.GetStdHandle(-12)
-    #         csbi = create_string_buffer(22)
-    #         res = windll.kernel32.GetConsoleScreenBufferInfo(h, csbi)
-    #     except:
-    #         return None
-    #
-    #     if res:
-    #         import struct
-    #         (_, _, _, _, _, left, top, right, bottom, _, _) = \
-    #             struct.unpack("hhhhHhhhhhh", csbi.raw)
-    #         w = right - left + 1
-    #         h = bottom - top + 1
-    #         return w, h
-    #     else:
-    #         return None
+    def _handle_resize_terminal(self):
+        w, h = get_terminal_size_windows()

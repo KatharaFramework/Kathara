@@ -5,6 +5,7 @@ import pyuv
 from kubernetes.stream.ws_client import RESIZE_CHANNEL
 
 from .Terminal import Terminal
+from .terminal_utils import get_terminal_size_linux, get_terminal_size_windows
 from ...utils import exec_by_platform
 
 
@@ -16,6 +17,7 @@ class SocketTerminal(Terminal):
     def _on_close(self):
         def unix_close():
             self._system_stdin.set_mode(0)
+            self._resize_signal.close()
 
         exec_by_platform(unix_close, lambda: None, unix_close)
 
@@ -42,19 +44,19 @@ class SocketTerminal(Terminal):
         return handle_external_tty
 
     def _handle_resize_terminal(self):
-        def resize_terminal(signal_handle, signal_num):
-            def resize_unix():
-                import shutil
-                return shutil.get_terminal_size((0, 0))
+        def resize_unix():
+            def resize_terminal(signal_handle, signal_num):
+                w, h = get_terminal_size_linux()
+                self.handler.write_channel(RESIZE_CHANNEL, json.dumps({"Height": h, "Width": w}))
 
-            def resize_win():
-                return 0, 0
+            self._resize_signal = pyuv.Signal(self._loop)
+            self._resize_signal.start(resize_terminal, signal.SIGWINCH)
 
-            h, w = exec_by_platform(resize_unix, resize_win, resize_unix)
-            print("Found size", w, h)
+            # Run first time to set the proper terminal size
+            resize_terminal(None, None)
+
+        def resize_windows():
+            w, h = get_terminal_size_windows()
             self.handler.write_channel(RESIZE_CHANNEL, json.dumps({"Height": h, "Width": w}))
 
-        self._resize_signal = pyuv.Signal(self._loop)
-        self._resize_signal.start(resize_terminal, signal.SIGWINCH)
-
-        return resize_terminal
+        exec_by_platform(resize_unix, resize_windows, resize_unix)
