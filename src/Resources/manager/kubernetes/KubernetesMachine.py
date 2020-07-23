@@ -407,9 +407,11 @@ class KubernetesMachine(object):
                       _preload_content=False
                       )
 
-        from ...trdparty.k8spty.terminal import KubernetesTerminal
-        pty = KubernetesTerminal(k8s_stream=resp)
-        pty.start()
+        from ...os.terminal.SocketTerminal import SocketTerminal
+        SocketTerminal(resp).start()
+        # from ...trdparty.k8spty.terminal import KubernetesTerminal
+        # pty = KubernetesTerminal(k8s_stream=resp)
+        # pty.start()
 
     def exec(self, lab_hash, machine_name, command, tty=False, stdin=False, stdin_buffer=None, stderr=False):
         logging.debug("Executing command `%s` to machine with name: %s" % (command, machine_name))
