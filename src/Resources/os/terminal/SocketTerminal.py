@@ -7,7 +7,7 @@ from ...utils import exec_by_platform
 class SocketTerminal(Terminal):
     def _start_external(self):
         self._external_tty = pyuv.Timer(self._loop)
-        self._external_tty.start(self._handle_external_tty(), 0.1, 0.1)
+        self._external_tty.start(self._handle_external_tty(), 0, 0.001)
 
     def _on_close(self):
         def unix_close():
@@ -23,8 +23,13 @@ class SocketTerminal(Terminal):
 
     def _handle_external_tty(self):
         def handle_external_tty(timer_handle):
+            data = None
             if self.handler.peek_stdout():
                 data = self.handler.read_stdout()
+            if self.handler.peek_stderr():
+                data = self.handler.read_stderr()
+
+            if data:
                 self._system_stdout.write(data.encode('utf-8'))
 
                 if data.strip() == 'exit':
