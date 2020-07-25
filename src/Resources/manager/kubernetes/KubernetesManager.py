@@ -217,11 +217,11 @@ class KubernetesManager(IManager):
         container_status = container_statuses[0].state
 
         string_status = None
-        if container_status.waiting is not None:
-            string_status = container_status.waiting.reason
-        elif container_status.terminated is not None:
+        if container_status.terminated is not None:
             string_status = container_status.terminated.reason if container_status.terminated.reason is not None \
                                                                else "Terminating"
+        elif container_status.waiting is not None:
+            string_status = container_status.waiting.reason
 
         # In case the status contains an error message, split it to the first ": " and take the left part
         return string_status.split(': ')[0] if string_status is not None else machine.status.phase
