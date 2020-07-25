@@ -150,14 +150,9 @@ class KubernetesManager(IManager):
             ]
 
             for machine in machines:
-                container_status = machine.status.container_statuses[0].state
-                detailed_status = container_status.running if container_status.running is not None else \
-                                  container_status.waiting if container_status.waiting is not None else \
-                                  container_status.terminated
-
                 machines_data.append([machine.metadata.namespace,
                                       machine.metadata.labels["name"],
-                                      detailed_status.reason,
+                                      self._get_detailed_machine_status(machine),
                                       machine.spec.node_name
                                       ])
 
@@ -189,7 +184,7 @@ class KubernetesManager(IManager):
         machine_info += "Lab Hash: %s\n" % machine.metadata.namespace
         machine_info += "Machine Name: %s\n" % machine.metadata.labels["name"]
         machine_info += "Real Machine Name: %s\n" % machine.metadata.name
-        machine_info += "Status: %s\n" % machine.status.phase
+        machine_info += "Status: %s\n" % self._get_detailed_machine_status(machine)
         machine_info += "Image: %s\n" % machine.status.container_statuses[0].image.replace('docker.io/', '')
         machine_info += "Assigned Node: %s\n" % machine.spec.node_name
 
@@ -211,3 +206,11 @@ class KubernetesManager(IManager):
     @staticmethod
     def get_formatted_manager_name():
         return "Kubernetes (Megalos)"
+
+    @staticmethod
+    def _get_detailed_machine_status(machine):
+        container_status = machine.status.container_statuses[0].state
+
+        return machine.status.phase if container_status.running is not None else \
+               container_status.waiting.reason if container_status.waiting is not None else \
+               container_status.terminated.reason
