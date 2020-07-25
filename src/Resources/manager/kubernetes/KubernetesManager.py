@@ -209,8 +209,17 @@ class KubernetesManager(IManager):
 
     @staticmethod
     def _get_detailed_machine_status(machine):
-        container_status = machine.status.container_statuses[0].state
+        container_statuses = machine.status.container_statuses
 
-        return machine.status.phase if container_status.running is not None else \
-               container_status.waiting.reason if container_status.waiting is not None else \
-               container_status.terminated.reason
+        if not container_statuses:
+            return machine.status.phase
+
+        container_status = container_statuses[0].state
+
+        if container_status.running is not None:
+            return machine.status.phase
+
+        string_status = container_status.waiting.reason if container_status.waiting is not None \
+                                                        else container_status.terminated.reason
+
+        return string_status if string_status is not None else machine.status.phase
