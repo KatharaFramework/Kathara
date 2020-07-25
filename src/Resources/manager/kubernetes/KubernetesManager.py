@@ -150,9 +150,14 @@ class KubernetesManager(IManager):
             ]
 
             for machine in machines:
+                container_status = machine.status.container_statuses[0].state
+                detailed_status = container_status.running if container_status.running is not None else \
+                                  container_status.waiting if container_status.waiting is not None else \
+                                  container_status.terminated
+
                 machines_data.append([machine.metadata.namespace,
                                       machine.metadata.labels["name"],
-                                      machine.status.phase,
+                                      detailed_status.reason,
                                       machine.spec.node_name
                                       ])
 
