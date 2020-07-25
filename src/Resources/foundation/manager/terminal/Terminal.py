@@ -21,13 +21,13 @@ class Terminal(ABC):
 
         self._system_stdin = pyuv.TTY(self._loop, sys.stdin.fileno(), True)
         self._system_stdin.set_mode(1)
-        self._system_stdin.start_read(self._write_on_external_tty())
+        self._system_stdin.start_read(self._write_on_external_terminal())
 
         self._system_stdout = pyuv.TTY(self._loop, sys.stdout.fileno(), False)
 
         self._start_external()
 
-        self._handle_resize_terminal()
+        self._resize_terminal()
 
         self._loop.run()
 
@@ -50,21 +50,21 @@ class Terminal(ABC):
     def _on_close(self):
         pass
 
-    def _write_on_external_tty(self):
-        def write_on_external_tty(handle, data, error):
+    def _write_on_external_terminal(self):
+        def write_on_external_terminal(handle, data, error):
             self._external_terminal.write(data)
 
-        return write_on_external_tty
+        return write_on_external_terminal
 
-    def _handle_external_tty(self):
-        def handle_external_tty(handle, data, error):
+    def _read_external_terminal(self):
+        def read_external_terminal(handle, data, error):
             self._system_stdout.write(data)
 
             if data.decode('utf-8').strip() == 'exit':
                 self.close()
 
-        return handle_external_tty
+        return read_external_terminal
 
     @abstractmethod
-    def _handle_resize_terminal(self):
+    def _resize_terminal(self):
         pass

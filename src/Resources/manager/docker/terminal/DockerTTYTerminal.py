@@ -17,14 +17,14 @@ class DockerTTYTerminal(Terminal):
 
     def _start_external(self):
         self._external_terminal = pyuv.TTY(self._loop, self.handler.fileno(), True)
-        self._external_terminal.start_read(self._handle_external_tty())
+        self._external_terminal.start_read(self._read_external_terminal())
 
     def _on_close(self):
         self._system_stdin.set_mode(0)
 
         self._resize_signal.close()
 
-    def _handle_resize_terminal(self):
+    def _resize_terminal(self):
         def resize_terminal(signal_handle, signal_num):
             w, h = get_terminal_size_linux()
             self.client.api.exec_resize(self.exec_id, height=h, width=w)

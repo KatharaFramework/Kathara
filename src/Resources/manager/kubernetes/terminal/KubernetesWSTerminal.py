@@ -18,8 +18,8 @@ class KubernetesWSTerminal(Terminal):
         self._closed = False
 
     def _start_external(self):
-        self._external_tty = pyuv.Timer(self._loop)
-        self._external_tty.start(self._handle_external_tty(), 0, 0.001)
+        self._external_terminal = pyuv.Timer(self._loop)
+        self._external_terminal.start(self._read_external_terminal(), 0, 0.001)
 
     def _on_close(self):
         def unix_close():
@@ -29,14 +29,14 @@ class KubernetesWSTerminal(Terminal):
 
         exec_by_platform(unix_close, lambda: None, unix_close)
 
-    def _write_on_external_tty(self):
-        def write_on_external_tty(handle, data, error):
+    def _write_on_external_terminal(self):
+        def write_on_external_terminal(handle, data, error):
             self.handler.write_stdin(data)
 
-        return write_on_external_tty
+        return write_on_external_terminal
 
-    def _handle_external_tty(self):
-        def handle_external_tty(timer_handle):
+    def _read_external_terminal(self):
+        def read_external_terminal(timer_handle):
             if not self.handler.is_open() and not self._closed:
                 self._closed = True
                 self.close()
@@ -54,9 +54,9 @@ class KubernetesWSTerminal(Terminal):
                     self._closed = True
                     self.close()
 
-        return handle_external_tty
+        return read_external_terminal
 
-    def _handle_resize_terminal(self):
+    def _resize_terminal(self):
         def resize_unix():
             def resize_terminal(signal_handle, signal_num):
                 w, h = get_terminal_size_linux()

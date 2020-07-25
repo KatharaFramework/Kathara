@@ -23,7 +23,7 @@ class DockerNPipeTerminal(Terminal):
         self._external_terminal = pyuv.Pipe(self._loop)
         self._external_terminal.open(terminal_fd)
         self._external_terminal.set_blocking(False)
-        self._external_terminal.start_read(self._handle_external_tty())
+        self._external_terminal.start_read(self._read_external_terminal())
 
     def _convert_pipe_to_fd(self):
         handle_id = self.handler._handle.handle
@@ -35,14 +35,14 @@ class DockerNPipeTerminal(Terminal):
     def _on_close(self):
         pass
 
-    def _write_on_external_tty(self):
-        def write_on_external_tty(handle, data, error):
+    def _write_on_external_terminal(self):
+        def write_on_external_terminal(handle, data, error):
             self._external_terminal.stop_read()
             self._external_terminal.write(data)
-            self._external_terminal.start_read(self._handle_external_tty())
+            self._external_terminal.start_read(self._read_external_terminal())
 
-        return write_on_external_tty
+        return write_on_external_terminal
 
-    def _handle_resize_terminal(self):
+    def _resize_terminal(self):
         w, h = get_terminal_size_windows()
         self.client.api.exec_resize(self.exec_id, height=h, width=w)
