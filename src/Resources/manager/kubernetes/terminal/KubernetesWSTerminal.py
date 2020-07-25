@@ -10,9 +10,16 @@ from ....utils import exec_by_platform
 
 
 class KubernetesWSTerminal(Terminal):
+    __slots__ = ['_closed']
+
+    def __init__(self, handler):
+        super().__init__(handler)
+
+        self._closed = False
+
     def _start_external(self):
         self._external_tty = pyuv.Timer(self._loop)
-        self._external_tty.start(self._handle_external_tty(), 0, 0)
+        self._external_tty.start(self._handle_external_tty(), 0, 0.001)
 
     def _on_close(self):
         def unix_close():
@@ -30,7 +37,8 @@ class KubernetesWSTerminal(Terminal):
 
     def _handle_external_tty(self):
         def handle_external_tty(timer_handle):
-            if not self.handler.is_open():
+            if not self.handler.is_open() and not self._closed:
+                self._closed = True
                 self.close()
 
             data = None
@@ -43,6 +51,7 @@ class KubernetesWSTerminal(Terminal):
                 self._system_stdout.write(data.encode('utf-8'))
 
                 if data.strip() == 'exit':
+                    self._closed = True
                     self.close()
 
         return handle_external_tty
