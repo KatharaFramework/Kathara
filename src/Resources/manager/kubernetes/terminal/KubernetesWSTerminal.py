@@ -4,19 +4,20 @@ import signal
 import pyuv
 from kubernetes.stream.ws_client import RESIZE_CHANNEL
 
-from .Terminal import Terminal
-from .terminal_utils import get_terminal_size_linux, get_terminal_size_windows
-from ...utils import exec_by_platform
+from ....foundation.manager.terminal.Terminal import Terminal
+from ....foundation.manager.terminal.terminal_utils import get_terminal_size_linux, get_terminal_size_windows
+from ....utils import exec_by_platform
 
 
-class SocketTerminal(Terminal):
+class KubernetesWSTerminal(Terminal):
     def _start_external(self):
         self._external_tty = pyuv.Timer(self._loop)
-        self._external_tty.start(self._handle_external_tty(), 0, 0.001)
+        self._external_tty.start(self._handle_external_tty(), 0, 0)
 
     def _on_close(self):
         def unix_close():
             self._system_stdin.set_mode(0)
+
             self._resize_signal.close()
 
         exec_by_platform(unix_close, lambda: None, unix_close)
@@ -29,10 +30,13 @@ class SocketTerminal(Terminal):
 
     def _handle_external_tty(self):
         def handle_external_tty(timer_handle):
+            if not self.handler.is_open():
+                self.close()
+
             data = None
             if self.handler.peek_stdout():
                 data = self.handler.read_stdout()
-            if self.handler.peek_stderr():
+            elif self.handler.peek_stderr():
                 data = self.handler.read_stderr()
 
             if data:

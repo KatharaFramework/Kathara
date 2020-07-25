@@ -223,10 +223,10 @@ class KubernetesMachine(object):
         # Build the final startup commands string
         sysctl_commands = "; ".join(["sysctl -w -q %s=%d" % item for item in machine.meta["sysctls"].items()])
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
-                                      .format(machine_name=machine.name,
-                                              sysctl_commands=sysctl_commands,
-                                              machine_commands="; ".join(machine.startup_commands)
-                                              )
+            .format(machine_name=machine.name,
+                    sysctl_commands=sysctl_commands,
+                    machine_commands="; ".join(machine.startup_commands)
+                    )
 
         post_start = client.V1Handler(
             _exec=client.V1ExecAction(
@@ -407,11 +407,8 @@ class KubernetesMachine(object):
                       _preload_content=False
                       )
 
-        from ...os.terminal.SocketTerminal import SocketTerminal
-        SocketTerminal(resp).start()
-        # from ...trdparty.k8spty.terminal import KubernetesTerminal
-        # pty = KubernetesTerminal(k8s_stream=resp)
-        # pty.start()
+        from .terminal.KubernetesWSTerminal import KubernetesWSTerminal
+        KubernetesWSTerminal(resp).start()
 
     def exec(self, lab_hash, machine_name, command, tty=False, stdin=False, stdin_buffer=None, stderr=False):
         logging.debug("Executing command `%s` to machine with name: %s" % (command, machine_name))
@@ -443,7 +440,6 @@ class KubernetesMachine(object):
             'stderr': ''
         }
         while response.is_open():
-            response.update(timeout=1)
             if response.peek_stdout():
                 result['stdout'] += response.read_stdout()
             if stderr and response.peek_stderr():

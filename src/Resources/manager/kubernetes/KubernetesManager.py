@@ -22,7 +22,6 @@ class KubernetesManager(IManager):
     # @check_k8s_status
     def __init__(self):
         KubernetesConfig.load_kube_config()
-        KubernetesConfig.get_cluster_user()
 
         self.k8s_namespace = KubernetesNamespace()
         self.k8s_machine = KubernetesMachine(self.k8s_namespace)

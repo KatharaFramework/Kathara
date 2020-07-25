@@ -5,7 +5,7 @@ import pyuv
 
 
 class Terminal(ABC):
-    __slots__ = ['handler', '_loop', '_system_stdin', '_system_stdout', '_external_tty', '_resize_signal']
+    __slots__ = ['handler', '_loop', '_system_stdin', '_system_stdout', '_external_terminal', '_resize_signal']
 
     def __init__(self, handler):
         self.handler = handler
@@ -13,7 +13,7 @@ class Terminal(ABC):
         self._loop = None
         self._system_stdin = None
         self._system_stdout = None
-        self._external_tty = None
+        self._external_terminal = None
         self._resize_signal = None
 
     def start(self):
@@ -42,7 +42,7 @@ class Terminal(ABC):
 
         self._system_stdin.close()
         self._system_stdout.close()
-        self._external_tty.close()
+        self._external_terminal.close()
 
         self._loop.stop()
 
@@ -52,18 +52,15 @@ class Terminal(ABC):
 
     def _write_on_external_tty(self):
         def write_on_external_tty(handle, data, error):
-            self._external_tty.write(data)
+            self._external_terminal.write(data)
 
         return write_on_external_tty
 
     def _handle_external_tty(self):
         def handle_external_tty(handle, data, error):
-            if data:
-                self._system_stdout.write(data)
+            self._system_stdout.write(data)
 
-                if data.decode('utf-8').strip() == 'exit':
-                    self.close()
-            else:
+            if data.decode('utf-8').strip() == 'exit':
                 self.close()
 
         return handle_external_tty

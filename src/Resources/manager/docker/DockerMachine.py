@@ -365,12 +365,12 @@ class DockerMachine(object):
                                                  )
 
         def tty_connect():
-            from ...os.terminal.TTYTerminal import TTYTerminal
-            TTYTerminal(exec_output).start()
+            from .terminal.DockerTTYTerminal import DockerTTYTerminal
+            DockerTTYTerminal(exec_output, self.client, resp['Id']).start()
 
         def cmd_connect():
-            from ...os.terminal.PipeTerminal import PipeTerminal
-            PipeTerminal(exec_output).start()
+            from .terminal.DockerNPipeTerminal import DockerNPipeTerminal
+            DockerNPipeTerminal(exec_output, self.client, resp['Id']).start()
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
