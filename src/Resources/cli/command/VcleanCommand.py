@@ -42,7 +42,7 @@ class VcleanCommand(Command):
         lab_hash = utils.generate_urlsafe_hash(vlab_dir)
 
         ManagerProxy.get_instance().undeploy_lab(lab_hash,
-                                                 selected_machines=[args.name]
+                                                 selected_machines={args.name}
                                                  )
 
         logging.info("Machine `%s` deleted successfully!" % args.name)
