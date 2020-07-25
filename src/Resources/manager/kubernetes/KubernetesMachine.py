@@ -359,12 +359,12 @@ class KubernetesMachine(object):
         # Build the shutdown command string
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine_name)
 
-        self.exec(machine_namespace,
-                  machine_name,
-                  command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
-                  )
-
         try:
+            self.exec(machine_namespace,
+                      machine_name,
+                      command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
+                      )
+
             self.kubernetes_config_map.delete_for_machine(machine_name, machine_namespace)
 
             self.client.delete_namespaced_deployment(name=self.get_deployment_name(machine_name),
