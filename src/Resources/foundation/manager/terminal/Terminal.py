@@ -58,9 +58,12 @@ class Terminal(ABC):
 
     def _read_external_terminal(self):
         def read_external_terminal(handle, data, error):
-            self._system_stdout.write(data)
+            if data:
+                self._system_stdout.write(data)
 
-            if data.decode('utf-8').strip() == 'exit':
+                if data.decode('utf-8').strip() == 'exit':
+                    self.close()
+            else:
                 self.close()
 
         return read_external_terminal
