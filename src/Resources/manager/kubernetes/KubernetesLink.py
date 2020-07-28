@@ -29,27 +29,33 @@ class KubernetesLink(object):
         self._get_link_number_seed()
 
     def deploy_links(self, lab):
+        links = lab.links.items()
+
+        link_to_network_id = dict()
+        network_ids = []
+        for i, (name, _) in enumerate(links):
+            link_to_network_id[name] = self._get_unique_network_id(name, network_ids)
+
         pool_size = utils.get_pool_size()
         link_pool = Pool(pool_size)
 
-        links = lab.links.items()
         items = utils.chunk_list(links, pool_size)
 
         progress_bar = Bar('Deploying links...', max=len(links))
 
         for chunk in items:
-            link_pool.map(func=partial(self._deploy_link, progress_bar), iterable=chunk)
+            link_pool.map(func=partial(self._deploy_link, progress_bar, link_to_network_id), iterable=chunk)
 
         progress_bar.finish()
 
-    def _deploy_link(self, progress_bar, link_item):
+    def _deploy_link(self, progress_bar, link_to_network_id, link_item):
         (_, link) = link_item
 
-        self.create(link)
+        self.create(link, link_to_network_id[link.name])
 
         progress_bar.next()
 
-    def create(self, link):
+    def create(self, link, network_id):
         if '_' in link.name:
             logging.warning("Link name `%s` not valid for Kubernetes API Server, changed to `%s`." %
                             (link.name, link.name.replace('_', '-')))
@@ -64,7 +70,7 @@ class KubernetesLink(object):
                                                                       version=K8S_NET_VERSION,
                                                                       namespace=link.lab.folder_hash,
                                                                       plural=K8S_NET_PLURAL,
-                                                                      body=self._build_definition(link)
+                                                                      body=self._build_definition(link, network_id)
                                                                       )
 
     def undeploy(self, lab_hash, networks_to_delete=None):
@@ -128,9 +134,7 @@ class KubernetesLink(object):
                                                          label_selector=",".join(filters)
                                                          )["items"]
 
-    def _build_definition(self, link):
-        network_id = self._get_link_identifier(link.name)
-
+    def _build_definition(self, link, network_id):
         return {
             "apiVersion": "k8s.cni.cncf.io/v1",
             "kind": "NetworkAttachmentDefinition",
@@ -153,13 +157,22 @@ class KubernetesLink(object):
         }
 
     def _get_link_number_seed(self):
-        cluster_user = KubernetesConfig.get_cluster_user()
-        self.seed = int(hashlib.sha1(cluster_user.encode('utf-8')).hexdigest(), 16)
+        self.seed = KubernetesConfig.get_cluster_user()
 
-    def _get_link_identifier(self, name):
-        name_seed = int(hashlib.sha1(name.encode('utf-8')).hexdigest(), 16)
-        name_seed = (self.seed + name_seed) % MAX_K8S_LINK_NUMBER
-        return 10 + name_seed
+    def _get_unique_network_id(self, name, network_ids):
+        network_id = self._get_network_id(name)
+        offset = 1
+        while network_id in network_ids:
+            network_id = self._get_network_id(name, offset)
+            offset += 1
+
+        network_ids.append(network_id)
+
+        return network_id
+
+    def _get_network_id(self, name, offset=0):
+        network_name = self.seed + name
+        return (offset + int(hashlib.sha256(network_name.encode('utf-8')).hexdigest(), 16)) % MAX_K8S_LINK_NUMBER
 
     @staticmethod
     def get_network_name(name):
