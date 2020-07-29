@@ -10,13 +10,6 @@ from ....utils import exec_by_platform
 
 
 class KubernetesWSTerminal(Terminal):
-    __slots__ = ['_closed']
-
-    def __init__(self, handler):
-        super().__init__(handler)
-
-        self._closed = False
-
     def _start_external(self):
         self._external_terminal = pyuv.Timer(self._loop)
         self._external_terminal.start(self._read_external_terminal(), 0, 0.001)
@@ -37,9 +30,9 @@ class KubernetesWSTerminal(Terminal):
 
     def _read_external_terminal(self):
         def read_external_terminal(timer_handle):
-            if not self.handler.is_open() and not self._closed:
-                self._closed = True
+            if not self.handler.is_open() and not self._external_terminal.closed:
                 self.close()
+                return
 
             data = None
             if self.handler.peek_stdout():
@@ -51,7 +44,6 @@ class KubernetesWSTerminal(Terminal):
                 self._system_stdout.write(data.encode('utf-8'))
 
                 if data.strip() == 'exit':
-                    self._closed = True
                     self.close()
 
         return read_external_terminal

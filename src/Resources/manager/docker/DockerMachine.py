@@ -360,8 +360,7 @@ class DockerMachine(object):
 
         exec_output = self.client.api.exec_start(resp['Id'],
                                                  tty=True,
-                                                 socket=True,
-                                                 stream=True
+                                                 socket=True
                                                  )
 
         def tty_connect():

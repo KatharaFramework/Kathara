@@ -3,19 +3,22 @@ import os
 
 import pyuv
 import win32pipe
+from docker.errors import APIError
 
 from ....foundation.manager.terminal.Terminal import Terminal
 from ....foundation.manager.terminal.terminal_utils import get_terminal_size_windows
 
 
 class DockerNPipeTerminal(Terminal):
-    __slots__ = ['client', 'exec_id']
+    __slots__ = ['client', 'exec_id', '_check_opened_timer']
 
     def __init__(self, handler, client, exec_id):
         super().__init__(handler)
 
         self.client = client
         self.exec_id = exec_id
+
+        self._check_opened_timer = None
 
     def _start_external(self):
         terminal_fd = self._convert_pipe_to_fd()
@@ -25,6 +28,9 @@ class DockerNPipeTerminal(Terminal):
         self._external_terminal.set_blocking(False)
         self._external_terminal.start_read(self._read_external_terminal())
 
+        self._check_opened_timer = pyuv.Timer(self._loop)
+        self._check_opened_timer.start(self._is_terminal_opened(), 0, 5)
+
     def _convert_pipe_to_fd(self):
         handle_id = self.handler._handle.handle
         win32pipe.SetNamedPipeHandleState(handle_id, 0x00000001, None, None)
@@ -33,7 +39,7 @@ class DockerNPipeTerminal(Terminal):
         return handle_fd
 
     def _on_close(self):
-        pass
+        self._check_opened_timer.close()
 
     def _write_on_external_terminal(self):
         def write_on_external_terminal(handle, data, error):
@@ -46,3 +52,12 @@ class DockerNPipeTerminal(Terminal):
     def _resize_terminal(self):
         w, h = get_terminal_size_windows()
         self.client.api.exec_resize(self.exec_id, height=h, width=w)
+
+    def _is_terminal_opened(self):
+        def is_terminal_opened(timer_handle):
+            try:
+                self.client.api.exec_inspect(self.exec_id)
+            except APIError:
+                self.close()
+
+        return is_terminal_opened

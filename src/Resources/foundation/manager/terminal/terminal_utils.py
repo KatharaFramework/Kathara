@@ -2,7 +2,6 @@ import os
 
 
 def get_terminal_size_windows():
-    res = None
     try:
         from ctypes import windll, create_string_buffer
 

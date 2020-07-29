@@ -31,11 +31,6 @@ class KubernetesLink(object):
     def deploy_links(self, lab):
         links = lab.links.items()
 
-        link_to_network_id = dict()
-        network_ids = []
-        for i, (name, _) in enumerate(links):
-            link_to_network_id[name] = self._get_unique_network_id(name, network_ids)
-
         pool_size = utils.get_pool_size()
         link_pool = Pool(pool_size)
 
@@ -43,15 +38,17 @@ class KubernetesLink(object):
 
         progress_bar = Bar('Deploying links...', max=len(links))
 
+        network_ids = []
         for chunk in items:
-            link_pool.map(func=partial(self._deploy_link, progress_bar, link_to_network_id), iterable=chunk)
+            link_pool.map(func=partial(self._deploy_link, progress_bar, network_ids), iterable=chunk)
 
         progress_bar.finish()
 
-    def _deploy_link(self, progress_bar, link_to_network_id, link_item):
+    def _deploy_link(self, progress_bar, network_ids, link_item):
         (_, link) = link_item
 
-        self.create(link, link_to_network_id[link.name])
+        network_id = self._get_unique_network_id(link.name, network_ids)
+        self.create(link, network_id)
 
         progress_bar.next()
 
