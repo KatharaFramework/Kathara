@@ -158,7 +158,7 @@ class KubernetesMachine(object):
         sysctl_parameters["net.ipv4.ip_forward"] = 1
         sysctl_parameters["net.ipv4.icmp_ratelimit"] = 0
 
-        if Setting.get_instance().enable_ipv6:
+        if machine.is_ipv6_enabled():
             sysctl_parameters["net.ipv6.conf.all.forwarding"] = 1
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
@@ -166,6 +166,8 @@ class KubernetesMachine(object):
 
         # Merge machine sysctls
         machine.meta['sysctls'] = {**sysctl_parameters, **machine.meta['sysctls']}
+
+        machine.add_meta('real_name', self.get_deployment_name(machine.name))
 
         try:
             config_map = self.kubernetes_config_map.deploy_for_machine(machine)
@@ -236,7 +238,7 @@ class KubernetesMachine(object):
         lifecycle = client.V1Lifecycle(post_start=post_start)
 
         container_definition = client.V1Container(
-            name=self.get_deployment_name(machine.name),
+            name=machine.meta['real_name'],
             image=machine.get_image(),
             lifecycle=lifecycle,
             stdin=True,
@@ -278,7 +280,7 @@ class KubernetesMachine(object):
             volumes.append(client.V1Volume(
                 name="hostlab",
                 config_map=client.V1ConfigMapVolumeSource(
-                    name=self.kubernetes_config_map.build_name_for_machine(machine.name, machine.lab.folder_hash)
+                    name=config_map.metadata.name
                 )
             ))
 
@@ -293,6 +295,7 @@ class KubernetesMachine(object):
             ))
 
         pod_spec = client.V1PodSpec(containers=[container_definition],
+                                    hostname=machine.name,
                                     dns_policy="None",
                                     dns_config=dns_config,
                                     volumes=volumes
@@ -304,7 +307,7 @@ class KubernetesMachine(object):
                                                   template=pod_template,
                                                   selector=selector_rules
                                                   )
-        deployment_metadata = client.V1ObjectMeta(name=self.get_deployment_name(machine.name), labels=pod_labels)
+        deployment_metadata = client.V1ObjectMeta(name=machine.meta['real_name'], labels=pod_labels)
 
         return client.V1Deployment(api_version="apps/v1",
                                    kind="Deployment",
@@ -365,9 +368,10 @@ class KubernetesMachine(object):
                       command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
                       )
 
-            self.kubernetes_config_map.delete_for_machine(machine_name, machine_namespace)
+            deployment_name = self.get_deployment_name(machine_name)
+            self.kubernetes_config_map.delete_for_machine(deployment_name, machine_namespace)
 
-            self.client.delete_namespaced_deployment(name=self.get_deployment_name(machine_name),
+            self.client.delete_namespaced_deployment(name=deployment_name,
                                                      namespace=machine_namespace
                                                      )
         except ApiException:
