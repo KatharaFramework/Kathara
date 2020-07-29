@@ -295,7 +295,7 @@ class KubernetesMachine(object):
             ))
 
         pod_spec = client.V1PodSpec(containers=[container_definition],
-                                    hostname=machine.name,
+                                    hostname=machine.meta['real_name'],
                                     dns_policy="None",
                                     dns_config=dns_config,
                                     volumes=volumes
