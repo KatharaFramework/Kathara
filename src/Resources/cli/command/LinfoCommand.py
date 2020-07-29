@@ -33,6 +33,7 @@ class LinfoCommand(Command):
             required=False,
             help='Specify the folder containing the lab.'
         )
+
         parser.add_argument(
             '-l', '--live',
             required=False,
@@ -58,7 +59,10 @@ class LinfoCommand(Command):
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
         if args.live:
-            self._get_live_info(lab_hash, args.name)
+            if args.name:
+                self._get_machine_live_info(lab_hash, args.name)
+            else:
+                self._get_lab_live_info(lab_hash)
         else:
             if args.name:
                 print(ManagerProxy.get_instance().get_machine_info(args.name, lab_hash))
@@ -66,8 +70,15 @@ class LinfoCommand(Command):
                 self._get_conf_info(lab_path)
 
     @staticmethod
-    def _get_live_info(lab_hash, machine_name):
-        lab_info = ManagerProxy.get_instance().get_lab_info(lab_hash, machine_name)
+    def _get_machine_live_info(lab_hash, machine_name):
+        while True:
+            utils.exec_by_platform(lambda: os.system('clear'), lambda: os.system('cls'), lambda: os.system('clear'))
+            print(ManagerProxy.get_instance().get_machine_info(machine_name, lab_hash))
+            time.sleep(1)
+
+    @staticmethod
+    def _get_lab_live_info(lab_hash):
+        lab_info = ManagerProxy.get_instance().get_lab_info(lab_hash)
 
         while True:
             utils.exec_by_platform(lambda: os.system('clear'), lambda: os.system('cls'), lambda: os.system('clear'))

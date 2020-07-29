@@ -13,7 +13,7 @@ from .KubernetesConfig import KubernetesConfig
 from ... import utils
 from ...setting.Setting import Setting
 
-MAX_K8S_LINK_NUMBER = (1 << 24) - 20
+MAX_K8S_LINK_NUMBER = (1 << 24) - 10
 
 K8S_NET_GROUP = "k8s.cni.cncf.io"
 K8S_NET_VERSION = "v1"
@@ -29,31 +29,30 @@ class KubernetesLink(object):
         self._get_link_number_seed()
 
     def deploy_links(self, lab):
+        links = lab.links.items()
+
         pool_size = utils.get_pool_size()
         link_pool = Pool(pool_size)
 
-        links = lab.links.items()
         items = utils.chunk_list(links, pool_size)
 
         progress_bar = Bar('Deploying links...', max=len(links))
 
+        network_ids = []
         for chunk in items:
-            link_pool.map(func=partial(self._deploy_link, progress_bar), iterable=chunk)
+            link_pool.map(func=partial(self._deploy_link, progress_bar, network_ids), iterable=chunk)
 
         progress_bar.finish()
 
-    def _deploy_link(self, progress_bar, link_item):
+    def _deploy_link(self, progress_bar, network_ids, link_item):
         (_, link) = link_item
 
-        self.create(link)
+        network_id = self._get_unique_network_id(link.name, network_ids)
+        self.create(link, network_id)
 
         progress_bar.next()
 
-    def create(self, link):
-        if '_' in link.name:
-            logging.warning("Link name `%s` not valid for Kubernetes API Server, changed to `%s`." %
-                            (link.name, link.name.replace('_', '-')))
-
+    def create(self, link, network_id):
         # If a network with the same name exists, return it instead of creating a new one.
         network_objects = self.get_links_by_filters(lab_hash=link.lab.folder_hash, link_name=link.name)
         if network_objects:
@@ -64,8 +63,12 @@ class KubernetesLink(object):
                                                                       version=K8S_NET_VERSION,
                                                                       namespace=link.lab.folder_hash,
                                                                       plural=K8S_NET_PLURAL,
-                                                                      body=self._build_definition(link)
+                                                                      body=self._build_definition(link, network_id)
                                                                       )
+
+        # If external is defined for a link, throw a warning.
+        if link.external:
+            logging.warning('External is not supported on Kubernetes. It will be ignored.')
 
     def undeploy(self, lab_hash, networks_to_delete=None):
         links = self.get_links_by_filters(lab_hash=lab_hash)
@@ -128,9 +131,7 @@ class KubernetesLink(object):
                                                          label_selector=",".join(filters)
                                                          )["items"]
 
-    def _build_definition(self, link):
-        network_id = self._get_link_identifier(link.name)
-
+    def _build_definition(self, link, network_id):
         return {
             "apiVersion": "k8s.cni.cncf.io/v1",
             "kind": "NetworkAttachmentDefinition",
@@ -153,13 +154,22 @@ class KubernetesLink(object):
         }
 
     def _get_link_number_seed(self):
-        cluster_user = KubernetesConfig.get_cluster_user()
-        self.seed = int(hashlib.sha1(cluster_user.encode('utf-8')).hexdigest(), 16)
+        self.seed = KubernetesConfig.get_cluster_user()
 
-    def _get_link_identifier(self, name):
-        name_seed = int(hashlib.sha1(name.encode('utf-8')).hexdigest(), 16)
-        name_seed = (self.seed + name_seed) % MAX_K8S_LINK_NUMBER
-        return 10 + name_seed
+    def _get_unique_network_id(self, name, network_ids):
+        network_id = self._get_network_id(name)
+        offset = 1
+        while network_id in network_ids:
+            network_id = self._get_network_id(name, offset)
+            offset += 1
+
+        network_ids.append(network_id)
+
+        return network_id
+
+    def _get_network_id(self, name, offset=0):
+        network_name = self.seed + name
+        return (offset + int(hashlib.sha256(network_name.encode('utf-8')).hexdigest(), 16)) % MAX_K8S_LINK_NUMBER
 
     @staticmethod
     def get_network_name(name):

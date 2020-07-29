@@ -3,7 +3,6 @@ import shlex
 from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
-from subprocess import Popen
 
 from docker.errors import APIError
 from progress.bar import Bar
@@ -350,33 +349,27 @@ class DockerMachine(object):
 
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
+        resp = self.client.api.exec_create(container.id,
+                                           shell,
+                                           stdout=True,
+                                           stderr=True,
+                                           stdin=True,
+                                           tty=True,
+                                           privileged=False
+                                           )
+
+        exec_output = self.client.api.exec_start(resp['Id'],
+                                                 tty=True,
+                                                 socket=True
+                                                 )
+
         def tty_connect():
-            # Import PseudoTerminal only on Linux since some libraries are not available on Windows
-            from ...trdparty.dockerpty.pty import PseudoTerminal
-
-            # Needed with low level api because we need the id of the exec_create
-            resp = self.client.api.exec_create(container.id,
-                                               shell,
-                                               stdout=True,
-                                               stderr=True,
-                                               stdin=True,
-                                               tty=True,
-                                               privileged=False
-                                               )
-
-            exec_output = self.client.api.exec_start(resp['Id'],
-                                                     tty=True,
-                                                     socket=True,
-                                                     demux=True
-                                                     )
-
-            PseudoTerminal(self.client, exec_output, resp['Id']).start()
+            from .terminal.DockerTTYTerminal import DockerTTYTerminal
+            DockerTTYTerminal(exec_output, self.client, resp['Id']).start()
 
         def cmd_connect():
-            exec_command = ["docker", "exec", "-it", container.id]
-            exec_command.extend(shell)
-
-            Popen(exec_command)
+            from .terminal.DockerNPipeTerminal import DockerNPipeTerminal
+            DockerNPipeTerminal(exec_output, self.client, resp['Id']).start()
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 

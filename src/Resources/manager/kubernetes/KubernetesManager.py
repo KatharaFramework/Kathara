@@ -22,7 +22,6 @@ class KubernetesManager(IManager):
     # @check_k8s_status
     def __init__(self):
         KubernetesConfig.load_kube_config()
-        KubernetesConfig.get_cluster_user()
 
         self.k8s_namespace = KubernetesNamespace()
         self.k8s_machine = KubernetesMachine(self.k8s_namespace)
@@ -153,7 +152,7 @@ class KubernetesManager(IManager):
             for machine in machines:
                 machines_data.append([machine.metadata.namespace,
                                       machine.metadata.labels["name"],
-                                      machine.status.phase,
+                                      self._get_detailed_machine_status(machine),
                                       machine.spec.node_name
                                       ])
 
@@ -185,7 +184,7 @@ class KubernetesManager(IManager):
         machine_info += "Lab Hash: %s\n" % machine.metadata.namespace
         machine_info += "Machine Name: %s\n" % machine.metadata.labels["name"]
         machine_info += "Real Machine Name: %s\n" % machine.metadata.name
-        machine_info += "Status: %s\n" % machine.status.phase
+        machine_info += "Status: %s\n" % self._get_detailed_machine_status(machine)
         machine_info += "Image: %s\n" % machine.status.container_statuses[0].image.replace('docker.io/', '')
         machine_info += "Assigned Node: %s\n" % machine.spec.node_name
 
@@ -207,3 +206,22 @@ class KubernetesManager(IManager):
     @staticmethod
     def get_formatted_manager_name():
         return "Kubernetes (Megalos)"
+
+    @staticmethod
+    def _get_detailed_machine_status(machine):
+        container_statuses = machine.status.container_statuses
+
+        if not container_statuses:
+            return machine.status.phase
+
+        container_status = container_statuses[0].state
+
+        string_status = None
+        if container_status.terminated is not None:
+            string_status = container_status.terminated.reason if container_status.terminated.reason is not None \
+                                                               else "Terminating"
+        elif container_status.waiting is not None:
+            string_status = container_status.waiting.reason
+
+        # In case the status contains an error message, split it to the first ": " and take the left part
+        return string_status.split(': ')[0] if string_status is not None else machine.status.phase

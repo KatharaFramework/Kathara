@@ -17,7 +17,6 @@ from .KubernetesConfigMap import KubernetesConfigMap
 from ... import utils
 from ...exceptions import MachineAlreadyExistsError
 from ...setting.Setting import Setting
-from ...trdparty.k8spty.terminal import KubernetesTerminal
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 
@@ -159,7 +158,7 @@ class KubernetesMachine(object):
         sysctl_parameters["net.ipv4.ip_forward"] = 1
         sysctl_parameters["net.ipv4.icmp_ratelimit"] = 0
 
-        if Setting.get_instance().enable_ipv6:
+        if machine.is_ipv6_enabled():
             sysctl_parameters["net.ipv6.conf.all.forwarding"] = 1
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
@@ -167,6 +166,8 @@ class KubernetesMachine(object):
 
         # Merge machine sysctls
         machine.meta['sysctls'] = {**sysctl_parameters, **machine.meta['sysctls']}
+
+        machine.add_meta('real_name', self.get_deployment_name(machine.name))
 
         try:
             config_map = self.kubernetes_config_map.deploy_for_machine(machine)
@@ -224,10 +225,10 @@ class KubernetesMachine(object):
         # Build the final startup commands string
         sysctl_commands = "; ".join(["sysctl -w -q %s=%d" % item for item in machine.meta["sysctls"].items()])
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
-                                      .format(machine_name=machine.name,
-                                              sysctl_commands=sysctl_commands,
-                                              machine_commands="; ".join(machine.startup_commands)
-                                              )
+            .format(machine_name=machine.name,
+                    sysctl_commands=sysctl_commands,
+                    machine_commands="; ".join(machine.startup_commands)
+                    )
 
         post_start = client.V1Handler(
             _exec=client.V1ExecAction(
@@ -237,7 +238,7 @@ class KubernetesMachine(object):
         lifecycle = client.V1Lifecycle(post_start=post_start)
 
         container_definition = client.V1Container(
-            name=self.get_deployment_name(machine.name),
+            name=machine.meta['real_name'],
             image=machine.get_image(),
             lifecycle=lifecycle,
             stdin=True,
@@ -279,7 +280,7 @@ class KubernetesMachine(object):
             volumes.append(client.V1Volume(
                 name="hostlab",
                 config_map=client.V1ConfigMapVolumeSource(
-                    name=self.kubernetes_config_map.build_name_for_machine(machine.name, machine.lab.folder_hash)
+                    name=config_map.metadata.name
                 )
             ))
 
@@ -294,6 +295,7 @@ class KubernetesMachine(object):
             ))
 
         pod_spec = client.V1PodSpec(containers=[container_definition],
+                                    hostname=machine.meta['real_name'],
                                     dns_policy="None",
                                     dns_config=dns_config,
                                     volumes=volumes
@@ -305,7 +307,7 @@ class KubernetesMachine(object):
                                                   template=pod_template,
                                                   selector=selector_rules
                                                   )
-        deployment_metadata = client.V1ObjectMeta(name=self.get_deployment_name(machine.name), labels=pod_labels)
+        deployment_metadata = client.V1ObjectMeta(name=machine.meta['real_name'], labels=pod_labels)
 
         return client.V1Deployment(api_version="apps/v1",
                                    kind="Deployment",
@@ -360,15 +362,16 @@ class KubernetesMachine(object):
         # Build the shutdown command string
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine_name)
 
-        self.exec(machine_namespace,
-                  machine_name,
-                  command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
-                  )
-
         try:
-            self.kubernetes_config_map.delete_for_machine(machine_name, machine_namespace)
+            self.exec(machine_namespace,
+                      machine_name,
+                      command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
+                      )
 
-            self.client.delete_namespaced_deployment(name=self.get_deployment_name(machine_name),
+            deployment_name = self.get_deployment_name(machine_name)
+            self.kubernetes_config_map.delete_for_machine(deployment_name, machine_namespace)
+
+            self.client.delete_namespaced_deployment(name=deployment_name,
                                                      namespace=machine_namespace
                                                      )
         except ApiException:
@@ -408,8 +411,8 @@ class KubernetesMachine(object):
                       _preload_content=False
                       )
 
-        pty = KubernetesTerminal(k8s_stream=resp)
-        pty.start()
+        from .terminal.KubernetesWSTerminal import KubernetesWSTerminal
+        KubernetesWSTerminal(resp).start()
 
     def exec(self, lab_hash, machine_name, command, tty=False, stdin=False, stdin_buffer=None, stderr=False):
         logging.debug("Executing command `%s` to machine with name: %s" % (command, machine_name))
@@ -441,7 +444,6 @@ class KubernetesMachine(object):
             'stderr': ''
         }
         while response.is_open():
-            response.update(timeout=1)
             if response.peek_stdout():
                 result['stdout'] += response.read_stdout()
             if stderr and response.peek_stderr():
