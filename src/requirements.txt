@@ -9,3 +9,4 @@ pyroute2>=0.5.7;
 progress>=1.5;
 appscript>=1.1.0; sys_platform == 'darwin'
 pypiwin32>=223; sys_platform == 'win32'
+libtmux>=0.8.2

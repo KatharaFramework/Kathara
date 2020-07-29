@@ -175,12 +175,21 @@ class Machine(object):
 
         def unix_connect():
             logging.debug("Opening Linux terminal with command: %s." % connect_command)
-            # Command should be passed as an array
-            # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
-            subprocess.Popen([terminal, "-e", connect_command],
-                             cwd=self.lab.path,
-                             start_new_session=True
-                             )
+            if "tmux" in terminal:
+                from ..trdparty.libtmux.tmux import TMUX
+
+                logging.debug("TMUX: %s, %s, %s" % (terminal, self.name, connect_command))
+                # Open a new window and connect to machine
+                tmux=TMUX.get_instance()
+                tmux.start(self.name, connect_command)
+            else:
+                # Command should be passed as an array
+                # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
+                subprocess.Popen([terminal, "-e", connect_command],
+                                 cwd=self.lab.path,
+                                 start_new_session=True
+                                 )
+
 
         def windows_connect():
             complete_win_command = "& %s" % connect_command
@@ -238,7 +247,7 @@ class Machine(object):
         CPU limit, defined as nano CPUs (10*e-9).
         User should pass a float value ranging from 0 to max user CPUs.
         It is took from options, or machine meta.
-        :return: 
+        :return:
         """
         if "cpus" in self.lab.general_options:
             try:
