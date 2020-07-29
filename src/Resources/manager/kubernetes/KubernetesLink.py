@@ -13,7 +13,7 @@ from .KubernetesConfig import KubernetesConfig
 from ... import utils
 from ...setting.Setting import Setting
 
-MAX_K8S_LINK_NUMBER = (1 << 24) - 20
+MAX_K8S_LINK_NUMBER = (1 << 24) - 10
 
 K8S_NET_GROUP = "k8s.cni.cncf.io"
 K8S_NET_VERSION = "v1"
@@ -53,10 +53,6 @@ class KubernetesLink(object):
         progress_bar.next()
 
     def create(self, link, network_id):
-        if '_' in link.name:
-            logging.warning("Link name `%s` not valid for Kubernetes API Server, changed to `%s`." %
-                            (link.name, link.name.replace('_', '-')))
-
         # If a network with the same name exists, return it instead of creating a new one.
         network_objects = self.get_links_by_filters(lab_hash=link.lab.folder_hash, link_name=link.name)
         if network_objects:
@@ -69,6 +65,10 @@ class KubernetesLink(object):
                                                                       plural=K8S_NET_PLURAL,
                                                                       body=self._build_definition(link, network_id)
                                                                       )
+
+        # If external is defined for a link, throw a warning.
+        if link.external:
+            logging.warning('External is not supported on Kubernetes. It will be ignored.')
 
     def undeploy(self, lab_hash, networks_to_delete=None):
         links = self.get_links_by_filters(lab_hash=lab_hash)

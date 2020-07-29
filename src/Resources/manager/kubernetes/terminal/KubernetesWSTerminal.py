@@ -5,7 +5,7 @@ import pyuv
 from kubernetes.stream.ws_client import RESIZE_CHANNEL
 
 from ....foundation.manager.terminal.Terminal import Terminal
-from ....foundation.manager.terminal.terminal_utils import get_terminal_size_linux, get_terminal_size_windows
+from ....foundation.manager.terminal.terminal_utils import get_terminal_size_windows
 from ....utils import exec_by_platform
 
 
@@ -51,7 +51,7 @@ class KubernetesWSTerminal(Terminal):
     def _resize_terminal(self):
         def resize_unix():
             def resize_terminal(signal_handle, signal_num):
-                w, h = get_terminal_size_linux()
+                w, h = self._system_stdin.get_winsize()
                 self.handler.write_channel(RESIZE_CHANNEL, json.dumps({"Height": h, "Width": w}))
 
             self._resize_signal = pyuv.Signal(self._loop)
