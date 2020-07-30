@@ -21,14 +21,9 @@ Open a shell in device DEVICE_NAME.
 * `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
     Specify the folder containing the lab.
 
-    Connect to a Kathara device belonging to a lab that is located inside DIRECTORY.  
+    Connect to a Kathara device belonging to a lab that is located inside DIRECTORY.
 	If no `-d` option is provided, assume the lab is located in the current directory.
-	This option cannot be used in conjuction with `-v` or `--vdevice`.
-
-* `-v`, `--vdevice`:
-	The device has been started with vstart command.
-
-	This option cannot be used in conjuction with `-d` or `--directory`.
+	This option cannot be used in conjunction with a machine started by `kathara-vstart(1)`.
 
 * `--shell` <SHELL>:
     Set the shell (sh, bash, etc.) that should be used inside the device.
@@ -46,9 +41,9 @@ Open a shell in device DEVICE_NAME.
 
 ## EXAMPLES
 
-	kathara connect -v pc1
+	kathara connect -l pc1
 
-Connects to a device called `pc1`, started with `kathara-vstart`(1).
+Connects to a device called `pc1`, started with `kathara-vstart`(1) and displays the startup logs.
 
 	kathara connect as1r1
 
