@@ -33,6 +33,12 @@ class ConnectCommand(Command):
             '-d', '--directory',
             help='Specify the folder containing the lab.',
         )
+        group.add_argument(
+            '-v', '--vmachine',
+            dest="vmachine",
+            action="store_true",
+            help='The machine has been started with vstart command.',
+        )
         parser.add_argument(
             '--shell',
             required=False,
@@ -54,11 +60,11 @@ class ConnectCommand(Command):
     def run(self, current_path, argv):
         args = self.parser.parse_args(argv)
 
-        lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
-        if os.path.isfile("%s/lab.conf" % lab_path):
-            lab_path = utils.get_absolute_path(lab_path)
-        else:
+        if args.vmachine:
             lab_path = utils.get_vlab_temp_path()
+        else:
+            lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+            lab_path = utils.get_absolute_path(lab_path)
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 

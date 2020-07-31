@@ -190,4 +190,6 @@ class VstartCommand(Command):
         if args.port:
             machine.add_meta("port", args.port)
 
+        machine.add_meta("vdevice", True)
+
         ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args.privileged)

@@ -13,12 +13,12 @@ class TMUX(object):
             TMUX()
         return TMUX.__instance
 
-    def __init__(self):
+    def __init__(self, session_name="Kathara"):
         if TMUX.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
             TMUX.__instance = self
-            self.session_name="Kathara"
+            self.session_name=session_name
             server = libtmux.Server()
             if not server.has_session(self.session_name):
                 server.new_session(self.session_name)

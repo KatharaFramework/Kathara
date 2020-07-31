@@ -168,7 +168,10 @@ class Machine(object):
         if not executable_path:
             raise Exception("Unable to find Kathara.")
 
-        connect_command = "%s connect -l %s" % (executable_path, self.name)
+        if "vdevice" in self.meta:
+            connect_command = "%s connect -l -v %s" % (executable_path, self.name)
+        else:
+            connect_command = "%s connect -l %s" % (executable_path, self.name)
         terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
         logging.debug("Terminal will open in directory %s." % self.lab.path)
