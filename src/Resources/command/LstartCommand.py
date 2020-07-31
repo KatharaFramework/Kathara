@@ -14,7 +14,6 @@ from ..parser.netkit.LabParser import LabParser
 from ..parser.netkit.OptionParser import OptionParser
 from ..setting.Setting import Setting
 from ..strings import strings, wiki_description
-from ..trdparty.libtmux.tmux import TMUX
 
 
 class LstartCommand(Command):
@@ -198,9 +197,6 @@ class LstartCommand(Command):
             lab.general_options = OptionParser.parse(args.options)
         except:
             raise Exception("--pass parameter not valid.")
-
-        if "tmux" in Setting.get_instance().terminal:
-            TMUX().get_instance()
 
         ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args.privileged)
 

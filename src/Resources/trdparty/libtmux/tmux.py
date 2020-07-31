@@ -13,15 +13,15 @@ class TMUX(object):
             TMUX()
         return TMUX.__instance
 
-    def __init__(self, session_name="Kathara"):
+    def __init__(self, lab_name):
         if TMUX.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
             TMUX.__instance = self
-            self.session_name=session_name
+            self.session_name="Kathara" if lab_name is None else lab_name
             server = libtmux.Server()
             if not server.has_session(self.session_name):
-                server.new_session(self.session_name)
+                server.new_session(self.session_name, window_name="Kathara")
             while not server.has_session(self.session_name):
                 time.sleep(1)
             logging.debug("Initialized tmux session %s" % self.session_name)
@@ -34,6 +34,12 @@ class TMUX(object):
         if not window:
             logging.debug("Starting tmux window for %s" % window_name)
             window = TMUX.__session.new_window(window_name=window_name, window_shell=start_machine)
+        self.__clean()
+
+    def __clean(self):
+        initial_window = TMUX.__session.find_where({"window_name": "Kathara"})
+        if initial_window:
+            initial_window.kill_window()
 
     @staticmethod
     def kill_instance():

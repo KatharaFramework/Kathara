@@ -9,11 +9,12 @@ from ..setting.Setting import Setting
 
 
 class Lab(object):
-    __slots__ = ['description', 'version', 'author', 'email', 'web',
+    __slots__ = ['name', 'description', 'version', 'author', 'email', 'web',
                  'path', 'folder_hash', 'machines', 'links', 'general_options',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder', 'has_dependencies']
 
     def __init__(self, path):
+        self.name = None
         self.description = None
         self.version = None
         self.author = None
@@ -127,7 +128,9 @@ class Lab(object):
 
     def __str__(self):
         lab_info = ""
-
+        if self.name:
+            lab_info += "Name: %s\n" % self.name
+        
         if self.description:
             lab_info += "Description: %s\n" % self.description
 
