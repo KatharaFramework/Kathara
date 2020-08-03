@@ -3,7 +3,6 @@ import argparse
 from .. import utils
 from ..foundation.command.Command import Command
 from ..manager.ManagerProxy import ManagerProxy
-from ..setting.Setting import Setting
 from ..strings import strings, wiki_description
 
 

@@ -50,7 +50,7 @@ It is also possible to provide descriptive information about a lab by using one 
 + LAB_VERSION=string (the version of the lab)
 + LAB_AUTHOR=string (people who have written the lab)
 + LAB_EMAIL=string (contacts of lab authors)
-+ LAB_WEB=string (useful web reources related to the lab)
++ LAB_WEB=string (useful web resources related to the lab)
 
 ## EXAMPLE
 
