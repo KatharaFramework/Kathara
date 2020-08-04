@@ -1,11 +1,13 @@
 import libtmux
 import time
 import logging
+import random
 
 class TMUX(object):
 
     __instance = None
     __session = None
+    __initial_window = None
 
     @staticmethod
     def get_instance():
@@ -18,10 +20,11 @@ class TMUX(object):
             raise Exception("This class is a singleton!")
         else:
             TMUX.__instance = self
+            self.__initial_window="%008x" % random.getrandbits(32)
             self.session_name="Kathara" if lab_name is None else lab_name
             server = libtmux.Server()
             if not server.has_session(self.session_name):
-                server.new_session(self.session_name, window_name="Kathara")
+                server.new_session(self.session_name, window_name=self.__initial_window)
             while not server.has_session(self.session_name):
                 time.sleep(1)
             logging.debug("Initialized tmux session %s" % self.session_name)
@@ -37,7 +40,7 @@ class TMUX(object):
         self.__clean()
 
     def __clean(self):
-        initial_window = TMUX.__session.find_where({"window_name": "Kathara"})
+        initial_window = TMUX.__session.find_where({"window_name": self.__initial_window})
         if initial_window:
             initial_window.kill_window()
 
