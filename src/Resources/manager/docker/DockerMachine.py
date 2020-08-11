@@ -194,7 +194,9 @@ class DockerMachine(object):
                                                                       "lab_hash": machine.lab.folder_hash,
                                                                       "user": utils.get_current_user_name(),
                                                                       "app": "kathara",
-                                                                      "shell": machine.meta["shell"] if "shell" in machine.meta else Setting.get_instance().device_shell
+                                                                      "shell": machine.meta["shell"]
+                                                                               if "shell" in machine.meta
+                                                                               else Setting.get_instance().device_shell
                                                                       }
                                                               )
         except APIError as e:
@@ -312,15 +314,15 @@ class DockerMachine(object):
             if log:
                 progress_bar.next()
 
-    def connect(self, lab_hash, machine_name, shell, logs=False):
+    def connect(self, lab_hash, machine_name, shell=None, logs=False):
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
         if not shell:
-            shell = container.labels['shell']
+            shell = shlex.split(container.labels['shell'])
         else:
             shell = shlex.split(shell) if type(shell) == str else shell
 
-        logging.debug("Connect to machine `%s` with shell: %s" % (machine_name,shell))
+        logging.debug("Connect to machine `%s` with shell: %s" % (machine_name, shell))
 
         if logs and Setting.get_instance().print_startup_log:
             result_string = self.exec(container,
