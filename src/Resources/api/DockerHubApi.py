@@ -10,7 +10,6 @@ EXCLUDED_IMAGES = ['megalos-bgp-manager', 'katharanp']
 
 
 class DockerHubApi(object):
-
     @staticmethod
     def get_images():
         try:
