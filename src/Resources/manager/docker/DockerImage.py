@@ -1,7 +1,6 @@
 import logging
 from docker.errors import APIError
 
-from ...api.DockerHubApi import DockerHubApi
 from ... import utils
 from ...exceptions import HTTPConnectionError
 
@@ -15,20 +14,21 @@ class DockerImage(object):
     def check_local(self, image_name):
         return self.client.images.get(image_name)
 
+    def check_remote(self, image_name):
+        return self.client.images.get_registry_data(image_name)
+
     def pull(self, image_name):
+        # If no tag or sha key is specified, we add "latest"
+        if (':' or '@') not in image_name:
+            image_name = "%s:latest" % image_name
         print("Pulling image `%s`... This may take a while." % image_name)
-        tag = 'latest'
-        img_name = image_name
-        if ':' in image_name:
-            split_name = image_name.split(':')
-            img_name, tag = split_name[0], split_name[1]
-        return self.client.images.pull(img_name, tag=tag)
+        return self.client.images.pull(image_name)
 
     def check_update(self, image_name):
         logging.debug("Check update for %s" % image_name)
 
-        if '/' not in image_name:
-            logging.debug('Cannot check image digest because %s is a library/<image>' % image_name)
+        if '@' in image_name:
+            logging.debug('No need to check image digest of %s' % image_name)
             return
 
         local_image_info = self.check_local(image_name)
@@ -39,17 +39,13 @@ class DockerImage(object):
             logging.debug("Image %s is build locally" % image_name)
             return
 
-        try:
-            remote_image_info = self.check_remote(image_name)
-            local_repo_digest = local_repo_digests[0]
-            remote_image_digest = remote_image_info["images"][0]["digest"]
-        except HTTPConnectionError:
-            logging.debug("Unable to connect to DockerHub")
-            return
+        remote_image_info = self.check_remote(image_name).attrs['Descriptor']
+        local_repo_digest = local_repo_digests[0]
+        remote_image_digest = remote_image_info["digest"]
 
         # Format is image_name@sha256, so we strip the first part.
         (_, local_image_digest) = local_repo_digest.split("@")
-
+        # We only need to update tagged images, not the ones with digests.
         if remote_image_digest != local_image_digest:
             utils.confirmation_prompt("A new version of image `%s` has been found on Docker Hub. "
                                       "Do you want to pull it?" % image_name,
@@ -77,7 +73,3 @@ class DockerImage(object):
     def multiple_check_and_pull(self, images):
         for image in images:
             self.check_and_pull(image)
-
-    @staticmethod
-    def check_remote(image_name):
-        return DockerHubApi.get_image_information(image_name)
