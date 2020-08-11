@@ -57,7 +57,7 @@ It is also possible to provide descriptive information about a lab by using one 
 
 ## EXAMPLE
 
-    LAB_NAME="Example"
+        LAB_NAME="Example"
 		LAB_DESCRIPTION="A simple example of lab.conf"
 		LAB_VERSION=1.0
 		LAB_AUTHOR="Kathara Authors"
@@ -79,7 +79,7 @@ It is also possible to provide descriptive information about a lab by using one 
 
 		pc2[0]="C"
 		pc2[mem]=128m
-    pc2[shell]="/bin/sh"
+        pc2[shell]="/bin/sh"
 
 Example of a `lab.conf`(5) file.
 

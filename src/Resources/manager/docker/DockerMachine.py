@@ -258,10 +258,10 @@ class DockerMachine(object):
             machine.bridge.api_object.connect(machine.api_object)
 
         # Build the final startup commands string
-        startup_commands_string = "; ".join(STARTUP_COMMANDS) \
-            .format(machine_name=machine.name,
-                    machine_commands="; ".join(machine.startup_commands)
-                    )
+        startup_commands_string = "; ".join(STARTUP_COMMANDS).format(
+            machine_name=machine.name,
+            machine_commands="; ".join(machine.startup_commands)
+        )
 
         # Execute the startup commands inside the container (without privileged flag so basic permissions are used)
         machine.api_object.exec_run(cmd=[Setting.get_instance().device_shell, '-c', startup_commands_string],
@@ -283,7 +283,7 @@ class DockerMachine(object):
         items = utils.chunk_list(machines, pool_size)
 
         progress_bar = Bar("Deleting machines...", max=len(machines) if not selected_machines
-        else len(selected_machines)
+                                                                     else len(selected_machines)
                            )
 
         for chunk in items:
