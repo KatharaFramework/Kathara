@@ -40,7 +40,11 @@ class IManager(ABC):
 
     @abstractmethod
     def check_image(self, image_name):
-        raise NotImplementedError("You must implement `check_image` method.")
+        raise NotImplementedError("You must implement `check` method.")
+
+    @abstractmethod
+    def check_updates(self, settings):
+        raise NotImplementedError("You must implement `check_updates` method.")
 
     @abstractmethod
     def get_release_version(self):

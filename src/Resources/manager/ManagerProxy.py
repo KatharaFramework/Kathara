@@ -57,6 +57,9 @@ class ManagerProxy(IManager):
     def check_image(self, image_name):
         self.manager.check_image(image_name)
 
+    def check_updates(self, settings):
+        self.manager.check_updates(settings)
+
     def get_release_version(self):
         return self.manager.get_release_version()
 

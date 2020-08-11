@@ -236,6 +236,29 @@ class DockerManager(IManager):
         self.docker_image.check_and_pull(image_name)
 
     @privileged
+    def check_updates(self, settings):
+        local_image_info = self.docker_image.check_local(settings.image)
+        remote_image_info = self.docker_image.check_remote(settings.image)
+
+        # Image has been built locally, so there's nothing to compare.
+        local_repo_digests = local_image_info.attrs["RepoDigests"]
+        if not local_repo_digests:
+            return
+
+        local_repo_digest = local_repo_digests[0]
+        remote_image_digest = remote_image_info["images"][0]["digest"]
+
+        # Format is image_name@sha256, so we strip the first part.
+        (_, local_image_digest) = local_repo_digest.split("@")
+
+        if remote_image_digest != local_image_digest:
+            utils.confirmation_prompt("A new version of image `%s` has been found on Docker Hub. "
+                                      "Do you want to pull it?" % settings.image,
+                                      lambda: self.docker_image.pull(settings.image),
+                                      lambda: None
+                                      )
+
+    @privileged
     def get_release_version(self):
         return self.client.version()["Version"]
 

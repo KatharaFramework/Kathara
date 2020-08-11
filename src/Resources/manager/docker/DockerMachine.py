@@ -84,7 +84,7 @@ class DockerMachine(object):
     def deploy_machines(self, lab, privileged_mode=False):
         # Check and pulling machine images
         lab_images = set(map(lambda x: x.get_image(), lab.machines.values()))
-        self.docker_image.check_and_pull_from_list(lab_images)
+        self.docker_image.multiple_check_and_pull(lab_images)
 
         machines = lab.machines.items()
         progress_bar = Bar('Deploying machines...', max=len(machines))
