@@ -1,7 +1,6 @@
 from .. import utils
 from ..foundation.manager.IManager import IManager
 from ..setting.Setting import Setting, POSSIBLE_MANAGERS
-from ..trdparty.libtmux.tmux import TMUX
 
 
 class ManagerProxy(IManager):
@@ -29,8 +28,6 @@ class ManagerProxy(IManager):
             ManagerProxy.__instance = self
 
     def deploy_lab(self, lab, privileged_mode=False):
-        if "tmux" in Setting.get_instance().terminal:
-            tmux=TMUX(lab.name).get_instance()
         self.manager.deploy_lab(lab, privileged_mode)
 
     def update_lab(self, lab_diff):

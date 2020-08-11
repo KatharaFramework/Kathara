@@ -161,7 +161,7 @@ class DockerMachine(object):
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
-        
+
         # Merge machine sysctls
         sysctl_parameters = {**sysctl_parameters, **machine.meta['sysctls']}
 
@@ -257,9 +257,9 @@ class DockerMachine(object):
 
         # Build the final startup commands string
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
-                                      .format(machine_name=machine.name,
-                                              machine_commands="; ".join(machine.startup_commands)
-                                              )
+            .format(machine_name=machine.name,
+                    machine_commands="; ".join(machine.startup_commands)
+                    )
 
         # Execute the startup commands inside the container (without privileged flag so basic permissions are used)
         machine.api_object.exec_run(cmd=[Setting.get_instance().device_shell, '-c', startup_commands_string],
@@ -281,7 +281,7 @@ class DockerMachine(object):
         items = utils.chunk_list(machines, pool_size)
 
         progress_bar = Bar("Deleting machines...", max=len(machines) if not selected_machines
-                                                       else len(selected_machines)
+        else len(selected_machines)
                            )
 
         for chunk in items:
@@ -306,7 +306,7 @@ class DockerMachine(object):
         # If selected machines list is empty, remove everything
         # Else, check if the machine is in the list.
         if not selected_machines or \
-           machine_item.labels["name"] in selected_machines:
+                machine_item.labels["name"] in selected_machines:
             self.delete_machine(machine_item)
 
             if log:

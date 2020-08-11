@@ -128,6 +128,7 @@ class Lab(object):
 
     def __str__(self):
         lab_info = ""
+
         if self.name:
             lab_info += "Name: %s\n" % self.name
         
