@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import argparse
 import logging
@@ -98,7 +98,7 @@ class KatharaEntryPoint(object):
 
 if __name__ == '__main__':
     utils.check_python_version()
-    
+
     utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
 
     try:
@@ -107,5 +107,5 @@ if __name__ == '__main__':
         debug_level = "DEBUG"
 
     coloredlogs.install(fmt='%(levelname)s - %(message)s', level=debug_level)
-    
+
     KatharaEntryPoint()

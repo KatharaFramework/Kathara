@@ -48,14 +48,16 @@ In order to establish a uniform convention, comment lines should always start wi
 
 It is also possible to provide descriptive information about a lab by using one of the following special assignments:
 
++ LAB_NAME=string (a word as identifier for the lab)
 + LAB_DESCRIPTION=string (a brief description of the purpose of the lab)
 + LAB_VERSION=string (the version of the lab)
 + LAB_AUTHOR=string (people who have written the lab)
 + LAB_EMAIL=string (contacts of lab authors)
-+ LAB_WEB=string (useful web reources related to the lab)
++ LAB_WEB=string (useful web resources related to the lab)
 
 ## EXAMPLE
 
+        LAB_NAME="Example"
 		LAB_DESCRIPTION="A simple example of lab.conf"
 		LAB_VERSION=1.0
 		LAB_AUTHOR="Kathara Authors"

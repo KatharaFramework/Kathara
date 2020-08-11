@@ -233,7 +233,7 @@ class SettingsCommand(Command):
                                       formatter=menu_formatter,
                                       prologue_text="""The terminal emulator application to be used for device terminals.
                                                     **The application must be correctly installed in the host system!**
-                                                    This setting is only used on Linux systems.
+                                                    This setting is only used on Linux and macOS systems.
                                                     Default is `%s`.
                                                     """ % DEFAULTS['terminal']
                                       )

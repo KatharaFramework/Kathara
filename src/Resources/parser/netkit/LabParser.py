@@ -50,7 +50,8 @@ class LabParser(object):
             else:
                 if not line.startswith('#') and \
                         line.strip():
-                    if not line.startswith("LAB_DESCRIPTION=") and \
+                    if not line.startswith("LAB_NAME=") and \
+                       not line.startswith("LAB_DESCRIPTION=") and \
                        not line.startswith("LAB_VERSION=") and \
                        not line.startswith("LAB_AUTHOR=") and \
                        not line.startswith("LAB_EMAIL=") and \

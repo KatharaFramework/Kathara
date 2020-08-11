@@ -7,5 +7,6 @@ slug>=2.0;
 deepdiff>=4.0.9;
 pyroute2>=0.5.7;
 progress>=1.5;
+libtmux>=0.8.2; sys_platform == 'darwin' or sys_platform == 'linux'
 appscript>=1.1.0; sys_platform == 'darwin'
 pypiwin32>=223; sys_platform == 'win32'
