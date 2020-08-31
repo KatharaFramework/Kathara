@@ -75,6 +75,8 @@ for command_class in os.listdir(COMMAND_DIR):
         for action in command_object.parser._actions:
             actions.extend(action.option_strings)
         commands_table[command_name.lower()] = actions
+    else:
+        commands_table[command_name.lower()] = ""
 
 opts = ' '.join(commands_table.keys())
 
