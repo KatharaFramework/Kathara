@@ -10,7 +10,7 @@ ARCHITECTURE:=$(shell dpkg --print-architecture)
 
 allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_disco
 
-docker-unsigned: docker-build-image
+docker-unsigned: prepare-deb-source docker-build-image
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make build-deb-unsigned"
 
 docker-signed_%:
@@ -52,7 +52,9 @@ build-man: copy-debian-folder
 	cp -r ../../docs/Roff Output/kathara-$(VERSION)/debian/manpages
 	cd ../../docs && make cleanall
 	ls Output/kathara-$(VERSION)/debian/manpages/ | awk '{print "debian/manpages/"$$0}' > Output/kathara-$(VERSION)/debian/kathara.manpages
-	./generate_autocompletion.py "Output/kathara-$(VERSION)/debian/kathara.bash-completion"
+	
+	/usr/bin/python3 -m pip install -r autocompletion/requirements.txt
+	/usr/bin/python3 autocompletion/generate_autocompletion.py "Output/kathara-$(VERSION)/debian/kathara.bash-completion"
 
 build-deb-unsigned: build-man download-pip
 	sed -i -e 's/__UBUNTU_VERSION__/bionic/g' Output/kathara-$(VERSION)/debian/changelog

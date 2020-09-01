@@ -17,14 +17,12 @@ RUN apt update \
 		git \
 		ruby-full
 
-RUN gem install nokogiri mustache kramdown rubocop sinatra rack rake test-unit
+RUN gem install ronn-ng
 
 COPY dput.cf /root/.dput.cf
 
 WORKDIR /opt
 
-RUN git clone https://github.com/apjanke/ronn-ng.git
-ENV PATH="/opt/ronn-ng/bin:${PATH}"
 ENV RUBYOPT="-KU -E utf-8:utf-8"
 
 WORKDIR /opt/kathara/scripts/Linux
