@@ -7,7 +7,8 @@ Build-Depends: debhelper (>= 10),
 	python3 (>= 3.5.0),
 	python3-pip (>= 9.0.0),
 	python3-dev (>= 3.5.0),
-	python3-setuptools (>=33.1.1)
+	python3-setuptools (>=33.1.1),
+	bash-completion (>=1:2.8)
 Vcs-Git: https://github.com/KatharaFramework/Kathara.git
 Vcs-Browser: https://github.com/KatharaFramework/Kathara
 Homepage: https://www.kathara.org/

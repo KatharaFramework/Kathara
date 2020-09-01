@@ -52,6 +52,7 @@ build-man: copy-debian-folder
 	cp -r ../../docs/Roff Output/kathara-$(VERSION)/debian/manpages
 	cd ../../docs && make cleanall
 	ls Output/kathara-$(VERSION)/debian/manpages/ | awk '{print "debian/manpages/"$$0}' > Output/kathara-$(VERSION)/debian/kathara.manpages
+	./generate_autocompletion.py "Output/kathara-$(VERSION)/debian/kathara.bash-completion"
 
 build-deb-unsigned: build-man download-pip
 	sed -i -e 's/__UBUNTU_VERSION__/bionic/g' Output/kathara-$(VERSION)/debian/changelog
