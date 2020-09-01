@@ -3,7 +3,7 @@
 import os
 import sys
 
-src_dir = os.path.join('..', '..', 'src')
+src_dir = os.path.join('../..', '..', 'src')
 sys.path.insert(0, src_dir)
 
 from Resources.foundation.cli.command.CommandFactory import CommandFactory
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         exit(1)
 
-    path = os.path.join('.', 'kathara_autocompletion') if len(sys.argv) < 2 else sys.argv[1]
+    path = os.path.join('..', 'kathara_autocompletion') if len(sys.argv) < 2 else sys.argv[1]
 
     commands_table = {}
     for command_class in os.listdir(COMMAND_DIR):
