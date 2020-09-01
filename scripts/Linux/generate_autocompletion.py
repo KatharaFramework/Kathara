@@ -66,7 +66,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         exit(1)
 
-    path = '.' if len(sys.argv) < 2 else sys.argv[1]
+    path = os.path.join('.', 'kathara_autocompletion') if len(sys.argv) < 2 else sys.argv[1]
 
     commands_table = {}
     for command_class in os.listdir(COMMAND_DIR):
@@ -92,5 +92,5 @@ if __name__ == '__main__':
         commands_options += elif_template % (command_name, command_name, command_opts_string)
 
     autocompletion_file_str = FILE_TEMPLATE % (opts, commands_options)
-    with open(os.path.join(path, 'kathara_autocompletion'), 'w') as bash_completion_file:
+    with open(os.path.join(path), 'w') as bash_completion_file:
         bash_completion_file.write(autocompletion_file_str)
