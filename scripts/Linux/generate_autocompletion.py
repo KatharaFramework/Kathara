@@ -1,13 +1,14 @@
 #!/usr/bin/python3
 
-import importlib
 import os
 import sys
 
-if __name__ == '__main__':
-    src_dir = os.path.join('..', '..', 'src')
-    sys.path.insert(0, src_dir)
+src_dir = os.path.join('..', '..', 'src')
+sys.path.insert(0, src_dir)
 
+from Resources.foundation.cli.command.CommandFactory import CommandFactory
+
+if __name__ == '__main__':
     COMMAND_DIR = os.path.join(src_dir, 'Resources', 'cli', 'command')
 
     FILE_TEMPLATE = '''
@@ -73,10 +74,7 @@ if __name__ == '__main__':
             continue
 
         command_name = command_class.replace('Command.py', '')
-
-        command_class = "%sCommand" % command_name
-        m = importlib.import_module("Resources.cli.command.%s" % command_class)
-        command_object = getattr(m, command_class)()
+        command_object = CommandFactory().create_instance(class_args=(command_name,))
 
         if hasattr(command_object, 'parser'):
             actions = []
