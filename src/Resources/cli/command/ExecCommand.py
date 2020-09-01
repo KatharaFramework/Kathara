@@ -52,13 +52,13 @@ class ExecCommand(Command):
         parser.add_argument(
             'machine_name',
             metavar='DEVICE_NAME',
-            help='Name of the machine to connect to.'
+            help='Name of the machine to execute the command into.'
         )
         parser.add_argument(
             'command',
             metavar='COMMAND',
             nargs='+',
-            help='Command that should be executed inside the machine.'
+            help='Shell command that will be executed inside the machine.'
         )
 
         self.parser = parser

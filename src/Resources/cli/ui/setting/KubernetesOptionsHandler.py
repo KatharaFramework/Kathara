@@ -21,7 +21,7 @@ class KubernetesOptionsHandler(OptionsHandler):
                                             title=api_server_url_string,
                                             subtitle=setting_utils.current_string("api_server_url"),
                                             prologue_text="""You can specify a remote Kubernetes API Server URL to """
-                                                          """connect to when Kathara is not used on a Kubernetes """
+                                                          """connect to when Megalos is not used on a Kubernetes """
                                                           """master.
                                                           Default is %s.""" % DEFAULTS['api_server_url'],
                                             formatter=menu_formatter
@@ -80,9 +80,9 @@ class KubernetesOptionsHandler(OptionsHandler):
         host_shared_menu = SelectionMenu(strings=[],
                                          title=host_shared_string,
                                          subtitle=setting_utils.current_bool("host_shared"),
-                                         prologue_text="""Each Kubernetes host creates a /home/shared directory """
-                                                       """and it is made available for reading/writing inside """
-                                                       """the device under the special directory `/shared`.
+                                         prologue_text="""Each Kubernetes worker node creates a /home/shared """
+                                                       """directory and it is made available for reading/writing """
+                                                       """inside the device under the special directory `/shared`.
                                                        Default is %s.""" %
                                                        setting_utils.format_bool(DEFAULTS['host_shared']),
                                          formatter=menu_formatter
