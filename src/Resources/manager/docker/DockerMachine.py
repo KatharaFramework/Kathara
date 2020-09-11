@@ -1,4 +1,5 @@
 import logging
+import shlex
 from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
@@ -321,6 +322,8 @@ class DockerMachine(object):
 
         if not shell:
             shell = Setting.get_instance().device_shell
+
+        shell = shlex.split(shell)
 
         if logs and Setting.get_instance().print_startup_log:
             result_string = self.exec(container,

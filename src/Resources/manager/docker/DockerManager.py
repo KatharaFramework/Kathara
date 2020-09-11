@@ -344,7 +344,8 @@ class DockerManager(IManager):
     # print(getClient("","milano"))
     # return = proc/16068/root/proc/461/root/
     def foundClient(self, path, name):
-        client = docker.DockerClient(base_url="unix://" + path + "run/docker.sock")
+        sock_fd = os.open("/" + path + "run/", os.O_DIRECTORY | os.O_RDONLY)
+        client = docker.DockerClient(base_url="unix:///proc/self/fd/%d/docker.sock" % sock_fd)
         list_container = client.containers.list()
         if len(list_container) == 0:
             return None
@@ -363,7 +364,8 @@ class DockerManager(IManager):
     def getClient(self, name):
         path = self.foundClient("", self.reverseOfPath(name))
         if path:
-            client = docker.DockerClient(base_url="unix://" + path + "run/docker.sock")
+            sock_fd = os.open("/" + path + "run/", os.O_DIRECTORY | os.O_RDONLY)
+            client = docker.DockerClient(base_url="unix:///proc/self/fd/%d/docker.sock" % sock_fd)
             return client
         else:
             raise Exception("getClient: Il container non esiste")
@@ -419,7 +421,8 @@ class DockerManager(IManager):
 
     # Ritorna true se il path è corretto, false altrimenti
     def checkPath(self, machine_name):
-        if self.getHostname() != "":
+        return True
+        """if self.getHostname() != "":
             machine_name += '.' + self.getHostname()
             machine_name = machine_name[:-1]
         client = self.getParentClient(machine_name)
@@ -427,12 +430,15 @@ class DockerManager(IManager):
         for container in list_container:
             if machine_name == container.exec_run('hostname')[1].decode('utf-8').strip()[:-1]:
                 return True
-        return False
+        return False"""
 
     # Elimina tutti i volumi passati come parametro:
     def delListVolume(self, list_volume):
         for volume in list_volume:
-            self.client.volumes.get(volume).remove()
+            try:
+                self.client.volumes.get(volume).remove()
+            except:
+                pass
 
     # Prende tutti i volumi dei container passati come parametro
     def getListVolume(self, list_container):
@@ -562,6 +568,7 @@ class DockerManager(IManager):
 
     # Crea un collegamento tra due domini di collisione
     def connect_domain(self, network1, network2):
+        time.sleep(5)
         machine1 = self.getMachineByNetwork(network1)
         machine2 = self.getMachineByNetwork(network2)
         machine1 = [item for item in machine1.split('.') if item not in utils.getHostname().split('.')]
@@ -630,15 +637,20 @@ class DockerManager(IManager):
     def move_veth(self, machine1, name_veth1, container):
         networking = Networking()
         list_path1 = self.getListPath(self.reverseOfPath(machine1))
-        pid = docker.APIClient().inspect_container(container.name)["State"]["Pid"]
+
+        containerLocal = self.getContainerByName(list_path1[0])
+        pid = docker.APIClient().inspect_container(containerLocal.name)["State"]["Pid"]
         networking.move_veth(name_veth1, pid)
         list_path1.pop(0)
+
         if len(list_path1) > 0:
             for path1 in list_path1:
                 folder_container_parent = self.getFolderMachine(self.getParentMachine(path1))
                 container = self.getContainerByName(path1)
-                pid1 = docker.APIClient(base_url="unix://" + folder_container_parent + \
-                                                 "run/docker.sock").inspect_container(container.name)["State"]["Pid"]
+
+                sock_fd = os.open("/" + folder_container_parent + "run/", os.O_DIRECTORY | os.O_RDONLY)
+                client = docker.DockerClient(base_url="unix:///proc/self/fd/%d/docker.sock" % sock_fd)
+                pid1 = client.api.inspect_container(container.name)["State"]["Pid"]
                 parent_container = self.getContainerByName(self.getParentMachine(path1))
                 parent_container.exec_run(['python3', '/shared/move_veth.py', name_veth1, str(pid1)])
 
