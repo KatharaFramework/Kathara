@@ -13,7 +13,7 @@ override_dh_auto_configure:
 	python3 -m pip install --system -t $(CURDIR)/debian/pythonModules $(CURDIR)/debian/pythonLibs/*
 
 override_dh_auto_build: 
-	export PYTHONPATH=$$PYTHONPATH:$(CURDIR)/debian/pythonModules && python3 -m nuitka --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Resources kathara.py
+	export PYTHONPATH=$$PYTHONPATH:$(CURDIR)/debian/pythonModules && python3 -m nuitka --show-progress --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Resources kathara.py
 
 
 override_dh_auto_install:

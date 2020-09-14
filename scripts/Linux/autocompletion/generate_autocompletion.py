@@ -3,7 +3,7 @@
 import os
 import sys
 
-src_dir = os.path.join('../..', '..', 'src')
+src_dir = os.path.join('..', '..', 'src')
 sys.path.insert(0, src_dir)
 
 from Resources.foundation.cli.command.CommandFactory import CommandFactory
