@@ -35,7 +35,7 @@ clean-output-folder:
 	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro)_source.buildinfo
 	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro)_source.changes
 
-copy-debian-folder: 
+copy-debian-folder:
 	cp -r debian Output/kathara-$(VERSION)/
 	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog
 	sed -i -e 's/__DEBIAN_PACKAGE_VERSION__/$(DEBIAN_PACKAGE_VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
@@ -52,12 +52,12 @@ build-man: copy-debian-folder
 	cp -r ../../docs/Roff Output/kathara-$(VERSION)/debian/manpages
 	cd ../../docs && make cleanall
 	ls Output/kathara-$(VERSION)/debian/manpages/ | awk '{print "debian/manpages/"$$0}' > Output/kathara-$(VERSION)/debian/kathara.manpages
-	
+
 	/usr/bin/python3 -m pip install -r autocompletion/requirements.txt
 	/usr/bin/python3 autocompletion/generate_autocompletion.py "Output/kathara-$(VERSION)/debian/kathara.bash-completion"
 
 build-deb-unsigned: build-man download-pip
-	sed -i -e 's/__UBUNTU_VERSION__/bionic/g' Output/kathara-$(VERSION)/debian/changelog
+	sed -i -e 's/__UBUNTU_VERSION__/focal/g' Output/kathara-$(VERSION)/debian/changelog
 	cd Output/kathara-$(VERSION); debuild -us -uc
 
 build-deb-signed: build-man download-pip

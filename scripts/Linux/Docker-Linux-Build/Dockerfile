@@ -1,4 +1,8 @@
-FROM debian:9
+FROM ubuntu:focal
+
+ENV TZ=Europe/Rome
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt update \
 	&& DEBIAN_FRONTEND=noninteractive apt upgrade -y \
@@ -15,7 +19,8 @@ RUN apt update \
 		lintian \
 		devscripts \
 		git \
-		ruby-full
+		ruby-full \
+		bash-completion
 
 RUN gem install ronn-ng
 
