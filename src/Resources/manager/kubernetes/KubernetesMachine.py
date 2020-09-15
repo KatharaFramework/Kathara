@@ -262,7 +262,8 @@ class KubernetesMachine(object):
 
         # Create labels (so Deployment can match them)
         pod_labels = {"name": machine.name,
-                      "app": "kathara"
+                      "app": "kathara",
+                      "shell": machine.meta["shell"] if "shell" in machine.meta else Setting.get_instance().device_shell
                       }
 
         pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
@@ -378,17 +379,17 @@ class KubernetesMachine(object):
             return
 
     def connect(self, lab_hash, machine_name, shell=None, logs=False):
-        logging.debug("Connect to machine with name: %s" % machine_name)
-
         pod = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
         if 'Running' not in pod.status.phase:
             raise Exception('Machine `%s` is not ready.' % machine_name)
 
         if not shell:
-            shell = [Setting.get_instance().device_shell]
+            shell = shlex.split(pod.metadata.labels['shell'])
         else:
             shell = shlex.split(shell) if type(shell) == str else shell
+
+        logging.debug("Connect to machine `%s` with shell: %s" % (machine_name, shell))
 
         if logs and Setting.get_instance().print_startup_log:
             (result_string, _) = self.exec(lab_hash,

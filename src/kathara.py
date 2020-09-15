@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import argparse
 import logging
@@ -54,7 +54,7 @@ class KatharaEntryPoint(object):
         args = parser.parse_args(sys.argv[1:2])
 
         if args.version:
-            print('Current version: %s.' % CURRENT_VERSION)
+            print('Current version: %s' % CURRENT_VERSION)
             sys.exit(0)
 
         if args.command is None:
@@ -92,7 +92,7 @@ class KatharaEntryPoint(object):
 
 if __name__ == '__main__':
     utils.check_python_version()
-    
+
     utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
 
     try:

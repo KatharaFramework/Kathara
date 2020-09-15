@@ -44,18 +44,23 @@ In order to establish a uniform convention, comment lines should always start wi
 * `sysctl` (string):
 	Sets a sysctl option for this device. Only the `net.` namespace is allowed to be set. Can be set multiple times per machine, each will add a new entry (unless the same config item is used again).
 
+* `shell` (string):
+    Use the specified shell to connect to the device, e.g., when `kathara connect` is called.
+
 ## LAB META INFORMATION
 
 It is also possible to provide descriptive information about a lab by using one of the following special assignments:
 
++ LAB_NAME=string (a word as identifier for the lab)
 + LAB_DESCRIPTION=string (a brief description of the purpose of the lab)
 + LAB_VERSION=string (the version of the lab)
 + LAB_AUTHOR=string (people who have written the lab)
 + LAB_EMAIL=string (contacts of lab authors)
-+ LAB_WEB=string (useful web reources related to the lab)
++ LAB_WEB=string (useful web resources related to the lab)
 
 ## EXAMPLE
 
+        LAB_NAME="Example"
 		LAB_DESCRIPTION="A simple example of lab.conf"
 		LAB_VERSION=1.0
 		LAB_AUTHOR="Kathara Authors"
@@ -77,7 +82,8 @@ It is also possible to provide descriptive information about a lab by using one 
 
 		pc2[0]="C"
 		pc2[mem]=128m
-  
+        pc2[shell]="/bin/sh"
+
 Example of a `lab.conf`(5) file.
 
 m4_include(footer.txt)

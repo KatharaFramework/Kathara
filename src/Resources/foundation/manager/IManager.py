@@ -19,7 +19,7 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `wipe` method.")
 
     @abstractmethod
-    def connect_tty(self, lab_hash, machine_name, shell, logs=False):
+    def connect_tty(self, lab_hash, machine_name, shell=None, logs=False):
         raise NotImplementedError("You must implement `connect_tty` method.")
 
     @abstractmethod
@@ -40,7 +40,7 @@ class IManager(ABC):
 
     @abstractmethod
     def check_image(self, image_name):
-        raise NotImplementedError("You must implement `check` method.")
+        raise NotImplementedError("You must implement `check_image` method.")
 
     @abstractmethod
     def get_release_version(self):

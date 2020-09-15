@@ -175,13 +175,22 @@ class Machine(object):
         logging.debug("Terminal will open in directory %s." % self.lab.path)
 
         def unix_connect():
-            logging.debug("Opening Linux terminal with command: %s." % connect_command)
-            # Command should be passed as an array
-            # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
-            subprocess.Popen([terminal, "-e", connect_command],
-                             cwd=self.lab.path,
-                             start_new_session=True
-                             )
+            if terminal == "/usr/bin/tmux":
+                from ..trdparty.libtmux.tmux import TMUX
+
+                logging.debug("Attaching `%s` to TMUX session `%s` with command `%s`" % (self.name, self.lab.name,
+                                                                                         connect_command))
+
+                TMUX.get_instance().add_window(self.lab.name, self.name, connect_command, cwd=self.lab.path)
+            else:
+                logging.debug("Opening Linux terminal with command: %s." % connect_command)
+
+                # Command should be passed as an array
+                # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
+                subprocess.Popen([terminal, "-e", connect_command],
+                                 cwd=self.lab.path,
+                                 start_new_session=True
+                                 )
 
         def windows_connect():
             complete_win_command = "& %s" % connect_command
@@ -195,10 +204,19 @@ class Machine(object):
                              )
 
         def osx_connect():
-            import appscript
             complete_osx_command = "cd \"%s\" && clear && %s && exit" % (self.lab.path, connect_command)
-            logging.debug("Opening OSX terminal with command: %s." % complete_osx_command)
-            appscript.app('Terminal').do_script(complete_osx_command)
+
+            if terminal == "/usr/local/bin/tmux":
+                from ..trdparty.libtmux.tmux import TMUX
+
+                logging.debug("Attaching `%s` to TMUX session `%s` with command `%s`" % (self.name, self.lab.name,
+                                                                                         complete_osx_command))
+
+                TMUX.get_instance().add_window(self.lab.name, self.name, complete_osx_command, cwd=self.lab.path)
+            else:
+                import appscript
+                logging.debug("Opening OSX terminal with command: %s." % complete_osx_command)
+                appscript.app('Terminal').do_script(complete_osx_command)
 
         utils.exec_by_platform(unix_connect, windows_connect, osx_connect)
 
@@ -238,7 +256,7 @@ class Machine(object):
         CPU limit, multiplied by a specific multiplier.
         User should pass a float value ranging from 0 to max user CPUs.
         It is took from options, or machine meta.
-        :return: 
+        :return:
         """
         if "cpus" in self.lab.general_options:
             try:

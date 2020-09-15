@@ -28,7 +28,7 @@ class LrestartCommand(Command):
         group = parser.add_mutually_exclusive_group(required=False)
 
         group.add_argument(
-            "-n", "--noterminals",
+            "--noterminals",
             action="store_const",
             dest="terminals",
             const=False,
@@ -36,11 +36,17 @@ class LrestartCommand(Command):
             help='Start the lab without opening terminal windows.'
         )
         group.add_argument(
-            "-t", "--terminals",
+            "--terminals",
             action="store_const",
             dest="terminals",
             const=True,
             help='Start the lab opening terminal windows.'
+        )
+        group.add_argument(
+            "--privileged",
+            action="store_true",
+            required=False,
+            help='Start the devices in privileged mode. MUST BE ROOT FOR THIS OPTION.'
         )
         parser.add_argument(
             '-d', '--directory',
@@ -76,22 +82,16 @@ class LrestartCommand(Command):
         parser.add_argument(
             '-H', '--no-hosthome',
             dest="no_hosthome",
-            required=False,
-            action='store_false',
+            action="store_const",
+            const=False,
             help='/hosthome dir will not be mounted inside the machine.'
         )
         parser.add_argument(
             '-S', '--no-shared',
             dest="no_shared",
-            required=False,
-            action='store_false',
+            action="store_const",
+            const=False,
             help='/shared dir will not be mounted inside the machine.'
-        )
-        group.add_argument(
-            "--privileged",
-            action="store_true",
-            required=False,
-            help='Start the devices in privileged mode. MUST BE ROOT FOR THIS OPTION.'
         )
 
         self.parser = parser

@@ -98,7 +98,7 @@ class KubernetesManager(IManager):
         self.k8s_namespace.wipe()
 
     @privileged
-    def connect_tty(self, lab_hash, machine_name, shell, logs=False):
+    def connect_tty(self, lab_hash, machine_name, shell=None, logs=False):
         lab_hash = lab_hash.lower()
 
         self.k8s_machine.connect(lab_hash=lab_hash,

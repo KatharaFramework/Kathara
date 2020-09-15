@@ -84,7 +84,7 @@ class DockerMachine(object):
     def deploy_machines(self, lab, privileged_mode=False):
         # Check and pulling machine images
         lab_images = set(map(lambda x: x.get_image(), lab.machines.values()))
-        self.docker_image.multiple_check_and_pull(lab_images)
+        self.docker_image.check_and_pull_from_list(lab_images)
 
         # Read additional CLI args and settings
         args = CliArgs.get_instance().args
@@ -98,7 +98,6 @@ class DockerMachine(object):
 
         machines = lab.machines.items()
         progress_bar = Bar('Deploying machines...', max=len(machines))
-
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
         # If not, they're started sequentially
@@ -209,7 +208,10 @@ class DockerMachine(object):
                                                               labels={"name": machine.name,
                                                                       "lab_hash": machine.lab.folder_hash,
                                                                       "user": utils.get_current_user_name(),
-                                                                      "app": "kathara"
+                                                                      "app": "kathara",
+                                                                      "shell": machine.meta["shell"]
+                                                                               if "shell" in machine.meta
+                                                                               else Setting.get_instance().device_shell
                                                                       }
                                                               )
         except APIError as e:
@@ -271,10 +273,10 @@ class DockerMachine(object):
             machine.bridge.api_object.connect(machine.api_object)
 
         # Build the final startup commands string
-        startup_commands_string = "; ".join(STARTUP_COMMANDS) \
-            .format(machine_name=machine.name,
-                    machine_commands="; ".join(machine.startup_commands)
-                    )
+        startup_commands_string = "; ".join(STARTUP_COMMANDS).format(
+            machine_name=machine.name,
+            machine_commands="; ".join(machine.startup_commands)
+        )
 
         # Execute the startup commands inside the container (without privileged flag so basic permissions are used)
         machine.api_object.exec_run(cmd=[Setting.get_instance().device_shell, '-c', startup_commands_string],
@@ -328,12 +330,14 @@ class DockerMachine(object):
                 progress_bar.next()
 
     def connect(self, lab_hash, machine_name, shell=None, logs=False):
-        logging.debug("Connect to machine with name: %s" % machine_name)
+        container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
         if not shell:
-            shell = [Setting.get_instance().device_shell]
+            shell = shlex.split(container.labels['shell'])
         else:
             shell = shlex.split(shell) if type(shell) == str else shell
+
+        logging.debug("Connect to machine `%s` with shell: %s" % (machine_name, shell))
 
         if logs and Setting.get_instance().print_startup_log:
             (result_string, _) = self.exec(lab_hash,

@@ -5,10 +5,9 @@ kathara-lstart(1) -- Start a Kathara lab
 ## SYNOPSIS
 
 `kathara lstart`
->           [`-h`] [`-n` | `-t`] [`-d` <DIRECTORY>] [`-F`] [`-l`]  
+>           [`-h`] [`--noterminals` | `--terminals` | `--privileged`] [`-d` <DIRECTORY>] [`-F`] [`-l`]
 >           [`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>] [`--print`]  
->           [`-H`] [`-S`] [`--privileged`]  
->           [<DEVICE_NAME> [<DEVICE_NAME> ...]]
+>           [`-H`] [`-S`] [<DEVICE_NAME> [<DEVICE_NAME> ...]]
 
 
 ## DESCRIPTION
@@ -32,10 +31,13 @@ The configuration of a Kathara lab consists of some files described in `kathara-
 
     Override the default setting specified in `kathara.conf`(5) file.
 
-* `-t`, `--terminals`:
+* `--terminals`:
     Start the lab devices opening their terminal windows.
 
     Override the default setting specified in `kathara.conf`(5) file.
+
+* `--privileged`:
+    Start the devices in privileged mode. MUST BE ROOT FOR THIS OPTION.
 
 * `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
     Specify the folder containing the lab.
@@ -73,9 +75,6 @@ The configuration of a Kathara lab consists of some files described in `kathara-
     `/shared` dir will not be mounted inside the device.
 
     By default, the "shared" directory inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
-
-* `--privileged`:
-    Start the devices in privileged mode. MUST BE ROOT FOR THIS OPTION.
 
 * `DEVICE_NAME`:
     A list of device names. Instead of starting the whole lab, only specified devices are started.
