@@ -38,6 +38,11 @@ STARTUP_COMMANDS = [
     "chown quagga:quagga /etc/quagga/*",
     "chmod 640 /etc/quagga/*; fi",
 
+    # Give proper permissions to FRR files (if present)
+    "if [ -d \"/etc/frr\" ]; then "
+    "chown frr:frr /etc/frr/*",
+    "chmod 640 /etc/frr/*; fi",
+
     # If shared.startup file is present
     "if [ -f \"/hostlab/shared.startup\" ]; then "
     # Give execute permissions to the file and execute it

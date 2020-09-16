@@ -58,6 +58,11 @@ STARTUP_COMMANDS = [
     "chown quagga:quagga /etc/quagga/*",
     "chmod 640 /etc/quagga/*; fi",
 
+    # Give proper permissions to FRR files (if present)
+    "if [ -d \"/etc/frr\" ]; then "
+    "chown frr:frr /etc/frr/*",
+    "chmod 640 /etc/frr/*; fi",
+
     # If shared.startup file is present
     "if [ -f \"/hostlab/shared.startup\" ]; then "
     # Give execute permissions to the file and execute it
@@ -141,6 +146,9 @@ class KubernetesMachine(object):
     def create(self, machine, privileged=False):
         logging.debug("Creating device `%s`..." % machine.name)
 
+        if privileged:
+            logging.warning('Privileged option is not supported on Kubernetes. It will be ignored.')
+
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options
 
@@ -171,7 +179,7 @@ class KubernetesMachine(object):
 
         try:
             config_map = self.kubernetes_config_map.deploy_for_machine(machine)
-            machine_definition = self._build_definition(machine, config_map, privileged)
+            machine_definition = self._build_definition(machine, config_map)
 
             machine.api_object = self.client.create_namespaced_deployment(body=machine_definition,
                                                                           namespace=machine.lab.folder_hash
@@ -182,7 +190,8 @@ class KubernetesMachine(object):
             else:
                 raise e
 
-    def _build_definition(self, machine, config_map, privileged):
+    @staticmethod
+    def _build_definition(machine, config_map):
         volume_mounts = []
         if config_map:
             # Define volume mounts for hostlab if a ConfigMap is defined.
@@ -390,8 +399,8 @@ class KubernetesMachine(object):
             raise Exception('Device `%s` is not ready.' % machine_name)
 
         if not shell:
-            shell_env = pod.containers[0].env.pop()
-            shell = shlex.split(shell_env.value)
+            shell_env_value = self.get_env_var_value_from_pod(pod, "_MEGALOS_SHELL")
+            shell = shlex.split(shell_env_value if shell_env_value else Setting.get_instance().device_shell)
         else:
             shell = shlex.split(shell) if type(shell) == str else shell
 
@@ -420,6 +429,27 @@ class KubernetesMachine(object):
 
         from .terminal.KubernetesWSTerminal import KubernetesWSTerminal
         KubernetesWSTerminal(resp).start()
+
+    @staticmethod
+    def get_env_var_value_from_pod(pod, var_name):
+        containers = pod.spec.containers
+        if not containers:
+            return None
+
+        # There is only one container definition in Megalos Pods
+        container_definition = containers.pop()
+        # Get env vars list
+        env_vars = container_definition.env
+
+        if not env_vars:
+            return None
+
+        # Iterate over the env vars and search the desired one
+        for env_var in env_vars:
+            if var_name == env_var.name:
+                return env_var.value
+
+        return None
 
     def exec(self, lab_hash, machine_name, command, tty=False, stdin=False, stdin_buffer=None, stderr=False):
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
