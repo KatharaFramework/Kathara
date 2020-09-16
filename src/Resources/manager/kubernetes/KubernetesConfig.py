@@ -6,14 +6,14 @@ from ...setting.Setting import Setting
 class KubernetesConfig(object):
     @staticmethod
     def get_cluster_user():
-        _, current_context = config.kube_config.list_kube_config_contexts()
-        return current_context['name']
+        configuration = client.api_client.Configuration()
+        return configuration.api_key['authorization']
 
     @staticmethod
     def load_kube_config():
         try:
-            config.load_kube_config()           # Try to load configuration if Kathara is launched on a k8s master.
-        except Exception:                       # Not on a k8s master, load Kathara setting to read remote cluster data.
+            config.load_kube_config()           # Try to load configuration if Megalos is launched on a k8s master.
+        except Exception:                       # Not on a k8s master, load Megalos setting to read remote cluster data.
             api_url = Setting.get_instance().api_server_url
             token = Setting.get_instance().api_token
 
@@ -23,6 +23,7 @@ class KubernetesConfig(object):
             # Load the configuration and set it as default.
             configuration = client.Configuration()
             configuration.host = api_url
-            configuration.api_key = {"authorization": "Bearer " + token}
+            configuration.api_key_prefix['authorization'] = "Bearer"
+            configuration.api_key['authorization'] = token
 
             client.Configuration.set_default(configuration)

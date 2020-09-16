@@ -26,7 +26,7 @@ class KubernetesLink(object):
     def __init__(self):
         self.client = custom_objects_api.CustomObjectsApi()
 
-        self._get_link_number_seed()
+        self.seed = KubernetesConfig.get_cluster_user()
 
     def deploy_links(self, lab):
         links = lab.links.items()
@@ -152,9 +152,6 @@ class KubernetesLink(object):
                         }""" % (link.name.lower(), link.lab.folder_hash[0:6], network_id)
             }
         }
-
-    def _get_link_number_seed(self):
-        self.seed = KubernetesConfig.get_cluster_user()
 
     def _get_unique_network_id(self, name, network_ids):
         network_id = self._get_network_id(name)

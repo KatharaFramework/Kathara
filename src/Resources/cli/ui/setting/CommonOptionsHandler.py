@@ -7,6 +7,7 @@ from ....setting.Setting import Setting, DEFAULTS, POSSIBLE_SHELLS, POSSIBLE_TER
 from ....trdparty.consolemenu import *
 from ....trdparty.consolemenu.items import *
 from ....trdparty.consolemenu.validators.regex import RegexValidator
+from ....utils import exec_by_platform
 from ....validator.ImageValidator import ImageValidator
 from ....validator.TerminalValidator import TerminalValidator
 
@@ -134,36 +135,47 @@ class CommonOptionsHandler(OptionsHandler):
         machine_shell_item = SubmenuItem(machine_shell_string, machine_shell_menu, current_menu)
 
         # Terminal Emulator Submenu
-        terminal_string = "Choose terminal emulator to be used"
-        terminal_menu = SelectionMenu(strings=[],
-                                      title=terminal_string,
-                                      subtitle=setting_utils.current_string("terminal"),
-                                      formatter=menu_formatter,
-                                      prologue_text="""Terminal emulator application to be used for device terminals.
-                                                    **The application must be correctly installed in the host system!**
-                                                    This setting is only used on Linux and macOS systems.
-                                                    Default is `%s`.""" % DEFAULTS['terminal']
-                                      )
+        # Shown only on Linux and macOS
+        def terminal_emulator_menu():
+            terminal_string = "Choose terminal emulator to be used"
+            terminal_menu = SelectionMenu(strings=[],
+                                          title=terminal_string,
+                                          subtitle=setting_utils.current_string("terminal"),
+                                          formatter=menu_formatter,
+                                          prologue_text="""Terminal emulator application to be used for device """
+                                                        """terminals. 
+                                                        **The application must be correctly installed in """
+                                                        """the host system!**
+                                                        Default is `%s`.""" % DEFAULTS['terminal']
+                                          )
 
-        for terminal in POSSIBLE_TERMINALS:
-            terminal_menu.append_item(FunctionItem(text=terminal,
+            for terminal in POSSIBLE_TERMINALS:
+                terminal_menu.append_item(FunctionItem(text=terminal,
+                                                       function=setting_utils.update_setting_value,
+                                                       args=["terminal", terminal],
+                                                       should_exit=True
+                                                       )
+                                          )
+            terminal_menu.append_item(FunctionItem(text="TMUX",
                                                    function=setting_utils.update_setting_value,
-                                                   args=["terminal", terminal],
+                                                   args=["terminal", "TMUX"],
                                                    should_exit=True
                                                    )
                                       )
-        terminal_menu.append_item(FunctionItem(text="Choose another terminal emulator",
-                                               function=setting_utils.read_value,
-                                               args=['terminal',
-                                                     TerminalValidator(),
-                                                     'Write the name of a terminal emulator:',
-                                                     'Terminal emulator is not valid!'
-                                                     ],
-                                               should_exit=True
-                                               )
-                                  )
+            terminal_menu.append_item(FunctionItem(text="Choose another terminal emulator",
+                                                   function=setting_utils.read_value,
+                                                   args=['terminal',
+                                                         TerminalValidator(),
+                                                         'Write the name of a terminal emulator:',
+                                                         'Terminal emulator is not valid! Install it before using it.'
+                                                         ],
+                                                   should_exit=True
+                                                   )
+                                      )
 
-        terminal_item = SubmenuItem(terminal_string, terminal_menu, current_menu)
+            return SubmenuItem(terminal_string, terminal_menu, current_menu)
+
+        terminal_item = exec_by_platform(terminal_emulator_menu, lambda: None, terminal_emulator_menu)
 
         # Prefixes Submenu
         prefixes_string = "Choose Kathara prefixes"
@@ -276,7 +288,8 @@ class CommonOptionsHandler(OptionsHandler):
         current_menu.append_item(submenu_item)
         current_menu.append_item(open_terminals_item)
         current_menu.append_item(machine_shell_item)
-        current_menu.append_item(terminal_item)
+        if terminal_item:
+            current_menu.append_item(terminal_item)
         current_menu.append_item(prefixes_item)
         current_menu.append_item(debug_level_item)
         current_menu.append_item(print_startup_log_item)

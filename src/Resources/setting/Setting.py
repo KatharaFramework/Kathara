@@ -10,7 +10,7 @@ from ..exceptions import HTTPConnectionError, SettingsError
 from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
 
 POSSIBLE_SHELLS = ["/bin/bash", "/bin/sh", "/bin/ash", "/bin/ksh", "/bin/zsh", "/bin/fish", "/bin/csh", "/bin/tcsh"]
-POSSIBLE_TERMINALS = ["/usr/bin/xterm", "/usr/bin/konsole", "/usr/bin/tmux"]
+POSSIBLE_TERMINALS = ["/usr/bin/xterm", "/usr/bin/konsole"]
 POSSIBLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
 POSSIBLE_MANAGERS = ["docker", "kubernetes"]
 
@@ -180,11 +180,15 @@ class Setting(object):
     def check_terminal(self, terminal=None):
         terminal = self.terminal if not terminal else terminal
 
+        # Skip check for TMUX (special value)
+        if terminal == "TMUX":
+            return True
+
         def check_unix():
             return os.path.isfile(terminal) and os.access(terminal, os.X_OK)
 
         if not utils.exec_by_platform(check_unix, lambda: True, lambda: True):
-            raise SettingsError("Terminal Emulator not valid!")
+            raise SettingsError("Terminal Emulator `%s` not valid! Install it before using it." % terminal)
 
         return True
 
@@ -201,6 +205,6 @@ class Setting(object):
                 "device_prefix": self.device_prefix,
                 "debug_level": self.debug_level,
                 "print_startup_log": self.print_startup_log,
+                "enable_ipv6": self.enable_ipv6,
                 "last_checked": self.last_checked,
-                "enable_ipv6": self.enable_ipv6
                 }

@@ -6,11 +6,10 @@ from ....trdparty.consolemenu.items import *
 from ....trdparty.consolemenu.validators.regex import RegexValidator
 
 url_regex = r'^(?:http)s?://'  # http:// or https://
-r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
-r'localhost|'  # localhost...
-r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-r'(?::\d+)?'  # optional port
-r'(?:/?|[/?]\S+)$'
+url_regex += r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+url_regex += r'localhost|'  # localhost...
+url_regex += r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+url_regex += r'(?::\d+)?$'  # optional port
 
 
 class KubernetesOptionsHandler(OptionsHandler):
@@ -32,7 +31,8 @@ class KubernetesOptionsHandler(OptionsHandler):
                                                      args=['api_server_url',
                                                            RegexValidator(url_regex),
                                                            'Write a Kubernetes API Server URL:',
-                                                           'Kubernetes API Server URL is not a valid URL!'
+                                                           'Kubernetes API Server URL is not a valid URL (remove '
+                                                           'the trailing slash, if present)'
                                                            ],
                                                      should_exit=True
                                                      )
@@ -59,7 +59,7 @@ class KubernetesOptionsHandler(OptionsHandler):
         api_token_menu.append_item(FunctionItem(text=api_token_string,
                                                 function=setting_utils.read_value,
                                                 args=['api_token',
-                                                      RegexValidator(r'^\w+$'),
+                                                      RegexValidator(r'^.+$'),
                                                       'Write a Kubernetes API Token:',
                                                       'Kubernetes API Token not valid!'
                                                       ],

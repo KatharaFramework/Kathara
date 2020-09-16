@@ -1,6 +1,7 @@
 from ....exceptions import SettingsError
 from ....setting.Setting import Setting
 from ....trdparty.consolemenu import *
+from ....trdparty.consolemenu import UserQuit
 
 SAVED_STRING = "Saved successfully!\n"
 PRESS_ENTER_STRING = "Press [Enter] to continue."
@@ -58,15 +59,17 @@ def read_and_validate_value(prompt_msg, validator):
 
 
 def read_value(attribute_name, validator, prompt_msg, error_msg):
-    answer = read_and_validate_value(prompt_msg=prompt_msg,
-                                     validator=validator
-                                     )
-
-    while not answer.validation_result:
-        print(error_msg)
+    try:
         answer = read_and_validate_value(prompt_msg=prompt_msg,
                                          validator=validator
                                          )
+
+        while not answer.validation_result:
+            answer = read_and_validate_value(prompt_msg=prompt_msg,
+                                             validator=validator
+                                             )
+    except UserQuit:
+        return
 
     setattr(Setting.get_instance(), attribute_name, answer.input_string)
     Setting.get_instance().save()

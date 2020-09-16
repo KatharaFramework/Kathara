@@ -175,7 +175,7 @@ class Machine(object):
         logging.debug("Terminal will open in directory %s." % self.lab.path)
 
         def unix_connect():
-            if terminal == "/usr/bin/tmux":
+            if terminal == "TMUX":
                 from ..trdparty.libtmux.tmux import TMUX
 
                 logging.debug("Attaching `%s` to TMUX session `%s` with command `%s`" % (self.name, self.lab.name,
@@ -206,7 +206,7 @@ class Machine(object):
         def osx_connect():
             complete_osx_command = "cd \"%s\" && clear && %s && exit" % (self.lab.path, connect_command)
 
-            if terminal == "/usr/local/bin/tmux":
+            if terminal == "TMUX":
                 from ..trdparty.libtmux.tmux import TMUX
 
                 logging.debug("Attaching `%s` to TMUX session `%s` with command `%s`" % (self.name, self.lab.name,
