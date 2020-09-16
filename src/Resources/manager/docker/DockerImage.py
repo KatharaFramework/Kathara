@@ -53,23 +53,28 @@ class DockerImage(object):
                                       lambda: None
                                       )
 
-    def check_and_pull(self, image_name):
+    def check(self, image):
+        self._check_and_pull(image, pull=False)
+
+    def check_and_pull_from_list(self, images):
+        for image in images:
+            self._check_and_pull(image)
+
+    def _check_and_pull(self, image_name, pull=True):
         try:
             # Tries to get the image from the local Docker repository.
             self.get_local(image_name)
-            self.check_for_updates(image_name)
+            if pull:
+                self.check_for_updates(image_name)
         except APIError:
             # If not found, tries on Docker Hub.
             try:
                 # If the image exists on Docker Hub, pulls it.
                 self.get_remote(image_name)
-                self.pull(image_name)
+                if pull:
+                    self.pull(image_name)
             except ConnectionError:
                 raise ConnectionError("Image `%s` does not exists in local and no Internet connection for Docker Hub."
                                       % image_name)
             except Exception:
                 raise Exception("Image `%s` does not exists either in local or on Docker Hub." % image_name)
-
-    def check_and_pull_from_list(self, images):
-        for image in images:
-            self.check_and_pull(image)

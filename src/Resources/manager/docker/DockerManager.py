@@ -216,7 +216,7 @@ class DockerManager(IManager):
 
     @privileged
     def check_image(self, image_name):
-        self.docker_image.check_and_pull(image_name)
+        self.docker_image.check(image_name)
 
     @privileged
     def get_release_version(self):

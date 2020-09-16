@@ -10,7 +10,6 @@ from .KubernetesLink import KubernetesLink
 from .KubernetesMachine import KubernetesMachine
 from .KubernetesNamespace import KubernetesNamespace
 from ... import utils
-from ...api.DockerHubApi import DockerHubApi
 from ...decorators import privileged
 from ...exceptions import NotSupportedError
 from ...foundation.manager.IManager import IManager
@@ -194,10 +193,8 @@ class KubernetesManager(IManager):
 
     @privileged
     def check_image(self, image_name):
-        try:
-            DockerHubApi.get_image_information(image_name)
-        except Exception:
-            raise Exception("Image `%s` does not exists on Docker Hub or no Internet connection." % image_name)
+        # Delegate the image check to Kubernetes
+        return True
 
     @privileged
     def get_release_version(self):

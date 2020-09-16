@@ -237,6 +237,11 @@ class KubernetesMachine(object):
         )
         lifecycle = client.V1Lifecycle(post_start=post_start)
 
+        env = [client.V1EnvVar("_MEGALOS_SHELL",
+                               machine.meta["shell"] if "shell" in machine.meta else Setting.get_instance().device_shell
+                               )
+               ]
+
         container_definition = client.V1Container(
             name=machine.meta['real_name'],
             image=machine.get_image(),
@@ -247,7 +252,8 @@ class KubernetesMachine(object):
             ports=container_ports,
             resources=resources,
             volume_mounts=volume_mounts,
-            security_context=security_context
+            security_context=security_context,
+            env=env
         )
 
         pod_annotations = {}
@@ -262,8 +268,7 @@ class KubernetesMachine(object):
 
         # Create labels (so Deployment can match them)
         pod_labels = {"name": machine.name,
-                      "app": "kathara",
-                      "shell": machine.meta["shell"] if "shell" in machine.meta else Setting.get_instance().device_shell
+                      "app": "kathara"
                       }
 
         pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
@@ -325,7 +330,7 @@ class KubernetesMachine(object):
         items = utils.chunk_list(machines, pool_size)
 
         progress_bar = Bar("Deleting devices...", max=len(machines) if not selected_machines
-        else len(selected_machines)
+                                                                    else len(selected_machines)
                            )
 
         for chunk in items:
@@ -385,7 +390,8 @@ class KubernetesMachine(object):
             raise Exception('Device `%s` is not ready.' % machine_name)
 
         if not shell:
-            shell = shlex.split(pod.metadata.labels['shell'])
+            shell_env = pod.containers[0].env.pop()
+            shell = shlex.split(shell_env.value)
         else:
             shell = shlex.split(shell) if type(shell) == str else shell
 
