@@ -33,7 +33,7 @@ class LcleanCommand(Command):
             'machine_names',
             metavar='DEVICE_NAME',
             nargs='*',
-            help='Clean only specified machines.'
+            help='Clean only specified devices.'
         )
 
         self.parser = parser

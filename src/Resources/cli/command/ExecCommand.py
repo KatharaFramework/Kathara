@@ -35,7 +35,7 @@ class ExecCommand(Command):
             '-v', '--vmachine',
             dest="vmachine",
             action="store_true",
-            help='The machine has been started with vstart command.',
+            help='The device has been started with vstart command.',
         )
         parser.add_argument(
             '--no-stdout',
@@ -52,13 +52,13 @@ class ExecCommand(Command):
         parser.add_argument(
             'machine_name',
             metavar='DEVICE_NAME',
-            help='Name of the machine to execute the command into.'
+            help='Name of the device to execute the command into.'
         )
         parser.add_argument(
             'command',
             metavar='COMMAND',
             nargs='+',
-            help='Shell command that will be executed inside the machine.'
+            help='Shell command that will be executed inside the device.'
         )
 
         self.parser = parser

@@ -97,7 +97,7 @@ class DockerMachine(object):
             lab.create_shared_folder()
 
         machines = lab.machines.items()
-        progress_bar = Bar('Deploying machines...', max=len(machines))
+        progress_bar = Bar('Deploying devices...', max=len(machines))
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
         # If not, they're started sequentially
@@ -126,7 +126,7 @@ class DockerMachine(object):
         progress_bar.next()
 
     def create(self, machine, privileged=False):
-        logging.debug("Creating machine `%s`..." % machine.name)
+        logging.debug("Creating device `%s`..." % machine.name)
 
         image = machine.get_image()
         memory = machine.get_mem()
@@ -216,7 +216,7 @@ class DockerMachine(object):
                                                               )
         except APIError as e:
             if e.response.status_code == 409 and e.explanation.startswith('Conflict.'):
-                raise MachineAlreadyExistsError("Machine with name `%s` already exists." % machine.name)
+                raise MachineAlreadyExistsError("Device with name `%s` already exists." % machine.name)
             else:
                 raise e
 
@@ -231,7 +231,7 @@ class DockerMachine(object):
         machines = self.get_machines_by_filters(machine_name=machine.name, lab_hash=machine.lab.folder_hash)
 
         if not machines:
-            raise Exception("Machine `%s` not found." % machine.name)
+            raise Exception("Device `%s` not found." % machine.name)
 
         machine.api_object = machines.pop()
 
@@ -246,7 +246,7 @@ class DockerMachine(object):
 
     @staticmethod
     def start(machine):
-        logging.debug("Starting machine `%s`..." % machine.name)
+        logging.debug("Starting device `%s`..." % machine.name)
 
         try:
             machine.api_object.start()
@@ -260,10 +260,10 @@ class DockerMachine(object):
         # This should be done after the container start because Docker causes a non-deterministic order when attaching
         # networks before container startup.
         for (iface_num, machine_link) in islice(machine.interfaces.items(), 1, None):
-            logging.debug("Connecting machine `%s` to network `%s` on interface %d..." % (machine.name,
-                                                                                          machine_link.name,
-                                                                                          iface_num
-                                                                                          )
+            logging.debug("Connecting device `%s` to collision domain `%s` on interface %d..." % (machine.name,
+                                                                                                  machine_link.name,
+                                                                                                  iface_num
+                                                                                                  )
                           )
 
             machine_link.api_object.connect(machine.api_object)
@@ -297,7 +297,7 @@ class DockerMachine(object):
 
         items = utils.chunk_list(machines, pool_size)
 
-        progress_bar = Bar("Deleting machines...", max=len(machines) if not selected_machines
+        progress_bar = Bar("Deleting devices...", max=len(machines) if not selected_machines
                                                                      else len(selected_machines)
                            )
 
@@ -337,7 +337,7 @@ class DockerMachine(object):
         else:
             shell = shlex.split(shell) if type(shell) == str else shell
 
-        logging.debug("Connect to machine `%s` with shell: %s" % (machine_name, shell))
+        logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
 
         if logs and Setting.get_instance().print_startup_log:
             (result_string, _) = self.exec(lab_hash,
@@ -378,7 +378,7 @@ class DockerMachine(object):
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
     def exec(self, lab_hash, machine_name, command, tty=True):
-        logging.debug("Executing command `%s` to machine with name: %s" % (command, machine_name))
+        logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
         container = self.get_machine(lab_hash, machine_name)
 
@@ -416,7 +416,7 @@ class DockerMachine(object):
         logging.debug("Found containers: %s" % str(containers))
 
         if len(containers) != 1:
-            raise Exception("Error getting the machine `%s` inside the lab." % machine_name)
+            raise Exception("Error getting the device `%s` inside the lab." % machine_name)
         else:
             return containers[0]
 

@@ -31,7 +31,7 @@ class VconfigCommand(Command):
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=True,
-            help='Name of the machine to be connected on desired collision domains.'
+            help='Name of the device to be connected on desired collision domains.'
         )
         parser.add_argument(
             '--eth',
@@ -62,7 +62,7 @@ class VconfigCommand(Command):
 
         iface_number = 0
         for eth in args.eths:
-            logging.info("Adding interface to machine `%s` for collision domain `%s`..." % (args.name, eth))
+            logging.info("Adding interface to device `%s` for collision domain `%s`..." % (args.name, eth))
 
             lab.connect_machine_to_link(args.name, iface_number, eth)
             iface_number += 1

@@ -45,7 +45,7 @@ class LinfoCommand(Command):
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=False,
-            help='Show only information about a specified machine.'
+            help='Show only information about a specified device.'
         )
 
         self.parser = parser
@@ -99,7 +99,7 @@ class LinfoCommand(Command):
         n_machines = len(lab.machines)
         n_links = len(lab.links) if BRIDGE_LINK_NAME not in lab.links else len(lab.links) - 1
 
-        print("There are %d machines." % n_machines)
-        print("There are %d links." % n_links)
+        print("There are %d devices." % n_machines)
+        print("There are %d collision domains." % n_links)
 
         print(utils.format_headers())

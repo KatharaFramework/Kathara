@@ -37,14 +37,14 @@ class VstartCommand(Command):
             dest="terminals",
             const=False,
             default=None,
-            help='Start the machine without opening a terminal window.'
+            help='Start the device without opening a terminal window.'
         )
         group.add_argument(
             "--terminals",
             action="store_const",
             dest="terminals",
             const=True,
-            help='Start the machine opening its terminal window.'
+            help='Start the device opening its terminal window.'
         )
         group.add_argument(
             "--privileged",
@@ -56,7 +56,7 @@ class VstartCommand(Command):
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=True,
-            help='Name of the machine to be started.'
+            help='Name of the device to be started.'
         )
         parser.add_argument(
             '--eth',
@@ -71,29 +71,29 @@ class VstartCommand(Command):
             required=False,
             dest='exec_commands',
             nargs='*',
-            help='Execute a specific command in the machine during startup.'
+            help='Execute a specific command in the device during startup.'
         )
         parser.add_argument(
             '--mem',
             required=False,
-            help='Limit the amount of RAM available for this machine.'
+            help='Limit the amount of RAM available for this device.'
         )
         parser.add_argument(
             '--cpus',
             required=False,
-            help='Limit the amount of CPU available for this machine.'
+            help='Limit the amount of CPU available for this device.'
         )
         parser.add_argument(
             '-i', '--image',
             required=False,
-            help='Run this machine with a specific Docker Image.'
+            help='Run this device with a specific Docker Image.'
         )
         parser.add_argument(
             '-H', '--no-hosthome',
             dest="no_hosthome",
             action="store_const",
             const=False,
-            help='/hosthome dir will not be mounted inside the machine.'
+            help='/hosthome dir will not be mounted inside the device.'
         )
         parser.add_argument(
             '--xterm',
@@ -105,23 +105,23 @@ class VstartCommand(Command):
             dest='dry_mode',
             required=False,
             action='store_true',
-            help='Check if the machine parameters are correct (dry run).'
+            help='Check if the device parameters are correct (dry run).'
         )
         parser.add_argument(
             '--bridged',
             required=False,
             action='store_true',
-            help='Add a bridge interface to the machine.'
+            help='Add a bridge interface to the device.'
         )
         parser.add_argument(
             '--port',
             required=False,
-            help='Choose a TCP Port number to map localhost port PORT to the internal port 3000 of the machine.'
+            help='Choose a TCP Port number to map localhost port PORT to the internal port 3000 of the device.'
         )
         parser.add_argument(
             '--shell',
             required=False,
-            help='Set the shell (sh, bash, etc.) that should be used inside the machine.'
+            help='Set the shell (sh, bash, etc.) that should be used inside the device.'
         )
 
         self.parser = parser
@@ -131,10 +131,10 @@ class VstartCommand(Command):
         args = self.get_args()
 
         if args.dry_mode:
-            print("Machine configuration is correct. Exiting...")
+            print("Device configuration is correct. Exiting...")
             sys.exit(0)
         else:
-            print(utils.format_headers("Starting Machine"))
+            print(utils.format_headers("Starting Device"))
 
         args.no_shared = False
 
@@ -156,7 +156,7 @@ class VstartCommand(Command):
         machine_name = args.name.strip()
         matches = re.search(r"^[a-z0-9_]{1,30}$", machine_name)
         if not matches:
-            raise Exception("Invalid machine name `%s`." % machine_name)
+            raise Exception("Invalid device name `%s`." % machine_name)
 
         machine = lab.get_or_new_machine(machine_name)
 

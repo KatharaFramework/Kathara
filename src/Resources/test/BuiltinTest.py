@@ -16,7 +16,7 @@ class BuiltInTest(Test):
 
     def create_signature(self):
         for (machine_name, machine) in self.lab.machines.items():
-            logging.info("Building `builtin` signature for machine %s..." % machine_name)
+            logging.info("Building `builtin` signature for device %s..." % machine_name)
 
             machine_status = self._get_machine_status(machine)
 
@@ -28,7 +28,7 @@ class BuiltInTest(Test):
         test_passed = True
 
         for (machine_name, machine) in self.lab.machines.items():
-            logging.info("Executing `builtin` tests for machine %s..." % machine_name)
+            logging.info("Executing `builtin` tests for device %s..." % machine_name)
 
             machine_state = self._get_machine_status(machine)
 
@@ -38,7 +38,7 @@ class BuiltInTest(Test):
                 with open(machine_signature_path, 'r') as machine_signature_file:
                     machine_signature = json.loads(machine_signature_file.read())
             else:
-                raise MachineSignatureNotFoundError("Signature for machine `%s` not found! Exiting..." % machine_name)
+                raise MachineSignatureNotFoundError("Signature for device `%s` not found! Exiting..." % machine_name)
 
             # Save machine state into result file
             machine_result_path = "%s/%s.builtin" % (self.results_path, machine.name)

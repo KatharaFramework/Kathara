@@ -29,7 +29,7 @@ class VcleanCommand(Command):
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=True,
-            help='Name of the machine to be cleaned.'
+            help='Name of the device to be cleaned.'
         )
 
         self.parser = parser
@@ -45,4 +45,4 @@ class VcleanCommand(Command):
                                                  selected_machines={args.name}
                                                  )
 
-        logging.info("Machine `%s` deleted successfully!" % args.name)
+        logging.info("Device `%s` deleted successfully!" % args.name)

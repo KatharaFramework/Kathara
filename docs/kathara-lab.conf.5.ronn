@@ -14,7 +14,7 @@ If `arg` is an option name, then `device` will be launched with option `arg` set
 
 In order to establish a uniform convention, comment lines should always start with a hash character (`#`).
 
-## MACHINE OPTIONS
+## DEVICE OPTIONS
 
 * `image` (string):
     Docker image used for this device.
@@ -36,13 +36,13 @@ In order to establish a uniform convention, comment lines should always start wi
     Connect the device to the host network by adding an additional network interface. This interface will be connected to the host network through a NAT connection.
 
 * `ipv6` (boolean):
-    Enable or disable IPv6 on this machine.
+    Enable or disable IPv6 on this device.
 
 * `exec` (string):
     Run a specific shell command inside the device during the startup phase.
 
 * `sysctl` (string):
-	Sets a sysctl option for this device. Only the `net.` namespace is allowed to be set. Can be set multiple times per machine, each will add a new entry (unless the same config item is used again).
+	Sets a sysctl option for this device. Only the `net.` namespace is allowed to be set. Can be set multiple times per device, each will add a new entry (unless the same config item is used again).
 
 * `shell` (string):
     Use the specified shell to connect to the device, e.g., when `kathara connect` is called.

@@ -134,7 +134,7 @@ class DockerManager(IManager):
 
         if not machines:
             if not lab_hash:
-                raise Exception("No machines running.")
+                raise Exception("No devices running.")
             else:
                 raise Exception("Lab is not started.")
 
@@ -145,7 +145,7 @@ class DockerManager(IManager):
         for machine in machines:
             machine_streams[machine] = machine.stats(stream=True, decode=True)
 
-        table_header = ["LAB HASH", "USER", "MACHINE NAME", "STATUS", "CPU %", "MEM USAGE / LIMIT", "MEM %", "NET I/O"]
+        table_header = ["LAB HASH", "USER", "DEVICE NAME", "STATUS", "CPU %", "MEM USAGE / LIMIT", "MEM %", "NET I/O"]
         stats_table = DoubleTable([])
         stats_table.inner_row_border = True
 
@@ -186,17 +186,17 @@ class DockerManager(IManager):
                                                                )
 
         if not machines:
-            raise Exception("The specified machine is not running.")
+            raise Exception("The specified device is not running.")
         elif len(machines) > 1:
-            raise Exception("There are more than one machine matching the name `%s`." % machine_name)
+            raise Exception("There are more than one device matching the name `%s`." % machine_name)
 
         machine = machines[0]
 
-        machine_info = utils.format_headers("Machine information") + "\n"
+        machine_info = utils.format_headers("Device information") + "\n"
 
         machine_info += "Lab Hash: %s\n" % machine.labels['lab_hash']
-        machine_info += "Machine Name: %s\n" % machine_name
-        machine_info += "Real Machine Name: %s\n" % machine.name
+        machine_info += "Device Name: %s\n" % machine_name
+        machine_info += "Real Device Name: %s\n" % machine.name
         machine_info += "Status: %s\n" % machine.status
         machine_info += "Image: %s\n\n" % machine.image.tags[0]
 

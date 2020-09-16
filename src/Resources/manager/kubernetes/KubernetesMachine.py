@@ -110,7 +110,7 @@ class KubernetesMachine(object):
     def deploy_machines(self, lab, privileged_mode=False):
         machines = lab.machines.items()
 
-        progress_bar = Bar('Deploying machines...', max=len(machines))
+        progress_bar = Bar('Deploying devices...', max=len(machines))
 
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
@@ -139,7 +139,7 @@ class KubernetesMachine(object):
         progress_bar.next()
 
     def create(self, machine, privileged=False):
-        logging.debug("Creating machine `%s`..." % machine.name)
+        logging.debug("Creating device `%s`..." % machine.name)
 
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options
@@ -178,7 +178,7 @@ class KubernetesMachine(object):
                                                                           )
         except ApiException as e:
             if e.status == 409 and 'Conflict' in e.reason:
-                raise MachineAlreadyExistsError("Machine with name `%s` already exists." % machine.name)
+                raise MachineAlreadyExistsError("Device with name `%s` already exists." % machine.name)
             else:
                 raise e
 
@@ -324,7 +324,7 @@ class KubernetesMachine(object):
 
         items = utils.chunk_list(machines, pool_size)
 
-        progress_bar = Bar("Deleting machines...", max=len(machines) if not selected_machines
+        progress_bar = Bar("Deleting devices...", max=len(machines) if not selected_machines
         else len(selected_machines)
                            )
 
@@ -382,14 +382,14 @@ class KubernetesMachine(object):
         pod = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
         if 'Running' not in pod.status.phase:
-            raise Exception('Machine `%s` is not ready.' % machine_name)
+            raise Exception('Device `%s` is not ready.' % machine_name)
 
         if not shell:
             shell = shlex.split(pod.metadata.labels['shell'])
         else:
             shell = shlex.split(shell) if type(shell) == str else shell
 
-        logging.debug("Connect to machine `%s` with shell: %s" % (machine_name, shell))
+        logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
 
         if logs and Setting.get_instance().print_startup_log:
             (result_string, _) = self.exec(lab_hash,
@@ -416,7 +416,7 @@ class KubernetesMachine(object):
         KubernetesWSTerminal(resp).start()
 
     def exec(self, lab_hash, machine_name, command, tty=False, stdin=False, stdin_buffer=None, stderr=False):
-        logging.debug("Executing command `%s` to machine with name: %s" % (command, machine_name))
+        logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
         command = shlex.split(command) if type(command) == str else command
 
@@ -491,7 +491,7 @@ class KubernetesMachine(object):
         logging.debug("Found pods: %s" % len(pods))
 
         if len(pods) != 1:
-            raise Exception("Error getting the machine `%s` inside the lab." % machine_name)
+            raise Exception("Error getting the device `%s` inside the lab." % machine_name)
         else:
             return pods[0]
 

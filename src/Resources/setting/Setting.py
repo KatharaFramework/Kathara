@@ -158,7 +158,7 @@ class Setting(object):
         try:
             utils.re_search_fail(r"^[a-z]+_?[a-z_]+$", self.device_prefix)
         except ValueError:
-            raise SettingsError("Machine Prefix must only contain lowercase letters and underscore.")
+            raise SettingsError("Device Prefix must only contain lowercase letters and underscore.")
 
         if self.debug_level not in POSSIBLE_DEBUG_LEVELS:
             raise SettingsError("Debug Level must be one of the following: %s." % (", ".join(POSSIBLE_DEBUG_LEVELS)))

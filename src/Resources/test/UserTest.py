@@ -19,7 +19,7 @@ class UserTest(Test):
             machine_test_file = self._copy_machine_test_file(machine)
 
             if machine_test_file:
-                logging.info("Building `user` signature for machine %s..." % machine_name)
+                logging.info("Building `user` signature for device %s..." % machine_name)
 
                 machine_state = self._run_machine_test_file(machine)
 
@@ -34,7 +34,7 @@ class UserTest(Test):
             machine_test_file = self._copy_machine_test_file(machine)
 
             if machine_test_file:
-                logging.info("Executing `user` tests for machine %s..." % machine_name)
+                logging.info("Executing `user` tests for device %s..." % machine_name)
 
                 machine_state = self._run_machine_test_file(machine)
 
@@ -44,7 +44,7 @@ class UserTest(Test):
                     with open(machine_signature_path, 'r') as machine_signature_file:
                         machine_signature = machine_signature_file.read()
                 else:
-                    raise MachineSignatureNotFoundError("Signature for machine `%s` not found! Exiting..." %
+                    raise MachineSignatureNotFoundError("Signature for device `%s` not found! Exiting..." %
                                                         machine_name
                                                         )
 

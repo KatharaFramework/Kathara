@@ -52,7 +52,8 @@ class Lab(object):
     def attach_external_links(self, external_links):
         for (link_name, link_external_links) in external_links.items():
             if link_name not in self.links:
-                raise Exception("Link `%s` (declared in lab.ext) not found in lab links." % link_name)
+                raise Exception("Collision domain `%s` (declared in lab.ext) not found in lab "
+                                "collision domains." % link_name)
 
             self.links[link_name].external += link_external_links
 

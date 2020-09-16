@@ -63,7 +63,7 @@ The possible kathara commands are:
     Execute a command in a Kathara device
 
 * `kathara-wipe`(1):
-    Delete all Kathara devices and links, optionally also delete settings
+    Delete all Kathara devices and collision domains, optionally also delete settings
 
 * `kathara-list`(1):
     Show all running Kathara devices

@@ -128,7 +128,7 @@ class KubernetesManager(IManager):
         if lab_hash:
             lab_hash = lab_hash.lower()
 
-        table_header = ["LAB HASH", "MACHINE NAME", "STATUS", "ASSIGNED NODE"]
+        table_header = ["LAB HASH", "DEVICE NAME", "STATUS", "ASSIGNED NODE"]
         stats_table = DoubleTable([])
         stats_table.inner_row_border = True
 
@@ -139,7 +139,7 @@ class KubernetesManager(IManager):
 
             if not machines:
                 if not lab_hash:
-                    raise Exception("No machines running.")
+                    raise Exception("No devices running.")
                 else:
                     raise Exception("Lab is not started.")
 
@@ -173,17 +173,17 @@ class KubernetesManager(IManager):
                                                             )
 
         if not machines:
-            raise Exception("The specified machine is not running.")
+            raise Exception("The specified device is not running.")
         elif len(machines) > 1:
-            raise Exception("There are more than one machine matching the name `%s`." % machine_name)
+            raise Exception("There are more than one device matching the name `%s`." % machine_name)
 
         machine = machines[0]
 
-        machine_info = utils.format_headers("Machine information") + "\n"
+        machine_info = utils.format_headers("Device information") + "\n"
 
         machine_info += "Lab Hash: %s\n" % machine.metadata.namespace
-        machine_info += "Machine Name: %s\n" % machine.metadata.labels["name"]
-        machine_info += "Real Machine Name: %s\n" % machine.metadata.name
+        machine_info += "Device Name: %s\n" % machine.metadata.labels["name"]
+        machine_info += "Real Device Name: %s\n" % machine.metadata.name
         machine_info += "Status: %s\n" % self._get_detailed_machine_status(machine)
         machine_info += "Image: %s\n" % machine.status.container_statuses[0].image.replace('docker.io/', '')
         machine_info += "Assigned Node: %s\n" % machine.spec.node_name

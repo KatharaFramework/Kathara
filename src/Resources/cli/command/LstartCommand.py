@@ -73,7 +73,7 @@ class LstartCommand(Command):
             '-l', '--list',
             required=False,
             action='store_true',
-            help='Show information about running machines after the lab has been started.'
+            help='Show information about running devices after the lab has been started.'
         )
         parser.add_argument(
             '-o', '--pass',
@@ -81,7 +81,7 @@ class LstartCommand(Command):
             metavar="OPTION",
             nargs='*',
             required=False,
-            help="Apply options to all machines of a lab during startup."
+            help="Apply options to all devices of a lab during startup."
         )
         parser.add_argument(
             '--xterm',
@@ -100,20 +100,20 @@ class LstartCommand(Command):
             dest="no_hosthome",
             action="store_const",
             const=False,
-            help='/hosthome dir will not be mounted inside the machine.'
+            help='/hosthome dir will not be mounted inside the device.'
         )
         parser.add_argument(
             '-S', '--no-shared',
             dest="no_shared",
             action="store_const",
             const=False,
-            help='/shared dir will not be mounted inside the machine.'
+            help='/shared dir will not be mounted inside the device.'
         )
         parser.add_argument(
             'machine_name',
             metavar='DEVICE_NAME',
             nargs='*',
-            help='Launches only specified machines.'
+            help='Launches only specified devices.'
         )
 
         self.parser = parser
@@ -186,7 +186,7 @@ class LstartCommand(Command):
             sys.exit(0)
 
         if len(lab.machines) <= 0:
-            raise Exception("No machines in the current lab. Exiting...")
+            raise Exception("No devices in the current lab. Exiting...")
 
         try:
             lab.general_options = OptionParser.parse(args.options)

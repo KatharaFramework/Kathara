@@ -33,7 +33,7 @@ class LabParser(object):
 
                 if key == "shared":
                     raise Exception("[ERROR] In line %d: "
-                                    "`shared` is a reserved name, you can not use it for a machine." % line_number)
+                                    "`shared` is a reserved name, you can not use it for a device." % line_number)
 
                 try:
                     # It's an interface, handle it.
@@ -43,7 +43,8 @@ class LabParser(object):
                         lab.connect_machine_to_link(key, interface_number, value)
                     else:
                         raise Exception("[ERROR] In line %d: "
-                                        "Link `%s` contains non-alphanumeric characters." % (line_number, value))
+                                        "Collision domain `%s` contains non-alphanumeric characters." % (line_number,
+                                                                                                         value))
                 except ValueError:
                     # Not an interface, add it to the machine metas.
                     lab.assign_meta_to_machine(key, arg, value)

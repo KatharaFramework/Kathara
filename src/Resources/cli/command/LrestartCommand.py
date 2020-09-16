@@ -64,7 +64,7 @@ class LrestartCommand(Command):
             '-l', '--list',
             required=False,
             action='store_true',
-            help='Show information about running machines after the lab has been started.'
+            help='Show information about running devices after the lab has been started.'
         )
         parser.add_argument(
             '-o', '--pass',
@@ -72,7 +72,7 @@ class LrestartCommand(Command):
             metavar="OPTION",
             nargs='*',
             required=False,
-            help="Apply options to all machines of a lab during startup."
+            help="Apply options to all devices of a lab during startup."
         )
         parser.add_argument(
             '--xterm',
@@ -84,14 +84,14 @@ class LrestartCommand(Command):
             dest="no_hosthome",
             action="store_const",
             const=False,
-            help='/hosthome dir will not be mounted inside the machine.'
+            help='/hosthome dir will not be mounted inside the device.'
         )
         parser.add_argument(
             '-S', '--no-shared',
             dest="no_shared",
             action="store_const",
             const=False,
-            help='/shared dir will not be mounted inside the machine.'
+            help='/shared dir will not be mounted inside the device.'
         )
 
         self.parser = parser

@@ -46,7 +46,7 @@ class Machine(object):
 
     def add_interface(self, number, link):
         if number in self.interfaces:
-            raise Exception("Interface %d already set on machine `%s`." % (number, self.name))
+            raise Exception("Interface %d already set on device `%s`." % (number, self.name))
 
         self.interfaces[number] = link
 
@@ -88,7 +88,7 @@ class Machine(object):
         for i in range(1, len(sorted_interfaces)):
             if sorted_interfaces[i - 1][0] != sorted_interfaces[i][0] - 1:
                 # If a number is non sequential, raise the exception.
-                raise NonSequentialMachineInterfaceError("Interface %d missing on machine %s." % (i, self.name))
+                raise NonSequentialMachineInterfaceError("Interface %d missing on device %s." % (i, self.name))
 
         self.interfaces = collections.OrderedDict(sorted_interfaces)
 
@@ -162,7 +162,7 @@ class Machine(object):
         return tar_data
 
     def connect(self, terminal_name):
-        logging.debug("Opening terminal for machine %s.", self.name)
+        logging.debug("Opening terminal for device %s.", self.name)
 
         executable_path = utils.get_executable_path(sys.argv[0])
 

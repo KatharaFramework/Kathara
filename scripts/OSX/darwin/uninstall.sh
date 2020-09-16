@@ -22,9 +22,9 @@ echo "Application uninstalling process started"
 /Library/Kathara/kathara wipe -a -f
 if [ $? -eq 0 ]
 then
-  echo "[1/5] [DONE] Successfully deleted all running Kathara machines"
+  echo "[1/5] [DONE] Successfully deleted all running Kathara devices"
 else
-  echo "[1/5] [ERROR] Could not delete all running Kathara machines" >&2
+  echo "[1/5] [ERROR] Could not delete all running Kathara devices" >&2
 fi
 
 # remove link to shorcut file

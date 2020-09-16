@@ -34,22 +34,22 @@ class ConnectCommand(Command):
             '-v', '--vmachine',
             dest="vmachine",
             action="store_true",
-            help='The machine has been started with vstart command.',
+            help='The device has been started with vstart command.',
         )
         parser.add_argument(
             '--shell',
             required=False,
-            help='Shell that should be used inside the machine.'
+            help='Shell that should be used inside the device.'
         )
         parser.add_argument(
             '-l', '--logs',
             action="store_true",
-            help='Print machine startup logs before launching the shell.',
+            help='Print device startup logs before launching the shell.',
         )
         parser.add_argument(
             'machine_name',
             metavar='DEVICE_NAME',
-            help='Name of the machine to connect to.'
+            help='Name of the device to connect to.'
         )
 
         self.parser = parser

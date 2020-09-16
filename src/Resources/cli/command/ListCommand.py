@@ -30,7 +30,7 @@ class ListCommand(Command):
             '-a', '--all',
             required=False,
             action='store_true',
-            help='Show all running Kathara machines of all users. MUST BE ROOT FOR THIS OPTION.'
+            help='Show all running Kathara devices of all users. MUST BE ROOT FOR THIS OPTION.'
         )
 
         parser.add_argument(
@@ -44,7 +44,7 @@ class ListCommand(Command):
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=False,
-            help='Show only information about a specified machine.'
+            help='Show only information about a specified device.'
         )
 
         self.parser = parser

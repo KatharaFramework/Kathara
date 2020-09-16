@@ -36,7 +36,7 @@ class KubernetesLink(object):
 
         items = utils.chunk_list(links, pool_size)
 
-        progress_bar = Bar('Deploying links...', max=len(links))
+        progress_bar = Bar('Deploying collision domains...', max=len(links))
 
         network_ids = []
         for chunk in items:
@@ -78,8 +78,8 @@ class KubernetesLink(object):
 
         items = utils.chunk_list(links, pool_size)
 
-        progress_bar = Bar("Deleting links...", max=len(links) if not networks_to_delete
-                                                               else len(networks_to_delete)
+        progress_bar = Bar("Deleting collision domains...", max=len(links) if not networks_to_delete
+                                                                           else len(networks_to_delete)
                            )
 
         for chunk in items:

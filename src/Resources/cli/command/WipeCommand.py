@@ -47,7 +47,7 @@ class WipeCommand(Command):
             '-a', '--all',
             required=False,
             action='store_true',
-            help='Wipe all Kathara machines and links of all users. MUST BE ROOT FOR THIS OPTION.'
+            help='Wipe all Kathara devices and collision domains of all users. MUST BE ROOT FOR THIS OPTION.'
         )
 
         self.parser = parser
