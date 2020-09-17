@@ -425,6 +425,82 @@ class DockerMachine(object):
         else:
             return containers[0]
 
+    def get_machine_info(self, machine_name, lab_hash=None, user=None):
+        machines = self.get_machines_by_filters(machine_name=machine_name, lab_hash=lab_hash, user=user)
+
+        if not machines:
+            raise Exception("The specified device is not running.")
+        elif len(machines) > 1:
+            raise Exception("There is more than one device matching the name `%s`." % machine_name)
+
+        machine = machines[0]
+        machine_stats = machine.stats(stream=False)
+
+        return self._get_stats_by_machine(machine, machine_stats)
+
+    def get_machines_info(self, lab_hash, machine_filter=None, user=None):
+        machines = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_filter, user=user)
+
+        if not machines:
+            if not lab_hash:
+                raise Exception("No devices running.")
+            else:
+                raise Exception("Lab is not started.")
+
+        machines = sorted(machines, key=lambda x: x.name)
+
+        machine_streams = {}
+
+        for machine in machines:
+            machine_streams[machine] = machine.stats(stream=True, decode=True)
+
+        while True:
+            machines_data = []
+
+            for (machine, machine_stats) in machine_streams.items():
+                result = next(machine_stats)
+                machines_data.append(self._get_stats_by_machine(machine, result))
+
+            yield machines_data
+
+    def _get_stats_by_machine(self, machine, machine_stats):
+        stats = self._get_aggregate_machine_info(machine_stats)
+
+        return {
+            "real_lab_hash": machine.labels['lab_hash'],
+            "name": machine.labels['name'],
+            "real_name": machine.name,
+            "user": machine.labels['user'],
+            "status": machine.status,
+            "image": machine.image.tags[0],
+            "pids": machine_stats['pids_stats']['current'] if 'current' in machine_stats['pids_stats'] else 0,
+            "cpu_usage": stats['cpu_usage'],
+            "mem_usage": stats['mem_usage'],
+            "mem_percent": stats['mem_percent'],
+            "net_usage": stats['net_usage']
+        }
+
+    @staticmethod
+    def _get_aggregate_machine_info(stats):
+        network_stats = stats["networks"] if "networks" in stats else {}
+
+        return {
+            "cpu_usage": "{0:.2f}%".format(stats["cpu_stats"]["cpu_usage"]["total_usage"] /
+                                           stats["cpu_stats"]["system_cpu_usage"]
+                                           ) if "system_cpu_usage" in stats["cpu_stats"] else "-",
+            "mem_usage": utils.human_readable_bytes(stats["memory_stats"]["usage"]) + " / " +
+                         utils.human_readable_bytes(stats["memory_stats"]["limit"])
+            if "usage" in stats["memory_stats"] else "- / -",
+            "mem_percent": "{0:.2f}%".format((stats["memory_stats"]["usage"] / stats["memory_stats"]["limit"]) * 100)
+            if "usage" in stats["memory_stats"] else "-",
+            "net_usage": utils.human_readable_bytes(sum([net_stats["rx_bytes"]
+                                                         for (_, net_stats) in network_stats.items()])
+                                                    ) + " / " +
+                         utils.human_readable_bytes(sum([net_stats["tx_bytes"]
+                                                         for (_, net_stats) in network_stats.items()])
+                                                    )
+        }
+
     @staticmethod
     def get_container_name(name, lab_hash):
         lab_hash = lab_hash if lab_hash else ""

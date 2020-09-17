@@ -64,8 +64,11 @@ class DockerImage(object):
         try:
             # Tries to get the image from the local Docker repository.
             self.get_local(image_name)
-            if pull:
-                self.check_for_updates(image_name)
+            try:
+                if pull:
+                    self.check_for_updates(image_name)
+            except APIError:
+                logging.debug("Cannot check updates, skipping...")
         except APIError:
             # If not found, tries on Docker Hub.
             try:
@@ -73,8 +76,8 @@ class DockerImage(object):
                 self.get_remote(image_name)
                 if pull:
                     self.pull(image_name)
-            except ConnectionError:
-                raise ConnectionError("Image `%s` does not exists in local and no Internet connection for Docker Hub."
-                                      % image_name)
-            except Exception:
-                raise Exception("Image `%s` does not exists either in local or on Docker Hub." % image_name)
+            except APIError as e:
+                if e.response.status_code == 500 and 'dial tcp' in e.explanation:
+                    raise ConnectionError("Image `%s` not found in local and no Internet connection." % image_name)
+                else:
+                    raise Exception("Image `%s` does not exists either in local or on Docker Hub." % image_name)

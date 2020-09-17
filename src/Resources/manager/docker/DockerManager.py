@@ -127,23 +127,7 @@ class DockerManager(IManager):
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
 
-        machines = self.docker_machine.get_machines_by_filters(lab_hash=lab_hash,
-                                                               machine_name=machine_name,
-                                                               user=user_name
-                                                               )
-
-        if not machines:
-            if not lab_hash:
-                raise Exception("No devices running.")
-            else:
-                raise Exception("Lab is not started.")
-
-        machines = sorted(machines, key=lambda x: x.name)
-
-        machine_streams = {}
-
-        for machine in machines:
-            machine_streams[machine] = machine.stats(stream=True, decode=True)
+        machine_streams = self.docker_machine.get_machines_info(lab_hash, machine_filter=machine_name, user=user_name)
 
         table_header = ["LAB HASH", "USER", "DEVICE NAME", "STATUS", "CPU %", "MEM USAGE / LIMIT", "MEM %", "NET I/O"]
         stats_table = DoubleTable([])
@@ -154,22 +138,20 @@ class DockerManager(IManager):
                 table_header
             ]
 
-            for (machine, machine_stats) in machine_streams.items():
-                try:
-                    result = next(machine_stats)
-                except StopIteration:
-                    continue
+            try:
+                result = next(machine_streams)
+            except StopIteration:
+                continue
 
-                stats = self._get_aggregate_machine_info(result)
-
-                machines_data.append([machine.labels['lab_hash'],
-                                      machine.labels['user'],
-                                      machine.labels["name"],
-                                      machine.status,
-                                      stats["cpu_usage"],
-                                      stats["mem_usage"],
-                                      stats["mem_percent"],
-                                      stats["net_usage"]
+            for machine_stats in result:
+                machines_data.append([machine_stats['real_lab_hash'],
+                                      machine_stats['user'],
+                                      machine_stats['name'],
+                                      machine_stats['status'],
+                                      machine_stats['cpu_usage'],
+                                      machine_stats['mem_usage'],
+                                      machine_stats['mem_percent'],
+                                      machine_stats['net_usage']
                                       ])
 
             stats_table.table_data = machines_data
@@ -180,36 +162,18 @@ class DockerManager(IManager):
     def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
 
-        machines = self.docker_machine.get_machines_by_filters(machine_name=machine_name,
-                                                               lab_hash=lab_hash,
-                                                               user=user_name
-                                                               )
-
-        if not machines:
-            raise Exception("The specified device is not running.")
-        elif len(machines) > 1:
-            raise Exception("There are more than one device matching the name `%s`." % machine_name)
-
-        machine = machines[0]
+        machine_stats = self.docker_machine.get_machine_info(machine_name, lab_hash=lab_hash, user=user_name)
 
         machine_info = utils.format_headers("Device information") + "\n"
-
-        machine_info += "Lab Hash: %s\n" % machine.labels['lab_hash']
-        machine_info += "Device Name: %s\n" % machine_name
-        machine_info += "Real Device Name: %s\n" % machine.name
-        machine_info += "Status: %s\n" % machine.status
-        machine_info += "Image: %s\n\n" % machine.image.tags[0]
-
-        machine_stats = machine.stats(stream=False)
-
-        machine_info += "PIDs: %d\n" % (machine_stats["pids_stats"]["current"]
-                                        if "current" in machine_stats["pids_stats"] else 0)
-        stats = self._get_aggregate_machine_info(machine_stats)
-
-        machine_info += "CPU Usage: %s\n" % stats["cpu_usage"]
-        machine_info += "Memory Usage: %s\n" % stats["mem_usage"]
-        machine_info += "Network Usage (DL/UL): %s\n" % stats["net_usage"]
-
+        machine_info += "Lab Hash: %s\n" % machine_stats['real_lab_hash']
+        machine_info += "Device Name: %s\n" % machine_stats['name']
+        machine_info += "Real Device Name: %s\n" % machine_stats['real_name']
+        machine_info += "Status: %s\n" % machine_stats['status']
+        machine_info += "Image: %s\n\n" % machine_stats['image']
+        machine_info += "PIDs: %d\n" % machine_stats['pids']
+        machine_info += "CPU Usage: %s\n" % machine_stats["cpu_usage"]
+        machine_info += "Memory Usage: %s\n" % machine_stats["mem_usage"]
+        machine_info += "Network Usage (DL/UL): %s\n" % machine_stats["net_usage"]
         machine_info += utils.format_headers()
 
         return machine_info
@@ -225,24 +189,3 @@ class DockerManager(IManager):
     @staticmethod
     def get_formatted_manager_name():
         return "Docker (Kathara)"
-
-    @staticmethod
-    def _get_aggregate_machine_info(stats):
-        network_stats = stats["networks"] if "networks" in stats else {}
-
-        return {
-            "cpu_usage": "{0:.2f}%".format(stats["cpu_stats"]["cpu_usage"]["total_usage"] /
-                                           stats["cpu_stats"]["system_cpu_usage"]
-                                           ) if "system_cpu_usage" in stats["cpu_stats"] else "-",
-            "mem_usage": utils.human_readable_bytes(stats["memory_stats"]["usage"]) + " / " +
-                         utils.human_readable_bytes(stats["memory_stats"]["limit"])
-            if "usage" in stats["memory_stats"] else "- / -",
-            "mem_percent": "{0:.2f}%".format((stats["memory_stats"]["usage"] / stats["memory_stats"]["limit"]) * 100)
-            if "usage" in stats["memory_stats"] else "-",
-            "net_usage": utils.human_readable_bytes(sum([net_stats["rx_bytes"]
-                                                         for (_, net_stats) in network_stats.items()])
-                                                    ) + " / " +
-                         utils.human_readable_bytes(sum([net_stats["tx_bytes"]
-                                                         for (_, net_stats) in network_stats.items()])
-                                                    )
-        }

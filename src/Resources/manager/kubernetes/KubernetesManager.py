@@ -131,27 +131,16 @@ class KubernetesManager(IManager):
         stats_table.inner_row_border = True
 
         while True:
-            machines = self.k8s_machine.get_machines_by_filters(lab_hash=lab_hash,
-                                                                machine_name=machine_name
-                                                                )
-
-            if not machines:
-                if not lab_hash:
-                    raise Exception("No devices running.")
-                else:
-                    raise Exception("Lab is not started.")
-
-            machines = sorted(machines, key=lambda x: x.metadata.labels["name"])
+            machines_stats = self.k8s_machine.get_machines_info(lab_hash=lab_hash, machine_filter=machine_name)
 
             machines_data = [
                 table_header
             ]
-
-            for machine in machines:
-                machines_data.append([machine.metadata.namespace,
-                                      machine.metadata.labels["name"],
-                                      self._get_detailed_machine_status(machine),
-                                      machine.spec.node_name
+            for machine_stats in machines_stats:
+                machines_data.append([machine_stats["real_lab_hash"],
+                                      machine_stats["name"],
+                                      machine_stats["status"],
+                                      machine_stats["assigned_node"]
                                       ])
 
             stats_table.table_data = machines_data
@@ -166,26 +155,15 @@ class KubernetesManager(IManager):
         if lab_hash:
             lab_hash = lab_hash.lower()
 
-        machines = self.k8s_machine.get_machines_by_filters(machine_name=machine_name,
-                                                            lab_hash=lab_hash
-                                                            )
-
-        if not machines:
-            raise Exception("The specified device is not running.")
-        elif len(machines) > 1:
-            raise Exception("There are more than one device matching the name `%s`." % machine_name)
-
-        machine = machines[0]
+        machine_stats = self.k8s_machine.get_machine_info(machine_name=machine_name, lab_hash=lab_hash)
 
         machine_info = utils.format_headers("Device information") + "\n"
-
-        machine_info += "Lab Hash: %s\n" % machine.metadata.namespace
-        machine_info += "Device Name: %s\n" % machine.metadata.labels["name"]
-        machine_info += "Real Device Name: %s\n" % machine.metadata.name
-        machine_info += "Status: %s\n" % self._get_detailed_machine_status(machine)
-        machine_info += "Image: %s\n" % machine.status.container_statuses[0].image.replace('docker.io/', '')
-        machine_info += "Assigned Node: %s\n" % machine.spec.node_name
-
+        machine_info += "Lab Hash: %s\n" % machine_stats["real_lab_hash"]
+        machine_info += "Device Name: %s\n" % machine_stats["name"]
+        machine_info += "Real Device Name: %s\n" % machine_stats["real_name"]
+        machine_info += "Status: %s\n" % machine_stats["status"]
+        machine_info += "Image: %s\n" % machine_stats["image"]
+        machine_info += "Assigned Node: %s\n" % machine_stats["assigned_node"]
         machine_info += utils.format_headers()
 
         return machine_info
@@ -202,22 +180,3 @@ class KubernetesManager(IManager):
     @staticmethod
     def get_formatted_manager_name():
         return "Kubernetes (Megalos)"
-
-    @staticmethod
-    def _get_detailed_machine_status(machine):
-        container_statuses = machine.status.container_statuses
-
-        if not container_statuses:
-            return machine.status.phase
-
-        container_status = container_statuses[0].state
-
-        string_status = None
-        if container_status.terminated is not None:
-            string_status = container_status.terminated.reason if container_status.terminated.reason is not None \
-                                                               else "Terminating"
-        elif container_status.waiting is not None:
-            string_status = container_status.waiting.reason
-
-        # In case the status contains an error message, split it to the first ": " and take the left part
-        return string_status.split(': ')[0] if string_status is not None else machine.status.phase

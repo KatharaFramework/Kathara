@@ -115,6 +115,9 @@ class KubernetesMachine(object):
     def deploy_machines(self, lab, privileged_mode=False):
         machines = lab.machines.items()
 
+        if privileged_mode:
+            logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
+
         progress_bar = Bar('Deploying devices...', max=len(machines))
 
         # Deploy all lab machines.
@@ -127,34 +130,31 @@ class KubernetesMachine(object):
             items = utils.chunk_list(machines, pool_size)
 
             for chunk in items:
-                machines_pool.map(func=partial(self._deploy_machine, progress_bar, privileged_mode),
+                machines_pool.map(func=partial(self._deploy_machine, progress_bar),
                                   iterable=chunk
                                   )
         else:
             for item in machines:
-                self._deploy_machine(progress_bar, privileged_mode, item)
+                self._deploy_machine(progress_bar, item)
 
         progress_bar.finish()
 
-    def _deploy_machine(self, progress_bar, privileged_mode, machine_item):
+    def _deploy_machine(self, progress_bar, machine_item):
         (_, machine) = machine_item
 
-        self.create(machine, privileged=privileged_mode)
+        self.create(machine)
 
         progress_bar.next()
 
-    def create(self, machine, privileged=False):
+    def create(self, machine):
         logging.debug("Creating device `%s`..." % machine.name)
-
-        if privileged:
-            logging.warning('Privileged option is not supported on Kubernetes. It will be ignored.')
 
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options
 
         # If bridged is defined for the device, throw a warning.
         if "bridged" in options or machine.bridge:
-            logging.warning('Bridged option is not supported on Kubernetes. It will be ignored.')
+            logging.warning('Bridged option is not supported on Megalos. It will be ignored.')
 
         # If any exec command is passed in command line, add it.
         if "exec" in options:
@@ -530,6 +530,64 @@ class KubernetesMachine(object):
             raise Exception("Error getting the device `%s` inside the lab." % machine_name)
         else:
             return pods[0]
+
+    def get_machine_info(self, machine_name, lab_hash=None):
+        machines = self.get_machines_by_filters(machine_name=machine_name, lab_hash=lab_hash)
+
+        if not machines:
+            raise Exception("The specified device is not running.")
+        elif len(machines) > 1:
+            raise Exception("There is more than one device matching the name `%s`." % machine_name)
+
+        machine = machines[0]
+
+        return self._get_stats_by_machine(machine)
+
+    def get_machines_info(self, lab_hash, machine_filter=None):
+        machines = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_filter)
+
+        if not machines:
+            if not lab_hash:
+                raise Exception("No devices running.")
+            else:
+                raise Exception("Lab is not started.")
+
+        machines = sorted(machines, key=lambda x: x.metadata.labels["name"])
+
+        machines_stats = []
+        for machine in machines:
+            machines_stats.append(self._get_stats_by_machine(machine))
+
+        return machines_stats
+
+    def _get_stats_by_machine(self, machine):
+        return {
+              "real_lab_hash": machine.metadata.namespace,
+              "name": machine.metadata.labels["name"],
+              "real_name": machine.metadata.name,
+              "status": self._get_detailed_machine_status(machine),
+              "image": machine.status.container_statuses[0].image.replace('docker.io/', ''),
+              "assigned_node": machine.spec.node_name
+        }
+
+    @staticmethod
+    def _get_detailed_machine_status(machine):
+        container_statuses = machine.status.container_statuses
+
+        if not container_statuses:
+            return machine.status.phase
+
+        container_status = container_statuses[0].state
+
+        string_status = None
+        if container_status.terminated is not None:
+            string_status = container_status.terminated.reason if container_status.terminated.reason is not None \
+                else "Terminating"
+        elif container_status.waiting is not None:
+            string_status = container_status.waiting.reason
+
+        # In case the status contains an error message, split it to the first ": " and take the left part
+        return string_status.split(': ')[0] if string_status is not None else machine.status.phase
 
     @staticmethod
     def get_deployment_name(name):
