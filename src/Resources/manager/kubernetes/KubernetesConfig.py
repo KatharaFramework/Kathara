@@ -6,8 +6,14 @@ from ...setting.Setting import Setting
 class KubernetesConfig(object):
     @staticmethod
     def get_cluster_user():
-        configuration = client.api_client.Configuration()
-        return configuration.api_key['authorization']
+        try:
+            # Remote configuration is present, use the API Token as user
+            configuration = client.api_client.Configuration()
+            return configuration.api_key['authorization']
+        except KeyError:
+            # In-Cluster configuration, take the context name as user
+            _, current_context = config.kube_config.list_kube_config_contexts()
+            return current_context['name']
 
     @staticmethod
     def load_kube_config():
