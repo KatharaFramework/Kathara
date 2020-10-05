@@ -4,6 +4,7 @@ from docker.errors import NotFound
 
 from ... import utils
 from ...os.Networking import Networking
+from ...setting.Setting import Setting
 
 PLUGIN_NAME = "kathara/katharanp"
 BUSTER_TAG = "buster"
@@ -22,9 +23,13 @@ class DockerPlugin(object):
             return "%s:%s" % (PLUGIN_NAME, BUSTER_TAG) if 'nf_tables' in iptables_version else \
                    "%s:%s" % (PLUGIN_NAME, STRETCH_TAG)
 
-        self.plugin_name = utils.exec_by_platform(_select_plugin_name_linux,
-                                                  lambda: "%s:%s" % (PLUGIN_NAME, BUSTER_TAG),
-                                                  lambda: "%s:%s" % (PLUGIN_NAME, BUSTER_TAG)
+        def _select_plugin_name_windows():
+            return "%s:%s" % (PLUGIN_NAME, STRETCH_TAG) if Setting.get_instance().win_wls2 else \
+                   "%s:%s" % (PLUGIN_NAME, BUSTER_TAG)
+
+        self.plugin_name = utils.exec_by_platform(_select_plugin_name_linux, _select_plugin_name_windows,
+                                                  lambda: "%s:%s" % (
+                                                      PLUGIN_NAME, BUSTER_TAG)
                                                   )
 
     def check_and_download_plugin(self):

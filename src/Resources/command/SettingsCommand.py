@@ -362,7 +362,35 @@ class SettingsCommand(Command):
                                                   )
                                      )
 
-        enable_ipv6_item = SubmenuItem(enable_ipv6_string, enable_ipv6_menu, menu)
+        enable_ipv6_item = SubmenuItem(
+            enable_ipv6_string, enable_ipv6_menu, menu)
+
+        # Windows WLS2 Option
+        win_wls2_string = "(**Windows only**) Enable WLS2 Support"
+        win_wls2_menu = SelectionMenu(strings=[],
+                                      title=win_wls2_string,
+                                      subtitle=current_bool("win_wls2"),
+                                      formatter=menu_formatter,
+                                      prologue_text="""This option is used only on Windows OS.
+                                      Enables the support for Docker using WLS2.
+                                                          Default is %s.""" % format_bool(
+            DEFAULTS['win_wls2'])
+        )
+
+        win_wls2_menu.append_item(FunctionItem(text="Yes",
+                                               function=self.set_setting_value,
+                                               args=['win_wls2', True],
+                                               should_exit=True
+                                               )
+                                  )
+        win_wls2_menu.append_item(FunctionItem(text="No",
+                                               function=self.set_setting_value,
+                                               args=['win_wls2', False],
+                                               should_exit=True
+                                               )
+                                  )
+
+        win_wls2_item = SubmenuItem(win_wls2_string, win_wls2_menu, menu)
 
         menu.append_item(submenu_item)
         menu.append_item(manager_item)
@@ -375,6 +403,7 @@ class SettingsCommand(Command):
         menu.append_item(debug_level_item)
         menu.append_item(print_startup_log_item)
         menu.append_item(enable_ipv6_item)
+        menu.append_item(win_wls2_item)
 
         self.menu = menu
 
