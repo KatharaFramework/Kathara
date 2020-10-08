@@ -1,5 +1,4 @@
 import logging
-import os
 
 
 class Networking(object):
@@ -96,7 +95,3 @@ class Networking(object):
         )
 
         ip.close()
-
-    @staticmethod
-    def get_iptables_version():
-        return os.popen("/sbin/iptables --version").read().strip()
