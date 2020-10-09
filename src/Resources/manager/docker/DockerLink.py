@@ -7,6 +7,7 @@ import docker
 from docker import types
 from progress.bar import Bar
 
+from ..docker.DockerPlugin import PLUGIN_NAME
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...model.Link import BRIDGE_LINK_NAME
@@ -15,12 +16,10 @@ from ...setting.Setting import Setting
 
 
 class DockerLink(object):
-    __slots__ = ['client', 'docker_plugin']
+    __slots__ = ['client']
 
-    def __init__(self, client, docker_plugin):
+    def __init__(self, client):
         self.client = client
-
-        self.docker_plugin = docker_plugin
 
     def deploy_links(self, lab):
         pool_size = utils.get_pool_size()
@@ -66,7 +65,7 @@ class DockerLink(object):
         network_ipam_config = docker.types.IPAMConfig(driver='null')
 
         link.api_object = self.client.networks.create(name=link_name,
-                                                      driver=self.docker_plugin.plugin_name,
+                                                      driver=PLUGIN_NAME,
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,
                                                       labels={"lab_hash": link.lab.folder_hash,

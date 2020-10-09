@@ -8,6 +8,9 @@ PLUGIN_NAME = "kathara/katharanp:latest"
 class DockerPlugin(object):
     __slots__ = ['client']
 
+    def __init__(self, client):
+        self.client = client
+
     def check_and_download_plugin(self):
         try:
             logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)
