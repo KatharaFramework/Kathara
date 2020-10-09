@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=2.3.0
+VERSION=3.0.0
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 
@@ -10,7 +10,7 @@ ARCHITECTURE:=$(shell dpkg --print-architecture)
 
 allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_eoan docker-signed_focal
 
-docker-unsigned: prepare-deb-source docker-build-image
+docker-unsigned: clean prepare-deb-source docker-build-image
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make build-deb-unsigned"
 
 docker-signed_%:
