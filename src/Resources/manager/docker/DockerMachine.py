@@ -4,8 +4,8 @@ from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
 
+import progressbar
 from docker.errors import APIError
-from progress.bar import Bar
 
 from ... import utils
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
@@ -21,7 +21,7 @@ STARTUP_COMMANDS = [
     # In this way, files are all replaced in the container root folder
     # rsync is used to keep symlinks while copying files.
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
-    "rsync -r -K /hostlab/{machine_name}/* /; fi",
+    "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xf -); fi",
 
     # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
     # If not, clear the content of the file.
@@ -102,7 +102,13 @@ class DockerMachine(object):
             lab.create_shared_folder()
 
         machines = lab.machines.items()
-        progress_bar = Bar('Deploying devices...', max=len(machines))
+        progress_bar = progressbar.ProgressBar(
+            widgets=['Deploying devices... ', progressbar.Bar(),
+                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+            redirect_stdout=True,
+            max_value=len(machines)
+        )
+
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
         # If not, they're started sequentially
@@ -128,7 +134,7 @@ class DockerMachine(object):
         self.create(machine, privileged=privileged_mode)
         self.start(machine)
 
-        progress_bar.next()
+        progress_bar += 1
 
     def create(self, machine, privileged=False):
         logging.debug("Creating device `%s`..." % machine.name)
@@ -302,9 +308,12 @@ class DockerMachine(object):
 
         items = utils.chunk_list(machines, pool_size)
 
-        progress_bar = Bar("Deleting devices...", max=len(machines) if not selected_machines
-                                                                     else len(selected_machines)
-                           )
+        progress_bar = progressbar.ProgressBar(
+            widgets=['Deleting devices... ', progressbar.Bar(),
+                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+            redirect_stdout=True,
+            max_value=len(machines) if not selected_machines else len(selected_machines)
+        )
 
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True, progress_bar),
@@ -332,7 +341,7 @@ class DockerMachine(object):
             self.delete_machine(machine_item)
 
             if log:
-                progress_bar.next()
+                progress_bar += 1
 
     def connect(self, lab_hash, machine_name, shell=None, logs=False):
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)

@@ -4,8 +4,8 @@ from functools import partial
 from multiprocessing.dummy import Pool
 
 import docker
+import progressbar
 from docker import types
-from progress.bar import Bar
 
 from ..docker.DockerPlugin import PLUGIN_NAME
 from ... import utils
@@ -28,7 +28,12 @@ class DockerLink(object):
         links = lab.links.items()
         items = utils.chunk_list(links, pool_size)
 
-        progress_bar = Bar('Deploying collision domains...', max=len(links))
+        progress_bar = progressbar.ProgressBar(
+            widgets=['Deploying collision domains... ', progressbar.Bar(),
+                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+            redirect_stdout=True,
+            max_value=len(links)
+        )
 
         for chunk in items:
             link_pool.map(func=partial(self._deploy_link, progress_bar), iterable=chunk)
@@ -48,7 +53,7 @@ class DockerLink(object):
 
         self.create(link)
 
-        progress_bar.next()
+        progress_bar += 1
 
     def create(self, link):
         # Reserved name for bridged connections, ignore.
@@ -91,7 +96,12 @@ class DockerLink(object):
 
         items = utils.chunk_list(links, pool_size)
 
-        progress_bar = Bar("Deleting collision domains...", max=len(links))
+        progress_bar = progressbar.ProgressBar(
+            widgets=['Deleting collision domains... ', progressbar.Bar(),
+                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+            redirect_stdout=True,
+            max_value=len(links)
+        )
 
         for chunk in items:
             links_pool.map(func=partial(self._undeploy_link, True, progress_bar), iterable=chunk)
@@ -118,7 +128,7 @@ class DockerLink(object):
         self._delete_link(link_item)
 
         if log:
-            progress_bar.next()
+            progress_bar += 1
 
     def get_docker_bridge(self):
         bridge_list = self.client.networks.list(names="bridge")

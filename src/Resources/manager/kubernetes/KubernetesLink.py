@@ -7,7 +7,7 @@ from multiprocessing.dummy import Pool
 from kubernetes import client
 from kubernetes.client.api import custom_objects_api
 from kubernetes.client.rest import ApiException
-from progress.bar import Bar
+import progressbar
 
 from .KubernetesConfig import KubernetesConfig
 from ... import utils
@@ -36,7 +36,12 @@ class KubernetesLink(object):
 
         items = utils.chunk_list(links, pool_size)
 
-        progress_bar = Bar('Deploying collision domains...', max=len(links))
+        progress_bar = progressbar.ProgressBar(
+            widgets=['Deploying collision domains... ', progressbar.Bar(),
+                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+            redirect_stdout=True,
+            max_value=len(links)
+        )
 
         network_ids = []
         for chunk in items:
@@ -50,7 +55,7 @@ class KubernetesLink(object):
         network_id = self._get_unique_network_id(link.name, network_ids)
         self.create(link, network_id)
 
-        progress_bar.next()
+        progress_bar += 1
 
     def create(self, link, network_id):
         # If a network with the same name exists, return it instead of creating a new one.
@@ -78,9 +83,12 @@ class KubernetesLink(object):
 
         items = utils.chunk_list(links, pool_size)
 
-        progress_bar = Bar("Deleting collision domains...", max=len(links) if not networks_to_delete
-                                                                           else len(networks_to_delete)
-                           )
+        progress_bar = progressbar.ProgressBar(
+            widgets=['Deleting collision domains... ', progressbar.Bar(),
+                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+            redirect_stdout=True,
+            max_value=len(links) if not networks_to_delete else len(networks_to_delete)
+        )
 
         for chunk in items:
             links_pool.map(func=partial(self._undeploy_link, networks_to_delete, True, progress_bar), iterable=chunk)
@@ -113,11 +121,11 @@ class KubernetesLink(object):
                                                         body=client.V1DeleteOptions(grace_period_seconds=0),
                                                         grace_period_seconds=0
                                                         )
-
-            if log:
-                progress_bar.next()
         except ApiException:
-            return
+            pass
+
+        if log:
+            progress_bar += 1
 
     def get_links_by_filters(self, lab_hash=None, link_name=None):
         filters = ["app=kathara"]

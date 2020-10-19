@@ -6,12 +6,12 @@ import shlex
 from functools import partial
 from multiprocessing.dummy import Pool
 
+import progressbar
 from kubernetes import client
 from kubernetes.client.api import apps_v1_api
 from kubernetes.client.api import core_v1_api
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
-from progress.bar import Bar
 
 from .KubernetesConfigMap import KubernetesConfigMap
 from ... import utils
@@ -41,7 +41,7 @@ STARTUP_COMMANDS = [
     # In this way, files are all replaced in the container root folder
     # rsync is used to keep symlinks while copying files.
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
-    "rsync -r -K /hostlab/{machine_name}/* /; fi",
+    "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xf -); fi",
 
     # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
     # If not, clear the content of the file.
@@ -118,7 +118,12 @@ class KubernetesMachine(object):
         if privileged_mode:
             logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
 
-        progress_bar = Bar('Deploying devices...', max=len(machines))
+        progress_bar = progressbar.ProgressBar(
+            widgets=['Deploying devices... ', progressbar.Bar(),
+                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+            redirect_stdout=True,
+            max_value=len(machines)
+        )
 
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
@@ -144,7 +149,7 @@ class KubernetesMachine(object):
 
         self.create(machine)
 
-        progress_bar.next()
+        progress_bar += 1
 
     def create(self, machine):
         logging.debug("Creating device `%s`..." % machine.name)
@@ -338,9 +343,12 @@ class KubernetesMachine(object):
 
         items = utils.chunk_list(machines, pool_size)
 
-        progress_bar = Bar("Deleting devices...", max=len(machines) if not selected_machines
-                                                                    else len(selected_machines)
-                           )
+        progress_bar = progressbar.ProgressBar(
+            widgets=['Deleting devices... ', progressbar.Bar(),
+                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+            redirect_stdout=True,
+            max_value=len(machines) if not selected_machines else len(selected_machines)
+        )
 
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True, progress_bar),
@@ -368,7 +376,7 @@ class KubernetesMachine(object):
             self._delete_machine(machine_item)
 
             if log:
-                progress_bar.next()
+                progress_bar += 1
 
     def _delete_machine(self, machine):
         machine_name = machine.metadata.labels["name"]
