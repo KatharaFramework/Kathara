@@ -60,6 +60,9 @@ class Terminal(ABC):
         def read_external_terminal(handle, data, error):
             if data:
                 self._system_stdout.write(data)
+
+                if data == b"\r\nexit\r\n":
+                    self.close()
             else:
                 self.close()
 
