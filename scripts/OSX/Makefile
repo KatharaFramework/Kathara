@@ -14,6 +14,7 @@ default: all
 
 deps:
 	python3 -m pip install pyinstaller
+	export ARCHFLAGS="-arch x86_64"
 	python3 -m pip install -r ../../src/requirements.txt
 	gem install ronn-ng
 

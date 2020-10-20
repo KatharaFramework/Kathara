@@ -1,6 +1,4 @@
 import argparse
-import os
-import time
 
 from ... import utils
 from ...foundation.cli.command.Command import Command
@@ -8,6 +6,7 @@ from ...manager.ManagerProxy import ManagerProxy
 from ...model.Link import BRIDGE_LINK_NAME
 from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
+from ...trdparty.curses.curses import Curses
 
 
 class LinfoCommand(Command):
@@ -71,19 +70,29 @@ class LinfoCommand(Command):
 
     @staticmethod
     def _get_machine_live_info(lab_hash, machine_name):
-        while True:
-            utils.exec_by_platform(lambda: os.system('clear'), lambda: os.system('cls'), lambda: os.system('clear'))
-            print(ManagerProxy.get_instance().get_machine_info(machine_name, lab_hash))
-            time.sleep(1)
+        Curses.get_instance().init_window()
+
+        try:
+            while True:
+                Curses.get_instance().print_string(
+                    ManagerProxy.get_instance().get_machine_info(machine_name, lab_hash)
+                )
+        finally:
+            Curses.get_instance().close()
 
     @staticmethod
     def _get_lab_live_info(lab_hash):
         lab_info = ManagerProxy.get_instance().get_lab_info(lab_hash)
 
-        while True:
-            utils.exec_by_platform(lambda: os.system('clear'), lambda: os.system('cls'), lambda: os.system('clear'))
-            print(next(lab_info))
-            time.sleep(1)
+        Curses.get_instance().init_window()
+
+        try:
+            while True:
+                Curses.get_instance().print_string(next(lab_info))
+        except StopIteration:
+            pass
+        finally:
+            Curses.get_instance().close()
 
     @staticmethod
     def _get_conf_info(lab_path):

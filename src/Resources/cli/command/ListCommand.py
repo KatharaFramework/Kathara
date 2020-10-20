@@ -1,11 +1,10 @@
 import argparse
-import os
-import time
 
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.ManagerProxy import ManagerProxy
 from ...strings import strings, wiki_description
+from ...trdparty.curses.curses import Curses
 
 
 class ListCommand(Command):
@@ -73,16 +72,26 @@ class ListCommand(Command):
 
     @staticmethod
     def _get_machine_live_info(machine_name, all_users):
-        while True:
-            utils.exec_by_platform(lambda: os.system('clear'), lambda: os.system('cls'), lambda: os.system('clear'))
-            print(ManagerProxy.get_instance().get_machine_info(machine_name, all_users=all_users))
-            time.sleep(1)
+        Curses.get_instance().init_window()
+
+        try:
+            while True:
+                Curses.get_instance().print_string(
+                    ManagerProxy.get_instance().get_machine_info(machine_name, all_users=all_users)
+                )
+        finally:
+            Curses.get_instance().close()
 
     @staticmethod
     def _get_lab_live_info(all_users):
         lab_info = ManagerProxy.get_instance().get_lab_info(all_users=all_users)
 
-        while True:
-            utils.exec_by_platform(lambda: os.system('clear'), lambda: os.system('cls'), lambda: os.system('clear'))
-            print(next(lab_info))
-            time.sleep(1)
+        Curses.get_instance().init_window()
+
+        try:
+            while True:
+                Curses.get_instance().print_string(next(lab_info))
+        except StopIteration:
+            pass
+        finally:
+            Curses.get_instance().close()

@@ -141,7 +141,10 @@ class DockerManager(IManager):
             try:
                 result = next(machine_streams)
             except StopIteration:
-                continue
+                return
+
+            if not result:
+                return
 
             for machine_stats in result:
                 machines_data.append([machine_stats['real_lab_hash'],

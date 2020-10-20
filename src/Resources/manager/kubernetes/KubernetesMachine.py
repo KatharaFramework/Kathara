@@ -39,9 +39,8 @@ STARTUP_COMMANDS = [
 
     # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
     # In this way, files are all replaced in the container root folder
-    # rsync is used to keep symlinks while copying files.
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
-    "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xf -); fi",
+    "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf -); fi",
 
     # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
     # If not, clear the content of the file.

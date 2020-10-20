@@ -73,7 +73,7 @@ class KubernetesLink(object):
 
         # If external is defined for a link, throw a warning.
         if link.external:
-            logging.warning('External is not supported on Kubernetes. It will be ignored.')
+            logging.warning('External is not supported on Megalos. It will be ignored.')
 
     def undeploy(self, lab_hash, networks_to_delete=None):
         links = self.get_links_by_filters(lab_hash=lab_hash)
