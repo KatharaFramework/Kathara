@@ -6,7 +6,7 @@ from ... import utils
 from ...os.Networking import Networking
 
 PLUGIN_NAME = "kathara/katharanp:latest"
-XTABLES_CONFIGURATION_KEY = "var_run_xtables_lock"
+XTABLES_CONFIGURATION_KEY = "xtables_lock"
 XTABLES_LOCK_PATH = "/run/xtables.lock"
 
 
