@@ -35,9 +35,11 @@ class DockerPlugin(object):
             logging.debug("Enabling plugin `%s`..." % PLUGIN_NAME)
             plugin.enable()
         else:
+            # Get the mount of xtables.lock from the current plugin configuration
             mount_obj = list(filter(lambda x: x["Name"] == XTABLES_CONFIGURATION_KEY,
                                     plugin.attrs["Settings"]["Mounts"])).pop()
 
+            # If it's not equal to the computed one, fix the mount
             if mount_obj["Source"] != xtables_lock_mount:
                 plugin.disable()
 

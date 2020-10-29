@@ -568,12 +568,15 @@ class KubernetesMachine(object):
         return machines_stats
 
     def _get_stats_by_machine(self, machine):
+        container_statuses = machine.status.container_statuses
+        image_name = container_statuses[0].image.replace('docker.io/', '') if container_statuses else "N/A"
+
         return {
               "real_lab_hash": machine.metadata.namespace,
               "name": machine.metadata.labels["name"],
               "real_name": machine.metadata.name,
               "status": self._get_detailed_machine_status(machine),
-              "image": machine.status.container_statuses[0].image.replace('docker.io/', ''),
+              "image": image_name,
               "assigned_node": machine.spec.node_name
         }
 
