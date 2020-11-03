@@ -1,33 +1,30 @@
 import collections
 import logging
+import os
 import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
-from glob import glob
 from distutils.util import strtobool
+from glob import glob
 
-import os
-from .Link import BRIDGE_LINK_NAME
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError
 from ..setting.Setting import Setting
 
 
 class Machine(object):
-    __slots__ = ['lab', 'name', 'startup_path', 'shutdown_path', 'folder',
-                 'interfaces', 'bridge', 'meta', 'startup_commands', 'api_object',
-                 'capabilities']
+    __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities',
+                 'startup_path', 'shutdown_path', 'folder']
 
     def __init__(self, lab, name):
         self.lab = lab
         self.name = name
 
         self.interfaces = {}
-        self.bridge = None
 
-        self.meta = {'sysctls': {}}
+        self.meta = {'sysctls': {}, 'bridged': False}
 
         self.startup_commands = []
 
@@ -56,15 +53,15 @@ class Machine(object):
             return
 
         if name == "bridged":
-            self.bridge = self.lab.get_or_new_link(BRIDGE_LINK_NAME)
+            self.meta[name] = bool(strtobool(str(value)))
             return
 
         if name == "sysctl":
             # Check for valid kv-pair
             if '=' in value:
-                parts = value.split('=')
-                key = parts[0].strip()
-                val = parts[1].strip()
+                (key, val) = value.split('=')
+                key = key.strip()
+                val = val.strip()
                 # Only allow `net.` namespace
                 if key.startswith('net.'):
                     # Convert to int if possible

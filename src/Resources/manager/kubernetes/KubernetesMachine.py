@@ -157,7 +157,7 @@ class KubernetesMachine(object):
         options = machine.lab.general_options
 
         # If bridged is defined for the device, throw a warning.
-        if "bridged" in options or machine.bridge:
+        if "bridged" in options or machine.meta['bridged']:
             logging.warning('Bridged option is not supported on Megalos. It will be ignored.')
 
         # If any exec command is passed in command line, add it.

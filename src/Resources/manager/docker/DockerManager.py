@@ -56,7 +56,7 @@ def check_docker_status(method):
 
 
 class DockerManager(IManager):
-    __slots__ = ['docker_image', 'docker_machine', 'docker_link', 'client']
+    __slots__ = ['client', 'docker_image', 'docker_machine', 'docker_link']
 
     @check_docker_status
     def __init__(self):

@@ -16,7 +16,7 @@ from ...foundation.manager.IManager import IManager
 
 
 class KubernetesManager(IManager):
-    __slots__ = ['client', 'k8s_namespace', 'k8s_link', 'k8s_machine']
+    __slots__ = ['k8s_namespace', 'k8s_machine', 'k8s_link']
 
     def __init__(self):
         KubernetesConfig.load_kube_config()

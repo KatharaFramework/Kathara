@@ -9,8 +9,8 @@ from .. import utils
 
 class Lab(object):
     __slots__ = ['name', 'description', 'version', 'author', 'email', 'web',
-                 'path', 'folder_hash', 'machines', 'links', 'general_options',
-                 'shared_startup_path', 'shared_shutdown_path', 'shared_folder', 'has_dependencies']
+                 'path', 'folder_hash', 'machines', 'links', 'general_options', 'has_dependencies',
+                 'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
     def __init__(self, path):
         self.name = None

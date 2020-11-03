@@ -31,23 +31,24 @@ class KubernetesLink(object):
     def deploy_links(self, lab):
         links = lab.links.items()
 
-        pool_size = utils.get_pool_size()
-        link_pool = Pool(pool_size)
+        if len(links) > 0:
+            pool_size = utils.get_pool_size()
+            link_pool = Pool(pool_size)
 
-        items = utils.chunk_list(links, pool_size)
+            items = utils.chunk_list(links, pool_size)
 
-        progress_bar = progressbar.ProgressBar(
-            widgets=['Deploying collision domains... ', progressbar.Bar(),
-                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-            redirect_stdout=True,
-            max_value=len(links)
-        )
+            progress_bar = progressbar.ProgressBar(
+                widgets=['Deploying collision domains... ', progressbar.Bar(),
+                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+                redirect_stdout=True,
+                max_value=len(links)
+            )
 
-        network_ids = []
-        for chunk in items:
-            link_pool.map(func=partial(self._deploy_link, progress_bar, network_ids), iterable=chunk)
+            network_ids = []
+            for chunk in items:
+                link_pool.map(func=partial(self._deploy_link, progress_bar, network_ids), iterable=chunk)
 
-        progress_bar.finish()
+            progress_bar.finish()
 
     def _deploy_link(self, progress_bar, network_ids, link_item):
         (_, link) = link_item

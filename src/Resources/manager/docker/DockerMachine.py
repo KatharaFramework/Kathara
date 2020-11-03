@@ -10,6 +10,7 @@ from docker.errors import APIError
 from ... import utils
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
 from ...foundation.cli.CliArgs import CliArgs
+from ...model.Link import BRIDGE_LINK_NAME
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
@@ -152,7 +153,7 @@ class DockerMachine(object):
         options = machine.lab.general_options
 
         # If bridged is required in command line but not defined in machine meta, add it.
-        if "bridged" in options and not machine.bridge:
+        if "bridged" in options and not machine.meta['bridged']:
             machine.add_meta("bridged", True)
 
         # If any exec command is passed in command line, add it.
@@ -167,8 +168,8 @@ class DockerMachine(object):
 
         # If no interfaces are declared in machine, but bridged mode is required, get bridge as first link.
         # Flag that bridged is already connected (because there's another check in `start`).
-        if first_network is None and machine.bridge:
-            first_network = machine.bridge.api_object
+        if first_network is None and machine.meta['bridged']:
+            first_network = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
             machine.add_meta("bridge_connected", True)
 
         # Sysctl params to pass to the container creation
@@ -279,8 +280,9 @@ class DockerMachine(object):
             machine_link.api_object.connect(machine.api_object)
 
         # Bridged connection required but not added in `deploy` method.
-        if "bridge_connected" not in machine.meta and machine.bridge:
-            machine.bridge.api_object.connect(machine.api_object)
+        if "bridge_connected" not in machine.meta and machine.meta['bridged']:
+            bridge_link = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
+            bridge_link.connect(machine.api_object)
 
         # Build the final startup commands string
         startup_commands_string = "; ".join(STARTUP_COMMANDS).format(
