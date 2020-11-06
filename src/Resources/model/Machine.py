@@ -270,11 +270,17 @@ class Machine(object):
 
     def get_ports(self):
         if "port" in self.meta:
-            try:
-                return 3000, 'tcp', int(self.meta["port"])
-            except ValueError:
-                raise MachineOptionError("Port value not valid.")
-
+            if ':' not in self.meta["port"]:
+                try:
+                    return 3000, 'tcp', int(self.meta["port"])
+                except ValueError:
+                    raise MachineOptionError("Port value not valid.")
+            else:
+                (host, guest) = self.meta["port"].split(':')
+                try:
+                    return int(host), 'tcp', int(guest)
+                except ValueError:
+                    raise MachineOptionError("Port value not valid.")
         return None
 
     def is_ipv6_enabled(self):
