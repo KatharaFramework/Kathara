@@ -50,7 +50,8 @@ STARTUP_COMMANDS = [
     "echo \"\" > /etc/resolv.conf; fi",
 
     # Give proper permissions to /var/www
-    "chmod -R 777 /var/www/*",
+    "if [ -d \"/var/www\" ]; then "
+    "chmod -R 777 /var/www/*; fi",
 
     # Give proper permissions to Quagga files (if present)
     "if [ -d \"/etc/quagga\" ]; then "
