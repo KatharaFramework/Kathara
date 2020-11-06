@@ -82,7 +82,7 @@ STARTUP_COMMANDS = [
     "/hostlab/{machine_name}.startup &> /var/log/startup.log; fi",
 
     # Remove the Kubernetes' default gateway which points to the eth0 interface and causes problems sometimes.
-    "route del default dev eth0 &> /dev/null",
+    "route del default dev eth0 || true",
 
     # Placeholder for user commands
     "{machine_commands}"
