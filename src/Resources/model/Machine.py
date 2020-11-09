@@ -24,7 +24,7 @@ class Machine(object):
 
         self.interfaces = {}
 
-        self.meta = {'sysctls': {}, 'bridged': False}
+        self.meta = {'sysctls': {}, 'bridged': False, 'port': {}}
 
         self.startup_commands = []
 
@@ -70,6 +70,26 @@ class Machine(object):
                     raise MachineOptionError("Invalid sysctl value (`%s`), only `net.` namespace is allowed." % value)
             else:
                 raise MachineOptionError("Invalid sysctl value (`%s`), missing `=`." % value)
+            return
+
+        if name == "port":
+            if '/' in value:
+                (ports, protocol) = value.split('/')
+            else:
+                (ports, protocol) = value, 'tcp'
+            if ':' not in ports:
+                try:
+                    host_port, guest_port = 3000, int(ports)
+                except ValueError:
+                    raise MachineOptionError("Port value not valid.")
+            else:
+                (host_port, guest_port) = ports.split(':')
+                try:
+                    (host_port, guest_port) = int(host_port), int(guest_port)
+                except ValueError:
+                    raise MachineOptionError("Port value not valid.")
+
+            self.meta['port'][(host_port, protocol)] = guest_port
             return
 
         self.meta[name] = value
@@ -269,18 +289,9 @@ class Machine(object):
         return None
 
     def get_ports(self):
-        if "port" in self.meta:
-            if ':' not in self.meta["port"]:
-                try:
-                    return 3000, 'tcp', int(self.meta["port"])
-                except ValueError:
-                    raise MachineOptionError("Port value not valid.")
-            else:
-                (host, guest) = self.meta["port"].split(':')
-                try:
-                    return int(host), 'tcp', int(guest)
-                except ValueError:
-                    raise MachineOptionError("Port value not valid.")
+        if self.meta['port']:
+            return self.meta['port']
+
         return None
 
     def is_ipv6_enabled(self):

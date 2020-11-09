@@ -144,11 +144,12 @@ class DockerMachine(object):
         memory = machine.get_mem()
         cpus = machine.get_cpu(multiplier=1e9)
 
-        port_info = machine.get_ports()
+        ports_info = machine.get_ports()
         ports = None
-        if port_info:
-            (internal_port, protocol, host_port) = port_info
-            ports = {'%d/%s' % (internal_port, protocol): host_port}
+        if ports_info:
+            ports = {}
+            for (host_port, protocol), guest_port in ports_info.items():
+                ports['%d/%s' % (guest_port, protocol)] = host_port
 
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options
