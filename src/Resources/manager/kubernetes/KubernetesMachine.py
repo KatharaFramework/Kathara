@@ -214,10 +214,10 @@ class KubernetesMachine(object):
             (internal_port, protocol, host_port) = port_info
             container_ports = [
                 client.V1ContainerPort(
-                    name="kathara",
+                    name="kathara-%d-%d-%s" % (host_port, internal_port, protocol),
                     container_port=internal_port,
                     host_port=host_port,
-                    protocol=protocol
+                    protocol=protocol.upper()
                 )
             ]
 
