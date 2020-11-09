@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import shlex
-import base64
+import uuid
 from functools import partial
 from multiprocessing.dummy import Pool
 
@@ -213,12 +213,10 @@ class KubernetesMachine(object):
         container_ports = None
         if port_info:
             (internal_port, protocol, host_port) = port_info
-            port_name = "kathara-%d-%d-%s" % (host_port, internal_port, protocol)
-            digest = hashlib.sha1(port_name.encode('utf-8')).digest()
-
+            port_name = str(uuid.uuid4()).replace('-', '')[0:15]
             container_ports = [
                 client.V1ContainerPort(
-                    name=base64.b64encode(digest)[0:15],
+                    name=port_name,
                     container_port=internal_port,
                     host_port=host_port,
                     protocol=protocol.upper()
