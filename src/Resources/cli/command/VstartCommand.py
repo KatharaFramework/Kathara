@@ -115,8 +115,11 @@ class VstartCommand(Command):
         )
         parser.add_argument(
             '--port',
+            dest='ports',
+            metavar='HOST[:GUEST[/PROTOCOL]]',
+            nargs='+',
             required=False,
-            help='Choose a TCP Port number to map localhost port PORT to the internal port 3000 of the device.'
+            help='Choose a Port number to map localhost port HOST to the internal port GUEST of the device.'
         )
         parser.add_argument(
             '--shell',
@@ -184,7 +187,8 @@ class VstartCommand(Command):
         if args.bridged:
             machine.add_meta("bridged", True)
 
-        if args.port:
-            machine.add_meta("port", args.port)
+        if args.ports:
+            for port in args.ports:
+                machine.add_meta("port", port)
 
         ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args.privileged)
