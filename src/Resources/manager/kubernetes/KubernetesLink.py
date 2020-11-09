@@ -2,12 +2,13 @@ import hashlib
 import logging
 import re
 from functools import partial
+from multiprocessing import Manager
 from multiprocessing.dummy import Pool
 
+import progressbar
 from kubernetes import client
 from kubernetes.client.api import custom_objects_api
 from kubernetes.client.rest import ApiException
-import progressbar
 
 from .KubernetesConfig import KubernetesConfig
 from ... import utils
@@ -44,9 +45,11 @@ class KubernetesLink(object):
                 max_value=len(links)
             )
 
-            network_ids = []
-            for chunk in items:
-                link_pool.map(func=partial(self._deploy_link, progress_bar, network_ids), iterable=chunk)
+            with Manager() as manager:
+                network_ids = manager.dict()
+
+                for chunk in items:
+                    link_pool.map(func=partial(self._deploy_link, progress_bar, network_ids), iterable=chunk)
 
             progress_bar.finish()
 
@@ -169,7 +172,7 @@ class KubernetesLink(object):
             network_id = self._get_network_id(name, offset)
             offset += 1
 
-        network_ids.append(network_id)
+        network_ids[network_id] = 1
 
         return network_id
 
