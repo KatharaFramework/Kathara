@@ -3,6 +3,10 @@ import base64
 from kubernetes import client
 from kubernetes.client.api import core_v1_api
 
+from ...utils import human_readable_bytes
+
+MAX_FILE_SIZE = 3145728
+
 
 class KubernetesConfigMap(object):
     __slots__ = ['client']
@@ -29,6 +33,15 @@ class KubernetesConfigMap(object):
 
     def _build_for_machine(self, machine):
         tar_data = machine.pack_data()
+
+        tar_data_size = len(tar_data)
+        if tar_data_size > MAX_FILE_SIZE:
+            raise Exception(
+                'Unable to upload device folder. Maximum supported size: %s. Current: %s.' % (
+                    human_readable_bytes(MAX_FILE_SIZE),
+                    human_readable_bytes(tar_data_size)
+                )
+            )
 
         # Create a ConfigMap on the cluster containing the base64 of the .tar.gz file
         # This will be decoded and extracted in the postStart hook of the pod
