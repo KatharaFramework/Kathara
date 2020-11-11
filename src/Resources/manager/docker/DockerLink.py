@@ -4,9 +4,10 @@ from functools import partial
 from multiprocessing.dummy import Pool
 
 import docker
+import progressbar
 from docker import types
-from progress.bar import Bar
 
+from ..docker.DockerPlugin import PLUGIN_NAME
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...model.Link import BRIDGE_LINK_NAME
@@ -15,26 +16,31 @@ from ...setting.Setting import Setting
 
 
 class DockerLink(object):
-    __slots__ = ['client', 'docker_plugin']
+    __slots__ = ['client']
 
-    def __init__(self, client, docker_plugin):
+    def __init__(self, client):
         self.client = client
 
-        self.docker_plugin = docker_plugin
-
     def deploy_links(self, lab):
-        pool_size = utils.get_pool_size()
-        link_pool = Pool(pool_size)
-
         links = lab.links.items()
-        items = utils.chunk_list(links, pool_size)
 
-        progress_bar = Bar('Deploying links...', max=len(links))
+        if len(links) > 0:
+            pool_size = utils.get_pool_size()
+            link_pool = Pool(pool_size)
 
-        for chunk in items:
-            link_pool.map(func=partial(self._deploy_link, progress_bar), iterable=chunk)
+            items = utils.chunk_list(links, pool_size)
 
-        progress_bar.finish()
+            progress_bar = progressbar.ProgressBar(
+                widgets=['Deploying collision domains... ', progressbar.Bar(),
+                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+                redirect_stdout=True,
+                max_value=len(links)
+            )
+
+            for chunk in items:
+                link_pool.map(func=partial(self._deploy_link, progress_bar), iterable=chunk)
+
+            progress_bar.finish()
 
         # Create a docker bridge link in the lab object and assign the Docker Network object associated to it.
         docker_bridge = self.get_docker_bridge()
@@ -49,7 +55,7 @@ class DockerLink(object):
 
         self.create(link)
 
-        progress_bar.next()
+        progress_bar += 1
 
     def create(self, link):
         # Reserved name for bridged connections, ignore.
@@ -66,7 +72,7 @@ class DockerLink(object):
         network_ipam_config = docker.types.IPAMConfig(driver='null')
 
         link.api_object = self.client.networks.create(name=link_name,
-                                                      driver=self.docker_plugin.plugin_name,
+                                                      driver=PLUGIN_NAME,
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,
                                                       labels={"lab_hash": link.lab.folder_hash,
@@ -92,7 +98,12 @@ class DockerLink(object):
 
         items = utils.chunk_list(links, pool_size)
 
-        progress_bar = Bar("Deleting links...", max=len(links))
+        progress_bar = progressbar.ProgressBar(
+            widgets=['Deleting collision domains... ', progressbar.Bar(),
+                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+            redirect_stdout=True,
+            max_value=len(links)
+        )
 
         for chunk in items:
             links_pool.map(func=partial(self._undeploy_link, True, progress_bar), iterable=chunk)
@@ -119,7 +130,7 @@ class DockerLink(object):
         self._delete_link(link_item)
 
         if log:
-            progress_bar.next()
+            progress_bar += 1
 
     def get_docker_bridge(self):
         bridge_list = self.client.networks.list(names="bridge")

@@ -1,11 +1,16 @@
 binaryornot>=0.4.4;
+urllib3<1.26,>=1.24.1;
 docker>=4.0.2;
+kubernetes>=11.0.0;
+requests>=2.22.0;
 coloredlogs>=10.0;
 terminaltables>=3.1.0;
-requests>=2.22.0;
 slug>=2.0;
 deepdiff>=4.0.9;
 pyroute2>=0.5.7;
-progress>=1.5;
+progressbar2>=1.14.0;
+libtmux>=0.8.2; sys_platform == 'darwin' or sys_platform == 'linux'
+pyuv>=1.4.0;
 appscript>=1.1.0; sys_platform == 'darwin'
 pypiwin32>=223; sys_platform == 'win32'
+windows-curses>=2.1.0; sys_platform == 'win32'

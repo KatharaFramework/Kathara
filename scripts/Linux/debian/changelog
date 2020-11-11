@@ -1,7 +1,11 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-  * Fix no_shared and no_hosthome flags
-  * Fix lrestart
-  * Fix privileged flag in vstart
+  * Add Megalos (Kubernetes Manager) support
+  * Native tty wrappers for Unix/Windows for Docker exec and Socket-based for Kubernetes exec (using pyuv)
+  * Introduce bash autocompletion of commands on Linux
+  * Add TMUX Support (thanks to Marcel Großmann)
+  * It is not possible to specify a tag for a Docker image (thanks to Tommaso Caiazzi and Marcel Großmann)
+  * Support for unified version of Docker Network Plugin
+  * Minor fixes
 
  -- Mariano Scazzariello <******@gmail.com>  __DATE__

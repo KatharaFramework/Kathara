@@ -21,22 +21,12 @@ Checks on the correctness of the configuration are performed each time a Kathara
     Default to `docker`.
 	
 * `terminal` (string):
-	This parameter determines the terminal emulator application to be used for device terminals. The application must be correctly installed in the host system.
+	This parameter determines the terminal emulator application to be used for device terminals. The application must be correctly installed in the host system. This option is only visible on Linux and macOS.
 
 	Default to `/usr/bin/xterm`.
 
 * `open_terminals` (boolean):
 	This parameter determines if device terminal should be opened when starting it. 
-
-	Default to `true`.
-
-* `hosthome_mount` (boolean):
-	This parameter specifies if the `/hosthome` dir will be mounted inside the device. The home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`.  
-
-	Default to `false`.
-
-* `shared_mount` (boolean):
-	This parameter specifies if the `/shared` dir will be mounted inside the device. The "shared" folder inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`.  
 
 	Default to `true`.
 
@@ -74,26 +64,67 @@ Checks on the correctness of the configuration are performed each time a Kathara
 	Unix time (in milliseconds) of the last online check for Kathara updates. Each week, when the first Kathara command is launched, the system will check if the system and the default image are up-to-date.
 
 	Default to `time of the file creation - one week`, so the check will always run after a fresh.
-	
+
+## ADDITIONAL MANAGER PARAMETERS
+
+Each Manager specifies additional parameters which are used only when the Manager is currently active.
+
+### KATHARA (Docker)
+
+* `hosthome_mount` (boolean):
+	This parameter specifies if the `/hosthome` dir will be mounted inside the device. The home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`.
+
+	Default to `false`.
+
+* `shared_mount` (boolean):
+	This parameter specifies if the `/shared` dir will be mounted inside the device. The "shared" folder inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`.
+
+	Default to `true`.
+
+### MEGALOS (Kubernetes)
+
+* `api_server_url` (string):
+	This parameter specifies the remote Kubernetes API server url. If not specified Megalos will try to connect to a local API server.
+
+	Default to null.
+
+* `api_token` (string):
+	This parameter specifies the authentication token used for the remote API server. If the remote API server is not used, this parameter is useless.
+
+	Default to null.
+
+* `host_shared` (boolean):
+	Each Kubernetes worker node creates a '/home/shared` directory and this directory will be mounted in read/write mode on each device under the path `/shared`.
+	This will allow to save files from the device to the Kubernetes worker node locally. Note that the content of those folders (one on each worker node) are not shared between them nor between the worker and the Kathara host.
+
+	Default to `true`.
+
+* `image_pull_policy` (string):
+	Specify the image pull policy for Docker images used by devices.
+
+	Possible values are `Always`, `IfNotPresent`, `Never`. Please refer to the [official Kubernetes page](https://kubernetes.io/docs/concepts/configuration/overview/#container-images) for further details on how this mode works.
+
+	Default to `IfNotPresent`.
 
 ## EXAMPLE
 
-		{
-			"image": "kathara/quagga",
-			"deployer_type": "docker",
-			"terminal": "/usr/bin/xterm",
-			"open_terminals": true,
-			"hosthome_mount": true,
-			"device_shell": "bash",
-			"net_prefix": "kathara",
-			"device_prefix": "kathara",
-			"debug_level": "INFO",
-			"print_startup_log": true,
-			"enable_ipv6": false,
-			"last_checked": 1570724309.2402148
-		}
+        {
+            "image": "kathara/quagga",
+            "manager_type": "docker",
+            "terminal": "/usr/bin/xterm",
+            "open_terminals": true,
+            "device_shell": "/bin/bash",
+            "net_prefix": "kathara",
+            "device_prefix": "kathara",
+            "debug_level": "INFO",
+            "print_startup_log": true,
+            "enable_ipv6": true,
+            "last_checked": 1600087624.6843708,
+            "hosthome_mount": false,
+            "shared_mount": true
+        }
   
-Example of the default `kathara.conf`(5) file.
+Example of the default `kathara.conf`(5) file using Docker Manager.
 
 m4_include(footer.txt)
 

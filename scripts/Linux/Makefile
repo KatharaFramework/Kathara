@@ -1,16 +1,14 @@
 #!/usr/bin/make -f
 
-VERSION=2.2.5
+VERSION=3.0.1
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 
-ARCHITECTURE:=$(shell dpkg --print-architecture)
-
 .PHONY: allSigned docker-unsigned docker-signed_% docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean
 
-allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_eoan docker-signed_focal
+allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_groovy
 
-docker-unsigned: docker-build-image
+docker-unsigned: clean prepare-deb-source docker-build-image
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make build-deb-unsigned"
 
 docker-signed_%:
@@ -35,7 +33,7 @@ clean-output-folder:
 	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro)_source.buildinfo
 	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro)_source.changes
 
-copy-debian-folder: 
+copy-debian-folder:
 	cp -r debian Output/kathara-$(VERSION)/
 	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog
 	sed -i -e 's/__DEBIAN_PACKAGE_VERSION__/$(DEBIAN_PACKAGE_VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
@@ -53,8 +51,11 @@ build-man: copy-debian-folder
 	cd ../../docs && make cleanall
 	ls Output/kathara-$(VERSION)/debian/manpages/ | awk '{print "debian/manpages/"$$0}' > Output/kathara-$(VERSION)/debian/kathara.manpages
 
+	/usr/bin/python3 -m pip install -r autocompletion/requirements.txt
+	/usr/bin/python3 autocompletion/generate_autocompletion.py "Output/kathara-$(VERSION)/debian/kathara.bash-completion"
+
 build-deb-unsigned: build-man download-pip
-	sed -i -e 's/__UBUNTU_VERSION__/bionic/g' Output/kathara-$(VERSION)/debian/changelog
+	sed -i -e 's/__UBUNTU_VERSION__/focal/g' Output/kathara-$(VERSION)/debian/changelog
 	cd Output/kathara-$(VERSION); debuild -us -uc
 
 build-deb-signed: build-man download-pip

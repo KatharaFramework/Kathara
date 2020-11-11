@@ -1,4 +1,8 @@
-FROM debian:9
+FROM ubuntu:focal
+
+ENV TZ=Europe/Rome
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt update \
 	&& DEBIAN_FRONTEND=noninteractive apt upgrade -y \
@@ -15,16 +19,15 @@ RUN apt update \
 		lintian \
 		devscripts \
 		git \
-		ruby-full
+		ruby-full \
+		bash-completion
 
-RUN gem install nokogiri mustache kramdown rubocop sinatra rack rake test-unit
+RUN gem install ronn-ng
 
 COPY dput.cf /root/.dput.cf
 
 WORKDIR /opt
 
-RUN git clone https://github.com/apjanke/ronn-ng.git
-ENV PATH="/opt/ronn-ng/bin:${PATH}"
 ENV RUBYOPT="-KU -E utf-8:utf-8"
 
 WORKDIR /opt/kathara/scripts/Linux

@@ -1,9 +1,9 @@
 import json
 import logging
-import os
 
 from deepdiff import DeepDiff
 
+import os
 from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
@@ -16,7 +16,7 @@ class BuiltInTest(Test):
 
     def create_signature(self):
         for (machine_name, machine) in self.lab.machines.items():
-            logging.info("Building `builtin` signature for machine %s..." % machine_name)
+            logging.info("Building `builtin` signature for device %s..." % machine_name)
 
             machine_status = self._get_machine_status(machine)
 
@@ -28,7 +28,7 @@ class BuiltInTest(Test):
         test_passed = True
 
         for (machine_name, machine) in self.lab.machines.items():
-            logging.info("Executing `builtin` tests for machine %s..." % machine_name)
+            logging.info("Executing `builtin` tests for device %s..." % machine_name)
 
             machine_state = self._get_machine_status(machine)
 
@@ -38,7 +38,7 @@ class BuiltInTest(Test):
                 with open(machine_signature_path, 'r') as machine_signature_file:
                     machine_signature = json.loads(machine_signature_file.read())
             else:
-                raise MachineSignatureNotFoundError("Signature for machine `%s` not found! Exiting..." % machine_name)
+                raise MachineSignatureNotFoundError("Signature for device `%s` not found! Exiting..." % machine_name)
 
             # Save machine state into result file
             machine_result_path = "%s/%s.builtin" % (self.results_path, machine.name)
@@ -52,7 +52,7 @@ class BuiltInTest(Test):
             with open(machine_diff_path, 'w') as machine_diff_file:
                 machine_diff_file.write(utils.format_headers("Builtin Test Result") + '\n')
                 machine_diff_file.write(json.dumps(diff, indent=4) + "\n" if diff else "OK\n")
-                machine_diff_file.write("=============================================================\n\n")
+                machine_diff_file.write(utils.format_headers() + "\n\n")
 
         return test_passed
 
@@ -69,10 +69,10 @@ class BuiltInTest(Test):
     @staticmethod
     def _get_machine_status(machine):
         # Machine interfaces
-        ip_addr = json.loads(ManagerProxy.get_instance().exec(machine=machine,
-                                                              command="ip -j addr show"
-                                                              )
-                             )
+        (ip_addr, _) = json.loads(ManagerProxy.get_instance().exec(machine_name=machine,
+                                                                   command="ip -j addr show"
+                                                                   )
+                                  )
 
         # Get only relevant information (interface name, state and list of address/prefix)
         ip_addr_clean = {}
@@ -84,22 +84,22 @@ class BuiltInTest(Test):
                                              }
 
         # Machine routes
-        ip_route = json.loads(ManagerProxy.get_instance().exec(machine=machine,
-                                                               command="ip -j route show"
-                                                               )
-                              )
+        (ip_route, _) = json.loads(ManagerProxy.get_instance().exec(machine_name=machine,
+                                                                    command="ip -j route show"
+                                                                    )
+                                   )
 
         # Machine opened ports
-        net_stat = ManagerProxy.get_instance().exec(machine=machine,
-                                                    command="netstat -tuwln"
-                                                    )
+        (net_stat, _) = ManagerProxy.get_instance().exec(machine_name=machine,
+                                                         command="netstat -tuwln"
+                                                         )
         # Remove Docker ports and header lines. Sort the array alphabetically.
         net_stat = sorted([filter(lambda x: "127.0.0.11" not in x, net_stat.splitlines())][2:])
 
         # Machine processes
-        processes = ManagerProxy.get_instance().exec(machine=machine,
-                                                     command="ps -e -o command"
-                                                     )
+        (processes, _) = ManagerProxy.get_instance().exec(machine_name=machine,
+                                                          command="ps -e -o command"
+                                                          )
         # Remove header line and sort the array alphabetically.
         processes = sorted([x.strip() for x in processes.splitlines()[1:]])
 

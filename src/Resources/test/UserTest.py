@@ -1,8 +1,8 @@
 import difflib
 import logging
-import os
 import tarfile
 
+import os
 from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
@@ -19,7 +19,7 @@ class UserTest(Test):
             machine_test_file = self._copy_machine_test_file(machine)
 
             if machine_test_file:
-                logging.info("Building `user` signature for machine %s..." % machine_name)
+                logging.info("Building `user` signature for device %s..." % machine_name)
 
                 machine_state = self._run_machine_test_file(machine)
 
@@ -34,7 +34,7 @@ class UserTest(Test):
             machine_test_file = self._copy_machine_test_file(machine)
 
             if machine_test_file:
-                logging.info("Executing `user` tests for machine %s..." % machine_name)
+                logging.info("Executing `user` tests for device %s..." % machine_name)
 
                 machine_state = self._run_machine_test_file(machine)
 
@@ -44,7 +44,7 @@ class UserTest(Test):
                     with open(machine_signature_path, 'r') as machine_signature_file:
                         machine_signature = machine_signature_file.read()
                 else:
-                    raise MachineSignatureNotFoundError("Signature for machine `%s` not found! Exiting..." %
+                    raise MachineSignatureNotFoundError("Signature for device `%s` not found! Exiting..." %
                                                         machine_name
                                                         )
 
@@ -60,7 +60,7 @@ class UserTest(Test):
                 with open(machine_diff_path, 'a') as machine_diff_file:
                     machine_diff_file.write(utils.format_headers("User Test Result") + '\n')
                     machine_diff_file.write("\n".join(diff) + "\n" if diff else "OK\n")
-                    machine_diff_file.write("=============================================================\n\n")
+                    machine_diff_file.write(utils.format_headers() + "\n\n")
 
         return test_passed
 
@@ -104,13 +104,15 @@ class UserTest(Test):
     @staticmethod
     def _run_machine_test_file(machine):
         # Give execution permissions to test file
-        ManagerProxy.get_instance().exec(machine=machine,
+        ManagerProxy.get_instance().exec(machine_name=machine,
                                          command="chmod u+x /%s.test" % machine.name
                                          )
 
         # Run the test file inside the container
-        return ManagerProxy.get_instance().exec(machine=machine,
-                                                command="%s -c /%s.test" % (Setting.get_instance().device_shell,
-                                                                            machine.name
-                                                                            )
-                                                )
+        (result_stdout, _) = ManagerProxy.get_instance().exec(machine_name=machine,
+                                                              command="%s -c /%s.test" % (
+                                                                  Setting.get_instance().device_shell,
+                                                                  machine.name
+                                                              ))
+
+        return result_stdout

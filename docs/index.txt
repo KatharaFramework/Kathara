@@ -15,6 +15,7 @@ kathara-wipe(1)      kathara-wipe.1.ronn
 kathara-list(1)      kathara-list.1.ronn
 kathara-settings(1)  kathara-settings.1.ronn
 kathara-check(1)     kathara-check.1.ronn
+kathara-exec(1)      kathara-exec.1.ronn
 
 # Files man pages
 kathara.conf(5)      kathara.conf.5.ronn

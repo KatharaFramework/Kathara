@@ -9,7 +9,7 @@ from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
 from .DockerPlugin import DockerPlugin
 from ... import utils
-from ...auth.PrivilegeHandler import PrivilegeHandler
+from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
@@ -28,21 +28,6 @@ def pywin_import_stub():
 def pywin_import_win():
     import pywintypes
     return pywintypes
-
-
-def privileged(method):
-    """
-    Decorator function to execute Docker daemon with proper privileges.
-    They are then dropped when method is executed.
-    """
-    def exec_with_privileges(*args, **kw):
-        utils.exec_by_platform(PrivilegeHandler.get_instance().raise_privileges, lambda: None, lambda: None)
-        result = method(*args, **kw)
-        utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
-
-        return result
-
-    return exec_with_privileges
 
 
 def check_docker_status(method):
@@ -71,7 +56,7 @@ def check_docker_status(method):
 
 
 class DockerManager(IManager):
-    __slots__ = ['docker_image', 'docker_machine', 'docker_link', 'client']
+    __slots__ = ['client', 'docker_image', 'docker_machine', 'docker_link']
 
     @check_docker_status
     def __init__(self):
@@ -83,7 +68,7 @@ class DockerManager(IManager):
         self.docker_image = DockerImage(self.client)
 
         self.docker_machine = DockerMachine(self.client, self.docker_image)
-        self.docker_link = DockerLink(self.client, docker_plugin)
+        self.docker_link = DockerLink(self.client)
 
     @privileged
     def deploy_lab(self, lab, privileged_mode=False):
@@ -120,7 +105,7 @@ class DockerManager(IManager):
         self.docker_link.wipe(user=user_name)
 
     @privileged
-    def connect_tty(self, lab_hash, machine_name, shell, logs=False):
+    def connect_tty(self, lab_hash, machine_name, shell=None, logs=False):
         self.docker_machine.connect(lab_hash=lab_hash,
                                     machine_name=machine_name,
                                     shell=shell,
@@ -128,10 +113,8 @@ class DockerManager(IManager):
                                     )
 
     @privileged
-    def exec(self, machine, command):
-        return self.docker_machine.exec(machine.api_object,
-                                        command=command
-                                        )
+    def exec(self, lab_hash, machine_name, command):
+        return self.docker_machine.exec(lab_hash, machine_name, command, tty=False)
 
     @privileged
     def copy_files(self, machine, path, tar_data):
@@ -144,25 +127,9 @@ class DockerManager(IManager):
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
 
-        machines = self.docker_machine.get_machines_by_filters(lab_hash=lab_hash,
-                                                               machine_name=machine_name,
-                                                               user=user_name
-                                                               )
+        machine_streams = self.docker_machine.get_machines_info(lab_hash, machine_filter=machine_name, user=user_name)
 
-        if not machines:
-            if not lab_hash:
-                raise Exception("No machines running.")
-            else:
-                raise Exception("Lab is not started.")
-
-        machines = sorted(machines, key=lambda x: x.name)
-
-        machine_streams = {}
-
-        for machine in machines:
-            machine_streams[machine] = machine.stats(stream=True, decode=True)
-
-        table_header = ["LAB HASH", "USER", "MACHINE NAME", "STATUS", "CPU %", "MEM USAGE / LIMIT", "MEM %", "NET I/O"]
+        table_header = ["LAB HASH", "USER", "DEVICE NAME", "STATUS", "CPU %", "MEM USAGE / LIMIT", "MEM %", "NET I/O"]
         stats_table = DoubleTable([])
         stats_table.inner_row_border = True
 
@@ -171,22 +138,23 @@ class DockerManager(IManager):
                 table_header
             ]
 
-            for (machine, machine_stats) in machine_streams.items():
-                try:
-                    result = next(machine_stats)
-                except StopIteration:
-                    continue
+            try:
+                result = next(machine_streams)
+            except StopIteration:
+                return
 
-                stats = self._get_aggregate_machine_info(result)
+            if not result:
+                return
 
-                machines_data.append([machine.labels['lab_hash'],
-                                      machine.labels['user'],
-                                      machine.labels["name"],
-                                      machine.status,
-                                      stats["cpu_usage"],
-                                      stats["mem_usage"],
-                                      stats["mem_percent"],
-                                      stats["net_usage"]
+            for machine_stats in result:
+                machines_data.append([machine_stats['real_lab_hash'],
+                                      machine_stats['user'],
+                                      machine_stats['name'],
+                                      machine_stats['status'],
+                                      machine_stats['cpu_usage'],
+                                      machine_stats['mem_usage'],
+                                      machine_stats['mem_percent'],
+                                      machine_stats['net_usage']
                                       ])
 
             stats_table.table_data = machines_data
@@ -197,94 +165,30 @@ class DockerManager(IManager):
     def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
 
-        machines = self.docker_machine.get_machines_by_filters(machine_name=machine_name,
-                                                               lab_hash=lab_hash,
-                                                               user=user_name
-                                                               )
+        machine_stats = self.docker_machine.get_machine_info(machine_name, lab_hash=lab_hash, user=user_name)
 
-        if not machines:
-            raise Exception("The specified machine is not running.")
-        elif len(machines) > 1:
-            raise Exception("There are more than one machine matching the name `%s`." % machine_name)
-
-        machine = machines[0]
-
-        machine_info = utils.format_headers("Machine information") + "\n"
-
-        machine_info += "Lab Hash: %s\n" % machine.labels['lab_hash']
-        machine_info += "Machine Name: %s\n" % machine_name
-        machine_info += "Real Machine Name: %s\n" % machine.name
-        machine_info += "Status: %s\n" % machine.status
-        machine_info += "Image: %s\n\n" % machine.image.tags[0]
-
-        machine_stats = machine.stats(stream=False)
-
-        machine_info += "PIDs: %d\n" % (machine_stats["pids_stats"]["current"]
-                                        if "current" in machine_stats["pids_stats"] else 0)
-        stats = self._get_aggregate_machine_info(machine_stats)
-
-        machine_info += "CPU Usage: %s\n" % stats["cpu_usage"]
-        machine_info += "Memory Usage: %s\n" % stats["mem_usage"]
-        machine_info += "Network Usage (DL/UL): %s\n" % stats["net_usage"]
-
-        machine_info += "======================================================================="
+        machine_info = utils.format_headers("Device information") + "\n"
+        machine_info += "Lab Hash: %s\n" % machine_stats['real_lab_hash']
+        machine_info += "Device Name: %s\n" % machine_stats['name']
+        machine_info += "Real Device Name: %s\n" % machine_stats['real_name']
+        machine_info += "Status: %s\n" % machine_stats['status']
+        machine_info += "Image: %s\n\n" % machine_stats['image']
+        machine_info += "PIDs: %d\n" % machine_stats['pids']
+        machine_info += "CPU Usage: %s\n" % machine_stats["cpu_usage"]
+        machine_info += "Memory Usage: %s\n" % machine_stats["mem_usage"]
+        machine_info += "Network Usage (DL/UL): %s\n" % machine_stats["net_usage"]
+        machine_info += utils.format_headers()
 
         return machine_info
 
     @privileged
     def check_image(self, image_name):
-        self.docker_image.check_and_pull(image_name)
-
-    @privileged
-    def check_updates(self, settings):
-        local_image_info = self.docker_image.check_local(settings.image)
-        remote_image_info = self.docker_image.check_remote(settings.image)
-
-        # Image has been built locally, so there's nothing to compare.
-        local_repo_digests = local_image_info.attrs["RepoDigests"]
-        if not local_repo_digests:
-            return
-
-        local_repo_digest = local_repo_digests[0]
-        remote_image_digest = remote_image_info["images"][0]["digest"]
-
-        # Format is image_name@sha256, so we strip the first part.
-        (_, local_image_digest) = local_repo_digest.split("@")
-
-        if remote_image_digest != local_image_digest:
-            utils.confirmation_prompt("A new version of image `%s` has been found on Docker Hub. "
-                                      "Do you want to pull it?" % settings.image,
-                                      lambda: self.docker_image.pull(settings.image),
-                                      lambda: None
-                                      )
+        self.docker_image.check(image_name)
 
     @privileged
     def get_release_version(self):
         return self.client.version()["Version"]
 
-    def get_manager_name(self):
-        return "docker"
-
-    def get_formatted_manager_name(self):
-        return "Docker (Kathara)"
-
     @staticmethod
-    def _get_aggregate_machine_info(stats):
-        network_stats = stats["networks"] if "networks" in stats else {}
-
-        return {
-            "cpu_usage": "{0:.2f}%".format(stats["cpu_stats"]["cpu_usage"]["total_usage"] /
-                                           stats["cpu_stats"]["system_cpu_usage"]
-                                           ) if "system_cpu_usage" in stats["cpu_stats"] else "-",
-            "mem_usage": utils.human_readable_bytes(stats["memory_stats"]["usage"]) + " / " +
-                         utils.human_readable_bytes(stats["memory_stats"]["limit"])
-                         if "usage" in stats["memory_stats"] else "- / -",
-            "mem_percent": "{0:.2f}%".format((stats["memory_stats"]["usage"] / stats["memory_stats"]["limit"]) * 100)
-                           if "usage" in stats["memory_stats"] else "-",
-            "net_usage": utils.human_readable_bytes(sum([net_stats["rx_bytes"]
-                                                         for (_, net_stats) in network_stats.items()])
-                                                    ) + " / " +
-                         utils.human_readable_bytes(sum([net_stats["tx_bytes"]
-                                                         for (_, net_stats) in network_stats.items()])
-                                                    )
-        }
+    def get_formatted_manager_name():
+        return "Docker (Kathara)"

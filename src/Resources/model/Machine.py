@@ -6,27 +6,25 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from distutils.util import strtobool
 from glob import glob
 
-from .Link import BRIDGE_LINK_NAME
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError
 from ..setting.Setting import Setting
 
 
 class Machine(object):
-    __slots__ = ['lab', 'name', 'startup_path', 'shutdown_path', 'folder',
-                 'interfaces', 'bridge', 'meta', 'startup_commands', 'api_object',
-                 'capabilities']
+    __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities',
+                 'startup_path', 'shutdown_path', 'folder']
 
     def __init__(self, lab, name):
         self.lab = lab
         self.name = name
 
         self.interfaces = {}
-        self.bridge = None
 
-        self.meta = {'sysctls': {}}
+        self.meta = {'sysctls': {}, 'bridged': False}
 
         self.startup_commands = []
 
@@ -45,7 +43,7 @@ class Machine(object):
 
     def add_interface(self, number, link):
         if number in self.interfaces:
-            raise Exception("Interface %d already set on machine `%s`." % (number, self.name))
+            raise Exception("Interface %d already set on device `%s`." % (number, self.name))
 
         self.interfaces[number] = link
 
@@ -55,15 +53,15 @@ class Machine(object):
             return
 
         if name == "bridged":
-            self.bridge = self.lab.get_or_new_link(BRIDGE_LINK_NAME)
+            self.meta[name] = bool(strtobool(str(value)))
             return
 
         if name == "sysctl":
             # Check for valid kv-pair
             if '=' in value:
-                parts = value.split('=')
-                key = parts[0].strip()
-                val = parts[1].strip()
+                (key, val) = value.split('=')
+                key = key.strip()
+                val = val.strip()
                 # Only allow `net.` namespace
                 if key.startswith('net.'):
                     # Convert to int if possible
@@ -87,7 +85,7 @@ class Machine(object):
         for i in range(1, len(sorted_interfaces)):
             if sorted_interfaces[i - 1][0] != sorted_interfaces[i][0] - 1:
                 # If a number is non sequential, raise the exception.
-                raise NonSequentialMachineInterfaceError("Interface %d missing on machine %s." % (i, self.name))
+                raise NonSequentialMachineInterfaceError("Interface %d missing on device %s." % (i, self.name))
 
         self.interfaces = collections.OrderedDict(sorted_interfaces)
 
@@ -161,7 +159,7 @@ class Machine(object):
         return tar_data
 
     def connect(self, terminal_name):
-        logging.debug("Opening terminal for machine %s.", self.name)
+        logging.debug("Opening terminal for device %s.", self.name)
 
         executable_path = utils.get_executable_path(sys.argv[0])
 
@@ -174,13 +172,22 @@ class Machine(object):
         logging.debug("Terminal will open in directory %s." % self.lab.path)
 
         def unix_connect():
-            logging.debug("Opening Linux terminal with command: %s." % connect_command)
-            # Command should be passed as an array
-            # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
-            subprocess.Popen([terminal, "-e", connect_command],
-                             cwd=self.lab.path,
-                             start_new_session=True
-                             )
+            if terminal == "TMUX":
+                from ..trdparty.libtmux.tmux import TMUX
+
+                logging.debug("Attaching `%s` to TMUX session `%s` with command `%s`" % (self.name, self.lab.name,
+                                                                                         connect_command))
+
+                TMUX.get_instance().add_window(self.lab.name, self.name, connect_command, cwd=self.lab.path)
+            else:
+                logging.debug("Opening Linux terminal with command: %s." % connect_command)
+
+                # Command should be passed as an array
+                # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
+                subprocess.Popen([terminal, "-e", connect_command],
+                                 cwd=self.lab.path,
+                                 start_new_session=True
+                                 )
 
         def windows_connect():
             complete_win_command = "& %s" % connect_command
@@ -194,10 +201,19 @@ class Machine(object):
                              )
 
         def osx_connect():
-            import appscript
             complete_osx_command = "cd \"%s\" && clear && %s && exit" % (self.lab.path, connect_command)
-            logging.debug("Opening OSX terminal with command: %s." % complete_osx_command)
-            appscript.app('Terminal').do_script(complete_osx_command)
+
+            if terminal == "TMUX":
+                from ..trdparty.libtmux.tmux import TMUX
+
+                logging.debug("Attaching `%s` to TMUX session `%s` with command `%s`" % (self.name, self.lab.name,
+                                                                                         complete_osx_command))
+
+                TMUX.get_instance().add_window(self.lab.name, self.name, complete_osx_command, cwd=self.lab.path)
+            else:
+                import appscript
+                logging.debug("Opening OSX terminal with command: %s." % complete_osx_command)
+                appscript.app('Terminal').do_script(complete_osx_command)
 
         utils.exec_by_platform(unix_connect, windows_connect, osx_connect)
 
@@ -207,8 +223,7 @@ class Machine(object):
         :return: The Docker image to be used
         """
         return self.lab.general_options["image"] if "image" in self.lab.general_options else \
-               self.meta["image"] if "image" in self.meta \
-               else Setting.get_instance().image
+                self.meta["image"] if "image" in self.meta else Setting.get_instance().image
 
     def get_mem(self):
         """
@@ -216,7 +231,7 @@ class Machine(object):
         :return: The memory limit of the image.
         """
         memory = self.lab.general_options["mem"] if "mem" in self.lab.general_options else \
-                 self.meta["mem"] if "mem" in self.meta else None
+            self.meta["mem"] if "mem" in self.meta else None
 
         if memory:
             unit = memory[-1].lower()
@@ -233,21 +248,21 @@ class Machine(object):
 
         return memory
 
-    def get_cpu(self):
+    def get_cpu(self, multiplier=1):
         """
-        CPU limit, defined as nano CPUs (10*e-9).
+        CPU limit, multiplied by a specific multiplier.
         User should pass a float value ranging from 0 to max user CPUs.
         It is took from options, or machine meta.
-        :return: 
+        :return:
         """
         if "cpus" in self.lab.general_options:
             try:
-                return int(float(self.lab.general_options["cpus"]) * 1e9)
+                return int(float(self.lab.general_options["cpus"]) * multiplier)
             except ValueError:
                 raise MachineOptionError("CPU value not valid.")
         elif "cpus" in self.meta:
             try:
-                return int(float(self.meta["cpus"]) * 1e9)
+                return int(float(self.meta["cpus"]) * multiplier)
             except ValueError:
                 raise MachineOptionError("CPU value not valid.")
 
@@ -256,11 +271,18 @@ class Machine(object):
     def get_ports(self):
         if "port" in self.meta:
             try:
-                return {'3000/tcp': int(self.meta["port"])}
+                return 3000, 'tcp', int(self.meta["port"])
             except ValueError:
                 raise MachineOptionError("Port value not valid.")
 
         return None
+
+    def is_ipv6_enabled(self):
+        try:
+            return bool(strtobool(self.lab.general_options["ipv6"])) if "ipv6" in self.lab.general_options else \
+                    bool(strtobool(self.meta["ipv6"])) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
+        except ValueError:
+            raise MachineOptionError("IPv6 value not valid.")
 
     def __repr__(self):
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

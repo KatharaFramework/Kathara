@@ -19,11 +19,11 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `wipe` method.")
 
     @abstractmethod
-    def connect_tty(self, lab_hash, machine_name, shell, logs=False):
+    def connect_tty(self, lab_hash, machine_name, shell=None, logs=False):
         raise NotImplementedError("You must implement `connect_tty` method.")
 
     @abstractmethod
-    def exec(self, machine, command):
+    def exec(self, lab_hash, machine_name, command):
         raise NotImplementedError("You must implement `exec` method.")
 
     @abstractmethod
@@ -40,20 +40,12 @@ class IManager(ABC):
 
     @abstractmethod
     def check_image(self, image_name):
-        raise NotImplementedError("You must implement `check` method.")
-
-    @abstractmethod
-    def check_updates(self, settings):
-        raise NotImplementedError("You must implement `check_updates` method.")
+        raise NotImplementedError("You must implement `check_image` method.")
 
     @abstractmethod
     def get_release_version(self):
         raise NotImplementedError("You must implement `get_release_version` method.")
 
-    @abstractmethod
-    def get_manager_name(self):
-        raise NotImplementedError("You must implement `get_manager_name` method.")
-
-    @abstractmethod
-    def get_formatted_manager_name(self):
+    @staticmethod
+    def get_formatted_manager_name():
         raise NotImplementedError("You must implement `get_formatted_manager_name` method.")

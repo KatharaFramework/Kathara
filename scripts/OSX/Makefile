@@ -1,7 +1,7 @@
 #!/usr/bin/make -s
 
 PRODUCT=Kathara
-VERSION=2.2.3
+VERSION=3.0.1
 TARGET_DIRECTORY=Output
 APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
 ROFF_DIR=../../docs/Roff
@@ -13,7 +13,8 @@ allSigned: deps binary manpages createInstaller signProduct clean
 default: all
 
 deps:
-	python3 -m pip install pyinstaller
+	python3 -m pip install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+	export ARCHFLAGS="-arch x86_64"
 	python3 -m pip install -r ../../src/requirements.txt
 	gem install ronn-ng
 

@@ -30,6 +30,6 @@ In particular we suggest [Netkit Lab Generator](https://github.com/KatharaFramew
 * Download and unpack "BGP, OSPF and RIP interplay" from [here](https://github.com/KatharaFramework/Kathara-Labs/raw/master/Labs%20Integrating%20Several%20Technologies/BGP%2C%20OSPF%20and%20RIP%20interplay/kathara-lab_bgp-ospf-rip.zip).
 * The topology of this lab can be found [here](https://github.com/KatharaFramework/Kathara-Labs/blob/master/Labs%20Integrating%20Several%20Technologies/BGP%2C%20OSPF%20and%20RIP%20interplay/kathara-lab_bgp-ospf-rip.pdf).
 * `cd` inside "BGP, OSPF and RIP interplay" and run `kathara lstart`
-* Kathará will read the configuration of the lab from `lab.conf`, `lab.dep` and the various `*.startup` files and start the machines, opening terminal windows to interact with the virtual network nodes.
+* Kathará will read the configuration of the lab from `lab.conf`, `lab.dep` and the various `*.startup` files and start the devices, opening terminal windows to interact with the virtual network nodes.
 * After you're done experimenting, simply run `kathara lclean`
-* This will kill and remove all the machines.
+* This will kill and remove all the devices.

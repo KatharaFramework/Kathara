@@ -1,4 +1,8 @@
 # Generic Exceptions
+class ClassNotFoundError(Exception):
+    pass
+
+
 class HTTPConnectionError(Exception):
     pass
 
@@ -12,8 +16,18 @@ class DockerDaemonConnectionError(Exception):
     pass
 
 
+class NotSupportedError(Exception):
+    def __init__(self, message):
+        super().__init__("Not Supported: %s" % message)
+
+
 # OS Exceptions
 class PrivilegeError(Exception):
+    pass
+
+
+# Lab Exceptions
+class LabAlreadyExistsError(Exception):
     pass
 
 

@@ -1,8 +1,8 @@
-BRIDGE_LINK_NAME = "docker_bridge"
+BRIDGE_LINK_NAME = "kathara_host_bridge"
 
 
 class Link(object):
-    __slots__ = ['lab', 'name', 'api_object', 'external']
+    __slots__ = ['lab', 'name', 'external', 'api_object']
 
     def __init__(self, lab, name):
         self.lab = lab

@@ -1,5 +1,7 @@
 @ECHO OFF
 
+python -m pip install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+
 python -m pip install -r ..\..\src\requirements.txt
 if %errorlevel% neq 0 exit /b %errorlevel%
 

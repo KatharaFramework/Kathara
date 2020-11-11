@@ -5,15 +5,15 @@ from itertools import chain
 from .Link import Link
 from .Machine import Machine
 from .. import utils
-from ..setting.Setting import Setting
 
 
 class Lab(object):
-    __slots__ = ['description', 'version', 'author', 'email', 'web',
-                 'path', 'folder_hash', 'machines', 'links', 'general_options',
-                 'shared_startup_path', 'shared_shutdown_path', 'shared_folder', 'has_dependencies']
+    __slots__ = ['name', 'description', 'version', 'author', 'email', 'web',
+                 'path', 'folder_hash', 'machines', 'links', 'general_options', 'has_dependencies',
+                 'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
     def __init__(self, path):
+        self.name = None
         self.description = None
         self.version = None
         self.author = None
@@ -36,18 +36,7 @@ class Lab(object):
         shared_shutdown_file = os.path.join(self.path, 'shared.shutdown')
         self.shared_shutdown_path = shared_shutdown_file if os.path.exists(shared_shutdown_file) else None
 
-        if Setting.get_instance().shared_mount:
-            try:
-                self.shared_folder = os.path.join(self.path, 'shared')
-                if not os.path.isdir(self.shared_folder):
-                    os.mkdir(self.shared_folder)
-                elif os.path.islink(self.shared_folder):
-                    raise Exception("`shared` folder is a symlink, delete it.")
-            except OSError:
-                # Do not create shared folder if not permitted.
-                self.shared_folder = None
-        else:
-            self.shared_folder = None
+        self.shared_folder = None
 
     def connect_machine_to_link(self, machine_name, machine_iface_number, link_name):
         machine = self.get_or_new_machine(machine_name)
@@ -63,7 +52,8 @@ class Lab(object):
     def attach_external_links(self, external_links):
         for (link_name, link_external_links) in external_links.items():
             if link_name not in self.links:
-                raise Exception("Link `%s` (declared in lab.ext) not found in lab links." % link_name)
+                raise Exception("Collision domain `%s` (declared in lab.ext) not found in lab "
+                                "collision domains." % link_name)
 
             self.links[link_name].external += link_external_links
 
@@ -122,12 +112,26 @@ class Lab(object):
 
         return self.links[name]
 
+    def create_shared_folder(self):
+        try:
+            self.shared_folder = os.path.join(self.path, 'shared')
+            if not os.path.isdir(self.shared_folder):
+                os.mkdir(self.shared_folder)
+            elif os.path.islink(self.shared_folder):
+                raise Exception("`shared` folder is a symlink, delete it.")
+        except OSError:
+            # Do not create shared folder if not permitted.
+            return
+
     def __repr__(self):
         return "Lab(%s, %s, %s, %s)" % (self.path, self.folder_hash, self.machines, self.links)
 
     def __str__(self):
         lab_info = ""
 
+        if self.name:
+            lab_info += "Name: %s\n" % self.name
+        
         if self.description:
             lab_info += "Description: %s\n" % self.description
 

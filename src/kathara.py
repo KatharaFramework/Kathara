@@ -1,14 +1,16 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import argparse
 import logging
+import multiprocessing
 import os
 import sys
 
 import coloredlogs
 from Resources import utils
 from Resources.auth.PrivilegeHandler import PrivilegeHandler
-from Resources.exceptions import SettingsError, DockerDaemonConnectionError
+from Resources.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError
+from Resources.foundation.cli.command.CommandFactory import CommandFactory
 from Resources.setting.Setting import Setting
 from Resources.strings import formatted_strings
 from Resources.version import CURRENT_VERSION
@@ -60,11 +62,6 @@ class KatharaEntryPoint(object):
             parser.print_help()
             sys.exit(1)
 
-        module_name = {
-            "package": "Resources.command",
-            "class": args.command.capitalize() + "Command"
-        }
-
         try:
             # Check settings
             Setting.get_instance().check()
@@ -73,23 +70,21 @@ class KatharaEntryPoint(object):
             sys.exit(1)
 
         try:
-            command_class = utils.class_for_name(module_name["package"], module_name["class"])
-            command_object = command_class()
+            command_object = CommandFactory().create_instance(class_args=(args.command.capitalize(), ))
+        except ClassNotFoundError:
+            logging.error('Unrecognized command `%s`.\n' % args.command)
+            parser.print_help()
+            sys.exit(1)
         except ImportError as e:
-            if e.name == '.'.join(module_name.values()):
-                logging.error('Unrecognized command.\n')
-                parser.print_help()
-                sys.exit(1)
-            else:
-                logging.critical("`%s` is not installed in your system\n" % e.name)
-                sys.exit(1)
+            logging.critical("`%s` is not installed in your system\n" % e.name)
+            sys.exit(1)
 
         try:
             current_path = os.getcwd()
             command_object.run(current_path, sys.argv[2:])
         except KeyboardInterrupt:
-            logging.critical("You interrupted Kathara during a command. The system may be in an inconsistent state!")
-            logging.critical("If you encounter any problem please run `kathara wipe`.")
+            logging.warning("You interrupted Kathara during a command. The system may be in an inconsistent state!\n")
+            logging.warning("If you encounter any problem please run `kathara wipe`.")
             sys.exit(0)
         except Exception as e:
             logging.critical(str(e) + '\n')
@@ -97,8 +92,10 @@ class KatharaEntryPoint(object):
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
+
     utils.check_python_version()
-    
+
     utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
 
     try:
@@ -107,5 +104,5 @@ if __name__ == '__main__':
         debug_level = "DEBUG"
 
     coloredlogs.install(fmt='%(levelname)s - %(message)s', level=debug_level)
-    
+
     KatharaEntryPoint()

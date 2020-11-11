@@ -9,7 +9,6 @@ class TerminalValidator(BaseValidator):
 
     def validate(self, input_string):
         try:
-            Setting.get_instance().check_terminal(input_string)
-            return True
+            return Setting.get_instance().check_terminal(input_string)
         except Exception:
             return False

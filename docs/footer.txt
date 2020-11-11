@@ -6,7 +6,7 @@ When reporting a bug, remember to write used commands, eventually attach your la
 
 ## AUTHORS
 
-Kathara was born from Netkit. Its first version was developed by Gaetano Bonofiglio and Veronica Iovinella. Currently it is mantained by Lorenzo Ariemma and Mariano Scazzariello.
+Kathara was born from Netkit. Its first version was developed by Gaetano Bonofiglio and Veronica Iovinella. Currently it is mantained by Mariano Scazzariello, Tommaso Caiazzi and Lorenzo Ariemma.
 
 People involved also include:
 
@@ -18,5 +18,5 @@ People involved also include:
 
 ## COPYRIGHT
 
-Copyright © 2017-2019 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.  
+Copyright © 2017-2020 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.  
 This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

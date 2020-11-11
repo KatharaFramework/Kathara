@@ -1,5 +1,5 @@
 m4_changequote()
-kathara-wipe(1) -- Delete all Kathara devices and links, optionally also delete settings
+kathara-wipe(1) -- Delete all Kathara devices and collision domains, optionally also delete settings
 =============================================
 
 ## SYNOPSIS
@@ -28,7 +28,7 @@ Using optional parameters, it is also possible to delete the current user settin
     Delete the `kathara.config`(5) file and create it again with default settings.
 
 * `-a`, `--all`:
-    Wipe all Kathara devices and links of all users. MUST BE ROOT FOR THIS OPTION.
+    Wipe all Kathara devices and collision domains of all users. MUST BE ROOT FOR THIS OPTION.
 
     This option can be run only by `root` user. Cannot be used with `-s` or `--settings`.
 
