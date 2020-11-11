@@ -13,7 +13,7 @@ allSigned: deps binary manpages createInstaller signProduct clean
 default: all
 
 deps:
-	python3 -m pip install pyinstaller
+	python3 -m pip install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
 	export ARCHFLAGS="-arch x86_64"
 	python3 -m pip install -r ../../src/requirements.txt
 	gem install ronn-ng
