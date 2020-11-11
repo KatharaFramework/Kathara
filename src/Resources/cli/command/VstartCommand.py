@@ -47,6 +47,12 @@ class VstartCommand(Command):
             help='Start the device opening its terminal window.'
         )
         group.add_argument(
+            '--num_terms',
+            metavar='NUM_TERMS',
+            required=False,
+            help='The number of terminals to open for the device.'
+        )
+        group.add_argument(
             "--privileged",
             action="store_true",
             required=False,
@@ -162,6 +168,9 @@ class VstartCommand(Command):
             raise Exception("Invalid device name `%s`." % machine_name)
 
         machine = lab.get_or_new_machine(machine_name)
+
+        if args.num_terms:
+            machine.add_meta('num_terms', args.num_terms)
 
         if args.eths:
             for eth in args.eths:

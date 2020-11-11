@@ -92,6 +92,13 @@ class Machine(object):
             self.meta['port'][(host_port, protocol)] = guest_port
             return
 
+        if name == 'num_terms':
+            try:
+                self.meta[name] = int(value)
+            except ValueError:
+                raise MachineOptionError("num_terms value not valid.")
+            return
+
         self.meta[name] = value
 
     def check(self):

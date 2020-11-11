@@ -8,7 +8,7 @@ import progressbar
 from docker.errors import APIError
 
 from ... import utils
-from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineOptionError
+from ...exceptions import MountDeniedError, MachineAlreadyExistsError
 from ...foundation.cli.CliArgs import CliArgs
 from ...model.Link import BRIDGE_LINK_NAME
 from ...setting.Setting import Setting
@@ -301,13 +301,7 @@ class DockerMachine(object):
                                     )
 
         if Setting.get_instance().open_terminals:
-            num_terms = 1
-            if 'num_terms' in machine.meta:
-                try:
-                    num_terms = int(machine.meta['num_terms'])
-                except ValueError:
-                    raise MachineOptionError("num_terms value not valid.")
-
+            num_terms = machine.meta['num_terms'] if 'num_terms' in machine.meta else 1
             for i in range(0, num_terms):
                 machine.connect(Setting.get_instance().terminal)
 
