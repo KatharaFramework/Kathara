@@ -8,7 +8,7 @@ import progressbar
 from docker.errors import APIError
 
 from ... import utils
-from ...exceptions import MountDeniedError, MachineAlreadyExistsError
+from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineOptionError
 from ...foundation.cli.CliArgs import CliArgs
 from ...model.Link import BRIDGE_LINK_NAME
 from ...setting.Setting import Setting
@@ -223,8 +223,8 @@ class DockerMachine(object):
                                                                       "user": utils.get_current_user_name(),
                                                                       "app": "kathara",
                                                                       "shell": machine.meta["shell"]
-                                                                               if "shell" in machine.meta
-                                                                               else Setting.get_instance().device_shell
+                                                                      if "shell" in machine.meta
+                                                                      else Setting.get_instance().device_shell
                                                                       }
                                                               )
         except APIError as e:
@@ -301,7 +301,15 @@ class DockerMachine(object):
                                     )
 
         if Setting.get_instance().open_terminals:
-            machine.connect(Setting.get_instance().terminal)
+            num_terms = 1
+            if 'num_terms' in machine.meta:
+                try:
+                    num_terms = int(machine.meta['num_terms'])
+                except ValueError:
+                    raise MachineOptionError("num_terms value not valid.")
+
+            for i in range(0, num_terms):
+                machine.connect(Setting.get_instance().terminal)
 
     def undeploy(self, lab_hash, selected_machines=None):
         machines = self.get_machines_by_filters(lab_hash=lab_hash)
