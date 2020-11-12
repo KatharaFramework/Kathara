@@ -4,10 +4,10 @@
     </a>
 </p>
 <p align="right">
-    <img src="https://img.shields.io/github/v/release/KatharaFramework/Kathara" />
-    <img src="https://img.shields.io/github/release-date/KatharaFramework/Kathara" />
-    <img src="https://img.shields.io/github/downloads/KatharaFramework/Kathara/total" />
-    <img src="https://img.shields.io/github/stars/KatharaFramework/Kathara" />
+    <a href="https://github.com/KatharaFramework/Kathara/releases"><img src="https://img.shields.io/github/v/release/KatharaFramework/Kathara" /></a>
+    <a href="https://github.com/KatharaFramework/Kathara/releases"><img src="https://img.shields.io/github/release-date/KatharaFramework/Kathara" /></a>
+    <a href="https://github.com/KatharaFramework/Kathara/releases"><img src="https://img.shields.io/github/downloads/KatharaFramework/Kathara/total" /></a>
+    <a href="https://github.com/KatharaFramework/Kathara/stargazers"><img src="https://img.shields.io/github/stars/KatharaFramework/Kathara" /></a>
     <a href="https://github.com/KatharaFramework/Kathara/blob/master/LICENSE"><img src="https://img.shields.io/github/license/KatharaFramework/Kathara" alt="License: GPL v3" target="_blank" /></a>
 </p>
 <ul>
@@ -16,7 +16,7 @@
     <li><a href="#how-does-it-work">How does it work?</a></li>
     <li><a href="#publications">Publications</a></li>
     <li><a href="#installation">Installation</a></li>
-    <li><a href="#example">Example</a></li>
+    <li><a href="#quick-example">Quick Example</a></li>
     <li><a href="#external-tools">External Tools</a></li>
     <li><a href="#join-us">Join Us</a></li>
     <li><a href="https://github.com/KatharaFramework/Docker-Images">Docker Images and Dockerfiles</a></li>
@@ -61,7 +61,7 @@ Several publications are related to this tool:
 ## Installation
 Install Docker and then run the installer specific for your Operating System. For a step by step guide check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki).
 
-## Example
+## Quick Example
 <p align="center">
     <img width="100%" src="https://raw.githubusercontent.com/wiki/KatharaFramework/Kathara/lstart-example.gif" />
 </p>
@@ -70,7 +70,7 @@ Install Docker and then run the installer specific for your Operating System. Fo
 * Download and unpack a scenario emulating a "Small Internet" from [here](https://github.com/KatharaFramework/Kathara-Labs/raw/master/Labs%20Integrating%20Several%20Technologies/Small%20Internet%20with%20DNS%20and%20Webserver/small-internet-w-dns-webserver.zip) (the network topology can be found [here](https://github.com/KatharaFramework/Kathara-Labs/blob/master/Labs%20Integrating%20Several%20Technologies/Small%20Internet%20with%20DNS%20and%20Webserver/Small%20Internet%20with%20DNS%20and%20Webserver.pdf)).
 * `cd` inside `small-internet-w-dns-webserver` and run `kathara lstart`.
 * Kathará will read the configuration of the lab from `lab.conf` and the various `*.startup` files and start the devices, opening terminal windows to interact with the virtual network devices.
-* After you're done experimenting, simply run `kathara lclean`, that closes the network scenario.
+* After you're done experimenting, simply run `kathara lclean` and wait until the network scenario closes.
 
 ## External Tools
 
