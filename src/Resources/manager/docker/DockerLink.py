@@ -93,22 +93,23 @@ class DockerLink(object):
     def undeploy(self, lab_hash):
         links = self.get_links_by_filters(lab_hash=lab_hash)
 
-        pool_size = utils.get_pool_size()
-        links_pool = Pool(pool_size)
+        if len(links) > 0:
+            pool_size = utils.get_pool_size()
+            links_pool = Pool(pool_size)
 
-        items = utils.chunk_list(links, pool_size)
+            items = utils.chunk_list(links, pool_size)
 
-        progress_bar = progressbar.ProgressBar(
-            widgets=['Deleting collision domains... ', progressbar.Bar(),
-                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-            redirect_stdout=True,
-            max_value=len(links)
-        )
+            progress_bar = progressbar.ProgressBar(
+                widgets=['Deleting collision domains... ', progressbar.Bar(),
+                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+                redirect_stdout=True,
+                max_value=len(links)
+            )
 
-        for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, True, progress_bar), iterable=chunk)
+            for chunk in items:
+                links_pool.map(func=partial(self._undeploy_link, True, progress_bar), iterable=chunk)
 
-        progress_bar.finish()
+            progress_bar.finish()
 
     def wipe(self, user=None):
         links = self.get_links_by_filters(user=user)

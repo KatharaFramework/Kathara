@@ -1,8 +1,5 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-  * Add Exception log level
-  * Print Operating System in `check` command
-  * Fix Settings bug
-  * Fix Bash Autocompletion
+  * Minor fixes
 
  -- Mariano Scazzariello <******@gmail.com>  __DATE__

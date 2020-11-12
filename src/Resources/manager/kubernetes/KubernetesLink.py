@@ -82,22 +82,23 @@ class KubernetesLink(object):
     def undeploy(self, lab_hash, networks_to_delete=None):
         links = self.get_links_by_filters(lab_hash=lab_hash)
 
-        pool_size = utils.get_pool_size()
-        links_pool = Pool(pool_size)
+        if len(links) > 0:
+            pool_size = utils.get_pool_size()
+            links_pool = Pool(pool_size)
 
-        items = utils.chunk_list(links, pool_size)
+            items = utils.chunk_list(links, pool_size)
 
-        progress_bar = progressbar.ProgressBar(
-            widgets=['Deleting collision domains... ', progressbar.Bar(),
-                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-            redirect_stdout=True,
-            max_value=len(links) if not networks_to_delete else len(networks_to_delete)
-        )
+            progress_bar = progressbar.ProgressBar(
+                widgets=['Deleting collision domains... ', progressbar.Bar(),
+                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+                redirect_stdout=True,
+                max_value=len(links) if not networks_to_delete else len(networks_to_delete)
+            )
 
-        for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, networks_to_delete, True, progress_bar), iterable=chunk)
+            for chunk in items:
+                links_pool.map(func=partial(self._undeploy_link, networks_to_delete, True, progress_bar), iterable=chunk)
 
-        progress_bar.finish()
+            progress_bar.finish()
 
     def wipe(self):
         links = self.get_links_by_filters()
