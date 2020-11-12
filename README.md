@@ -26,7 +26,7 @@
 
 ## What is it?
 **Kathará** (from the Greek Καθαρά) is a lightweight network emulation system based on Docker containers.
-It can be really helpful in networks testings, live demos or lessons, and also in network protocols developing.
+It can be really helpful in live demos/lessons, testing production networks in a sandbox environment, or developing new network protocols.
 
 Kathará is the spiritual successor of the notorious [Netkit](https://www.netkit.org/), hence it is cross-compatible, and inherits its language and features.
 
@@ -69,7 +69,7 @@ Install Docker and then run the installer specific for your Operating System. Fo
 * Install Kathará by following the Installation section.
 * Download and unpack a scenario emulating a "Small Internet" from [here](https://github.com/KatharaFramework/Kathara-Labs/raw/master/Labs%20Integrating%20Several%20Technologies/Small%20Internet%20with%20DNS%20and%20Webserver/small-internet-w-dns-webserver.zip) (the network topology can be found [here](https://github.com/KatharaFramework/Kathara-Labs/blob/master/Labs%20Integrating%20Several%20Technologies/Small%20Internet%20with%20DNS%20and%20Webserver/Small%20Internet%20with%20DNS%20and%20Webserver.pdf)).
 * `cd` inside `small-internet-w-dns-webserver` and run `kathara lstart`.
-* Kathará will read the configuration of the lab from `lab.conf` and the various `*.startup` files and start the devices, opening terminal windows to interact with the virtual network devices.
+* Kathará will read the configuration of the scenario from `lab.conf` and the various `*.startup` files and start the devices, opening terminal windows to interact with them.
 * After you're done experimenting, simply run `kathara lclean` and wait until the network scenario closes.
 
 ## External Tools
