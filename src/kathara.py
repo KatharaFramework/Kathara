@@ -87,7 +87,10 @@ class KatharaEntryPoint(object):
             logging.warning("If you encounter any problem please run `kathara wipe`.")
             sys.exit(0)
         except Exception as e:
-            logging.critical(str(e) + '\n')
+            if Setting.get_instance().debug_level == "EXCEPTION":
+                logging.exception(str(e) + '\n')
+            else:
+                logging.critical(str(e) + '\n')
             sys.exit(1)
 
 
@@ -100,6 +103,7 @@ if __name__ == '__main__':
 
     try:
         debug_level = Setting.get_instance().debug_level
+        debug_level = debug_level if debug_level != "EXCEPTION" else "DEBUG"
     except SettingsError:
         debug_level = "DEBUG"
 

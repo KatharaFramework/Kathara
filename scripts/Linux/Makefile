@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=3.0.1
+VERSION=3.0.2
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 

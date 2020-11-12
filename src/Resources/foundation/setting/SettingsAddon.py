@@ -8,7 +8,10 @@ class SettingsAddon(ABC):
                 setattr(self, name, value)
 
     def get(self, name):
-        return getattr(self, name)
+        if hasattr(self, name):
+            return getattr(self, name)
+        else:
+            raise AttributeError
 
     def merge(self, settings=None):
         to_dict = self._to_dict()

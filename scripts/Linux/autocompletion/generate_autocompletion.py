@@ -85,6 +85,7 @@ if __name__ == '__main__':
             commands_table[command_name.lower()] = ""
 
     opts = ' '.join(commands_table.keys())
+    opts += ' -v --version -h --help'
 
     commands_options = ''
     for command_name, command_opts in commands_table.items():

@@ -1,5 +1,6 @@
 import argparse
 import logging
+import platform
 import sys
 
 from ... import utils
@@ -42,6 +43,8 @@ class CheckCommand(Command):
         print("*\tPython version is: %s" % sys.version.replace("\n", "- "))
 
         print("*\tKathara version is: %s" % version.CURRENT_VERSION)
+
+        print("*\tOperating System version is: %s" % platform.platform())
 
         print("*\tTrying to run `Hello World` container...")
 

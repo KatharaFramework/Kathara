@@ -11,7 +11,7 @@ from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
 
 POSSIBLE_SHELLS = ["/bin/bash", "/bin/sh", "/bin/ash", "/bin/ksh", "/bin/zsh", "/bin/fish", "/bin/csh", "/bin/tcsh"]
 POSSIBLE_TERMINALS = ["/usr/bin/xterm", "/usr/bin/konsole"]
-POSSIBLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
+POSSIBLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "EXCEPTION"]
 POSSIBLE_MANAGERS = ["docker", "kubernetes"]
 
 ONE_WEEK = 604800
@@ -26,8 +26,7 @@ DEFAULTS = {
     "device_prefix": 'kathara',
     "debug_level": 'INFO',
     "print_startup_log": True,
-    "enable_ipv6": False,
-    "win_wls2": False
+    "enable_ipv6": False
 }
 
 
