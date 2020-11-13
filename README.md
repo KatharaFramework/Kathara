@@ -11,7 +11,7 @@
     <a href="https://github.com/KatharaFramework/Kathara/blob/master/LICENSE"><img src="https://img.shields.io/github/license/KatharaFramework/Kathara" alt="License: GPL v3" target="_blank" /></a>
 </p>
 <ul>
-	<li><a href="https://www.kathara.org">Official Website</a></li>
+    <li><a href="https://www.kathara.org">Official Website</a></li>
     <li><a href="#what-is-it">What is it?</a></li>
     <li><a href="#how-does-it-work">How does it work?</a></li>
     <li><a href="#publications">Publications</a></li>
@@ -26,7 +26,7 @@
 
 ## What is it?
 **Kathará** (from the Greek Καθαρά) is a lightweight network emulation system based on Docker containers.
-It can be really helpful in live demos/lessons, testing production networks in a sandbox environment, or developing new network protocols.
+It can be really helpful in showing interactive demos/lessons, testing production networks in a sandbox environment, or developing new network protocols.
 
 Kathará is the spiritual successor of the notorious [Netkit](https://www.netkit.org/), hence it is cross-compatible, and inherits its language and features.
 
@@ -49,7 +49,7 @@ Several publications are related to this tool:
 
 - **Kathará: A container-based framework for implementing network function virtualization and software defined networks** (at NOMS 2018)
     - <a href="https://ieeexplore.ieee.org/abstract/document/8406267/" target="_blank">Paper</a>
-	- <a href="https://www.slideshare.net/GaetanoBonofiglio/kathar-noms-2018-106743047" target="_blank">Presentation</a>
+    - <a href="https://www.slideshare.net/GaetanoBonofiglio/kathar-noms-2018-106743047" target="_blank">Presentation</a>
 - **Megalos: A Scalable Architecture for the Virtualization of Network Scenarios** (at NOMS 2020)
     - <a href="https://ieeexplore.ieee.org/document/9110288" target="_blank">Paper</a>
     - <a href="https://www.youtube.com/watch?v=XvInh-kujrA&amp;feature=youtu.be" target="_blank">Presentation</a>
@@ -67,7 +67,7 @@ Install Docker and then run the installer specific for your Operating System. Fo
 </p>
 
 * Install Kathará by following the Installation section.
-* Download and unpack a scenario emulating a "Small Internet" from [here](https://github.com/KatharaFramework/Kathara-Labs/raw/master/Labs%20Integrating%20Several%20Technologies/Small%20Internet%20with%20DNS%20and%20Webserver/small-internet-w-dns-webserver.zip) (the network topology can be found [here](https://github.com/KatharaFramework/Kathara-Labs/blob/master/Labs%20Integrating%20Several%20Technologies/Small%20Internet%20with%20DNS%20and%20Webserver/Small%20Internet%20with%20DNS%20and%20Webserver.pdf)).
+* Download and unpack the network scenario of a "Small Internet" from [here](https://github.com/KatharaFramework/Kathara-Labs/raw/master/Labs%20Integrating%20Several%20Technologies/Small%20Internet%20with%20DNS%20and%20Webserver/small-internet-w-dns-webserver.zip) (network topology can be found [here](https://github.com/KatharaFramework/Kathara-Labs/blob/master/Labs%20Integrating%20Several%20Technologies/Small%20Internet%20with%20DNS%20and%20Webserver/Small%20Internet%20with%20DNS%20and%20Webserver.pdf)).
 * `cd` inside `small-internet-w-dns-webserver` and run `kathara lstart`.
 * Kathará will read the configuration of the scenario from `lab.conf` and the various `*.startup` files and start the devices, opening terminal windows to interact with them.
 * After you're done experimenting, simply run `kathara lclean` and wait until the network scenario closes.
@@ -82,4 +82,4 @@ In particular we suggest [Netkit Lab Generator](https://github.com/KatharaFramew
 Kathará is an open source project. 
 Feel free to download the code, play with it, and submit feature requests, notify bugs, or open pull requests!
 
-Thanks to everyone who has contributed developing Kathará!
+Thanks to everyone who has contributed to the development of Kathará!
