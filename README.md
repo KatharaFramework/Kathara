@@ -61,7 +61,7 @@ Several publications are related to this tool:
 ## Installation
 Install Docker and then run the installer specific for your Operating System. For a step by step guide check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki).
 
-For further information on how to use Kathará on Kubernetes please refer to the [Wiki Page](https://github.com/KatharaFramework/Kathara/wiki/Diff-Kat-Meg).
+For further information on how to use Kathará on Kubernetes please refer to the [Wiki Page](https://github.com/KatharaFramework/Kathara/wiki/Megalos-(Kathara-on-Kubernetes)).
 
 ## Quick Example
 <p align="center">
