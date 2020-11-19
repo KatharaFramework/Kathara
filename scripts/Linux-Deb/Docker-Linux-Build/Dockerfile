@@ -30,4 +30,4 @@ WORKDIR /opt
 
 ENV RUBYOPT="-KU -E utf-8:utf-8"
 
-WORKDIR /opt/kathara/scripts/Linux-Debian
+WORKDIR /opt/kathara/scripts/Linux-Deb

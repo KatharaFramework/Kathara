@@ -1,8 +1,9 @@
 #!/usr/bin/make -f
 
 VERSION=3.0.3
+PACKAGE_VERSION=1
 
-.PHONY: all docker-build-image prepare-env prepare-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean
+.PHONY: all docker-build-image prepare-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean
 
 all: clean docker-build-image build prepare-source docker-signed_bionic docker-signed_focal docker-signed_groovy
 
@@ -11,15 +12,19 @@ docker-unsigned: clean prepare-deb-source docker-build-image
 
 docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build .
-
-prepare-env:
-	rpmdev-setuptree
-	rpmbuild -ba kathara.spec
-
+	
 prepare-source:
-	mkdir Output
-	cp -r ../../src Output/kathara-$(VERSION)
-	cd Output; tar -zcf kathara_$(VERSION).orig.tar.gz kathara-$(VERSION)
+	cp fedora/kathara.spec ~/rpmbuild/SPECS
+	sed -i -e "s|__DATE__|$$(date -R)|g" ~/rpmbuild/SPECS/kathara.spec
+	sed -i -e 's/__VERSION__/$(VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
+	sed -i -e 's/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
+	cp -r ../../src ~/rpmbuild/SOURCES/kathara-$(VERSION)
+	cd ~/rpmbuild/SOURCES/; tar -zcf kathara-$(VERSION).tar.gz kathara-$(VERSION)
+	rm -Rf kathara-$(VERSION)
+	cd /opt/kathara/scripts/Linux-Rpm/
+	
+build-spec: prepare-source
+	rpmbuild -ba ~/rpmbuild/SPECS/kathara.spec
 
 unpack-deb-source:
 	cd Output; tar -xvf kathara_$(VERSION).orig.tar.gz
@@ -37,12 +42,6 @@ copy-debian-folder:
 	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog
 	sed -i -e 's/__DEBIAN_PACKAGE_VERSION__/$(DEBIAN_PACKAGE_VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
 	sed -i -e 's/__VERSION__/$(VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
-
-download-pip: copy-debian-folder
-	mkdir Output/kathara-$(VERSION)/debian/pythonLibs
-	cd Output/kathara-$(VERSION)/debian/pythonLibs; python3 -m pip download -r ../../requirements.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs; python3 -m pip download nuitka
-	ls Output/kathara-$(VERSION)/debian/pythonLibs/ | awk '{print "debian/pythonLibs/"$$0}' > Output/kathara-$(VERSION)/debian/source/include-binaries
 
 build-man: copy-debian-folder
 	cd ../../docs && make roff-build
