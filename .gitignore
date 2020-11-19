@@ -107,7 +107,8 @@ Dockerfile~
 # ISS Compiled file
 /scripts/Windows/Output/
 /scripts/OSX/Output/
-/scripts/Linux/Output/
+/scripts/Linux-Deb/Output/
+/scripts/Linux-Rpm/Output/
 
 /docs/Html/
 /docs/MD/

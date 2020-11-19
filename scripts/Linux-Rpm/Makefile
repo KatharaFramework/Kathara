@@ -3,57 +3,46 @@
 VERSION=3.0.3
 PACKAGE_VERSION=1
 
-.PHONY: all docker-build-image prepare-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean
+.PHONY: all clean docker-build-image prepare-source prepare-man-pages prepare-bash-completion pack-source build
 
-all: clean docker-build-image build prepare-source docker-signed_bionic docker-signed_focal docker-signed_groovy
+all: clean docker-build-image docker-build
 
-docker-unsigned: clean prepare-deb-source docker-build-image
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make build"
+docker-build: clean docker-build-image
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-rpm /bin/bash -c "make build"
 
 docker-build-image:
-	cd Docker-Linux-Build && docker build -t kathara/linux-build .
+	cd Docker-Linux-Build && docker build -t kathara/linux-build-rpm .
 	
 prepare-source:
 	cp fedora/kathara.spec ~/rpmbuild/SPECS
-	sed -i -e "s|__DATE__|$$(date -R)|g" ~/rpmbuild/SPECS/kathara.spec
+	sed -i -e "s|__DATE__|$$(date +'%a %b %d %Y')|g" ~/rpmbuild/SPECS/kathara.spec
 	sed -i -e 's/__VERSION__/$(VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
 	sed -i -e 's/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
 	cp -r ../../src ~/rpmbuild/SOURCES/kathara-$(VERSION)
-	cd ~/rpmbuild/SOURCES/; tar -zcf kathara-$(VERSION).tar.gz kathara-$(VERSION)
-	rm -Rf kathara-$(VERSION)
-	cd /opt/kathara/scripts/Linux-Rpm/
-	
-build-spec: prepare-source
-	rpmbuild -ba ~/rpmbuild/SPECS/kathara.spec
 
-unpack-deb-source:
-	cd Output; tar -xvf kathara_$(VERSION).orig.tar.gz
-
-clean-output-folder:
-	rm -rf Output/kathara-$(VERSION)
-	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro).debian.tar.xz
-	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro).dsc
-	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro)_source.build
-	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro)_source.buildinfo
-	rm -rf Output/kathara_$(VERSION)-$(DEBIAN_PACKAGE_VERSION)$(distro)_source.changes
-
-copy-debian-folder:
-	cp -r debian Output/kathara-$(VERSION)/
-	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog
-	sed -i -e 's/__DEBIAN_PACKAGE_VERSION__/$(DEBIAN_PACKAGE_VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
-	sed -i -e 's/__VERSION__/$(VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
-
-build-man: copy-debian-folder
+prepare-man-pages:
 	cd ../../docs && make roff-build
-	cp -r ../../docs/Roff Output/kathara-$(VERSION)/debian/manpages
+	for man_file in ../../docs/Roff/*; do \
+		man_file_dir="man$${man_file: -1}"; \
+		[[ -d ../../docs/Roff/$$man_file_dir ]] || mkdir ../../docs/Roff/$$man_file_dir; \
+		mv $$man_file ../../docs/Roff/$$man_file_dir; \
+	done;
+	mkdir -p ~/rpmbuild/SOURCES/kathara-$(VERSION)/manpages
+	cp -r ../../docs/Roff/* ~/rpmbuild/SOURCES/kathara-$(VERSION)/manpages
 	cd ../../docs && make cleanall
-	ls Output/kathara-$(VERSION)/debian/manpages/ | awk '{print "debian/manpages/"$$0}' > Output/kathara-$(VERSION)/debian/kathara.manpages
 
-	/usr/bin/python3 -m pip install -r autocompletion/requirements.txt
-	/usr/bin/python3 autocompletion/generate_autocompletion.py "Output/kathara-$(VERSION)/debian/kathara.bash-completion"
+prepare-bash-completion:
+	python3 -m pip install -r ../autocompletion/requirements.txt
+	python3 ../autocompletion/generate_autocompletion.py ~/rpmbuild/SOURCES/kathara-$(VERSION)/kathara.bash-completion
 
-deps:
-	gem install ronn-ng
+pack-source: prepare-source prepare-man-pages prepare-bash-completion
+	cd ~/rpmbuild/SOURCES/ && tar -zcf kathara-$(VERSION).tar.gz kathara-$(VERSION)
+	cd ~/rpmbuild/SOURCES/ && rm -Rf kathara-$(VERSION)
+
+build: clean pack-source
+	rpmbuild -ba ~/rpmbuild/SPECS/kathara.spec
+	mkdir Output
+	cp -r ~/rpmbuild/RPMS/* Output
 
 clean:
 	if [ -d Output ]; then \

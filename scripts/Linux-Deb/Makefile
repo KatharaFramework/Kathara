@@ -9,13 +9,13 @@ LAUNCHPAD_NAME=user
 allSigned: clean docker-build-image prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_groovy
 
 docker-unsigned: clean prepare-deb-source docker-build-image
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make build-deb-unsigned"
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb /bin/bash -c "make build-deb-unsigned"
 
 docker-signed_%:
-	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/linux-build /bin/bash -c "make unpack-deb-source && make build-deb-signed distro=$* && make ppa && make clean-output-folder distro=$*"
+	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/linux-build-deb /bin/bash -c "make unpack-deb-source && make build-deb-signed distro=$* && make ppa && make clean-output-folder distro=$*"
 
 docker-build-image:
-	cd Docker-Linux-Build && docker build -t kathara/linux-build .
+	cd Docker-Linux-Build && docker build -t kathara/linux-build-deb .
 
 prepare-deb-source:
 	mkdir Output
@@ -51,8 +51,8 @@ build-man: copy-debian-folder
 	cd ../../docs && make cleanall
 	ls Output/kathara-$(VERSION)/debian/manpages/ | awk '{print "debian/manpages/"$$0}' > Output/kathara-$(VERSION)/debian/kathara.manpages
 
-	/usr/bin/python3 -m pip install -r autocompletion/requirements.txt
-	/usr/bin/python3 autocompletion/generate_autocompletion.py "Output/kathara-$(VERSION)/debian/kathara.bash-completion"
+	/usr/bin/python3 -m pip install -r ../autocompletion/requirements.txt
+	/usr/bin/python3 ../autocompletion/generate_autocompletion.py Output/kathara-$(VERSION)/debian/kathara.bash-completion
 
 build-deb-unsigned: build-man download-pip
 	sed -i -e 's/__UBUNTU_VERSION__/focal/g' Output/kathara-$(VERSION)/debian/changelog
