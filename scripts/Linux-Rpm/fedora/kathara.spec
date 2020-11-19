@@ -15,6 +15,8 @@ Ten times faster than Netkit and more than 100 times lighter, the framework has 
 
 %prep
 %autosetup
+python3 -m pip install -r requirements.txt
+python3 -m pip install nuitka
 
 
 %build
@@ -23,14 +25,15 @@ python3 -m nuitka --show-progress --plugin-enable=pylint-warnings --follow-impor
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%make_install
+cp -r $(CURDIR)/kathara.dist/* %{buildroot}/usr/lib/kathara/
+chmod 400 $(CURDIR)/debian/kathara/usr/lib/kathara/*.so*
+chmod 755 $(CURDIR)/debian/kathara/usr/lib/kathara/kathara
 
 
 %files
 %license add-license-file-here
 %doc add-docs-here
 
-
-
 %changelog
-* Thu Nov 19 10:46:02 UTC 2020 root
+*  __DATE__ Mariano Scazzariello <******@gmail.com> - __VERSION__-__PACKAGE_VERSION__
+- Minor fixes
