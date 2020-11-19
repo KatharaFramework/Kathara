@@ -1,17 +1,15 @@
 Name:           kathara
 Version:	    __VERSION__
 Release:        1%{?dist}
-Summary:	    Network emulation tool.
+Summary:	    Lightweight network emulation tool.
 Group: 		    Applications/Emulators
 License:	    GPLv3
 URL:		    https://www.kathara.org/
 Source:		    %{name}-%{version}.tar.gz
-BuildRequires:	bash-completion
 
 %description
-Network emulation tool.
-It is an implementation of the notorious Netkit using Python.  
-Ten times faster than Netkit and more than 100 times lighter, the framework has the performances to run in production.
+Lightweight network emulation system based on Docker containers.
+It can be really helpful in showing interactive demos/lessons, testing production networks in a sandbox environment, or developing new network protocols.
 
 %global debug_package %{nil}
 
