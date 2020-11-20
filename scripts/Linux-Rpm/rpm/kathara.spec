@@ -30,8 +30,12 @@ rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libz.so.1
 rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libtinfo.so.5
 rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libcrypto.so.1.1
 install -d %{buildroot}%{_libdir}/kathara
-install -p -m 400 %{_builddir}/%{buildsubdir}/kathara.dist/*.so* %{buildroot}%{_libdir}/kathara/
+install -p -m 644 %{_builddir}/%{buildsubdir}/kathara.dist/*.so* %{buildroot}%{_libdir}/kathara/
 install -p -m 755 %{_builddir}/%{buildsubdir}/kathara.dist/kathara %{buildroot}%{_libdir}/kathara/
+install -d -m 755 %{buildroot}%{_libdir}/kathara/certifi
+cp -r %{_builddir}/%{buildsubdir}/kathara.dist/certifi/* %{buildroot}%{_libdir}/kathara/certifi/
+install -d -m 755 %{buildroot}%{_libdir}/kathara/pyuv
+cp -r %{_builddir}/%{buildsubdir}/kathara.dist/pyuv/* %{buildroot}%{_libdir}/kathara/pyuv/
 install -d -m 755 %{buildroot}%{_mandir}
 cp -r %{_builddir}/%{buildsubdir}/manpages/* %{buildroot}%{_mandir}/
 install -d -m 755 %{buildroot}%{_sysconfdir}/bash_completion.d/
