@@ -45,8 +45,11 @@ class CheckCommand(Command):
 
         print("*\tKathara version is: %s" % version.CURRENT_VERSION)
 
+        def linux_platform_info():
+            info = os.uname()
+            return "%s-%s-%s" % (info.sysname, info.release, info.machine)
         platform_info = utils.exec_by_platform(
-            lambda: os.uname(), lambda: platform.platform(), lambda: platform.platform()
+            linux_platform_info, lambda: platform.platform(), lambda: platform.platform()
         )
         print("*\tOperating System version is: %s" % str(platform_info))
 
