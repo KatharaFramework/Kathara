@@ -14,7 +14,7 @@ docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-rpm .
 	
 prepare-source:
-	cp fedora/kathara.spec ~/rpmbuild/SPECS
+	cp rpm/kathara.spec ~/rpmbuild/SPECS
 	sed -i -e "s|__DATE__|$$(date +'%a %b %d %Y')|g" ~/rpmbuild/SPECS/kathara.spec
 	sed -i -e 's/__VERSION__/$(VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
 	sed -i -e 's/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
