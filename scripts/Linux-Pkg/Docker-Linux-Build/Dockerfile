@@ -10,6 +10,8 @@ RUN pacman -S --noconfirm git \
 				 python-pip \
 				 ruby 
 
+RUN su -c "gem install ronn-ng" builduser
+
 ENV RUBYOPT="-KU -E utf-8:utf-8"
 
 WORKDIR /opt/kathara/scripts/Linux-Pkg

@@ -8,7 +8,7 @@ PACKAGE_VERSION=1
 all: clean docker-build-image docker-build
 
 docker-build: docker-build-image
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-arch /usr/bin/su -c "PATH=$$PATH:/home/builduser/.gem/ruby/2.7.0/bin /bin/bash" builduser
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-arch /usr/bin/su -c "PATH=$$PATH:/home/builduser/.gem/ruby/2.7.0/bin make build" builduser
 
 docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-arch .
@@ -44,6 +44,10 @@ pack-source: prepare-source prepare-man-pages prepare-bash-completion
 
 build: pack-source
 	cd Output && makepkg
+	rm -rf Output/kathara.changelog Output/kathara.install Output/PKGBUILD
+	rm -rf Output/kathara.tar.gz
+	rm -rf Output/pkg
+	rm -rf Output/src
 
 clean:
 	if [ -d Output ]; then \
