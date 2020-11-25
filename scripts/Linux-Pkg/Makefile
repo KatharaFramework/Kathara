@@ -8,10 +8,10 @@ PACKAGE_VERSION=1
 all: clean docker-build-image docker-build
 
 docker-build: docker-build-image
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-arch /usr/bin/su -c "PATH=$$PATH:/home/builduser/.gem/ruby/2.7.0/bin make build" builduser
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c "PATH=$$PATH:/home/builduser/.gem/ruby/2.7.0/bin make build" builduser
 
 docker-build-image:
-	cd Docker-Linux-Build && docker build -t kathara/linux-build-arch .
+	cd Docker-Linux-Build && docker build -t kathara/linux-build-pkg .
 
 prepare-source:
 	mkdir Output

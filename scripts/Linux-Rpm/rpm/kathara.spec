@@ -6,7 +6,7 @@ Group: 		    Applications/Emulators
 License:	    GPLv3
 URL:		    https://www.kathara.org/
 Source:		    %{name}-%{version}.tar.gz
-BuildRequires:	python3>=3.5
+BuildRequires:	python3
 BuildRequires:	python3-pip
 BuildArch:		x86_64
 

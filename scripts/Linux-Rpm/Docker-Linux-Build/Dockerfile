@@ -1,7 +1,7 @@
 FROM fedora:32
 
 RUN dnf install -y rubygem-rails ruby-devel zlib-devel make \
-		   python3-devel python3-pip \
+		   python3-devel python3-pip m4 \
 		   @development-tools fedora-packager rpmdevtools
 
 RUN dnf remove -y python3-pyroute2
