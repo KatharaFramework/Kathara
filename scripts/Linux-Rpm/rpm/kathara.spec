@@ -1,15 +1,21 @@
 Name:           kathara
 Version:	    __VERSION__
-Release:        1%{?dist}
-Summary:	    Lightweight network emulation tool.
+Release:        __PACKAGE_VERSION__%{?dist}
+Summary:	    Lightweight network emulation tool
 Group: 		    Applications/Emulators
 License:	    GPLv3
 URL:		    https://www.kathara.org/
 Source:		    %{name}-%{version}.tar.gz
+BuildRequires:	python3>=3.5
+BuildRequires:	python3-pip
+BuildArch:		x86_64
 
 %description
 Lightweight network emulation system based on Docker containers.
-It can be really helpful in showing interactive demos/lessons, testing production networks in a sandbox environment, or developing new network protocols.
+
+It can be really helpful in showing interactive demos/lessons,
+testing production networks in a sandbox environment, or developing
+new network protocols.
 
 %global debug_package %{nil}
 
@@ -40,18 +46,19 @@ install -d -m 755 %{buildroot}%{_mandir}
 cp -r %{_builddir}/%{buildsubdir}/manpages/* %{buildroot}%{_mandir}/
 install -d -m 755 %{buildroot}%{_sysconfdir}/bash_completion.d/
 install -p -m 644 %{_builddir}/%{buildsubdir}/kathara.bash-completion %{buildroot}%{_sysconfdir}/bash_completion.d/
+ln -sf %{buildroot}%{_libdir}/kathara/kathara %{_bindir}/kathara
 
 %files
-%{_libdir}/*
+%{_libdir}/kathara/*
 %{_mandir}/*
 %{_sysconfdir}/bash_completion.d/kathara.bash-completion
+%{_bindir}/kathara
 
 %post
 if [ $(getent group docker) ]; then
     chown root:docker %{_libdir}/kathara/kathara
 fi
 chmod g+s %{_libdir}/kathara/kathara
-ln -sf %{_libdir}/kathara/kathara %{_bindir}/kathara
 
 %preun
 %{_libdir}/kathara/kathara wipe -f -a 2> /dev/null || true
