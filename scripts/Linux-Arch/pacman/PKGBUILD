@@ -1,12 +1,14 @@
-pkgname=Kathara
-pkgver=3.0.5
-pkgrel=1
+pkgname=kathara
+pkgver=__VERSION__
+pkgrel=__PACKAGE_VERSION__
 pkgdesc="Lightweight network emulation system based on Docker containers."
-arch=('any')
+arch=('x86_64')
 url="https://www.kathara.org/"
-license=('GPL')
+license=('GPL3')
 install="kathara.install"
-changelog=
+changelog="kathara.changelog"
+makedepends=('python>=3.5.0', 'python-pip', 'ruby')
+optdepends=('docker: for running network scenarios in a local environment','xterm: for opening devices terminals')
 source=("file://$(pwd)/../kathara.tar.gz")
 md5sums=('SKIP') #generate with 'makepkg -g'
 
@@ -39,4 +41,6 @@ package() {
   cp -r manpages/* $pkgdir/usr/share/man/
   install -d -m 755 $pkgdir/etc/bash_completion.d/
   install -p -m 644 kathara.bash-completion $pkgdir/etc/bash_completion.d/
+
+
 }
