@@ -3,10 +3,8 @@ post_install() {
         chown root:docker /usr/lib/kathara/kathara
     fi
     chmod g+s /usr/lib/kathara/kathara
-    ln -sf /usr/lib/kathara/kathara /usr/bin/kathara
 }
 
 pre_remove() {
-    rm /usr/bin/kathara
     /usr/lib/kathara/kathara wipe -f -a 2> /dev/null || true
 }
