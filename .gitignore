@@ -109,7 +109,7 @@ Dockerfile~
 /scripts/OSX/Output/
 /scripts/Linux-Deb/Output/
 /scripts/Linux-Rpm/Output/
-/scripts7Linux-Arch/Output/
+/scripts7Linux-Pkg/Output/
 
 /docs/Html/
 /docs/MD/

@@ -7,9 +7,9 @@ url="https://www.kathara.org/"
 license=('GPL3')
 install="kathara.install"
 changelog="kathara.changelog"
-makedepends=('python>=3.5.0', 'python-pip', 'ruby')
-optdepends=('docker: for running network scenarios in a local environment','xterm: for opening devices terminals')
-source=("file://$(pwd)/../kathara.tar.gz")
+makedepends=('python>=3.5.0' 'python-pip' 'ruby')
+optdepends=('docker: for running network scenarios in a local environment' 'xterm: for opening devices terminals')
+source=("file://$(pwd)/kathara.tar.gz")
 md5sums=('SKIP') #generate with 'makepkg -g'
 
 prepare() {
