@@ -46,7 +46,8 @@ install -d -m 755 %{buildroot}%{_mandir}
 cp -r %{_builddir}/%{buildsubdir}/manpages/* %{buildroot}%{_mandir}/
 install -d -m 755 %{buildroot}%{_sysconfdir}/bash_completion.d/
 install -p -m 644 %{_builddir}/%{buildsubdir}/kathara.bash-completion %{buildroot}%{_sysconfdir}/bash_completion.d/
-ln -sf %{buildroot}%{_libdir}/kathara/kathara %{_bindir}/kathara
+mkdir %{buildroot}%{_bindir}
+ln -sf %{_libdir}/kathara/kathara %{buildroot}%{_bindir}/kathara
 
 %files
 %{_libdir}/kathara/*
