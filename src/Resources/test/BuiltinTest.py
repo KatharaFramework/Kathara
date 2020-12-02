@@ -69,10 +69,11 @@ class BuiltInTest(Test):
     @staticmethod
     def _get_machine_status(machine):
         # Machine interfaces
-        (ip_addr, _) = json.loads(ManagerProxy.get_instance().exec(machine_name=machine,
-                                                                   command="ip -j addr show"
-                                                                   )
-                                  )
+        (ip_addr, _) = ManagerProxy.get_instance().exec(lab_hash=machine.lab.folder_hash,
+                                                        machine_name=machine.name,
+                                                        command="ip -j addr show"
+                                                        )
+        ip_addr = json.loads(ip_addr)
 
         # Get only relevant information (interface name, state and list of address/prefix)
         ip_addr_clean = {}
@@ -84,20 +85,23 @@ class BuiltInTest(Test):
                                              }
 
         # Machine routes
-        (ip_route, _) = json.loads(ManagerProxy.get_instance().exec(machine_name=machine,
-                                                                    command="ip -j route show"
-                                                                    )
-                                   )
+        (ip_route, _) = ManagerProxy.get_instance().exec(lab_hash=machine.lab.folder_hash,
+                                                         machine_name=machine.name,
+                                                         command="ip -j route show"
+                                                         )
+        ip_route = json.loads(ip_route)
 
         # Machine opened ports
-        (net_stat, _) = ManagerProxy.get_instance().exec(machine_name=machine,
+        (net_stat, _) = ManagerProxy.get_instance().exec(lab_hash=machine.lab.folder_hash,
+                                                         machine_name=machine.name,
                                                          command="netstat -tuwln"
                                                          )
         # Remove Docker ports and header lines. Sort the array alphabetically.
         net_stat = sorted([filter(lambda x: "127.0.0.11" not in x, net_stat.splitlines())][2:])
 
         # Machine processes
-        (processes, _) = ManagerProxy.get_instance().exec(machine_name=machine,
+        (processes, _) = ManagerProxy.get_instance().exec(lab_hash=machine.lab.folder_hash,
+                                                          machine_name=machine.name,
                                                           command="ps -e -o command"
                                                           )
         # Remove header line and sort the array alphabetically.

@@ -34,18 +34,19 @@ class KubernetesConfigMap(object):
     def _build_for_machine(self, machine):
         tar_data = machine.pack_data()
 
-        tar_data_size = len(tar_data)
-        if tar_data_size > MAX_FILE_SIZE:
-            raise Exception(
-                'Unable to upload device folder. Maximum supported size: %s. Current: %s.' % (
-                    human_readable_bytes(MAX_FILE_SIZE),
-                    human_readable_bytes(tar_data_size)
-                )
-            )
-
         # Create a ConfigMap on the cluster containing the base64 of the .tar.gz file
         # This will be decoded and extracted in the postStart hook of the pod
         if tar_data:
+            # Before creating the .tar.gz file, check if it is bigger than the maximum allowed size.
+            tar_data_size = len(tar_data)
+            if tar_data_size > MAX_FILE_SIZE:
+                raise Exception(
+                    'Unable to upload device folder. Maximum supported size: %s. Current: %s.' % (
+                        human_readable_bytes(MAX_FILE_SIZE),
+                        human_readable_bytes(tar_data_size)
+                    )
+                )
+
             data = {"hostlab.b64": base64.b64encode(tar_data).decode('utf-8')}
             metadata = client.V1ObjectMeta(name=self.build_name_for_machine(machine.meta['real_name'],
                                                                             machine.lab.folder_hash),
