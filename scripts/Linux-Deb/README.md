@@ -1,4 +1,4 @@
-# Compiling Kathara Signed for Linux
+# Compiling Kathara Signed for Linux (DEB)
 
 1. Change the Kathara version number in the following files:
     1. `src/Resources/version.py`
@@ -13,7 +13,7 @@
     4. Push the new version on LaunchPad. The LaunchPad password associated to the name set in the `Makefile` will be asked.
     5. Automatically remove the Docker container.
 
-# Compiling Kathara Unsigned for Linux
+# Compiling Kathara Unsigned for Linux (DEB)
 
 1. Change the Kathara version number in the following files:
     1. `src/Resources/version.py`
@@ -25,4 +25,4 @@
     3. Compile Kathara into a binary.
     4. Create a unsigned `.deb` package.
     6. Automatically remove the Docker container.
-4. Output files are located in the `Output` directory
+4. Output file is located in the `Output` directory

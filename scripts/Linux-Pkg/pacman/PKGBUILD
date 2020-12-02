@@ -1,0 +1,44 @@
+pkgname=kathara
+pkgver=__VERSION__
+pkgrel=__PACKAGE_VERSION__
+pkgdesc="Lightweight network emulation system based on Docker containers."
+arch=('x86_64')
+url="https://www.kathara.org/"
+license=('GPL3')
+install="kathara.install"
+changelog="kathara.changelog"
+makedepends=('python>=3.5.0' 'python-pip')
+optdepends=('docker: for running network scenarios in a local environment' 'xterm: for opening devices terminals')
+source=("file://$(pwd)/kathara.tar.gz")
+md5sums=('SKIP')
+
+prepare() {
+  python3 -m pip install -r requirements.txt
+  python3 -m pip install nuitka
+}
+
+build() {
+  python3 -m nuitka --show-progress --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Resources kathara.py
+}
+
+package() {
+  rm -f kathara.dist/libbz2.so.1.0
+  rm -f kathara.dist/libexpat.so.1
+  rm -f kathara.dist/libtinfo.so.6
+  rm -f kathara.dist/libz.so.1
+  rm -f kathara.dist/libtinfo.so.5
+  rm -f kathara.dist/libcrypto.so.1.1
+  install -d $pkgdir/usr/lib/$pkgname
+  install -p -m 644 kathara.dist/*.so* $pkgdir/usr/lib/$pkgname/
+  install -p -m 755 kathara.dist/kathara $pkgdir/usr/lib/$pkgname/
+  install -d -m 755 $pkgdir/usr/lib/$pkgname/certifi
+  cp -r kathara.dist/certifi/* $pkgdir/usr/lib/$pkgname/certifi/
+  install -d -m 755 $pkgdir/usr/lib/$pkgname/pyuv
+  cp -r kathara.dist/pyuv/* $pkgdir/usr/lib/$pkgname/pyuv/
+  install -d -m 755 $pkgdir/usr/share/man
+  cp -r manpages/* $pkgdir/usr/share/man/
+  install -d -m 755 $pkgdir/etc/bash_completion.d/
+  install -p -m 644 kathara.bash-completion $pkgdir/etc/bash_completion.d/
+  mkdir $pkgdir/usr/bin
+  ln -sf /usr/lib/$pkgname/kathara "$pkgdir/usr/bin/$pkgname"
+}

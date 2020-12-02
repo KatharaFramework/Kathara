@@ -37,7 +37,7 @@ ArchitecturesInstallIn64BitMode=x64
 UninstallDisplayIcon={app}\Kathara.exe
 
 [Messages]
-WelcomeLabel2=Kathara is a network emulation tool.%n%nThis will install [name/ver] on your computer.%n%nYou will be guided through the steps necessary to install this software.
+WelcomeLabel2=Kathara is a lightweight network emulation system based on Docker containers.%n%nThis will install [name/ver] on your computer.%n%nYou will be guided through the steps necessary to install this software.
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

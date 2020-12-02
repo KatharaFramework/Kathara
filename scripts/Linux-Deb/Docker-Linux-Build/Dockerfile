@@ -26,8 +26,6 @@ RUN gem install ronn-ng
 
 COPY dput.cf /root/.dput.cf
 
-WORKDIR /opt
-
 ENV RUBYOPT="-KU -E utf-8:utf-8"
 
-WORKDIR /opt/kathara/scripts/Linux
+WORKDIR /opt/kathara/scripts/Linux-Deb
