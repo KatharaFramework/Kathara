@@ -1,4 +1,5 @@
-__DATE__ Tommaso Caiazzi <...@gmail.com>
+__DATE__ Mariano Scazzariello <******@gmail.com>
 
 * Release v__VERSION__
-    * Minor fixes
+    * Fix ltest exec commands
+    * Fix check command

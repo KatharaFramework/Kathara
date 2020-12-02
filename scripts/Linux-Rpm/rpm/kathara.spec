@@ -66,4 +66,5 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Mariano Scazzariello <******@gmail.com> - __VERSION__-__PACKAGE_VERSION__
-- Minor fixes
+- Fix ltest exec commands
+- Fix check command
