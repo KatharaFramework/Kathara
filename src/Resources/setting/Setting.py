@@ -187,7 +187,18 @@ class Setting(object):
         def check_unix():
             return os.path.isfile(terminal) and os.access(terminal, os.X_OK)
 
-        if not utils.exec_by_platform(check_unix, lambda: True, lambda: True):
+        def check_macos():
+            if terminal == "iTerm":
+                import appscript
+                import aem
+                try:
+                    appscript.app('iTerm')
+                except aem.findapp.ApplicationNotFoundError:
+                    return False
+
+            return True
+
+        if not utils.exec_by_platform(check_unix, lambda: True, check_macos):
             raise SettingsError("Terminal Emulator `%s` not valid! Install it before using it." % terminal)
 
         return True
