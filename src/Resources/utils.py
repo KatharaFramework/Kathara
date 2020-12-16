@@ -5,16 +5,16 @@ import math
 import os
 import re
 import shutil
+import sys
 import tarfile
 import tempfile
 from io import BytesIO
 from itertools import islice
 from multiprocessing import cpu_count
+from sys import platform as _platform
 
-import sys
 from binaryornot.check import is_binary
 from slug import slug
-from sys import platform as _platform
 
 from .trdparty.consolemenu import PromptUtils, Screen
 
@@ -55,7 +55,7 @@ def get_absolute_path(path):
 def get_executable_path(exec_path):
     exec_abs_path = get_absolute_path(exec_path)
 
-    if os.path.exists(exec_abs_path):
+    if os.path.exists(exec_abs_path) and os.path.isfile(exec_abs_path):
         # If kathara is launched as a python script
         exec_abs_path = "\"" + exec_abs_path + "\""
         if exec_path.endswith(".py"):
@@ -108,7 +108,7 @@ def confirmation_prompt(prompt_string, callback_yes, callback_no):
 
 
 def get_pool_size():
-    return min(10, cpu_count())
+    return cpu_count()
 
 
 # Platform Specific Functions

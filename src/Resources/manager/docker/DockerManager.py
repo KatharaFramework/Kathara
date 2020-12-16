@@ -60,7 +60,7 @@ class DockerManager(IManager):
 
     @check_docker_status
     def __init__(self):
-        self.client = docker.from_env(timeout=None)
+        self.client = docker.from_env(timeout=None, max_pool_size=utils.get_pool_size())
 
         docker_plugin = DockerPlugin(self.client)
         docker_plugin.check_and_download_plugin()
