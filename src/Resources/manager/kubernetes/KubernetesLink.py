@@ -141,7 +141,8 @@ class KubernetesLink(object):
                                                          version=K8S_NET_VERSION,
                                                          namespace=lab_hash if lab_hash else "default",
                                                          plural=K8S_NET_PLURAL,
-                                                         label_selector=",".join(filters)
+                                                         label_selector=",".join(filters),
+                                                         timeout_seconds=9999
                                                          )["items"]
 
     def _build_definition(self, link, network_id):

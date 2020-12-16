@@ -525,7 +525,8 @@ class KubernetesMachine(object):
         machines = []
         for namespace in namespaces:
             machines.extend(self.core_client.list_namespaced_pod(namespace=namespace,
-                                                                 label_selector=",".join(filters)
+                                                                 label_selector=",".join(filters),
+                                                                 timeout_seconds=9999
                                                                  ).items
                             )
 
