@@ -48,7 +48,7 @@ def generate_urlsafe_hash(string):
 
 
 def get_absolute_path(path):
-    abs_path = os.path.abspath(path)
+    abs_path = os.path.realpath(path)
     return abs_path if not os.path.islink(abs_path) else os.readlink(abs_path)
 
 

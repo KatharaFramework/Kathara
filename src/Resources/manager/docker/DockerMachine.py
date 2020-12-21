@@ -223,8 +223,8 @@ class DockerMachine(object):
                                                                       "user": utils.get_current_user_name(),
                                                                       "app": "kathara",
                                                                       "shell": machine.meta["shell"]
-                                                                      if "shell" in machine.meta
-                                                                      else Setting.get_instance().device_shell
+                                                                               if "shell" in machine.meta
+                                                                               else Setting.get_instance().device_shell
                                                                       }
                                                               )
         except APIError as e:
@@ -301,8 +301,7 @@ class DockerMachine(object):
                                     )
 
         if Setting.get_instance().open_terminals:
-            num_terms = machine.meta['num_terms'] if 'num_terms' in machine.meta else 1
-            for i in range(0, num_terms):
+            for i in range(0, machine.get_num_terms()):
                 machine.connect(Setting.get_instance().terminal)
 
     def undeploy(self, lab_hash, selected_machines=None):

@@ -24,7 +24,7 @@ class Machine(object):
 
         self.interfaces = {}
 
-        self.meta = {'sysctls': {}, 'bridged': False, 'port': {}}
+        self.meta = {'sysctls': {}, 'bridged': False, 'ports': {}}
 
         self.startup_commands = []
 
@@ -67,9 +67,11 @@ class Machine(object):
                     # Convert to int if possible
                     self.meta['sysctls'][key] = int(val) if val.isdigit() else val
                 else:
-                    raise MachineOptionError("Invalid sysctl value (`%s`), only `net.` namespace is allowed." % value)
+                    raise MachineOptionError(
+                        "Invalid sysctl value (`%s`) on `%s`, only `net.` namespace is allowed." % (value, self.name)
+                    )
             else:
-                raise MachineOptionError("Invalid sysctl value (`%s`), missing `=`." % value)
+                raise MachineOptionError("Invalid sysctl value (`%s`) on `%s`, missing `=`." % (value, self.name))
             return
 
         if name == "port":
@@ -77,26 +79,20 @@ class Machine(object):
                 (ports, protocol) = value.split('/')
             else:
                 (ports, protocol) = value, 'tcp'
+
             if ':' not in ports:
-                try:
-                    host_port, guest_port = 3000, int(ports)
-                except ValueError:
-                    raise MachineOptionError("Port value not valid.")
+                host_port, guest_port = 3000, ports
             else:
                 (host_port, guest_port) = ports.split(':')
-                try:
-                    (host_port, guest_port) = int(host_port), int(guest_port)
-                except ValueError:
-                    raise MachineOptionError("Port value not valid.")
 
-            self.meta['port'][(host_port, protocol)] = guest_port
-            return
+            protocol = protocol.lower()
+            if protocol not in ['tcp', 'udp', 'sctp']:
+                raise MachineOptionError("Port protocol value not valid on `%s`." % self.name)
 
-        if name == 'num_terms':
             try:
-                self.meta[name] = int(value)
+                self.meta['ports'][(int(host_port), protocol)] = int(guest_port)
             except ValueError:
-                raise MachineOptionError("num_terms value not valid.")
+                raise MachineOptionError("Port value not valid on `%s`." % self.name)
             return
 
         self.meta[name] = value
@@ -266,12 +262,12 @@ class Machine(object):
                 try:
                     return "%sm" % int(memory)
                 except ValueError:
-                    raise MachineOptionError("Memory value not valid.")
+                    raise MachineOptionError("Memory value not valid on `%s`." % self.name)
 
             try:
                 return "%s%s" % (int(memory[:-1]), unit)
             except ValueError:
-                raise MachineOptionError("Memory value not valid.")
+                raise MachineOptionError("Memory value not valid on `%s`." % self.name)
 
         return memory
 
@@ -286,27 +282,45 @@ class Machine(object):
             try:
                 return int(float(self.lab.general_options["cpus"]) * multiplier)
             except ValueError:
-                raise MachineOptionError("CPU value not valid.")
+                raise MachineOptionError("CPU value not valid on `%s`." % self.name)
         elif "cpus" in self.meta:
             try:
                 return int(float(self.meta["cpus"]) * multiplier)
             except ValueError:
-                raise MachineOptionError("CPU value not valid.")
+                raise MachineOptionError("CPU value not valid on `%s`." % self.name)
 
         return None
 
     def get_ports(self):
-        if self.meta['port']:
-            return self.meta['port']
+        if self.meta['ports']:
+            return self.meta['ports']
 
         return None
+
+    def get_num_terms(self):
+        num_terms = 1
+
+        if "num_terms" in self.lab.general_options:
+            num_terms = self.lab.general_options['num_terms']
+        elif 'num_terms' in self.meta:
+            num_terms = self.meta['num_terms']
+
+        try:
+            num_terms = int(num_terms)
+
+            if num_terms < 0:
+                raise MachineOptionError("Terminals Number value on `%s` must be a positive value or zero." % self.name)
+        except ValueError:
+            raise MachineOptionError("Terminals Number value not valid on `%s`." % self.name)
+
+        return num_terms
 
     def is_ipv6_enabled(self):
         try:
             return bool(strtobool(self.lab.general_options["ipv6"])) if "ipv6" in self.lab.general_options else \
                     bool(strtobool(self.meta["ipv6"])) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
         except ValueError:
-            raise MachineOptionError("IPv6 value not valid.")
+            raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
 
     def __repr__(self):
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

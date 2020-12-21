@@ -5,11 +5,12 @@ kathara-vstart(1) -- Start a new Kathara device
 ## SYNOPSIS
 
 `kathara vstart`
->           [`-h`] [`--noterminals` | `--terminals` | `--privileged`] `-n` <DEVICE_NAME>
+>           [`-h`] [`--noterminals` | `--terminals` | `--privileged` | `--num_terms` <NUM_TERMS>] `-n` <DEVICE_NAME>
 >           [`--eth` <N\:CD> [<N\:CD> ...]]
 >           [`-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]] [`--mem` <MEM>]  
 >           [`--cpus` <CPUS>] [`-i` <IMAGE>] [`-H`]
->           [`--xterm` <XTERM>] [`--print`] [`--bridged`] [`--port` <PORT>]  
+>           [`--xterm` <XTERM>] [`--print`] [`--bridged`]
+>           [--port <[HOST\:]GUEST[\/PROTOCOL]> [<[HOST\:]GUEST[\/PROTOCOL]> ...]]
 >           [`--shell` <SHELL>]
 
 ## DESCRIPTION
@@ -87,8 +88,13 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
 
     Connect the device to the host network by adding an additional network interface (will be the last one). This interface will be connected to the host network through a NAT connection and will receive its IP configuration automatically via DHCP.
 
-* `--port` <PORT>:
-    Choose a TCP <PORT> number to map localhost port <PORT> to the internal port 3000 of the device.
+* `--port` <[HOST\:]GUEST[\/PROTOCOL]> [<[HOST\:]GUEST[\/PROTOCOL]> ...]:
+    Map localhost port HOST to the internal port GUEST of the device for the specified PROTOCOL.
+
+    If HOST port is not specified, default is 3000. If PROTOCOL is not specified, default is `tcp`. Supported PROTOCOL values are: tcp, udp, or sctp.
+
+* `--num_terms` <NUM_TERMS>:
+    Choose the number of terminals to open for the device.
 
 * `--shell` <SHELL>:
     Set the shell (sh, bash, etc.) that should be used inside the device.

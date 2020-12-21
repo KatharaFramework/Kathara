@@ -214,10 +214,9 @@ class KubernetesMachine(object):
         if ports_info:
             container_ports = []
             for (host_port, protocol), guest_port in ports_info.items():
-                port_name = str(uuid.uuid4()).replace('-', '')[0:15]
                 container_ports.append([
                     client.V1ContainerPort(
-                        name=port_name,
+                        name=str(uuid.uuid4()).replace('-', '')[0:15],
                         container_port=guest_port,
                         host_port=host_port,
                         protocol=protocol.upper()
