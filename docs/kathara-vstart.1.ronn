@@ -94,7 +94,7 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
     If HOST port is not specified, default is 3000. If PROTOCOL is not specified, default is `tcp`. Supported PROTOCOL values are: tcp, udp, or sctp.
 
 * `--sysctl` <SYSCTL> [<SYSCTL> ...]:
-    Set a sysctl option for the device. Only the `net.` namespace is allowed to be set. Can be set multiple times per device, each will add a new entry (unless the same config item is used again).
+    Set a sysctl option for the device. Only the `net.` namespace is allowed to be set.
 
 * `--num_terms` <NUM_TERMS>:
     Choose the number of terminals to open for the device.
