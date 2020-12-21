@@ -47,6 +47,12 @@ class VstartCommand(Command):
             help='Start the device opening its terminal window.'
         )
         group.add_argument(
+            '--num_terms',
+            metavar='NUM_TERMS',
+            required=False,
+            help='The number of terminals to open for the device.'
+        )
+        group.add_argument(
             "--privileged",
             action="store_true",
             required=False,
@@ -115,8 +121,11 @@ class VstartCommand(Command):
         )
         parser.add_argument(
             '--port',
+            dest='ports',
+            metavar='HOST[:GUEST[/PROTOCOL]]',
+            nargs='+',
             required=False,
-            help='Choose a TCP Port number to map localhost port PORT to the internal port 3000 of the device.'
+            help='Choose a Port number to map localhost port HOST to the internal port GUEST of the device.'
         )
         parser.add_argument(
             '--shell',
@@ -160,6 +169,9 @@ class VstartCommand(Command):
 
         machine = lab.get_or_new_machine(machine_name)
 
+        if args.num_terms:
+            machine.add_meta('num_terms', args.num_terms)
+
         if args.eths:
             for eth in args.eths:
                 try:
@@ -184,7 +196,8 @@ class VstartCommand(Command):
         if args.bridged:
             machine.add_meta("bridged", True)
 
-        if args.port:
-            machine.add_meta("port", args.port)
+        if args.ports:
+            for port in args.ports:
+                machine.add_meta("port", port)
 
         ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args.privileged)

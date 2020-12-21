@@ -209,19 +209,20 @@ class KubernetesMachine(object):
         # Machine must be executed in privileged mode to run sysctls.
         security_context = client.V1SecurityContext(privileged=True)
 
-        port_info = machine.get_ports()
+        ports_info = machine.get_ports()
         container_ports = None
-        if port_info:
-            (internal_port, protocol, host_port) = port_info
-            port_name = str(uuid.uuid4()).replace('-', '')[0:15]
-            container_ports = [
-                client.V1ContainerPort(
-                    name=port_name,
-                    container_port=internal_port,
-                    host_port=host_port,
-                    protocol=protocol.upper()
-                )
-            ]
+        if ports_info:
+            container_ports = []
+            for (host_port, protocol), guest_port in ports_info.items():
+                port_name = str(uuid.uuid4()).replace('-', '')[0:15]
+                container_ports.append([
+                    client.V1ContainerPort(
+                        name=port_name,
+                        container_port=guest_port,
+                        host_port=host_port,
+                        protocol=protocol.upper()
+                    )
+                ])
 
         resources = None
         memory = machine.get_mem()

@@ -144,11 +144,12 @@ class DockerMachine(object):
         memory = machine.get_mem()
         cpus = machine.get_cpu(multiplier=1e9)
 
-        port_info = machine.get_ports()
+        ports_info = machine.get_ports()
         ports = None
-        if port_info:
-            (internal_port, protocol, host_port) = port_info
-            ports = {'%d/%s' % (internal_port, protocol): host_port}
+        if ports_info:
+            ports = {}
+            for (host_port, protocol), guest_port in ports_info.items():
+                ports['%d/%s' % (guest_port, protocol)] = host_port
 
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options
@@ -222,8 +223,8 @@ class DockerMachine(object):
                                                                       "user": utils.get_current_user_name(),
                                                                       "app": "kathara",
                                                                       "shell": machine.meta["shell"]
-                                                                               if "shell" in machine.meta
-                                                                               else Setting.get_instance().device_shell
+                                                                      if "shell" in machine.meta
+                                                                      else Setting.get_instance().device_shell
                                                                       }
                                                               )
         except APIError as e:
@@ -300,7 +301,9 @@ class DockerMachine(object):
                                     )
 
         if Setting.get_instance().open_terminals:
-            machine.connect(Setting.get_instance().terminal)
+            num_terms = machine.meta['num_terms'] if 'num_terms' in machine.meta else 1
+            for i in range(0, num_terms):
+                machine.connect(Setting.get_instance().terminal)
 
     def undeploy(self, lab_hash, selected_machines=None):
         machines = self.get_machines_by_filters(lab_hash=lab_hash)
