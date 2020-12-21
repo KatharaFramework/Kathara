@@ -128,6 +128,14 @@ class VstartCommand(Command):
             help='Map localhost port HOST to the internal port GUEST of the device for the specified PROTOCOL.'
         )
         parser.add_argument(
+            '--sysctl',
+            dest='sysctls',
+            metavar='SYSCTL',
+            nargs='+',
+            required=False,
+            help='Set sysctl option for the device.'
+        )
+        parser.add_argument(
             '--shell',
             required=False,
             help='Set the shell (sh, bash, etc.) that should be used inside the device.'
@@ -199,5 +207,9 @@ class VstartCommand(Command):
 
         if args.num_terms:
             machine.add_meta('num_terms', args.num_terms)
+
+        if args.sysctls:
+            for sysctl in args.sysctls:
+                machine.add_meta("sysctl", sysctl)
 
         ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args.privileged)

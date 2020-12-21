@@ -10,7 +10,7 @@ kathara-vstart(1) -- Start a new Kathara device
 >           [`-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]] [`--mem` <MEM>]  
 >           [`--cpus` <CPUS>] [`-i` <IMAGE>] [`-H`]
 >           [`--xterm` <XTERM>] [`--print`] [`--bridged`]
->           [--port <[HOST\:]GUEST[\/PROTOCOL]> [<[HOST\:]GUEST[\/PROTOCOL]> ...]]
+>           [--port <[HOST\:]GUEST[\/PROTOCOL]> [<[HOST\:]GUEST[\/PROTOCOL]> ...]] [--sysctl <SYSCTL> [<SYSCTL> ...]]
 >           [`--shell` <SHELL>]
 
 ## DESCRIPTION
@@ -92,6 +92,9 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
     Map localhost port HOST to the internal port GUEST of the device for the specified PROTOCOL.
 
     If HOST port is not specified, default is 3000. If PROTOCOL is not specified, default is `tcp`. Supported PROTOCOL values are: tcp, udp, or sctp.
+
+* `--sysctl` <SYSCTL> [<SYSCTL> ...]:
+    Set a sysctl option for the device. Only the `net.` namespace is allowed to be set. Can be set multiple times per device, each will add a new entry (unless the same config item is used again).
 
 * `--num_terms` <NUM_TERMS>:
     Choose the number of terminals to open for the device.
