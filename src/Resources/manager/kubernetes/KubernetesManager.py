@@ -66,7 +66,7 @@ class KubernetesManager(IManager):
                 network_annotation = json.loads(machine.metadata.annotations["k8s.v1.cni.cncf.io/networks"])
                 networks = [net['name'] for net in network_annotation]
 
-                if not machine.metadata.labels["name"] in selected_machines:
+                if machine.metadata.labels["name"] not in selected_machines:
                     running_networks.update(networks)
 
             # Difference between all networks and attached networks are the ones to delete

@@ -81,6 +81,8 @@ class KubernetesLink(object):
 
     def undeploy(self, lab_hash, networks_to_delete=None):
         links = self.get_links_by_filters(lab_hash=lab_hash)
+        if networks_to_delete is not None and len(networks_to_delete) > 0:
+            links = [item for item in links if item["metadata"]["name"] in networks_to_delete]
 
         if len(links) > 0:
             pool_size = utils.get_pool_size()
@@ -92,11 +94,11 @@ class KubernetesLink(object):
                 widgets=['Deleting collision domains... ', progressbar.Bar(),
                          ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
                 redirect_stdout=True,
-                max_value=len(links) if not networks_to_delete else len(networks_to_delete)
+                max_value=len(links)
             )
 
             for chunk in items:
-                links_pool.map(func=partial(self._undeploy_link, networks_to_delete, True, progress_bar), iterable=chunk)
+                links_pool.map(func=partial(self._undeploy_link, progress_bar), iterable=chunk)
 
             progress_bar.finish()
 
@@ -109,13 +111,10 @@ class KubernetesLink(object):
         items = utils.chunk_list(links, pool_size)
 
         for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, None, False, None), iterable=chunk)
+            links_pool.map(func=partial(self._undeploy_link, None), iterable=chunk)
 
-    def _undeploy_link(self, networks_to_delete, log, progress_bar, link_item):
+    def _undeploy_link(self, progress_bar, link_item):
         namespace = link_item["metadata"]["namespace"]
-
-        if networks_to_delete is not None and link_item["metadata"]["name"] not in networks_to_delete:
-            return
 
         try:
             self.client.delete_namespaced_custom_object(group=K8S_NET_GROUP,
@@ -129,7 +128,7 @@ class KubernetesLink(object):
         except ApiException:
             pass
 
-        if log:
+        if progress_bar is not None:
             progress_bar += 1
 
     def get_links_by_filters(self, lab_hash=None, link_name=None):
