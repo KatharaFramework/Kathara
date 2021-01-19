@@ -3,13 +3,16 @@ from ....api.DockerHubApi import DockerHubApi
 from ....exceptions import HTTPConnectionError
 from ....foundation.cli.ui.setting.OptionsHandler import OptionsHandler
 from ....manager.ManagerProxy import ManagerProxy
-from ....setting.Setting import Setting, DEFAULTS, POSSIBLE_SHELLS, POSSIBLE_TERMINALS, POSSIBLE_DEBUG_LEVELS
+from ....setting.Setting import Setting, DEFAULTS, AVAILABLE_DEBUG_LEVELS
 from ....trdparty.consolemenu import *
 from ....trdparty.consolemenu.items import *
 from ....trdparty.consolemenu.validators.regex import RegexValidator
 from ....utils import exec_by_platform
 from ....validator.ImageValidator import ImageValidator
 from ....validator.TerminalValidator import TerminalValidator
+
+SHELLS_HINT = ["/bin/bash", "/bin/sh", "/bin/ash", "/bin/ksh", "/bin/zsh", "/bin/fish", "/bin/csh", "/bin/tcsh"]
+TERMINALS_OSX = ["Terminal", "iTerm"]
 
 
 class CommonOptionsHandler(OptionsHandler):
@@ -114,7 +117,7 @@ class CommonOptionsHandler(OptionsHandler):
                                                          """ % DEFAULTS['device_shell']
                                            )
 
-        for shell in POSSIBLE_SHELLS:
+        for shell in SHELLS_HINT:
             machine_shell_menu.append_item(FunctionItem(text=shell,
                                                         function=setting_utils.update_setting_value,
                                                         args=["device_shell", shell],
@@ -135,8 +138,8 @@ class CommonOptionsHandler(OptionsHandler):
         machine_shell_item = SubmenuItem(machine_shell_string, machine_shell_menu, current_menu)
 
         # Terminal Emulator Submenu
-        # Shown only on Linux and macOS
-        def terminal_emulator_menu():
+        # Linux Version
+        def terminal_emulator_menu_linux():
             terminal_string = "Choose terminal emulator to be used"
             terminal_menu = SelectionMenu(strings=[],
                                           title=terminal_string,
@@ -149,7 +152,46 @@ class CommonOptionsHandler(OptionsHandler):
                                                         Default is `%s`.""" % DEFAULTS['terminal']
                                           )
 
-            for terminal in POSSIBLE_TERMINALS:
+            terminal_menu.append_item(FunctionItem(text="/usr/bin/xterm",
+                                                   function=setting_utils.update_setting_value,
+                                                   args=["terminal", "/usr/bin/xterm"],
+                                                   should_exit=True
+                                                   )
+                                      )
+            terminal_menu.append_item(FunctionItem(text="TMUX",
+                                                   function=setting_utils.update_setting_value,
+                                                   args=["terminal", "TMUX"],
+                                                   should_exit=True
+                                                   )
+                                      )
+            terminal_menu.append_item(FunctionItem(text="Choose another terminal emulator",
+                                                   function=setting_utils.read_value,
+                                                   args=['terminal',
+                                                         TerminalValidator(),
+                                                         'Write the path of a terminal emulator:',
+                                                         'Terminal emulator is not valid! Install it before using it.'
+                                                         ],
+                                                   should_exit=True
+                                                   )
+                                      )
+
+            return SubmenuItem(terminal_string, terminal_menu, current_menu)
+
+        # macOS Version
+        def terminal_emulator_menu_osx():
+            terminal_string = "Choose terminal emulator to be used"
+            terminal_menu = SelectionMenu(strings=[],
+                                          title=terminal_string,
+                                          subtitle=setting_utils.current_string("terminal"),
+                                          formatter=menu_formatter,
+                                          prologue_text="""Terminal emulator application to be used for device """
+                                                        """terminals. 
+                                                        **The application must be correctly installed in """
+                                                        """the host system!**
+                                                        Default is `Terminal`."""
+                                          )
+
+            for terminal in TERMINALS_OSX:
                 terminal_menu.append_item(FunctionItem(text=terminal,
                                                        function=setting_utils.update_setting_value,
                                                        args=["terminal", terminal],
@@ -162,20 +204,10 @@ class CommonOptionsHandler(OptionsHandler):
                                                    should_exit=True
                                                    )
                                       )
-            terminal_menu.append_item(FunctionItem(text="Choose another terminal emulator",
-                                                   function=setting_utils.read_value,
-                                                   args=['terminal',
-                                                         TerminalValidator(),
-                                                         'Write the name of a terminal emulator:',
-                                                         'Terminal emulator is not valid! Install it before using it.'
-                                                         ],
-                                                   should_exit=True
-                                                   )
-                                      )
 
             return SubmenuItem(terminal_string, terminal_menu, current_menu)
 
-        terminal_item = exec_by_platform(terminal_emulator_menu, lambda: None, terminal_emulator_menu)
+        terminal_item = exec_by_platform(terminal_emulator_menu_linux, lambda: None, terminal_emulator_menu_osx)
 
         # Prefixes Submenu
         prefixes_string = "Choose Kathara prefixes"
@@ -223,7 +255,7 @@ class CommonOptionsHandler(OptionsHandler):
                                                        Default is `%s`.""" % DEFAULTS['debug_level']
                                          )
 
-        for debug_level in POSSIBLE_DEBUG_LEVELS:
+        for debug_level in AVAILABLE_DEBUG_LEVELS:
             debug_level_menu.append_item(FunctionItem(text=debug_level,
                                                       function=setting_utils.update_setting_value,
                                                       args=["debug_level", debug_level],

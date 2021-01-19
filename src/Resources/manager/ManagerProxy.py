@@ -1,6 +1,6 @@
 from ..foundation.manager.IManager import IManager
 from ..foundation.manager.ManagerFactory import ManagerFactory
-from ..setting.Setting import Setting, POSSIBLE_MANAGERS
+from ..setting.Setting import Setting, AVAILABLE_MANAGERS
 
 
 class ManagerProxy(IManager):
@@ -68,7 +68,7 @@ class ManagerProxy(IManager):
         managers = {}
         manager_factory = ManagerFactory()
 
-        for manager_name in POSSIBLE_MANAGERS:
+        for manager_name in AVAILABLE_MANAGERS:
             manager = manager_factory.get_class(module_args=(manager_name, ),
                                                 class_args=(manager_name.capitalize(), )
                                                 )

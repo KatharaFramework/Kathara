@@ -233,16 +233,15 @@ class Machine(object):
                                                                                          complete_osx_command))
 
                 TMUX.get_instance().add_window(self.lab.name, self.name, complete_osx_command, cwd=self.lab.path)
-            elif terminal == "iTerm":
-                import appscript
-                logging.debug("Opening iTerm with command: %s." % complete_osx_command)
-                iterm = appscript.app('iTerm')
-                window = iterm.create_window_with_default_profile()
-                window.current_session.write(text=complete_osx_command)
             else:
                 import appscript
                 logging.debug("Opening OSX terminal with command: %s." % complete_osx_command)
-                appscript.app('Terminal').do_script(complete_osx_command)
+                terminal_app = appscript.app(terminal)
+                if terminal == 'iTerm':
+                    window = terminal_app.create_window_with_default_profile()
+                    window.current_session.write(text=complete_osx_command)
+                elif terminal == 'Terminal':
+                    terminal_app.do_script(complete_osx_command)
 
         utils.exec_by_platform(unix_connect, windows_connect, osx_connect)
 

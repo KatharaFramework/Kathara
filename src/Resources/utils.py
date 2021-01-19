@@ -226,7 +226,10 @@ def get_vlab_temp_path(force_creation=True):
         import win32file
         return win32file.GetLongPathName(tempfile.gettempdir())
 
-    tempdir = exec_by_platform(tempfile.gettempdir, windows_path, lambda: "/%s" % get_absolute_path("/tmp"))
+    tempdir = exec_by_platform(tempfile.gettempdir,
+                               windows_path,
+                               lambda: re.sub(r"/+", "/", "/%s" % get_absolute_path("/tmp"))
+                               )
 
     vlab_directory = os.path.join(tempdir, "kathara_vlab")
     if not os.path.isdir(vlab_directory) and force_creation:

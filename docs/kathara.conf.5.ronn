@@ -21,9 +21,11 @@ Checks on the correctness of the configuration are performed each time a Kathara
     Default to `docker`.
 
 * `terminal` (string):
-	This parameter determines the terminal emulator application to be used for device terminals. The application must be correctly installed in the host system. This option is only visible on Linux and macOS. On macOS options other than "iTerm" or "TMUX" default to the system terminal.
+	This parameter determines the terminal emulator application to be used for device terminals. The application must be correctly installed in the host system. This option is only visible on Linux and macOS.
+	On Linux, options are `/usr/bin/xterm`, `TMUX` or an user-defined path.
+	On macOS, options are `Terminal` (default system terminal), `iTerm` or `TMUX`.
 
-	Default to `/usr/bin/xterm`.
+	Default to `/usr/bin/xterm` on Linux and `Terminal` on macOS.
 
 * `open_terminals` (boolean):
 	This parameter determines if device terminal should be opened when starting it.
