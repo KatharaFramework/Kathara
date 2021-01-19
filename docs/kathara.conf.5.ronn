@@ -19,14 +19,14 @@ Checks on the correctness of the configuration are performed each time a Kathara
     Manager used to launch the lab.
 
     Default to `docker`.
-	
+
 * `terminal` (string):
-	This parameter determines the terminal emulator application to be used for device terminals. The application must be correctly installed in the host system. This option is only visible on Linux and macOS.
+	This parameter determines the terminal emulator application to be used for device terminals. The application must be correctly installed in the host system. This option is only visible on Linux and macOS. On macOS options other than "iTerm" or "TMUX" default to the system terminal.
 
 	Default to `/usr/bin/xterm`.
 
 * `open_terminals` (boolean):
-	This parameter determines if device terminal should be opened when starting it. 
+	This parameter determines if device terminal should be opened when starting it.
 
 	Default to `true`.
 
@@ -123,7 +123,7 @@ Each Manager specifies additional parameters which are used only when the Manage
             "hosthome_mount": false,
             "shared_mount": true
         }
-  
+
 Example of the default `kathara.conf`(5) file using Docker Manager.
 
 m4_include(footer.txt)
