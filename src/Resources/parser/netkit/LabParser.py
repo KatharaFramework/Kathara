@@ -3,9 +3,10 @@ import os
 import re
 
 from ...model.Lab import Lab
-
-
+from ...manager.docker import DockerManager
+from ...utils import check_value,getHostname
 class LabParser(object):
+    
     @staticmethod
     def parse(path):
         lab_conf_path = os.path.join(path, 'lab.conf')
@@ -25,7 +26,6 @@ class LabParser(object):
             matches = re.search(r"^(?P<key>[a-z0-9_]{1,30})\[(?P<arg>\w+)\]=(?P<value>\".+\"|\'.+\'|\w+)$",
                                 line.strip()
                                 )
-
             if matches:
                 key = matches.group("key").strip()
                 arg = matches.group("arg").strip()
@@ -38,9 +38,14 @@ class LabParser(object):
                 try:
                     # It's an interface, handle it.
                     interface_number = int(arg)
-
-                    if re.search(r"^\w+$", value):
-                        lab.connect_machine_to_link(key, interface_number, value)
+                    if re.search(r"^\w+$", value) or check_value(value):
+                        if re.search(r"^\w+$", value):
+                            if getHostname() == '.':
+                                lab.connect_machine_to_link(key, interface_number, value+getHostname())
+                            else:
+                                lab.connect_machine_to_link(key, interface_number, value+'.'+getHostname())
+                        else:
+                            lab.connect_machine_to_link(key, interface_number, value)
                     else:
                         raise Exception("[ERROR] In line %d: "
                                         "Link `%s` contains non-alphanumeric characters." % (line_number, value))
@@ -63,7 +68,8 @@ class LabParser(object):
 
             line_number += 1
             line = lab_mem_file.readline().decode('utf-8')
-
+        
         lab.check_integrity()
 
         return lab
+

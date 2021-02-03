@@ -1,4 +1,5 @@
 import logging
+import shlex
 from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
@@ -73,11 +74,11 @@ SHUTDOWN_COMMANDS = [
 
 
 class DockerMachine(object):
-    __slots__ = ['client', 'docker_image']
+    __slots__ = ['client','manager','docker_image']
 
-    def __init__(self, client, docker_image):
-        self.client = client
-
+    def __init__(self,manager,client, docker_image):
+        self.manager = manager
+        self.client = manager.client
         self.docker_image = docker_image
 
     def deploy_machines(self, lab, privileged_mode=False):
@@ -170,11 +171,18 @@ class DockerMachine(object):
         if Setting.get_instance().hosthome_mount:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
+        my_hostname = self.manager.getHostname()
+        if len(my_hostname.split('.')) == 1:
+            volumes[machine.lab.path+"/image"] = {'bind': '/root', 'mode': 'rw'}
+        else:
+            volumes["/root"] = {'bind': '/root', 'mode': 'rw'}
+
         container_name = self.get_container_name(machine.name, machine.lab.folder_hash)
+
         try:
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,
-                                                              hostname=machine.name,
+                                                              hostname=machine.name+"."+my_hostname,
                                                               cap_add=machine.capabilities if not privileged else None,
                                                               privileged=privileged,
                                                               network=first_network.name if first_network else None,
@@ -307,12 +315,15 @@ class DockerMachine(object):
                 progress_bar.next()
 
     def connect(self, lab_hash, machine_name, shell, logs=False):
+        self.client = self.manager.client
         logging.debug("Connect to machine with name: %s" % machine_name)
 
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
         if not shell:
             shell = Setting.get_instance().device_shell
+
+        shell = shlex.split(shell)
 
         if logs and Setting.get_instance().print_startup_log:
             result_string = self.exec(container,
@@ -375,18 +386,35 @@ class DockerMachine(object):
             filters["label"].append("lab_hash=%s" % lab_hash)
         if machine_name:
             filters["label"].append("name=%s" % machine_name)
+        list_container = self.client.containers.list()
+        return list_container
 
-        return self.client.containers.list(all=True, filters=filters)
+    def get_machines_by_filters_rec(self, lab_hash=None, machine_name=None, user=None):
+        filters = {"label": ["app=kathara"]}
+        if user:
+            filters["label"].append("user=%s" % user)
+        if lab_hash:
+            filters["label"].append("lab_hash=%s" % lab_hash)
+        if machine_name:
+            filters["label"].append("name=%s" % machine_name)
+
+        list_client = []
+        list_container = []
+        list_client.append(self.client)
+        self.manager.getAllClient(self.client,list_client)
+        for client in list_client:
+            list_container.extend(client.containers.list())
+        return list_container
 
     def get_machine(self, lab_hash, machine_name):
+        machine_connect = machine_name.split('.')[0]
         containers = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
-
-        logging.debug("Found containers: %s" % str(containers))
-
-        if len(containers) != 1:
+        if len(containers)==0:
             raise Exception("Error getting the machine `%s` inside the lab." % machine_name)
-        else:
-            return containers[0]
+        for c in containers:
+            if machine_connect == c.labels['name']:
+                logging.debug("Found containers: %s" % str(containers))
+                return c
 
     @staticmethod
     def get_container_name(name, lab_hash):

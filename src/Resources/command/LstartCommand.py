@@ -12,6 +12,7 @@ from ..parser.netkit.ExtParser import ExtParser
 from ..parser.netkit.FolderParser import FolderParser
 from ..parser.netkit.LabParser import LabParser
 from ..parser.netkit.OptionParser import OptionParser
+from ..parser.netkit.IntParser import IntParser
 from ..setting.Setting import Setting
 from ..strings import strings, wiki_description
 
@@ -153,7 +154,11 @@ class LstartCommand(Command):
                 raise Exception(str(e))
             else:
                 lab = FolderParser.parse(lab_path)
-
+        try:
+            IntParser.parse(lab_path)
+        except FileExistsError as e:
+            print("lab.int non esistente")
+    
         # Reorder machines by lab.dep file, if present.
         dependencies = DepParser.parse(lab_path)
         if dependencies:
