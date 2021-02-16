@@ -11,6 +11,7 @@ makedepends=(
   'python-pip' 
   'nuitka'
   'ruby-ronn-ng'
+  'ccache'
 )
 optdepends=(
   'docker: for running network scenarios in a local environment'
