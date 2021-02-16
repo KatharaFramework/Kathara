@@ -18,7 +18,7 @@ manpages:
 
 autocompletion:
 	python3 -m pip install -r $(AUTOCOMPDIR)/requirements.txt
-	python3 $(AUTOCOMPDIR)/generate_autocompletion.py $(AUTOCOMPDIR)/${PKGNAME}.bash-completion
+	cd $(AUTOCOMPDIR) && python3 generate_autocompletion.py ${PKGNAME}.bash-completion
 
 build: manpages autocompletion
 	python3 -m pip install -r $(SRCDIR)/requirements.txt
