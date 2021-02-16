@@ -55,6 +55,7 @@ aur:
 	mv kathara-aur/PKGBUILD pacman/kathara.install Output/kathara-aur
 	sed -i -e "s/__VERSION__/$(VERSION)/g" Output/kathara-aur/PKGBUILD
 	sed -i -e "s/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g" Output/kathara-aur/PKGBUILD
+	cd Output/kathara-aur && makepkg --printsrcinfo > .SRCINFO
 	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git add . 
 	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git commit -m "Bump to v$(VERSION)" 
 	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git push
