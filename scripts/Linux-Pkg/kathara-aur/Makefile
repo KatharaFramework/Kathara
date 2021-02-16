@@ -22,7 +22,7 @@ autocompletion:
 
 build: manpages autocompletion
 	python3 -m pip install -r $(SRCDIR)/requirements.txt
-	[ ! -d $(BUILDDIR) ] && mkdir -p $(BUILDDIR)
+	mkdir -p $(BUILDDIR)
 	python3 -m nuitka --show-progress --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=$(SRCDIR)/Resources --output-dir=$(BUILDDIR) $(SRCDIR)/${PKGNAME}.py
 
 install:
