@@ -49,7 +49,15 @@ build: pack-source
 	rm -rf Output/pkg
 	rm -rf Output/src
 
+aur:
+	mkdir -p Output
+	git clone ssh://aur@aur.archlinux.org/kathara Output/kathara-aur
+	mv kathara-aur/PKGBUILD pacman/kathara.install Output/kathara-aur
+	sed -i -e "s/__VERSION__/$(VERSION)/g" Output/kathara-aur/PKGBUILD
+	sed -i -e "s/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g" Output/kathara-aur/PKGBUILD
+	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git add . 
+	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git commit -m "Bump to v$(VERSION)" 
+	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git push
+
 clean:
-	if [ -d Output ]; then \
-		rm -rf Output; \
-	fi
+	[ -d Output ] && rm -rf Output
