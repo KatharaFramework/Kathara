@@ -5,27 +5,10 @@ pkgdesc="Lightweight network emulation system based on Docker containers."
 arch=('x86_64')
 url="https://www.kathara.org/"
 license=('GPL3')
-install="kathara.install"
-makedepends=(
-  'python>=3.5.0' 
-  'python-pip' 
-  'nuitka'
-  'ruby-ronn-ng'
-  'ccache'
-)
+makedepends=()
 optdepends=(
   'docker: for running network scenarios in a local environment'
   'xterm: for opening devices terminals'
 )
-source=("Kathara-${pkgver}::https://github.com/KatharaFramework/Kathara/archive/${pkgver}.tar.gz")
+source=("https://github.com/KatharaFramework/Kathara/releases/download/$pkgver/$pkgname-$pkgver-$pkgrel-x86_64.pkg.tar.zst")
 sha256sums=('SKIP')
-
-build() {
-  cd $srcdir/Kathara-$pkgver/scripts/Linux-Pkg/kathara-aur/
-  make DESTDIR="$pkgdir" PREFIX="/usr" build
-}
-
-package() {
-  cd $srcdir/Kathara-$pkgver/scripts/Linux-Pkg/kathara-aur/
-  make DESTDIR="$pkgdir" PREFIX="/usr" install
-}
