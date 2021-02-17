@@ -52,7 +52,7 @@ build: pack-source
 aur:
 	mkdir -p Output
 	git clone ssh://aur@aur.archlinux.org/kathara Output/kathara-aur
-	mv kathara-aur/PKGBUILD pacman/kathara.install Output/kathara-aur
+	cp kathara-aur/PKGBUILD pacman/kathara.install Output/kathara-aur
 	sed -i -e "s/__VERSION__/$(VERSION)/g" Output/kathara-aur/PKGBUILD
 	sed -i -e "s/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g" Output/kathara-aur/PKGBUILD
 	cd Output/kathara-aur && makepkg --printsrcinfo > .SRCINFO
