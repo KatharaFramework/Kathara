@@ -5,10 +5,12 @@ pkgdesc="Lightweight network emulation system based on Docker containers."
 arch=('x86_64')
 url="https://www.kathara.org/"
 license=('GPL3')
+install="kathara.install"
+changelog="kathara.changelog"
 makedepends=()
 optdepends=(
   'docker: for running network scenarios in a local environment'
   'xterm: for opening devices terminals'
 )
-source=("https://github.com/KatharaFramework/Kathara/releases/download/$pkgver/$pkgname-$pkgver-$pkgrel-x86_64.pkg.tar.zst")
-sha256sums=('SKIP')
+source=("file://$(pwd)/kathara.tar.gz")
+md5sums=('SKIP')
