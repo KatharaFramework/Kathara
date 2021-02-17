@@ -8,7 +8,7 @@ PACKAGE_VERSION=1
 all: clean docker-build-image docker-build
 
 docker-build: docker-build-image
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c "PATH=$$PATH:/home/builduser/.gem/ruby/2.7.0/bin make build" builduser
+	docker run -ti --rm -v ~/.ssh:/home/builduser/.ssh -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c "PATH=$$PATH:/home/builduser/.gem/ruby/2.7.0/bin make build" builduser
 
 docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-pkg .
@@ -44,12 +44,20 @@ pack-source: prepare-source prepare-man-pages prepare-bash-completion
 
 build: pack-source
 	cd Output && makepkg
+	git clone ssh://aur@aur.archlinux.org/kathara Output/kathara-aur
+	git config --global user.name "sameas-aur-account"
+	git config --global user.email "sameas-aur-account@kathara.org"
+	cp kathara-aur/PKGBUILD Output/kathara-aur/PKGBUILD
+	sed -i -e "s/__VERSION__/$(VERSION)/g" Output/kathara-aur/PKGBUILD
+	sed -i -e "s/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g" Output/kathara-aur/PKGBUILD
+	cd Output/kathara-aur && makepkg --printsrcinfo > .SRCINFO
+	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git add . 
+	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git commit -m "Bump to v$(VERSION)-$(PACKAGE_VERSION)" 
+	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git push
 	rm -rf Output/kathara.changelog Output/kathara.install Output/PKGBUILD
 	rm -rf Output/kathara.tar.gz
 	rm -rf Output/pkg
 	rm -rf Output/src
 
 clean:
-	if [ -d Output ]; then \
-		rm -rf Output; \
-	fi
+	[ -d Output ] && rm -rf Output

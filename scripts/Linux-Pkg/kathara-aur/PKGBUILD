@@ -1,0 +1,14 @@
+pkgname=kathara
+pkgver=__VERSION__
+pkgrel=__PACKAGE_VERSION__
+pkgdesc="Lightweight network emulation system based on Docker containers."
+arch=('x86_64')
+url="https://www.kathara.org/"
+license=('GPL3')
+makedepends=()
+optdepends=(
+  'docker: for running network scenarios in a local environment'
+  'xterm: for opening devices terminals'
+)
+source=("https://github.com/KatharaFramework/Kathara/releases/download/$pkgver/$pkgname-$pkgver-$pkgrel-x86_64.pkg.tar.zst")
+sha256sums=('SKIP')
