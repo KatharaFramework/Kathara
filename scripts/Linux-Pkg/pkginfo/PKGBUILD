@@ -8,8 +8,11 @@ license=('GPL3')
 install="kathara.install"
 changelog="kathara.changelog"
 makedepends=('python>=3.5.0' 'python-pip')
-optdepends=('docker: for running network scenarios in a local environment' 'xterm: for opening devices terminals')
-source=("file://$(pwd)/kathara.tar.gz")
+optdepends=(
+  'docker: for running network scenarios in a local environment'
+  'xterm: for opening devices terminals'
+)
+source=("kathara.tar.gz")
 md5sums=('SKIP')
 
 prepare() {
@@ -18,7 +21,7 @@ prepare() {
 }
 
 build() {
-  python3 -m nuitka --show-progress --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Resources kathara.py
+  python3 -m nuitka --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Resources kathara.py
 }
 
 package() {
