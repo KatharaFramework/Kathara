@@ -3,7 +3,7 @@
 VERSION=3.0.6
 PACKAGE_VERSION=1
 AUR_NAME=user
-AUR_MAIL=my@mail.com
+AUR_MAIL=your@mail.com
 
 .PHONY: all allRemote clean docker-build-image docker-build-local docker-build-remote prepare-source prepare-man-pages prepare-bash-completion pack-source build-local build-remote
 
@@ -15,7 +15,7 @@ docker-build-local: docker-build-image
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c "PATH=$$PATH:/home/builduser/.gem/ruby/2.7.0/bin:/home/builduser/.local/share/gem/ruby/2.7.0/bin make build-local" builduser
 
 docker-build-remote: docker-build-image
-	docker run -ti --rm -v ~/.ssh:/home/builduser/.ssh -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c "PATH=$$PATH:/home/builduser/.gem/ruby/2.7.0/bin:/home/builduser/.local/share/gem/ruby/2.7.0/bin make build-remote" builduser
+	docker run -ti --rm -v ~/.ssh:/opt/kathara/.ssh -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c "PATH=$$PATH:/home/builduser/.gem/ruby/2.7.0/bin:/home/builduser/.local/share/gem/ruby/2.7.0/bin make build-remote" builduser
 
 docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-pkg .
@@ -49,7 +49,7 @@ prepare-bash-completion:
 pack-source: clean prepare-source prepare-man-pages prepare-bash-completion
 	cd Output/kathara && tar cfvz ../kathara.tar.gz .
 	rm -Rf Output/kathara
-	cp -r build-local/* Output/
+	cp -r pkginfo/* Output/
 	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara.changelog
 	sed -i -e 's/__VERSION__/$(VERSION)/g' Output/kathara.changelog
 	sed -i -e 's/__VERSION__/$(VERSION)/g' Output/PKGBUILD
@@ -62,15 +62,19 @@ build-local: pack-source
 	rm -rf Output/pkg
 	rm -rf Output/src
 
-build-remote: pack-source
+build-remote: pack-source 
+	cp -r /opt/kathara/.ssh/ /home/builduser/.ssh/ && chmod 600 /home/builduser/.ssh/id_rsa
+	ssh-keyscan aur.archlinux.org > /home/builduser/.ssh/known_hosts
 	cd Output && git clone ssh://aur@aur.archlinux.org/kathara kathara-aur
 	git config --global user.name "$(AUR_NAME)"
 	git config --global user.email "$(AUR_MAIL)"
-	cd Output && cp -Rf $(ls | grep -v kathara-aur) kathara-aur/
+	cd Output && cp -Rf $$(ls | grep -v kathara-aur) kathara-aur/
 	cd Output/kathara-aur && makepkg --printsrcinfo > .SRCINFO
 	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git add .
 	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git commit -m "Bump to v$(VERSION)-$(PACKAGE_VERSION)"
 	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git push
 
 clean:
-	[ -d Output ] && rm -rf Output
+	if [ -d Output ]; then \
+		rm -rf Output; \
+	fi
