@@ -1,4 +1,4 @@
-FROM archlinux:latest
+FROM archlinux:base-20210131.0.14634
 
 RUN pacman -Syyu --noconfirm
 RUN pacman-db-upgrade
@@ -6,10 +6,10 @@ RUN pacman-db-upgrade
 RUN useradd -m -s /bin/bash builduser 
 
 RUN pacman -S --noconfirm git \
-			  openssh \
-				 base-devel \
-				 python-pip \
-				 ruby 
+			  			  openssh \
+				 		  base-devel \
+				 		  python-pip \
+				 		  ruby 
 
 RUN su -c "gem install ronn-ng" builduser
 
