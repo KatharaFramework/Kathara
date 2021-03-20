@@ -65,6 +65,10 @@ chmod g+s %{_libdir}/kathara/kathara
 %{_libdir}/kathara/kathara wipe -f -a 2> /dev/null || true
 
 %changelog
-*  __DATE__ Mariano Scazzariello <******@gmail.com> - __VERSION__-__PACKAGE_VERSION__
-- Fix ltest exec commands
-- Fix check command
+*  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
+- Add option to specify number of terminals to open for a device
+- Add advanced port forwarding options
+- Add sysctl option in vstart
+- Minor fixes (fix lstart directory parsing)
+- Bump Dockerpy version to 4.4.0 and use max_pool_size = cpu_count with no limit (before the limit was 10)
+- Fix Kubernetes timeout on big list requests

@@ -144,11 +144,12 @@ class DockerMachine(object):
         memory = machine.get_mem()
         cpus = machine.get_cpu(multiplier=1e9)
 
-        port_info = machine.get_ports()
+        ports_info = machine.get_ports()
         ports = None
-        if port_info:
-            (internal_port, protocol, host_port) = port_info
-            ports = {'%d/%s' % (internal_port, protocol): host_port}
+        if ports_info:
+            ports = {}
+            for (host_port, protocol), guest_port in ports_info.items():
+                ports['%d/%s' % (guest_port, protocol)] = host_port
 
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
         options = machine.lab.general_options
@@ -300,29 +301,33 @@ class DockerMachine(object):
                                     )
 
         if Setting.get_instance().open_terminals:
-            machine.connect(Setting.get_instance().terminal)
+            for i in range(0, machine.get_num_terms()):
+                machine.connect(Setting.get_instance().terminal)
 
     def undeploy(self, lab_hash, selected_machines=None):
         machines = self.get_machines_by_filters(lab_hash=lab_hash)
+        if selected_machines is not None and len(selected_machines) > 0:
+            machines = [item for item in machines if item.labels["name"] in selected_machines]
 
-        pool_size = utils.get_pool_size()
-        machines_pool = Pool(pool_size)
+        if len(machines) > 0:
+            pool_size = utils.get_pool_size()
+            machines_pool = Pool(pool_size)
 
-        items = utils.chunk_list(machines, pool_size)
+            items = utils.chunk_list(machines, pool_size)
 
-        progress_bar = progressbar.ProgressBar(
-            widgets=['Deleting devices... ', progressbar.Bar(),
-                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-            redirect_stdout=True,
-            max_value=len(machines) if not selected_machines else len(selected_machines)
-        )
+            progress_bar = progressbar.ProgressBar(
+                widgets=['Deleting devices... ', progressbar.Bar(),
+                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+                redirect_stdout=True,
+                max_value=len(machines)
+            )
 
-        for chunk in items:
-            machines_pool.map(func=partial(self._undeploy_machine, selected_machines, True, progress_bar),
-                              iterable=chunk
-                              )
+            for chunk in items:
+                machines_pool.map(func=partial(self._undeploy_machine, progress_bar),
+                                  iterable=chunk
+                                  )
 
-        progress_bar.finish()
+            progress_bar.finish()
 
     def wipe(self, user=None):
         machines = self.get_machines_by_filters(user=user)
@@ -333,17 +338,13 @@ class DockerMachine(object):
         items = utils.chunk_list(machines, pool_size)
 
         for chunk in items:
-            machines_pool.map(func=partial(self._undeploy_machine, [], False, None), iterable=chunk)
+            machines_pool.map(func=partial(self._undeploy_machine, None), iterable=chunk)
 
-    def _undeploy_machine(self, selected_machines, log, progress_bar, machine_item):
-        # If selected machines list is empty, remove everything
-        # Else, check if the machine is in the list.
-        if not selected_machines or \
-                machine_item.labels["name"] in selected_machines:
-            self.delete_machine(machine_item)
+    def _undeploy_machine(self, progress_bar, machine_item):
+        self.delete_machine(machine_item)
 
-            if log:
-                progress_bar += 1
+        if progress_bar is not None:
+            progress_bar += 1
 
     def connect(self, lab_hash, machine_name, shell=None, logs=False):
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)

@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 from ... import utils
 from ...foundation.cli.command.Command import Command
@@ -63,6 +64,8 @@ class ConnectCommand(Command):
         else:
             lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
             lab_path = utils.get_absolute_path(lab_path)
+
+        logging.debug("Executing `connect` command in path `%s`..." % lab_path)
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 

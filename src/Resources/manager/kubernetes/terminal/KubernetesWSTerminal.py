@@ -43,7 +43,7 @@ class KubernetesWSTerminal(Terminal):
             if data:
                 self._system_stdout.write(data.encode('utf-8'))
 
-                if data.strip() == 'exit':
+                if data.strip() == '\r\nexit\r\n':
                     self.close()
 
         return read_external_terminal

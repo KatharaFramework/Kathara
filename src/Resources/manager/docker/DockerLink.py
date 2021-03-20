@@ -92,6 +92,9 @@ class DockerLink(object):
 
     def undeploy(self, lab_hash):
         links = self.get_links_by_filters(lab_hash=lab_hash)
+        for item in links:
+            item.reload()
+        links = [item for item in links if len(item.containers) <= 0]
 
         if len(links) > 0:
             pool_size = utils.get_pool_size()
@@ -107,7 +110,7 @@ class DockerLink(object):
             )
 
             for chunk in items:
-                links_pool.map(func=partial(self._undeploy_link, True, progress_bar), iterable=chunk)
+                links_pool.map(func=partial(self._undeploy_link, progress_bar), iterable=chunk)
 
             progress_bar.finish()
 
@@ -120,17 +123,12 @@ class DockerLink(object):
         items = utils.chunk_list(links, pool_size)
 
         for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, False, None), iterable=chunk)
+            links_pool.map(func=partial(self._undeploy_link, None), iterable=chunk)
 
-    def _undeploy_link(self, log, progress_bar, link_item):
-        link_item.reload()
-
-        if len(link_item.containers) > 0:
-            return
-
+    def _undeploy_link(self, progress_bar, link_item):
         self._delete_link(link_item)
 
-        if log:
+        if progress_bar is not None:
             progress_bar += 1
 
     def get_docker_bridge(self):

@@ -52,6 +52,12 @@ class VstartCommand(Command):
             required=False,
             help='Start the device in privileged mode. MUST BE ROOT FOR THIS OPTION.'
         )
+        group.add_argument(
+            '--num_terms',
+            metavar='NUM_TERMS',
+            required=False,
+            help='Choose the number of terminals to open for the device.'
+        )
         parser.add_argument(
             '-n', '--name',
             metavar='DEVICE_NAME',
@@ -115,8 +121,19 @@ class VstartCommand(Command):
         )
         parser.add_argument(
             '--port',
+            dest='ports',
+            metavar='[HOST:]GUEST[/PROTOCOL]',
+            nargs='+',
             required=False,
-            help='Choose a TCP Port number to map localhost port PORT to the internal port 3000 of the device.'
+            help='Map localhost port HOST to the internal port GUEST of the device for the specified PROTOCOL.'
+        )
+        parser.add_argument(
+            '--sysctl',
+            dest='sysctls',
+            metavar='SYSCTL',
+            nargs='+',
+            required=False,
+            help='Set sysctl option for the device.'
         )
         parser.add_argument(
             '--shell',
@@ -184,7 +201,15 @@ class VstartCommand(Command):
         if args.bridged:
             machine.add_meta("bridged", True)
 
-        if args.port:
-            machine.add_meta("port", args.port)
+        if args.ports:
+            for port in args.ports:
+                machine.add_meta("port", port)
+
+        if args.num_terms:
+            machine.add_meta('num_terms', args.num_terms)
+
+        if args.sysctls:
+            for sysctl in args.sysctls:
+                machine.add_meta("sysctl", sysctl)
 
         ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args.privileged)

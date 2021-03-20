@@ -9,17 +9,15 @@ from ..api.GitHubApi import GitHubApi
 from ..exceptions import HTTPConnectionError, SettingsError
 from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
 
-POSSIBLE_SHELLS = ["/bin/bash", "/bin/sh", "/bin/ash", "/bin/ksh", "/bin/zsh", "/bin/fish", "/bin/csh", "/bin/tcsh"]
-POSSIBLE_TERMINALS = ["/usr/bin/xterm", "/usr/bin/konsole"]
-POSSIBLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "EXCEPTION"]
-POSSIBLE_MANAGERS = ["docker", "kubernetes"]
+AVAILABLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "EXCEPTION"]
+AVAILABLE_MANAGERS = ["docker", "kubernetes"]
 
 ONE_WEEK = 604800
 
 DEFAULTS = {
     "image": 'kathara/quagga',
     "manager_type": 'docker',
-    "terminal": '/usr/bin/xterm',
+    "terminal": utils.exec_by_platform(lambda: '/usr/bin/xterm', lambda: '', lambda: 'Terminal'),
     "open_terminals": True,
     "device_shell": '/bin/bash',
     "net_prefix": 'kathara',
@@ -160,8 +158,8 @@ class Setting(object):
         except ValueError:
             raise SettingsError("Device Prefix must only contain lowercase letters and underscore.")
 
-        if self.debug_level not in POSSIBLE_DEBUG_LEVELS:
-            raise SettingsError("Debug Level must be one of the following: %s." % (", ".join(POSSIBLE_DEBUG_LEVELS)))
+        if self.debug_level not in AVAILABLE_DEBUG_LEVELS:
+            raise SettingsError("Debug Level must be one of the following: %s." % (", ".join(AVAILABLE_DEBUG_LEVELS)))
 
     def check_manager(self):
         from ..manager.ManagerProxy import ManagerProxy
@@ -187,7 +185,17 @@ class Setting(object):
         def check_unix():
             return os.path.isfile(terminal) and os.access(terminal, os.X_OK)
 
-        if not utils.exec_by_platform(check_unix, lambda: True, lambda: True):
+        def check_osx():
+            import appscript
+            import aem
+            try:
+                appscript.app(terminal)
+            except aem.findapp.ApplicationNotFoundError:
+                return False
+
+            return True
+
+        if not utils.exec_by_platform(check_unix, lambda: True, check_osx):
             raise SettingsError("Terminal Emulator `%s` not valid! Install it before using it." % terminal)
 
         return True

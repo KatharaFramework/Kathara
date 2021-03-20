@@ -4,7 +4,6 @@ from docker.errors import NotFound
 
 from ... import utils
 from ...os.Networking import Networking
-from ...setting.Setting import Setting
 
 PLUGIN_NAME = "kathara/katharanp:latest"
 XTABLES_CONFIGURATION_KEY = "xtables_lock"
