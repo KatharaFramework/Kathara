@@ -7,7 +7,7 @@ url="https://www.kathara.org/"
 license=('GPL3')
 install="kathara.install"
 changelog="kathara.changelog"
-makedepends=('python>=3.5.0' 'python-pip')
+makedepends=('python>=3.5.0' 'python-pip' 'chrpath')
 optdepends=(
   'docker: for running network scenarios in a local environment'
   'xterm: for opening devices terminals'

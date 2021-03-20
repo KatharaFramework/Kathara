@@ -9,7 +9,8 @@ RUN pacman -S --noconfirm git \
 			  			  openssh \
 				 		  base-devel \
 				 		  python-pip \
-				 		  ruby 
+				 		  ruby \
+						  chrpath 
 
 RUN su -c "gem install ronn-ng" builduser
 
