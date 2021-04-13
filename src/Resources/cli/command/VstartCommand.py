@@ -147,20 +147,20 @@ class VstartCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        if args.dry_mode:
+        if args['dry_mode']:
             print("Device configuration is correct. Exiting...")
             sys.exit(0)
         else:
             print(utils.format_headers("Starting Device"))
 
-        args.no_shared = False
+        args['no_shared'] = False
 
-        Setting.get_instance().open_terminals = args.terminals if args.terminals is not None \
+        Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
                                                 else Setting.get_instance().open_terminals
-        Setting.get_instance().terminal = args.xterm or Setting.get_instance().terminal
-        Setting.get_instance().device_shell = args.shell or Setting.get_instance().device_shell
+        Setting.get_instance().terminal = args['xterm'] or Setting.get_instance().terminal
+        Setting.get_instance().device_shell = args['shell'] or Setting.get_instance().device_shell
 
-        if args.privileged:
+        if args['privileged']:
             if not utils.is_admin():
                 raise Exception("You must be root in order to start this Kathara device in privileged mode.")
             else:
@@ -170,46 +170,12 @@ class VstartCommand(Command):
         vlab_dir = utils.get_vlab_temp_path()
         lab = Lab(vlab_dir)
 
-        machine_name = args.name.strip()
+        machine_name = args['name'].strip()
         matches = re.search(r"^[a-z0-9_]{1,30}$", machine_name)
         if not matches:
             raise Exception("Invalid device name `%s`." % machine_name)
 
         machine = lab.get_or_new_machine(machine_name)
+        machine.add_meta_from_args(args)
 
-        if args.eths:
-            for eth in args.eths:
-                try:
-                    (iface_number, link_name) = eth.split(":")
-                    lab.connect_machine_to_link(machine.name, int(iface_number), link_name)
-                except ValueError:
-                    raise Exception("Interface number in `--eth %s` is not a number." % eth)
-
-        if args.exec_commands:
-            for command in args.exec_commands:
-                machine.add_meta("exec", command)
-
-        if args.mem:
-            machine.add_meta("mem", args.mem)
-
-        if args.cpus:
-            machine.add_meta("cpus", args.cpus)
-
-        if args.image:
-            machine.add_meta("image", args.image)
-
-        if args.bridged:
-            machine.add_meta("bridged", True)
-
-        if args.ports:
-            for port in args.ports:
-                machine.add_meta("port", port)
-
-        if args.num_terms:
-            machine.add_meta('num_terms', args.num_terms)
-
-        if args.sysctls:
-            for sysctl in args.sysctls:
-                machine.add_meta("sysctl", sysctl)
-
-        ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args.privileged)
+        ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args['privileged'])

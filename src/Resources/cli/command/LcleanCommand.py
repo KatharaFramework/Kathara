@@ -42,11 +42,11 @@ class LcleanCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+        lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
         ManagerProxy.get_instance().undeploy_lab(lab_hash,
-                                                 selected_machines=set(args.machine_names)
+                                                 selected_machines=set(args['machine_names'])
                                                  )

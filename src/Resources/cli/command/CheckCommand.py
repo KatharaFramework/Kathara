@@ -56,8 +56,8 @@ class CheckCommand(Command):
         print("*\tTrying to run `Hello World` container...")
 
         Setting.get_instance().open_terminals = False
-        args.no_shared = False
-        args.no_hosthome = False
+        args['no_shared'] = False
+        args['no_hosthome'] = False
 
         vlab_dir = utils.get_vlab_temp_path()
         lab = Lab(vlab_dir)

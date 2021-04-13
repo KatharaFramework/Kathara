@@ -329,3 +329,39 @@ class Machine(object):
 
     def __repr__(self):
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)
+
+    def add_meta_from_args(self, args):
+        if args['eths']:
+            for eth in args['eths']:
+                try:
+                    (iface_number, link_name) = eth.split(":")
+                    self.lab.connect_machine_to_link(self.name, int(iface_number), link_name)
+                except ValueError:
+                    raise Exception("Interface number in `--eth %s` is not a number." % eth)
+
+        if args['exec_commands']:
+            for command in args['exec_commands']:
+                self.add_meta("exec", command)
+
+        if args['mem']:
+            self.add_meta("mem", args['mem'])
+
+        if args['cpus']:
+            self.add_meta("cpus", args['cpus'])
+
+        if args['image']:
+            self.add_meta("image", args['image'])
+
+        if args['bridged']:
+            self.add_meta("bridged", True)
+
+        if args['ports']:
+            for port in args['ports']:
+                self.add_meta("port", port)
+
+        if args['num_terms']:
+            self.add_meta('num_terms', args['num_terms'])
+
+        if args['sysctls']:
+            for sysctl in args['sysctls']:
+                self.add_meta("sysctl", sysctl)

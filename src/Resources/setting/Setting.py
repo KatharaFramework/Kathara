@@ -5,7 +5,7 @@ import time
 
 from .. import utils
 from .. import version
-from ..api.GitHubApi import GitHubApi
+from ..connectors.GitHubApi import GitHubApi
 from ..exceptions import HTTPConnectionError, SettingsError
 from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
 

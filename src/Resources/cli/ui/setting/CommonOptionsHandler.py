@@ -1,5 +1,5 @@
 from . import utils as setting_utils
-from ....api.DockerHubApi import DockerHubApi
+from ....connectors.DockerHubApi import DockerHubApi
 from ....exceptions import HTTPConnectionError
 from ....foundation.cli.ui.setting.OptionsHandler import OptionsHandler
 from ....manager.ManagerProxy import ManagerProxy

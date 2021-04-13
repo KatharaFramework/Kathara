@@ -66,14 +66,14 @@ class LtestCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+        lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
 
         signature_test_path = None
-        if not args.verify:
+        if not args['verify']:
             signature_test_path = os.path.join(lab_path, "_test", "signature")
 
-            if os.path.exists(signature_test_path) and not args.rebuild_signature:
+            if os.path.exists(signature_test_path) and not args['rebuild_signature']:
                 logging.error("Signature for current lab already exists. Exiting...")
                 sys.exit(1)
 
@@ -83,9 +83,9 @@ class LtestCommand(Command):
         # Start the lab
         lab = LstartCommand().run(lab_path, new_argv)
 
-        if args.wait:
+        if args['wait']:
             try:
-                sleep_minutes = float(args.wait)
+                sleep_minutes = float(args['wait'])
                 if sleep_minutes < 0:
                     raise ValueError()
 
@@ -98,8 +98,8 @@ class LtestCommand(Command):
         builtin_test = BuiltInTest(lab)
         user_test = UserTest(lab)
 
-        if not args.verify:
-            if not os.path.exists(signature_test_path) or args.rebuild_signature:
+        if not args['verify']:
+            if not os.path.exists(signature_test_path) or args['rebuild_signature']:
                 shutil.rmtree(signature_test_path, ignore_errors=True)
                 os.makedirs(signature_test_path, exist_ok=True)
 
@@ -114,9 +114,9 @@ class LtestCommand(Command):
             builtin_test_passed = True
             user_test_passed = True
             try:
-                if args.verify == "builtin" or args.verify == "both":
+                if args['verify'] == "builtin" or args['verify'] == "both":
                     builtin_test_passed = builtin_test.test()
-                if args.verify == "user" or args.verify == "both":
+                if args['verify'] == "user" or args['verify'] == "both":
                     user_test_passed = user_test.test()
             except TestError as e:
                 logging.error(str(e))
@@ -124,6 +124,6 @@ class LtestCommand(Command):
         # Clean the lab at the end of the test.
         LcleanCommand().run(lab_path, [])
 
-        if args.verify:
+        if args['verify']:
             if not builtin_test_passed or not user_test_passed:
                 sys.exit(1)

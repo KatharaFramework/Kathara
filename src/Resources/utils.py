@@ -43,8 +43,8 @@ def class_for_name(module_name, class_name):
 def generate_urlsafe_hash(string):
     string = re.sub(r'[^\x00-\x7F]+', '', string)
     return base64.urlsafe_b64encode(hashlib.md5(string.encode('utf-8', errors='ignore')).digest())[:-2] \
-            .decode('utf-8') \
-            .replace('-', '').replace('_', '')
+        .decode('utf-8') \
+        .replace('-', '').replace('_', '')
 
 
 def get_absolute_path(path):
@@ -221,7 +221,7 @@ def human_readable_bytes(size_bytes):
 
 
 # Lab Functions
-def get_vlab_temp_path(force_creation=True):
+def get_lab_temp_path(lab_name, force_creation=True):
     def windows_path():
         import win32file
         return win32file.GetLongPathName(tempfile.gettempdir())
@@ -230,19 +230,22 @@ def get_vlab_temp_path(force_creation=True):
                                windows_path,
                                lambda: re.sub(r"/+", "/", "/%s" % get_absolute_path("/tmp"))
                                )
+    lab_temp_directory = os.path.join(tempdir, lab_name)
+    if not os.path.isdir(lab_temp_directory) and force_creation:
+        os.mkdir(lab_temp_directory)
 
-    vlab_directory = os.path.join(tempdir, "kathara_vlab")
-    if not os.path.isdir(vlab_directory) and force_creation:
-        os.mkdir(vlab_directory)
+    return lab_temp_directory
 
-    return vlab_directory
+
+def get_vlab_temp_path(force_creation=True):
+    return get_lab_temp_path("kathara_vlab", force_creation=force_creation)
 
 
 def pack_file_for_tar(filename, arcname):
     file_content_patched = convert_win_2_linux(filename)
 
     file_content = BytesIO(file_content_patched)
-    tarinfo = tarfile.TarInfo(arcname.replace("\\", "/"))   # Tar files must have Linux-style paths
+    tarinfo = tarfile.TarInfo(arcname.replace("\\", "/"))  # Tar files must have Linux-style paths
     tarinfo.size = len(file_content_patched)
 
     return tarinfo, file_content

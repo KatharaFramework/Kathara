@@ -67,18 +67,18 @@ class ExecCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        if args.vmachine:
+        if args['vmachine']:
             lab_path = utils.get_vlab_temp_path()
         else:
-            lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+            lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
             lab_path = utils.get_absolute_path(lab_path)
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        (stdout, stderr) = ManagerProxy.get_instance().exec(lab_hash, args.machine_name, args.command)
+        (stdout, stderr) = ManagerProxy.get_instance().exec(lab_hash, args['machine_name'], args['command'])
 
-        if not args.no_stdout:
+        if not args['no_stdout']:
             sys.stdout.write(stdout)
 
-        if stderr and not args.no_stderr:
+        if stderr and not args['no_stderr']:
             sys.stderr.write(stderr)

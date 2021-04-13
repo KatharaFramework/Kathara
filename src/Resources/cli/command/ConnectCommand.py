@@ -59,15 +59,15 @@ class ConnectCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        if args.vmachine:
+        if args['vmachine']:
             lab_path = utils.get_vlab_temp_path()
         else:
-            lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+            lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
             lab_path = utils.get_absolute_path(lab_path)
 
         logging.debug("Executing `connect` command in path `%s`..." % lab_path)
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        ManagerProxy.get_instance().connect_tty(lab_hash, machine_name=args.machine_name, shell=args.shell,
-                                                logs=args.logs)
+        ManagerProxy.get_instance().connect_tty(lab_hash, machine_name=args['machine_name'], shell=args['shell'],
+                                                logs=args['logs'])

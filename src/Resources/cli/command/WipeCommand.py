@@ -56,18 +56,18 @@ class WipeCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        if not args.force:
+        if not args['force']:
             utils.confirmation_prompt("Are you sure to wipe Kathara?", lambda: None, sys.exit)
 
-        if args.all and not utils.is_admin():
+        if args['all'] and not utils.is_admin():
             raise Exception("You must be root in order to wipe all Kathara devices of all users.")
 
-        if args.settings:
+        if args['settings']:
             Setting.wipe()
 
             sys.exit(0)
         else:
-            ManagerProxy.get_instance().wipe(all_users=bool(args.all))
+            ManagerProxy.get_instance().wipe(all_users=bool(args['all']))
 
         vlab_dir = utils.get_vlab_temp_path(force_creation=False)
         shutil.rmtree(vlab_dir, ignore_errors=True)

@@ -48,7 +48,7 @@ class VconfigCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        for eth in args.eths:
+        for eth in args['eths']:
             # Only alphanumeric characters are allowed
             matches = re.search(r"^\w+$", eth)
 
@@ -61,10 +61,10 @@ class VconfigCommand(Command):
         lab = Lab(vlab_dir)
 
         iface_number = 0
-        for eth in args.eths:
-            logging.info("Adding interface to device `%s` for collision domain `%s`..." % (args.name, eth))
+        for eth in args['eths']:
+            logging.info("Adding interface to device `%s` for collision domain `%s`..." % (args['name'], eth))
 
-            lab.connect_machine_to_link(args.name, iface_number, eth)
+            lab.connect_machine_to_link(args['name'], iface_number, eth)
             iface_number += 1
 
         ManagerProxy.get_instance().update_lab(lab)

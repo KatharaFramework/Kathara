@@ -122,21 +122,21 @@ class LstartCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+        lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
 
-        Setting.get_instance().open_terminals = args.terminals if args.terminals is not None \
+        Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
                                                 else Setting.get_instance().open_terminals
-        Setting.get_instance().terminal = args.xterm or Setting.get_instance().terminal
+        Setting.get_instance().terminal = args['xterm'] or Setting.get_instance().terminal
 
-        if args.privileged:
+        if args['privileged']:
             if not utils.is_admin():
                 raise Exception("You must be root in order to start Kathara devices in privileged mode.")
             else:
                 logging.warning("Running devices with privileged capabilities, terminals won't open!")
                 Setting.get_instance().open_terminals = False
 
-        if args.dry_mode:
+        if args['dry_mode']:
             print(utils.format_headers("Checking Lab"))
         else:
             print(utils.format_headers("Starting Lab"))
@@ -144,7 +144,7 @@ class LstartCommand(Command):
         try:
             lab = LabParser.parse(lab_path)
         except FileNotFoundError as e:
-            if not args.force_lab:
+            if not args['force_lab']:
                 raise Exception(str(e))
             else:
                 lab = FolderParser.parse(lab_path)
@@ -171,8 +171,8 @@ class LstartCommand(Command):
             else:
                 raise OSError("lab.ext is only available on UNIX systems.")
 
-        if args.machine_name:
-            lab.intersect_machines(args.machine_name)
+        if args['machine_name']:
+            lab.intersect_machines(args['machine_name'])
 
         lab_meta_information = str(lab)
 
@@ -181,7 +181,7 @@ class LstartCommand(Command):
             print(utils.format_headers())
 
         # If dry mode, we just check if the lab.conf is correct.
-        if args.dry_mode:
+        if args['dry_mode']:
             print("lab.conf file is correct. Exiting...")
             sys.exit(0)
 
@@ -189,13 +189,13 @@ class LstartCommand(Command):
             raise Exception("No devices in the current lab. Exiting...")
 
         try:
-            lab.general_options = OptionParser.parse(args.options)
+            lab.general_options = OptionParser.parse(args['options'])
         except:
             raise Exception("--pass parameter not valid.")
 
-        ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args.privileged)
+        ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args['privileged'])
 
-        if args.list:
+        if args['list']:
             print(next(ManagerProxy.get_instance().get_lab_info(lab.folder_hash)))
 
         return lab

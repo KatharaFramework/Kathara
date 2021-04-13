@@ -93,7 +93,7 @@ class DockerMachine(object):
         self.docker_image.check_and_pull_from_list(lab_images)
 
         # Read additional CLI args and settings
-        args = CliArgs.get_instance().args
+        args = CliArgs.get_instance()
         Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
             else Setting.get_instance().hosthome_mount
         Setting.get_instance().shared_mount = args.no_shared if args.no_shared is not None \
@@ -441,7 +441,7 @@ class DockerMachine(object):
         machines = self.get_machines_by_filters(machine_name=machine_name, lab_hash=lab_hash, user=user)
 
         if not machines:
-            raise Exception("The specified device is not running.")
+            raise Exception("The specified device '%s' is not running." % machine_name)
         elif len(machines) > 1:
             raise Exception("There is more than one device matching the name `%s`." % machine_name)
 

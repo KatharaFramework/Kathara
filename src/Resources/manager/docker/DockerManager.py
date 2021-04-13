@@ -127,11 +127,17 @@ class DockerManager(IManager):
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
 
-        machine_streams = self.docker_machine.get_machines_info(lab_hash, machine_filter=machine_name, user=user_name)
+        lab_info = self.docker_machine.get_machines_info(lab_hash, machine_filter=machine_name, user=user_name)
 
+        return lab_info
+
+    @privileged
+    def get_formatted_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         table_header = ["LAB HASH", "USER", "DEVICE NAME", "STATUS", "CPU %", "MEM USAGE / LIMIT", "MEM %", "NET I/O"]
         stats_table = DoubleTable([])
         stats_table.inner_row_border = True
+
+        lab_info = self.get_lab_info(lab_hash, machine_name, all_users)
 
         while True:
             machines_data = [
@@ -139,7 +145,7 @@ class DockerManager(IManager):
             ]
 
             try:
-                result = next(machine_streams)
+                result = next(lab_info)
             except StopIteration:
                 return
 
@@ -166,6 +172,12 @@ class DockerManager(IManager):
         user_name = utils.get_current_user_name() if not all_users else None
 
         machine_stats = self.docker_machine.get_machine_info(machine_name, lab_hash=lab_hash, user=user_name)
+
+        return machine_stats
+
+    @privileged
+    def get_formatted_machine_info(self, machine_name, lab_hash=None, all_users=False):
+        machine_stats = self.get_machine_info(machine_name, lab_hash, all_users)
 
         machine_info = utils.format_headers("Device information") + "\n"
         machine_info += "Lab Hash: %s\n" % machine_stats['real_lab_hash']

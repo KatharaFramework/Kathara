@@ -131,7 +131,7 @@ class Lab(object):
 
         if self.name:
             lab_info += "Name: %s\n" % self.name
-        
+
         if self.description:
             lab_info += "Description: %s\n" % self.description
 

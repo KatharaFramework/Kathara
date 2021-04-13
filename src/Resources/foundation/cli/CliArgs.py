@@ -17,3 +17,9 @@ class CliArgs(object):
             self.args = {}
 
             CliArgs.__instance = self
+
+    def __getattr__(self, item):
+        if item in self.args:
+            return self.args[item]
+        else:
+            return None

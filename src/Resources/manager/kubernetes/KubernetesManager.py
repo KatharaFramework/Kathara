@@ -120,18 +120,23 @@ class KubernetesManager(IManager):
 
     @privileged
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
-        if all_users:
-            raise NotSupportedError("Cannot use `--all` flag.")
-
         if lab_hash:
             lab_hash = lab_hash.lower()
+
+        machines_stats = self.k8s_machine.get_machines_info(lab_hash=lab_hash, machine_filter=machine_name)
+        return machines_stats
+
+    @privileged
+    def get_formatted_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
+        if all_users:
+            raise NotSupportedError("Cannot use `--all` flag.")
 
         table_header = ["LAB HASH", "DEVICE NAME", "STATUS", "ASSIGNED NODE"]
         stats_table = DoubleTable([])
         stats_table.inner_row_border = True
 
         while True:
-            machines_stats = self.k8s_machine.get_machines_info(lab_hash=lab_hash, machine_filter=machine_name)
+            machines_stats = self.get_lab_info(lab_hash=lab_hash, machine_filter=machine_name)
 
             machines_data = [
                 table_header
@@ -149,13 +154,19 @@ class KubernetesManager(IManager):
 
     @privileged
     def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
-        if all_users:
-            raise NotSupportedError("Cannot use `--all` flag.")
-
         if lab_hash:
             lab_hash = lab_hash.lower()
 
         machine_stats = self.k8s_machine.get_machine_info(machine_name=machine_name, lab_hash=lab_hash)
+
+        return machine_stats
+
+    @privileged
+    def get_formatted_machine_info(self, machine_name, lab_hash=None, all_users=False):
+        if all_users:
+            raise NotSupportedError("Cannot use `--all` flag.")
+
+        machine_stats = self.get_machine_info(machine_name, lab_hash=lab_hash)
 
         machine_info = utils.format_headers("Device information") + "\n"
         machine_info += "Lab Hash: %s\n" % machine_stats["real_lab_hash"]

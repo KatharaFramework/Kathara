@@ -21,8 +21,8 @@ class ManagerProxy(IManager):
         else:
             manager_type = Setting.get_instance().manager_type
 
-            self.manager = ManagerFactory().create_instance(module_args=(manager_type, ),
-                                                            class_args=(manager_type.capitalize(), )
+            self.manager = ManagerFactory().create_instance(module_args=(manager_type,),
+                                                            class_args=(manager_type.capitalize(),)
                                                             )
 
             ManagerProxy.__instance = self
@@ -51,8 +51,14 @@ class ManagerProxy(IManager):
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         return self.manager.get_lab_info(lab_hash, machine_name, all_users)
 
+    def get_formatted_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
+        return self.manager.get_formatted_lab_info(lab_hash, machine_name, all_users)
+
     def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
         return self.manager.get_machine_info(machine_name, lab_hash, all_users)
+
+    def get_formatted_machine_info(self, machine_name, lab_hash=None, all_users=False):
+        return self.manager.get_formatted_machine_info(machine_name, lab_hash, all_users)
 
     def check_image(self, image_name):
         self.manager.check_image(image_name)
@@ -69,8 +75,8 @@ class ManagerProxy(IManager):
         manager_factory = ManagerFactory()
 
         for manager_name in AVAILABLE_MANAGERS:
-            manager = manager_factory.get_class(module_args=(manager_name, ),
-                                                class_args=(manager_name.capitalize(), )
+            manager = manager_factory.get_class(module_args=(manager_name,),
+                                                class_args=(manager_name.capitalize(),)
                                                 )
 
             managers[manager_name] = manager.get_formatted_manager_name()

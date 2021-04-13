@@ -100,10 +100,10 @@ class LrestartCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+        lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
 
-        lclean_argv = ['-d', args.directory] if args.directory else []
+        lclean_argv = ['-d', args['directory']] if args['directory'] else []
 
         LcleanCommand().run(lab_path, lclean_argv)
         LstartCommand().run(lab_path, argv)

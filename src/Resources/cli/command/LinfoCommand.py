@@ -53,18 +53,18 @@ class LinfoCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+        lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        if args.live:
-            if args.name:
-                self._get_machine_live_info(lab_hash, args.name)
+        if args['live']:
+            if args['name']:
+                self._get_machine_live_info(lab_hash, args['name'])
             else:
                 self._get_lab_live_info(lab_hash)
         else:
-            if args.name:
-                print(ManagerProxy.get_instance().get_machine_info(args.name, lab_hash))
+            if args['name']:
+                print(ManagerProxy.get_instance().get_formatted_machine_info(args['name'], lab_hash))
             else:
                 self._get_conf_info(lab_path)
 
@@ -75,14 +75,14 @@ class LinfoCommand(Command):
         try:
             while True:
                 Curses.get_instance().print_string(
-                    ManagerProxy.get_instance().get_machine_info(machine_name, lab_hash)
+                    ManagerProxy.get_instance().get_formatted_machine_info(machine_name, lab_hash)
                 )
         finally:
             Curses.get_instance().close()
 
     @staticmethod
     def _get_lab_live_info(lab_hash):
-        lab_info = ManagerProxy.get_instance().get_lab_info(lab_hash)
+        lab_info = ManagerProxy.get_instance().get_formatted_lab_info(lab_hash)
 
         Curses.get_instance().init_window()
 
@@ -112,3 +112,5 @@ class LinfoCommand(Command):
         print("There are %d collision domains." % n_links)
 
         print(utils.format_headers())
+
+

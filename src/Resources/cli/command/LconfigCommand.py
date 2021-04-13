@@ -54,7 +54,7 @@ class LconfigCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        lab_path = args.directory.replace('"', '').replace("'", '') if args.directory else current_path
+        lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
 
         for eth in args.eths:
@@ -69,10 +69,10 @@ class LconfigCommand(Command):
         lab = Lab(lab_path)
 
         iface_number = 0
-        for eth in args.eths:
-            logging.info("Adding interface to device `%s` for collision domain `%s`..." % (args.name, eth))
+        for eth in args['eths']:
+            logging.info("Adding interface to device `%s` for collision domain `%s`..." % (args['name'], eth))
 
-            lab.connect_machine_to_link(args.name, iface_number, eth)
+            lab.connect_machine_to_link(args['name'], iface_number, eth)
             iface_number += 1
 
         ManagerProxy.get_instance().update_lab(lab)
