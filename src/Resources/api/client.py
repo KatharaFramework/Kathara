@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+import copy
 
 
 def build_url(request):
@@ -41,7 +42,7 @@ def wipe_scenario(name):
 
 def create_device(scenario_name, args):
     request_url = build_url('scenarios/%s/device' % scenario_name)
-
+    args = copy.deepcopy(args)
     files = {}
     if 'startup' in args:
         files['startup'] = open(args['startup'], 'r')
@@ -95,7 +96,7 @@ if __name__ == '__main__':
         'eths': ['0:A', '1:B'],
         'startup': 'pc1.startup',
         'filesystem': {
-            'etc': ('pc1.config',  '.')
+            'etc': ('pc1.config', '.')
         }
     }
 
@@ -104,26 +105,20 @@ if __name__ == '__main__':
         'eths': ['0:A', '1:B'],
         # 'startup': 'pc2.startup',
         'filesystem': {
-            'etc': ('pc1.config',  '.')
+            'etc': ('pc1.config', '.')
         }
     }
 
     print('Create Device... ', device_info)
     print(create_device('scenario2', device_info))
-    print('Create Device... ', device_info2)
-    print(create_device('scenario2', device_info2))
-    print('Getting Device...')
-    print(get_device('scenario2', 'pc1'))
-    print('Deleting Device pc1...')
-    print(delete_device('scenario2', 'pc1'))
-    print('Getting Device pc1...')
-    print(get_device('scenario2', 'pc1'))
+    print('Create Device... ', device_info)
+    print(create_device('scenario2', device_info))
+    # print('Getting Device...')
+    # print(get_device('scenario2', 'pc1'))
+    # print('Deleting Device pc1...')
+    # print(delete_device('scenario2', 'pc1'))
+    # print('Getting Device pc1...')
+    # print(get_device('scenario2', 'pc1'))
 
     # print('Deleting scenarios')
     # print(wipe_scenario('scenario2'))
-
-
-
-
-
-

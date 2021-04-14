@@ -137,13 +137,18 @@ def delete_scenario(scenario_name):
 @app.route('/scenarios/<scenario_name>/device', methods=['POST'])
 def create_device(scenario_name):
     lab_dir = get_lab_temp_path(_read_scenarios()[scenario_name])
-    lab = Lab(lab_dir)
+    try:
+        lab = LabParser.parse(lab_dir)
+    except FileNotFoundError:
+        lab = Lab(lab_dir)
     args = _parse_device_argument(json.loads(request.form.get('data')))
 
     machine_name = args['name'].strip()
     matches = re.search(r"^[a-z0-9_]{1,30}$", machine_name)
     if not matches:
         raise abort(400, description='Invalid device name `%s`.' % machine_name)
+    if machine_name in lab.machines:
+        return abort(400, description=str(MachineAlreadyExistsError))
 
     machine = lab.get_or_new_machine(machine_name)
 
