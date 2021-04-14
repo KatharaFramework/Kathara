@@ -1,16 +1,17 @@
-import os
-import shutil
 import json
-
-from flask import Flask, request, jsonify, abort
+import logging
+import os
 import re
+import shutil
 import sqlite3
 
-from Resources.utils import generate_urlsafe_hash, get_lab_temp_path
-from Resources.model.Lab import Lab
-from Resources.manager.ManagerProxy import ManagerProxy
+from flask import Flask, request, jsonify, abort
+
 from Resources.exceptions import MachineAlreadyExistsError
+from Resources.manager.ManagerProxy import ManagerProxy
+from Resources.model.Lab import Lab
 from Resources.parser.netkit.LabParser import LabParser
+from Resources.utils import generate_urlsafe_hash, get_lab_temp_path
 
 app = Flask('Kathara Server')
 
@@ -42,7 +43,7 @@ def _delete_scenarios_entry(scenario_name):
 
 
 def _delete_scenarios_table():
-    print("Deleting Scenarios Table...")
+    logging.info("Deleting Scenarios Table...")
     for scenario_name, scenario_hash in _read_scenarios().items():
         _wipe_scenario(scenario_name)
 
@@ -51,7 +52,7 @@ def _create_scenarios_table():
     con = sqlite3.connect('scenarios.db')
     cur = con.cursor()
 
-    print("Creating Scenarios Table...")
+    logging.info("Creating Scenarios Table...")
     # Create table
     cur.execute('''CREATE TABLE IF NOT EXISTS scenarios
                    (scenario_name text, scenario_hash text)''')
@@ -100,11 +101,13 @@ def _wipe_scenario(scenario_name):
 
 @app.errorhandler(404)
 def resource_not_found(e):
+    logging.error(str(e))
     return jsonify(error=str(e)), 404
 
 
 @app.errorhandler(400)
 def bad_request(e):
+    logging.error(str(e))
     return jsonify(error=str(e)), 400
 
 
@@ -115,6 +118,7 @@ def get_scenarios():
 
 @app.route('/scenarios/<scenario_name>', methods=["POST"])
 def create_scenario(scenario_name):
+    logging.info("Creating Scenario '%s'..." % scenario_name)
     scenarios = _read_scenarios()
 
     if scenario_name in scenarios:
@@ -127,8 +131,8 @@ def create_scenario(scenario_name):
 
 @app.route('/scenarios/<scenario_name>', methods=["DELETE"])
 def delete_scenario(scenario_name):
+    logging.info("Deleting Scenario '%s'..." % scenario_name)
     _wipe_scenario(scenario_name)
-
     _delete_scenarios_entry(scenario_name)
 
     return jsonify({}), 200
@@ -144,6 +148,8 @@ def create_device(scenario_name):
     args = _parse_device_argument(json.loads(request.form.get('data')))
 
     machine_name = args['name'].strip()
+
+    logging.info("Creating Device '%s' in Scenario '%s'..." % (machine_name, scenario_name))
     matches = re.search(r"^[a-z0-9_]{1,30}$", machine_name)
     if not matches:
         raise abort(400, description='Invalid device name `%s`.' % machine_name)
@@ -185,12 +191,12 @@ def create_device(scenario_name):
 
 @app.route('/scenarios/<scenario_name>/device/<device_name>')
 def get_device(scenario_name, device_name):
+    logging.info("Getting Device '%s' in Scenario '%s'..." % (device_name, scenario_name))
     lab_dir = get_lab_temp_path(_read_scenarios()[scenario_name])
     lab = Lab(lab_dir)
 
     try:
-        machine_info = ManagerProxy.get_instance().get_machine_info(device_name,
-                                                                    lab_hash=lab.folder_hash)
+        machine_info = ManagerProxy.get_instance().get_machine_info(device_name, lab_hash=lab.folder_hash)
     except Exception as e:
         return abort(404, description=str(e))
 
@@ -199,6 +205,7 @@ def get_device(scenario_name, device_name):
 
 @app.route('/scenarios/<scenario_name>/device/<device_name>', methods=['DELETE'])
 def delete_device(scenario_name, device_name):
+    logging.info("Deleting Device '%s' in Scenario '%s'..." % (device_name, scenario_name))
     lab_dir = get_lab_temp_path(_read_scenarios()[scenario_name])
     lab = Lab(lab_dir)
 
@@ -213,14 +220,29 @@ def delete_device(scenario_name, device_name):
 
     shutil.rmtree(os.path.join(lab.path, device_name))
 
-    ManagerProxy.get_instance().undeploy_lab(lab.folder_hash,
-                                             selected_machines={device_name}
-                                             )
+    ManagerProxy.get_instance().undeploy_lab(lab.folder_hash, selected_machines={device_name})
 
     return jsonify({}), 200
 
 
+def _set_logging(console_logging_level, file_logging_level):
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    file_handler = logging.FileHandler('kathara-server.log')
+    file_handler.setLevel(file_logging_level)
+    file_handler.setFormatter(formatter)
+    file_handler.mode = 'w'
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(console_logging_level)
+    stream_handler.setFormatter(formatter)
+
+    logging.basicConfig(handlers=[file_handler, stream_handler])
+
+
 if __name__ == '__main__':
+    _set_logging(logging.INFO, logging.DEBUG)
+
     _create_scenarios_table()
     app.run(host='localhost', port=5000)
     _delete_scenarios_table()

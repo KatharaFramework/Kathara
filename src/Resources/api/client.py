@@ -3,6 +3,8 @@ import json
 import os
 import copy
 
+# A Client to test the REST API implemented in Resources.api.server.py
+
 
 def build_url(request):
     return "http://localhost:5000/%s" % request
