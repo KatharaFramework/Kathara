@@ -99,14 +99,25 @@ if __name__ == '__main__':
         }
     }
 
+    device_info2 = {
+        'name': 'pc2',
+        'eths': ['0:A', '1:B'],
+        # 'startup': 'pc2.startup',
+        'filesystem': {
+            'etc': ('pc1.config',  '.')
+        }
+    }
+
     print('Create Device... ', device_info)
     print(create_device('scenario2', device_info))
+    print('Create Device... ', device_info2)
+    print(create_device('scenario2', device_info2))
     print('Getting Device...')
     print(get_device('scenario2', 'pc1'))
-    # print('Deleting Device...')
-    # print(delete_device('scenario2', 'pc1'))
-    # print('Getting Device...')
-    # print(get_device('scenario2', 'pc1'))
+    print('Deleting Device pc1...')
+    print(delete_device('scenario2', 'pc1'))
+    print('Getting Device pc1...')
+    print(get_device('scenario2', 'pc1'))
 
     # print('Deleting scenarios')
     # print(wipe_scenario('scenario2'))

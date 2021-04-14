@@ -10,6 +10,7 @@ from Resources.utils import generate_urlsafe_hash, get_lab_temp_path
 from Resources.model.Lab import Lab
 from Resources.manager.ManagerProxy import ManagerProxy
 from Resources.exceptions import MachineAlreadyExistsError
+from Resources.parser.netkit.LabParser import LabParser
 
 app = Flask('Kathara Server')
 
@@ -154,10 +155,8 @@ def create_device(scenario_name):
             lab_file.write("%s[%s]='%s'\n" % (machine_name, number, link.name))
 
     machine_directory = os.path.join(lab.path, machine_name)
-    print(machine_directory)
     os.makedirs(machine_directory, exist_ok=True)
-    print(machine_directory)
-    # print(request.files)
+
     if 'startup' in request.files:
         startup = request.files['startup']
         startup_path = os.path.join(lab.path, 'startup')
@@ -197,6 +196,17 @@ def get_device(scenario_name, device_name):
 def delete_device(scenario_name, device_name):
     lab_dir = get_lab_temp_path(_read_scenarios()[scenario_name])
     lab = Lab(lab_dir)
+
+    lab_conf_path = os.path.join(lab.path, 'lab.conf')
+    with open(lab_conf_path, 'r') as lab_file:
+        lab_conf = lab_file.readlines()
+
+    lab_conf = list(filter(lambda line: device_name not in line, lab_conf))
+
+    with open(lab_conf_path, 'w') as lab_file:
+        lab_file.writelines(lab_conf)
+
+    shutil.rmtree(os.path.join(lab.path, device_name))
 
     ManagerProxy.get_instance().undeploy_lab(lab.folder_hash,
                                              selected_machines={device_name}
