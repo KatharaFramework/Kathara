@@ -3,6 +3,7 @@ import json
 import os
 import copy
 
+
 # A Client to test the REST API implemented in Resources.api.server.py
 
 
@@ -77,6 +78,15 @@ def delete_device(scenario_name, device_name):
     return response.json()
 
 
+def add_interface_to_device(scenario_name, device_name, info):
+    request_url = build_url('scenarios/%s/device/%s' % (scenario_name, device_name))
+    response = requests.patch(request_url,
+                              json=json.dumps(info),
+                              timeout=None)
+
+    return response.json()
+
+
 if __name__ == '__main__':
     print('Getting Scenarios...')
     print(get_scenarios())
@@ -111,6 +121,10 @@ if __name__ == '__main__':
         }
     }
 
+    patch_info = {
+        'eths': [(2, 'C')],
+    }
+
     print('Create Device... ', device_info)
     print(create_device('scenario2', device_info))
     print('Create Device... ', device_info)
@@ -121,6 +135,8 @@ if __name__ == '__main__':
     # print(delete_device('scenario2', 'pc1'))
     # print('Getting Device pc1...')
     # print(get_device('scenario2', 'pc1'))
-
+    print(add_interface_to_device('scenario2', 'pc1', patch_info))
+    print('Getting Device pc1...')
+    print(get_device('scenario2', 'pc1'))
     # print('Deleting scenarios')
     # print(wipe_scenario('scenario2'))

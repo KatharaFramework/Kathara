@@ -203,6 +203,35 @@ def get_device(scenario_name, device_name):
     return jsonify({'device_info': machine_info}), 200
 
 
+@app.route('/scenarios/<scenario_name>/device/<device_name>', methods=['PATCH'])
+def add_interface(scenario_name, device_name):
+    logging.info("Adding interfaces to Device '%s' in Scenario '%s'" % (scenario_name, device_name))
+
+    params = json.loads(request.json)
+    lab_dir = get_lab_temp_path(_read_scenarios()[scenario_name])
+
+    lab = Lab(lab_dir)
+
+    for (eth_n, cd) in params['eths']:
+
+        # Only alphanumeric characters are allowed
+        matches = re.search(r"^\w+$", cd)
+        if not matches:
+            abort(400, description="Syntax error in eth %s field. Only alphanumeric characters are allowed." % cd)
+
+    lab_conf_path = os.path.join(lab.path, 'lab.conf')
+    with open(lab_conf_path, 'a') as lab_file:
+        for (eth_n, cd) in params['eths']:
+            logging.info("Adding interface to device `%s` for collision domain `%s`..." % (device_name, cd))
+            lab.connect_machine_to_link(device_name, eth_n, cd)
+            # Update lab.conf
+            lab_file.write("%s[%d]='%s'" % (device_name, eth_n, cd))
+
+    ManagerProxy.get_instance().update_lab(lab)
+
+    return jsonify({}), 200
+
+
 @app.route('/scenarios/<scenario_name>/device/<device_name>', methods=['DELETE'])
 def delete_device(scenario_name, device_name):
     logging.info("Deleting Device '%s' in Scenario '%s'..." % (device_name, scenario_name))
@@ -223,6 +252,11 @@ def delete_device(scenario_name, device_name):
     ManagerProxy.get_instance().undeploy_lab(lab.folder_hash, selected_machines={device_name})
 
     return jsonify({}), 200
+
+
+@app.route('/scenarios/<scenario_name>/device/<device_name>/exec', methods=['POST'])
+def exec_command(scenario_name, device_name):
+    pass
 
 
 def _set_logging(console_logging_level, file_logging_level):
