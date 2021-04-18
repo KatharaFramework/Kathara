@@ -78,11 +78,24 @@ def delete_device(scenario_name, device_name):
     return response.json()
 
 
-def add_interface_to_device(scenario_name, device_name, info):
+def patch_device(scenario_name, device_name, info):
     request_url = build_url('scenarios/%s/device/%s' % (scenario_name, device_name))
+    files = {}
+    for remote_path, (file_name, local_path) in info['filesystem'].items():
+        files[os.path.join(remote_path, file_name)] = open(os.path.join(local_path, file_name), 'r')
     response = requests.patch(request_url,
-                              json=json.dumps(info),
-                              timeout=None)
+                              data={'data': json.dumps(info)},
+                              timeout=None,
+                              files=files)
+
+    return response.json()
+
+
+def exec_command(scenario_name, device_name, command):
+    request_url = build_url('scenarios/%s/device/%s/exec' % (scenario_name, device_name))
+    response = requests.post(request_url,
+                             json=json.dumps({'command': command}),
+                             timeout=None)
 
     return response.json()
 
@@ -123,6 +136,9 @@ if __name__ == '__main__':
 
     patch_info = {
         'eths': [(2, 'C')],
+        'filesystem': {
+            'usr': ('pc1.config', '.')
+        }
     }
 
     print('Create Device... ', device_info)
@@ -135,8 +151,10 @@ if __name__ == '__main__':
     # print(delete_device('scenario2', 'pc1'))
     # print('Getting Device pc1...')
     # print(get_device('scenario2', 'pc1'))
-    print(add_interface_to_device('scenario2', 'pc1', patch_info))
+    print("=========== Patching device ================", patch_info)
+    print(patch_device('scenario2', 'pc1', patch_info))
     print('Getting Device pc1...')
     print(get_device('scenario2', 'pc1'))
     # print('Deleting scenarios')
     # print(wipe_scenario('scenario2'))
+    print(exec_command('scenario2', 'pc1', 'ls /usr'))

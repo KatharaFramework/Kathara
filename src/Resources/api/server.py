@@ -173,11 +173,7 @@ def create_device(scenario_name):
         startup_path = os.path.join(lab.path, 'startup')
         startup.save(startup_path)
 
-    for path, file_name in args['filesystem'].items():
-        machine_path = os.path.join(machine_directory, path)
-        os.makedirs(machine_path, exist_ok=True)
-        path_to_upload = os.path.join(os.path.join(path, file_name))
-        request.files[path_to_upload].save(os.path.join(machine_directory, path_to_upload))
+    _save_files_to_machine(machine_directory, args['filesystem'])
 
     try:
         ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args['privileged'])
@@ -204,32 +200,55 @@ def get_device(scenario_name, device_name):
 
 
 @app.route('/scenarios/<scenario_name>/device/<device_name>', methods=['PATCH'])
-def add_interface(scenario_name, device_name):
+def patch_device(scenario_name, device_name):
     logging.info("Adding interfaces to Device '%s' in Scenario '%s'" % (scenario_name, device_name))
 
-    params = json.loads(request.json)
+    params = json.loads(request.form.get('data'))
     lab_dir = get_lab_temp_path(_read_scenarios()[scenario_name])
 
     lab = Lab(lab_dir)
-
-    for (eth_n, cd) in params['eths']:
-
-        # Only alphanumeric characters are allowed
-        matches = re.search(r"^\w+$", cd)
-        if not matches:
-            abort(400, description="Syntax error in eth %s field. Only alphanumeric characters are allowed." % cd)
-
-    lab_conf_path = os.path.join(lab.path, 'lab.conf')
-    with open(lab_conf_path, 'a') as lab_file:
+    if 'eths' in params:
         for (eth_n, cd) in params['eths']:
-            logging.info("Adding interface to device `%s` for collision domain `%s`..." % (device_name, cd))
-            lab.connect_machine_to_link(device_name, eth_n, cd)
-            # Update lab.conf
-            lab_file.write("%s[%d]='%s'" % (device_name, eth_n, cd))
+
+            # Only alphanumeric characters are allowed
+            matches = re.search(r"^\w+$", cd)
+            if not matches:
+                abort(400, description="Syntax error in eth %s field. Only alphanumeric characters are allowed." % cd)
+
+        lab_conf_path = os.path.join(lab.path, 'lab.conf')
+        with open(lab_conf_path, 'a') as lab_file:
+            for (eth_n, cd) in params['eths']:
+                logging.info("Adding interface to device `%s` for collision domain `%s`..." % (device_name, cd))
+                lab.connect_machine_to_link(device_name, eth_n, cd)
+                # Update lab.conf
+                lab_file.write("%s[%d]='%s'" % (device_name, eth_n, cd))
+
+    if 'filesystem' in params:
+        machine_directory = os.path.join(lab.path, device_name)
+        shared_directory = os.path.join(lab.path, 'shared')
+        os.makedirs(shared_directory, exist_ok=True)
+        for path, (file_name, _) in params['filesystem'].items():
+            machine_path = os.path.join(machine_directory, path)
+            os.makedirs(machine_path, exist_ok=True)
+
+            path_to_upload = os.path.join(path, file_name)
+            shared_path = os.path.join(shared_directory, file_name)
+            request.files[path_to_upload].save(shared_path)
+            (stdout, stderr) = ManagerProxy.get_instance().exec(lab.folder_hash, device_name,
+                                                                'cp -r /shared/%s %s' % (file_name, path_to_upload))
+            os.remove(shared_path)
 
     ManagerProxy.get_instance().update_lab(lab)
 
     return jsonify({}), 200
+
+
+def _save_files_to_machine(machine_directory, filesystem):
+    for path, file_name in filesystem.items():
+        machine_path = os.path.join(machine_directory, path)
+        os.makedirs(machine_path, exist_ok=True)
+        path_to_upload = os.path.join(path, file_name)
+        request.files[path_to_upload].save(os.path.join(machine_directory, path_to_upload))
 
 
 @app.route('/scenarios/<scenario_name>/device/<device_name>', methods=['DELETE'])
@@ -256,7 +275,14 @@ def delete_device(scenario_name, device_name):
 
 @app.route('/scenarios/<scenario_name>/device/<device_name>/exec', methods=['POST'])
 def exec_command(scenario_name, device_name):
-    pass
+    lab_dir = get_lab_temp_path(_read_scenarios()[scenario_name])
+    lab = Lab(lab_dir)
+
+    params = json.loads(request.json)
+
+    (stdout, stderr) = ManagerProxy.get_instance().exec(lab.folder_hash, device_name, params['command'])
+
+    return jsonify({'stdout': stdout, 'stderr': stderr}), 200
 
 
 def _set_logging(console_logging_level, file_logging_level):
