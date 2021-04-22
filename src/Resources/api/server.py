@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import sqlite3
+import tarfile
 
 from flask import Flask, request, jsonify, abort
 
@@ -11,7 +12,7 @@ from Resources.exceptions import MachineAlreadyExistsError
 from Resources.manager.ManagerProxy import ManagerProxy
 from Resources.model.Lab import Lab
 from Resources.parser.netkit.LabParser import LabParser
-from Resources.utils import generate_urlsafe_hash, get_lab_temp_path
+from Resources.utils import generate_urlsafe_hash, get_lab_temp_path, pack_file_for_tar
 
 app = Flask('Kathara Server')
 
@@ -224,19 +225,7 @@ def patch_device(scenario_name, device_name):
                 lab_file.write("%s[%d]='%s'" % (device_name, eth_n, cd))
 
     if 'filesystem' in params:
-        machine_directory = os.path.join(lab.path, device_name)
-        shared_directory = os.path.join(lab.path, 'shared')
-        os.makedirs(shared_directory, exist_ok=True)
-        for path, (file_name, _) in params['filesystem'].items():
-            machine_path = os.path.join(machine_directory, path)
-            os.makedirs(machine_path, exist_ok=True)
-
-            path_to_upload = os.path.join(path, file_name)
-            shared_path = os.path.join(shared_directory, file_name)
-            request.files[path_to_upload].save(shared_path)
-            (stdout, stderr) = ManagerProxy.get_instance().exec(lab.folder_hash, device_name,
-                                                                'cp -r /shared/%s %s' % (file_name, path_to_upload))
-            os.remove(shared_path)
+        _upload_to_machine(device_name, params['filesystem'])
 
     ManagerProxy.get_instance().update_lab(lab)
 
@@ -249,6 +238,14 @@ def _save_files_to_machine(machine_directory, filesystem):
         os.makedirs(machine_path, exist_ok=True)
         path_to_upload = os.path.join(path, file_name)
         request.files[path_to_upload].save(os.path.join(machine_directory, path_to_upload))
+
+
+def _upload_to_machine(machine_name, filesystem):
+    with tarfile.open('/tmp/%s.tar.gz' % machine_name, "w:gz") as tar:
+        for path, (file_name, _) in filesystem.items():
+            path_to_upload = os.path.join(path, file_name)
+            tar_info, file_content = pack_file_for_tar(file_name, path_to_upload)
+            tar.addfile(tar_info, fileobj=file_content)
 
 
 @app.route('/scenarios/<scenario_name>/device/<device_name>', methods=['DELETE'])
