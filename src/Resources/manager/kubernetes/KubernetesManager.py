@@ -153,6 +153,10 @@ class KubernetesManager(IManager):
             yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
 
     @privileged
+    def get_machine_api_object(self, lab_hash, machine_name):
+        return self.k8s_machine.get_machine(lab_hash, machine_name)
+
+    @privileged
     def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
         if lab_hash:
             lab_hash = lab_hash.lower()

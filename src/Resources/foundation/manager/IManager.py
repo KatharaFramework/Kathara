@@ -39,6 +39,10 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `get_formatted_lab_info` method.")
 
     @abstractmethod
+    def get_machine_api_object(self, lab_hash, machine_name):
+        raise NotImplementedError("You must implement `get_machine_api_object` method.")
+
+    @abstractmethod
     def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
         raise NotImplementedError("You must implement `get_machine_info` method.")
 

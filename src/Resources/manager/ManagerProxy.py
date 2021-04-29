@@ -54,6 +54,9 @@ class ManagerProxy(IManager):
     def get_formatted_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         return self.manager.get_formatted_lab_info(lab_hash, machine_name, all_users)
 
+    def get_machine_api_object(self, lab_hash, machine_name):
+        return self.manager.get_machine_api_object(lab_hash, machine_name)
+
     def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
         return self.manager.get_machine_info(machine_name, lab_hash, all_users)
 

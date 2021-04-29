@@ -83,6 +83,7 @@ def patch_device(scenario_name, device_name, info):
     files = {}
     for remote_path, (file_name, local_path) in info['filesystem'].items():
         files[os.path.join(remote_path, file_name)] = open(os.path.join(local_path, file_name), 'r')
+        info['filesystem'][remote_path] = file_name
     response = requests.patch(request_url,
                               data={'data': json.dumps(info)},
                               timeout=None,

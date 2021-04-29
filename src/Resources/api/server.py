@@ -225,7 +225,10 @@ def patch_device(scenario_name, device_name):
                 lab_file.write("%s[%d]='%s'" % (device_name, eth_n, cd))
 
     if 'filesystem' in params:
-        _upload_to_machine(device_name, params['filesystem'])
+        parsed_lab = LabParser.parse(lab_dir)
+        device = parsed_lab.get_or_new_machine(device_name)
+        device.api_object = ManagerProxy.get_instance().get_machine_api_object(lab.folder_hash, device_name)
+        _upload_to_machine(device, params['filesystem'])
 
     ManagerProxy.get_instance().update_lab(lab)
 
@@ -240,12 +243,21 @@ def _save_files_to_machine(machine_directory, filesystem):
         request.files[path_to_upload].save(os.path.join(machine_directory, path_to_upload))
 
 
-def _upload_to_machine(machine_name, filesystem):
-    with tarfile.open('/tmp/%s.tar.gz' % machine_name, "w:gz") as tar:
-        for path, (file_name, _) in filesystem.items():
+def _upload_to_machine(machine, filesystem):
+    with tarfile.open('/tmp/%s.tar.gz' % machine.name, "w:gz") as tar:
+        for path, file_name in filesystem.items():
             path_to_upload = os.path.join(path, file_name)
-            tar_info, file_content = pack_file_for_tar(file_name, path_to_upload)
-            tar.addfile(tar_info, fileobj=file_content)
+            tar_info, file_content = pack_file_for_tar(file_name, arcname=path_to_upload)
+            tar.addfile(tar_info, file_content)
+
+    # Read tar.gz content
+    with open('/tmp/%s.tar.gz' % machine.name, "rb") as tar_file:
+        tar_data = tar_file.read()
+
+    # Delete temporary tar.gz
+    os.remove('/tmp/%s.tar.gz' % machine.name)
+
+    ManagerProxy.get_instance().copy_files(machine, '/', tar_data)
 
 
 @app.route('/scenarios/<scenario_name>/device/<device_name>', methods=['DELETE'])
