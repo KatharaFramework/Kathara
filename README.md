@@ -77,7 +77,7 @@ For further information on how to use Kathará on Kubernetes please refer to the
 ## External Tools
 
 - [Netkit Lab Generator](https://github.com/KatharaFramework/Netkit-Lab-Generator), a GUI that allows the easy creation of a network scenario configuration and the visualization of its network topology.
-- [VFTGen](https://github.com/KatharaFramework/VFTGen), a tool that allows to create three levels Fat Tree topologies (single-plane or multi-planes) and configure them to run on Kathará.
+- [VFTGen](https://github.com/KatharaFramework/VFTGen), a tool that allows to create three levels Fat Tree topologies (single-plane or multi-planes) and automatically configure them to run on Kathará.
 
 Being based on Netkit, all the previous tools still work. 
 
