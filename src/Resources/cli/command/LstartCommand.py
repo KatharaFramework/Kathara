@@ -126,7 +126,7 @@ class LstartCommand(Command):
         lab_path = utils.get_absolute_path(lab_path)
 
         Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
-                                                else Setting.get_instance().open_terminals
+            else Setting.get_instance().open_terminals
         Setting.get_instance().terminal = args['xterm'] or Setting.get_instance().terminal
 
         if args['privileged']:
@@ -171,9 +171,6 @@ class LstartCommand(Command):
             else:
                 raise OSError("lab.ext is only available on UNIX systems.")
 
-        if args['machine_name']:
-            lab.intersect_machines(args['machine_name'])
-
         lab_meta_information = str(lab)
 
         if lab_meta_information:
@@ -193,7 +190,10 @@ class LstartCommand(Command):
         except:
             raise Exception("--pass parameter not valid.")
 
-        ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args['privileged'])
+        ManagerProxy.get_instance().deploy_lab(lab,
+                                               selected_machines=args['machine_name'],
+                                               privileged_mode=args['privileged']
+                                               )
 
         if args['list']:
             print(next(ManagerProxy.get_instance().get_lab_info(lab.folder_hash)))

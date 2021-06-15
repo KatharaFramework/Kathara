@@ -38,8 +38,7 @@ class VcleanCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        vlab_dir = utils.get_vlab_temp_path()
-        lab_hash = utils.generate_urlsafe_hash(vlab_dir)
+        lab_hash = utils.generate_urlsafe_hash("kathara_vlab")
 
         ManagerProxy.get_instance().undeploy_lab(lab_hash,
                                                  selected_machines={args['name']}

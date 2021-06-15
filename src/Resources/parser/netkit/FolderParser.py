@@ -7,7 +7,7 @@ from ...model.Lab import Lab
 class FolderParser(object):
     @staticmethod
     def parse(path):
-        lab = Lab(path)
+        lab = Lab(None, path=path)
 
         # Get all subfolders of lab path
         machine_folders = glob("%s/*/" % path)

@@ -247,15 +247,15 @@ class DockerMachine(object):
             raise Exception("Device `%s` not found." % machine.name)
 
         machine.api_object = machines.pop()
-
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
-        last_interface = len(attached_networks) - 1 if "none" in attached_networks else len(attached_networks)
 
         # Connect the container to its new networks
         for (_, machine_link) in machine.interfaces.items():
-            machine_link.api_object.connect(machine.api_object)
+            if machine_link.api_object.name not in attached_networks:
+                print(machine_link.api_object.attrs)
+                machine_link.api_object.connect(machine.api_object)
 
-            last_interface += 1
+
 
     @staticmethod
     def start(machine):

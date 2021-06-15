@@ -1,3 +1,4 @@
+from copy import copy
 from datetime import datetime
 
 import docker
@@ -13,6 +14,7 @@ from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
+from ...utils import pack_files_for_tar
 
 
 def pywin_import_stub():
@@ -71,7 +73,11 @@ class DockerManager(IManager):
         self.docker_link = DockerLink(self.client)
 
     @privileged
-    def deploy_lab(self, lab, privileged_mode=False):
+    def deploy_lab(self, lab, selected_machines=None, privileged_mode=False):
+        if selected_machines:
+            lab = copy(lab)
+            lab.intersect_machines(selected_machines)
+
         # Deploy all lab links.
         self.docker_link.deploy_links(lab)
 
@@ -89,7 +95,12 @@ class DockerManager(IManager):
 
         # Update lab machines.
         for (_, machine) in lab_diff.machines.items():
-            self.docker_machine.update(machine)
+            print(machine.name, machine.api_object)
+
+            if machine.api_object is None:
+                self.deploy_lab(lab_diff, selected_machines={machine.name})
+            else:
+                self.docker_machine.update(machine)
 
     @privileged
     def undeploy_lab(self, lab_hash, selected_machines=None):
@@ -117,9 +128,10 @@ class DockerManager(IManager):
         return self.docker_machine.exec(lab_hash, machine_name, command, tty=False)
 
     @privileged
-    def copy_files(self, machine, path, tar_data):
+    def copy_files(self, machine, guest_to_host):
+        tar_data = pack_files_for_tar(machine.name, guest_to_host)
         self.docker_machine.copy_files(machine.api_object,
-                                       path=path,
+                                       path="/",
                                        tar_data=tar_data
                                        )
 
@@ -168,7 +180,7 @@ class DockerManager(IManager):
             yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
 
     @privileged
-    def get_machine_api_object(self,  lab_hash, machine_name):
+    def get_machine_api_object(self, lab_hash, machine_name):
         return self.docker_machine.get_machine(lab_hash, machine_name)
 
     @privileged

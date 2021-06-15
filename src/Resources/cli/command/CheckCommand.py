@@ -16,7 +16,7 @@ from ...strings import strings, wiki_description
 class CheckCommand(Command):
     def __init__(self):
         Command.__init__(self)
-        
+
         parser = argparse.ArgumentParser(
             prog='kathara check',
             description=strings['check'],
@@ -48,6 +48,7 @@ class CheckCommand(Command):
         def linux_platform_info():
             info = os.uname()
             return "%s-%s-%s" % (info.sysname, info.release, info.machine)
+
         platform_info = utils.exec_by_platform(
             linux_platform_info, lambda: platform.platform(), lambda: platform.platform()
         )
@@ -59,8 +60,7 @@ class CheckCommand(Command):
         args['no_shared'] = False
         args['no_hosthome'] = False
 
-        vlab_dir = utils.get_vlab_temp_path()
-        lab = Lab(vlab_dir)
+        lab = Lab("kathara_vlab")
         lab.get_or_new_machine("hello_world")
 
         try:

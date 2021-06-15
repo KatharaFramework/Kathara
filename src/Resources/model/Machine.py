@@ -1,6 +1,7 @@
 import collections
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -18,7 +19,12 @@ class Machine(object):
     __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities',
                  'startup_path', 'shutdown_path', 'folder']
 
-    def __init__(self, lab, name):
+    def __init__(self, lab, name, **kwargs):
+        name = name.strip()
+        matches = re.search(r"^[a-z0-9_]{1,30}$", name)
+        if not matches:
+            raise Exception("Invalid device name `%s`." % name)
+
         self.lab = lab
         self.name = name
 
@@ -32,14 +38,21 @@ class Machine(object):
 
         self.capabilities = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
 
-        startup_file = os.path.join(lab.path, '%s.startup' % self.name)
-        self.startup_path = startup_file if os.path.exists(startup_file) else None
+        self.startup_path = None
+        self.shutdown_path = None
+        self.folder = None
 
-        shutdown_file = os.path.join(lab.path, '%s.shutdown' % self.name)
-        self.shutdown_path = shutdown_file if os.path.exists(shutdown_file) else None
+        if lab.path:
+            startup_file = os.path.join(lab.path, '%s.startup' % self.name)
+            self.startup_path = startup_file if os.path.exists(startup_file) else None
 
-        machine_folder = os.path.join(lab.path, '%s' % self.name)
-        self.folder = machine_folder if os.path.isdir(machine_folder) else None
+            shutdown_file = os.path.join(lab.path, '%s.shutdown' % self.name)
+            self.shutdown_path = shutdown_file if os.path.exists(shutdown_file) else None
+
+            machine_folder = os.path.join(lab.path, '%s' % self.name)
+            self.folder = machine_folder if os.path.isdir(machine_folder) else None
+
+        self.add_metas(kwargs)
 
     def add_interface(self, number, link):
         if number in self.interfaces:
@@ -251,7 +264,7 @@ class Machine(object):
         :return: The Docker image to be used
         """
         return self.lab.general_options["image"] if "image" in self.lab.general_options else \
-                self.meta["image"] if "image" in self.meta else Setting.get_instance().image
+            self.meta["image"] if "image" in self.meta else Setting.get_instance().image
 
     def get_mem(self):
         """
@@ -323,45 +336,37 @@ class Machine(object):
     def is_ipv6_enabled(self):
         try:
             return bool(strtobool(self.lab.general_options["ipv6"])) if "ipv6" in self.lab.general_options else \
-                    bool(strtobool(self.meta["ipv6"])) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
+                bool(strtobool(self.meta["ipv6"])) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
 
     def __repr__(self):
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)
 
-    def add_meta_from_args(self, args):
-        if args['eths']:
-            for eth in args['eths']:
-                try:
-                    (iface_number, link_name) = eth.split(":")
-                    self.lab.connect_machine_to_link(self.name, int(iface_number), link_name)
-                except ValueError:
-                    raise Exception("Interface number in `--eth %s` is not a number." % eth)
-
-        if args['exec_commands']:
+    def add_metas(self, args):
+        if 'exec_commands' in args and args['exec_commands']:
             for command in args['exec_commands']:
                 self.add_meta("exec", command)
 
-        if args['mem']:
+        if 'mem' in args and args['mem']:
             self.add_meta("mem", args['mem'])
 
-        if args['cpus']:
+        if 'cpus' in args and args['cpus']:
             self.add_meta("cpus", args['cpus'])
 
-        if args['image']:
+        if 'image' in args and args['image']:
             self.add_meta("image", args['image'])
 
-        if args['bridged']:
+        if 'bridged' in args and args['bridged']:
             self.add_meta("bridged", True)
 
-        if args['ports']:
+        if 'ports' in args and args['ports']:
             for port in args['ports']:
                 self.add_meta("port", port)
 
-        if args['num_terms']:
+        if 'num_terms' in args and args['num_terms']:
             self.add_meta('num_terms', args['num_terms'])
 
-        if args['sysctls']:
+        if 'sysctls' in args and args['sysctls']:
             for sysctl in args['sysctls']:
                 self.add_meta("sysctl", sysctl)

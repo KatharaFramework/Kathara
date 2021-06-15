@@ -66,7 +66,7 @@ class LconfigCommand(Command):
                 self.parser.print_help()
                 exit(1)
 
-        lab = Lab(lab_path)
+        lab = Lab(None, path=lab_path)
 
         iface_number = 0
         for eth in args['eths']:

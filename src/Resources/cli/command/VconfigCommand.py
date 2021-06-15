@@ -3,7 +3,6 @@ import logging
 import re
 import sys
 
-from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.ManagerProxy import ManagerProxy
 from ...model.Lab import Lab
@@ -57,8 +56,10 @@ class VconfigCommand(Command):
                 self.parser.print_help()
                 exit(1)
 
-        vlab_dir = utils.get_vlab_temp_path()
-        lab = Lab(vlab_dir)
+        lab = Lab("kathara_vlab")
+
+        device = lab.get_or_new_machine(args['name'])
+        device.api_object = ManagerProxy.get_instance().get_machine_api_object(lab.folder_hash, args['name'])
 
         iface_number = 0
         for eth in args['eths']:

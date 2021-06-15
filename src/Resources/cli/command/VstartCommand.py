@@ -1,6 +1,5 @@
 import argparse
 import logging
-import re
 import sys
 
 from ... import utils
@@ -156,7 +155,7 @@ class VstartCommand(Command):
         args['no_shared'] = False
 
         Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
-                                                else Setting.get_instance().open_terminals
+            else Setting.get_instance().open_terminals
         Setting.get_instance().terminal = args['xterm'] or Setting.get_instance().terminal
         Setting.get_instance().device_shell = args['shell'] or Setting.get_instance().device_shell
 
@@ -167,15 +166,19 @@ class VstartCommand(Command):
                 logging.warning("Running device with privileged capabilities, terminal won't open!")
                 Setting.get_instance().open_terminals = False
 
-        vlab_dir = utils.get_vlab_temp_path()
-        lab = Lab(vlab_dir)
+        lab = Lab("kathara_vlab")
 
-        machine_name = args['name'].strip()
-        matches = re.search(r"^[a-z0-9_]{1,30}$", machine_name)
-        if not matches:
-            raise Exception("Invalid device name `%s`." % machine_name)
+        name = args['name']
+        del args['name']
 
-        machine = lab.get_or_new_machine(machine_name)
-        machine.add_meta_from_args(args)
+        device = lab.get_or_new_machine(name, **args)
+
+        if args['eths']:
+            for eth in args['eths']:
+                try:
+                    (iface_number, link_name) = eth.split(":")
+                    lab.connect_machine_to_link(device.name, int(iface_number), link_name)
+                except ValueError:
+                    raise Exception("Interface number in `--eth %s` is not a number." % eth)
 
         ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args['privileged'])

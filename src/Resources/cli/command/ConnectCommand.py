@@ -60,7 +60,7 @@ class ConnectCommand(Command):
         args = self.get_args()
 
         if args['vmachine']:
-            lab_path = utils.get_vlab_temp_path()
+            lab_path = "kathara_vlab"
         else:
             lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
             lab_path = utils.get_absolute_path(lab_path)

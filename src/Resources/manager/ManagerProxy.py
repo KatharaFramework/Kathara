@@ -27,7 +27,7 @@ class ManagerProxy(IManager):
 
             ManagerProxy.__instance = self
 
-    def deploy_lab(self, lab, privileged_mode=False):
+    def deploy_lab(self, lab, selected_machines=None, privileged_mode=False):
         self.manager.deploy_lab(lab, privileged_mode)
 
     def update_lab(self, lab_diff):
@@ -45,8 +45,8 @@ class ManagerProxy(IManager):
     def exec(self, lab_hash, machine_name, command):
         return self.manager.exec(lab_hash, machine_name, command)
 
-    def copy_files(self, machine, path, tar_data):
-        self.manager.copy_files(machine, path, tar_data)
+    def copy_files(self, machine, path_to_fd):
+        self.manager.copy_files(machine, path_to_fd)
 
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         return self.manager.get_lab_info(lab_hash, machine_name, all_users)

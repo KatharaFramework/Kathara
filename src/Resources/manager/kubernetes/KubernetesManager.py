@@ -13,6 +13,7 @@ from ... import utils
 from ...decorators import privileged
 from ...exceptions import NotSupportedError
 from ...foundation.manager.IManager import IManager
+from ...utils import pack_files_for_tar
 
 
 class KubernetesManager(IManager):
@@ -25,10 +26,13 @@ class KubernetesManager(IManager):
         self.k8s_machine = KubernetesMachine(self.k8s_namespace)
         self.k8s_link = KubernetesLink()
 
-    def deploy_lab(self, lab, privileged_mode=False):
+    def deploy_lab(self, lab, selected_machines=None, privileged_mode=False):
         # Kubernetes needs only lowercase letters for resources.
         # We force the folder_hash to be lowercase
         lab.folder_hash = lab.folder_hash.lower()
+
+        if selected_machines:
+            lab.intersect_machines(selected_machines)
 
         self.k8s_namespace.create(lab)
         try:
@@ -112,9 +116,10 @@ class KubernetesManager(IManager):
         return self.k8s_machine.exec(lab_hash, machine_name, command, stderr=True, tty=False)
 
     @privileged
-    def copy_files(self, machine, path, tar_data):
+    def copy_files(self, machine, guest_to_host):
+        tar_data = pack_files_for_tar(machine.name, guest_to_host)
         self.k8s_machine.copy_files(machine.api_object,
-                                    path=path,
+                                    path="/",
                                     tar_data=tar_data
                                     )
 

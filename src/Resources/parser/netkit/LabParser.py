@@ -17,7 +17,7 @@ class LabParser(object):
         with open(lab_conf_path, 'r') as lab_file:
             lab_mem_file = mmap.mmap(lab_file.fileno(), 0, access=mmap.ACCESS_READ)
 
-        lab = Lab(path)
+        lab = Lab(None, path=path)
 
         line_number = 1
         line = lab_mem_file.readline().decode('utf-8')

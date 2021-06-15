@@ -1,8 +1,7 @@
 import difflib
 import logging
-import tarfile
-
 import os
+
 from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
@@ -77,29 +76,11 @@ class UserTest(Test):
         machine_test_file = os.path.join(self.test_path, "%s.test" % machine.name)
 
         if os.path.exists(machine_test_file):
-            tar_data = self._pack_machine_test_file(machine.name, machine_test_file)
-
-            ManagerProxy.get_instance().copy_files(machine, "/", tar_data)
+            ManagerProxy.get_instance().copy_files(machine, {"/%s.test" % machine.name: machine_test_file})
 
             return machine_test_file
         else:
             return None
-
-    def _pack_machine_test_file(self, machine_name, machine_test_file):
-        tar_path = "%s/test_file.tar.gz" % self.test_path
-
-        with tarfile.open(tar_path, "w:gz") as tar:
-            (tarinfo, content) = utils.pack_file_for_tar(machine_test_file,
-                                                         "/%s.test" % machine_name
-                                                         )
-            tar.addfile(tarinfo, content)
-
-        with open(tar_path, "rb") as tar_file:
-            tar_data = tar_file.read()
-
-        os.remove(tar_path)
-
-        return tar_data
 
     @staticmethod
     def _run_machine_test_file(machine):
