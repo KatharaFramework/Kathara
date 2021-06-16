@@ -6,7 +6,7 @@ import sys
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
-from ...manager.ManagerProxy import ManagerProxy
+from ...manager.Kathara import Kathara
 from ...parser.netkit.DepParser import DepParser
 from ...parser.netkit.ExtParser import ExtParser
 from ...parser.netkit.FolderParser import FolderParser
@@ -190,12 +190,12 @@ class LstartCommand(Command):
         except:
             raise Exception("--pass parameter not valid.")
 
-        ManagerProxy.get_instance().deploy_lab(lab,
-                                               selected_machines=args['machine_name'],
-                                               privileged_mode=args['privileged']
-                                               )
+        Kathara.get_instance().deploy_lab(lab,
+                                          selected_machines=args['machine_name'],
+                                          privileged_mode=args['privileged']
+                                          )
 
         if args['list']:
-            print(next(ManagerProxy.get_instance().get_lab_info(lab.folder_hash)))
+            print(next(Kathara.get_instance().get_lab_info(lab.folder_hash)))
 
         return lab

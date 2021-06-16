@@ -3,7 +3,7 @@ import sys
 
 from ... import utils
 from ...foundation.cli.command.Command import Command
-from ...manager.ManagerProxy import ManagerProxy
+from ...manager.Kathara import Kathara
 from ...strings import strings, wiki_description
 
 
@@ -75,7 +75,7 @@ class ExecCommand(Command):
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        (stdout, stderr) = ManagerProxy.get_instance().exec(lab_hash, args['machine_name'], args['command'])
+        (stdout, stderr) = Kathara.get_instance().exec(lab_hash, args['machine_name'], args['command'])
 
         if not args['no_stdout']:
             sys.stdout.write(stdout)

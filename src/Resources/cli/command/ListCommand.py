@@ -2,7 +2,7 @@ import argparse
 
 from ... import utils
 from ...foundation.cli.command.Command import Command
-from ...manager.ManagerProxy import ManagerProxy
+from ...manager.Kathara import Kathara
 from ...strings import strings, wiki_description
 from ...trdparty.curses.curses import Curses
 
@@ -64,9 +64,9 @@ class ListCommand(Command):
                 self._get_lab_live_info(all_users)
         else:
             if args['name']:
-                print(ManagerProxy.get_instance().get_formatted_machine_info(args['name'], all_users=all_users))
+                print(Kathara.get_instance().get_formatted_machine_info(args['name'], all_users=all_users))
             else:
-                lab_info = ManagerProxy.get_instance().get_formatted_lab_info(all_users=all_users)
+                lab_info = Kathara.get_instance().get_formatted_lab_info(all_users=all_users)
 
                 print(next(lab_info))
 
@@ -77,14 +77,14 @@ class ListCommand(Command):
         try:
             while True:
                 Curses.get_instance().print_string(
-                    ManagerProxy.get_instance().get_formatted_machine_info(machine_name, all_users=all_users)
+                    Kathara.get_instance().get_formatted_machine_info(machine_name, all_users=all_users)
                 )
         finally:
             Curses.get_instance().close()
 
     @staticmethod
     def _get_lab_live_info(all_users):
-        lab_info = ManagerProxy.get_instance().get_formatted_lab_info(all_users=all_users)
+        lab_info = Kathara.get_instance().get_formatted_lab_info(all_users=all_users)
 
         Curses.get_instance().init_window()
 

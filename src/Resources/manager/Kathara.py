@@ -3,20 +3,20 @@ from ..foundation.manager.ManagerFactory import ManagerFactory
 from ..setting.Setting import Setting, AVAILABLE_MANAGERS
 
 
-class ManagerProxy(IManager):
+class Kathara(IManager):
     __slots__ = ['manager']
 
     __instance = None
 
     @staticmethod
     def get_instance():
-        if ManagerProxy.__instance is None:
-            ManagerProxy()
+        if Kathara.__instance is None:
+            Kathara()
 
-        return ManagerProxy.__instance
+        return Kathara.__instance
 
     def __init__(self):
-        if ManagerProxy.__instance is not None:
+        if Kathara.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
             manager_type = Setting.get_instance().manager_type
@@ -25,7 +25,7 @@ class ManagerProxy(IManager):
                                                             class_args=(manager_type.capitalize(),)
                                                             )
 
-            ManagerProxy.__instance = self
+            Kathara.__instance = self
 
     def deploy_lab(self, lab, selected_machines=None, privileged_mode=False):
         self.manager.deploy_lab(lab, privileged_mode)

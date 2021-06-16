@@ -2,7 +2,7 @@ from . import utils as setting_utils
 from ....connectors.DockerHubApi import DockerHubApi
 from ....exceptions import HTTPConnectionError
 from ....foundation.cli.ui.setting.OptionsHandler import OptionsHandler
-from ....manager.ManagerProxy import ManagerProxy
+from ....manager.Kathara import Kathara
 from ....setting.Setting import Setting, DEFAULTS, AVAILABLE_DEBUG_LEVELS
 from ....trdparty.consolemenu import *
 from ....trdparty.consolemenu.items import *
@@ -18,7 +18,7 @@ TERMINALS_OSX = ["Terminal", "iTerm"]
 class CommonOptionsHandler(OptionsHandler):
     def add_items(self, current_menu, menu_formatter):
         # Manager Submenu
-        managers = ManagerProxy.get_available_managers_name()
+        managers = Kathara.get_available_managers_name()
         manager_type = Setting.get_instance().manager_type
 
         choose_manager_string = "Choose default manager"

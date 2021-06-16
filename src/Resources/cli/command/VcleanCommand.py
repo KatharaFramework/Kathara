@@ -3,7 +3,7 @@ import logging
 
 from ... import utils
 from ...foundation.cli.command.Command import Command
-from ...manager.ManagerProxy import ManagerProxy
+from ...manager.Kathara import Kathara
 from ...strings import strings, wiki_description
 
 
@@ -40,8 +40,8 @@ class VcleanCommand(Command):
 
         lab_hash = utils.generate_urlsafe_hash("kathara_vlab")
 
-        ManagerProxy.get_instance().undeploy_lab(lab_hash,
-                                                 selected_machines={args['name']}
-                                                 )
+        Kathara.get_instance().undeploy_lab(lab_hash,
+                                            selected_machines={args['name']}
+                                            )
 
         logging.info("Device `%s` deleted successfully!" % args['name'])

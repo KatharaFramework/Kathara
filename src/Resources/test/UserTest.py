@@ -5,7 +5,7 @@ import os
 from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
-from ..manager.ManagerProxy import ManagerProxy
+from ..manager.Kathara import Kathara
 from ..setting.Setting import Setting
 
 
@@ -76,7 +76,7 @@ class UserTest(Test):
         machine_test_file = os.path.join(self.test_path, "%s.test" % machine.name)
 
         if os.path.exists(machine_test_file):
-            ManagerProxy.get_instance().copy_files(machine, {"/%s.test" % machine.name: machine_test_file})
+            Kathara.get_instance().copy_files(machine, {"/%s.test" % machine.name: machine_test_file})
 
             return machine_test_file
         else:
@@ -85,15 +85,15 @@ class UserTest(Test):
     @staticmethod
     def _run_machine_test_file(machine):
         # Give execution permissions to test file
-        ManagerProxy.get_instance().exec(lab_hash=machine.lab.folder_hash,
-                                         machine_name=machine.name,
-                                         command="chmod u+x /%s.test" % machine.name
-                                         )
+        Kathara.get_instance().exec(lab_hash=machine.lab.folder_hash,
+                                    machine_name=machine.name,
+                                    command="chmod u+x /%s.test" % machine.name
+                                    )
 
         # Run the test file inside the container
-        (result_stdout, _) = ManagerProxy.get_instance().exec(lab_hash=machine.lab.folder_hash,
-                                                              machine_name=machine.name,
-                                                              command="%s -c /%s.test" % (
+        (result_stdout, _) = Kathara.get_instance().exec(lab_hash=machine.lab.folder_hash,
+                                                         machine_name=machine.name,
+                                                         command="%s -c /%s.test" % (
                                                                   Setting.get_instance().device_shell,
                                                                   machine.name
                                                               ))

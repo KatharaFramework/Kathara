@@ -2,7 +2,7 @@ import argparse
 
 from ... import utils
 from ...foundation.cli.command.Command import Command
-from ...manager.ManagerProxy import ManagerProxy
+from ...manager.Kathara import Kathara
 from ...model.Link import BRIDGE_LINK_NAME
 from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
@@ -76,16 +76,16 @@ class LinfoCommand(Command):
 
         if args['conf']:
             if args['name']:
-                print(ManagerProxy.get_instance().get_formatted_machine_info(args['name'], lab_hash))
+                print(Kathara.get_instance().get_formatted_machine_info(args['name'], lab_hash))
             else:
                 self._get_conf_info(lab_path)
 
             return
 
         if args['name']:
-            print(ManagerProxy.get_instance().get_formatted_machine_info(args['name'], lab_hash))
+            print(Kathara.get_instance().get_formatted_machine_info(args['name'], lab_hash))
         else:
-            lab_info = ManagerProxy.get_instance().get_formatted_lab_info(lab_hash)
+            lab_info = Kathara.get_instance().get_formatted_lab_info(lab_hash)
 
             print(next(lab_info))
 
@@ -96,14 +96,14 @@ class LinfoCommand(Command):
         try:
             while True:
                 Curses.get_instance().print_string(
-                    ManagerProxy.get_instance().get_formatted_machine_info(machine_name, lab_hash)
+                    Kathara.get_instance().get_formatted_machine_info(machine_name, lab_hash)
                 )
         finally:
             Curses.get_instance().close()
 
     @staticmethod
     def _get_lab_live_info(lab_hash):
-        lab_info = ManagerProxy.get_instance().get_formatted_lab_info(lab_hash)
+        lab_info = Kathara.get_instance().get_formatted_lab_info(lab_hash)
 
         Curses.get_instance().init_window()
 

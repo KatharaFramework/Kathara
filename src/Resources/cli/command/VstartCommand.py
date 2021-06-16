@@ -4,7 +4,7 @@ import sys
 
 from ... import utils
 from ...foundation.cli.command.Command import Command
-from ...manager.ManagerProxy import ManagerProxy
+from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
 from ...setting.Setting import Setting
 from ...strings import strings, wiki_description
@@ -181,4 +181,4 @@ class VstartCommand(Command):
                 except ValueError:
                     raise Exception("Interface number in `--eth %s` is not a number." % eth)
 
-        ManagerProxy.get_instance().deploy_lab(lab, privileged_mode=args['privileged'])
+        Kathara.get_instance().deploy_lab(lab, privileged_mode=args['privileged'])

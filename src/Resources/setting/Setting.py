@@ -162,8 +162,8 @@ class Setting(object):
             raise SettingsError("Debug Level must be one of the following: %s." % (", ".join(AVAILABLE_DEBUG_LEVELS)))
 
     def check_manager(self):
-        from ..manager.ManagerProxy import ManagerProxy
-        managers = ManagerProxy.get_available_managers_name()
+        from ..manager.Kathara import Kathara
+        managers = Kathara.get_available_managers_name()
 
         if self.manager_type not in managers.keys():
             raise SettingsError("Manager Type not allowed.")
@@ -172,8 +172,8 @@ class Setting(object):
         image = self.image if not image else image
 
         # Required to import here because otherwise there is a cyclic dependency
-        from ..manager.ManagerProxy import ManagerProxy
-        ManagerProxy.get_instance().check_image(image)
+        from ..manager.Kathara import Kathara
+        Kathara.get_instance().check_image(image)
 
     def check_terminal(self, terminal=None):
         terminal = self.terminal if not terminal else terminal

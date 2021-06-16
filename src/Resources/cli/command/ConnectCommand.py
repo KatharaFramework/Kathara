@@ -3,7 +3,7 @@ import logging
 
 from ... import utils
 from ...foundation.cli.command.Command import Command
-from ...manager.ManagerProxy import ManagerProxy
+from ...manager.Kathara import Kathara
 from ...strings import strings, wiki_description
 
 
@@ -69,5 +69,5 @@ class ConnectCommand(Command):
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        ManagerProxy.get_instance().connect_tty(lab_hash, machine_name=args['machine_name'], shell=args['shell'],
-                                                logs=args['logs'])
+        Kathara.get_instance().connect_tty(lab_hash, machine_name=args['machine_name'], shell=args['shell'],
+                                           logs=args['logs'])

@@ -7,7 +7,7 @@ import sys
 from ... import utils
 from ... import version
 from ...foundation.cli.command.Command import Command
-from ...manager.ManagerProxy import ManagerProxy
+from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
 from ...setting.Setting import Setting
 from ...strings import strings, wiki_description
@@ -37,9 +37,9 @@ class CheckCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        print("*\tCurrent Manager is: %s" % ManagerProxy.get_instance().get_formatted_manager_name())
+        print("*\tCurrent Manager is: %s" % Kathara.get_instance().get_formatted_manager_name())
 
-        print("*\tManager version is: %s" % ManagerProxy.get_instance().get_release_version())
+        print("*\tManager version is: %s" % Kathara.get_instance().get_release_version())
 
         print("*\tPython version is: %s" % sys.version.replace("\n", "- "))
 
@@ -64,8 +64,8 @@ class CheckCommand(Command):
         lab.get_or_new_machine("hello_world")
 
         try:
-            ManagerProxy.get_instance().deploy_lab(lab)
+            Kathara.get_instance().deploy_lab(lab)
             print("*\tContainer run successfully.")
-            ManagerProxy.get_instance().undeploy_lab(lab.folder_hash)
+            Kathara.get_instance().undeploy_lab(lab.folder_hash)
         except Exception as e:
             logging.exception("\t! Running `Hello World` failed: %s" % str(e))
