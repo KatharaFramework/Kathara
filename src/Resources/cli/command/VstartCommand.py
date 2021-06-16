@@ -147,10 +147,10 @@ class VstartCommand(Command):
         args = self.get_args()
 
         if args['dry_mode']:
-            print("Device configuration is correct. Exiting...")
+            logging.info("Device configuration is correct. Exiting...")
             sys.exit(0)
         else:
-            print(utils.format_headers("Starting Device"))
+            logging.info(utils.format_headers("Starting Device"))
 
         args['no_shared'] = False
 

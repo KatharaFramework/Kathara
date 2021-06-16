@@ -137,9 +137,9 @@ class LstartCommand(Command):
                 Setting.get_instance().open_terminals = False
 
         if args['dry_mode']:
-            print(utils.format_headers("Checking Lab"))
+            logging.info(utils.format_headers("Checking Lab"))
         else:
-            print(utils.format_headers("Starting Lab"))
+            logging.info(utils.format_headers("Starting Lab"))
 
         try:
             lab = LabParser.parse(lab_path)
@@ -174,12 +174,12 @@ class LstartCommand(Command):
         lab_meta_information = str(lab)
 
         if lab_meta_information:
-            print(lab_meta_information)
-            print(utils.format_headers())
+            logging.info("\n" + lab_meta_information)
+            logging.info(utils.format_headers())
 
         # If dry mode, we just check if the lab.conf is correct.
         if args['dry_mode']:
-            print("lab.conf file is correct. Exiting...")
+            logging.info("lab.conf file is correct. Exiting...")
             sys.exit(0)
 
         if len(lab.machines) <= 0:

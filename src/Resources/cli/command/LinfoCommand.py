@@ -33,14 +33,16 @@ class LinfoCommand(Command):
             help='Specify the folder containing the lab.'
         )
 
-        parser.add_argument(
+        group = parser.add_mutually_exclusive_group(required=False)
+
+        group.add_argument(
             '-l', '--live',
             required=False,
             action='store_true',
             help='Live mode, can be used only when a lab is launched.'
         )
 
-        parser.add_argument(
+        group.add_argument(
             '-c', '--conf',
             required=False,
             action='store_true',

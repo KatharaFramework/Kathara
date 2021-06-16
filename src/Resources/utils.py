@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import importlib
+import logging
 import math
 import os
 import re
@@ -31,7 +32,7 @@ EXCLUDED_FILES = ['.DS_Store']
 # Generic Functions
 def check_python_version():
     if sys.version_info < (3, 0):
-        print("Python version should be greater than 3.0")
+        logging.critical("Python version should be greater than 3.0")
         sys.exit(1)
 
 
