@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import importlib
+import io
 import logging
 import math
 import os
@@ -242,12 +243,22 @@ def get_vlab_temp_path(force_creation=True):
     return get_lab_temp_path("kathara_vlab", force_creation=force_creation)
 
 
-def pack_file_for_tar(filename, arcname):
-    file_content_patched = convert_win_2_linux(filename)
+def pack_file_for_tar(fileobj, arcname):
+    if isinstance(fileobj, str):
+        file_content_patched = convert_win_2_linux(fileobj)
+        file_content = BytesIO(file_content_patched)
+        filesize = len(file_content_patched)
+    elif isinstance(fileobj, io.IOBase):
+        file_content = fileobj.read()
+        file_content = BytesIO(file_content.encode('utf-8') if isinstance(fileobj, io.TextIOBase) else file_content)
+        fileobj.seek(0, 2)
+        filesize = fileobj.tell()
+        fileobj.seek(0)
+    else:
+        raise ValueError("File type %s not supported" % type(fileobj))
 
-    file_content = BytesIO(file_content_patched)
     tarinfo = tarfile.TarInfo(arcname.replace("\\", "/"))  # Tar files must have Linux-style paths
-    tarinfo.size = len(file_content_patched)
+    tarinfo.size = filesize
 
     return tarinfo, file_content
 
@@ -255,11 +266,12 @@ def pack_file_for_tar(filename, arcname):
 def pack_files_for_tar(guest_to_host):
     with tempfile.NamedTemporaryFile(mode='wb+', suffix='.tar.gz') as temp_file:
         with tarfile.open(fileobj=temp_file, mode='w:gz') as tar_file:
-            for path, file_name in guest_to_host.items():
-                tar_info, file_content = pack_file_for_tar(file_name, arcname=path)
+            for path, fileobj in guest_to_host.items():
+                tar_info, file_content = pack_file_for_tar(fileobj, arcname=path)
                 tar_file.addfile(tar_info, file_content)
 
         temp_file.seek(0)
+
         tar_data = temp_file.read()
 
     return tar_data
