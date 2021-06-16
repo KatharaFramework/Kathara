@@ -117,7 +117,8 @@ class KubernetesManager(IManager):
 
     @privileged
     def copy_files(self, machine, guest_to_host):
-        tar_data = pack_files_for_tar(machine.name, guest_to_host)
+        tar_data = pack_files_for_tar(guest_to_host)
+
         self.k8s_machine.copy_files(machine.api_object,
                                     path="/",
                                     tar_data=tar_data

@@ -19,6 +19,14 @@ class Lab(object):
         self.author = None
         self.email = None
         self.web = None
+
+        self.machines = {}
+        self.links = {}
+
+        self.general_options = {}
+
+        self.has_dependencies = False
+
         self.path = path
         self.shared_startup_path = None
         self.shared_shutdown_path = None
@@ -34,20 +42,13 @@ class Lab(object):
         else:
             self.folder_hash = utils.generate_urlsafe_hash(self.name)
 
-        self.machines = {}
-        self.links = {}
-
-        self.general_options = {}
-
-        self.has_dependencies = False
-
         self.shared_folder = None
 
-    def connect_machine_to_link(self, machine_name, machine_iface_number, link_name):
+    def connect_machine_to_link(self, machine_name, link_name, machine_iface_number=None):
         machine = self.get_or_new_machine(machine_name)
         link = self.get_or_new_link(link_name)
 
-        machine.add_interface(machine_iface_number, link)
+        machine.add_interface(link, number=machine_iface_number)
 
     def assign_meta_to_machine(self, machine_name, meta_name, meta_value):
         machine = self.get_or_new_machine(machine_name)
@@ -118,7 +119,7 @@ class Lab(object):
         return self.links[name]
 
     def create_shared_folder(self):
-        if not self.path:
+        if not self.has_path():
             return
         try:
             self.shared_folder = os.path.join(self.path, 'shared')
@@ -129,6 +130,9 @@ class Lab(object):
         except OSError:
             # Do not create shared folder if not permitted.
             return
+        
+    def has_path(self):
+        return self.path is not None
 
     def __repr__(self):
         return "Lab(%s, %s, %s, %s)" % (self.path, self.folder_hash, self.machines, self.links)

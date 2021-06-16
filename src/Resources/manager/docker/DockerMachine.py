@@ -223,8 +223,8 @@ class DockerMachine(object):
                                                                       "user": utils.get_current_user_name(),
                                                                       "app": "kathara",
                                                                       "shell": machine.meta["shell"]
-                                                                               if "shell" in machine.meta
-                                                                               else Setting.get_instance().device_shell
+                                                                      if "shell" in machine.meta
+                                                                      else Setting.get_instance().device_shell
                                                                       }
                                                               )
         except APIError as e:
@@ -252,10 +252,7 @@ class DockerMachine(object):
         # Connect the container to its new networks
         for (_, machine_link) in machine.interfaces.items():
             if machine_link.api_object.name not in attached_networks:
-                print(machine_link.api_object.attrs)
                 machine_link.api_object.connect(machine.api_object)
-
-
 
     @staticmethod
     def start(machine):

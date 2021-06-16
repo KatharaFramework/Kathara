@@ -93,13 +93,13 @@ class DockerManager(IManager):
 
             self.docker_link.create(link)
 
-        # Update lab machines.
+        # Update lab devices.
         for (_, machine) in lab_diff.machines.items():
-            print(machine.name, machine.api_object)
-
+            # Device is not deployed, deploy it
             if machine.api_object is None:
                 self.deploy_lab(lab_diff, selected_machines={machine.name})
             else:
+                # Device already deployed, update it
                 self.docker_machine.update(machine)
 
     @privileged
@@ -129,7 +129,8 @@ class DockerManager(IManager):
 
     @privileged
     def copy_files(self, machine, guest_to_host):
-        tar_data = pack_files_for_tar(machine.name, guest_to_host)
+        tar_data = pack_files_for_tar(guest_to_host)
+
         self.docker_machine.copy_files(machine.api_object,
                                        path="/",
                                        tar_data=tar_data

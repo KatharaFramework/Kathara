@@ -57,7 +57,7 @@ class LconfigCommand(Command):
         lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
 
-        for eth in args.eths:
+        for eth in args['eths']:
             # Only alphanumeric characters are allowed
             matches = re.search(r"^\w+$", eth)
 
@@ -68,11 +68,11 @@ class LconfigCommand(Command):
 
         lab = Lab(None, path=lab_path)
 
-        iface_number = 0
+        device = lab.get_or_new_machine(args['name'])
+        device.api_object = ManagerProxy.get_instance().get_machine_api_object(lab.folder_hash, args['name'])
+
         for eth in args['eths']:
             logging.info("Adding interface to device `%s` for collision domain `%s`..." % (args['name'], eth))
-
-            lab.connect_machine_to_link(args['name'], iface_number, eth)
-            iface_number += 1
+            lab.connect_machine_to_link(args['name'], eth)
 
         ManagerProxy.get_instance().update_lab(lab)

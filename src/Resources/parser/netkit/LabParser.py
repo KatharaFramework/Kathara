@@ -40,7 +40,7 @@ class LabParser(object):
                     interface_number = int(arg)
 
                     if re.search(r"^\w+$", value):
-                        lab.connect_machine_to_link(key, interface_number, value)
+                        lab.connect_machine_to_link(key, value, machine_iface_number=interface_number)
                     else:
                         raise Exception("[ERROR] In line %d: "
                                         "Collision domain `%s` contains non-alphanumeric characters." % (line_number,

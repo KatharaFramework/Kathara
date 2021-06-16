@@ -177,7 +177,7 @@ class VstartCommand(Command):
             for eth in args['eths']:
                 try:
                     (iface_number, link_name) = eth.split(":")
-                    lab.connect_machine_to_link(device.name, int(iface_number), link_name)
+                    lab.connect_machine_to_link(device.name, link_name, machine_iface_number=int(iface_number))
                 except ValueError:
                     raise Exception("Interface number in `--eth %s` is not a number." % eth)
 

@@ -251,16 +251,15 @@ def pack_file_for_tar(filename, arcname):
     return tarinfo, file_content
 
 
-def pack_files_for_tar(machine_name, guest_to_host):
-    with tarfile.open('/tmp/%s.tar.gz' % machine_name, "w:gz") as tar:
-        for path, file_name in guest_to_host.items():
-            tar_info, file_content = pack_file_for_tar(file_name, arcname=path)
-            tar.addfile(tar_info, file_content)
+def pack_files_for_tar(guest_to_host):
+    with tempfile.NamedTemporaryFile(mode='wb+', suffix='.tar.gz') as temp_file:
+        with tarfile.open(fileobj=temp_file, mode='w:gz') as tar_file:
+            for path, file_name in guest_to_host.items():
+                tar_info, file_content = pack_file_for_tar(file_name, arcname=path)
+                tar_file.addfile(tar_info, file_content)
 
-    with open('/tmp/%s.tar.gz' % machine_name, "rb") as tar_file:
-        tar_data = tar_file.read()
-
-    os.remove('/tmp/%s.tar.gz' % machine_name)
+        temp_file.seek(0)
+        tar_data = temp_file.read()
 
     return tar_data
 

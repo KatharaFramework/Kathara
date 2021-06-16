@@ -41,6 +41,13 @@ class LinfoCommand(Command):
         )
 
         parser.add_argument(
+            '-c', '--conf',
+            required=False,
+            action='store_true',
+            help='Read information from lab.conf.'
+        )
+
+        parser.add_argument(
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=False,
@@ -62,11 +69,23 @@ class LinfoCommand(Command):
                 self._get_machine_live_info(lab_hash, args['name'])
             else:
                 self._get_lab_live_info(lab_hash)
-        else:
+
+            return
+
+        if args['conf']:
             if args['name']:
                 print(ManagerProxy.get_instance().get_formatted_machine_info(args['name'], lab_hash))
             else:
                 self._get_conf_info(lab_path)
+
+            return
+
+        if args['name']:
+            print(ManagerProxy.get_instance().get_formatted_machine_info(args['name'], lab_hash))
+        else:
+            lab_info = ManagerProxy.get_instance().get_formatted_lab_info(lab_hash)
+
+            print(next(lab_info))
 
     @staticmethod
     def _get_machine_live_info(lab_hash, machine_name):
@@ -112,5 +131,3 @@ class LinfoCommand(Command):
         print("There are %d collision domains." % n_links)
 
         print(utils.format_headers())
-
-

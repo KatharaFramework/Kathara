@@ -61,11 +61,8 @@ class VconfigCommand(Command):
         device = lab.get_or_new_machine(args['name'])
         device.api_object = ManagerProxy.get_instance().get_machine_api_object(lab.folder_hash, args['name'])
 
-        iface_number = 0
         for eth in args['eths']:
             logging.info("Adding interface to device `%s` for collision domain `%s`..." % (args['name'], eth))
-
-            lab.connect_machine_to_link(args['name'], iface_number, eth)
-            iface_number += 1
+            lab.connect_machine_to_link(args['name'], eth)
 
         ManagerProxy.get_instance().update_lab(lab)

@@ -27,7 +27,7 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `exec` method.")
 
     @abstractmethod
-    def copy_files(self, machine, path_to_fd):
+    def copy_files(self, machine, guest_to_host):
         raise NotImplementedError("You must implement `copy_files` method.")
 
     @abstractmethod

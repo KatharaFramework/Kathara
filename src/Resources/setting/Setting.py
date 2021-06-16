@@ -135,9 +135,9 @@ class Setting(object):
                 latest_version = latest_remote_release["tag_name"]
 
                 if version.less_than(version.CURRENT_VERSION, latest_version):
-                    print("A new version of Kathara has been released.")
-                    print("Current: %s - Latest: %s" % (version.CURRENT_VERSION, latest_version))
-                    print("Please update it from https://github.com/KatharaFramework/Kathara")
+                    logging.info("A new version of Kathara has been released.")
+                    logging.info("Current: %s - Latest: %s" % (version.CURRENT_VERSION, latest_version))
+                    logging.info("Please update it from https://github.com/KatharaFramework/Kathara")
             except HTTPConnectionError:
                 logging.debug("Connection to GitHub failed, passing...")
                 checked = False

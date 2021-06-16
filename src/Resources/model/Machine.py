@@ -42,7 +42,7 @@ class Machine(object):
         self.shutdown_path = None
         self.folder = None
 
-        if lab.path:
+        if lab.has_path():
             startup_file = os.path.join(lab.path, '%s.startup' % self.name)
             self.startup_path = startup_file if os.path.exists(startup_file) else None
 
@@ -52,9 +52,12 @@ class Machine(object):
             machine_folder = os.path.join(lab.path, '%s' % self.name)
             self.folder = machine_folder if os.path.isdir(machine_folder) else None
 
-        self.add_metas(kwargs)
+        self.init_metas(kwargs)
 
-    def add_interface(self, number, link):
+    def add_interface(self, link, number=None):
+        if number is None:
+            number = len(self.interfaces.keys())
+
         if number in self.interfaces:
             raise Exception("Interface %d already set on device `%s`." % (number, self.name))
 
@@ -340,10 +343,7 @@ class Machine(object):
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
 
-    def __repr__(self):
-        return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)
-
-    def add_metas(self, args):
+    def init_metas(self, args):
         if 'exec_commands' in args and args['exec_commands']:
             for command in args['exec_commands']:
                 self.add_meta("exec", command)
@@ -370,3 +370,6 @@ class Machine(object):
         if 'sysctls' in args and args['sysctls']:
             for sysctl in args['sysctls']:
                 self.add_meta("sysctl", sysctl)
+
+    def __repr__(self):
+        return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)
