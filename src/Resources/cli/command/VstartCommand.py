@@ -168,10 +168,9 @@ class VstartCommand(Command):
 
         lab = Lab("kathara_vlab")
 
-        name = args['name']
-        del args['name']
+        device_name = args.pop('name')
 
-        device = lab.get_or_new_machine(name, **args)
+        device = lab.get_or_new_machine(device_name, **args)
 
         if args['eths']:
             for eth in args['eths']:
