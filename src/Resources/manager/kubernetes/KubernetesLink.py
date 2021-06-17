@@ -38,12 +38,14 @@ class KubernetesLink(object):
 
             items = utils.chunk_list(links, pool_size)
 
-            progress_bar = progressbar.ProgressBar(
-                widgets=['Deploying collision domains... ', progressbar.Bar(),
-                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                redirect_stdout=True,
-                max_value=len(links)
-            )
+            progress_bar = None
+            if utils.CLI_ENV:
+                progress_bar = progressbar.ProgressBar(
+                    widgets=['Deploying collision domains... ', progressbar.Bar(),
+                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+                    redirect_stdout=True,
+                    max_value=len(links)
+                )
 
             with Manager() as manager:
                 network_ids = manager.dict()
@@ -51,7 +53,8 @@ class KubernetesLink(object):
                 for chunk in items:
                     link_pool.map(func=partial(self._deploy_link, progress_bar, network_ids), iterable=chunk)
 
-            progress_bar.finish()
+            if utils.CLI_ENV:
+                progress_bar.finish()
 
     def _deploy_link(self, progress_bar, network_ids, link_item):
         (_, link) = link_item
@@ -59,7 +62,8 @@ class KubernetesLink(object):
         network_id = self._get_unique_network_id(link.name, network_ids)
         self.create(link, network_id)
 
-        progress_bar += 1
+        if progress_bar is not None:
+            progress_bar += 1
 
     def create(self, link, network_id):
         # If a network with the same name exists, return it instead of creating a new one.

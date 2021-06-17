@@ -119,12 +119,14 @@ class KubernetesMachine(object):
         if privileged_mode:
             logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
 
-        progress_bar = progressbar.ProgressBar(
-            widgets=['Deploying devices... ', progressbar.Bar(),
-                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-            redirect_stdout=True,
-            max_value=len(machines)
-        )
+        progress_bar = None
+        if utils.CLI_ENV:
+            progress_bar = progressbar.ProgressBar(
+                widgets=['Deploying devices... ', progressbar.Bar(),
+                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+                redirect_stdout=True,
+                max_value=len(machines)
+            )
 
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
@@ -143,14 +145,16 @@ class KubernetesMachine(object):
             for item in machines:
                 self._deploy_machine(progress_bar, item)
 
-        progress_bar.finish()
+        if utils.CLI_ENV:
+            progress_bar.finish()
 
     def _deploy_machine(self, progress_bar, machine_item):
         (_, machine) = machine_item
 
         self.create(machine)
 
-        progress_bar += 1
+        if progress_bar is not None:
+            progress_bar += 1
 
     def create(self, machine):
         logging.debug("Creating device `%s`..." % machine.name)

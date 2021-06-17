@@ -29,6 +29,9 @@ LINUX2 = "linux2"
 # List of ignored files
 EXCLUDED_FILES = ['.DS_Store']
 
+# True if launched from cli
+CLI_ENV = False
+
 
 # Generic Functions
 def check_python_version():

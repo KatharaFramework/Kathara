@@ -103,12 +103,15 @@ class DockerMachine(object):
             lab.create_shared_folder()
 
         machines = lab.machines.items()
-        progress_bar = progressbar.ProgressBar(
-            widgets=['Deploying devices... ', progressbar.Bar(),
-                     ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-            redirect_stdout=True,
-            max_value=len(machines)
-        )
+
+        progress_bar = None
+        if utils.CLI_ENV:
+            progress_bar = progressbar.ProgressBar(
+                widgets=['Deploying devices... ', progressbar.Bar(),
+                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+                redirect_stdout=True,
+                max_value=len(machines)
+            )
 
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
@@ -127,7 +130,8 @@ class DockerMachine(object):
             for item in machines:
                 self._deploy_and_start_machine(progress_bar, privileged_mode, item)
 
-        progress_bar.finish()
+        if utils.CLI_ENV:
+            progress_bar.finish()
 
     def _deploy_and_start_machine(self, progress_bar, privileged_mode, machine_item):
         (_, machine) = machine_item
@@ -135,7 +139,8 @@ class DockerMachine(object):
         self.create(machine, privileged=privileged_mode)
         self.start(machine)
 
-        progress_bar += 1
+        if progress_bar is not None:
+            progress_bar += 1
 
     def create(self, machine, privileged=False):
         logging.debug("Creating device `%s`..." % machine.name)

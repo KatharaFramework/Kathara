@@ -30,17 +30,20 @@ class DockerLink(object):
 
             items = utils.chunk_list(links, pool_size)
 
-            progress_bar = progressbar.ProgressBar(
-                widgets=['Deploying collision domains... ', progressbar.Bar(),
-                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                redirect_stdout=True,
-                max_value=len(links)
-            )
+            progress_bar = None
+            if utils.CLI_ENV:
+                progress_bar = progressbar.ProgressBar(
+                    widgets=['Deploying collision domains... ', progressbar.Bar(),
+                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+                    redirect_stdout=True,
+                    max_value=len(links)
+                )
 
             for chunk in items:
                 link_pool.map(func=partial(self._deploy_link, progress_bar), iterable=chunk)
 
-            progress_bar.finish()
+            if utils.CLI_ENV:
+                progress_bar.finish()
 
         # Create a docker bridge link in the lab object and assign the Docker Network object associated to it.
         docker_bridge = self.get_docker_bridge()
@@ -55,7 +58,8 @@ class DockerLink(object):
 
         self.create(link)
 
-        progress_bar += 1
+        if progress_bar is not None:
+            progress_bar += 1
 
     def create(self, link):
         # Reserved name for bridged connections, ignore.
