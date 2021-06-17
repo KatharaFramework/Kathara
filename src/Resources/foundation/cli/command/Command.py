@@ -17,5 +17,6 @@ class Command(ABC):
         args = self.parser.parse_args(argv)
         CliArgs.get_instance().args = vars(args)
 
-    def get_args(self):
+    @staticmethod
+    def get_args():
         return CliArgs.get_instance().args

@@ -73,7 +73,7 @@ class DockerManager(IManager):
         self.docker_link = DockerLink(self.client)
 
     @privileged
-    def deploy_lab(self, lab, selected_machines=None, privileged_mode=False):
+    def deploy_lab(self, lab, selected_machines=None):
         if selected_machines:
             lab = copy(lab)
             lab.intersect_machines(selected_machines)
@@ -82,7 +82,7 @@ class DockerManager(IManager):
         self.docker_link.deploy_links(lab)
 
         # Deploy all lab machines.
-        self.docker_machine.deploy_machines(lab, privileged_mode=privileged_mode)
+        self.docker_machine.deploy_machines(lab)
 
     @privileged
     def update_lab(self, lab_diff):

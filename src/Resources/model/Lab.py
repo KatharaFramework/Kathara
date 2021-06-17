@@ -130,9 +130,13 @@ class Lab(object):
         except OSError:
             # Do not create shared folder if not permitted.
             return
-        
+
     def has_path(self):
         return self.path is not None
+
+    def add_option(self, name, value):
+        if value is not None:
+            self.general_options[name] = value
 
     def __repr__(self):
         return "Lab(%s, %s, %s, %s)" % (self.path, self.folder_hash, self.machines, self.links)

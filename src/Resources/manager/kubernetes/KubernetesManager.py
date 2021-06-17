@@ -26,7 +26,7 @@ class KubernetesManager(IManager):
         self.k8s_machine = KubernetesMachine(self.k8s_namespace)
         self.k8s_link = KubernetesLink()
 
-    def deploy_lab(self, lab, selected_machines=None, privileged_mode=False):
+    def deploy_lab(self, lab, selected_machines=None):
         # Kubernetes needs only lowercase letters for resources.
         # We force the folder_hash to be lowercase
         lab.folder_hash = lab.folder_hash.lower()
@@ -38,7 +38,7 @@ class KubernetesManager(IManager):
         try:
             self.k8s_link.deploy_links(lab)
 
-            self.k8s_machine.deploy_machines(lab, privileged_mode)
+            self.k8s_machine.deploy_machines(lab)
         except ApiException as e:
             if e.status == 403 and 'Forbidden' in e.reason:
                 raise Exception("Previous lab execution is still terminating. Please wait.")

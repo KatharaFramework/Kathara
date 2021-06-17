@@ -154,6 +154,10 @@ class LstartCommand(Command):
         if dependencies:
             lab.apply_dependencies(dependencies)
 
+        lab.add_option('hosthome_mount', args['no_hosthome'])
+        lab.add_option('shared_mount', args['no_shared'])
+        lab.add_option('privileged_machines', args['privileged'])
+
         lab_ext_path = os.path.join(lab_path, 'lab.ext')
 
         if os.path.exists(lab_ext_path):
@@ -186,14 +190,12 @@ class LstartCommand(Command):
             raise Exception("No devices in the current lab. Exiting...")
 
         try:
-            lab.general_options = OptionParser.parse(args['options'])
-        except:
-            raise Exception("--pass parameter not valid.")
+            options = OptionParser.parse(args['options'])
+            lab.general_options = {**lab.general_options, **options}
+        except ValueError as e:
+            raise e
 
-        Kathara.get_instance().deploy_lab(lab,
-                                          selected_machines=args['machine_name'],
-                                          privileged_mode=args['privileged']
-                                          )
+        Kathara.get_instance().deploy_lab(lab, selected_machines=args['machine_name'])
 
         if args['list']:
             print(next(Kathara.get_instance().get_lab_info(lab.folder_hash)))

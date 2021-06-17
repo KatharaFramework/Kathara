@@ -113,10 +113,12 @@ class KubernetesMachine(object):
 
         self.kubernetes_namespace = kubernetes_namespace
 
-    def deploy_machines(self, lab, privileged_mode=False):
+    def deploy_machines(self, lab):
         machines = lab.machines.items()
 
-        if privileged_mode:
+        privileged = lab.general_options['privileged_machines'] if 'privileged_machines' in lab.general_options \
+            else False
+        if privileged:
             logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
 
         progress_bar = None

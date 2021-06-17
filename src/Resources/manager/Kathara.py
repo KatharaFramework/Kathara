@@ -27,8 +27,8 @@ class Kathara(IManager):
 
             Kathara.__instance = self
 
-    def deploy_lab(self, lab, selected_machines=None, privileged_mode=False):
-        self.manager.deploy_lab(lab, privileged_mode)
+    def deploy_lab(self, lab, selected_machines=None):
+        self.manager.deploy_lab(lab, selected_machines)
 
     def update_lab(self, lab_diff):
         self.manager.update_lab(lab_diff)

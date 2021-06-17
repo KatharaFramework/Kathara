@@ -9,7 +9,6 @@ from docker.errors import APIError
 
 from ... import utils
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
-from ...foundation.cli.CliArgs import CliArgs
 from ...model.Link import BRIDGE_LINK_NAME
 from ...setting.Setting import Setting
 
@@ -87,19 +86,15 @@ class DockerMachine(object):
 
         self.docker_image = docker_image
 
-    def deploy_machines(self, lab, privileged_mode=False):
+    def deploy_machines(self, lab):
         # Check and pulling machine images
         lab_images = set(map(lambda x: x.get_image(), lab.machines.values()))
         self.docker_image.check_and_pull_from_list(lab_images)
 
-        # Read additional CLI args and settings
-        args = CliArgs.get_instance()
-        Setting.get_instance().hosthome_mount = args.no_hosthome if args.no_hosthome is not None \
-            else Setting.get_instance().hosthome_mount
-        Setting.get_instance().shared_mount = args.no_shared if args.no_shared is not None \
+        shared_mount = lab.general_options['shared_mount'] if 'shared_mount' in lab.general_options \
             else Setting.get_instance().shared_mount
 
-        if Setting.get_instance().shared_mount:
+        if shared_mount:
             lab.create_shared_folder()
 
         machines = lab.machines.items()
@@ -123,26 +118,24 @@ class DockerMachine(object):
             items = utils.chunk_list(machines, pool_size)
 
             for chunk in items:
-                machines_pool.map(func=partial(self._deploy_and_start_machine, progress_bar, privileged_mode),
-                                  iterable=chunk
-                                  )
+                machines_pool.map(func=partial(self._deploy_and_start_machine, progress_bar), iterable=chunk)
         else:
             for item in machines:
-                self._deploy_and_start_machine(progress_bar, privileged_mode, item)
+                self._deploy_and_start_machine(progress_bar, item)
 
         if utils.CLI_ENV:
             progress_bar.finish()
 
-    def _deploy_and_start_machine(self, progress_bar, privileged_mode, machine_item):
+    def _deploy_and_start_machine(self, progress_bar, machine_item):
         (_, machine) = machine_item
 
-        self.create(machine, privileged=privileged_mode)
+        self.create(machine)
         self.start(machine)
 
         if progress_bar is not None:
             progress_bar += 1
 
-    def create(self, machine, privileged=False):
+    def create(self, machine):
         logging.debug("Creating device `%s`..." % machine.name)
 
         image = machine.get_image()
@@ -199,12 +192,16 @@ class DockerMachine(object):
 
         volumes = {}
 
-        if Setting.get_instance().shared_mount and machine.lab.shared_folder:
+        shared_mount = options['shared_mount'] if 'shared_mount' in options else machine.meta['shared_mount']
+        if shared_mount and machine.lab.shared_folder:
             volumes = {machine.lab.shared_folder: {'bind': '/shared', 'mode': 'rw'}}
 
         # Mount the host home only if specified in settings.
-        if Setting.get_instance().hosthome_mount:
+        hosthome_mount = options['hosthome_mount'] if 'hosthome_mount' in options else machine.meta['hosthome_mount']
+        if hosthome_mount:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
+
+        privileged = options['privileged_machines'] if 'privileged_machines' in options else machine.meta['privileged']
 
         container_name = self.get_container_name(machine.name, machine.lab.folder_hash)
         try:

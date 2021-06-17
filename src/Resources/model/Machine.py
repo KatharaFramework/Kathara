@@ -30,7 +30,14 @@ class Machine(object):
 
         self.interfaces = {}
 
-        self.meta = {'sysctls': {}, 'bridged': False, 'ports': {}}
+        self.meta = {
+            'sysctls': {},
+            'bridged': False,
+            'ports': {},
+            'hosthome_mount': Setting.get_instance().hosthome_mount,
+            'shared_mount': Setting.get_instance().shared_mount,
+            'privileged': False
+        }
 
         self.startup_commands = []
 
@@ -52,7 +59,7 @@ class Machine(object):
             machine_folder = os.path.join(lab.path, '%s' % self.name)
             self.folder = machine_folder if os.path.isdir(machine_folder) else None
 
-        self.init_metas(kwargs)
+        self.update_meta(kwargs)
 
     def add_interface(self, link, number=None):
         if number is None:
@@ -205,7 +212,8 @@ class Machine(object):
         if not executable_path:
             raise Exception("Unable to find Kathara.")
 
-        connect_command = "%s connect -l %s" % (executable_path, self.name)
+        vmachine = "-v" if self.lab.path is None else ""
+        connect_command = "%s connect %s -l %s" % (executable_path, vmachine, self.name)
         terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
         logging.debug("Terminal will open in directory %s." % self.lab.path)
@@ -343,33 +351,42 @@ class Machine(object):
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
 
-    def init_metas(self, args):
-        if 'exec_commands' in args and args['exec_commands']:
+    def update_meta(self, args):
+        if 'exec_commands' in args and args['exec_commands'] is not None:
             for command in args['exec_commands']:
                 self.add_meta("exec", command)
 
-        if 'mem' in args and args['mem']:
+        if 'mem' in args and args['mem'] is not None:
             self.add_meta("mem", args['mem'])
 
-        if 'cpus' in args and args['cpus']:
+        if 'cpus' in args and args['cpus'] is not None:
             self.add_meta("cpus", args['cpus'])
 
-        if 'image' in args and args['image']:
+        if 'image' in args and args['image'] is not None:
             self.add_meta("image", args['image'])
 
-        if 'bridged' in args and args['bridged']:
+        if 'bridged' in args and args['bridged'] is not None:
             self.add_meta("bridged", True)
 
-        if 'ports' in args and args['ports']:
+        if 'ports' in args and args['ports'] is not None:
             for port in args['ports']:
                 self.add_meta("port", port)
 
-        if 'num_terms' in args and args['num_terms']:
+        if 'num_terms' in args and args['num_terms'] is not None:
             self.add_meta('num_terms', args['num_terms'])
 
-        if 'sysctls' in args and args['sysctls']:
+        if 'sysctls' in args and args['sysctls'] is not None:
             for sysctl in args['sysctls']:
                 self.add_meta("sysctl", sysctl)
+
+        if 'no_hosthome' is args and args['no_hosthome'] is not None:
+            self.add_meta('hosthome_mount', args['no_hosthome'])
+
+        if 'no_shared' is args and args['no_shared'] is not None:
+            self.add_meta('shared_mount', args['no_shared'])
+
+        if 'privileged' is args and args['privileged'] is not None:
+            self.add_meta('privileged', args['privileged'])
 
     def __repr__(self):
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

@@ -152,8 +152,6 @@ class VstartCommand(Command):
         else:
             logging.info(utils.format_headers("Starting Device"))
 
-        args['no_shared'] = False
-
         Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
             else Setting.get_instance().open_terminals
         Setting.get_instance().terminal = args['xterm'] or Setting.get_instance().terminal
@@ -167,11 +165,12 @@ class VstartCommand(Command):
                 Setting.get_instance().open_terminals = False
 
         lab = Lab("kathara_vlab")
-
-        name = args['name']
-        del args['name']
+        name = args.pop('name')
 
         device = lab.get_or_new_machine(name, **args)
+        device.add_meta('hosthome_mount', args['no_hosthome'])
+        device.add_meta('shared_mount', False)
+        device.add_meta('privileged', args['privileged'])
 
         if args['eths']:
             for eth in args['eths']:
@@ -181,4 +180,4 @@ class VstartCommand(Command):
                 except ValueError:
                     raise Exception("Interface number in `--eth %s` is not a number." % eth)
 
-        Kathara.get_instance().deploy_lab(lab, privileged_mode=args['privileged'])
+        Kathara.get_instance().deploy_lab(lab)

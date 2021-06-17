@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class IManager(ABC):
     @abstractmethod
-    def deploy_lab(self, lab, selected_machines=None, privileged_mode=False):
+    def deploy_lab(self, lab, selected_machines=None):
         raise NotImplementedError("You must implement `deploy_lab` method.")
 
     @abstractmethod
