@@ -94,17 +94,20 @@ class KubernetesLink(object):
 
             items = utils.chunk_list(links, pool_size)
 
-            progress_bar = progressbar.ProgressBar(
-                widgets=['Deleting collision domains... ', progressbar.Bar(),
-                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                redirect_stdout=True,
-                max_value=len(links)
-            )
+            progress_bar = None
+            if utils.CLI_ENV:
+                progress_bar = progressbar.ProgressBar(
+                    widgets=['Deleting collision domains... ', progressbar.Bar(),
+                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+                    redirect_stdout=True,
+                    max_value=len(links)
+                )
 
             for chunk in items:
                 links_pool.map(func=partial(self._undeploy_link, progress_bar), iterable=chunk)
 
-            progress_bar.finish()
+            if utils.CLI_ENV:
+                progress_bar.finish()
 
     def wipe(self):
         links = self.get_links_by_filters()

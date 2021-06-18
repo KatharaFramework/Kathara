@@ -354,19 +354,21 @@ class KubernetesMachine(object):
 
             items = utils.chunk_list(machines, pool_size)
 
-            progress_bar = progressbar.ProgressBar(
-                widgets=['Deleting devices... ', progressbar.Bar(),
-                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                redirect_stdout=True,
-                max_value=len(machines)
-            )
+            progress_bar = None
+            if utils.CLI_ENV:
+                progress_bar = progressbar.ProgressBar(
+                    widgets=['Deleting devices... ', progressbar.Bar(),
+                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
+                    redirect_stdout=True,
+                    max_value=len(machines)
+                )
 
             for chunk in items:
                 machines_pool.map(func=partial(self._undeploy_machine, progress_bar),
                                   iterable=chunk
                                   )
-
-            progress_bar.finish()
+            if utils.CLI_ENV:
+                progress_bar.finish()
 
     def wipe(self):
         machines = self.get_machines_by_filters()
