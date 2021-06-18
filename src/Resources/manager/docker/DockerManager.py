@@ -15,6 +15,7 @@ from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Link import BRIDGE_LINK_NAME
 from ...utils import pack_files_for_tar
+from ...setting.Setting import Setting
 
 
 def pywin_import_stub():
@@ -62,7 +63,12 @@ class DockerManager(IManager):
 
     @check_docker_status
     def __init__(self):
-        self.client = docker.from_env(timeout=None, max_pool_size=utils.get_pool_size())
+        api_url = Setting.get_instance().api_server_url
+        if api_url is None:
+            self.client = docker.from_env(timeout=None, max_pool_size=utils.get_pool_size())
+        else:
+            tls_config = docker.tls.TLSConfig(ca_cert=Setting.get_instance().cert_path)
+            self.client = docker.DockerClient(base_url=api_url, tls=tls_config)
 
         docker_plugin = DockerPlugin(self.client)
         docker_plugin.check_and_download_plugin()
