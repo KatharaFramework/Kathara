@@ -22,6 +22,7 @@ class DockerOptionsHandler(OptionsHandler):
                                       prologue_text="""The home directory of the current user is made available for """
                                                     """reading/writing inside the device under the special """
                                                     """directory `/hosthome`.
+                                                    
                                                     Default is %s.""" %
                                                     setting_utils.format_bool(DEFAULTS['hosthome_mount']),
                                       formatter=menu_formatter
@@ -50,6 +51,7 @@ class DockerOptionsHandler(OptionsHandler):
                                     prologue_text="""The shared directory inside the lab folder is made available """
                                                   """for reading/writing inside the device under the special """
                                                   """directory `/shared`.
+                                                  
                                                   Default is %s.""" %
                                                   setting_utils.format_bool(DEFAULTS['shared_mount']),
                                     formatter=menu_formatter
@@ -70,42 +72,71 @@ class DockerOptionsHandler(OptionsHandler):
 
         shared_item = SubmenuItem(shared_string, shared_menu, current_menu)
 
-        api_server_url_string = "Insert a remote Docker Daemon URL"
-        api_server_url_menu = SelectionMenu(strings=[],
-                                            title=api_server_url_string,
-                                            subtitle=setting_utils.current_string("api_server_url"),
-                                            prologue_text="""You can specify a remote Docker Daemon URL.
-                                                          Default is %s.""" % DEFAULTS['api_server_url'],
-                                            formatter=menu_formatter
-                                            )
+        # Multiuser Option
+        multiuser_string = "Enable multiuser scenarios"
+        multiuser_menu = SelectionMenu(strings=[],
+                                       title=multiuser_string,
+                                       subtitle=setting_utils.current_bool("multiuser"),
+                                       prologue_text="""This option disables the per-user scenario creation and """
+                                                     """allows to interact on the same devices and collision domains.
+                                                     
+                                                     Default is %s.""" %
+                                                     setting_utils.format_bool(DEFAULTS['multiuser']),
+                                       formatter=menu_formatter
+                                       )
 
-        api_server_url_menu.append_item(FunctionItem(text=api_server_url_string,
-                                                     function=setting_utils.read_value,
-                                                     args=['api_server_url',
-                                                           RegexValidator(url_regex),
-                                                           'Write a Docker Daemon URL:',
-                                                           'Docker Daemon URL is not a valid URL (remove '
-                                                           'the trailing slash, if present)'
-                                                           ],
-                                                     should_exit=True
-                                                     )
+        multiuser_menu.append_item(FunctionItem(text="Yes",
+                                                function=setting_utils.update_setting_value,
+                                                args=["multiuser", True],
+                                                should_exit=True
+                                                )
+                                   )
+        multiuser_menu.append_item(FunctionItem(text="No",
+                                                function=setting_utils.update_setting_value,
+                                                args=["multiuser", False],
+                                                should_exit=True
+                                                )
+                                   )
+
+        multiuser_item = SubmenuItem(multiuser_string, multiuser_menu, current_menu)
+
+        # Remote Docker Daemon Option
+        remote_url_string = "Insert a remote Docker Daemon URL"
+        remote_url_menu = SelectionMenu(strings=[],
+                                        title=remote_url_string,
+                                        subtitle=setting_utils.current_string("remote_url"),
+                                        prologue_text="""You can specify a remote Docker Daemon URL.
+                                        Default is %s.""" % DEFAULTS['remote_url'],
+                                        formatter=menu_formatter
                                         )
-        api_server_url_menu.append_item(FunctionItem(text="Reset value to Empty String",
-                                                     function=setting_utils.update_setting_value,
-                                                     args=["api_server_url", None],
-                                                     should_exit=True
-                                                     )
-                                        )
 
-        api_url_item = SubmenuItem(api_server_url_string, api_server_url_menu, current_menu)
+        remote_url_menu.append_item(FunctionItem(text=remote_url_string,
+                                                 function=setting_utils.read_value,
+                                                 args=['remote_url',
+                                                       RegexValidator(url_regex),
+                                                       'Write a Docker Daemon URL:',
+                                                       'Docker Daemon URL is not a valid URL (remove '
+                                                       'the trailing slash, if present)'
+                                                       ],
+                                                 should_exit=True
+                                                 )
+                                    )
+        remote_url_menu.append_item(FunctionItem(text="Reset value to Empty String",
+                                                 function=setting_utils.update_setting_value,
+                                                 args=["remote_url", None],
+                                                 should_exit=True
+                                                 )
+                                    )
 
-        # API Token Option
+        remote_url_item = SubmenuItem(remote_url_string, remote_url_menu, current_menu)
+
+        # Docker Daemon TLS Path Option
         cert_path_string = "Insert a Docker Daemon TLS Cert Path"
         cert_path_menu = SelectionMenu(strings=[],
                                        title=cert_path_string,
                                        subtitle=setting_utils.current_string("cert_path"),
                                        prologue_text="""When using a remote Docker Daemon, a TLS Cert could be required.
-                                                        Default is %s.""" % DEFAULTS['cert_path'],
+                                       Default is %s.""" % DEFAULTS['cert_path'],
                                        formatter=menu_formatter
                                        )
 
@@ -130,5 +161,6 @@ class DockerOptionsHandler(OptionsHandler):
 
         current_menu.append_item(hosthome_item)
         current_menu.append_item(shared_item)
-        current_menu.append_item(api_url_item)
+        current_menu.append_item(multiuser_item)
+        current_menu.append_item(remote_url_item)
         current_menu.append_item(cert_path_item)

@@ -521,7 +521,8 @@ class DockerMachine(object):
     @staticmethod
     def get_container_name(name, lab_hash):
         lab_hash = lab_hash if lab_hash else ""
-        return "%s_%s_%s_%s" % (Setting.get_instance().device_prefix, utils.get_current_user_name(), name, lab_hash)
+        username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().multiuser else ""
+        return "%s%s_%s_%s" % (Setting.get_instance().device_prefix, username_prefix, name, lab_hash)
 
     @staticmethod
     def delete_machine(machine):

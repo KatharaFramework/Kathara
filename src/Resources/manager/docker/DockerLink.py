@@ -166,7 +166,8 @@ class DockerLink(object):
 
     @staticmethod
     def get_network_name(name):
-        return "%s_%s_%s" % (Setting.get_instance().net_prefix, utils.get_current_user_name(), name)
+        username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().multiuser else ""
+        return "%s%s_%s" % (Setting.get_instance().net_prefix, username_prefix, name)
 
     @staticmethod
     def _delete_link(link):
