@@ -35,8 +35,7 @@ class Machine(object):
             'bridged': False,
             'ports': {},
             'hosthome_mount': Setting.get_instance().hosthome_mount,
-            'shared_mount': Setting.get_instance().shared_mount,
-            'privileged': False
+            'shared_mount': Setting.get_instance().shared_mount
         }
 
         self.startup_commands = []
@@ -75,7 +74,7 @@ class Machine(object):
             self.startup_commands.append(value)
             return
 
-        if name == "bridged":
+        if name in ["bridged", "hosthome_mount", "shared_mount"]:
             self.meta[name] = bool(strtobool(str(value)))
             return
 
@@ -365,7 +364,7 @@ class Machine(object):
         if 'image' in args and args['image'] is not None:
             self.add_meta("image", args['image'])
 
-        if 'bridged' in args and args['bridged'] is not None:
+        if 'bridged' in args and args['bridged'] is not None and args['bridged']:
             self.add_meta("bridged", True)
 
         if 'ports' in args and args['ports'] is not None:
@@ -379,14 +378,11 @@ class Machine(object):
             for sysctl in args['sysctls']:
                 self.add_meta("sysctl", sysctl)
 
-        if 'no_hosthome' is args and args['no_hosthome'] is not None:
-            self.add_meta('hosthome_mount', args['no_hosthome'])
+        if 'no_hosthome' is args and args['no_hosthome'] is not None and args['no_hosthome']:
+            self.add_meta('hosthome_mount', True)
 
-        if 'no_shared' is args and args['no_shared'] is not None:
-            self.add_meta('shared_mount', args['no_shared'])
-
-        if 'privileged' is args and args['privileged'] is not None:
-            self.add_meta('privileged', args['privileged'])
+        if 'no_shared' is args and args['no_shared'] is not None and args['no_shared']:
+            self.add_meta('shared_mount', True)
 
     def __repr__(self):
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

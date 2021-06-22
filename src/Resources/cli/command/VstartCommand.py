@@ -47,7 +47,8 @@ class VstartCommand(Command):
         )
         group.add_argument(
             "--privileged",
-            action="store_true",
+            action="store_const",
+            const=True,
             required=False,
             help='Start the device in privileged mode. MUST BE ROOT FOR THIS OPTION.'
         )
@@ -165,12 +166,13 @@ class VstartCommand(Command):
                 Setting.get_instance().open_terminals = False
 
         lab = Lab("kathara_vlab")
+        lab.add_option('hosthome_mount', args['no_hosthome'])
+        lab.add_option('privileged_machines', args['privileged'])
+
         name = args.pop('name')
 
         device = lab.get_or_new_machine(name, **args)
-        device.add_meta('hosthome_mount', args['no_hosthome'])
         device.add_meta('shared_mount', False)
-        device.add_meta('privileged', args['privileged'])
 
         if args['eths']:
             for eth in args['eths']:

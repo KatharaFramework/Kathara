@@ -100,12 +100,12 @@ class DockerOptionsHandler(OptionsHandler):
         api_url_item = SubmenuItem(api_server_url_string, api_server_url_menu, current_menu)
 
         # API Token Option
-        cert_path_string = "Insert a Docker server TLS cert path"
+        cert_path_string = "Insert a Docker Daemon TLS Cert Path"
         cert_path_menu = SelectionMenu(strings=[],
                                        title=cert_path_string,
-                                       prologue_text="""When using a remote Docker Daemon, you must also """
-                                                     """specify a TLS cert to use.
-                                                     Default is %s.""" % DEFAULTS['cert_path'],
+                                       subtitle=setting_utils.current_string("cert_path"),
+                                       prologue_text="""When using a remote Docker Daemon, a TLS Cert could be required.
+                                                        Default is %s.""" % DEFAULTS['cert_path'],
                                        formatter=menu_formatter
                                        )
 
@@ -113,8 +113,8 @@ class DockerOptionsHandler(OptionsHandler):
                                                 function=setting_utils.read_value,
                                                 args=['cert_path',
                                                       RegexValidator(r'^.+$'),
-                                                      'Write a cert path:',
-                                                      'Cert path not valid!'
+                                                      'Write a TSL Cert Path:',
+                                                      'TLS Cert Path not valid!'
                                                       ],
                                                 should_exit=True
                                                 )

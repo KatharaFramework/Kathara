@@ -52,6 +52,12 @@ In order to establish a uniform convention, comment lines should always start wi
 * `num_terms` (integer):
     Choose the number of terminals to open for this device.
 
+* `hosthome_mount` (boolean):
+    If true, /hosthome dir will be mounted inside the device.
+
+* `shared_mount` (boolean):
+    If true, /shared dir will be mounted inside the device.
+
 ## LAB META INFORMATION
 
 It is also possible to provide descriptive information about a lab by using one of the following special assignments:
