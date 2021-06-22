@@ -18,6 +18,7 @@
     <li><a href="#installation">Installation</a></li>
     <li><a href="#quick-example">Quick Example</a></li>
     <li><a href="#external-tools">External Tools</a></li>
+    <li><a href="#success-stories">Success Stories</a></li>
     <li><a href="#join-us">Join Us</a></li>
     <li><a href="https://github.com/KatharaFramework/Docker-Images">Docker Images and Dockerfiles</a></li>
     <li><a href="https://www.kathara.org/man-pages/kathara.1.html">Man Pages</a></li>
@@ -80,6 +81,9 @@ For further information on how to use Kathará on Kubernetes please refer to the
 - [VFTGen](https://github.com/KatharaFramework/VFTGen), a tool that allows to create three levels Fat Tree topologies (single-plane or multi-planes) and automatically configure them to run on Kathará.
 
 Being based on Netkit, all the previous tools still work. 
+
+## Success Stories
+As far as we know, Kathará is currently being used in many [courses and projects](https://www.kathara.org/stories.html). We encourage you to tell us your story! 
 
 ## Join Us
 
