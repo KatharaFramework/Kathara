@@ -75,13 +75,14 @@ class DockerLink(object):
 
         network_ipam_config = docker.types.IPAMConfig(driver='null')
 
+        user_label = "shared" if Setting.get_instance().multiuser else utils.get_current_user_name()
         link.api_object = self.client.networks.create(name=link_name,
                                                       driver=PLUGIN_NAME,
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,
                                                       labels={"lab_hash": link.lab.folder_hash,
                                                               "name": link.name,
-                                                              "user": utils.get_current_user_name(),
+                                                              "user": user_label,
                                                               "app": "kathara",
                                                               "external": ";".join([x.get_full_name()
                                                                                     for x in link.external
@@ -122,7 +123,11 @@ class DockerLink(object):
                 progress_bar.finish()
 
     def wipe(self, user=None):
-        links = self.get_links_by_filters(user=user)
+        user_label = "shared" if Setting.get_instance().multiuser else user
+        links = self.get_links_by_filters(user=user_label)
+        for item in links:
+            item.reload()
+        links = [item for item in links if len(item.containers) <= 0]
 
         pool_size = utils.get_pool_size()
         links_pool = Pool(pool_size)
