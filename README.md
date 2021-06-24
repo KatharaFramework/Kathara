@@ -83,7 +83,9 @@ For further information on how to use Kathará on Kubernetes please refer to the
 Being based on Netkit, all the previous tools still work. 
 
 ## Success Stories
-As far as we know, Kathará is currently being used in many [courses and projects](https://www.kathara.org/stories.html). We encourage you to tell us your story! 
+As far as we know, Kathará is currently being used in many [courses and projects](https://www.kathara.org/stories.html). 
+
+We encourage you to tell us your story! 
 
 ## Join Us
 
