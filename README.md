@@ -84,8 +84,10 @@ Being based on Netkit, all the previous tools still work.
 
 ## Success Stories
 As far as we know, Kathará is currently being used in many [courses and projects](https://www.kathara.org/stories.html). 
-
+ 
 We encourage you to tell us your story! 
+
+We are also collecting network scenarios from the community. If you wanto to be added to the [list](https://github.com/KatharaFramework/Kathara-Labs/wiki/Community-Labs), please contact us!
 
 ## Join Us
 
