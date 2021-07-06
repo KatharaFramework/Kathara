@@ -69,7 +69,7 @@ class BuiltInTest(Test):
     @staticmethod
     def _get_machine_status(machine):
         # Machine interfaces
-        (ip_addr, _) = Kathara.get_instance().exec(lab_hash=machine.lab.folder_hash,
+        (ip_addr, _) = Kathara.get_instance().exec(lab_hash=machine.lab.hash,
                                                    machine_name=machine.name,
                                                    command="ip -j addr show"
                                                    )
@@ -85,14 +85,14 @@ class BuiltInTest(Test):
                                              }
 
         # Machine routes
-        (ip_route, _) = Kathara.get_instance().exec(lab_hash=machine.lab.folder_hash,
+        (ip_route, _) = Kathara.get_instance().exec(lab_hash=machine.lab.hash,
                                                     machine_name=machine.name,
                                                     command="ip -j route show"
                                                     )
         ip_route = json.loads(ip_route)
 
         # Machine opened ports
-        (net_stat, _) = Kathara.get_instance().exec(lab_hash=machine.lab.folder_hash,
+        (net_stat, _) = Kathara.get_instance().exec(lab_hash=machine.lab.hash,
                                                     machine_name=machine.name,
                                                     command="netstat -tuwln"
                                                     )
@@ -100,7 +100,7 @@ class BuiltInTest(Test):
         net_stat = sorted([filter(lambda x: "127.0.0.11" not in x, net_stat.splitlines())][2:])
 
         # Machine processes
-        (processes, _) = Kathara.get_instance().exec(lab_hash=machine.lab.folder_hash,
+        (processes, _) = Kathara.get_instance().exec(lab_hash=machine.lab.hash,
                                                      machine_name=machine.name,
                                                      command="ps -e -o command"
                                                      )

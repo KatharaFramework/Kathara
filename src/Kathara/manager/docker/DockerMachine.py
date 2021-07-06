@@ -203,7 +203,7 @@ class DockerMachine(object):
 
         privileged = options['privileged_machines'] if 'privileged_machines' in options else False
 
-        container_name = self.get_container_name(machine.name, machine.lab.folder_hash)
+        container_name = self.get_container_name(machine.name, machine.lab.hash)
         try:
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,
@@ -221,7 +221,7 @@ class DockerMachine(object):
                                                               detach=True,
                                                               volumes=volumes,
                                                               labels={"name": machine.name,
-                                                                      "lab_hash": machine.lab.folder_hash,
+                                                                      "lab_hash": machine.lab.hash,
                                                                       "user": utils.get_current_user_name(),
                                                                       "app": "kathara",
                                                                       "shell": machine.meta["shell"]
@@ -243,7 +243,7 @@ class DockerMachine(object):
         machine.api_object = machine_container
 
     def update(self, machine):
-        machines = self.get_machines_by_filters(machine_name=machine.name, lab_hash=machine.lab.folder_hash)
+        machines = self.get_machines_by_filters(machine_name=machine.name, lab_hash=machine.lab.hash)
 
         if not machines:
             raise Exception("Device `%s` not found." % machine.name)
@@ -442,7 +442,7 @@ class DockerMachine(object):
         machines = self.get_machines_by_filters(machine_name=machine_name, lab_hash=lab_hash, user=user)
 
         if not machines:
-            raise Exception("The specified device '%s' is not running." % machine_name)
+            raise Exception("The specified device `%s` is not running." % machine_name)
         elif len(machines) > 1:
             raise Exception("There is more than one device matching the name `%s`." % machine_name)
 
@@ -520,9 +520,9 @@ class DockerMachine(object):
 
     @staticmethod
     def get_container_name(name, lab_hash):
-        lab_hash = lab_hash if lab_hash else ""
+        lab_hash = lab_hash if "_%s" % lab_hash else ""
         username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().multiuser else ""
-        return "%s%s_%s_%s" % (Setting.get_instance().device_prefix, username_prefix, name, lab_hash)
+        return "%s%s_%s%s" % (Setting.get_instance().device_prefix, username_prefix, name, lab_hash)
 
     @staticmethod
     def delete_machine(machine):

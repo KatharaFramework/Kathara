@@ -199,6 +199,6 @@ class LstartCommand(Command):
         Kathara.get_instance().deploy_lab(lab, selected_machines=args['machine_name'])
 
         if args['list']:
-            print(next(Kathara.get_instance().get_lab_info(lab.folder_hash)))
+            print(next(Kathara.get_instance().get_lab_info(lab.hash)))
 
         return lab

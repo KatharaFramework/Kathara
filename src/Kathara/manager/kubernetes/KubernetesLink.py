@@ -67,14 +67,14 @@ class KubernetesLink(object):
 
     def create(self, link, network_id):
         # If a network with the same name exists, return it instead of creating a new one.
-        network_objects = self.get_links_by_filters(lab_hash=link.lab.folder_hash, link_name=link.name)
+        network_objects = self.get_links_by_filters(lab_hash=link.lab.hash, link_name=link.name)
         if network_objects:
             link.api_object = network_objects.pop()
             return
 
         link.api_object = self.client.create_namespaced_custom_object(group=K8S_NET_GROUP,
                                                                       version=K8S_NET_VERSION,
-                                                                      namespace=link.lab.folder_hash,
+                                                                      namespace=link.lab.hash,
                                                                       plural=K8S_NET_PLURAL,
                                                                       body=self._build_definition(link, network_id)
                                                                       )
@@ -169,7 +169,7 @@ class KubernetesLink(object):
                             "type": "megalos",
                             "suffix": "%s",
                             "vxlanId": %d
-                        }""" % (link.name.lower(), link.lab.folder_hash[0:6], network_id)
+                        }""" % (link.name.lower(), link.lab.hash[0:6], network_id)
             }
         }
 

@@ -59,7 +59,7 @@ class VconfigCommand(Command):
         lab = Lab("kathara_vlab")
 
         device = lab.get_or_new_machine(args['name'])
-        device.api_object = Kathara.get_instance().get_machine_api_object(lab.folder_hash, args['name'])
+        device.api_object = Kathara.get_instance().get_machine_api_object(lab.hash, args['name'])
 
         for eth in args['eths']:
             logging.info("Adding interface to device `%s` for collision domain `%s`..." % (args['name'], eth))

@@ -5,12 +5,6 @@ from ....trdparty.consolemenu import *
 from ....trdparty.consolemenu.items import *
 from ....trdparty.consolemenu.validators.regex import RegexValidator
 
-url_regex = r'^(?:http)s?://'  # http:// or https://
-url_regex += r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
-url_regex += r'localhost|'  # localhost...
-url_regex += r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-url_regex += r'(?::\d+)?$'  # optional port
-
 
 class KubernetesOptionsHandler(OptionsHandler):
     def add_items(self, current_menu, menu_formatter):
@@ -29,7 +23,7 @@ class KubernetesOptionsHandler(OptionsHandler):
         api_server_url_menu.append_item(FunctionItem(text=api_server_url_string,
                                                      function=setting_utils.read_value,
                                                      args=['api_server_url',
-                                                           RegexValidator(url_regex),
+                                                           RegexValidator(setting_utils.URL_REGEX),
                                                            'Write a Kubernetes API Server URL:',
                                                            'Kubernetes API Server URL is not a valid URL (remove '
                                                            'the trailing slash, if present)'

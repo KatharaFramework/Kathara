@@ -1,4 +1,5 @@
 import json
+from copy import copy
 from datetime import datetime
 
 from kubernetes import client
@@ -28,10 +29,11 @@ class KubernetesManager(IManager):
 
     def deploy_lab(self, lab, selected_machines=None):
         # Kubernetes needs only lowercase letters for resources.
-        # We force the folder_hash to be lowercase
-        lab.folder_hash = lab.folder_hash.lower()
+        # We force the hash to be lowercase
+        lab.hash = lab.hash.lower()
 
         if selected_machines:
+            lab = copy(lab)
             lab.intersect_machines(selected_machines)
 
         self.k8s_namespace.create(lab)
@@ -125,6 +127,15 @@ class KubernetesManager(IManager):
                                     )
 
     @privileged
+    def get_machine_api_object(self, lab_hash, machine_name):
+        return self.k8s_machine.get_machine(lab_hash, machine_name)
+
+    @privileged
+    def check_image(self, image_name):
+        # Delegate the image check to Kubernetes
+        return True
+
+    @privileged
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         if lab_hash:
             lab_hash = lab_hash.lower()
@@ -135,7 +146,7 @@ class KubernetesManager(IManager):
     @privileged
     def get_formatted_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         if all_users:
-            raise NotSupportedError("Cannot use `--all` flag.")
+            raise NotSupportedError("Cannot use `--all` flag on Megalos.")
 
         table_header = ["LAB HASH", "DEVICE NAME", "STATUS", "ASSIGNED NODE"]
         stats_table = DoubleTable([])
@@ -157,10 +168,6 @@ class KubernetesManager(IManager):
             stats_table.table_data = machines_data
 
             yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
-
-    @privileged
-    def get_machine_api_object(self, lab_hash, machine_name):
-        return self.k8s_machine.get_machine(lab_hash, machine_name)
 
     @privileged
     def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
@@ -188,11 +195,6 @@ class KubernetesManager(IManager):
         machine_info += utils.format_headers()
 
         return machine_info
-
-    @privileged
-    def check_image(self, image_name):
-        # Delegate the image check to Kubernetes
-        return True
 
     @privileged
     def get_release_version(self):

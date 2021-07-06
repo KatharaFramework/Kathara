@@ -9,7 +9,7 @@ from .. import utils
 
 class Lab(object):
     __slots__ = ['name', 'description', 'version', 'author', 'email', 'web',
-                 'path', 'folder_hash', 'machines', 'links', 'general_options', 'has_dependencies',
+                 'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
     def __init__(self, name, path=None):
@@ -33,14 +33,14 @@ class Lab(object):
 
         if self.path:
             self.path = path
-            self.folder_hash = utils.generate_urlsafe_hash(self.path)
+            self.hash = utils.generate_urlsafe_hash(self.path)
             shared_startup_file = os.path.join(self.path, 'shared.startup')
             self.shared_startup_path = shared_startup_file if os.path.exists(shared_startup_file) else None
 
             shared_shutdown_file = os.path.join(self.path, 'shared.shutdown')
             self.shared_shutdown_path = shared_shutdown_file if os.path.exists(shared_shutdown_file) else None
         else:
-            self.folder_hash = utils.generate_urlsafe_hash(self.name)
+            self.hash = utils.generate_urlsafe_hash(self.name)
 
         self.shared_folder = None
 
@@ -139,7 +139,7 @@ class Lab(object):
             self.general_options[name] = value
 
     def __repr__(self):
-        return "Lab(%s, %s, %s, %s)" % (self.path, self.folder_hash, self.machines, self.links)
+        return "Lab(%s, %s, %s, %s)" % (self.path, self.hash, self.machines, self.links)
 
     def __str__(self):
         lab_info = ""

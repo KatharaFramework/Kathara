@@ -194,7 +194,7 @@ class KubernetesMachine(object):
             machine_definition = self._build_definition(machine, config_map)
 
             machine.api_object = self.client.create_namespaced_deployment(body=machine_definition,
-                                                                          namespace=machine.lab.folder_hash
+                                                                          namespace=machine.lab.hash
                                                                           )
         except ApiException as e:
             if e.status == 409 and 'Conflict' in e.reason:
@@ -283,7 +283,7 @@ class KubernetesMachine(object):
         for (idx, machine_link) in machine.interfaces.items():
             network_interfaces.append({
                 "name": machine_link.api_object["metadata"]["name"],
-                "namespace": machine.lab.folder_hash,
+                "namespace": machine.lab.hash,
                 "interface": "net%d" % idx
             })
         pod_annotations["k8s.v1.cni.cncf.io/networks"] = json.dumps(network_interfaces)

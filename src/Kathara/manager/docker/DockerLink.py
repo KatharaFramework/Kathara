@@ -80,7 +80,7 @@ class DockerLink(object):
                                                       driver=PLUGIN_NAME,
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,
-                                                      labels={"lab_hash": link.lab.folder_hash,
+                                                      labels={"lab_hash": link.lab.hash,
                                                               "name": link.name,
                                                               "user": user_label,
                                                               "app": "kathara",

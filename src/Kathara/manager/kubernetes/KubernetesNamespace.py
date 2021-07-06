@@ -10,7 +10,7 @@ class KubernetesNamespace(object):
         self.client = core_v1_api.CoreV1Api()
 
     def create(self, lab):
-        namespace_definition = client.V1Namespace(metadata=client.V1ObjectMeta(name=lab.folder_hash,
+        namespace_definition = client.V1Namespace(metadata=client.V1ObjectMeta(name=lab.hash,
                                                                                labels={'app': 'kathara'}
                                                                                )
                                                   )

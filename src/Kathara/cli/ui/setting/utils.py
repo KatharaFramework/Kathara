@@ -6,6 +6,12 @@ from ....trdparty.consolemenu import UserQuit
 SAVED_STRING = "Saved successfully!\n"
 PRESS_ENTER_STRING = "Press [Enter] to continue."
 
+URL_REGEX = r'^(?:http)s?://'  # http:// or https://
+URL_REGEX += r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+URL_REGEX += r'localhost|'  # localhost...
+URL_REGEX += r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+URL_REGEX += r'(?::\d+)?$'  # optional port
+
 
 def format_bool(value):
     return "Yes" if value else "No"

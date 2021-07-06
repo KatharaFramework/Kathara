@@ -85,13 +85,13 @@ class UserTest(Test):
     @staticmethod
     def _run_machine_test_file(machine):
         # Give execution permissions to test file
-        Kathara.get_instance().exec(lab_hash=machine.lab.folder_hash,
+        Kathara.get_instance().exec(lab_hash=machine.lab.hash,
                                     machine_name=machine.name,
                                     command="chmod u+x /%s.test" % machine.name
                                     )
 
         # Run the test file inside the container
-        (result_stdout, _) = Kathara.get_instance().exec(lab_hash=machine.lab.folder_hash,
+        (result_stdout, _) = Kathara.get_instance().exec(lab_hash=machine.lab.hash,
                                                          machine_name=machine.name,
                                                          command="%s -c /%s.test" % (
                                                                   Setting.get_instance().device_shell,

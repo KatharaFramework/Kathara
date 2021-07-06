@@ -73,11 +73,11 @@ class Setting(object):
         setattr(self.addons, name, value)
 
     def load(self):
-        if not os.path.exists(Setting.SETTING_PATH):        # If settings file don't exist, create with defaults
-            if not os.path.isdir(Setting.SETTING_FOLDER):   # Create .config folder if doesn't exists, create it
+        if not os.path.exists(Setting.SETTING_PATH):  # If settings file don't exist, create with defaults
+            if not os.path.isdir(Setting.SETTING_FOLDER):  # Create .config folder if doesn't exists, create it
                 os.mkdir(Setting.SETTING_FOLDER)
 
-            self.load_settings_addon()                      # Load default manager addons
+            self.load_settings_addon()  # Load default manager addons
             self.save()
 
             def unix_permissions():
@@ -100,8 +100,8 @@ class Setting(object):
                 if hasattr(self, name):
                     setattr(self, name, value)
 
-            self.load_settings_addon()                      # Manager may be changed with loaded settings, reload addon
-            self.addons.load(settings)                      # Load values into the addon object
+            self.load_settings_addon()  # Manager may be changed with loaded settings, reload addon
+            self.addons.load(settings)  # Load values into the addon object
 
     @staticmethod
     def wipe():
@@ -201,7 +201,7 @@ class Setting(object):
         return True
 
     def load_settings_addon(self):
-        self.addons = SettingsAddonFactory().create_instance(class_args=(self.manager_type.capitalize(), ))
+        self.addons = SettingsAddonFactory().create_instance(class_args=(self.manager_type.capitalize(),))
 
     def _to_dict(self):
         return {"image": self.image,

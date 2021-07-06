@@ -5,12 +5,6 @@ from ....trdparty.consolemenu import *
 from ....trdparty.consolemenu.items import *
 from ....trdparty.consolemenu.validators.regex import RegexValidator
 
-url_regex = r'^(?:http)s?://'  # http:// or https://
-url_regex += r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
-url_regex += r'localhost|'  # localhost...
-url_regex += r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-url_regex += r'(?::\d+)?$'  # optional port
-
 
 class DockerOptionsHandler(OptionsHandler):
     def add_items(self, current_menu, menu_formatter):
@@ -113,7 +107,7 @@ class DockerOptionsHandler(OptionsHandler):
         remote_url_menu.append_item(FunctionItem(text=remote_url_string,
                                                  function=setting_utils.read_value,
                                                  args=['remote_url',
-                                                       RegexValidator(url_regex),
+                                                       RegexValidator(setting_utils.URL_REGEX),
                                                        'Write a Docker Daemon URL:',
                                                        'Docker Daemon URL is not a valid URL (remove '
                                                        'the trailing slash, if present)'

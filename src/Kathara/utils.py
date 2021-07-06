@@ -29,7 +29,7 @@ LINUX2 = "linux2"
 # List of ignored files
 EXCLUDED_FILES = ['.DS_Store']
 
-# True if launched from cli
+# True if launched from CLI
 CLI_ENV = False
 
 

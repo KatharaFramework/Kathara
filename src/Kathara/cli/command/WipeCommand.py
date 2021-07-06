@@ -59,15 +59,13 @@ class WipeCommand(Command):
         if not args['force']:
             utils.confirmation_prompt("Are you sure to wipe Kathara?", lambda: None, sys.exit)
 
-        if args['all'] and not utils.is_admin():
-            raise Exception("You must be root in order to wipe all Kathara devices of all users.")
-
         if args['settings']:
             Setting.wipe()
-
-            sys.exit(0)
         else:
+            if args['all'] and not utils.is_admin():
+                raise Exception("You must be root in order to wipe all Kathara devices of all users.")
+
             Kathara.get_instance().wipe(all_users=bool(args['all']))
 
-        vlab_dir = utils.get_vlab_temp_path(force_creation=False)
-        shutil.rmtree(vlab_dir, ignore_errors=True)
+            vlab_dir = utils.get_vlab_temp_path(force_creation=False)
+            shutil.rmtree(vlab_dir, ignore_errors=True)

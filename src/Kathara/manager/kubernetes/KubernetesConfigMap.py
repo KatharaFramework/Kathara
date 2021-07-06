@@ -20,7 +20,7 @@ class KubernetesConfigMap(object):
         if config_map is None:
             return None
 
-        return self.client.create_namespaced_config_map(body=config_map, namespace=machine.lab.folder_hash)
+        return self.client.create_namespaced_config_map(body=config_map, namespace=machine.lab.hash)
 
     def delete_for_machine(self, machine_name, machine_namespace):
         self.client.delete_namespaced_config_map(name=self.build_name_for_machine(machine_name, machine_namespace),
@@ -49,7 +49,7 @@ class KubernetesConfigMap(object):
 
             data = {"hostlab.b64": base64.b64encode(tar_data).decode('utf-8')}
             metadata = client.V1ObjectMeta(name=self.build_name_for_machine(machine.meta['real_name'],
-                                                                            machine.lab.folder_hash),
+                                                                            machine.lab.hash),
                                            deletion_grace_period_seconds=0
                                            )
 

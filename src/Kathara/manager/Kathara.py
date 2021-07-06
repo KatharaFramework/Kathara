@@ -48,23 +48,23 @@ class Kathara(IManager):
     def copy_files(self, machine, guest_to_host):
         self.manager.copy_files(machine, guest_to_host)
 
+    def get_machine_api_object(self, lab_hash, machine_name):
+        return self.manager.get_machine_api_object(lab_hash, machine_name)
+
+    def check_image(self, image_name):
+        self.manager.check_image(image_name)
+
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         return self.manager.get_lab_info(lab_hash, machine_name, all_users)
 
     def get_formatted_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         return self.manager.get_formatted_lab_info(lab_hash, machine_name, all_users)
 
-    def get_machine_api_object(self, lab_hash, machine_name):
-        return self.manager.get_machine_api_object(lab_hash, machine_name)
-
     def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
         return self.manager.get_machine_info(machine_name, lab_hash, all_users)
 
     def get_formatted_machine_info(self, machine_name, lab_hash=None, all_users=False):
         return self.manager.get_formatted_machine_info(machine_name, lab_hash, all_users)
-
-    def check_image(self, image_name):
-        self.manager.check_image(image_name)
 
     def get_release_version(self):
         return self.manager.get_release_version()

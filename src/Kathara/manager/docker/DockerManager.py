@@ -144,6 +144,14 @@ class DockerManager(IManager):
                                        )
 
     @privileged
+    def get_machine_api_object(self, lab_hash, machine_name):
+        return self.docker_machine.get_machine(lab_hash, machine_name)
+
+    @privileged
+    def check_image(self, image_name):
+        self.docker_image.check(image_name)
+
+    @privileged
     def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
 
@@ -188,10 +196,6 @@ class DockerManager(IManager):
             yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
 
     @privileged
-    def get_machine_api_object(self, lab_hash, machine_name):
-        return self.docker_machine.get_machine(lab_hash, machine_name)
-
-    @privileged
     def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
         user_name = utils.get_current_user_name() if not all_users else None
 
@@ -216,10 +220,6 @@ class DockerManager(IManager):
         machine_info += utils.format_headers()
 
         return machine_info
-
-    @privileged
-    def check_image(self, image_name):
-        self.docker_image.check(image_name)
 
     @privileged
     def get_release_version(self):

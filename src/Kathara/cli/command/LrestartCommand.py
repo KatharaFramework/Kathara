@@ -44,7 +44,8 @@ class LrestartCommand(Command):
         )
         group.add_argument(
             "--privileged",
-            action="store_true",
+            action="store_const",
+            const=True,
             required=False,
             help='Start the devices in privileged mode. MUST BE ROOT FOR THIS OPTION.'
         )
@@ -84,14 +85,14 @@ class LrestartCommand(Command):
             dest="no_hosthome",
             action="store_const",
             const=False,
-            help='/hosthome dir will not be mounted inside the device.'
+            help='/hosthome dir will not be mounted inside the devices.'
         )
         parser.add_argument(
             '-S', '--no-shared',
             dest="no_shared",
             action="store_const",
             const=False,
-            help='/shared dir will not be mounted inside the device.'
+            help='/shared dir will not be mounted inside the devices.'
         )
 
         self.parser = parser
