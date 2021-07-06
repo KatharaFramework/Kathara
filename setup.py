@@ -6,7 +6,7 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages(where='src'),  # Chose the same as "name"
 
-    version='0.1',  # Start with a small number and increase it with every change you make
+    version='0.2',  # Start with a small number and increase it with every change you make
     license='gpl-3.0',  # Chose a license from here: https://help.github.com/articles/licensing-a-repository
     description='A lightweight container based emulation system.',  # Give a short description about your library
     author='Tommaso Caiazzi',  # Type in your name
