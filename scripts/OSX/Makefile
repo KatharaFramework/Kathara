@@ -32,8 +32,8 @@ binary:
 	cd ../../src && pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
 
 clean: cleanbinary cleanman
-	if [ -d $(TARGET_DIRECTORY)/Resources ]; then \
-		rm -Rf $(TARGET_DIRECTORY)/Resources; \
+	if [ -d $(TARGET_DIRECTORY)/Kathara ]; then \
+		rm -Rf $(TARGET_DIRECTORY)/Kathara; \
 	fi
 	if [ -d $(TARGET_DIRECTORY)/darwinpkg ]; then \
 		rm -Rf $(TARGET_DIRECTORY)/darwinpkg; \
@@ -53,11 +53,11 @@ cleanbinary:
 
 copyBuildDirectory: binary manpages
 	mkdir $(TARGET_DIRECTORY)
-	cp -r darwin/Resources $(TARGET_DIRECTORY)/
-	chmod -R 755 $(TARGET_DIRECTORY)/Resources
+	cp -r darwin/Kathara $(TARGET_DIRECTORY)/
+	chmod -R 755 $(TARGET_DIRECTORY)/Kathara
 
-	sed -i '' -e 's/__VERSION__/'$(VERSION)'/g' $(TARGET_DIRECTORY)/Resources/*.html
-	chmod -R 755 $(TARGET_DIRECTORY)/Resources/
+	sed -i '' -e 's/__VERSION__/'$(VERSION)'/g' $(TARGET_DIRECTORY)/Kathara/*.html
+	chmod -R 755 $(TARGET_DIRECTORY)/Kathara/
 
 	mkdir -p $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)
 	mkdir -p $(TARGET_DIRECTORY)/darwinpkg/usr/local/share/man/
@@ -73,7 +73,7 @@ copyBuildDirectory: binary manpages
 	mkdir -p $(TARGET_DIRECTORY)/package
 	chmod -R 755 $(TARGET_DIRECTORY)/package
 
-	cp ../../LICENSE $(TARGET_DIRECTORY)/Resources/
+	cp ../../LICENSE $(TARGET_DIRECTORY)/Kathara/
 
 	cp darwin/uninstall.sh $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)
 
@@ -86,7 +86,7 @@ createInstaller: copyBuildDirectory
 	pkgbuild --identifier org.kathara.kathara --version $(VERSION) --scripts darwin/scripts \
 	--root $(TARGET_DIRECTORY)/darwinpkg $(TARGET_DIRECTORY)/package/$(PRODUCT).pkg > /dev/null 2>&1
 	
-	productbuild --distribution darwin/Distribution --resources $(TARGET_DIRECTORY)/Resources \
+	productbuild --distribution darwin/Distribution --resources $(TARGET_DIRECTORY)/Kathara \
 	--package-path $(TARGET_DIRECTORY)/package $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-x64-$(VERSION).pkg > /dev/null 2>&1
 
 

@@ -25,7 +25,7 @@ python3 -m pip install -r requirements.txt
 python3 -m pip install nuitka
 
 %build
-python3 -m nuitka --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Resources kathara.py
+python3 -m nuitka --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
 
 %install
 rm -rf %{buildroot}

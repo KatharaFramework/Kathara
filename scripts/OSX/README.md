@@ -3,7 +3,7 @@
 1. Install `pkgbuild`, `productbuild` and `make` from Apple developer repository
 	- If you have `XCode` installed you probably already have them installed
 	- Otherwise, download them from [here](https://developer.apple.com/devcenter/mac/index.action)
-2. Change the Kathara version number in both `src/Resources/version.py` and `Makefile` files.
+2. Change the Kathara version number in both `src/Kathara/version.py` and `Makefile` files.
 3. Run `make all` to automatically compile and create the package
 	- Run `make deps` to automatically download and install dependencies
 	- Run `make binary` to automatically compile the package
@@ -17,7 +17,7 @@
 2. Install `pkgbuild`, `productbuild` and `make` from Apple developer repository
 	- If you have `XCode` installed you probably already have them installed
 	- Otherwise, download them from [here](https://developer.apple.com/devcenter/mac/index.action)
-3. Change the Kathara version number in both `src/Resources/version.py` and `Makefile` files.
+3. Change the Kathara version number in both `src/Kathara/version.py` and `Makefile` files.
 4. Run `make allSigned` to automatically compile and create the package
 	- Run `make deps` to automatically download and install dependencies
 	- Run `make binary` to automatically compile the package

@@ -1,7 +1,7 @@
 # Compiling Kathara for Linux (PKG) and Deploying on AUR
 
 1. Change the Kathara version number in the following files:
-    1. `src/Resources/version.py`
+    1. `src/Kathara/version.py`
     2. `Makefile`
 2. Set your [AUR](https://aur.archlinux.org/) username and e-mail into the `Makefile`.
 3. Write a proper `changelog` section in `pkginfo/kathara.changelog` file. 
@@ -15,7 +15,7 @@
 # Compiling Kathara for Linux (PKG) locally
 
 1. Change the Kathara version number in the following files:
-    1. `src/Resources/version.py`
+    1. `src/Kathara/version.py`
     2. `Makefile`
 2. Write a proper `changelog` section in `pkginfo/kathara.changelog` file. 
 3. Run `make`. This will:

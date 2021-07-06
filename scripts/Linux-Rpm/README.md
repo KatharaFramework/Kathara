@@ -1,7 +1,7 @@
 # Compiling Kathara for Linux (RPM)
 
 1. Change the Kathara version number in the following files:
-    1. `src/Resources/version.py`
+    1. `src/Kathara/version.py`
     2. `Makefile`
 2. Write a proper `%changelog` section in `rpm/kathara.spec` file. 
 3. Run `make all`. This will:

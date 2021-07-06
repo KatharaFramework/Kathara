@@ -7,13 +7,13 @@ import os
 import sys
 
 import coloredlogs
-from Resources import utils
-from Resources.auth.PrivilegeHandler import PrivilegeHandler
-from Resources.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError
-from Resources.foundation.cli.command.CommandFactory import CommandFactory
-from Resources.setting.Setting import Setting
-from Resources.strings import formatted_strings
-from Resources.version import CURRENT_VERSION
+from Kathara import utils
+from Kathara.auth.PrivilegeHandler import PrivilegeHandler
+from Kathara.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError
+from Kathara.foundation.cli.command.CommandFactory import CommandFactory
+from Kathara.setting.Setting import Setting
+from Kathara.strings import formatted_strings
+from Kathara.version import CURRENT_VERSION
 
 description_msg = """kathara [-h] [-v] <command> [<args>]
 
