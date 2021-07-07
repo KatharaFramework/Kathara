@@ -4,8 +4,6 @@ from datetime import datetime
 from typing import Set, Dict
 
 import docker
-from Kathara.model.Lab import Lab
-from Kathara.model.Machine import Machine
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from terminaltables import DoubleTable
 
@@ -17,7 +15,9 @@ from ... import utils
 from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
+from ...model.Lab import Lab
 from ...model.Link import BRIDGE_LINK_NAME
+from ...model.Machine import Machine
 from ...setting.Setting import Setting
 from ...utils import pack_files_for_tar
 
@@ -85,12 +85,6 @@ class DockerManager(IManager):
 
     @privileged
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None):
-        """
-
-        Args:
-            lab ():
-            selected_machines ():
-        """
         if selected_machines:
             lab = copy(lab)
             lab.intersect_machines(selected_machines)

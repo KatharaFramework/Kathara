@@ -4,8 +4,6 @@ from copy import copy
 from datetime import datetime
 from typing import Set, Dict
 
-from Kathara.model.Lab import Lab
-from Kathara.model.Machine import Machine
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from terminaltables import DoubleTable
@@ -18,6 +16,8 @@ from ... import utils
 from ...decorators import privileged
 from ...exceptions import NotSupportedError
 from ...foundation.manager.IManager import IManager
+from ...model.Lab import Lab
+from ...model.Machine import Machine
 from ...utils import pack_files_for_tar
 
 

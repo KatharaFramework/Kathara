@@ -1,13 +1,19 @@
 import collections
 import os
 from itertools import chain
+from typing import Dict
 
+from .ExternalLink import ExternalLink
 from .Link import Link
 from .Machine import Machine
 from .. import utils
 
 
 class Lab(object):
+    """
+    A Kathara network scenario, containing information about devices and interfaces.
+    """
+
     __slots__ = ['name', 'description', 'version', 'author', 'email', 'web',
                  'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
@@ -44,18 +50,47 @@ class Lab(object):
 
         self.shared_folder = None
 
-    def connect_machine_to_link(self, machine_name, link_name, machine_iface_number=None):
+    def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None):
+        """
+        Connect the specified machine to the specified collision domain.
+        Args:
+            machine_name (str): The device name.
+            link_name (str): The collision domain.
+            machine_iface_number (int): The number of the device interface to connect. If it is None, the fist free
+                number is used.
+
+        Raises:
+            Exception: If an already used interface number is specified.
+
+        """
         machine = self.get_or_new_machine(machine_name)
         link = self.get_or_new_link(link_name)
 
         machine.add_interface(link, number=machine_iface_number)
 
-    def assign_meta_to_machine(self, machine_name, meta_name, meta_value):
+    def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str):
+        """
+        Assign a meta information to the specified device.
+        Args:
+            machine_name (str): The name of the device.
+            meta_name (str): The name of the meta property.
+            meta_value (str): The value of the meta property.
+
+        Raises:
+            MachineOptionError: If invalid values are specified for meta properties.
+
+        """
         machine = self.get_or_new_machine(machine_name)
 
         machine.add_meta(meta_name, meta_value)
 
-    def attach_external_links(self, external_links):
+    def attach_external_links(self, external_links: Dict[Link, ExternalLink]):
+        """
+        Attach external links to the network scenario.
+        Args:
+            external_links (Dict[Kathara.model.Link, Kathara.model.ExternalLink]): Keys are Link objects,
+            values are ExternalLink objects.
+        """
         for (link_name, link_external_links) in external_links.items():
             if link_name not in self.links:
                 raise Exception("Collision domain `%s` (declared in lab.ext) not found in lab "
@@ -69,8 +104,9 @@ class Lab(object):
 
     def intersect_machines(self, selected_machines):
         """
-        Intersect lab machines with selected machines, passed from command line.
-        :param selected_machines: An array with selected machines names.
+        Intersect network scenario devices with selected devices, passed from command line.
+        Args:
+            selected_machines (List[str]): An array with selected devices names.
         """
         # Intersect selected machines names with self.machines keys
         selected_machines = set(self.machines.keys()) & set(selected_machines)
@@ -96,22 +132,33 @@ class Lab(object):
             self.machines = collections.OrderedDict(sorted(self.machines.items(), key=lambda t: dep_sort(t[0])))
             self.has_dependencies = True
 
-    def get_or_new_machine(self, name, **kwargs):
+    def get_or_new_machine(self, name, **kwargs) -> Machine:
         """
-        :param name: The name of the machine
-        :return: The desired machine.
-        :rtype: Machine
+        Get the specified device. If it not exists, create and add it to the machines list.
+        Args:
+            name (str): The name of the device
+            **kwargs (Dict[str, Union[str, int, bool]]): Contains device meta information.
+                Keys are meta property names, values are meta property values.
+
+        Returns:
+            Kathara.model.Machine: A Kathara device.
+
         """
+
         if name not in self.machines:
             self.machines[name] = Machine(self, name, **kwargs)
 
         return self.machines[name]
 
-    def get_or_new_link(self, name):
+    def get_or_new_link(self, name) -> Link:
         """
-        :param name: The name of the link.
-        :return: The desired link
-        :rtype: Link
+        Get the specified collision domain. If it not exists, create and add it to the collision domains list.
+        Args:
+            name (str): The name of the collision domain.
+
+        Returns:
+            Kathara.model.Link: A Kathara collision domain.
+
         """
         if name not in self.links:
             self.links[name] = Link(self, name)
