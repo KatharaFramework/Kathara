@@ -1,7 +1,7 @@
 import collections
 import os
 from itertools import chain
-from typing import Dict
+from typing import Dict, Set, Any
 
 from .ExternalLink import ExternalLink
 from .Link import Link
@@ -12,13 +12,32 @@ from .. import utils
 class Lab(object):
     """
     A Kathara network scenario, containing information about devices and interfaces.
+
+    Attributes:
+        name (str): The name of the network scenario.
+        description (str): A short description of the network scenario.
+        version (str): The version of the network scenario.
+        author (str): The author of the network scenario.
+        email (str): The email of the author of the network scenario.
+        web (str): The web address of the author of the network scenario.
+        path (str): The path of the network scenario, if exists.
+        hash (str): The hash identifier of of the network scenario.
+        machines (Dict[str, Kathara.model.Machine]): The devices of the network scenario. Keys are device names, Values
+            are Kathara device object.
+        links (Dict[str, Kathara.model.Link]): The collision domains of the network scenario.
+            Keys are collision domains names, Values are Kathara collision domain object.
+        general_options (Dict[str, Any]): Keys are option name, values are option values.
+        has_dependencies (bool): True if there are dependencies among the devices boot.
+        shared_startup_path(str) The path of the shared startup file, if exists.
+        shared_shutdown_path(str) The path of the shared shutdown file, if exists.
+        shared_folder(str) The path of the shared folder, if exists.
     """
 
     __slots__ = ['name', 'description', 'version', 'author', 'email', 'web',
                  'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
-    def __init__(self, name, path=None):
+    def __init__(self, name: str, path: str = None):
         self.name = name
         self.description = None
         self.version = None
@@ -102,11 +121,11 @@ class Lab(object):
         for machine in self.machines:
             self.machines[machine].check()
 
-    def intersect_machines(self, selected_machines):
+    def intersect_machines(self, selected_machines: Set[str]):
         """
         Intersect network scenario devices with selected devices, passed from command line.
         Args:
-            selected_machines (List[str]): An array with selected devices names.
+            selected_machines (Set[str]): An set with selected devices names.
         """
         # Intersect selected machines names with self.machines keys
         selected_machines = set(self.machines.keys()) & set(selected_machines)
@@ -132,12 +151,12 @@ class Lab(object):
             self.machines = collections.OrderedDict(sorted(self.machines.items(), key=lambda t: dep_sort(t[0])))
             self.has_dependencies = True
 
-    def get_or_new_machine(self, name, **kwargs) -> Machine:
+    def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> Machine:
         """
         Get the specified device. If it not exists, create and add it to the machines list.
         Args:
             name (str): The name of the device
-            **kwargs (Dict[str, Union[str, int, bool]]): Contains device meta information.
+            **kwargs (Dict[str, Any]): Contains device meta information.
                 Keys are meta property names, values are meta property values.
 
         Returns:
@@ -150,7 +169,7 @@ class Lab(object):
 
         return self.machines[name]
 
-    def get_or_new_link(self, name) -> Link:
+    def get_or_new_link(self, name: str) -> Link:
         """
         Get the specified collision domain. If it not exists, create and add it to the collision domains list.
         Args:

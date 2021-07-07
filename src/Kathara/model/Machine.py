@@ -9,13 +9,31 @@ import tarfile
 import tempfile
 from distutils.util import strtobool
 from glob import glob
+from typing import Union, Dict, Any
 
+from .Link import Link
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError
 from ..setting.Setting import Setting
 
 
 class Machine(object):
+    """
+    A Kathara device. Contains information about the device and the API object to interact with the manager.
+
+    Attributes:
+        lab (Kathara.model.Lab): The Kathara network Scenario of the device.
+        name (str): The name of the device.
+        interfaces (List[Kathara.model.Link]): A list of the collision domains of the device.
+        meta (Dict[str, Any]): Keys are meta properties name, values are meta properties values.
+        startup_commands (List[str]): A list of the command to execute at the device startup.
+        api_object (Any): To interact with the current Kathara manager.
+        capabilities (List[str]): The selected capibilities for the device.
+        startup_path (str): The path of the device startup file, if exists.
+        shutdown_path (str): The path of the device shutdown file, if exists.
+        folder (str): The path of the device folder, if exists.
+    """
+
     __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities',
                  'startup_path', 'shutdown_path', 'folder']
 
@@ -60,7 +78,17 @@ class Machine(object):
 
         self.update_meta(kwargs)
 
-    def add_interface(self, link, number=None):
+    def add_interface(self, link: Link, number: int = None):
+        """
+        Add an interface to the device attached to the specified collision domain.
+        Args:
+            link (Kathara.model.Link): The Kathara collision domain to attach
+            number (int): the number of the new interface. If it is None, the first free number is selected.
+
+        Raises:
+            Exception: The interface number specified is already used on the device.
+
+        """
         if number is None:
             number = len(self.interfaces.keys())
 
@@ -69,7 +97,16 @@ class Machine(object):
 
         self.interfaces[number] = link
 
-    def add_meta(self, name, value):
+    def add_meta(self, name: str, value: Any):
+        """
+        Add a meta property to the device.
+        Args:
+            name (str): The name of the property.
+            value (Any): The value of the property.
+
+        Raises:
+            MachineOptionError: The specified value is not valid for the specified property.
+        """
         if name == "exec":
             self.startup_commands.append(value)
             return
@@ -134,11 +171,16 @@ class Machine(object):
 
         self.interfaces = collections.OrderedDict(sorted_interfaces)
 
-    def pack_data(self):
+    def pack_data(self) -> bytes:
         """
         Pack machine data into a .tar.gz file and returns the tar content as a byte array.
         While packing files, it also applies the win2linux patch in order to remove UTF-8 BOM.
+
+        Returns:
+            bytes: the tar content.
+
         """
+
         # Make a temp folder and create a tar.gz of the lab directory
         temp_path = tempfile.mkdtemp()
 
@@ -203,7 +245,17 @@ class Machine(object):
 
         return tar_data
 
-    def connect(self, terminal_name):
+    def connect(self, terminal_name: str):
+        """
+        Connect to the device with the specified terminal.
+        Args:
+            terminal_name (str): the name of the terminal to use for the connection.
+                The application must be correctly installed in the host system.
+                This option is only visible on Linux and macOS.
+                On Linux, options are /usr/bin/xterm, TMUX or an user-defined path.
+                On macOS, options are Terminal (default system terminal), iTerm or TMUX.
+                Default to /usr/bin/xterm on Linux and Terminal on macOS.
+        """
         logging.debug("Opening terminal for device %s.", self.name)
 
         executable_path = utils.get_executable_path(sys.argv[0])
@@ -268,18 +320,20 @@ class Machine(object):
 
         utils.exec_by_platform(unix_connect, windows_connect, osx_connect)
 
-    def get_image(self):
+    def get_image(self) -> str:
         """
-        Docker image, if defined in options or machine meta. If not use default one.
-        :return: The Docker image to be used
+        Get the image of the device, if defined in options or machine meta. If not use default one.
+        Returns:
+            str: The name of the device image.
         """
         return self.lab.general_options["image"] if "image" in self.lab.general_options else \
             self.meta["image"] if "image" in self.meta else Setting.get_instance().image
 
-    def get_mem(self):
+    def get_mem(self) -> str:
         """
-        Memory limit, if defined in options. If not use the value from machine meta.
-        :return: The memory limit of the image.
+        Get memory limit, if defined in options. If not use the value from device meta.
+        Returns:
+            str: The memory limit of the device.
         """
         memory = self.lab.general_options["mem"] if "mem" in self.lab.general_options else \
             self.meta["mem"] if "mem" in self.meta else None
@@ -299,12 +353,17 @@ class Machine(object):
 
         return memory
 
-    def get_cpu(self, multiplier=1):
+    def get_cpu(self, multiplier: int = 1) -> Union[int, None]:
+        # TODO: check multiplier
         """
-        CPU limit, multiplied by a specific multiplier.
+        Get the CPU limit, multiplied by a specific multiplier.
         User should pass a float value ranging from 0 to max user CPUs.
         It is took from options, or machine meta.
-        :return:
+        Args:
+            multiplier (int):
+
+        Returns:
+            Union[int, None]: The CPU limit of the device.
         """
         if "cpus" in self.lab.general_options:
             try:
@@ -319,7 +378,12 @@ class Machine(object):
 
         return None
 
-    def get_ports(self):
+    def get_ports(self) -> Dict[(int, str), int]:
+        """
+        Get the port mapping of the device.
+        Returns:
+            Dict[(int, str), int]: Keys are pairs (host_port, protocol), values specifies the guest_port.
+        """
         if self.meta['ports']:
             return self.meta['ports']
 
@@ -343,14 +407,25 @@ class Machine(object):
 
         return num_terms
 
-    def is_ipv6_enabled(self):
+    def is_ipv6_enabled(self) -> bool:
+        # TODO: check raises
+        """
+        Check if ipv6 is enabled on the device.
+        Returns:
+            bool: True if it is enabled, else False.
+        """
         try:
             return bool(strtobool(self.lab.general_options["ipv6"])) if "ipv6" in self.lab.general_options else \
                 bool(strtobool(self.meta["ipv6"])) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
 
-    def update_meta(self, args):
+    def update_meta(self, args: Dict[str, Any]):
+        """
+        Update the device meta.
+        Args:
+            args (Dict[str, Any]): Keys are the meta properties names, values are the updated meta properties values.
+        """
         if 'exec_commands' in args and args['exec_commands'] is not None:
             for command in args['exec_commands']:
                 self.add_meta("exec", command)
