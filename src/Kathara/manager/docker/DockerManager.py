@@ -102,19 +102,19 @@ class DockerManager(IManager):
         self.docker_machine.deploy_machines(lab)
 
     @privileged
-    def update_lab(self, lab_diff: Lab):
+    def update_lab(self, lab: Lab):
         # Deploy new links (if present)
-        for (_, link) in lab_diff.links.items():
+        for (_, link) in lab.links.items():
             if link.name == BRIDGE_LINK_NAME:
                 continue
 
             self.docker_link.create(link)
 
         # Update lab devices.
-        for (_, machine) in lab_diff.machines.items():
+        for (_, machine) in lab.machines.items():
             # Device is not deployed, deploy it
             if machine.api_object is None:
-                self.deploy_lab(lab_diff, selected_machines={machine.name})
+                self.deploy_lab(lab, selected_machines={machine.name})
             else:
                 # Device already deployed, update it
                 self.docker_machine.update(machine)

@@ -52,7 +52,7 @@ class KubernetesManager(IManager):
                 raise e
 
     @privileged
-    def update_lab(self, lab_diff: Lab):
+    def update_lab(self, lab: Lab):
         raise NotSupportedError("Unable to update a running lab.")
 
     @privileged
