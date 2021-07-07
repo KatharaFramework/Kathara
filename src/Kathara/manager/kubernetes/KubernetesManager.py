@@ -1,7 +1,11 @@
+import io
 import json
 from copy import copy
 from datetime import datetime
+from typing import Set, Dict
 
+from Kathara.model.Lab import Lab
+from Kathara.model.Machine import Machine
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from terminaltables import DoubleTable
@@ -27,7 +31,7 @@ class KubernetesManager(IManager):
         self.k8s_machine = KubernetesMachine(self.k8s_namespace)
         self.k8s_link = KubernetesLink()
 
-    def deploy_lab(self, lab, selected_machines=None):
+    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None):
         # Kubernetes needs only lowercase letters for resources.
         # We force the hash to be lowercase
         lab.hash = lab.hash.lower()
@@ -48,11 +52,11 @@ class KubernetesManager(IManager):
                 raise e
 
     @privileged
-    def update_lab(self, lab_diff):
+    def update_lab(self, lab_diff: Lab):
         raise NotSupportedError("Unable to update a running lab.")
 
     @privileged
-    def undeploy_lab(self, lab_hash, selected_machines=None):
+    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None):
         lab_hash = lab_hash.lower()
 
         # When only some machines should be undeployed, special checks are required.
@@ -92,7 +96,7 @@ class KubernetesManager(IManager):
             self.k8s_namespace.undeploy(lab_hash=lab_hash)
 
     @privileged
-    def wipe(self, all_users=False):
+    def wipe(self, all_users: bool = False):
         if all_users:
             raise NotSupportedError("Cannot use `--all` flag.")
 
@@ -102,7 +106,7 @@ class KubernetesManager(IManager):
         self.k8s_namespace.wipe()
 
     @privileged
-    def connect_tty(self, lab_hash, machine_name, shell=None, logs=False):
+    def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False):
         lab_hash = lab_hash.lower()
 
         self.k8s_machine.connect(lab_hash=lab_hash,
@@ -112,13 +116,13 @@ class KubernetesManager(IManager):
                                  )
 
     @privileged
-    def exec(self, lab_hash, machine_name, command):
+    def exec(self, lab_hash: str, machine_name: str, command: str):
         lab_hash = lab_hash.lower()
 
         return self.k8s_machine.exec(lab_hash, machine_name, command, stderr=True, tty=False)
 
     @privileged
-    def copy_files(self, machine, guest_to_host):
+    def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]):
         tar_data = pack_files_for_tar(guest_to_host)
 
         self.k8s_machine.copy_files(machine.api_object,
@@ -127,16 +131,7 @@ class KubernetesManager(IManager):
                                     )
 
     @privileged
-    def get_machine_api_object(self, lab_hash, machine_name):
-        return self.k8s_machine.get_machine(lab_hash, machine_name)
-
-    @privileged
-    def check_image(self, image_name):
-        # Delegate the image check to Kubernetes
-        return True
-
-    @privileged
-    def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
+    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False):
         if lab_hash:
             lab_hash = lab_hash.lower()
 
@@ -144,7 +139,7 @@ class KubernetesManager(IManager):
         return machines_stats
 
     @privileged
-    def get_formatted_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
+    def get_formatted_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False):
         if all_users:
             raise NotSupportedError("Cannot use `--all` flag on Megalos.")
 
@@ -170,7 +165,11 @@ class KubernetesManager(IManager):
             yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
 
     @privileged
-    def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
+    def get_machine_api_object(self, lab_hash: str, machine_name: str):
+        return self.k8s_machine.get_machine(lab_hash, machine_name)
+
+    @privileged
+    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False):
         if lab_hash:
             lab_hash = lab_hash.lower()
 
@@ -179,7 +178,7 @@ class KubernetesManager(IManager):
         return machine_stats
 
     @privileged
-    def get_formatted_machine_info(self, machine_name, lab_hash=None, all_users=False):
+    def get_formatted_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False):
         if all_users:
             raise NotSupportedError("Cannot use `--all` flag.")
 
@@ -195,6 +194,11 @@ class KubernetesManager(IManager):
         machine_info += utils.format_headers()
 
         return machine_info
+
+    @privileged
+    def check_image(self, image_name: str):
+        # Delegate the image check to Kubernetes
+        return True
 
     @privileged
     def get_release_version(self):
