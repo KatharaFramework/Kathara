@@ -16,6 +16,7 @@
     <li><a href="#how-does-it-work">How does it work?</a></li>
     <li><a href="#publications">Publications</a></li>
     <li><a href="#installation">Installation</a></li>
+    <li><a href="#python-api">Python API</a></li>
     <li><a href="#quick-example">Quick Example</a></li>
     <li><a href="#external-tools">External Tools</a></li>
     <li><a href="#success-stories">Success Stories</a></li>
@@ -63,6 +64,9 @@ Several publications are related to this tool:
 Install Docker and then run the installer specific for your Operating System. For a step by step guide check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki).
 
 For further information on how to use Kathará on Kubernetes please refer to the [Wiki Page](https://github.com/KatharaFramework/Kathara/wiki/Megalos-(Kathara-on-Kubernetes)).
+
+## Python API
+Kathará provides also [Python APIs](https://github.com/KatharaFramework/Kathara/wiki/Kathara-Python-API), that allow you to interact with it within Python apps.
 
 ## Quick Example
 <p align="center">
