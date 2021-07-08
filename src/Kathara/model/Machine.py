@@ -9,9 +9,10 @@ import tarfile
 import tempfile
 from distutils.util import strtobool
 from glob import glob
-from typing import Union, Dict, Any
+from typing import Union, Dict, Any, Tuple
 
-from .Link import Link
+from . import Lab
+from . import Link
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError
 from ..setting.Setting import Setting
@@ -37,7 +38,14 @@ class Machine(object):
     __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities',
                  'startup_path', 'shutdown_path', 'folder']
 
-    def __init__(self, lab, name, **kwargs):
+    def __init__(self, lab: 'Lab.Lab', name: str, **kwargs):
+        """
+        Create a new instance of a Kathara device.
+        Args:
+            lab (Kathara.model.Lab): The Kathara network scenario of the new device.
+            name (str): The name of the device.
+            **kwargs (Dict[str, Any]): Specifies the optional parameters of the device.
+        """
         name = name.strip()
         matches = re.search(r"^[a-z0-9_]{1,30}$", name)
         if not matches:
@@ -78,7 +86,7 @@ class Machine(object):
 
         self.update_meta(kwargs)
 
-    def add_interface(self, link: Link, number: int = None):
+    def add_interface(self, link: 'Link.Link', number: int = None):
         """
         Add an interface to the device attached to the specified collision domain.
         Args:
@@ -158,7 +166,7 @@ class Machine(object):
 
     def check(self):
         """
-        Sorts the dictionary of interfaces ignoring the missing positions
+        Sorts the dictionary of interfaces ignoring the missing positions.
         """
         sorted_interfaces = sorted(self.interfaces.items(), key=lambda kv: kv[0])
 
@@ -249,7 +257,7 @@ class Machine(object):
         """
         Connect to the device with the specified terminal.
         Args:
-            terminal_name (str): the name of the terminal to use for the connection.
+            terminal_name (str): The name of the terminal to use for the connection.
                 The application must be correctly installed in the host system.
                 This option is only visible on Linux and macOS.
                 On Linux, options are /usr/bin/xterm, TMUX or an user-defined path.
@@ -378,7 +386,7 @@ class Machine(object):
 
         return None
 
-    def get_ports(self) -> Dict[(int, str), int]:
+    def get_ports(self) -> Dict[Tuple[int, str], int]:
         """
         Get the port mapping of the device.
         Returns:
@@ -389,7 +397,12 @@ class Machine(object):
 
         return None
 
-    def get_num_terms(self):
+    def get_num_terms(self) -> int:
+        """
+        Get the number of terminal to be opened for the device.
+        Returns:
+            int: The number of terminal to be opened.
+        """
         num_terms = 1
 
         if "num_terms" in self.lab.general_options:

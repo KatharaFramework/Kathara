@@ -1,9 +1,9 @@
 import io
 from typing import Set, Dict, Union, Generator, Any
 
-from src.Kathara.model.Lab import Lab
 from ..foundation.manager.IManager import IManager
 from ..foundation.manager.ManagerFactory import ManagerFactory
+from ..model.Lab import Lab
 from ..model.Machine import Machine
 from ..setting.Setting import Setting, AVAILABLE_MANAGERS
 

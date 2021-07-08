@@ -2,8 +2,8 @@ import io
 from abc import ABC, abstractmethod
 from typing import Dict, Set, Generator, Any, Union
 
-from src.Kathara.model.Lab import Lab
-from src.Kathara.model.Machine import Machine
+from ...model.Lab import Lab
+from ...model.Machine import Machine
 
 
 class IManager(ABC):

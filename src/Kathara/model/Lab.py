@@ -38,6 +38,12 @@ class Lab(object):
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
     def __init__(self, name: str, path: str = None):
+        """
+        Create a new instance of a Kathara network scenario.
+        Args:
+            name (str): The name of the network scenario.
+            path (str): The path to the network scenario directory, if exists.
+        """
         self.name = name
         self.description = None
         self.version = None
@@ -118,6 +124,9 @@ class Lab(object):
             self.links[link_name].external += link_external_links
 
     def check_integrity(self):
+        """
+        Check the integrity of the image of all the devices in the network scenario.
+        """
         for machine in self.machines:
             self.machines[machine].check()
 
@@ -141,6 +150,11 @@ class Lab(object):
         self.links = {k: v for (k, v) in self.links.items() if k in selected_links}
 
     def apply_dependencies(self, dependencies):
+        """
+        Order the machines list of the network scenario to respect the boot dependencies.
+        Args:
+            dependencies (bool): If True, dependencies are applied.
+        """
         if dependencies:
             def dep_sort(item):
                 try:
@@ -185,6 +199,12 @@ class Lab(object):
         return self.links[name]
 
     def create_shared_folder(self):
+        """
+        If the network scenario has a directory, create the network scenario shared folder.
+        Raises:
+            Exception: The shared folder is a Symlink, delete it.
+            OSError: Permission error.
+        """
         if not self.has_path():
             return
         try:
@@ -198,9 +218,20 @@ class Lab(object):
             return
 
     def has_path(self):
+        """
+        Check if the network scenario has a directory.
+        Returns:
+            bool: True if it self.path is not None, else False.
+        """
         return self.path is not None
 
-    def add_option(self, name, value):
+    def add_option(self, name: str, value: Any):
+        """
+        Add an option to the network scenario.
+        Args:
+            name (str): The name of the option.
+            value (Any): The value of the option.
+        """
         if value is not None:
             self.general_options[name] = value
 
