@@ -8,7 +8,7 @@ class KubernetesConfig(object):
     def get_cluster_user():
         try:
             # Remote configuration is present, use the API Token as user
-            configuration = client.api_client.Configuration()
+            configuration = client.Configuration.get_default_copy()
             return configuration.api_key['authorization']
         except KeyError:
             # In-Cluster configuration, take the context name as user

@@ -153,7 +153,7 @@ class KubernetesManager(IManager):
         stats_table.inner_row_border = True
 
         while True:
-            machines_stats = self.get_lab_info(lab_hash=lab_hash, machine_filter=machine_name)
+            machines_stats = self.get_lab_info(lab_hash=lab_hash, machine_name=machine_name)
 
             machines_data = [
                 table_header

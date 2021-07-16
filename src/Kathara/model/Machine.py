@@ -33,9 +33,7 @@ class Machine(object):
         self.meta = {
             'sysctls': {},
             'bridged': False,
-            'ports': {},
-            'hosthome_mount': Setting.get_instance().hosthome_mount,
-            'shared_mount': Setting.get_instance().shared_mount
+            'ports': {}
         }
 
         self.startup_commands = []
