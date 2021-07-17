@@ -14,7 +14,7 @@ Vcs-Browser: https://github.com/KatharaFramework/Kathara
 Homepage: https://www.kathara.org/
 
 Package: kathara
-Architecture: amd64
+Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Suggests: docker.io (>= 17.03.2) | docker-ce (>= 17.03.2), xterm
 Description: Lightweight network emulation tool.
