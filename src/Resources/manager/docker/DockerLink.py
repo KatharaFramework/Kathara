@@ -7,7 +7,6 @@ import docker
 import progressbar
 from docker import types
 
-from ..docker.DockerPlugin import PLUGIN_NAME
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...model.Link import BRIDGE_LINK_NAME
@@ -72,7 +71,7 @@ class DockerLink(object):
         network_ipam_config = docker.types.IPAMConfig(driver='null')
 
         link.api_object = self.client.networks.create(name=link_name,
-                                                      driver=PLUGIN_NAME,
+                                                      driver=Setting.get_instance().plugin_name,
                                                       check_duplicate=True,
                                                       ipam=network_ipam_config,
                                                       labels={"lab_hash": link.lab.folder_hash,

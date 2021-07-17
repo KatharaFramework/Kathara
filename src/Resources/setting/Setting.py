@@ -15,6 +15,7 @@ AVAILABLE_MANAGERS = ["docker", "kubernetes"]
 ONE_WEEK = 604800
 
 DEFAULTS = {
+    "plugin_name": 'kathara/katharanp:latest',
     "image": 'kathara/quagga',
     "manager_type": 'docker',
     "terminal": utils.exec_by_platform(lambda: '/usr/bin/xterm', lambda: '', lambda: 'Terminal'),
@@ -29,7 +30,7 @@ DEFAULTS = {
 
 
 class Setting(object):
-    __slots__ = ['image', 'manager_type', 'terminal', 'open_terminals', 'device_shell', 'net_prefix',
+    __slots__ = ['plugin_name', 'image', 'manager_type', 'terminal', 'open_terminals', 'device_shell', 'net_prefix',
                  'device_prefix', 'debug_level', 'print_startup_log', 'enable_ipv6', 'last_checked', 'addons']
 
     SETTING_FOLDER = None

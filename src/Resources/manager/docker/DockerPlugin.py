@@ -4,8 +4,8 @@ from docker.errors import NotFound
 
 from ... import utils
 from ...os.Networking import Networking
+from ...setting.Setting import Setting
 
-PLUGIN_NAME = "kathara/katharanp:latest"
 XTABLES_CONFIGURATION_KEY = "xtables_lock"
 XTABLES_LOCK_PATH = "/run/xtables.lock"
 
@@ -18,21 +18,21 @@ class DockerPlugin(object):
 
     def check_and_download_plugin(self):
         try:
-            logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)
+            logging.debug("Checking plugin `%s`..." % Setting.get_instance().plugin_name)
 
-            plugin = self.client.plugins.get(PLUGIN_NAME)
+            plugin = self.client.plugins.get(Setting.get_instance().plugin_name)
             # Check for plugin updates.
             plugin.upgrade()
         except NotFound:
             logging.info("Installing Kathara Network Plugin...")
-            plugin = self.client.plugins.install(PLUGIN_NAME)
+            plugin = self.client.plugins.install(Setting.get_instance().plugin_name)
             logging.info("Kathara Network Plugin installed successfully!")
 
         xtables_lock_mount = self._get_xtables_lock_mount()
         if not plugin.enabled:
             self._configure_xtables_mount(plugin, xtables_lock_mount)
 
-            logging.debug("Enabling plugin `%s`..." % PLUGIN_NAME)
+            logging.debug("Enabling plugin `%s`..." % Setting.get_instance().plugin_name)
             plugin.enable()
         else:
             # Get the mount of xtables.lock from the current plugin configuration
@@ -45,7 +45,7 @@ class DockerPlugin(object):
 
                 self._configure_xtables_mount(plugin, xtables_lock_mount)
 
-                logging.debug("Enabling plugin `%s`..." % PLUGIN_NAME)
+                logging.debug("Enabling plugin `%s`..." % Setting.get_instance().plugin_name)
                 plugin.enable()
 
     def _get_xtables_lock_mount(self):
