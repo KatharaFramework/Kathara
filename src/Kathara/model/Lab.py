@@ -1,18 +1,49 @@
 import collections
 import os
 from itertools import chain
+from typing import Dict, Set, Any
 
+from .ExternalLink import ExternalLink
 from .Link import Link
 from .Machine import Machine
 from .. import utils
 
 
 class Lab(object):
+    """
+    A Kathara network scenario, containing information about devices and interfaces.
+
+    Attributes:
+        name (str): The name of the network scenario.
+        description (str): A short description of the network scenario.
+        version (str): The version of the network scenario.
+        author (str): The author of the network scenario.
+        email (str): The email of the author of the network scenario.
+        web (str): The web address of the author of the network scenario.
+        path (str): The path of the network scenario, if exists.
+        hash (str): The hash identifier of of the network scenario.
+        machines (Dict[str, Kathara.model.Machine]): The devices of the network scenario. Keys are device names, Values
+            are Kathara device object.
+        links (Dict[str, Kathara.model.Link]): The collision domains of the network scenario.
+            Keys are collision domains names, Values are Kathara collision domain object.
+        general_options (Dict[str, Any]): Keys are option name, values are option values.
+        has_dependencies (bool): True if there are dependencies among the devices boot.
+        shared_startup_path(str) The path of the shared startup file, if exists.
+        shared_shutdown_path(str) The path of the shared shutdown file, if exists.
+        shared_folder(str) The path of the shared folder, if exists.
+    """
+
     __slots__ = ['name', 'description', 'version', 'author', 'email', 'web',
                  'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
-    def __init__(self, name, path=None):
+    def __init__(self, name: str, path: str = None):
+        """
+        Create a new instance of a Kathara network scenario.
+        Args:
+            name (str): The name of the network scenario.
+            path (str): The path to the network scenario directory, if exists.
+        """
         self.name = name
         self.description = None
         self.version = None
@@ -44,18 +75,47 @@ class Lab(object):
 
         self.shared_folder = None
 
-    def connect_machine_to_link(self, machine_name, link_name, machine_iface_number=None):
+    def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None):
+        """
+        Connect the specified machine to the specified collision domain.
+        Args:
+            machine_name (str): The device name.
+            link_name (str): The collision domain.
+            machine_iface_number (int): The number of the device interface to connect. If it is None, the fist free
+                number is used.
+
+        Raises:
+            Exception: If an already used interface number is specified.
+
+        """
         machine = self.get_or_new_machine(machine_name)
         link = self.get_or_new_link(link_name)
 
         machine.add_interface(link, number=machine_iface_number)
 
-    def assign_meta_to_machine(self, machine_name, meta_name, meta_value):
+    def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str):
+        """
+        Assign a meta information to the specified device.
+        Args:
+            machine_name (str): The name of the device.
+            meta_name (str): The name of the meta property.
+            meta_value (str): The value of the meta property.
+
+        Raises:
+            MachineOptionError: If invalid values are specified for meta properties.
+
+        """
         machine = self.get_or_new_machine(machine_name)
 
         machine.add_meta(meta_name, meta_value)
 
-    def attach_external_links(self, external_links):
+    def attach_external_links(self, external_links: Dict[Link, ExternalLink]):
+        """
+        Attach external links to the network scenario.
+        Args:
+            external_links (Dict[Kathara.model.Link, Kathara.model.ExternalLink]): Keys are Link objects,
+            values are ExternalLink objects.
+        """
         for (link_name, link_external_links) in external_links.items():
             if link_name not in self.links:
                 raise Exception("Collision domain `%s` (declared in lab.ext) not found in lab "
@@ -64,13 +124,17 @@ class Lab(object):
             self.links[link_name].external += link_external_links
 
     def check_integrity(self):
+        """
+        Check the integrity of the image of all the devices in the network scenario.
+        """
         for machine in self.machines:
             self.machines[machine].check()
 
-    def intersect_machines(self, selected_machines):
+    def intersect_machines(self, selected_machines: Set[str]):
         """
-        Intersect lab machines with selected machines, passed from command line.
-        :param selected_machines: An array with selected machines names.
+        Intersect network scenario devices with selected devices, passed from command line.
+        Args:
+            selected_machines (Set[str]): An set with selected devices names.
         """
         # Intersect selected machines names with self.machines keys
         selected_machines = set(self.machines.keys()) & set(selected_machines)
@@ -86,6 +150,11 @@ class Lab(object):
         self.links = {k: v for (k, v) in self.links.items() if k in selected_links}
 
     def apply_dependencies(self, dependencies):
+        """
+        Order the machines list of the network scenario to respect the boot dependencies.
+        Args:
+            dependencies (bool): If True, dependencies are applied.
+        """
         if dependencies:
             def dep_sort(item):
                 try:
@@ -96,22 +165,33 @@ class Lab(object):
             self.machines = collections.OrderedDict(sorted(self.machines.items(), key=lambda t: dep_sort(t[0])))
             self.has_dependencies = True
 
-    def get_or_new_machine(self, name, **kwargs):
+    def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> Machine:
         """
-        :param name: The name of the machine
-        :return: The desired machine.
-        :rtype: Machine
+        Get the specified device. If it not exists, create and add it to the machines list.
+        Args:
+            name (str): The name of the device
+            **kwargs (Dict[str, Any]): Contains device meta information.
+                Keys are meta property names, values are meta property values.
+
+        Returns:
+            Kathara.model.Machine: A Kathara device.
+
         """
+
         if name not in self.machines:
             self.machines[name] = Machine(self, name, **kwargs)
 
         return self.machines[name]
 
-    def get_or_new_link(self, name):
+    def get_or_new_link(self, name: str) -> Link:
         """
-        :param name: The name of the link.
-        :return: The desired link
-        :rtype: Link
+        Get the specified collision domain. If it not exists, create and add it to the collision domains list.
+        Args:
+            name (str): The name of the collision domain.
+
+        Returns:
+            Kathara.model.Link: A Kathara collision domain.
+
         """
         if name not in self.links:
             self.links[name] = Link(self, name)
@@ -119,6 +199,12 @@ class Lab(object):
         return self.links[name]
 
     def create_shared_folder(self):
+        """
+        If the network scenario has a directory, create the network scenario shared folder.
+        Raises:
+            Exception: The shared folder is a Symlink, delete it.
+            OSError: Permission error.
+        """
         if not self.has_path():
             return
         try:
@@ -132,9 +218,20 @@ class Lab(object):
             return
 
     def has_path(self):
+        """
+        Check if the network scenario has a directory.
+        Returns:
+            bool: True if it self.path is not None, else False.
+        """
         return self.path is not None
 
-    def add_option(self, name, value):
+    def add_option(self, name: str, value: Any):
+        """
+        Add an option to the network scenario.
+        Args:
+            name (str): The name of the option.
+            value (Any): The value of the option.
+        """
         if value is not None:
             self.general_options[name] = value
 

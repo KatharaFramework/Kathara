@@ -1,5 +1,7 @@
+import io
 from copy import copy
 from datetime import datetime
+from typing import Set, Dict
 
 import docker
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -13,7 +15,9 @@ from ... import utils
 from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
+from ...model.Lab import Lab
 from ...model.Link import BRIDGE_LINK_NAME
+from ...model.Machine import Machine
 from ...setting.Setting import Setting
 from ...utils import pack_files_for_tar
 
@@ -80,7 +84,7 @@ class DockerManager(IManager):
         self.docker_link = DockerLink(self.client)
 
     @privileged
-    def deploy_lab(self, lab, selected_machines=None):
+    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None):
         if selected_machines:
             lab = copy(lab)
             lab.intersect_machines(selected_machines)
@@ -92,38 +96,38 @@ class DockerManager(IManager):
         self.docker_machine.deploy_machines(lab)
 
     @privileged
-    def update_lab(self, lab_diff):
+    def update_lab(self, lab: Lab):
         # Deploy new links (if present)
-        for (_, link) in lab_diff.links.items():
+        for (_, link) in lab.links.items():
             if link.name == BRIDGE_LINK_NAME:
                 continue
 
             self.docker_link.create(link)
 
         # Update lab devices.
-        for (_, machine) in lab_diff.machines.items():
+        for (_, machine) in lab.machines.items():
             # Device is not deployed, deploy it
             if machine.api_object is None:
-                self.deploy_lab(lab_diff, selected_machines={machine.name})
+                self.deploy_lab(lab, selected_machines={machine.name})
             else:
                 # Device already deployed, update it
                 self.docker_machine.update(machine)
 
     @privileged
-    def undeploy_lab(self, lab_hash, selected_machines=None):
+    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None):
         self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines)
 
         self.docker_link.undeploy(lab_hash)
 
     @privileged
-    def wipe(self, all_users=False):
+    def wipe(self, all_users: bool = False):
         user_name = utils.get_current_user_name() if not all_users else None
 
         self.docker_machine.wipe(user=user_name)
         self.docker_link.wipe(user=user_name)
 
     @privileged
-    def connect_tty(self, lab_hash, machine_name, shell=None, logs=False):
+    def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False):
         self.docker_machine.connect(lab_hash=lab_hash,
                                     machine_name=machine_name,
                                     shell=shell,
@@ -131,11 +135,11 @@ class DockerManager(IManager):
                                     )
 
     @privileged
-    def exec(self, lab_hash, machine_name, command):
+    def exec(self, lab_hash: str, machine_name: str, command: str):
         return self.docker_machine.exec(lab_hash, machine_name, command, tty=False)
 
     @privileged
-    def copy_files(self, machine, guest_to_host):
+    def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]):
         tar_data = pack_files_for_tar(guest_to_host)
 
         self.docker_machine.copy_files(machine.api_object,
@@ -144,15 +148,7 @@ class DockerManager(IManager):
                                        )
 
     @privileged
-    def get_machine_api_object(self, lab_hash, machine_name):
-        return self.docker_machine.get_machine(lab_hash, machine_name)
-
-    @privileged
-    def check_image(self, image_name):
-        self.docker_image.check(image_name)
-
-    @privileged
-    def get_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
+    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False):
         user_name = utils.get_current_user_name() if not all_users else None
 
         lab_info = self.docker_machine.get_machines_info(lab_hash, machine_filter=machine_name, user=user_name)
@@ -160,7 +156,7 @@ class DockerManager(IManager):
         return lab_info
 
     @privileged
-    def get_formatted_lab_info(self, lab_hash=None, machine_name=None, all_users=False):
+    def get_formatted_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False):
         table_header = ["LAB HASH", "USER", "DEVICE NAME", "STATUS", "CPU %", "MEM USAGE / LIMIT", "MEM %", "NET I/O"]
         stats_table = DoubleTable([])
         stats_table.inner_row_border = True
@@ -196,7 +192,11 @@ class DockerManager(IManager):
             yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
 
     @privileged
-    def get_machine_info(self, machine_name, lab_hash=None, all_users=False):
+    def get_machine_api_object(self, lab_hash: str, machine_name: str):
+        return self.docker_machine.get_machine(lab_hash, machine_name)
+
+    @privileged
+    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False):
         user_name = utils.get_current_user_name() if not all_users else None
 
         machine_stats = self.docker_machine.get_machine_info(machine_name, lab_hash=lab_hash, user=user_name)
@@ -204,7 +204,7 @@ class DockerManager(IManager):
         return machine_stats
 
     @privileged
-    def get_formatted_machine_info(self, machine_name, lab_hash=None, all_users=False):
+    def get_formatted_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False):
         machine_stats = self.get_machine_info(machine_name, lab_hash, all_users)
 
         machine_info = utils.format_headers("Device information") + "\n"
@@ -220,6 +220,10 @@ class DockerManager(IManager):
         machine_info += utils.format_headers()
 
         return machine_info
+
+    @privileged
+    def check_image(self, image_name: str):
+        self.docker_image.check(image_name)
 
     @privileged
     def get_release_version(self):
