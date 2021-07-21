@@ -164,7 +164,7 @@ class Machine(object):
 
     def check(self):
         """
-        Sorts the dictionary of interfaces ignoring the missing positions.
+        Sorts interfaces ignoring the missing positions.
         """
         sorted_interfaces = sorted(self.interfaces.items(), key=lambda kv: kv[0])
 
@@ -384,7 +384,7 @@ class Machine(object):
 
         return None
 
-    def get_ports(self) -> Dict[Tuple[int, str], int]:
+    def get_ports(self) -> Union[Dict[Tuple[int, str], int], None]:
         """
         Get the port mapping of the device.
         Returns:
