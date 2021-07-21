@@ -1,7 +1,7 @@
 import collections
 import os
 from itertools import chain
-from typing import Dict, Set, Any
+from typing import Dict, Set, Any, List, Union
 
 from .ExternalLink import ExternalLink
 from .Link import Link
@@ -130,11 +130,12 @@ class Lab(object):
         for machine in self.machines:
             self.machines[machine].check()
 
-    def intersect_machines(self, selected_machines: Set[str]):
+    def intersect_machines(self, selected_machines: Union[List[str], Set[str]]):
         """
-        Intersect network scenario devices with selected devices, passed from command line.
+        Delete network scenario devices and collision domains not in selected devices, passed from command line.
+        It has side effect on the current network scenario.
         Args:
-            selected_machines (Set[str]): An set with selected devices names.
+            selected_machines (Set[str]): A set with selected devices names.
         """
         # Intersect selected machines names with self.machines keys
         selected_machines = set(self.machines.keys()) & set(selected_machines)
