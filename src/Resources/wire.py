@@ -68,14 +68,11 @@ def start_snoop():
             "shell": "/bin/sh",
         },
     }
-    print(">>> run", snoop_image, args)
     res = client.containers.run(snoop_image, **args)
     logs = res.logs(stream=True, stdout=True)
-    print(">>> got", logs.next())
 
 
 def connect_snoop(link_name, network):
-    print(">>> connect", link_name)
     snoop = get_snoop()
     if snoop is None:
         logging.critical("Missing snoop VM")
@@ -94,19 +91,16 @@ def snoop_port(name):
     s.connect(("", portnum(0)))
     s.send(("DUMP {}\n".format(name)).encode())
     res = s.recv(1024).strip().split()
-    print(">>> res", res)
     if res[0] == b"NEW":
         connect_snoop(name, network)
     return portnum(int(res[-1])) - 5000
 
 
 def capture(nets):
-    print(">>> capture", nets)
     ports = [snoop_port(name) for name in nets]
     cmd = [Setting.get_instance().wire_command]
     for port in ports:
         cmd.append("-i")
         cmd.append("TCP@[127.0.0.1]:{}".format(port))
     cmd.append("-k")
-    print(">>> running", cmd)
     Popen(cmd)
