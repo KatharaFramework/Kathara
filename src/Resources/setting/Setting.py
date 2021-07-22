@@ -25,7 +25,11 @@ DEFAULTS = {
     "device_prefix": 'kathara',
     "debug_level": 'INFO',
     "print_startup_log": True,
-    "enable_ipv6": False
+    "enable_ipv6": False,
+    "wire_ports": '5000-5020',
+    "wire_command": 'wireshark',
+    "wire_image": 'nopid/wire:latest',
+    "wire_snoop": 'kathara_snoop'
 }
 
 SETTING_KEYS = list(DEFAULTS.keys())  + ['last_checked']
