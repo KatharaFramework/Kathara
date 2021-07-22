@@ -3,6 +3,7 @@ import hashlib
 import importlib
 import math
 import os
+import platform
 import re
 import shutil
 import sys
@@ -252,3 +253,11 @@ def is_excluded_file(path):
     _, filename = os.path.split(path)
 
     return filename in EXCLUDED_FILES
+
+
+# Architecture test
+def arch():
+    if platform.machine() in ['arm64', 'aarch64']:
+        return 'arm64'
+    else:
+        return 'amd64'

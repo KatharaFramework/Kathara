@@ -15,7 +15,7 @@ AVAILABLE_MANAGERS = ["docker", "kubernetes"]
 ONE_WEEK = 604800
 
 DEFAULTS = {
-    "plugin_name": 'kathara/katharanp:latest',
+    "plugin_name": 'kathara/katharanp:' + utils.arch(),
     "image": 'kathara/quagga',
     "manager_type": 'docker',
     "terminal": utils.exec_by_platform(lambda: '/usr/bin/xterm', lambda: '', lambda: 'Terminal'),
@@ -28,10 +28,11 @@ DEFAULTS = {
     "enable_ipv6": False
 }
 
+SETTING_KEYS = list(DEFAULTS.keys())  + ['last_checked']
+
 
 class Setting(object):
-    __slots__ = ['plugin_name', 'image', 'manager_type', 'terminal', 'open_terminals', 'device_shell', 'net_prefix',
-                 'device_prefix', 'debug_level', 'print_startup_log', 'enable_ipv6', 'last_checked', 'addons']
+    __slots__ = SETTING_KEYS + ['addons']
 
     SETTING_FOLDER = None
     SETTING_PATH = None
@@ -205,15 +206,7 @@ class Setting(object):
         self.addons = SettingsAddonFactory().create_instance(class_args=(self.manager_type.capitalize(), ))
 
     def _to_dict(self):
-        return {"image": self.image,
-                "manager_type": self.manager_type,
-                "terminal": self.terminal,
-                "open_terminals": self.open_terminals,
-                "device_shell": self.device_shell,
-                "net_prefix": self.net_prefix,
-                "device_prefix": self.device_prefix,
-                "debug_level": self.debug_level,
-                "print_startup_log": self.print_startup_log,
-                "enable_ipv6": self.enable_ipv6,
-                "last_checked": self.last_checked,
-                }
+        res = {}
+        for key in SETTING_KEYS:
+            res[key] = getattr(self, key)
+        return res
