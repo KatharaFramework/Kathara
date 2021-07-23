@@ -53,6 +53,7 @@ def start_snoop():
     args = {
         "name": snoop_name,
         "ports": ports,
+        "cap_add": ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"],
         "sysctls": {
             "net.ipv6.conf.all.disable_ipv6": 1,
             "net.ipv6.conf.default.disable_ipv6": 1,
