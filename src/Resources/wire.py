@@ -71,6 +71,9 @@ def start_snoop():
     }
     res = client.containers.run(snoop_image, **args)
     logs = res.logs(stream=True, stdout=True)
+    if logs.next() != b'READY\n':
+        logging.critical("Bad snoop VM initialization")
+        exit(1)
 
 
 def connect_snoop(link_name, network):
