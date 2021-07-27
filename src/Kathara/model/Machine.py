@@ -177,7 +177,7 @@ class Machine(object):
 
         self.interfaces = collections.OrderedDict(sorted_interfaces)
 
-    def pack_data(self) -> bytes:
+    def pack_data(self) -> Union[bytes, None]:
         """
         Pack machine data into a .tar.gz file and returns the tar content as a byte array.
         While packing files, it also applies the win2linux patch in order to remove UTF-8 BOM.
