@@ -37,7 +37,7 @@ class Lab(object):
                  'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
-    def __init__(self, name: str, path: str = None):
+    def __init__(self, name: Union[str, None], path: str = None):
         """
         Create a new instance of a Kathara network scenario.
         Args:
