@@ -3,13 +3,17 @@ import shlex
 from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
+from typing import List, Union, Any, Dict
 
+import docker
 import progressbar
 from docker.errors import APIError
 
 from ... import utils
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
+from ...model.Lab import Lab
 from ...model.Link import BRIDGE_LINK_NAME
+from ...model.Machine import Machine
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
@@ -86,7 +90,7 @@ class DockerMachine(object):
 
         self.docker_image = docker_image
 
-    def deploy_machines(self, lab):
+    def deploy_machines(self, lab: Lab) -> None:
         # Check and pulling machine images
         lab_images = set(map(lambda x: x.get_image(), lab.machines.values()))
         self.docker_image.check_and_pull_from_list(lab_images)
@@ -126,7 +130,7 @@ class DockerMachine(object):
         if utils.CLI_ENV:
             progress_bar.finish()
 
-    def _deploy_and_start_machine(self, progress_bar, machine_item):
+    def _deploy_and_start_machine(self, progress_bar: progressbar.ProgressBar, machine_item: (str, Machine)) -> None:
         (_, machine) = machine_item
 
         self.create(machine)
@@ -135,12 +139,12 @@ class DockerMachine(object):
         if progress_bar is not None:
             progress_bar += 1
 
-    def create(self, machine):
+    def create(self, machine: Machine) -> None:
         logging.debug("Creating device `%s`..." % machine.name)
 
         image = machine.get_image()
         memory = machine.get_mem()
-        cpus = machine.get_cpu(multiplier=1e9)
+        cpus = machine.get_cpu(multiplier=1000000000)
 
         ports_info = machine.get_ports()
         ports = None
@@ -244,7 +248,7 @@ class DockerMachine(object):
 
         machine.api_object = machine_container
 
-    def update(self, machine):
+    def update(self, machine: Machine) -> None:
         machines = self.get_machines_by_filters(machine_name=machine.name, lab_hash=machine.lab.hash)
 
         if not machines:
@@ -259,7 +263,7 @@ class DockerMachine(object):
                 machine_link.api_object.connect(machine.api_object)
 
     @staticmethod
-    def start(machine):
+    def start(machine: Machine) -> None:
         logging.debug("Starting device `%s`..." % machine.name)
 
         try:
@@ -305,7 +309,7 @@ class DockerMachine(object):
             for i in range(0, machine.get_num_terms()):
                 machine.connect(Setting.get_instance().terminal)
 
-    def undeploy(self, lab_hash, selected_machines=None):
+    def undeploy(self, lab_hash: str, selected_machines: List[Machine] = None) -> None:
         machines = self.get_machines_by_filters(lab_hash=lab_hash)
         if selected_machines is not None and len(selected_machines) > 0:
             machines = [item for item in machines if item.labels["name"] in selected_machines]
@@ -332,7 +336,7 @@ class DockerMachine(object):
             if utils.CLI_ENV:
                 progress_bar.finish()
 
-    def wipe(self, user=None):
+    def wipe(self, user: str = None) -> None:
         machines = self.get_machines_by_filters(user=user)
 
         pool_size = utils.get_pool_size()
@@ -343,13 +347,13 @@ class DockerMachine(object):
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, None), iterable=chunk)
 
-    def _undeploy_machine(self, progress_bar, machine_item):
-        self.delete_machine(machine_item)
+    def _undeploy_machine(self, progress_bar: progressbar.ProgressBar, machine_item: (str, Machine)) -> None:
+        self._delete_machine(machine_item)
 
         if progress_bar is not None:
             progress_bar += 1
 
-    def connect(self, lab_hash, machine_name, shell=None, logs=False):
+    def connect(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False) -> None:
         container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
         if not shell:
@@ -397,7 +401,7 @@ class DockerMachine(object):
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
-    def exec(self, lab_hash, machine_name, command, tty=True):
+    def exec(self, lab_hash: str, machine_name: str, command: str, tty: bool = True) -> (str, str):
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
         container = self.get_machine(lab_hash, machine_name)
@@ -414,10 +418,11 @@ class DockerMachine(object):
         return stdout.decode('utf-8') if stdout else "", stderr.decode('utf-8') if stderr else ""
 
     @staticmethod
-    def copy_files(machine, path, tar_data):
+    def copy_files(machine: docker.models.containers.Container, path: str, tar_data: bytes) -> None:
         machine.put_archive(path, tar_data)
 
-    def get_machines_by_filters(self, lab_hash=None, machine_name=None, user=None):
+    def get_machines_by_filters(self, lab_hash: str = None, machine_name: str = None,
+                                user: str = None) -> List[docker.models.containers.Container]:
         filters = {"label": ["app=kathara"]}
         if user:
             filters["label"].append("user=%s" % user)
@@ -428,7 +433,7 @@ class DockerMachine(object):
 
         return self.client.containers.list(all=True, filters=filters)
 
-    def get_machine(self, lab_hash, machine_name):
+    def get_machine(self, lab_hash: str, machine_name: str) -> docker.models.containers.Container:
         logging.debug("Searching container `%s` with lab hash `%s`" % (machine_name, lab_hash))
 
         containers = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
@@ -440,7 +445,7 @@ class DockerMachine(object):
         else:
             return containers[0]
 
-    def get_machine_info(self, machine_name, lab_hash=None, user=None):
+    def get_machine_info(self, machine_name: str, lab_hash: str = None, user: str = None) -> Dict[str, Union[str, int]]:
         machines = self.get_machines_by_filters(machine_name=machine_name, lab_hash=lab_hash, user=user)
 
         if not machines:
@@ -453,7 +458,8 @@ class DockerMachine(object):
 
         return self._get_stats_by_machine(machine, machine_stats)
 
-    def get_machines_info(self, lab_hash, machine_filter=None, user=None):
+    def get_machines_info(self, lab_hash: str, machine_filter: str = None, user: str = None) -> \
+            List[Dict[str, Union[str, int]]]:
         machines = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_filter, user=user)
 
         if not machines:
@@ -482,7 +488,8 @@ class DockerMachine(object):
 
             yield machines_data
 
-    def _get_stats_by_machine(self, machine, machine_stats):
+    def _get_stats_by_machine(self, machine: docker.models.containers.Container, machine_stats: Dict[str, Any]) -> \
+            Dict[str, str]:
         stats = self._get_aggregate_machine_info(machine_stats)
 
         return {
@@ -500,7 +507,7 @@ class DockerMachine(object):
         }
 
     @staticmethod
-    def _get_aggregate_machine_info(stats):
+    def _get_aggregate_machine_info(stats: Dict[str, Any]) -> Dict[str, str]:
         network_stats = stats["networks"] if "networks" in stats else {}
 
         return {
@@ -521,13 +528,13 @@ class DockerMachine(object):
         }
 
     @staticmethod
-    def get_container_name(name, lab_hash):
+    def get_container_name(name: str, lab_hash: str) -> str:
         lab_hash = lab_hash if "_%s" % lab_hash else ""
         username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().multiuser else ""
         return "%s%s_%s%s" % (Setting.get_instance().device_prefix, username_prefix, name, lab_hash)
 
     @staticmethod
-    def delete_machine(machine):
+    def _delete_machine(machine:  docker.models.containers.Container) -> None:
         # Build the shutdown command string
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine.labels["name"])
 

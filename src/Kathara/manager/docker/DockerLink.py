@@ -2,6 +2,7 @@ import logging
 import re
 from functools import partial
 from multiprocessing.dummy import Pool
+from typing import List, Union
 
 import docker
 import progressbar
@@ -10,7 +11,9 @@ from docker import types
 from ..docker.DockerPlugin import PLUGIN_NAME
 from ... import utils
 from ...exceptions import PrivilegeError
-from ...model.Link import BRIDGE_LINK_NAME
+from ...model.ExternalLink import ExternalLink
+from ...model.Lab import Lab
+from ...model.Link import BRIDGE_LINK_NAME, Link
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
 
@@ -21,7 +24,7 @@ class DockerLink(object):
     def __init__(self, client):
         self.client = client
 
-    def deploy_links(self, lab):
+    def deploy_links(self, lab: Lab) -> None:
         links = lab.links.items()
 
         if len(links) > 0:
@@ -50,7 +53,7 @@ class DockerLink(object):
         link = lab.get_or_new_link(BRIDGE_LINK_NAME)
         link.api_object = docker_bridge
 
-    def _deploy_link(self, progress_bar, link_item):
+    def _deploy_link(self, progress_bar: progressbar.ProgressBar, link_item: (str, Link)) -> None:
         (_, link) = link_item
 
         if link.name == BRIDGE_LINK_NAME:
@@ -61,7 +64,7 @@ class DockerLink(object):
         if progress_bar is not None:
             progress_bar += 1
 
-    def create(self, link):
+    def create(self, link: Link) -> None:
         # Reserved name for bridged connections, ignore.
         if link.name == BRIDGE_LINK_NAME:
             return
@@ -95,7 +98,7 @@ class DockerLink(object):
             logging.debug("External Interfaces required, connecting them...")
             self._attach_external_interfaces(link.external, link.api_object)
 
-    def undeploy(self, lab_hash):
+    def undeploy(self, lab_hash: str) -> None:
         links = self.get_links_by_filters(lab_hash=lab_hash)
         for item in links:
             item.reload()
@@ -122,7 +125,7 @@ class DockerLink(object):
             if utils.CLI_ENV:
                 progress_bar.finish()
 
-    def wipe(self, user=None):
+    def wipe(self, user: str = None) -> None:
         user_label = "shared" if Setting.get_instance().multiuser else user
         links = self.get_links_by_filters(user=user_label)
         for item in links:
@@ -137,17 +140,18 @@ class DockerLink(object):
         for chunk in items:
             links_pool.map(func=partial(self._undeploy_link, None), iterable=chunk)
 
-    def _undeploy_link(self, progress_bar, link_item):
-        self._delete_link(link_item)
+    def _undeploy_link(self, progress_bar: progressbar.ProgressBar, network: docker.models.networks.Network) -> None:
+        self._delete_link(network)
 
         if progress_bar is not None:
             progress_bar += 1
 
-    def get_docker_bridge(self):
+    def get_docker_bridge(self) -> Union[None, docker.models.networks.Network]:
         bridge_list = self.client.networks.list(names="bridge")
         return bridge_list.pop() if bridge_list else None
 
-    def get_links_by_filters(self, lab_hash=None, link_name=None, user=None):
+    def get_links_by_filters(self, lab_hash: str = None, link_name: str = None, user: str = None) -> \
+            List[docker.models.networks.Network]:
         filters = {"label": ["app=kathara"]}
         if user:
             filters["label"].append("user=%s" % user)
@@ -158,7 +162,8 @@ class DockerLink(object):
 
         return self.client.networks.list(filters=filters)
 
-    def _attach_external_interfaces(self, external_links, network):
+    def _attach_external_interfaces(self, external_links: List[ExternalLink],
+                                    network: docker.models.networks.Network) -> None:
         for external_link in external_links:
             (name, vlan) = external_link.get_name_and_vlan()
 
@@ -166,17 +171,17 @@ class DockerLink(object):
             Networking.attach_interface_to_bridge(interface_index, self._get_bridge_name(network))
 
     @staticmethod
-    def _get_bridge_name(network):
+    def _get_bridge_name(network: docker.models.networks.Network) -> str:
         return "kt-%s" % network.id[:12]
 
     @staticmethod
-    def get_network_name(name):
+    def get_network_name(name: str) -> str:
         username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().multiuser else ""
         return "%s%s_%s" % (Setting.get_instance().net_prefix, username_prefix, name)
 
     @staticmethod
-    def _delete_link(link):
-        external_label = link.attrs['Labels']["external"]
+    def _delete_link(network: docker.models.networks.Network) -> None:
+        external_label = network.attrs['Labels']["external"]
         external_links = external_label.split(";") if external_label else None
 
         if external_links:
@@ -191,4 +196,4 @@ class DockerLink(object):
                     else:
                         raise OSError("VLAN Interfaces are only available on UNIX systems.")
 
-        link.remove()
+        network.remove()

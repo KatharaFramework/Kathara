@@ -11,8 +11,8 @@ from distutils.util import strtobool
 from glob import glob
 from typing import Union, Dict, Any, Tuple
 
-from . import Lab
-from . import Link
+from . import Lab as LabPackage
+from . import Link as LinkPackage
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError
 from ..setting.Setting import Setting
@@ -38,7 +38,7 @@ class Machine(object):
     __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities',
                  'startup_path', 'shutdown_path', 'folder']
 
-    def __init__(self, lab: 'Lab.Lab', name: str, **kwargs):
+    def __init__(self, lab: 'LabPackage.Lab', name: str, **kwargs):
         """
         Create a new instance of a Kathara device.
         Args:
@@ -51,12 +51,12 @@ class Machine(object):
         if not matches:
             raise Exception("Invalid device name `%s`." % name)
 
-        self.lab = lab
+        self.lab: LabPackage.Lab = lab
         self.name = name
 
         self.interfaces = {}
 
-        self.meta = {
+        self.meta: Dict[str, Any] = {
             'sysctls': {},
             'bridged': False,
             'ports': {}
@@ -84,7 +84,7 @@ class Machine(object):
 
         self.update_meta(kwargs)
 
-    def add_interface(self, link: 'Link.Link', number: int = None):
+    def add_interface(self, link: 'LinkPackage.Link', number: int = None) -> None:
         """
         Add an interface to the device attached to the specified collision domain.
         Args:
@@ -103,7 +103,7 @@ class Machine(object):
 
         self.interfaces[number] = link
 
-    def add_meta(self, name: str, value: Any):
+    def add_meta(self, name: str, value: Any) -> None:
         """
         Add a meta property to the device.
         Args:
@@ -162,7 +162,7 @@ class Machine(object):
 
         self.meta[name] = value
 
-    def check(self):
+    def check(self) -> None:
         """
         Sorts interfaces ignoring the missing positions.
         """
@@ -251,7 +251,7 @@ class Machine(object):
 
         return tar_data
 
-    def connect(self, terminal_name: str):
+    def connect(self, terminal_name: str) -> None:
         """
         Connect to the device with the specified terminal.
         Args:
@@ -275,7 +275,7 @@ class Machine(object):
 
         logging.debug("Terminal will open in directory %s." % self.lab.path)
 
-        def unix_connect():
+        def unix_connect() -> None:
             if terminal == "TMUX":
                 from ..trdparty.libtmux.tmux import TMUX
 
@@ -293,7 +293,7 @@ class Machine(object):
                                  start_new_session=True
                                  )
 
-        def windows_connect():
+        def windows_connect() -> None:
             complete_win_command = "& %s" % connect_command
             logging.debug("Opening Windows terminal with command: %s." % complete_win_command)
             subprocess.Popen(["powershell.exe",
@@ -304,7 +304,7 @@ class Machine(object):
                              cwd=self.lab.path
                              )
 
-        def osx_connect():
+        def osx_connect() -> None:
             complete_osx_command = "cd \"%s\" && clear && %s && exit" % (self.lab.path, connect_command)
 
             if terminal == "TMUX":
@@ -431,7 +431,7 @@ class Machine(object):
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
 
-    def update_meta(self, args: Dict[str, Any]):
+    def update_meta(self, args: Dict[str, Any]) -> None:
         """
         Update the device meta.
         Args:

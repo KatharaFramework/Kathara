@@ -1,7 +1,7 @@
 import io
 from copy import copy
 from datetime import datetime
-from typing import Set, Dict
+from typing import Set, Dict, List, Union, Any
 
 import docker
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -84,7 +84,7 @@ class DockerManager(IManager):
         self.docker_link = DockerLink(self.client)
 
     @privileged
-    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None):
+    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         if selected_machines:
             lab = copy(lab)
             lab.intersect_machines(selected_machines)
@@ -96,7 +96,7 @@ class DockerManager(IManager):
         self.docker_machine.deploy_machines(lab)
 
     @privileged
-    def update_lab(self, lab: Lab):
+    def update_lab(self, lab: Lab) -> None:
         # Deploy new links (if present)
         for (_, link) in lab.links.items():
             if link.name == BRIDGE_LINK_NAME:
@@ -114,20 +114,20 @@ class DockerManager(IManager):
                 self.docker_machine.update(machine)
 
     @privileged
-    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None):
+    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
         self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines)
 
         self.docker_link.undeploy(lab_hash)
 
     @privileged
-    def wipe(self, all_users: bool = False):
+    def wipe(self, all_users: bool = False) -> None:
         user_name = utils.get_current_user_name() if not all_users else None
 
         self.docker_machine.wipe(user=user_name)
         self.docker_link.wipe(user=user_name)
 
     @privileged
-    def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False):
+    def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False) -> None:
         self.docker_machine.connect(lab_hash=lab_hash,
                                     machine_name=machine_name,
                                     shell=shell,
@@ -135,11 +135,11 @@ class DockerManager(IManager):
                                     )
 
     @privileged
-    def exec(self, lab_hash: str, machine_name: str, command: str):
+    def exec(self, lab_hash: str, machine_name: str, command: str) -> (str, str):
         return self.docker_machine.exec(lab_hash, machine_name, command, tty=False)
 
     @privileged
-    def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]):
+    def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
         tar_data = pack_files_for_tar(guest_to_host)
 
         self.docker_machine.copy_files(machine.api_object,
@@ -148,7 +148,8 @@ class DockerManager(IManager):
                                        )
 
     @privileged
-    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False):
+    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> \
+            List[Dict[str, Any]]:
         user_name = utils.get_current_user_name() if not all_users else None
 
         lab_info = self.docker_machine.get_machines_info(lab_hash, machine_filter=machine_name, user=user_name)
@@ -192,11 +193,11 @@ class DockerManager(IManager):
             yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
 
     @privileged
-    def get_machine_api_object(self, lab_hash: str, machine_name: str):
+    def get_machine_api_object(self, lab_hash: str, machine_name: str) -> docker.models.containers.Container:
         return self.docker_machine.get_machine(lab_hash, machine_name)
 
     @privileged
-    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False):
+    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> Dict[str, Any]:
         user_name = utils.get_current_user_name() if not all_users else None
 
         machine_stats = self.docker_machine.get_machine_info(machine_name, lab_hash=lab_hash, user=user_name)
@@ -204,7 +205,7 @@ class DockerManager(IManager):
         return machine_stats
 
     @privileged
-    def get_formatted_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False):
+    def get_formatted_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> str:
         machine_stats = self.get_machine_info(machine_name, lab_hash, all_users)
 
         machine_info = utils.format_headers("Device information") + "\n"
@@ -222,13 +223,13 @@ class DockerManager(IManager):
         return machine_info
 
     @privileged
-    def check_image(self, image_name: str):
+    def check_image(self, image_name: str) -> None:
         self.docker_image.check(image_name)
 
     @privileged
-    def get_release_version(self):
+    def get_release_version(self) -> str:
         return self.client.version()["Version"]
 
     @staticmethod
-    def get_formatted_manager_name():
+    def get_formatted_manager_name() -> str:
         return "Docker (Kathara)"

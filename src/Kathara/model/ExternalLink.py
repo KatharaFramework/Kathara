@@ -1,14 +1,16 @@
+from typing import Union
+
 MAX_INTERFACE_NAME_LENGTH = 15
 
 
 class ExternalLink(object):
     __slots__ = ['interface', 'vlan']
 
-    def __init__(self, interface, vlan):
-        self.interface = interface
-        self.vlan = vlan
+    def __init__(self, interface: str, vlan: Union[int, None]):
+        self.interface: str = interface
+        self.vlan: int = vlan
 
-    def get_name_and_vlan(self):
+    def get_name_and_vlan(self) -> (str, Union[None, int]):
         # VLAN is defined
         if self.vlan:
             vlan_name_length = len(".%s" % self.vlan)
@@ -20,7 +22,7 @@ class ExternalLink(object):
 
         return self.interface, None
 
-    def get_full_name(self):
+    def get_full_name(self) -> str:
         (name, vlan) = self.get_name_and_vlan()
         return name if not vlan else "%s.%s" % (name, vlan)
 
