@@ -38,7 +38,7 @@ class Kathara(IManager):
 
             Kathara.__instance = self
 
-    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None):
+    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """
         Deploy a Kathara network scenario.
         Args:
@@ -47,7 +47,7 @@ class Kathara(IManager):
         """
         self.manager.deploy_lab(lab, selected_machines)
 
-    def update_lab(self, lab: Lab):
+    def update_lab(self, lab: Lab) -> None:
         """
         Update a running network scenario.
         Args:
@@ -55,7 +55,7 @@ class Kathara(IManager):
         """
         self.manager.update_lab(lab)
 
-    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None):
+    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
         """
         Undeploy a Kathara network scenario.
         Args:
@@ -64,7 +64,7 @@ class Kathara(IManager):
         """
         self.manager.undeploy_lab(lab_hash, selected_machines)
 
-    def wipe(self, all_users: bool = False):
+    def wipe(self, all_users: bool = False) -> None:
         """
         Undeploy all the running network scenarios.
         Args:
@@ -73,7 +73,7 @@ class Kathara(IManager):
         """
         self.manager.wipe(all_users)
 
-    def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False):
+    def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False) -> None:
         """
         Connect to a device in a running network scenario, using the specified shell.
         Args:
@@ -97,7 +97,7 @@ class Kathara(IManager):
         """
         return self.manager.exec(lab_hash, machine_name, command)
 
-    def copy_files(self, machine: Machine, guest_to_host: Dict[str, Union[io.IOBase, str]]):
+    def copy_files(self, machine: Machine, guest_to_host: Dict[str, Union[io.IOBase, str]]) -> None:
         """
         Copy files on a running machine in the specified paths.
         Args:
@@ -175,7 +175,7 @@ class Kathara(IManager):
         """
         return self.manager.get_formatted_machine_info(machine_name, lab_hash, all_users)
 
-    def check_image(self, image_name: str):
+    def check_image(self, image_name: str) -> None:
         """
         Check if the specified image is valid.
         Args:
