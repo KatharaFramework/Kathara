@@ -8,7 +8,7 @@ import sys
 import tarfile
 import tempfile
 from distutils.util import strtobool
-from glob import glob
+from pathlib import Path
 from typing import Union, Dict, Any, Tuple
 
 from . import Lab as LabPackage
@@ -194,9 +194,11 @@ class Machine(object):
 
         with tarfile.open("%s/hostlab.tar.gz" % temp_path, "w:gz") as tar:
             if self.folder:
-                machine_files = filter(os.path.isfile, glob("%s/**" % self.folder, recursive=True))
+                machine_files = filter(lambda x: x.is_file(), Path(self.folder).rglob("*"))
 
                 for file in machine_files:
+                    file = str(file)
+
                     if utils.is_excluded_file(file):
                         continue
 
