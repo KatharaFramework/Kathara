@@ -1,6 +1,9 @@
+from typing import List
+
+
 class OptionParser(object):
     @staticmethod
-    def parse(options):
+    def parse(options: List[str]):
         try:
             parsed_options = {}
 

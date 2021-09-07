@@ -1,7 +1,7 @@
 import collections
 import os
 from itertools import chain
-from typing import Dict, Set, Any
+from typing import Dict, Set, Any, List, Union
 
 from .ExternalLink import ExternalLink
 from .Link import Link
@@ -37,30 +37,32 @@ class Lab(object):
                  'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
-    def __init__(self, name: str, path: str = None):
+    def __init__(self, name: Union[str, None], path: str = None):
         """
         Create a new instance of a Kathara network scenario.
         Args:
             name (str): The name of the network scenario.
             path (str): The path to the network scenario directory, if exists.
         """
-        self.name = name
-        self.description = None
-        self.version = None
-        self.author = None
-        self.email = None
-        self.web = None
+        self.name: Union[None, str] = name
+        self.description: Union[None, str] = None
+        self.version: Union[None, str] = None
+        self.author: Union[None, str] = None
+        self.email: Union[None, str] = None
+        self.web: Union[None, str] = None
 
-        self.machines = {}
-        self.links = {}
+        self.machines: Dict[str, Machine] = {}
+        self.links: Dict[str, Link] = {}
 
-        self.general_options = {}
+        self.general_options: Dict[str, Any] = {}
 
-        self.has_dependencies = False
+        self.has_dependencies: bool = False
 
-        self.path = path
-        self.shared_startup_path = None
-        self.shared_shutdown_path = None
+        self.path: str = path
+        self.shared_startup_path: Union[None, str] = None
+        self.shared_shutdown_path: Union[None, str] = None
+
+        self.hash: str = ""
 
         if self.path:
             self.path = path
@@ -73,9 +75,9 @@ class Lab(object):
         else:
             self.hash = utils.generate_urlsafe_hash(self.name)
 
-        self.shared_folder = None
+        self.shared_folder: Union[None, str] = None
 
-    def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None):
+    def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None) -> None:
         """
         Connect the specified machine to the specified collision domain.
         Args:
@@ -93,7 +95,7 @@ class Lab(object):
 
         machine.add_interface(link, number=machine_iface_number)
 
-    def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str):
+    def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> None:
         """
         Assign a meta information to the specified device.
         Args:
@@ -109,7 +111,7 @@ class Lab(object):
 
         machine.add_meta(meta_name, meta_value)
 
-    def attach_external_links(self, external_links: Dict[Link, ExternalLink]):
+    def attach_external_links(self, external_links: Dict[Link, ExternalLink]) -> None:
         """
         Attach external links to the network scenario.
         Args:
@@ -123,18 +125,19 @@ class Lab(object):
 
             self.links[link_name].external += link_external_links
 
-    def check_integrity(self):
+    def check_integrity(self) -> None:
         """
         Check the integrity of the image of all the devices in the network scenario.
         """
         for machine in self.machines:
             self.machines[machine].check()
 
-    def intersect_machines(self, selected_machines: Set[str]):
+    def intersect_machines(self, selected_machines: Union[List[str], Set[str]]) -> None:
         """
-        Intersect network scenario devices with selected devices, passed from command line.
+        Delete network scenario devices and collision domains not in selected devices, passed from command line.
+        It has side effect on the current network scenario.
         Args:
-            selected_machines (Set[str]): An set with selected devices names.
+            selected_machines (Set[str]): A set with selected devices names.
         """
         # Intersect selected machines names with self.machines keys
         selected_machines = set(self.machines.keys()) & set(selected_machines)
@@ -149,21 +152,20 @@ class Lab(object):
         # Apply filtering
         self.links = {k: v for (k, v) in self.links.items() if k in selected_links}
 
-    def apply_dependencies(self, dependencies):
+    def apply_dependencies(self, dependencies: List[str]) -> None:
         """
         Order the machines list of the network scenario to respect the boot dependencies.
         Args:
-            dependencies (bool): If True, dependencies are applied.
+            dependencies (List[str]): If True, dependencies are applied.
         """
-        if dependencies:
-            def dep_sort(item):
-                try:
-                    return dependencies.index(item) + 1
-                except ValueError:
-                    return 0
+        def dep_sort(item: str) -> int:
+            try:
+                return dependencies.index(item) + 1
+            except ValueError:
+                return 0
 
-            self.machines = collections.OrderedDict(sorted(self.machines.items(), key=lambda t: dep_sort(t[0])))
-            self.has_dependencies = True
+        self.machines = collections.OrderedDict(sorted(self.machines.items(), key=lambda t: dep_sort(t[0])))
+        self.has_dependencies = True
 
     def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> Machine:
         """
@@ -198,7 +200,7 @@ class Lab(object):
 
         return self.links[name]
 
-    def create_shared_folder(self):
+    def create_shared_folder(self) -> None:
         """
         If the network scenario has a directory, create the network scenario shared folder.
         Raises:
@@ -217,7 +219,7 @@ class Lab(object):
             # Do not create shared folder if not permitted.
             return
 
-    def has_path(self):
+    def has_path(self) -> bool:
         """
         Check if the network scenario has a directory.
         Returns:
@@ -225,7 +227,7 @@ class Lab(object):
         """
         return self.path is not None
 
-    def add_option(self, name: str, value: Any):
+    def add_option(self, name: str, value: Any) -> None:
         """
         Add an option to the network scenario.
         Args:

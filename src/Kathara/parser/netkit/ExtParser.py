@@ -1,13 +1,15 @@
 import mmap
 import os
 import re
+from typing import Dict, List
 
 from ...model.ExternalLink import ExternalLink
 
 
 class ExtParser(object):
     @staticmethod
-    def parse(path):
+    def parse(path: str) -> Dict[str, List[ExternalLink]]:
+
         lab_ext_path = os.path.join(path, 'lab.ext')
 
         if not os.path.exists(lab_ext_path):
@@ -35,13 +37,15 @@ class ExtParser(object):
 
                 if vlan:
                     if 0 <= vlan >= 4095:
-                        raise Exception("[ERROR] In line %d: "
+                        raise Exception("[ERROR] In file lab.ext, line %d: "
                                         "VLAN ID must be in range [1, 4094]." % line_number)
 
                 if link not in external_links:
                     external_links[link] = []
 
                 external_links[link].append(ExternalLink(interface, vlan))
+            elif not line.startswith('#'):
+                raise Exception("[ERROR] In file lab.ext, line %d malformed." % line_number)
 
             line_number += 1
             line = ext_mem_file.readline().decode('utf-8')

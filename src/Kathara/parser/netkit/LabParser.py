@@ -7,7 +7,7 @@ from ...model.Lab import Lab
 
 class LabParser(object):
     @staticmethod
-    def parse(path):
+    def parse(path: str):
         lab_conf_path = os.path.join(path, 'lab.conf')
 
         if not os.path.exists(lab_conf_path):
