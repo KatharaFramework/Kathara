@@ -6,7 +6,7 @@ MAX_INTERFACE_NAME_LENGTH = 15
 class ExternalLink(object):
     __slots__ = ['interface', 'vlan']
 
-    def __init__(self, interface: str, vlan: Union[int, None]):
+    def __init__(self, interface: str, vlan: Union[int, None] = None):
         self.interface: str = interface
         self.vlan: int = vlan
 
