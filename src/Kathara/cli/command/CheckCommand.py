@@ -3,6 +3,7 @@ import logging
 import os
 import platform
 import sys
+from typing import List
 
 from ... import utils
 from ... import version
@@ -14,7 +15,7 @@ from ...strings import strings, wiki_description
 
 
 class CheckCommand(Command):
-    def __init__(self):
+    def __init__(self) -> None:
         Command.__init__(self)
 
         parser = argparse.ArgumentParser(
@@ -33,7 +34,8 @@ class CheckCommand(Command):
 
         self.parser = parser
 
-    def run(self, current_path, argv):
+    def run(self, current_path: str, argv: List[str]) -> None:
+        print(argv)
         self.parse_args(argv)
         args = self.get_args()
 

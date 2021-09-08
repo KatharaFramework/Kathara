@@ -1,5 +1,6 @@
 import argparse
 import sys
+from typing import List
 
 from ... import utils
 from ...foundation.cli.command.Command import Command
@@ -8,7 +9,7 @@ from ...strings import strings, wiki_description
 
 
 class ExecCommand(Command):
-    def __init__(self):
+    def __init__(self) -> None:
         Command.__init__(self)
 
         parser = argparse.ArgumentParser(
@@ -63,7 +64,7 @@ class ExecCommand(Command):
 
         self.parser = parser
 
-    def run(self, current_path, argv):
+    def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)
         args = self.get_args()
 

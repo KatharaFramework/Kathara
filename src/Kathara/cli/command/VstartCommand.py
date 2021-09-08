@@ -11,7 +11,7 @@ from ...strings import strings, wiki_description
 
 
 class VstartCommand(Command):
-    def __init__(self):
+    def __init__(self) -> None:
         Command.__init__(self)
 
         parser = argparse.ArgumentParser(
@@ -143,7 +143,7 @@ class VstartCommand(Command):
 
         self.parser = parser
 
-    def run(self, current_path, argv):
+    def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)
         args = self.get_args()
 

@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 import os
 
@@ -8,13 +9,13 @@ class PrivilegeHandler(object):
     __instance = None
 
     @staticmethod
-    def get_instance():
+    def get_instance() -> PrivilegeHandler:
         if PrivilegeHandler.__instance is None:
             PrivilegeHandler()
 
         return PrivilegeHandler.__instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         if PrivilegeHandler.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
@@ -29,7 +30,7 @@ class PrivilegeHandler(object):
 
             PrivilegeHandler.__instance = self
 
-    def drop_privileges(self):
+    def drop_privileges(self) -> None:
         logging.debug("Dropping privileges to UID=%d and GID=%d..." % (self.user_uid, self.user_gid))
 
         try:
@@ -42,7 +43,7 @@ class PrivilegeHandler(object):
         except OSError:
             pass
 
-    def raise_privileges(self):
+    def raise_privileges(self) -> None:
         logging.debug("Raising privileges to UID=%d and GID=%d..." % (self.effective_user_uid, self.effective_user_gid))
 
         try:
