@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, Any
 
 import requests
 
@@ -10,7 +11,7 @@ REPOSITORY_NAME = "KatharaFramework/Kathara"
 
 class GitHubApi(object):
     @staticmethod
-    def get_release_information():
+    def get_release_information() -> Dict[str, Any]:
         try:
             result = requests.get(GITHUB_RELEASES_URL % REPOSITORY_NAME)
         except requests.exceptions.ConnectionError as e:

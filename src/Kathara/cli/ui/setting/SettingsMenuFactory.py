@@ -9,7 +9,7 @@ class SettingsMenuFactory(object):
     __slots__ = ['menu_formatter']
 
     def __init__(self) -> None:
-        self.menu_formatter = MenuFormatBuilder().set_title_align('center') \
+        self.menu_formatter: MenuFormatBuilder = MenuFormatBuilder().set_title_align('center') \
                                                 .set_subtitle_align('center') \
                                                 .set_prologue_text_align('center') \
                                                 .set_border_style_type(MenuBorderStyleType.DOUBLE_LINE_BORDER) \

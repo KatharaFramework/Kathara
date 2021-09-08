@@ -11,7 +11,7 @@ EXCLUDED_IMAGES = ['megalos-bgp-manager', 'katharanp']
 
 class DockerHubApi(object):
     @staticmethod
-    def get_images():
+    def get_images() -> filter:
         try:
             result = requests.get(DOCKER_HUB_KATHARA_URL)
         except requests.exceptions.ConnectionError as e:
