@@ -8,7 +8,7 @@ from ....trdparty.consolemenu.format import MenuBorderStyleType
 class SettingsMenuFactory(object):
     __slots__ = ['menu_formatter']
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.menu_formatter = MenuFormatBuilder().set_title_align('center') \
                                                 .set_subtitle_align('center') \
                                                 .set_prologue_text_align('center') \
@@ -16,7 +16,7 @@ class SettingsMenuFactory(object):
                                                 .show_prologue_top_border(True) \
                                                 .show_prologue_bottom_border(True)
 
-    def create_menu(self):
+    def create_menu(self) -> ConsoleMenu:
         menu = ConsoleMenu(title="Kathara Settings",
                            prologue_text="Choose the option to change.",
                            formatter=self.menu_formatter

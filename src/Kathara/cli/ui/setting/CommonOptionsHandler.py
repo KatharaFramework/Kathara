@@ -16,7 +16,7 @@ TERMINALS_OSX = ["Terminal", "iTerm"]
 
 
 class CommonOptionsHandler(OptionsHandler):
-    def add_items(self, current_menu, menu_formatter):
+    def add_items(self, current_menu: ConsoleMenu, menu_formatter: MenuFormatBuilder) -> None:
         # Manager Submenu
         managers = Kathara.get_available_managers_name()
         manager_type = Setting.get_instance().manager_type

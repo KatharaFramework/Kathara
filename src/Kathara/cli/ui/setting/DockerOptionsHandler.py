@@ -7,7 +7,7 @@ from ....trdparty.consolemenu.validators.regex import RegexValidator
 
 
 class DockerOptionsHandler(OptionsHandler):
-    def add_items(self, current_menu, menu_formatter):
+    def add_items(self, current_menu: ConsoleMenu, menu_formatter: MenuFormatBuilder) -> None:
         # Hosthome Mount Option
         hosthome_string = "Automatically mount /hosthome on startup"
         hosthome_menu = SelectionMenu(strings=[],

@@ -7,7 +7,7 @@ from ....trdparty.consolemenu.validators.regex import RegexValidator
 
 
 class KubernetesOptionsHandler(OptionsHandler):
-    def add_items(self, current_menu, menu_formatter):
+    def add_items(self, current_menu: ConsoleMenu, menu_formatter: MenuFormatBuilder) -> None:
         # API URL Option
         api_server_url_string = "Insert a Kubernetes API Server URL"
         api_server_url_menu = SelectionMenu(strings=[],
