@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -176,3 +176,15 @@ def test_create_shared_folder(directory_scenario: Lab):
 
 def test_create_shared_folder_no_path(default_scenario: Lab):
     assert default_scenario.create_shared_folder() is None
+
+
+def test_apply_dependencies(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+    default_scenario.get_or_new_machine("pc2")
+    default_scenario.get_or_new_machine("pc3")
+
+    default_scenario.apply_dependencies(["pc3", "pc1", "pc2"])
+
+    assert default_scenario.machines.popitem()[0] == "pc2"
+    assert default_scenario.machines.popitem()[0] == "pc1"
+    assert default_scenario.machines.popitem()[0] == "pc3"

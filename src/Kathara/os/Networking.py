@@ -1,10 +1,11 @@
 import logging
 import os
+from typing import Optional
 
 
 class Networking(object):
     @staticmethod
-    def get_or_new_interface(full_interface_name, vlan_interface_name, vlan_id=None):
+    def get_or_new_interface(full_interface_name: str, vlan_interface_name: str, vlan_id: Optional[int] = None) -> int:
         from pyroute2 import IPRoute
         ip = IPRoute()
 
@@ -54,7 +55,7 @@ class Networking(object):
         return link_index
 
     @staticmethod
-    def attach_interface_to_bridge(interface_index, bridge_name):
+    def attach_interface_to_bridge(interface_index: int, bridge_name: str) -> None:
         from pyroute2 import IPRoute
         ip = IPRoute()
 
@@ -73,7 +74,7 @@ class Networking(object):
         ip.close()
 
     @staticmethod
-    def remove_interface(interface_name):
+    def remove_interface(interface_name: str) -> None:
         from pyroute2 import IPRoute
         ip = IPRoute()
 
@@ -98,5 +99,5 @@ class Networking(object):
         ip.close()
 
     @staticmethod
-    def get_iptables_version():
+    def get_iptables_version() -> str:
         return os.popen("/sbin/iptables --version").read().strip()

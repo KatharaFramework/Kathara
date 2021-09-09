@@ -19,7 +19,7 @@ class Link(object):
     """
     __slots__ = ['lab', 'name', 'external', 'api_object']
 
-    def __init__(self, lab: 'LabPackage.Lab', name):
+    def __init__(self, lab: 'LabPackage.Lab', name) -> None:
         self.lab: 'LabPackage.Lab' = lab
         """"""
         self.name: str = name
@@ -27,5 +27,5 @@ class Link(object):
 
         self.api_object: Any = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Link(%s, %s)" % (self.name, self.external)

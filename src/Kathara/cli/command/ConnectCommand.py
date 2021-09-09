@@ -11,22 +11,22 @@ from ...strings import strings, wiki_description
 class ConnectCommand(Command):
     def __init__(self) -> None:
         Command.__init__(self)
-        
-        parser = argparse.ArgumentParser(
+
+        self.parser: argparse.ArgumentParser = argparse.ArgumentParser(
             prog='kathara connect',
             description=strings['connect'],
             epilog=wiki_description,
             add_help=False
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
             help='Show an help message and exit.'
         )
 
-        group = parser.add_mutually_exclusive_group(required=False)
+        group = self.parser.add_mutually_exclusive_group(required=False)
 
         group.add_argument(
             '-d', '--directory',
@@ -38,23 +38,21 @@ class ConnectCommand(Command):
             action="store_true",
             help='The device has been started with vstart command.',
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--shell',
             required=False,
             help='Shell that should be used inside the device.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-l', '--logs',
             action="store_true",
             help='Print device startup logs before launching the shell.',
         )
-        parser.add_argument(
+        self.parser.add_argument(
             'machine_name',
             metavar='DEVICE_NAME',
             help='Name of the device to connect to.'
         )
-
-        self.parser = parser
 
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)

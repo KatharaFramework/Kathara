@@ -1,14 +1,14 @@
 import mmap
 import os
 import re
-from typing import List, Union
+from typing import List, Optional
 
 from ...trdparty.depgen import depgen
 
 
 class DepParser(object):
     @staticmethod
-    def parse(path: str) -> Union[None, List[str]]:
+    def parse(path: str) -> Optional[List[str]]:
         lab_dep_path = os.path.join(path, 'lab.dep')
 
         if not os.path.exists(lab_dep_path):

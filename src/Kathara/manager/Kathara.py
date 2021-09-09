@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 from typing import Set, Dict, Union, Generator, Any
 
@@ -14,7 +16,7 @@ class Kathara(IManager):
     __instance = None
 
     @staticmethod
-    def get_instance():
+    def get_instance() -> Kathara:
         """
         Get an instance of the current Kathara Manager.
         Returns:
@@ -26,15 +28,15 @@ class Kathara(IManager):
 
         return Kathara.__instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         if Kathara.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
             manager_type = Setting.get_instance().manager_type
 
-            self.manager = ManagerFactory().create_instance(module_args=(manager_type,),
-                                                            class_args=(manager_type.capitalize(),)
-                                                            )
+            self.manager: IManager = ManagerFactory().create_instance(module_args=(manager_type,),
+                                                                      class_args=(manager_type.capitalize(),)
+                                                                      )
 
             Kathara.__instance = self
 
@@ -97,14 +99,13 @@ class Kathara(IManager):
         """
         return self.manager.exec(lab_hash, machine_name, command)
 
-    def copy_files(self, machine: Machine, guest_to_host: Dict[str, Union[io.IOBase, str]]) -> None:
+    def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
         """
         Copy files on a running machine in the specified paths.
         Args:
             machine (Kathara.model.Machine): A running machine object. It must have the api_object field populated.
-            guest_to_host (Dict[str, Union[io.IOBase, str]]): A dict containing the device path as key and
-                fileobj/string to copy in path as value.
-
+            guest_to_host (Dict[str, io.IOBase]): A dict containing the device path as key and
+                fileobj to copy in path as value.
         """
         self.manager.copy_files(machine, guest_to_host)
 
@@ -117,8 +118,7 @@ class Kathara(IManager):
             all_users (bool): If True, return information about the device of all users.
 
         Yields:
-              Dict[str, object]: A dict containing device names as keys and their info as values.
-
+              List[Dict[str, Any]]: A list containing dicts containing device names as keys and their info as values.
         """
         return self.manager.get_lab_info(lab_hash, machine_name, all_users)
 
@@ -130,26 +130,24 @@ class Kathara(IManager):
             machine_name (str): If not None, return information of the specified device.
             all_users (bool): If True, return information about the device of all users.
 
-        Yields:
+        Returns:
              str: String containing devices info
-
         """
         return self.manager.get_formatted_lab_info(lab_hash, machine_name, all_users)
 
     def get_machine_api_object(self, lab_hash: str, machine_name: str) -> Any:
         """
-           Return the corresponding API object of a running device in a network scenario.
-           Args:
-               lab_hash (str): The hash of the network scenario.
-               machine_name (str): The name of the device.
+        Return the corresponding API object of a running device in a network scenario.
+        Args:
+            lab_hash (str): The hash of the network scenario.
+            machine_name (str): The name of the device.
 
-           Returns:
-               Any: The Api object of the device specific for the current manager.
-           """
+        Returns:
+            Any: The Api object of the device specific for the current manager.
+        """
         return self.manager.get_machine_api_object(lab_hash, machine_name)
 
-    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
-            -> Dict[str, Union[int, str]]:
+    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> Dict[str, Any]:
         """
         Return information of a running device.
         Args:
@@ -158,7 +156,7 @@ class Kathara(IManager):
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
-            Dict[str, Union[int, str]]: The device properties.
+            Dict[str, Any]: The device properties.
         """
         return self.manager.get_machine_info(machine_name, lab_hash, all_users)
 

@@ -35,7 +35,7 @@ def current_string(attribute_name: str, text: Optional[str] = None) -> Callable[
                                         )
 
 
-def update_setting_value(attribute_name: str, value: Any):
+def update_setting_value(attribute_name: str, value: Any) -> None:
     reload = False
 
     if attribute_name == "manager_type" and Setting.get_instance().manager_type != value:

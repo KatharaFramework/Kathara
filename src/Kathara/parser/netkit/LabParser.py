@@ -7,7 +7,7 @@ from ...model.Lab import Lab
 
 class LabParser(object):
     @staticmethod
-    def parse(path: str):
+    def parse(path: str) -> Lab:
         lab_conf_path = os.path.join(path, 'lab.conf')
 
         if not os.path.exists(lab_conf_path):
@@ -52,11 +52,11 @@ class LabParser(object):
                 if not line.startswith('#') and \
                         line.strip():
                     if not line.startswith("LAB_NAME=") and \
-                       not line.startswith("LAB_DESCRIPTION=") and \
-                       not line.startswith("LAB_VERSION=") and \
-                       not line.startswith("LAB_AUTHOR=") and \
-                       not line.startswith("LAB_EMAIL=") and \
-                       not line.startswith("LAB_WEB="):
+                            not line.startswith("LAB_DESCRIPTION=") and \
+                            not line.startswith("LAB_VERSION=") and \
+                            not line.startswith("LAB_AUTHOR=") and \
+                            not line.startswith("LAB_EMAIL=") and \
+                            not line.startswith("LAB_WEB="):
                         raise Exception("[ERROR] In line %d: Invalid characters `%s`." % (line_number, line))
                     else:
                         (key, value) = line.split("=")

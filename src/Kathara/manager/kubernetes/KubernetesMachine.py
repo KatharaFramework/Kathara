@@ -6,6 +6,7 @@ import shlex
 import uuid
 from functools import partial
 from multiprocessing.dummy import Pool
+from typing import Optional, Set, List, Union, Dict, Generator
 
 import progressbar
 from kubernetes import client
@@ -15,8 +16,11 @@ from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
 
 from .KubernetesConfigMap import KubernetesConfigMap
+from .KubernetesNamespace import KubernetesNamespace
 from ... import utils
 from ...exceptions import MachineAlreadyExistsError
+from ...model.Lab import Lab
+from ...model.Machine import Machine
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
@@ -105,15 +109,15 @@ SHUTDOWN_COMMANDS = [
 class KubernetesMachine(object):
     __slots__ = ['client', 'core_client', 'kubernetes_config_map', 'kubernetes_namespace']
 
-    def __init__(self, kubernetes_namespace):
-        self.client = apps_v1_api.AppsV1Api()
-        self.core_client = core_v1_api.CoreV1Api()
+    def __init__(self, kubernetes_namespace: KubernetesNamespace) -> None:
+        self.client: apps_v1_api.AppsV1Api = apps_v1_api.AppsV1Api()
+        self.core_client: core_v1_api.CoreV1Api = core_v1_api.CoreV1Api()
 
-        self.kubernetes_config_map = KubernetesConfigMap()
+        self.kubernetes_config_map: KubernetesConfigMap = KubernetesConfigMap()
 
-        self.kubernetes_namespace = kubernetes_namespace
+        self.kubernetes_namespace: KubernetesNamespace = kubernetes_namespace
 
-    def deploy_machines(self, lab):
+    def deploy_machines(self, lab: Lab) -> None:
         machines = lab.machines.items()
 
         privileged = lab.general_options['privileged_machines'] if 'privileged_machines' in lab.general_options \
@@ -150,7 +154,7 @@ class KubernetesMachine(object):
         if utils.CLI_ENV:
             progress_bar.finish()
 
-    def _deploy_machine(self, progress_bar, machine_item):
+    def _deploy_machine(self, progress_bar: progressbar.ProgressBar, machine_item: (str, Machine)) -> None:
         (_, machine) = machine_item
 
         self.create(machine)
@@ -158,7 +162,7 @@ class KubernetesMachine(object):
         if progress_bar is not None:
             progress_bar += 1
 
-    def create(self, machine):
+    def create(self, machine: Machine) -> None:
         logging.debug("Creating device `%s`..." % machine.name)
 
         # Get the general options into a local variable (just to avoid accessing the lab object every time)
@@ -203,7 +207,7 @@ class KubernetesMachine(object):
                 raise e
 
     @staticmethod
-    def _build_definition(machine, config_map):
+    def _build_definition(machine: Machine, config_map: client.V1ConfigMap) -> client.V1Deployment:
         volume_mounts = []
         if config_map:
             # Define volume mounts for hostlab if a ConfigMap is defined.
@@ -343,7 +347,7 @@ class KubernetesMachine(object):
                                    spec=deployment_spec
                                    )
 
-    def undeploy(self, lab_hash, selected_machines=None):
+    def undeploy(self, lab_hash: str, selected_machines: Optional[Set] = None) -> None:
         machines = self.get_machines_by_filters(lab_hash=lab_hash)
         if selected_machines is not None and len(selected_machines) > 0:
             machines = [item for item in machines if item.metadata.labels["name"] in selected_machines]
@@ -370,7 +374,7 @@ class KubernetesMachine(object):
             if utils.CLI_ENV:
                 progress_bar.finish()
 
-    def wipe(self):
+    def wipe(self) -> None:
         machines = self.get_machines_by_filters()
 
         pool_size = utils.get_pool_size()
@@ -381,13 +385,13 @@ class KubernetesMachine(object):
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, None), iterable=chunk)
 
-    def _undeploy_machine(self, progress_bar, machine_item):
+    def _undeploy_machine(self, progress_bar: progressbar.ProgressBar, machine_item: client.V1Pod) -> None:
         self._delete_machine(machine_item)
 
         if progress_bar is not None:
             progress_bar += 1
 
-    def _delete_machine(self, machine):
+    def _delete_machine(self, machine: client.V1Pod) -> None:
         machine_name = machine.metadata.labels["name"]
         machine_namespace = machine.metadata.namespace
 
@@ -409,7 +413,7 @@ class KubernetesMachine(object):
         except ApiException:
             return
 
-    def connect(self, lab_hash, machine_name, shell=None, logs=False):
+    def connect(self, lab_hash: str, machine_name: str, shell: Union[str, List] = None, logs: bool = False) -> None:
         pod = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
 
         if 'Running' not in pod.status.phase:
@@ -448,7 +452,7 @@ class KubernetesMachine(object):
         KubernetesWSTerminal(resp).start()
 
     @staticmethod
-    def get_env_var_value_from_pod(pod, var_name):
+    def get_env_var_value_from_pod(pod: client.V1Pod, var_name: str) -> Optional[str]:
         containers = pod.spec.containers
         if not containers:
             return None
@@ -468,7 +472,8 @@ class KubernetesMachine(object):
 
         return None
 
-    def exec(self, lab_hash, machine_name, command, tty=False, stdin=False, stdin_buffer=None, stderr=False):
+    def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], tty: bool = False, stdin: bool = False,
+             stdin_buffer: List = None, stderr: bool = False) -> Optional[(str, str)]:
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
         command = shlex.split(command) if type(command) == str else command
@@ -488,7 +493,7 @@ class KubernetesMachine(object):
                               _preload_content=False
                               )
         except ApiException:
-            return
+            return None
 
         if stdin_buffer is None:
             stdin_buffer = []
@@ -509,7 +514,7 @@ class KubernetesMachine(object):
 
         return result['stdout'], result['stderr']
 
-    def copy_files(self, deployment, path, tar_data):
+    def copy_files(self, deployment: client.V1Deployment, path: str, tar_data: bytes) -> None:
         machine_name = deployment.metadata.labels["name"]
         machine_namespace = deployment.metadata.namespace
 
@@ -520,7 +525,7 @@ class KubernetesMachine(object):
                   stdin_buffer=[tar_data]
                   )
 
-    def get_machines_by_filters(self, lab_hash=None, machine_name=None):
+    def get_machines_by_filters(self, lab_hash: str = None, machine_name: str = None) -> List[client.V1Pod]:
         filters = ["app=kathara"]
         if machine_name:
             filters.append("name=%s" % machine_name)
@@ -539,7 +544,7 @@ class KubernetesMachine(object):
 
         return machines
 
-    def get_machine(self, lab_hash, machine_name):
+    def get_machine(self, lab_hash: str, machine_name: str) -> client.V1Pod:
         pods = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
 
         logging.debug("Found pods: %s" % len(pods))
@@ -549,7 +554,7 @@ class KubernetesMachine(object):
         else:
             return pods[0]
 
-    def get_machine_info(self, machine_name, lab_hash=None):
+    def get_machine_info(self, machine_name: str, lab_hash: str = None) -> Dict[str, str]:
         machines = self.get_machines_by_filters(machine_name=machine_name, lab_hash=lab_hash)
 
         if not machines:
@@ -561,7 +566,7 @@ class KubernetesMachine(object):
 
         return self._get_stats_by_machine(machine)
 
-    def get_machines_info(self, lab_hash, machine_filter=None):
+    def get_machines_info(self, lab_hash: str, machine_filter: str = None) -> Generator:
         machines = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_filter)
 
         if not machines:
@@ -576,23 +581,23 @@ class KubernetesMachine(object):
         for machine in machines:
             machines_stats.append(self._get_stats_by_machine(machine))
 
-        return machines_stats
+        yield machines_stats
 
-    def _get_stats_by_machine(self, machine):
+    def _get_stats_by_machine(self, machine: client.V1Pod) -> Dict[str, str]:
         container_statuses = machine.status.container_statuses
         image_name = container_statuses[0].image.replace('docker.io/', '') if container_statuses else "N/A"
 
         return {
-              "real_lab_hash": machine.metadata.namespace,
-              "name": machine.metadata.labels["name"],
-              "real_name": machine.metadata.name,
-              "status": self._get_detailed_machine_status(machine),
-              "image": image_name,
-              "assigned_node": machine.spec.node_name
+            "real_lab_hash": machine.metadata.namespace,
+            "name": machine.metadata.labels["name"],
+            "real_name": machine.metadata.name,
+            "status": self._get_detailed_machine_status(machine),
+            "image": image_name,
+            "assigned_node": machine.spec.node_name
         }
 
     @staticmethod
-    def _get_detailed_machine_status(machine):
+    def _get_detailed_machine_status(machine: client.V1Pod) -> str:
         container_statuses = machine.status.container_statuses
 
         if not container_statuses:
@@ -611,7 +616,7 @@ class KubernetesMachine(object):
         return string_status.split(': ')[0] if string_status is not None else machine.status.phase
 
     @staticmethod
-    def get_deployment_name(name):
+    def get_deployment_name(name: str) -> str:
         suffix = ''
         # Underscore is replaced with -, but to keep name uniqueness append 8 chars of hash from the original name
         if '_' in name:

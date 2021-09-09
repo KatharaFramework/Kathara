@@ -5,7 +5,9 @@ from multiprocessing.dummy import Pool
 from typing import List, Union
 
 import docker
+import docker.models.networks
 import progressbar
+from docker import DockerClient
 from docker import types
 
 from ..docker.DockerPlugin import PLUGIN_NAME
@@ -21,8 +23,8 @@ from ...setting.Setting import Setting
 class DockerLink(object):
     __slots__ = ['client']
 
-    def __init__(self, client):
-        self.client = client
+    def __init__(self, client: DockerClient) -> None:
+        self.client: DockerClient = client
 
     def deploy_links(self, lab: Lab) -> None:
         links = lab.links.items()

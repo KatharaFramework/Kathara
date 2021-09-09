@@ -1,9 +1,9 @@
-from typing import List
+from typing import List, Dict, Any
 
 
 class OptionParser(object):
     @staticmethod
-    def parse(options: List[str]):
+    def parse(options: List[str]) -> Dict[str, Any]:
         try:
             parsed_options = {}
 

@@ -1,7 +1,7 @@
 import collections
 import os
 from itertools import chain
-from typing import Dict, Set, Any, List, Union
+from typing import Dict, Set, Any, List, Union, Optional
 
 from .ExternalLink import ExternalLink
 from .Link import Link
@@ -37,19 +37,19 @@ class Lab(object):
                  'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
-    def __init__(self, name: Union[str, None], path: str = None):
+    def __init__(self, name: Optional[str], path: str = None) -> None:
         """
         Create a new instance of a Kathara network scenario.
         Args:
             name (str): The name of the network scenario.
             path (str): The path to the network scenario directory, if exists.
         """
-        self.name: Union[None, str] = name
-        self.description: Union[None, str] = None
-        self.version: Union[None, str] = None
-        self.author: Union[None, str] = None
-        self.email: Union[None, str] = None
-        self.web: Union[None, str] = None
+        self.name: Optional[str] = name
+        self.description: Optional[str] = None
+        self.version: Optional[str] = None
+        self.author: Optional[str] = None
+        self.email: Optional[str] = None
+        self.web: Optional[str] = None
 
         self.machines: Dict[str, Machine] = {}
         self.links: Dict[str, Link] = {}
@@ -59,8 +59,8 @@ class Lab(object):
         self.has_dependencies: bool = False
 
         self.path: str = path
-        self.shared_startup_path: Union[None, str] = None
-        self.shared_shutdown_path: Union[None, str] = None
+        self.shared_startup_path: Optional[str] = None
+        self.shared_shutdown_path: Optional[str] = None
 
         self.hash: str = ""
 
@@ -75,7 +75,7 @@ class Lab(object):
         else:
             self.hash = utils.generate_urlsafe_hash(self.name)
 
-        self.shared_folder: Union[None, str] = None
+        self.shared_folder: Optional[str] = None
 
     def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None) -> None:
         """
@@ -158,6 +158,7 @@ class Lab(object):
         Args:
             dependencies (List[str]): If True, dependencies are applied.
         """
+
         def dep_sort(item: str) -> int:
             try:
                 return dependencies.index(item) + 1
@@ -237,10 +238,10 @@ class Lab(object):
         if value is not None:
             self.general_options[name] = value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Lab(%s, %s, %s, %s)" % (self.path, self.hash, self.machines, self.links)
 
-    def __str__(self):
+    def __str__(self) -> str:
         lab_info = ""
 
         if self.name:

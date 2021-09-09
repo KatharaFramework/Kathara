@@ -1,3 +1,5 @@
+from typing import Optional, Dict, Any
+
 from ...foundation.setting.SettingsAddon import SettingsAddon
 
 DEFAULTS = {
@@ -11,13 +13,13 @@ DEFAULTS = {
 class KubernetesSettingsAddon(SettingsAddon):
     __slots__ = ['api_server_url', 'api_token', 'host_shared', 'image_pull_policy']
 
-    def __init__(self):
-        self.api_server_url = None
-        self.api_token = None
-        self.host_shared = True
-        self.image_pull_policy = "IfNotPresent"
+    def __init__(self) -> None:
+        self.api_server_url: Optional[str] = None
+        self.api_token: Optional[str] = None
+        self.host_shared: bool = True
+        self.image_pull_policy: Optional[str] = "IfNotPresent"
 
-    def _to_dict(self):
+    def _to_dict(self) -> Dict[str, Any]:
         return {
             'api_server_url': self.api_server_url,
             'api_token': self.api_token,

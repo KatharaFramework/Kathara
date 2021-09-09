@@ -1,6 +1,6 @@
 import io
 from abc import ABC, abstractmethod
-from typing import Dict, Set, Generator, Any, Union
+from typing import Dict, Set, Any, Union, Generator
 
 from ...model.Lab import Lab
 from ...model.Machine import Machine
@@ -8,7 +8,7 @@ from ...model.Machine import Machine
 
 class IManager(ABC):
     @abstractmethod
-    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None):
+    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """
         Deploy a Kathara network scenario.
         Args:
@@ -18,7 +18,7 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `deploy_lab` method.")
 
     @abstractmethod
-    def update_lab(self, lab: Lab):
+    def update_lab(self, lab: Lab) -> None:
         """
         Update a running network scenario.
         Args:
@@ -27,7 +27,7 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `update_lab` method.")
 
     @abstractmethod
-    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None):
+    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
         """
         Undeploy a Kathara network scenario.
         Args:
@@ -37,7 +37,7 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `undeploy_lab` method.")
 
     @abstractmethod
-    def wipe(self, all_users: bool = False):
+    def wipe(self, all_users: bool = False) -> None:
         """
         Undeploy all the running network scenarios.
         Args:
@@ -47,7 +47,7 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `wipe` method.")
 
     @abstractmethod
-    def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False):
+    def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False) -> None:
         """
         Connect to a device in a running network scenario, using the specified shell.
         Args:
@@ -73,14 +73,13 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `exec` method.")
 
     @abstractmethod
-    def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]):
+    def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
         """
         Copy files on a running machine in the specified paths.
         Args:
             machine (Kathara.model.Machine): A running machine object. It must have the api_object field populated.
-            guest_to_host (Dict[str, Union[io.IOBase, str]]): A dict containing the device path as key and
-                fileobj/string to copy in path as value.
-
+            guest_to_host (Dict[str, io.IOBase]): A dict containing the device path as key and
+                fileobj to copy in path as value.
         """
         raise NotImplementedError("You must implement `copy_files` method.")
 
@@ -94,8 +93,7 @@ class IManager(ABC):
             all_users (bool): If True, return information about the device of all users.
 
         Yields:
-              Dict[str, object]: A dict containing device names as keys and their info as values.
-
+              List[Dict[str, Any]]: A list containing dicts containing device names as keys and their info as values.
         """
         raise NotImplementedError("You must implement `get_lab_info` method.")
 
@@ -108,28 +106,26 @@ class IManager(ABC):
             machine_name (str): If not None, return information of the specified device.
             all_users (bool): If True, return information about the device of all users.
 
-        Yields:
+        Returns:
              str: String containing devices info
-
         """
         raise NotImplementedError("You must implement `get_formatted_lab_info` method.")
 
     @abstractmethod
     def get_machine_api_object(self, lab_hash: str, machine_name: str) -> Any:
         """
-           Return the corresponding API object of a running device in a network scenario.
-           Args:
-               lab_hash (str): The hash of the network scenario.
-               machine_name (str): The name of the device.
+        Return the corresponding API object of a running device in a network scenario.
+        Args:
+            lab_hash (str): The hash of the network scenario.
+            machine_name (str): The name of the device.
 
-           Returns:
-               Any: The Api object of the device specific for the current manager.
-           """
+        Returns:
+            Any: The Api object of the device specific for the current manager.
+        """
         raise NotImplementedError("You must implement `get_machine_api_object` method.")
 
     @abstractmethod
-    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
-            -> Dict[str, Union[int, str]]:
+    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> Dict[str, Any]:
         """
         Return information of a running device.
         Args:
@@ -138,7 +134,7 @@ class IManager(ABC):
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
-            Dict[str, Union[int, str]]: The device properties.
+            Dict[str, Any]: The device properties.
         """
         raise NotImplementedError("You must implement `get_machine_info` method.")
 
@@ -157,7 +153,7 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `get_formatted_machine_info` method.")
 
     @abstractmethod
-    def check_image(self, image_name: str):
+    def check_image(self, image_name: str) -> None:
         """
         Check if the specified image is valid.
         Args:

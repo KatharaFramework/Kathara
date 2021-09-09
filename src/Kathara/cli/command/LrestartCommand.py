@@ -12,21 +12,21 @@ class LrestartCommand(Command):
     def __init__(self) -> None:
         Command.__init__(self)
 
-        parser = argparse.ArgumentParser(
+        self.parser: argparse.ArgumentParser = argparse.ArgumentParser(
             prog='kathara lrestart',
             description=strings['lrestart'],
             epilog=wiki_description,
             add_help=False
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
             help='Show an help message and exit.'
         )
 
-        group = parser.add_mutually_exclusive_group(required=False)
+        group = self.parser.add_mutually_exclusive_group(required=False)
 
         group.add_argument(
             "--noterminals",
@@ -50,25 +50,25 @@ class LrestartCommand(Command):
             required=False,
             help='Start the devices in privileged mode. MUST BE ROOT FOR THIS OPTION.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-d', '--directory',
             required=False,
             help='Specify the folder containing the lab.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-F', '--force-lab',
             dest='force_lab',
             required=False,
             action='store_true',
             help='Force the lab to start without a lab.conf or lab.dep file.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-l', '--list',
             required=False,
             action='store_true',
             help='Show information about running devices after the lab has been started.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-o', '--pass',
             dest='options',
             metavar="OPTION",
@@ -76,27 +76,25 @@ class LrestartCommand(Command):
             required=False,
             help="Apply options to all devices of a lab during startup."
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--xterm',
             required=False,
             help='Set a different terminal emulator application (Unix only).'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-H', '--no-hosthome',
             dest="no_hosthome",
             action="store_const",
             const=False,
             help='/hosthome dir will not be mounted inside the devices.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-S', '--no-shared',
             dest="no_shared",
             action="store_const",
             const=False,
             help='/shared dir will not be mounted inside the devices.'
         )
-
-        self.parser = parser
 
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)

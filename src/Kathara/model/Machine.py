@@ -9,7 +9,7 @@ import tarfile
 import tempfile
 from distutils.util import strtobool
 from pathlib import Path
-from typing import Union, Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 
 from . import Lab as LabPackage
 from . import Link as LinkPackage
@@ -38,7 +38,7 @@ class Machine(object):
     __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities',
                  'startup_path', 'shutdown_path', 'folder']
 
-    def __init__(self, lab: 'LabPackage.Lab', name: str, **kwargs):
+    def __init__(self, lab: 'LabPackage.Lab', name: str, **kwargs) -> None:
         """
         Create a new instance of a Kathara device.
         Args:
@@ -177,7 +177,7 @@ class Machine(object):
 
         self.interfaces = collections.OrderedDict(sorted_interfaces)
 
-    def pack_data(self) -> Union[bytes, None]:
+    def pack_data(self) -> Optional[bytes]:
         """
         Pack machine data into a .tar.gz file and returns the tar content as a byte array.
         While packing files, it also applies the win2linux patch in order to remove UTF-8 BOM.
@@ -361,8 +361,7 @@ class Machine(object):
 
         return memory
 
-    def get_cpu(self, multiplier: int = 1) -> Union[int, None]:
-        # TODO: check multiplier
+    def get_cpu(self, multiplier: int = 1) -> Optional[int]:
         """
         Get the CPU limit, multiplied by a specific multiplier.
         User should pass a float value ranging from 0 to max user CPUs.
@@ -371,7 +370,7 @@ class Machine(object):
             multiplier (int):
 
         Returns:
-            Union[int, None]: The CPU limit of the device.
+            Optional[int]: The CPU limit of the device.
         """
         if "cpus" in self.lab.general_options:
             try:
@@ -386,7 +385,7 @@ class Machine(object):
 
         return None
 
-    def get_ports(self) -> Union[Dict[Tuple[int, str], int], None]:
+    def get_ports(self) -> Optional[Dict[Tuple[int, str], int]]:
         """
         Get the port mapping of the device.
         Returns:
@@ -421,7 +420,6 @@ class Machine(object):
         return num_terms
 
     def is_ipv6_enabled(self) -> bool:
-        # TODO: check raises
         """
         Check if ipv6 is enabled on the device.
         Returns:
@@ -472,5 +470,5 @@ class Machine(object):
         if 'no_shared' is args and args['no_shared'] is not None and args['no_shared']:
             self.add_meta('shared_mount', True)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

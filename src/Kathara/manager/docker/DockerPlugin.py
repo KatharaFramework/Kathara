@@ -1,5 +1,7 @@
 import logging
+from typing import Callable
 
+from docker import DockerClient
 from docker.errors import NotFound
 
 from ... import utils
@@ -13,10 +15,10 @@ XTABLES_LOCK_PATH = "/run/xtables.lock"
 class DockerPlugin(object):
     __slots__ = ['client']
 
-    def __init__(self, client):
-        self.client = client
+    def __init__(self, client: DockerClient):
+        self.client: DockerClient = client
 
-    def check_and_download_plugin(self):
+    def check_and_download_plugin(self) -> None:
         try:
             logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)
 
@@ -48,7 +50,7 @@ class DockerPlugin(object):
                 logging.debug("Enabling plugin `%s`..." % PLUGIN_NAME)
                 plugin.enable()
 
-    def _get_xtables_lock_mount(self):
+    def _get_xtables_lock_mount(self) -> Callable:
         def _mount_xtables_lock_linux():
             iptables_version = Networking.get_iptables_version()
             return "" if 'nf_tables' in iptables_version else XTABLES_LOCK_PATH
@@ -60,7 +62,7 @@ class DockerPlugin(object):
         return utils.exec_by_platform(_mount_xtables_lock_linux, _mount_xtables_lock_windows, lambda: "")
 
     @staticmethod
-    def _configure_xtables_mount(plugin, xtables_lock_mount):
+    def _configure_xtables_mount(plugin, xtables_lock_mount) -> None:
         logging.debug("Configuring xtables.lock source to `%s`..." % xtables_lock_mount)
         plugin.configure({
             XTABLES_CONFIGURATION_KEY + '.source': xtables_lock_mount

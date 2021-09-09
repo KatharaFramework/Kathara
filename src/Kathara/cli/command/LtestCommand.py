@@ -3,7 +3,6 @@ import logging
 import os
 import shutil
 import sys
-
 import time
 from typing import List
 
@@ -21,26 +20,26 @@ class LtestCommand(Command):
     def __init__(self) -> None:
         Command.__init__(self)
 
-        parser = argparse.ArgumentParser(
+        self.parser: argparse.ArgumentParser = argparse.ArgumentParser(
             prog='kathara ltest',
             description=strings['ltest'],
             epilog=wiki_description,
             add_help=False
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
             help='Show an help message and exit.'
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-d', '--directory',
             required=False,
             help='Specify the folder containing the lab.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-R', '--rebuild-signature',
             dest="rebuild_signature",
             required=False,
@@ -48,20 +47,18 @@ class LtestCommand(Command):
             help='Force generating a new signature for the lab, even if one already exists. '
                  'Overwrites any existing signature.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--wait',
             required=False,
             metavar='MINUTES',
             help='Minutes to wait from lab startup before running the tests (can be a decimal number).'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--verify',
             required=False,
             choices=['builtin', 'user', 'both'],
             help='Compares current lab state with stored signature.'
         )
-
-        self.parser = parser
 
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)

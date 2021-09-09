@@ -1,19 +1,18 @@
 import mmap
 import os
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from ...model.ExternalLink import ExternalLink
 
 
 class ExtParser(object):
     @staticmethod
-    def parse(path: str) -> Dict[str, List[ExternalLink]]:
-
+    def parse(path: str) -> Optional[Dict[str, List[ExternalLink]]]:
         lab_ext_path = os.path.join(path, 'lab.ext')
 
         if not os.path.exists(lab_ext_path):
-            return
+            return None
 
         # Reads lab.ext in memory so it is faster.
         with open(lab_ext_path, 'r') as ext_file:

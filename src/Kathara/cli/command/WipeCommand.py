@@ -14,28 +14,28 @@ class WipeCommand(Command):
     def __init__(self) -> None:
         Command.__init__(self)
 
-        parser = argparse.ArgumentParser(
+        self.parser: argparse.ArgumentParser = argparse.ArgumentParser(
             prog='kathara wipe',
             description=strings['wipe'],
             epilog=wiki_description,
             add_help=False
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
             help='Show an help message and exit.'
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-f', '--force',
             required=False,
             action='store_true',
             help='Force the wipe.'
         )
 
-        group = parser.add_mutually_exclusive_group(required=False)
+        group = self.parser.add_mutually_exclusive_group(required=False)
 
         group.add_argument(
             '-s', '--settings',
@@ -50,8 +50,6 @@ class WipeCommand(Command):
             action='store_true',
             help='Wipe all Kathara devices and collision domains of all users. MUST BE ROOT FOR THIS OPTION.'
         )
-
-        self.parser = parser
 
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import logging
 import os
 
@@ -6,7 +7,7 @@ import os
 class PrivilegeHandler(object):
     __slots__ = ['user_uid', 'user_gid', 'effective_user_uid', 'effective_user_gid']
 
-    __instance = None
+    __instance: PrivilegeHandler = None
 
     @staticmethod
     def get_instance() -> PrivilegeHandler:
@@ -20,11 +21,11 @@ class PrivilegeHandler(object):
             raise Exception("This class is a singleton!")
         else:
             try:
-                self.user_uid = os.getuid()
-                self.user_gid = os.getgid()
+                self.user_uid: int = os.getuid()
+                self.user_gid: int = os.getgid()
 
-                self.effective_user_uid = os.geteuid()
-                self.effective_user_gid = os.getegid()
+                self.effective_user_uid: int = os.geteuid()
+                self.effective_user_gid: int = os.getegid()
             except AttributeError:
                 pass
 

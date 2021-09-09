@@ -1,3 +1,5 @@
+from typing import Tuple, Any
+
 from ...exceptions import ClassNotFoundError
 from ...utils import class_for_name
 
@@ -5,13 +7,13 @@ from ...utils import class_for_name
 class Factory(object):
     __slots__ = ['module_template', 'name_template']
 
-    def get_module_name(self, args):
+    def get_module_name(self, args: Tuple) -> str:
         return self.module_template % args
 
-    def get_class_name(self, args):
+    def get_class_name(self, args: Tuple) -> str:
         return self.name_template % args
 
-    def get_class(self, module_args=(), class_args=()):
+    def get_class(self, module_args: Tuple = (), class_args: Tuple = ()) -> Any:
         module_name = self.get_module_name(module_args)
         class_name = self.get_class_name(class_args)
 
@@ -23,5 +25,5 @@ class Factory(object):
             else:
                 raise ImportError from e
 
-    def create_instance(self, module_args=(), class_args=()):
+    def create_instance(self, module_args: Tuple = (), class_args: Tuple = ()) -> Any:
         return self.get_class(module_args, class_args)()

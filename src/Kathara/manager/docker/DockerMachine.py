@@ -3,12 +3,14 @@ import shlex
 from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
-from typing import List, Union, Any, Dict
+from typing import List, Any, Dict, Generator
 
-import docker
+import docker.models.containers
 import progressbar
+from docker import DockerClient
 from docker.errors import APIError
 
+from .DockerImage import DockerImage
 from ... import utils
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
 from ...model.Lab import Lab
@@ -85,10 +87,10 @@ SHUTDOWN_COMMANDS = [
 class DockerMachine(object):
     __slots__ = ['client', 'docker_image']
 
-    def __init__(self, client, docker_image):
-        self.client = client
+    def __init__(self, client: DockerClient, docker_image: DockerImage) -> None:
+        self.client: DockerClient = client
 
-        self.docker_image = docker_image
+        self.docker_image: DockerImage = docker_image
 
     def deploy_machines(self, lab: Lab) -> None:
         # Check and pulling machine images
@@ -421,8 +423,8 @@ class DockerMachine(object):
     def copy_files(machine: docker.models.containers.Container, path: str, tar_data: bytes) -> None:
         machine.put_archive(path, tar_data)
 
-    def get_machines_by_filters(self, lab_hash: str = None, machine_name: str = None,
-                                user: str = None) -> List[docker.models.containers.Container]:
+    def get_machines_by_filters(self, lab_hash: str = None, machine_name: str = None, user: str = None) -> \
+            List[docker.models.containers.Container]:
         filters = {"label": ["app=kathara"]}
         if user:
             filters["label"].append("user=%s" % user)
@@ -445,7 +447,7 @@ class DockerMachine(object):
         else:
             return containers[0]
 
-    def get_machine_info(self, machine_name: str, lab_hash: str = None, user: str = None) -> Dict[str, Union[str, int]]:
+    def get_machine_info(self, machine_name: str, lab_hash: str = None, user: str = None) -> Dict[str, Any]:
         machines = self.get_machines_by_filters(machine_name=machine_name, lab_hash=lab_hash, user=user)
 
         if not machines:
@@ -458,8 +460,7 @@ class DockerMachine(object):
 
         return self._get_stats_by_machine(machine, machine_stats)
 
-    def get_machines_info(self, lab_hash: str, machine_filter: str = None, user: str = None) -> \
-            List[Dict[str, Union[str, int]]]:
+    def get_machines_info(self, lab_hash: str, machine_filter: str = None, user: str = None) -> Generator:
         machines = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_filter, user=user)
 
         if not machines:
@@ -489,7 +490,7 @@ class DockerMachine(object):
             yield machines_data
 
     def _get_stats_by_machine(self, machine: docker.models.containers.Container, machine_stats: Dict[str, Any]) -> \
-            Dict[str, str]:
+            Dict[str, Any]:
         stats = self._get_aggregate_machine_info(machine_stats)
 
         return {
@@ -534,7 +535,7 @@ class DockerMachine(object):
         return "%s%s_%s%s" % (Setting.get_instance().device_prefix, username_prefix, name, lab_hash)
 
     @staticmethod
-    def _delete_machine(machine:  docker.models.containers.Container) -> None:
+    def _delete_machine(machine: docker.models.containers.Container) -> None:
         # Build the shutdown command string
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine.labels["name"])
 

@@ -15,32 +15,32 @@ class LconfigCommand(Command):
     def __init__(self) -> None:
         Command.__init__(self)
 
-        parser = argparse.ArgumentParser(
+        self.parser: argparse.ArgumentParser = argparse.ArgumentParser(
             prog='kathara lconfig',
             description=strings['lconfig'],
             epilog=wiki_description,
             add_help=False
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
             help='Show an help message and exit.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-d', '--directory',
             metavar='LAB_PATH',
             required=False,
             help='Path of the lab to configure, if not specified the current path is used'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=True,
             help='Name of the device to be connected on desired collision domains.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--eth',
             dest='eths',
             metavar='CD',
@@ -48,8 +48,6 @@ class LconfigCommand(Command):
             required=True,
             help='Specify the collision domain for an interface.'
         )
-
-        self.parser = parser
 
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)

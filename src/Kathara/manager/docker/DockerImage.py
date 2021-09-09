@@ -1,5 +1,8 @@
 import logging
+from typing import Union, List, Set
 
+import docker.models.images
+from docker import DockerClient
 from docker.errors import APIError
 
 from ... import utils
@@ -8,16 +11,16 @@ from ... import utils
 class DockerImage(object):
     __slots__ = ['client']
 
-    def __init__(self, client):
-        self.client = client
+    def __init__(self, client: DockerClient) -> None:
+        self.client: DockerClient = client
 
-    def get_local(self, image_name):
+    def get_local(self, image_name: str) -> docker.models.images.Image:
         return self.client.images.get(image_name)
 
-    def get_remote(self, image_name):
+    def get_remote(self, image_name: str) -> docker.models.images.RegistryData:
         return self.client.images.get_registry_data(image_name)
 
-    def pull(self, image_name):
+    def pull(self, image_name: str) -> Union[docker.models.images.Image, List]:
         # If no tag or sha key is specified, we add "latest"
         if (':' or '@') not in image_name:
             image_name = "%s:latest" % image_name
@@ -25,7 +28,7 @@ class DockerImage(object):
         logging.info("Pulling image `%s`... This may take a while." % image_name)
         return self.client.images.pull(image_name)
 
-    def check_for_updates(self, image_name):
+    def check_for_updates(self, image_name: str) -> None:
         logging.debug("Checking updates for %s..." % image_name)
 
         if '@' in image_name:
@@ -53,14 +56,14 @@ class DockerImage(object):
                                       lambda: None
                                       )
 
-    def check(self, image):
-        self._check_and_pull(image, pull=False)
+    def check(self, image_name: str) -> None:
+        self._check_and_pull(image_name, pull=False)
 
-    def check_and_pull_from_list(self, images):
+    def check_and_pull_from_list(self, images: Union[List[str], Set[str]]) -> None:
         for image in images:
             self._check_and_pull(image)
 
-    def _check_and_pull(self, image_name, pull=True):
+    def _check_and_pull(self, image_name: str, pull: bool = True) -> None:
         try:
             # Tries to get the image from the local Docker repository.
             self.get_local(image_name)

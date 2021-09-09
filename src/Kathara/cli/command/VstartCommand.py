@@ -1,6 +1,7 @@
 import argparse
 import logging
 import sys
+from typing import List
 
 from ... import utils
 from ...foundation.cli.command.Command import Command
@@ -14,21 +15,21 @@ class VstartCommand(Command):
     def __init__(self) -> None:
         Command.__init__(self)
 
-        parser = argparse.ArgumentParser(
+        self.parser: argparse.ArgumentParser = argparse.ArgumentParser(
             prog='kathara vstart',
             description=strings['vstart'],
             epilog=wiki_description,
             add_help=False
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
             help='Show an help message and exit.'
         )
 
-        group = parser.add_mutually_exclusive_group(required=False)
+        group = self.parser.add_mutually_exclusive_group(required=False)
 
         group.add_argument(
             "--noterminals",
@@ -58,13 +59,13 @@ class VstartCommand(Command):
             required=False,
             help='Choose the number of terminals to open for the device.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=True,
             help='Name of the device to be started.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--eth',
             dest='eths',
             metavar='N:CD',
@@ -72,54 +73,54 @@ class VstartCommand(Command):
             required=False,
             help='Set a specific interface on a collision domain.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-e', '--exec',
             required=False,
             dest='exec_commands',
             nargs='*',
             help='Execute a specific command in the device during startup.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--mem',
             required=False,
             help='Limit the amount of RAM available for this device.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--cpus',
             required=False,
             help='Limit the amount of CPU available for this device.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-i', '--image',
             required=False,
             help='Run this device with a specific Docker Image.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-H', '--no-hosthome',
             dest="no_hosthome",
             action="store_const",
             const=False,
             help='/hosthome dir will not be mounted inside the device.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--xterm',
             required=False,
             help='Set a different terminal emulator application (Unix only).'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--print',
             dest='dry_mode',
             required=False,
             action='store_true',
             help='Check if the device parameters are correct (dry run).'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--bridged',
             required=False,
             action='store_true',
             help='Add a bridge interface to the device.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--port',
             dest='ports',
             metavar='[HOST:]GUEST[/PROTOCOL]',
@@ -127,7 +128,7 @@ class VstartCommand(Command):
             required=False,
             help='Map localhost port HOST to the internal port GUEST of the device for the specified PROTOCOL.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--sysctl',
             dest='sysctls',
             metavar='SYSCTL',
@@ -135,13 +136,11 @@ class VstartCommand(Command):
             required=False,
             help='Set sysctl option for the device.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--shell',
             required=False,
             help='Set the shell (sh, bash, etc.) that should be used inside the device.'
         )
-
-        self.parser = parser
 
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)

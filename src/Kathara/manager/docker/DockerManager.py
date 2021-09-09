@@ -1,9 +1,10 @@
 import io
 from copy import copy
 from datetime import datetime
-from typing import Set, Dict, List, Union, Any
+from typing import Set, Dict, Generator, Any
 
 import docker
+import docker.models.containers
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from terminaltables import DoubleTable
 
@@ -66,22 +67,23 @@ class DockerManager(IManager):
     __slots__ = ['client', 'docker_image', 'docker_machine', 'docker_link']
 
     @check_docker_status
-    def __init__(self):
+    def __init__(self) -> None:
         remote_url = Setting.get_instance().remote_url
         if remote_url is None:
-            self.client = docker.from_env(timeout=None, max_pool_size=utils.get_pool_size())
+            self.client: docker.DockerClient = docker.from_env(timeout=None, max_pool_size=utils.get_pool_size())
         else:
             tls_config = docker.tls.TLSConfig(ca_cert=Setting.get_instance().cert_path)
-            self.client = docker.DockerClient(base_url=remote_url, timeout=None, max_pool_size=utils.get_pool_size(),
-                                              tls=tls_config)
+            self.client: docker.DockerClient = docker.DockerClient(base_url=remote_url, timeout=None,
+                                                                   max_pool_size=utils.get_pool_size(),
+                                                                   tls=tls_config)
 
         docker_plugin = DockerPlugin(self.client)
         docker_plugin.check_and_download_plugin()
 
-        self.docker_image = DockerImage(self.client)
+        self.docker_image: DockerImage = DockerImage(self.client)
 
-        self.docker_machine = DockerMachine(self.client, self.docker_image)
-        self.docker_link = DockerLink(self.client)
+        self.docker_machine: DockerMachine = DockerMachine(self.client, self.docker_image)
+        self.docker_link: DockerLink = DockerLink(self.client)
 
     @privileged
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
@@ -148,8 +150,7 @@ class DockerManager(IManager):
                                        )
 
     @privileged
-    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> \
-            List[Dict[str, Any]]:
+    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> Generator:
         user_name = utils.get_current_user_name() if not all_users else None
 
         lab_info = self.docker_machine.get_machines_info(lab_hash, machine_filter=machine_name, user=user_name)
@@ -157,7 +158,7 @@ class DockerManager(IManager):
         return lab_info
 
     @privileged
-    def get_formatted_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False):
+    def get_formatted_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> str:
         table_header = ["LAB HASH", "USER", "DEVICE NAME", "STATUS", "CPU %", "MEM USAGE / LIMIT", "MEM %", "NET I/O"]
         stats_table = DoubleTable([])
         stats_table.inner_row_border = True

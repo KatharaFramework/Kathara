@@ -2,6 +2,7 @@ import argparse
 import logging
 import re
 import sys
+from typing import List
 
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -13,26 +14,26 @@ class VconfigCommand(Command):
     def __init__(self) -> None:
         Command.__init__(self)
 
-        parser = argparse.ArgumentParser(
+        self.parser: argparse.ArgumentParser = argparse.ArgumentParser(
             prog='kathara vconfig',
             description=strings['vconfig'],
             epilog=wiki_description,
             add_help=False
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
             help='Show an help message and exit.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=True,
             help='Name of the device to be connected on desired collision domains.'
         )
-        parser.add_argument(
+        self.parser.add_argument(
             '--eth',
             dest='eths',
             metavar='CD',
@@ -40,8 +41,6 @@ class VconfigCommand(Command):
             required=True,
             help='Specify the collision domain for an interface.'
         )
-
-        self.parser = parser
 
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)

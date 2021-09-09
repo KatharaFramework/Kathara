@@ -1,4 +1,4 @@
-def get_terminal_size_windows():
+def get_terminal_size_windows() -> (int, int):
     try:
         from ctypes import windll, create_string_buffer
 
@@ -21,7 +21,7 @@ def get_terminal_size_windows():
         return get_terminal_size_tput()
 
 
-def get_terminal_size_tput():
+def get_terminal_size_tput() -> (int, int):
     try:
         import subprocess
         proc = subprocess.Popen(['tput', 'cols'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)

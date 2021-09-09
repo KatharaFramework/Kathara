@@ -327,7 +327,7 @@ class CommonOptionsHandler(OptionsHandler):
         current_menu.append_item(print_startup_log_item)
         current_menu.append_item(enable_ipv6_item)
 
-    def update_manager_value(self, current_menu, value):
+    def update_manager_value(self, current_menu: ConsoleMenu, value: str) -> None:
         setting_utils.update_setting_value("manager_type", value)
 
         # exit() does not work. So we force the menu to exit as the user selected the Exit option.

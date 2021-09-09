@@ -12,42 +12,40 @@ class ListCommand(Command):
     def __init__(self) -> None:
         Command.__init__(self)
 
-        parser = argparse.ArgumentParser(
+        self.parser: argparse.ArgumentParser = argparse.ArgumentParser(
             prog='kathara list',
             description=strings['list'],
             epilog=wiki_description,
             add_help=False
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
             help='Show an help message and exit.'
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-a', '--all',
             required=False,
             action='store_true',
             help='Show all running Kathara devices of all users. MUST BE ROOT FOR THIS OPTION.'
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-l', '--live',
             required=False,
             action='store_true',
             help='Live mode.'
         )
 
-        parser.add_argument(
+        self.parser.add_argument(
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=False,
             help='Show only information about a specified device.'
         )
-
-        self.parser = parser
 
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)
@@ -72,7 +70,7 @@ class ListCommand(Command):
                 print(next(lab_info))
 
     @staticmethod
-    def _get_machine_live_info(machine_name, all_users):
+    def _get_machine_live_info(machine_name: str, all_users: bool) -> None:
         Curses.get_instance().init_window()
 
         try:
@@ -84,7 +82,7 @@ class ListCommand(Command):
             Curses.get_instance().close()
 
     @staticmethod
-    def _get_lab_live_info(all_users):
+    def _get_lab_live_info(all_users: bool) -> None:
         lab_info = Kathara.get_instance().get_formatted_lab_info(all_users=all_users)
 
         Curses.get_instance().init_window()

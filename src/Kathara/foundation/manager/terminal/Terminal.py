@@ -1,5 +1,6 @@
 import sys
 from abc import ABC, abstractmethod
+from typing import Any, Optional, Callable
 
 import pyuv
 
@@ -7,16 +8,16 @@ import pyuv
 class Terminal(ABC):
     __slots__ = ['handler', '_loop', '_system_stdin', '_system_stdout', '_external_terminal', '_resize_signal']
 
-    def __init__(self, handler):
-        self.handler = handler
+    def __init__(self, handler: Any) -> None:
+        self.handler: Any = handler
 
-        self._loop = None
-        self._system_stdin = None
-        self._system_stdout = None
-        self._external_terminal = None
-        self._resize_signal = None
+        self._loop: Optional[pyuv.Loop] = None
+        self._system_stdin: Optional[pyuv.TTY] = None
+        self._system_stdout: Optional[pyuv.TTY] = None
+        self._external_terminal: Optional[pyuv.TTY] = None
+        self._resize_signal: Optional[pyuv.Signal] = None
 
-    def start(self):
+    def start(self) -> None:
         self._loop = pyuv.Loop.default_loop()
 
         self._system_stdin = pyuv.TTY(self._loop, sys.stdin.fileno(), True)
@@ -34,10 +35,10 @@ class Terminal(ABC):
         pyuv.TTY.reset_mode()
 
     @abstractmethod
-    def _start_external(self):
+    def _start_external(self) -> None:
         pass
 
-    def close(self):
+    def close(self) -> None:
         self._on_close()
 
         self._system_stdin.close()
@@ -47,16 +48,16 @@ class Terminal(ABC):
         self._loop.stop()
 
     @abstractmethod
-    def _on_close(self):
+    def _on_close(self) -> None:
         pass
 
-    def _write_on_external_terminal(self):
+    def _write_on_external_terminal(self) -> Callable:
         def write_on_external_terminal(handle, data, error):
             self._external_terminal.write(data)
 
         return write_on_external_terminal
 
-    def _read_external_terminal(self):
+    def _read_external_terminal(self) -> Callable:
         def read_external_terminal(handle, data, error):
             if data:
                 self._system_stdout.write(data)
@@ -69,5 +70,5 @@ class Terminal(ABC):
         return read_external_terminal
 
     @abstractmethod
-    def _resize_terminal(self):
+    def _resize_terminal(self) -> None:
         pass

@@ -5,7 +5,7 @@ from ...setting.Setting import Setting
 
 class KubernetesConfig(object):
     @staticmethod
-    def get_cluster_user():
+    def get_cluster_user() -> str:
         try:
             # Remote configuration is present, use the API Token as user
             configuration = client.Configuration.get_default_copy()
@@ -16,10 +16,10 @@ class KubernetesConfig(object):
             return current_context['name']
 
     @staticmethod
-    def load_kube_config():
+    def load_kube_config() -> None:
         try:
-            config.load_kube_config()           # Try to load configuration if Megalos is launched on a k8s master.
-        except Exception:                       # Not on a k8s master, load Megalos setting to read remote cluster data.
+            config.load_kube_config()  # Try to load configuration if Megalos is launched on a k8s master.
+        except Exception:  # Not on a k8s master, load Megalos setting to read remote cluster data.
             api_url = Setting.get_instance().api_server_url
             token = Setting.get_instance().api_token
 
