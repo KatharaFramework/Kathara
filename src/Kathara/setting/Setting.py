@@ -11,7 +11,7 @@ from .. import version
 from ..connectors.GitHubApi import GitHubApi
 from ..exceptions import HTTPConnectionError, SettingsError
 from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
-from ...foundation.setting.SettingsAddon import SettingsAddon
+from ..foundation.setting.SettingsAddon import SettingsAddon
 
 AVAILABLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "EXCEPTION"]
 AVAILABLE_MANAGERS = ["docker", "kubernetes"]

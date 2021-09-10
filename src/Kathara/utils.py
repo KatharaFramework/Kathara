@@ -14,7 +14,7 @@ from io import BytesIO
 from itertools import islice
 from multiprocessing import cpu_count
 from sys import platform as _platform
-from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict
+from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable
 
 from binaryornot.check import is_binary
 from slug import slug
@@ -99,7 +99,7 @@ def list_chunks(iterable: List, size: int) -> Generator:
         item = list(islice(it, size))
 
 
-def chunk_list(iterable: List, size: int) -> List[List]:
+def chunk_list(iterable: Union[List, Iterable], size: int) -> List[List]:
     return [iterable] if len(iterable) < size else list_chunks(iterable, size)
 
 
