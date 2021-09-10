@@ -1,8 +1,10 @@
+from typing import Callable, Any
+
 from . import utils
 from .auth.PrivilegeHandler import PrivilegeHandler
 
 
-def privileged(method):
+def privileged(method: Callable) -> Any:
     """
     Decorator function to execute a method with proper privileges.
     They are then dropped when method is executed.
