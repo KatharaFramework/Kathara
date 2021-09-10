@@ -8,7 +8,7 @@ class HTTPConnectionError(Exception):
 
 
 class SettingsError(Exception):
-    def __init__(self, message):
+    def __init__(self, message) -> None:
         super().__init__("Settings file is not valid: %s\nFix it or delete it before launching." % message)
 
 
@@ -17,7 +17,7 @@ class DockerDaemonConnectionError(Exception):
 
 
 class NotSupportedError(Exception):
-    def __init__(self, message):
+    def __init__(self, message) -> None:
         super().__init__("Not Supported: %s" % message)
 
 

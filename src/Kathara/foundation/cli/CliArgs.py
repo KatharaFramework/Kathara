@@ -6,7 +6,7 @@ from typing import Any
 class CliArgs(object):
     __slots__ = ['args']
 
-    __instance = None
+    __instance: CliArgs = None
 
     @staticmethod
     def get_instance() -> CliArgs:

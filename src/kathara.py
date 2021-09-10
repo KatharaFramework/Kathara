@@ -7,6 +7,7 @@ import os
 import sys
 
 import coloredlogs
+
 from Kathara import utils
 from Kathara.auth.PrivilegeHandler import PrivilegeHandler
 from Kathara.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError
@@ -23,7 +24,7 @@ Possible Kathara commands are:\n
 
 
 class KatharaEntryPoint(object):
-    def __init__(self):
+    def __init__(self) -> None:
         parser = argparse.ArgumentParser(
             description='A network emulation tool.',
             usage=description_msg,
@@ -70,7 +71,7 @@ class KatharaEntryPoint(object):
             sys.exit(1)
 
         try:
-            command_object = CommandFactory().create_instance(class_args=(args.command.capitalize(), ))
+            command_object = CommandFactory().create_instance(class_args=(args.command.capitalize(),))
         except ClassNotFoundError:
             logging.error('Unrecognized command `%s`.\n' % args.command)
             parser.print_help()

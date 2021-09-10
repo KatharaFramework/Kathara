@@ -1,13 +1,17 @@
+from __future__ import annotations
+
 import json
 import logging
 import os
 import time
+from typing import Any, Dict
 
 from .. import utils
 from .. import version
 from ..connectors.GitHubApi import GitHubApi
 from ..exceptions import HTTPConnectionError, SettingsError
 from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
+from ...foundation.setting.SettingsAddon import SettingsAddon
 
 AVAILABLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "EXCEPTION"]
 AVAILABLE_MANAGERS = ["docker", "kubernetes"]
@@ -32,19 +36,19 @@ class Setting(object):
     __slots__ = ['image', 'manager_type', 'terminal', 'open_terminals', 'device_shell', 'net_prefix',
                  'device_prefix', 'debug_level', 'print_startup_log', 'enable_ipv6', 'last_checked', 'addons']
 
-    SETTING_FOLDER = None
-    SETTING_PATH = None
+    SETTING_FOLDER: str = None
+    SETTING_PATH: str = None
 
-    __instance = None
+    __instance: Setting = None
 
     @staticmethod
-    def get_instance():
+    def get_instance() -> Setting:
         if Setting.__instance is None:
             Setting()
 
         return Setting.__instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         if Setting.__instance is not None:
             raise Exception("This class is a singleton!")
         else:
@@ -55,24 +59,24 @@ class Setting(object):
             for (name, value) in DEFAULTS.items():
                 setattr(self, name, value)
 
-            self.addons = None
-            self.last_checked = time.time() - ONE_WEEK
+            self.addons: SettingsAddon = None
+            self.last_checked: float = time.time() - ONE_WEEK
 
             self.load()
 
             Setting.__instance = self
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str) -> Any:
         return self.addons.get(item)
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         if name in self.__slots__:
             super(Setting, self).__setattr__(name, value)
             return
 
         setattr(self.addons, name, value)
 
-    def load(self):
+    def load(self) -> None:
         if not os.path.exists(Setting.SETTING_PATH):  # If settings file don't exist, create with defaults
             if not os.path.isdir(Setting.SETTING_FOLDER):  # Create .config folder if doesn't exists, create it
                 os.mkdir(Setting.SETTING_FOLDER)
@@ -104,11 +108,11 @@ class Setting(object):
             self.addons.load(settings)  # Load values into the addon object
 
     @staticmethod
-    def wipe():
+    def wipe() -> None:
         if os.path.exists(Setting.SETTING_PATH):
             os.remove(Setting.SETTING_PATH)
 
-    def save(self):
+    def save(self) -> None:
         """
         Saves settings to a config.json file in the Kathara path.
         """
@@ -117,7 +121,7 @@ class Setting(object):
         with open(Setting.SETTING_PATH, 'w') as settings_file:
             settings_file.write(json.dumps(to_save, indent=True))
 
-    def check(self):
+    def check(self) -> None:
         self.check_manager()
 
         self.check_terminal()
@@ -161,21 +165,21 @@ class Setting(object):
         if self.debug_level not in AVAILABLE_DEBUG_LEVELS:
             raise SettingsError("Debug Level must be one of the following: %s." % (", ".join(AVAILABLE_DEBUG_LEVELS)))
 
-    def check_manager(self):
+    def check_manager(self) -> None:
         from ..manager.Kathara import Kathara
         managers = Kathara.get_available_managers_name()
 
         if self.manager_type not in managers.keys():
             raise SettingsError("Manager Type not allowed.")
 
-    def check_image(self, image=None):
+    def check_image(self, image: str = None) -> None:
         image = self.image if not image else image
 
         # Required to import here because otherwise there is a cyclic dependency
         from ..manager.Kathara import Kathara
         Kathara.get_instance().check_image(image)
 
-    def check_terminal(self, terminal=None):
+    def check_terminal(self, terminal: str = None) -> bool:
         terminal = self.terminal if not terminal else terminal
 
         # Skip check for TMUX (special value)
@@ -200,10 +204,10 @@ class Setting(object):
 
         return True
 
-    def load_settings_addon(self):
+    def load_settings_addon(self) -> None:
         self.addons = SettingsAddonFactory().create_instance(class_args=(self.manager_type.capitalize(),))
 
-    def _to_dict(self):
+    def _to_dict(self) -> Dict[str, Any]:
         return {"image": self.image,
                 "manager_type": self.manager_type,
                 "terminal": self.terminal,

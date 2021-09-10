@@ -1,19 +1,24 @@
 import difflib
 import logging
 import os
+from typing import Union, Dict, List, Optional
+
+from deepdiff import DeepDiff
 
 from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
 from ..manager.Kathara import Kathara
+from ..model.Lab import Lab
+from ..model.Machine import Machine
 from ..setting.Setting import Setting
 
 
 class UserTest(Test):
-    def __init__(self, lab):
+    def __init__(self, lab: Lab) -> None:
         Test.__init__(self, lab)
 
-    def create_signature(self):
+    def create_signature(self) -> None:
         for (machine_name, machine) in self.lab.machines.items():
             machine_test_file = self._copy_machine_test_file(machine)
 
@@ -26,7 +31,7 @@ class UserTest(Test):
                 with open("%s/%s.user" % (self.signature_path, machine_name), 'w') as machine_signature_file:
                     machine_signature_file.write(machine_state)
 
-    def test(self):
+    def test(self) -> bool:
         test_passed = True
 
         for (machine_name, machine) in self.lab.machines.items():
@@ -63,7 +68,7 @@ class UserTest(Test):
 
         return test_passed
 
-    def check_signature(self, signature, status):
+    def check_signature(self, signature: Union[Dict, str], status: Union[Dict, str]) -> Union[DeepDiff, List]:
         signature = signature.splitlines()
         status = status.splitlines()
 
@@ -72,7 +77,7 @@ class UserTest(Test):
         # Remove headers of the diff from the result
         return [x for x in filter(lambda x: not x.startswith(('---', '+++', '@@')), diff)]
 
-    def _copy_machine_test_file(self, machine):
+    def _copy_machine_test_file(self, machine: Machine) -> Optional[str]:
         machine_test_file = os.path.join(self.test_path, "%s.test" % machine.name)
 
         if os.path.exists(machine_test_file):
@@ -83,7 +88,7 @@ class UserTest(Test):
             return None
 
     @staticmethod
-    def _run_machine_test_file(machine):
+    def _run_machine_test_file(machine: Machine) -> str:
         # Give execution permissions to test file
         Kathara.get_instance().exec(lab_hash=machine.lab.hash,
                                     machine_name=machine.name,
@@ -94,8 +99,8 @@ class UserTest(Test):
         (result_stdout, _) = Kathara.get_instance().exec(lab_hash=machine.lab.hash,
                                                          machine_name=machine.name,
                                                          command="%s -c /%s.test" % (
-                                                                  Setting.get_instance().device_shell,
-                                                                  machine.name
-                                                              ))
+                                                             Setting.get_instance().device_shell,
+                                                             machine.name
+                                                         ))
 
         return result_stdout

@@ -206,7 +206,7 @@ class Machine(object):
                     # (because it's the machine folder name and it should be included in the tar archive)
                     lab_path, machine_folder = os.path.split(self.folder)
                     (tarinfo, content) = utils.pack_file_for_tar(file,
-                                                                 arcname="hostlab/%s" % os.path.relpath(file, lab_path)
+                                                                 arc_name="hostlab/%s" % os.path.relpath(file, lab_path)
                                                                  )
                     tar.addfile(tarinfo, content)
 
@@ -214,28 +214,28 @@ class Machine(object):
 
             if self.startup_path:
                 (tarinfo, content) = utils.pack_file_for_tar(self.startup_path,
-                                                             arcname="hostlab/%s.startup" % self.name
+                                                             arc_name="hostlab/%s.startup" % self.name
                                                              )
                 tar.addfile(tarinfo, content)
                 is_empty = False
 
             if self.shutdown_path:
                 (tarinfo, content) = utils.pack_file_for_tar(self.shutdown_path,
-                                                             arcname="hostlab/%s.shutdown" % self.name
+                                                             arc_name="hostlab/%s.shutdown" % self.name
                                                              )
                 tar.addfile(tarinfo, content)
                 is_empty = False
 
             if self.lab.shared_startup_path:
                 (tarinfo, content) = utils.pack_file_for_tar(self.lab.shared_startup_path,
-                                                             arcname="hostlab/shared.startup"
+                                                             arc_name="hostlab/shared.startup"
                                                              )
                 tar.addfile(tarinfo, content)
                 is_empty = False
 
             if self.lab.shared_shutdown_path:
                 (tarinfo, content) = utils.pack_file_for_tar(self.lab.shared_shutdown_path,
-                                                             arcname="hostlab/shared.shutdown"
+                                                             arc_name="hostlab/shared.shutdown"
                                                              )
                 tar.addfile(tarinfo, content)
                 is_empty = False

@@ -14,6 +14,7 @@ from io import BytesIO
 from itertools import islice
 from multiprocessing import cpu_count
 from sys import platform as _platform
+from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict
 
 from binaryornot.check import is_binary
 from slug import slug
@@ -34,30 +35,30 @@ CLI_ENV = False
 
 
 # Generic Functions
-def check_python_version():
+def check_python_version() -> None:
     if sys.version_info < (3, 0):
         logging.critical("Python version should be greater than 3.0")
         sys.exit(1)
 
 
-def class_for_name(module_name, class_name):
+def class_for_name(module_name: str, class_name: str) -> Any:
     m = importlib.import_module(module_name + "." + class_name)
     return getattr(m, class_name)
 
 
-def generate_urlsafe_hash(string):
+def generate_urlsafe_hash(string: str) -> str:
     string = re.sub(r'[^\x00-\x7F]+', '', string)
     return base64.urlsafe_b64encode(hashlib.md5(string.encode('utf-8', errors='ignore')).digest())[:-2] \
         .decode('utf-8') \
         .replace('-', '').replace('_', '')
 
 
-def get_absolute_path(path):
+def get_absolute_path(path: str) -> str:
     abs_path = os.path.realpath(path)
     return abs_path if not os.path.islink(abs_path) else os.readlink(abs_path)
 
 
-def get_executable_path(exec_path):
+def get_executable_path(exec_path: str) -> Optional[str]:
     exec_abs_path = get_absolute_path(exec_path)
 
     if os.path.exists(exec_abs_path) and os.path.isfile(exec_abs_path):
@@ -81,7 +82,7 @@ def get_executable_path(exec_path):
     return None
 
 
-def re_search_fail(expression, line):
+def re_search_fail(expression: str, line: str) -> Match:
     matches = re.search(expression, line)
 
     if not matches:
@@ -90,7 +91,7 @@ def re_search_fail(expression, line):
     return matches
 
 
-def list_chunks(iterable, size):
+def list_chunks(iterable: List, size: int) -> Generator:
     it = iter(iterable)
     item = list(islice(it, size))
     while item:
@@ -98,11 +99,11 @@ def list_chunks(iterable, size):
         item = list(islice(it, size))
 
 
-def chunk_list(iterable, size):
+def chunk_list(iterable: List, size: int) -> List[List]:
     return [iterable] if len(iterable) < size else list_chunks(iterable, size)
 
 
-def confirmation_prompt(prompt_string, callback_yes, callback_no):
+def confirmation_prompt(prompt_string: str, callback_yes: Callable, callback_no: Callable) -> Any:
     prompt_utils = PromptUtils(Screen())
     answer = prompt_utils.prompt_for_bilateral_choice(prompt_string, 'y', 'n')
 
@@ -112,17 +113,17 @@ def confirmation_prompt(prompt_string, callback_yes, callback_no):
     return callback_yes()
 
 
-def get_pool_size():
+def get_pool_size() -> int:
     return cpu_count()
 
 
 # Platform Specific Functions
-def is_platform(desired_platform):
+def is_platform(desired_platform: str) -> bool:
     platforms = [LINUX, LINUX2, WINDOWS, MAC_OS]
     return desired_platform in platforms
 
 
-def exec_by_platform(fun_linux, fun_windows, fun_mac):
+def exec_by_platform(fun_linux: Callable, fun_windows: Callable, fun_mac: Callable) -> Any:
     if _platform == LINUX or _platform == LINUX2:
         return fun_linux()
     elif _platform == WINDOWS:
@@ -131,7 +132,7 @@ def exec_by_platform(fun_linux, fun_windows, fun_mac):
         return fun_mac()
 
 
-def convert_win_2_linux(filename):
+def convert_win_2_linux(filename: str) -> bytes:
     if not is_binary(filename):
         file_content = open(filename, mode='r', encoding='utf-8-sig').read()
         return file_content.replace("\n\r", "\n").encode('utf-8')
@@ -139,7 +140,7 @@ def convert_win_2_linux(filename):
     return open(filename, mode='rb').read()
 
 
-def is_admin():
+def is_admin() -> bool:
     def unix_root():
         return os.getuid() == 0
 
@@ -150,7 +151,7 @@ def is_admin():
     return exec_by_platform(unix_root, windows_admin, unix_root)
 
 
-def get_current_user_home():
+def get_current_user_home() -> str:
     def passwd_home():
         user_info = get_current_user_info()
         return user_info.pw_dir
@@ -161,7 +162,7 @@ def get_current_user_home():
     return exec_by_platform(passwd_home, default_home, default_home)
 
 
-def get_current_user_uid_gid():
+def get_current_user_uid_gid() -> (int, int):
     def unix():
         user_info = get_current_user_info()
         return user_info.pw_uid, user_info.pw_gid
@@ -169,7 +170,7 @@ def get_current_user_uid_gid():
     return exec_by_platform(unix, lambda: (None, None), unix)
 
 
-def get_current_user_name():
+def get_current_user_name() -> str:
     def unix():
         user_info = get_current_user_info()
         return user_info.pw_name
@@ -181,7 +182,7 @@ def get_current_user_name():
     return slug(exec_by_platform(unix, windows, unix))
 
 
-def get_current_user_info():
+def get_current_user_info() -> Any:
     def passwd_info():
         import pwd
         user_id = os.getuid()
@@ -201,7 +202,7 @@ def get_current_user_info():
 
 
 # Formatting Functions
-def format_headers(message=""):
+def format_headers(message: str = "") -> str:
     footer = "=============================="
     half_message = int((len(message) / 2) + 1)
     second_half_message = half_message
@@ -213,7 +214,7 @@ def format_headers(message=""):
     return footer[half_message:] + message + footer[second_half_message:]
 
 
-def human_readable_bytes(size_bytes):
+def human_readable_bytes(size_bytes: int) -> str:
     if size_bytes == 0:
         return "0 B"
 
@@ -226,7 +227,7 @@ def human_readable_bytes(size_bytes):
 
 
 # Lab Functions
-def get_lab_temp_path(lab_name, force_creation=True):
+def get_lab_temp_path(lab_name: str, force_creation: bool = True) -> str:
     def windows_path():
         import win32file
         return win32file.GetLongPathName(tempfile.gettempdir())
@@ -242,35 +243,35 @@ def get_lab_temp_path(lab_name, force_creation=True):
     return lab_temp_directory
 
 
-def get_vlab_temp_path(force_creation=True):
+def get_vlab_temp_path(force_creation: bool = True) -> str:
     return get_lab_temp_path("kathara_vlab", force_creation=force_creation)
 
 
-def pack_file_for_tar(fileobj, arcname):
-    if isinstance(fileobj, str):
-        file_content_patched = convert_win_2_linux(fileobj)
+def pack_file_for_tar(file_obj: Union[str, io.IOBase], arc_name: str) -> (tarfile.TarInfo, bytes):
+    if isinstance(file_obj, str):
+        file_content_patched = convert_win_2_linux(file_obj)
         file_content = BytesIO(file_content_patched)
         filesize = len(file_content_patched)
-    elif isinstance(fileobj, io.IOBase):
-        file_content = fileobj.read()
-        file_content = BytesIO(file_content.encode('utf-8') if isinstance(fileobj, io.TextIOBase) else file_content)
-        fileobj.seek(0, 2)
-        filesize = fileobj.tell()
-        fileobj.seek(0)
+    elif isinstance(file_obj, io.IOBase):
+        file_content = file_obj.read()
+        file_content = BytesIO(file_content.encode('utf-8') if isinstance(file_obj, io.TextIOBase) else file_content)
+        file_obj.seek(0, 2)
+        filesize = file_obj.tell()
+        file_obj.seek(0)
     else:
-        raise ValueError("File type %s not supported" % type(fileobj))
+        raise ValueError("File type %s not supported" % type(file_obj))
 
-    tarinfo = tarfile.TarInfo(arcname.replace("\\", "/"))  # Tar files must have Linux-style paths
+    tarinfo = tarfile.TarInfo(arc_name.replace("\\", "/"))  # Tar files must have Linux-style paths
     tarinfo.size = filesize
 
     return tarinfo, file_content
 
 
-def pack_files_for_tar(guest_to_host):
+def pack_files_for_tar(guest_to_host: Dict) -> bytes:
     with tempfile.NamedTemporaryFile(mode='wb+', suffix='.tar.gz') as temp_file:
         with tarfile.open(fileobj=temp_file, mode='w:gz') as tar_file:
-            for path, fileobj in guest_to_host.items():
-                tar_info, file_content = pack_file_for_tar(fileobj, arcname=path)
+            for path, file_obj in guest_to_host.items():
+                tar_info, file_content = pack_file_for_tar(file_obj, arc_name=path)
                 tar_file.addfile(tar_info, file_content)
 
         temp_file.seek(0)
@@ -280,7 +281,7 @@ def pack_files_for_tar(guest_to_host):
     return tar_data
 
 
-def is_excluded_file(path):
+def is_excluded_file(path: str) -> bool:
     _, filename = os.path.split(path)
 
     return filename in EXCLUDED_FILES

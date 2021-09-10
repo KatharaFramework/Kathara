@@ -1,20 +1,23 @@
 import json
 import logging
+import os
+from typing import Dict, Union, List
 
 from deepdiff import DeepDiff
 
-import os
 from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
 from ..manager.Kathara import Kathara
+from ..model.Lab import Lab
+from ..model.Machine import Machine
 
 
 class BuiltInTest(Test):
-    def __init__(self, lab):
+    def __init__(self, lab: Lab) -> None:
         Test.__init__(self, lab)
 
-    def create_signature(self):
+    def create_signature(self) -> None:
         for (machine_name, machine) in self.lab.machines.items():
             logging.info("Building `builtin` signature for device %s..." % machine_name)
 
@@ -24,7 +27,7 @@ class BuiltInTest(Test):
             with open("%s/%s.builtin" % (self.signature_path, machine_name), 'w') as machine_signature_file:
                 machine_signature_file.write(json.dumps(machine_status, indent=4))
 
-    def test(self):
+    def test(self) -> bool:
         test_passed = True
 
         for (machine_name, machine) in self.lab.machines.items():
@@ -56,7 +59,7 @@ class BuiltInTest(Test):
 
         return test_passed
 
-    def check_signature(self, signature, status):
+    def check_signature(self, signature: Union[Dict, str], status: Union[Dict, str]) -> Union[DeepDiff, List]:
         diff = DeepDiff(status, signature, ignore_order=True)
 
         if "iterable_item_added" in diff:
@@ -67,7 +70,7 @@ class BuiltInTest(Test):
         return diff
 
     @staticmethod
-    def _get_machine_status(machine):
+    def _get_machine_status(machine: Machine) -> Dict:
         # Machine interfaces
         (ip_addr, _) = Kathara.get_instance().exec(lab_hash=machine.lab.hash,
                                                    machine_name=machine.name,

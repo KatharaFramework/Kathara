@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import Set, Dict, Union, Generator, Any
+from typing import Set, Dict, Generator, Any
 
 from ..foundation.manager.IManager import IManager
 from ..foundation.manager.ManagerFactory import ManagerFactory
@@ -13,7 +13,7 @@ from ..setting.Setting import Setting, AVAILABLE_MANAGERS
 class Kathara(IManager):
     __slots__ = ['manager']
 
-    __instance = None
+    __instance: Kathara = None
 
     @staticmethod
     def get_instance() -> Kathara:

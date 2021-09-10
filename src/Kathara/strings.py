@@ -1,6 +1,5 @@
 from terminaltables import SingleTable
 
-
 strings = {
     "vstart": "Start a new Kathara device",
     "vclean": "Stop a single Kathara device",
@@ -22,7 +21,7 @@ strings = {
 wiki_description = "For examples and further information visit: https://github.com/KatharaFramework/Kathara/wiki"
 
 
-def formatted_strings():
+def formatted_strings() -> str:
     commands = []
     for item in strings.items():
         commands.append(list(item))
