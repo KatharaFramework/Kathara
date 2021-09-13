@@ -50,11 +50,14 @@ class DockerImage(object):
         (_, local_image_digest) = local_repo_digest.split("@")
         # We only need to update tagged images, not the ones with digests.
         if remote_image_digest != local_image_digest:
-            utils.confirmation_prompt("A new version of image `%s` has been found on Docker Hub. "
-                                      "Do you want to pull it?" % image_name,
-                                      lambda: self.pull(image_name),
-                                      lambda: None
-                                      )
+            if utils.CLI_ENV:
+                utils.confirmation_prompt("A new version of image `%s` has been found on Docker Hub. "
+                                          "Do you want to pull it?" % image_name,
+                                          lambda: self.pull(image_name),
+                                          lambda: None
+                                          )
+            else:
+                self.pull(image_name)
 
     def check(self, image_name: str) -> None:
         self._check_and_pull(image_name, pull=False)

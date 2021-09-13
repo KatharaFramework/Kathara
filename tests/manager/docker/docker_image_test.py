@@ -84,14 +84,13 @@ def test_check_for_updates_remote_image(mock_local_image, mock_remote_image, moc
     assert not mock_pull.called
 
 
-@mock.patch("src.Kathara.utils.confirmation_prompt")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.pull")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.get_remote")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.get_local")
 @mock.patch("docker.models.images.Image")
 @mock.patch("docker.models.images.Image")
 def test_check_for_updates_image_update(mock_local_image, mock_remote_image, mock_get_local, mock_get_remote,
-                                        mock_pull, mock_confirmation_prompt_utils, docker_image):
+                                        mock_pull, docker_image):
     mock_local_image.configure_mock(**{
         'attrs': {
             'RepoDigests': ['kathara/test@sha256']
@@ -109,7 +108,6 @@ def test_check_for_updates_image_update(mock_local_image, mock_remote_image, moc
     docker_image.check_for_updates("kathara/test")
     mock_get_local.assert_called_once_with("kathara/test")
     mock_get_remote.assert_called_once_with("kathara/test")
-    mock_confirmation_prompt_utils.return_value = docker_image.pull("kathara/test")
     mock_pull.assert_called_once_with("kathara/test")
 
 
