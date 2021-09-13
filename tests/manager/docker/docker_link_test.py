@@ -1,5 +1,7 @@
 import sys
 from unittest import mock
+from unittest.mock import Mock
+
 import docker.types
 
 import pytest
@@ -24,12 +26,6 @@ def docker_link(mock_obj):
 
 
 @pytest.fixture()
-@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def default_setting(mock_setting):
-    return mock_setting
-
-
-@pytest.fixture()
 @mock.patch("docker.models.networks.Network")
 def docker_network(mock_network):
     return mock_network
@@ -40,23 +36,46 @@ def docker_network(mock_network):
 def progress_bar(mock_progress_bar):
     return mock_progress_bar
 
-
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_get_network_name(mock_get_current_user_name, default_setting):
+def test_get_network_name(mock_get_current_user_name, mock_setting_get_instance):
     mock_get_current_user_name.return_value = 'user'
-    default_setting.return_value.multiuser = False
-    default_setting.return_value.net_prefix = 'kathara'
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'multiuser': False,
+        'net_prefix': 'kathara'
+    })
+    mock_setting_get_instance.return_value = setting_mock
     link_name = DockerLink.get_network_name("A")
     assert link_name == "kathara_user_A"
 
 
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create(mock_get_current_user_name, docker_link, default_link, default_setting):
+def test_get_network_name_multiuser(mock_get_current_user_name, mock_setting_get_instance):
+    mock_get_current_user_name.return_value = 'user'
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'multiuser': True,
+        'net_prefix': 'CUSTOM_PREFIX'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    link_name = DockerLink.get_network_name("A")
+    assert link_name == "CUSTOM_PREFIX_A"
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_link, default_link):
     docker_link.client.networks.list.return_value = []
 
     mock_get_current_user_name.return_value = 'user'
-    default_setting.return_value.multiuser = False
-    default_setting.return_value.net_prefix = 'kathara'
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'multiuser': False,
+        'net_prefix': 'kathara',
+    })
+    mock_setting_get_instance.return_value = setting_mock
     docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
         name="kathara_user_A",
@@ -67,6 +86,34 @@ def test_create(mock_get_current_user_name, docker_link, default_link, default_s
             "lab_hash": utils.generate_urlsafe_hash("default_scenario"),
             "name": "A",
             "user": "user",
+            "app": "kathara",
+            "external": ""
+        }
+    )
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_multiuser(mock_get_current_user_name, mock_setting_get_instance, docker_link, default_link):
+    docker_link.client.networks.list.return_value = []
+
+    mock_get_current_user_name.return_value = 'user'
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'multiuser': True,
+        'net_prefix': 'kathara'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    docker_link.create(default_link)
+    docker_link.client.networks.create.assert_called_once_with(
+        name="kathara_A",
+        driver="kathara/katharanp:latest",
+        check_duplicate=True,
+        ipam=docker.types.IPAMConfig(driver='null'),
+        labels={
+            "lab_hash": utils.generate_urlsafe_hash("default_scenario"),
+            "name": "A",
+            "user": "shared",
             "app": "kathara",
             "external": ""
         }
