@@ -100,5 +100,4 @@ def test_get_container_name_lab_hash_multiuser(mock_get_current_user_name, mock_
         'device_prefix': 'dev_prefix'
     })
     mock_setting_get_instance.return_value = setting_mock
-    name = DockerMachine.get_container_name("test_device", "lab_hash")
     assert "dev_prefix_test_devicelab_hash" == DockerMachine.get_container_name("test_device", "lab_hash")
