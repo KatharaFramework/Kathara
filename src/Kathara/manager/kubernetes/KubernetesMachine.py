@@ -6,7 +6,7 @@ import shlex
 import uuid
 from functools import partial
 from multiprocessing.dummy import Pool
-from typing import Optional, Set, List, Union, Dict, Generator
+from typing import Optional, Set, List, Union, Dict, Generator, Tuple
 
 import progressbar
 from kubernetes import client
@@ -473,7 +473,7 @@ class KubernetesMachine(object):
         return None
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], tty: bool = False, stdin: bool = False,
-             stdin_buffer: List = None, stderr: bool = False) -> Optional[(str, str)]:
+             stdin_buffer: List = None, stderr: bool = False) -> Optional[Tuple[str, str]]:
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
         command = shlex.split(command) if type(command) == str else command

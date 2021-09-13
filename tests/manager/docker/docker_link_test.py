@@ -29,6 +29,12 @@ def default_setting(mock_setting):
     return mock_setting
 
 
+@pytest.fixture()
+@mock.patch("docker.models.networks.Network")
+def docker_network(mock_network):
+    return mock_network
+
+
 @mock.patch("src.Kathara.utils.get_current_user_name")
 def test_get_network_name(mock_get_current_user_name, default_setting):
     mock_get_current_user_name.return_value = 'user'
@@ -59,3 +65,9 @@ def test_create(mock_get_current_user_name, docker_link, default_link, default_s
             "external": ""
         }
     )
+
+
+@mock.patch("docker.models.networks.Network")
+def test_delete_link(docker_network):
+    DockerLink._delete_link(docker_network)
+    docker_network.remove.assert_called_once()

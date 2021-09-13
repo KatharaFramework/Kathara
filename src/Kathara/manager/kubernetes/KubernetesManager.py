@@ -2,7 +2,7 @@ import io
 import json
 from copy import copy
 from datetime import datetime
-from typing import Set, Dict, Generator
+from typing import Set, Dict, Generator, Any
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
