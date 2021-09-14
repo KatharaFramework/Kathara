@@ -43,7 +43,7 @@ class ExtParser(object):
                     external_links[link] = []
 
                 external_links[link].append(ExternalLink(interface, vlan))
-            elif not line.startswith('#'):
+            elif not line.startswith('#') and line.strip():
                 raise Exception("[ERROR] In file lab.ext, line %d malformed." % line_number)
 
             line_number += 1

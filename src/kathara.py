@@ -59,7 +59,7 @@ class KatharaEntryPoint(object):
             print('Current version: %s' % CURRENT_VERSION)
             sys.exit(0)
 
-        if args.command is None:
+        if args.command is None or not args.command.islower():
             parser.print_help()
             sys.exit(1)
 

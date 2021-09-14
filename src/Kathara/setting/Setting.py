@@ -4,14 +4,14 @@ import json
 import logging
 import os
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from .. import utils
 from .. import version
 from ..connectors.GitHubApi import GitHubApi
 from ..exceptions import HTTPConnectionError, SettingsError
-from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
 from ..foundation.setting.SettingsAddon import SettingsAddon
+from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
 
 AVAILABLE_DEBUG_LEVELS = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "EXCEPTION"]
 AVAILABLE_MANAGERS = ["docker", "kubernetes"]
@@ -59,7 +59,7 @@ class Setting(object):
             for (name, value) in DEFAULTS.items():
                 setattr(self, name, value)
 
-            self.addons: SettingsAddon = None
+            self.addons: Optional[SettingsAddon] = None
             self.last_checked: float = time.time() - ONE_WEEK
 
             self.load()

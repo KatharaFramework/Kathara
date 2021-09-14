@@ -17,7 +17,7 @@ def get_terminal_size_windows() -> (int, int):
             h = bottom - top + 1
 
             return w, h
-    except:
+    except Exception:
         return get_terminal_size_tput()
 
 
@@ -32,5 +32,5 @@ def get_terminal_size_tput() -> (int, int):
         h = int(output[0])
 
         return w, h
-    except:
+    except Exception:
         return 80, 25

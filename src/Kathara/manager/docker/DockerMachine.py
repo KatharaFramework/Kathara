@@ -210,6 +210,9 @@ class DockerMachine(object):
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
         privileged = options['privileged_machines'] if 'privileged_machines' in options else False
+        if Setting.get_instance().multiuser:
+            privileged = False
+            logging.warning("Privileged flag is ignored with multiuser scenarios.")
 
         container_name = self.get_container_name(machine.name, machine.lab.hash)
         try:
@@ -532,7 +535,7 @@ class DockerMachine(object):
     def get_container_name(name: str, lab_hash: str) -> str:
         lab_hash = lab_hash if "_%s" % lab_hash else ""
         username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().multiuser else ""
-        return "%s%s_%s%s" % (Setting.get_instance().device_prefix, username_prefix, name, lab_hash)
+        return "%s%s_%s_%s" % (Setting.get_instance().device_prefix, username_prefix, name, lab_hash)
 
     @staticmethod
     def _delete_machine(machine: docker.models.containers.Container) -> None:

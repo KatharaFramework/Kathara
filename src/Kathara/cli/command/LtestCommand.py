@@ -96,6 +96,9 @@ class LtestCommand(Command):
         builtin_test = BuiltInTest(lab)
         user_test = UserTest(lab)
 
+        builtin_test_passed = True
+        user_test_passed = True
+
         if not args['verify']:
             if not os.path.exists(signature_test_path) or args['rebuild_signature']:
                 shutil.rmtree(signature_test_path, ignore_errors=True)
@@ -109,8 +112,6 @@ class LtestCommand(Command):
             shutil.rmtree(result_test_path, ignore_errors=True)
             os.makedirs(result_test_path, exist_ok=True)
 
-            builtin_test_passed = True
-            user_test_passed = True
             try:
                 if args['verify'] == "builtin" or args['verify'] == "both":
                     builtin_test_passed = builtin_test.test()

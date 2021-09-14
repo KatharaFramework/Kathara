@@ -1,6 +1,6 @@
 import io
 from abc import ABC, abstractmethod
-from typing import Dict, Set, Any, Union, Generator
+from typing import Dict, Set, Any, Generator
 
 from ...model.Lab import Lab
 from ...model.Machine import Machine

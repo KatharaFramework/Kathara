@@ -1,5 +1,8 @@
-import pytest
 import sys
+from unittest import mock
+from unittest.mock import Mock
+
+import pytest
 
 sys.path.insert(0, './')
 
@@ -9,7 +12,6 @@ from src.Kathara.model.Link import Link
 from src.Kathara.exceptions import MachineOptionError, NonSequentialMachineInterfaceError
 
 sys.path.insert(0, './src')
-from Kathara.setting.Setting import Setting
 
 
 @pytest.fixture()
@@ -104,14 +106,16 @@ def test_check_exception(default_device: Machine):
         default_device.check()
 
 
-def test_get_image_default():
-    old_image = Setting.get_instance().image
-    Setting.get_instance().image = "kathara/frr"
-    Setting.get_instance().save()
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_get_image_default(mock_setting_get_instance):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'image': "kathara/frr"
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
     pc = Machine(Lab("Machine_test_lab"), "test_machine")
     assert pc.get_image() == "kathara/frr"
-    Setting.get_instance().image = old_image
-    Setting.get_instance().save()
 
 
 def test_get_image():

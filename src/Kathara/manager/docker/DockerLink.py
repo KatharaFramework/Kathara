@@ -76,25 +76,24 @@ class DockerLink(object):
         network_objects = self.get_links_by_filters(link_name=link_name)
         if network_objects:
             link.api_object = network_objects.pop()
-            return
+        else:
+            network_ipam_config = docker.types.IPAMConfig(driver='null')
 
-        network_ipam_config = docker.types.IPAMConfig(driver='null')
-
-        user_label = "shared" if Setting.get_instance().multiuser else utils.get_current_user_name()
-        link.api_object = self.client.networks.create(name=link_name,
-                                                      driver=PLUGIN_NAME,
-                                                      check_duplicate=True,
-                                                      ipam=network_ipam_config,
-                                                      labels={"lab_hash": link.lab.hash,
-                                                              "name": link.name,
-                                                              "user": user_label,
-                                                              "app": "kathara",
-                                                              "external": ";".join([x.get_full_name()
-                                                                                    for x in link.external
-                                                                                    ]
-                                                                                   )
-                                                              }
-                                                      )
+            user_label = "shared" if Setting.get_instance().multiuser else utils.get_current_user_name()
+            link.api_object = self.client.networks.create(name=link_name,
+                                                          driver=PLUGIN_NAME,
+                                                          check_duplicate=True,
+                                                          ipam=network_ipam_config,
+                                                          labels={"lab_hash": link.lab.hash,
+                                                                  "name": link.name,
+                                                                  "user": user_label,
+                                                                  "app": "kathara",
+                                                                  "external": ";".join([x.get_full_name()
+                                                                                        for x in link.external
+                                                                                        ]
+                                                                                       )
+                                                                  }
+                                                          )
 
         if link.external:
             logging.debug("External Interfaces required, connecting them...")
