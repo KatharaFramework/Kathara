@@ -3,7 +3,7 @@ import shlex
 from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
-from typing import List, Any, Dict, Generator
+from typing import List, Any, Dict, Generator, Optional, Set
 
 import docker.models.containers
 import progressbar
@@ -132,7 +132,8 @@ class DockerMachine(object):
         if utils.CLI_ENV:
             progress_bar.finish()
 
-    def _deploy_and_start_machine(self, progress_bar: progressbar.ProgressBar, machine_item: (str, Machine)) -> None:
+    def _deploy_and_start_machine(self, progress_bar: Optional[progressbar.ProgressBar],
+                                  machine_item: (str, Machine)) -> None:
         (_, machine) = machine_item
 
         self.create(machine)
@@ -254,7 +255,7 @@ class DockerMachine(object):
         machine.api_object = machine_container
 
     def update(self, machine: Machine) -> None:
-        machines = self.get_machines_by_filters(machine_name=machine.name, lab_hash=machine.lab.hash)
+        machines = self.get_machines_api_objects_by_filters(machine_name=machine.name, lab_hash=machine.lab.hash)
 
         if not machines:
             raise Exception("Device `%s` not found." % machine.name)
@@ -314,8 +315,9 @@ class DockerMachine(object):
             for i in range(0, machine.get_num_terms()):
                 machine.connect(Setting.get_instance().terminal)
 
-    def undeploy(self, lab_hash: str, selected_machines: List[Machine] = None) -> None:
-        machines = self.get_machines_by_filters(lab_hash=lab_hash)
+    def undeploy(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
+        machines = self.get_machines_api_objects_by_filters(lab_hash=lab_hash)
+
         if selected_machines is not None and len(selected_machines) > 0:
             machines = [item for item in machines if item.labels["name"] in selected_machines]
 
@@ -342,7 +344,7 @@ class DockerMachine(object):
                 progress_bar.finish()
 
     def wipe(self, user: str = None) -> None:
-        machines = self.get_machines_by_filters(user=user)
+        machines = self.get_machines_api_objects_by_filters(user=user)
 
         pool_size = utils.get_pool_size()
         machines_pool = Pool(pool_size)
@@ -352,14 +354,15 @@ class DockerMachine(object):
         for chunk in items:
             machines_pool.map(func=partial(self._undeploy_machine, None), iterable=chunk)
 
-    def _undeploy_machine(self, progress_bar: progressbar.ProgressBar, machine_item: (str, Machine)) -> None:
-        self._delete_machine(machine_item)
+    def _undeploy_machine(self, progress_bar: Optional[progressbar.ProgressBar],
+                          machine_api_object: docker.models.containers.Container) -> None:
+        self._delete_machine(machine_api_object)
 
         if progress_bar is not None:
             progress_bar += 1
 
     def connect(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False) -> None:
-        container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
+        container = self.get_machine_api_object(lab_hash=lab_hash, machine_name=machine_name)
 
         if not shell:
             shell = shlex.split(container.labels['shell'])
@@ -380,7 +383,7 @@ class DockerMachine(object):
                 print(result_string)
                 print("--- End Startup Commands Log\n")
 
-        container = self.get_machine(lab_hash=lab_hash, machine_name=machine_name)
+        container = self.get_machine_api_object(lab_hash=lab_hash, machine_name=machine_name)
 
         resp = self.client.api.exec_create(container.id,
                                            shell,
@@ -409,7 +412,7 @@ class DockerMachine(object):
     def exec(self, lab_hash: str, machine_name: str, command: str, tty: bool = True) -> (str, str):
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
-        container = self.get_machine(lab_hash, machine_name)
+        container = self.get_machine_api_object(lab_hash, machine_name)
 
         (exit_code, (stdout, stderr)) = container.exec_run(cmd=command,
                                                            stdout=True,
@@ -426,7 +429,7 @@ class DockerMachine(object):
     def copy_files(machine: docker.models.containers.Container, path: str, tar_data: bytes) -> None:
         machine.put_archive(path, tar_data)
 
-    def get_machines_by_filters(self, lab_hash: str = None, machine_name: str = None, user: str = None) -> \
+    def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None, user: str = None) -> \
             List[docker.models.containers.Container]:
         filters = {"label": ["app=kathara"]}
         if user:
@@ -438,10 +441,10 @@ class DockerMachine(object):
 
         return self.client.containers.list(all=True, filters=filters)
 
-    def get_machine(self, lab_hash: str, machine_name: str) -> docker.models.containers.Container:
+    def get_machine_api_object(self, lab_hash: str, machine_name: str) -> docker.models.containers.Container:
         logging.debug("Searching container `%s` with lab hash `%s`" % (machine_name, lab_hash))
 
-        containers = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+        containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
 
         logging.debug("Found containers: %s" % str(containers))
 
@@ -451,21 +454,21 @@ class DockerMachine(object):
             return containers[0]
 
     def get_machine_info(self, machine_name: str, lab_hash: str = None, user: str = None) -> Dict[str, Any]:
-        machines = self.get_machines_by_filters(machine_name=machine_name, lab_hash=lab_hash, user=user)
-
-        if not machines:
+        machines_api_objects = self.get_machines_api_objects_by_filters(machine_name=machine_name, lab_hash=lab_hash,
+                                                                        user=user)
+        if not machines_api_objects:
             raise Exception("The specified device `%s` is not running." % machine_name)
-        elif len(machines) > 1:
+        elif len(machines_api_objects) > 1:
             raise Exception("There is more than one device matching the name `%s`." % machine_name)
 
-        machine = machines[0]
-        machine_stats = machine.stats(stream=False)
+        machine_api_object = machines_api_objects[0]
 
-        return self._get_stats_by_machine(machine, machine_stats)
+        machine_stats = machine_api_object.stats(stream=False)
 
-    def get_machines_info(self, lab_hash: str, machine_filter: str = None, user: str = None) -> Generator:
-        machines = self.get_machines_by_filters(lab_hash=lab_hash, machine_name=machine_filter, user=user)
+        return self._get_stats_by_machine(machine_api_object, machine_stats)
 
+    def get_machines_info(self, lab_hash: str = None, machine_filter: str = None, user: str = None) -> Generator:
+        machines = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_filter, user=user)
         if not machines:
             if not lab_hash:
                 raise Exception("No devices running.")

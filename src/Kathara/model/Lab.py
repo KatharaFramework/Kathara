@@ -111,7 +111,7 @@ class Lab(object):
 
         machine.add_meta(meta_name, meta_value)
 
-    def attach_external_links(self, external_links: Dict[str, List[ExternalLink]]) -> None:
+    def attach_external_links(self, external_links: Dict[str, ExternalLink]) -> None:
         """
         Attach external links to the network scenario.
         Args:

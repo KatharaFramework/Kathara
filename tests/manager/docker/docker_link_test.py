@@ -36,6 +36,7 @@ def docker_network(mock_network):
 def progress_bar(mock_progress_bar):
     return mock_progress_bar
 
+
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
 def test_get_network_name(mock_get_current_user_name, mock_setting_get_instance):

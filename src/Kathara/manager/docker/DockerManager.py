@@ -195,7 +195,7 @@ class DockerManager(IManager):
 
     @privileged
     def get_machine_api_object(self, lab_hash: str, machine_name: str) -> docker.models.containers.Container:
-        return self.docker_machine.get_machine(lab_hash, machine_name)
+        return self.docker_machine.get_machine_api_object(lab_hash, machine_name)
 
     @privileged
     def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> Dict[str, Any]:
