@@ -44,7 +44,7 @@ class Kathara(IManager):
         """
         Deploy a Kathara network scenario.
         Args:
-            lab (Kathara.model.Lab): A Kathara network scenario.
+            lab (Kathara.model.Lab.Lab): A Kathara network scenario.
             selected_machines (Set[str]): If not None, deploy only the specified devices.
         """
         self.manager.deploy_lab(lab, selected_machines)
@@ -53,7 +53,7 @@ class Kathara(IManager):
         """
         Update a running network scenario.
         Args:
-            lab (Kathara.model.Lab): A Kathara network scenario.
+            lab (Kathara.model.Lab.Lab): A Kathara network scenario.
         """
         self.manager.update_lab(lab)
 
@@ -103,7 +103,7 @@ class Kathara(IManager):
         """
         Copy files on a running machine in the specified paths.
         Args:
-            machine (Kathara.model.Machine): A running machine object. It must have the api_object field populated.
+            machine (Kathara.model.Machine.Machine): A running machine object. It must have the api_object field populated.
             guest_to_host (Dict[str, io.IOBase]): A dict containing the device path as key and
                 fileobj to copy in path as value.
         """

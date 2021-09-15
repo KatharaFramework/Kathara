@@ -213,7 +213,7 @@ class DockerManager(IManager):
         """
         user_name = utils.get_current_user_name() if not all_users else None
 
-        lab_info = self.docker_machine.get_machines_info(lab_hash, machine_filter=machine_name, user=user_name)
+        lab_info = self.docker_machine.get_machines_info(lab_hash, machine_name=machine_name, user=user_name)
 
         return lab_info
 
