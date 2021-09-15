@@ -64,6 +64,10 @@ def check_docker_status(method):
 
 
 class DockerManager(IManager):
+    """
+    The class responsible to interact with Docker API.
+    """
+
     __slots__ = ['client', 'docker_image', 'docker_machine', 'docker_link']
 
     @check_docker_status

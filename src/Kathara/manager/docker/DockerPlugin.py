@@ -13,12 +13,19 @@ XTABLES_LOCK_PATH = "/run/xtables.lock"
 
 
 class DockerPlugin(object):
+    """
+    The class responsible to interact with Docker Plugins.
+    """
+
     __slots__ = ['client']
 
     def __init__(self, client: DockerClient):
         self.client: DockerClient = client
 
     def check_and_download_plugin(self) -> None:
+        """
+        Check the presence of the plugin and download it or upgrade it, if needed.
+        """
         try:
             logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)
 

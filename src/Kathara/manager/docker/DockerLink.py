@@ -21,12 +21,21 @@ from ...setting.Setting import Setting
 
 
 class DockerLink(object):
+    """
+    The class responsible to interact with Docker Networks.
+    """
+
     __slots__ = ['client']
 
     def __init__(self, client: DockerClient) -> None:
         self.client: DockerClient = client
 
     def deploy_links(self, lab: Lab) -> None:
+        """
+        Deploy all the links contained in lab.links.
+        Args:
+            lab (Kathara.model.Lab.Lab): A Kathara network scenario.
+        """
         links = lab.links.items()
 
         if len(links) > 0:
@@ -56,6 +65,12 @@ class DockerLink(object):
         link.api_object = docker_bridge
 
     def _deploy_link(self, progress_bar: progressbar.ProgressBar, link_item: (str, Link)) -> None:
+        """
+        Deploy the Link contained in the link_item.
+        Args:
+            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
+            link_item (Tuple[str, Link]): A tuple composed by the name of the link and a Link object
+        """
         (_, link) = link_item
 
         if link.name == BRIDGE_LINK_NAME:
@@ -67,13 +82,18 @@ class DockerLink(object):
             progress_bar += 1
 
     def create(self, link: Link) -> None:
+        """
+        Create a Docker Network representing the link object and assign it to link.api_object.
+        Args:
+            link (Kathara.model.Link.Link): A Kathara collision domain.
+        """
         # Reserved name for bridged connections, ignore.
         if link.name == BRIDGE_LINK_NAME:
             return
 
         # If a network with the same name exists, return it instead of creating a new one.
         link_name = self.get_network_name(link.name)
-        network_objects = self.get_links_by_filters(link_name=link_name)
+        network_objects = self.get_links_api_object_by_filters(link_name=link_name)
         if network_objects:
             link.api_object = network_objects.pop()
         else:
@@ -100,7 +120,12 @@ class DockerLink(object):
             self._attach_external_interfaces(link.external, link.api_object)
 
     def undeploy(self, lab_hash: str) -> None:
-        links = self.get_links_by_filters(lab_hash=lab_hash)
+        """
+        Undeploy all the links of the scenario specified by lab_hash.
+        Args:
+            lab_hash (str): The hash of the network scenario to undeploy.
+        """
+        links = self.get_links_api_object_by_filters(lab_hash=lab_hash)
         for item in links:
             item.reload()
         links = [item for item in links if len(item.containers) <= 0]
@@ -127,8 +152,14 @@ class DockerLink(object):
                 progress_bar.finish()
 
     def wipe(self, user: str = None) -> None:
+        """
+        Undeploy all the running networks of the specified user.
+        If user is None, it undeploy all the running networks.
+        Args:
+            user (str): The name of a current user on the host
+        """
         user_label = "shared" if Setting.get_instance().multiuser else user
-        links = self.get_links_by_filters(user=user_label)
+        links = self.get_links_api_object_by_filters(user=user_label)
         for item in links:
             item.reload()
         links = [item for item in links if len(item.containers) <= 0]
@@ -142,17 +173,38 @@ class DockerLink(object):
             links_pool.map(func=partial(self._undeploy_link, None), iterable=chunk)
 
     def _undeploy_link(self, progress_bar: progressbar.ProgressBar, network: docker.models.networks.Network) -> None:
+        """
+        Undeploy a Docker Network.
+        Args:
+            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
+            network (docker.models.networks.Network): The Docker network to undeploy.
+        """
         self._delete_link(network)
 
         if progress_bar is not None:
             progress_bar += 1
 
     def get_docker_bridge(self) -> Union[None, docker.models.networks.Network]:
+        """
+        Return a bridged Docker Network.
+        Returns:
+            Union[None, docker.models.networks.Network]: A Docker Bridge if it exists, else None
+        """
         bridge_list = self.client.networks.list(names="bridge")
         return bridge_list.pop() if bridge_list else None
 
-    def get_links_by_filters(self, lab_hash: str = None, link_name: str = None, user: str = None) -> \
+    def get_links_api_object_by_filters(self, lab_hash: str = None, link_name: str = None, user: str = None) -> \
             List[docker.models.networks.Network]:
+        """
+        Return the Docker networks specified by lab_hash, machine_name and user.
+        Args:
+            lab_hash (str): The hash of a network scenario. If specified, return all the networks in the scenario.
+            link_name (str): The name of a network. If specified, return the specified networks of the scenario.
+            user (str): The name of a user on the host. If specified, return only the networks of the user.
+
+        Returns:
+            List[docker.models.networks.Network]: A list of Docker Network.
+        """
         filters = {"label": ["app=kathara"]}
         if user:
             filters["label"].append("user=%s" % user)
@@ -165,6 +217,13 @@ class DockerLink(object):
 
     def _attach_external_interfaces(self, external_links: List[ExternalLink],
                                     network: docker.models.networks.Network) -> None:
+        """
+        Attach an ExternalLink to a Docker Network.
+        Args:
+            external_links (Kathara.model.ExternalLink): A Kathara external collision domain. It is used to create
+            a collision domain attached to a host interface.
+            network (docker.models.networks.Network): A docker Network.
+        """
         for external_link in external_links:
             (name, vlan) = external_link.get_name_and_vlan()
 
@@ -173,15 +232,36 @@ class DockerLink(object):
 
     @staticmethod
     def _get_bridge_name(network: docker.models.networks.Network) -> str:
+        """
+        Return the name of the bridge associated to the Docker Network.
+        Args:
+            network (docker.models.networks.Network): A Docker Network.
+
+        Returns:
+            str: The name of the Docker Bridge in the format "kt-<network.id[:12]>".
+        """
         return "kt-%s" % network.id[:12]
 
     @staticmethod
     def get_network_name(name: str) -> str:
+        """
+        Return the name of a Docker Network.
+        Args:
+            name (str): The name of a Kathara Link.
+
+        Returns:
+            str: The name of the Docker Network in the format "<net_prefix><username_prefix>_<name>".
+        """
         username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().multiuser else ""
         return "%s%s_%s" % (Setting.get_instance().net_prefix, username_prefix, name)
 
     @staticmethod
     def _delete_link(network: docker.models.networks.Network) -> None:
+        """
+        Remove a Docker Network.
+        Args:
+            network (docker.models.networks.Network): A Docker Network.
+        """
         external_label = network.attrs['Labels']["external"]
         external_links = external_label.split(";") if external_label else None
 

@@ -85,6 +85,10 @@ SHUTDOWN_COMMANDS = [
 
 
 class DockerMachine(object):
+    """
+    The class responsible to interact with Docker Container.
+    """
+
     __slots__ = ['client', 'docker_image']
 
     def __init__(self, client: DockerClient, docker_image: DockerImage) -> None:

@@ -161,35 +161,35 @@ def test_undeploy_link(mock_undeploy_link, docker_link, docker_network, progress
 
 @mock.patch("docker.models.networks.list")
 def test_get_links_by_filters(mock_network_list, docker_link):
-    docker_link.get_links_by_filters("lab_hash_value", "link_name_value", "user_name_value")
+    docker_link.get_links_api_object_by_filters("lab_hash_value", "link_name_value", "user_name_value")
     filters = {"label": ["app=kathara", "lab_hash=lab_hash_value", "user=user_name_value"], "name": "link_name_value"}
     mock_network_list.called_once_with(filters=filters)
 
 
 @mock.patch("docker.models.networks.list")
 def test_get_links_by_filters_empty_filters(mock_network_list, docker_link):
-    docker_link.get_links_by_filters()
+    docker_link.get_links_api_object_by_filters()
     filters = {"label": ["app=kathara"]}
     mock_network_list.called_once_with(filters=filters)
 
 
 @mock.patch("docker.models.networks.list")
 def test_get_links_by_filters_only_lab_hash(mock_network_list, docker_link):
-    docker_link.get_links_by_filters("lab_hash_value")
+    docker_link.get_links_api_object_by_filters("lab_hash_value")
     filters = {"label": ["app=kathara", "lab_hash=lab_hash_value"]}
     mock_network_list.called_once_with(filters=filters)
 
 
 @mock.patch("docker.models.networks.list")
 def test_get_links_by_filters_only_link_name(mock_network_list, docker_link):
-    docker_link.get_links_by_filters(None, "link_name_value")
+    docker_link.get_links_api_object_by_filters(None, "link_name_value")
     filters = {"label": ["app=kathara"], "name": "link_name_value"}
     mock_network_list.called_once_with(filters=filters)
 
 
 @mock.patch("docker.models.networks.list")
 def test_get_links_by_filters_only_user_name(mock_network_list, docker_link):
-    docker_link.get_links_by_filters(None, None, "user_name_value")
+    docker_link.get_links_api_object_by_filters(None, None, "user_name_value")
     filters = {"label": ["app=kathara", "user=user_name_value"]}
     mock_network_list.called_once_with(filters=filters)
 
@@ -198,7 +198,7 @@ def test_get_links_by_filters_only_user_name(mock_network_list, docker_link):
 @mock.patch("docker.models.networks.Network")
 @mock.patch("docker.models.networks.Network")
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._undeploy_link")
-@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_by_filters")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_api_object_by_filters")
 def test_undeploy(mock_get_links_by_filters, mock_undeploy_link, mock_net1, mock_net2, mock_net3,
                   docker_link):
     lab = Lab("Default scenario")
@@ -215,7 +215,7 @@ def test_undeploy(mock_get_links_by_filters, mock_undeploy_link, mock_net1, mock
 
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._undeploy_link")
-@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_by_filters")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_api_object_by_filters")
 def test_undeploy_empty_lab(mock_get_links_by_filters, mock_undeploy_link, docker_link):
     lab = Lab("Default scenario")
     mock_get_links_by_filters.return_value = []
@@ -228,7 +228,7 @@ def test_undeploy_empty_lab(mock_get_links_by_filters, mock_undeploy_link, docke
 @mock.patch("docker.models.networks.Network")
 @mock.patch("docker.models.networks.Network")
 @mock.patch("docker.models.networks.Network")
-@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_by_filters")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_api_object_by_filters")
 def test_wipe(mock_get_links_by_filters, mock_net1, mock_net2, mock_net3, mock_undeploy_link, docker_link):
     lab = Lab("Default scenario")
     lab.get_or_new_link("A")

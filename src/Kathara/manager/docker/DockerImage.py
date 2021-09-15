@@ -9,18 +9,50 @@ from ... import utils
 
 
 class DockerImage(object):
+    """
+    The class responsible to interact with Docker Images.
+    """
+
     __slots__ = ['client']
 
     def __init__(self, client: DockerClient) -> None:
         self.client: DockerClient = client
 
     def get_local(self, image_name: str) -> docker.models.images.Image:
+        """
+        Return the specified Docker Image.
+        Args:
+            image_name (str): The name of a Docker Image.
+
+        Returns:
+            docker.models.images.Image: A Docker Image
+        """
         return self.client.images.get(image_name)
 
     def get_remote(self, image_name: str) -> docker.models.images.RegistryData:
+        """
+        Gets the registry data for an image.
+
+        Args:
+            image_name (str): The name of the image.
+
+        Returns:
+            docker.models.images.RegistryData: The data object.
+
+        Raises:
+            `docker.errors.APIError`: If the server returns an error.
+        """
         return self.client.images.get_registry_data(image_name)
 
-    def pull(self, image_name: str) -> Union[docker.models.images.Image, List]:
+    def pull(self, image_name: str) -> docker.models.images.Image:
+        """
+        Pull and return the specified Docker Image.
+        Args:
+            image_name (str): The name of a Docker Image.
+
+        Returns:
+            docker.models.images.Image: A Docker Image
+        """
         # If no tag or sha key is specified, we add "latest"
         if (':' or '@') not in image_name:
             image_name = "%s:latest" % image_name
@@ -29,6 +61,11 @@ class DockerImage(object):
         return self.client.images.pull(image_name)
 
     def check_for_updates(self, image_name: str) -> None:
+        """
+        Update the specified image.
+        Args:
+            image_name (str): The name of a Docker Image.
+        """
         logging.debug("Checking updates for %s..." % image_name)
 
         if '@' in image_name:
@@ -60,13 +97,29 @@ class DockerImage(object):
                 self.pull(image_name)
 
     def check(self, image_name: str) -> None:
+        """
+        Check the existence of the specified image.
+        Args:
+            image_name (str): The name of a Docker Image.
+        """
         self._check_and_pull(image_name, pull=False)
 
     def check_and_pull_from_list(self, images: Union[List[str], Set[str]]) -> None:
+        """
+        Check and pull a list of specified images.
+        Args:
+            images (Union[List[str], Set[str]]): A list of Docker images name to pull.
+        """
         for image in images:
             self._check_and_pull(image)
 
     def _check_and_pull(self, image_name: str, pull: bool = True) -> None:
+        """
+        Check and pull of the specified image.
+        Args:
+            image_name (str): The name of a Docker Image.
+            pull (bool): If True, pull the image from Docker Hub.
+        """
         try:
             # Tries to get the image from the local Docker repository.
             self.get_local(image_name)
