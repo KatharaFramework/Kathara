@@ -84,7 +84,8 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `copy_files` method.")
 
     @abstractmethod
-    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> Generator:
+    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> \
+            Generator[Dict[str, Any], None, None]:
         """
         Return information about the running devices.
         Args:

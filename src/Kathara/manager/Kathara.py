@@ -109,7 +109,8 @@ class Kathara(IManager):
         """
         self.manager.copy_files(machine, guest_to_host)
 
-    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> Generator:
+    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> \
+            Generator[Dict[str, Any], None, None]:
         """
         Return information about the running devices.
         Args:
@@ -117,8 +118,9 @@ class Kathara(IManager):
             machine_name (str): If not None, return information of the specified device.
             all_users (bool): If True, return information about the device of all users.
 
-        Yields:
-              List[Dict[str, Any]]: A list containing dicts containing device names as keys and their info as values.
+        Returns:
+              Generator[Dict[str, Any], None, None]: A generator containing dicts containing device names as keys and
+              their info as values.
         """
         return self.manager.get_lab_info(lab_hash, machine_name, all_users)
 

@@ -467,7 +467,8 @@ class DockerMachine(object):
 
         return self._get_stats_by_machine(machine_api_object, machine_stats)
 
-    def get_machines_info(self, lab_hash: str = None, machine_filter: str = None, user: str = None) -> Generator:
+    def get_machines_info(self, lab_hash: str = None, machine_filter: str = None, user: str = None) -> \
+            Generator[Dict[str, Any], None, None]:
         machines = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_filter, user=user)
         if not machines:
             if not lab_hash:
