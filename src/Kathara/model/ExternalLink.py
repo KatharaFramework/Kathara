@@ -1,16 +1,27 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 MAX_INTERFACE_NAME_LENGTH = 15
 
 
 class ExternalLink(object):
+    """
+    A Kathara external collision domain. It is used to create a collision domain attached to a host interface.
+    """
     __slots__ = ['interface', 'vlan']
 
     def __init__(self, interface: str, vlan: Optional[int] = None) -> None:
         self.interface: str = interface
         self.vlan: int = vlan
 
-    def get_name_and_vlan(self) -> (str, Optional[int]):
+    def get_name_and_vlan(self) -> Tuple[str, Optional[int]]:
+        """
+        Return a tuple composed by the name of the attached interface and, if present, the vlan tag.
+        The interface name is computed appending the interface name to the vlan tag (if present).
+        If the length of interface name + vlan tag is more than 15 chars, the interface name is truncated in order
+        to fit the whole string in 15 chars.
+        Returns:
+            Tuple[str, Optional[int]]: a tuple composed by the name of the attached interface and the vlan tag.
+        """
         # VLAN is defined
         if self.vlan:
             vlan_name_length = len(".%s" % self.vlan)
@@ -23,6 +34,11 @@ class ExternalLink(object):
         return self.interface, None
 
     def get_full_name(self) -> str:
+        """
+        Return the external link full name: <name>.<vlan-tag>
+        Returns:
+            (str): external link full name
+        """
         (name, vlan) = self.get_name_and_vlan()
         return name if not vlan else "%s.%s" % (name, vlan)
 
