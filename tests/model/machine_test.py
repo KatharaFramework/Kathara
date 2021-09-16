@@ -1,4 +1,6 @@
+import os
 import sys
+import tarfile
 from unittest import mock
 from unittest.mock import Mock
 
@@ -16,7 +18,7 @@ sys.path.insert(0, './src')
 
 @pytest.fixture()
 def default_device():
-    return Machine(Lab("Machine_test_lab"), "test_machine")
+    return Machine(Lab("test_lab"), "test_machine")
 
 
 def test_default_device_parameters(default_device: Machine):
@@ -107,21 +109,20 @@ def test_check_exception(default_device: Machine):
 
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_get_image_default(mock_setting_get_instance):
+def test_get_image_default(mock_setting_get_instance, default_device: Machine):
     setting_mock = Mock()
     setting_mock.configure_mock(**{
         'image': "kathara/frr"
     })
     mock_setting_get_instance.return_value = setting_mock
 
-    pc = Machine(Lab("Machine_test_lab"), "test_machine")
-    assert pc.get_image() == "kathara/frr"
+    assert default_device.get_image() == "kathara/frr"
 
 
 def test_get_image():
     kwargs = {'image': 'kathara/frr'}
-    pc = Machine(Lab("Machine_test_lab"), "test_machine", **kwargs)
-    assert pc.get_image() == "kathara/frr"
+    device = Machine(Lab("test_lab"), "test_machine", **kwargs)
+    assert device.get_image() == "kathara/frr"
 
 
 def test_get_mem_default(default_device: Machine):
@@ -131,14 +132,14 @@ def test_get_mem_default(default_device: Machine):
 def test_get_mem_from_lab_options():
     lab = Lab('mem_test')
     lab.add_option("mem", "150m")
-    pc = Machine(lab, "test_machine")
-    assert pc.get_mem() == "150m"
+    device = Machine(lab, "test_machine")
+    assert device.get_mem() == "150m"
 
 
 def test_get_mem_from_device_meta():
     kwargs = {"mem": "200m"}
-    pc = Machine(Lab("Machine_test_lab"), "test_machine", **kwargs)
-    assert pc.get_mem() == "200m"
+    device = Machine(Lab("test_lab"), "test_machine", **kwargs)
+    assert device.get_mem() == "200m"
 
 
 def test_get_cpu_default(default_device: Machine):
@@ -148,14 +149,14 @@ def test_get_cpu_default(default_device: Machine):
 def test_get_cpu_from_lab_options():
     lab = Lab('mem_test')
     lab.add_option("cpus", "2")
-    pc = Machine(lab, "test_machine")
-    assert pc.get_cpu() == 2
+    device = Machine(lab, "test_machine")
+    assert device.get_cpu() == 2
 
 
 def test_get_cpu_from_device_meta():
     kwargs = {"cpus": "1"}
-    pc = Machine(Lab("Machine_test_lab"), "test_machine", **kwargs)
-    assert pc.get_cpu() == 1
+    device = Machine(Lab("test_lab"), "test_machine", **kwargs)
+    assert device.get_cpu() == 1
 
 
 def test_get_num_terms_default(default_device: Machine):
@@ -165,14 +166,14 @@ def test_get_num_terms_default(default_device: Machine):
 def test_get_num_terms_from_lab_options():
     lab = Lab('mem_test')
     lab.add_option("num_terms", "2")
-    pc = Machine(lab, "test_machine")
-    assert pc.get_num_terms() == 2
+    device = Machine(lab, "test_machine")
+    assert device.get_num_terms() == 2
 
 
 def test_get_num_terms_from_device_meta():
     kwargs = {"num_terms": "1"}
-    pc = Machine(Lab("Machine_test_lab"), "test_machine", **kwargs)
-    assert pc.get_num_terms() == 1
+    device = Machine(Lab("test_lab"), "test_machine", **kwargs)
+    assert device.get_num_terms() == 1
 
 
 def test_get_num_terms_mix():
@@ -180,7 +181,101 @@ def test_get_num_terms_mix():
     lab = Lab('mem_test')
     lab.add_option("num_terms", "2")
     kwargs = {"num_terms": "1"}
-    pc1 = Machine(lab, "test_machine1", **kwargs)
-    pc2 = Machine(lab, "test_machine2")
-    assert pc1.get_num_terms() == 2
-    assert pc2.get_num_terms() == 2
+    device1 = Machine(lab, "test_machine1", **kwargs)
+    device2 = Machine(lab, "test_machine2")
+    assert device1.get_num_terms() == 2
+    assert device2.get_num_terms() == 2
+
+
+@mock.patch("src.Kathara.utils.pack_file_for_tar")
+def test_pack_data_hidden_files(pack_file_for_tar_mock):
+    lab_path = "tests/model/hiddenfiles"
+    lab = Lab(None, lab_path)
+    device = lab.get_or_new_machine("test_machine")
+
+    pack_file_for_tar_mock.return_value = (tarfile.TarInfo(""), None)
+
+    device.pack_data()
+
+    pack_file_for_tar_mock.assert_any_call(
+        os.path.join(lab_path, "test_machine", ".hidden"),
+        arc_name=os.path.join("hostlab", device.name, ".hidden")
+    )
+
+    pack_file_for_tar_mock.assert_any_call(
+        os.path.join(lab_path, "test_machine", "nothidden"),
+        arc_name=os.path.join("hostlab", device.name, "nothidden")
+    )
+
+    assert pack_file_for_tar_mock.call_count == 2
+
+
+@mock.patch("src.Kathara.utils.pack_file_for_tar")
+def test_pack_data_hidden_files_recursive(pack_file_for_tar_mock):
+    lab_path = "tests/model/hiddenfilesrecursive"
+    lab = Lab(None, lab_path)
+    device = lab.get_or_new_machine("test_machine")
+
+    pack_file_for_tar_mock.return_value = (tarfile.TarInfo(""), None)
+
+    device.pack_data()
+
+    pack_file_for_tar_mock.assert_any_call(
+        os.path.join(lab_path, "test_machine", ".hidden"),
+        arc_name=os.path.join("hostlab", device.name, ".hidden")
+    )
+
+    pack_file_for_tar_mock.assert_any_call(
+        os.path.join(lab_path, "test_machine", "nothidden"),
+        arc_name=os.path.join("hostlab", device.name, "nothidden")
+    )
+
+    pack_file_for_tar_mock.assert_any_call(
+        os.path.join(lab_path, "test_machine", "etc", ".hidden"),
+        arc_name=os.path.join("hostlab", device.name, "etc", ".hidden")
+    )
+
+    pack_file_for_tar_mock.assert_any_call(
+        os.path.join(lab_path, "test_machine", "etc", "nothidden"),
+        arc_name=os.path.join("hostlab", device.name, "etc", "nothidden")
+    )
+
+    pack_file_for_tar_mock.assert_any_call(
+        os.path.join(lab_path, "test_machine", "etc", "log", ".hidden"),
+        arc_name=os.path.join("hostlab", device.name, "etc", "log", ".hidden")
+    )
+
+    pack_file_for_tar_mock.assert_any_call(
+        os.path.join(lab_path, "test_machine", "etc", "log", "nothidden"),
+        arc_name=os.path.join("hostlab", device.name, "etc", "log", "nothidden")
+    )
+
+    assert pack_file_for_tar_mock.call_count == 6
+
+
+@mock.patch("src.Kathara.utils.pack_file_for_tar")
+def test_pack_data_only_hidden_files(pack_file_for_tar_mock):
+    lab_path = "tests/model/hiddenfilesonly"
+    lab = Lab(None, lab_path)
+    device = lab.get_or_new_machine("test_machine")
+
+    pack_file_for_tar_mock.return_value = (tarfile.TarInfo(""), None)
+
+    device.pack_data()
+
+    pack_file_for_tar_mock.assert_any_call(
+        os.path.join(lab_path, "test_machine", ".hidden"),
+        arc_name=os.path.join("hostlab", device.name, ".hidden")
+    )
+
+    pack_file_for_tar_mock.assert_any_call(
+        os.path.join(lab_path, "test_machine", "etc", ".hidden"),
+        arc_name=os.path.join("hostlab", device.name, "etc", ".hidden")
+    )
+
+    pack_file_for_tar_mock.assert_any_call(
+        os.path.join(lab_path, "test_machine", "etc", "log", ".hidden"),
+        arc_name=os.path.join("hostlab", device.name, "etc", "log", ".hidden")
+    )
+
+    assert pack_file_for_tar_mock.call_count == 3

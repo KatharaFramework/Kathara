@@ -3,7 +3,6 @@ from unittest import mock
 from unittest.mock import Mock
 
 import docker.types
-
 import pytest
 
 sys.path.insert(0, './')

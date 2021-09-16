@@ -7,8 +7,6 @@ from src.Kathara.parser.netkit.LabParser import LabParser
 sys.path.insert(0, './')
 
 
-
-
 def test_one_device():
     lab = LabParser.parse("tests/parser/labconf/one_device")
     assert len(lab.machines) == 1

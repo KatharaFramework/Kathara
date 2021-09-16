@@ -1,7 +1,5 @@
 import sys
 
-import pytest
-
 sys.path.insert(0, './')
 
 from src.Kathara.parser.netkit.FolderParser import FolderParser
