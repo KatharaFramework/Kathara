@@ -41,10 +41,14 @@ class Machine(object):
     def __init__(self, lab: 'LabPackage.Lab', name: str, **kwargs) -> None:
         """
         Create a new instance of a Kathara device.
+
         Args:
             lab (Kathara.model.Lab): The Kathara network scenario of the new device.
             name (str): The name of the device.
             **kwargs (Dict[str, Any]): Specifies the optional parameters of the device.
+
+        Returns:
+            None
         """
         name = name.strip()
         matches = re.search(r"^[a-z0-9_]{1,30}$", name)
@@ -87,9 +91,13 @@ class Machine(object):
     def add_interface(self, link: 'LinkPackage.Link', number: int = None) -> None:
         """
         Add an interface to the device attached to the specified collision domain.
+
         Args:
             link (Kathara.model.Link): The Kathara collision domain to attach
             number (int): the number of the new interface. If it is None, the first free number is selected.
+
+        Returns:
+            None
 
         Raises:
             Exception: The interface number specified is already used on the device.
@@ -106,9 +114,13 @@ class Machine(object):
     def add_meta(self, name: str, value: Any) -> None:
         """
         Add a meta property to the device.
+
         Args:
             name (str): The name of the property.
             value (Any): The value of the property.
+
+        Returns:
+            None
 
         Raises:
             MachineOptionError: The specified value is not valid for the specified property.
@@ -165,6 +177,9 @@ class Machine(object):
     def check(self) -> None:
         """
         Sorts interfaces ignoring the missing positions.
+
+        Returns:
+            None
         """
         sorted_interfaces = sorted(self.interfaces.items(), key=lambda kv: kv[0])
 
@@ -184,7 +199,6 @@ class Machine(object):
 
         Returns:
             bytes: the tar content.
-
         """
 
         # Make a temp folder and create a tar.gz of the lab directory
@@ -256,6 +270,7 @@ class Machine(object):
     def connect(self, terminal_name: str) -> None:
         """
         Connect to the device with the specified terminal.
+
         Args:
             terminal_name (str): The name of the terminal to use for the connection.
                 The application must be correctly installed in the host system.
@@ -263,6 +278,9 @@ class Machine(object):
                 On Linux, options are /usr/bin/xterm, TMUX or an user-defined path.
                 On macOS, options are Terminal (default system terminal), iTerm or TMUX.
                 Default to /usr/bin/xterm on Linux and Terminal on macOS.
+
+        Returns:
+            None
         """
         logging.debug("Opening terminal for device %s.", self.name)
 
@@ -331,6 +349,7 @@ class Machine(object):
     def get_image(self) -> str:
         """
         Get the image of the device, if defined in options or machine meta. If not use default one.
+
         Returns:
             str: The name of the device image.
         """
@@ -340,6 +359,7 @@ class Machine(object):
     def get_mem(self) -> str:
         """
         Get memory limit, if defined in options. If not use the value from device meta.
+
         Returns:
             str: The memory limit of the device.
         """
@@ -366,6 +386,7 @@ class Machine(object):
         Get the CPU limit, multiplied by a specific multiplier.
         User should pass a float value ranging from 0 to max user CPUs.
         It is took from options, or machine meta.
+
         Args:
             multiplier (int):
 
@@ -388,6 +409,7 @@ class Machine(object):
     def get_ports(self) -> Optional[Dict[Tuple[int, str], int]]:
         """
         Get the port mapping of the device.
+
         Returns:
             Dict[(int, str), int]: Keys are pairs (host_port, protocol), values specifies the guest_port.
         """
@@ -399,6 +421,7 @@ class Machine(object):
     def get_num_terms(self) -> int:
         """
         Get the number of terminal to be opened for the device.
+
         Returns:
             int: The number of terminal to be opened.
         """
@@ -422,6 +445,7 @@ class Machine(object):
     def is_ipv6_enabled(self) -> bool:
         """
         Check if ipv6 is enabled on the device.
+
         Returns:
             bool: True if it is enabled, else False.
         """
@@ -434,8 +458,12 @@ class Machine(object):
     def update_meta(self, args: Dict[str, Any]) -> None:
         """
         Update the device meta.
+
         Args:
             args (Dict[str, Any]): Keys are the meta properties names, values are the updated meta properties values.
+
+        Returns:
+            None
         """
         if 'exec_commands' in args and args['exec_commands'] is not None:
             for command in args['exec_commands']:
@@ -464,10 +492,10 @@ class Machine(object):
             for sysctl in args['sysctls']:
                 self.add_meta("sysctl", sysctl)
 
-        if 'no_hosthome' is args and args['no_hosthome'] is not None and args['no_hosthome']:
+        if 'no_hosthome' in args and args['no_hosthome'] is not None and args['no_hosthome']:
             self.add_meta('hosthome_mount', True)
 
-        if 'no_shared' is args and args['no_shared'] is not None and args['no_shared']:
+        if 'no_shared' in args and args['no_shared'] is not None and args['no_shared']:
             self.add_meta('shared_mount', True)
 
     def __repr__(self) -> str:

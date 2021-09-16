@@ -21,10 +21,8 @@ class Link(object):
 
     def __init__(self, lab: 'LabPackage.Lab', name) -> None:
         self.lab: 'LabPackage.Lab' = lab
-        """"""
         self.name: str = name
         self.external: List[ExternalLink] = []
-
         self.api_object: Any = None
 
     def __repr__(self) -> str:

@@ -33,8 +33,12 @@ class DockerLink(object):
     def deploy_links(self, lab: Lab) -> None:
         """
         Deploy all the links contained in lab.links.
+
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
+
+        Returns:
+            None
         """
         links = lab.links.items()
 
@@ -67,9 +71,13 @@ class DockerLink(object):
     def _deploy_link(self, progress_bar: progressbar.ProgressBar, link_item: (str, Link)) -> None:
         """
         Deploy the Link contained in the link_item.
+
         Args:
             progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             link_item (Tuple[str, Link]): A tuple composed by the name of the link and a Link object
+
+        Returns:
+            None
         """
         (_, link) = link_item
 
@@ -84,8 +92,12 @@ class DockerLink(object):
     def create(self, link: Link) -> None:
         """
         Create a Docker Network representing the link object and assign it to link.api_object.
+
         Args:
             link (Kathara.model.Link.Link): A Kathara collision domain.
+
+        Returns:
+            None
         """
         # Reserved name for bridged connections, ignore.
         if link.name == BRIDGE_LINK_NAME:
@@ -122,8 +134,12 @@ class DockerLink(object):
     def undeploy(self, lab_hash: str) -> None:
         """
         Undeploy all the links of the scenario specified by lab_hash.
+
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
+
+        Returns:
+            None
         """
         links = self.get_links_api_object_by_filters(lab_hash=lab_hash)
         for item in links:
@@ -155,8 +171,12 @@ class DockerLink(object):
         """
         Undeploy all the running networks of the specified user.
         If user is None, it undeploy all the running networks.
+
         Args:
             user (str): The name of a current user on the host
+
+        Returns:
+            None
         """
         user_label = "shared" if Setting.get_instance().multiuser else user
         links = self.get_links_api_object_by_filters(user=user_label)
@@ -175,9 +195,13 @@ class DockerLink(object):
     def _undeploy_link(self, progress_bar: progressbar.ProgressBar, network: docker.models.networks.Network) -> None:
         """
         Undeploy a Docker Network.
+
         Args:
             progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             network (docker.models.networks.Network): The Docker network to undeploy.
+
+        Returns:
+            None
         """
         self._delete_link(network)
 
@@ -187,6 +211,7 @@ class DockerLink(object):
     def get_docker_bridge(self) -> Union[None, docker.models.networks.Network]:
         """
         Return a bridged Docker Network.
+
         Returns:
             Union[None, docker.models.networks.Network]: A Docker Bridge if it exists, else None
         """
@@ -197,6 +222,7 @@ class DockerLink(object):
             List[docker.models.networks.Network]:
         """
         Return the Docker networks specified by lab_hash, machine_name and user.
+
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return all the networks in the scenario.
             link_name (str): The name of a network. If specified, return the specified networks of the scenario.
@@ -219,10 +245,14 @@ class DockerLink(object):
                                     network: docker.models.networks.Network) -> None:
         """
         Attach an ExternalLink to a Docker Network.
+
         Args:
             external_links (Kathara.model.ExternalLink): A Kathara external collision domain. It is used to create
             a collision domain attached to a host interface.
             network (docker.models.networks.Network): A docker Network.
+
+        Returns:
+            None
         """
         for external_link in external_links:
             (name, vlan) = external_link.get_name_and_vlan()
@@ -234,6 +264,7 @@ class DockerLink(object):
     def _get_bridge_name(network: docker.models.networks.Network) -> str:
         """
         Return the name of the bridge associated to the Docker Network.
+
         Args:
             network (docker.models.networks.Network): A Docker Network.
 
@@ -246,6 +277,7 @@ class DockerLink(object):
     def get_network_name(name: str) -> str:
         """
         Return the name of a Docker Network.
+
         Args:
             name (str): The name of a Kathara Link.
 
@@ -259,6 +291,7 @@ class DockerLink(object):
     def _delete_link(network: docker.models.networks.Network) -> None:
         """
         Remove a Docker Network.
+
         Args:
             network (docker.models.networks.Network): A Docker Network.
         """

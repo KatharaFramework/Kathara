@@ -25,6 +25,9 @@ class DockerPlugin(object):
     def check_and_download_plugin(self) -> None:
         """
         Check the presence of the plugin and download it or upgrade it, if needed.
+
+        Returns:
+            None
         """
         try:
             logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)

@@ -21,6 +21,7 @@ class DockerImage(object):
     def get_local(self, image_name: str) -> docker.models.images.Image:
         """
         Return the specified Docker Image.
+
         Args:
             image_name (str): The name of a Docker Image.
 
@@ -47,6 +48,7 @@ class DockerImage(object):
     def pull(self, image_name: str) -> docker.models.images.Image:
         """
         Pull and return the specified Docker Image.
+
         Args:
             image_name (str): The name of a Docker Image.
 
@@ -63,8 +65,12 @@ class DockerImage(object):
     def check_for_updates(self, image_name: str) -> None:
         """
         Update the specified image.
+
         Args:
             image_name (str): The name of a Docker Image.
+
+        Returns:
+            None
         """
         logging.debug("Checking updates for %s..." % image_name)
 
@@ -99,16 +105,24 @@ class DockerImage(object):
     def check(self, image_name: str) -> None:
         """
         Check the existence of the specified image.
+
         Args:
             image_name (str): The name of a Docker Image.
+
+        Returns:
+            None
         """
         self._check_and_pull(image_name, pull=False)
 
     def check_and_pull_from_list(self, images: Union[List[str], Set[str]]) -> None:
         """
         Check and pull a list of specified images.
+
         Args:
             images (Union[List[str], Set[str]]): A list of Docker images name to pull.
+
+        Returns:
+            None
         """
         for image in images:
             self._check_and_pull(image)
@@ -116,9 +130,13 @@ class DockerImage(object):
     def _check_and_pull(self, image_name: str, pull: bool = True) -> None:
         """
         Check and pull of the specified image.
+
         Args:
             image_name (str): The name of a Docker Image.
             pull (bool): If True, pull the image from Docker Hub.
+
+        Returns:
+            None
         """
         try:
             # Tries to get the image from the local Docker repository.
