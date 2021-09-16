@@ -275,6 +275,15 @@ class KubernetesLink(object):
         return network_id
 
     def _get_network_id(self, name: str, offset: int = 0) -> int:
+        """
+        Return the Kubernetes network ID from a Kathara collision domain name.
+        Args:
+            name (str): The name of a Kathara collision domain.
+            offset (int): Offset to avoid collision on the generated Kubernetes network ID.
+
+        Returns:
+            int: The Kubernetes network ID.
+        """
         network_name = self.seed + name
         return (offset + int(hashlib.sha256(network_name.encode('utf-8')).hexdigest(), 16)) % MAX_K8S_LINK_NUMBER
 
