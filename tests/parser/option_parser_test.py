@@ -26,4 +26,3 @@ def test_option_error():
 def test_option_error2():
     with pytest.raises(ValueError):
         parsed_options = OptionParser.parse(["option=fail=2"])
-

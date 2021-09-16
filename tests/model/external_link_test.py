@@ -1,5 +1,6 @@
-import pytest
 import sys
+
+import pytest
 
 sys.path.insert(0, './')
 
@@ -50,6 +51,3 @@ def test_full_name(external_link_vlan):
 def test_full_name_no_vlan(external_link_no_vlan):
     full_name = external_link_no_vlan.get_full_name()
     assert full_name == "eth0"
-
-
-
