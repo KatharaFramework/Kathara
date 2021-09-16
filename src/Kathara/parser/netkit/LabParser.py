@@ -6,8 +6,21 @@ from ...model.Lab import Lab
 
 
 class LabParser(object):
+    """
+    Class responsible for parsing the lab.conf file.
+    """
+
     @staticmethod
     def parse(path: str) -> Lab:
+        """
+        Parse the lab.conf and return the corresponding Kathara network scenario.
+
+        Args:
+            path (str): The path to lab.conf file.
+
+        Returns:
+            Kathara.model.Lab.Lab: A Kathara network scenario.
+        """
         lab_conf_path = os.path.join(path, 'lab.conf')
 
         if not os.path.exists(lab_conf_path):

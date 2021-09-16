@@ -14,7 +14,7 @@ XTABLES_LOCK_PATH = "/run/xtables.lock"
 
 class DockerPlugin(object):
     """
-    The class responsible to interact with Docker Plugins.
+    Class responsible for interacting with Docker Plugins.
     """
 
     __slots__ = ['client']

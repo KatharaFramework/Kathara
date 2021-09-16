@@ -86,7 +86,7 @@ SHUTDOWN_COMMANDS = [
 
 class DockerMachine(object):
     """
-    The class responsible to interact with Docker Container.
+    Class responsible for interacting with Docker Container.
     """
 
     __slots__ = ['client', 'docker_image']
@@ -370,7 +370,7 @@ class DockerMachine(object):
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
-            selected_machines (Set[str]): If not None, undeploy only the specified devices.
+            selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
 
         Returns:
             None
@@ -507,7 +507,7 @@ class DockerMachine(object):
         Args:
             lab_hash (str): The hash of the network scenario containing the device.
             machine_name (str): The name of the device.
-            command (str): The command to execute
+            command (str): The command to execute.
             tty (bool): If True, open a new tty.
 
         Returns:
@@ -594,7 +594,8 @@ class DockerMachine(object):
 
         Args:
             machine_name (str): The name of a device
-            lab_hash (str): The hash of a network scenario. If specified, return all the devices in the scenario.
+            lab_hash (str): The hash of a network scenario. If specified, search only the devices in the corresponding
+            scenario.
             user (str): The name of a user on the host. If specified, search only the containers of the user.
 
         Returns:

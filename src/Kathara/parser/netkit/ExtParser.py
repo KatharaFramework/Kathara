@@ -7,8 +7,23 @@ from ...model.ExternalLink import ExternalLink
 
 
 class ExtParser(object):
+    """
+    Class responsible for parsing lab.ext file.
+    """
+
     @staticmethod
     def parse(path: str) -> Optional[Dict[str, List[ExternalLink]]]:
+        """
+        Parse the lab.ext and return a Dict. Keys are name of collision domain and values are List of ExternalLink
+        attached to that interface.
+
+        Args:
+            path (str): The path to lab.ext file.
+
+        Returns:
+            Optional[Dict[str, List[ExternalLink]]]: Keys are name of collision domain and values are List of
+            ExternalLink attached to that interface.
+        """
         lab_ext_path = os.path.join(path, 'lab.ext')
 
         if not os.path.exists(lab_ext_path):

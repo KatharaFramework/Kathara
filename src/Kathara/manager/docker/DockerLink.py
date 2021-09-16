@@ -22,7 +22,7 @@ from ...setting.Setting import Setting
 
 class DockerLink(object):
     """
-    The class responsible to interact with Docker Networks.
+    Class responsible for interacting with Docker Networks.
     """
 
     __slots__ = ['client']

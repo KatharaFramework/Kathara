@@ -7,8 +7,24 @@ from ...trdparty.depgen import depgen
 
 
 class DepParser(object):
+    """
+    Class responsible for parsing the lab.dep file.
+    """
+
     @staticmethod
     def parse(path: str) -> Optional[List[str]]:
+        """
+        Parse the lab.dep file and return a List of string containing the names of the device ordered considering the
+        dependencies.
+
+        Args:
+            path (str): The path to the lab.dep file.
+
+        Returns:
+            Optional[List[str]]: A List of string containing the names of the device ordered considering the
+            dependencies.
+
+        """
         lab_dep_path = os.path.join(path, 'lab.dep')
 
         if not os.path.exists(lab_dep_path):

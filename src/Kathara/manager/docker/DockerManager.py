@@ -65,7 +65,7 @@ def check_docker_status(method):
 
 class DockerManager(IManager):
     """
-    The class responsible to interact with Docker API.
+    Class responsible for interacting with Docker API.
     """
 
     __slots__ = ['client', 'docker_image', 'docker_machine', 'docker_link']
@@ -377,6 +377,7 @@ class DockerManager(IManager):
     def get_release_version(self) -> str:
         """
         Return the current manager version.
+
         Returns:
             str: The current manager version.
         """
@@ -386,6 +387,7 @@ class DockerManager(IManager):
     def get_formatted_manager_name() -> str:
         """
         Return a formatted string containing the current manager name.
+
         Returns:
             str: A formatted string containing the current manager name.
         """

@@ -11,12 +11,25 @@ MAX_FILE_SIZE = 3145728
 
 
 class KubernetesConfigMap(object):
+    """
+    Class responsible for interacting with Kubernetes ConfigMap.
+    """
+
     __slots__ = ['client']
 
     def __init__(self) -> None:
         self.client: core_v1_api.CoreV1Api = core_v1_api.CoreV1Api()
 
     def deploy_for_machine(self, machine: Machine) -> Optional[client.V1ConfigMap]:
+        """
+        Deploy and return a Kubernetes ConfigMap for the machine.
+
+        Args:
+            machine (Kathara.model.Machine.Machine): A Kathara device.
+
+        Returns:
+            Optional[client.V1ConfigMap]: A Kubernetes ConfigMap.
+        """
         config_map = self._build_for_machine(machine)
 
         if config_map is None:
@@ -25,15 +38,44 @@ class KubernetesConfigMap(object):
         return self.client.create_namespaced_config_map(body=config_map, namespace=machine.lab.hash)
 
     def delete_for_machine(self, machine_name: str, machine_namespace: str) -> None:
+        """
+        Delete the Kubernetes ConfigMap associated with the device.
+
+        Args:
+            machine_name (str): The name of a Kathara device.
+            machine_namespace (str): the name of the namespace the machine belongs to.
+
+        Returns:
+            None
+        """
         self.client.delete_namespaced_config_map(name=self.build_name_for_machine(machine_name, machine_namespace),
                                                  namespace=machine_namespace
                                                  )
 
     @staticmethod
     def build_name_for_machine(machine_name: str, machine_namespace: str) -> str:
+        """
+        Return the name for the Kubernetes deployment.
+
+        Args:
+            machine_name (str): The name of a Kathara device.
+            machine_namespace (str): the name of the namespace the machine belongs to.
+
+        Returns:
+            str: The name for the ConfigMap in the format '<machine_name>-<machine_namespace>-files'.
+        """
         return "%s-%s-files" % (machine_name, machine_namespace)
 
     def _build_for_machine(self, machine: Machine) -> Optional[client.V1ConfigMap]:
+        """
+        Build and return a Kubernetes ConfigMap for the machine.
+
+        Args:
+            machine (Kathara.model.Machine.Machine): A Kathara device.
+
+        Returns:
+            Optional[client.V1ConfigMap]: The Kubernetes ConfigMap for the machine.
+        """
         tar_data = machine.pack_data()
 
         # Create a ConfigMap on the cluster containing the base64 of the .tar.gz file

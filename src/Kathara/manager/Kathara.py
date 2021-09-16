@@ -11,6 +11,10 @@ from ..setting.Setting import Setting, AVAILABLE_MANAGERS
 
 
 class Kathara(IManager):
+    """
+    Facade class for interacting with Kathara. It is a proxy for the selected virtualization manager.
+    """
+
     __slots__ = ['manager']
 
     __instance: Kathara = None

@@ -5,8 +5,21 @@ from ...model.Lab import Lab
 
 
 class FolderParser(object):
+    """
+    Class responsible for parsing the folder in the network scenario directory.
+    """
+
     @staticmethod
     def parse(path: str) -> Lab:
+        """
+        Parse the network scenario folders and return a network scenario containing the corresponding devices.
+
+        Args:
+            path (str): The path to the network scenario directory.
+
+        Returns:
+            Kathara.model.Lab.Lab: A Kathara network scenario.
+        """
         lab = Lab(None, path=path)
 
         # Get all subfolders of lab path

@@ -25,6 +25,9 @@ K8S_NET_PLURAL = "network-attachment-definitions"
 
 
 class KubernetesLink(object):
+    """
+    Class responsible for interacting with Kubernetes
+    """
     __slots__ = ['client', 'seed']
 
     def __init__(self) -> None:
@@ -35,6 +38,7 @@ class KubernetesLink(object):
     def deploy_links(self, lab: Lab) -> None:
         """
         Deploy all the links contained in lab.links.
+
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
         """
@@ -67,6 +71,7 @@ class KubernetesLink(object):
     def _deploy_link(self, progress_bar: progressbar.ProgressBar, network_ids: Dict, link_item: (str, Link)) -> None:
         """
         Deploy the Link contained in the link_item.
+
         Args:
             progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             network_ids (Dict):
@@ -86,6 +91,7 @@ class KubernetesLink(object):
     def create(self, link: Link, network_id: int) -> None:
         """
         Create a Docker Network representing the link object and assign it to link.api_object.
+
         Args:
             link (Kathara.model.Link.Link): A Kathara collision domain.
         """
@@ -191,6 +197,7 @@ class KubernetesLink(object):
     def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None) -> List[Any]:
         """
          Return the List of Kubernetes networks.
+
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return only the networks in the scenario, else
             return the networks in the 'default' namespace.
@@ -215,6 +222,7 @@ class KubernetesLink(object):
     def _build_definition(self, link: Link, network_id: int) -> Dict[str, str]:
         """
         Return a Dict containing the network definition for Kubernetes API corresponding to link.
+
         Args:
             link (Kathara.model.Link.Link): A Kathara collision domain.
             network_id (int): The network id.
@@ -246,6 +254,7 @@ class KubernetesLink(object):
     def _get_unique_network_id(self, name: str, network_ids: Dict[int, int]) -> int:
         """
         Return a unique network id.
+
         Args:
             name (str): The name of the network.
             network_ids (Dict[int, int]): A Dict for reserving network IDs. The Key is the network_id, value is 1 if it

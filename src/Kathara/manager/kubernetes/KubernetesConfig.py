@@ -4,8 +4,18 @@ from ...setting.Setting import Setting
 
 
 class KubernetesConfig(object):
+    """
+    Class responsible for loading Kubernetes configurations.
+    """
+
     @staticmethod
     def get_cluster_user() -> str:
+        """
+        Return the name of the current c
+
+        Returns:
+            str:
+        """
         try:
             # Remote configuration is present, use the API Token as user
             configuration = client.Configuration.get_default_copy()
@@ -17,6 +27,15 @@ class KubernetesConfig(object):
 
     @staticmethod
     def load_kube_config() -> None:
+        """
+        Load a Kubernetes Configuration if Kathara is launched on a k8s master.
+
+        Returns:
+            None
+
+        Raises:
+            ConnectionError: Cannot read Kubernetes configuration.
+        """
         try:
             config.load_kube_config()  # Try to load configuration if Megalos is launched on a k8s master.
         except Exception:  # Not on a k8s master, load Megalos setting to read remote cluster data.

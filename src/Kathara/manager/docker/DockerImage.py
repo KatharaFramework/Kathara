@@ -10,7 +10,7 @@ from ... import utils
 
 class DockerImage(object):
     """
-    The class responsible to interact with Docker Images.
+    Class responsible for interacting with Docker Images.
     """
 
     __slots__ = ['client']
