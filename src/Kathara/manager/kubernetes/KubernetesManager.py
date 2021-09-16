@@ -62,7 +62,7 @@ class KubernetesManager(IManager):
         # When only some machines should be undeployed, special checks are required.
         if selected_machines:
             # Get all current deployed networks and save only their name
-            networks = self.k8s_link.get_links_by_filters(lab_hash=lab_hash)
+            networks = self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash)
             all_networks = set([network["metadata"]["name"] for network in networks])
 
             # Get all current running machines (not Terminating)

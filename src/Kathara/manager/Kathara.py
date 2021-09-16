@@ -243,7 +243,7 @@ class Kathara(IManager):
     def get_available_managers_name() -> Dict[str, str]:
         """
         Return a dict containing the available manager names.
-        
+
         Returns:
             Dict[str, str]: keys are the manager names, values are the formatted manager names.
         """

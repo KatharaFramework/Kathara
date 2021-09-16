@@ -105,7 +105,7 @@ class DockerLink(object):
 
         # If a network with the same name exists, return it instead of creating a new one.
         link_name = self.get_network_name(link.name)
-        network_objects = self.get_links_api_object_by_filters(link_name=link_name)
+        network_objects = self.get_links_api_objects_by_filters(link_name=link_name)
         if network_objects:
             link.api_object = network_objects.pop()
         else:
@@ -141,7 +141,7 @@ class DockerLink(object):
         Returns:
             None
         """
-        links = self.get_links_api_object_by_filters(lab_hash=lab_hash)
+        links = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
         for item in links:
             item.reload()
         links = [item for item in links if len(item.containers) <= 0]
@@ -179,7 +179,7 @@ class DockerLink(object):
             None
         """
         user_label = "shared" if Setting.get_instance().multiuser else user
-        links = self.get_links_api_object_by_filters(user=user_label)
+        links = self.get_links_api_objects_by_filters(user=user_label)
         for item in links:
             item.reload()
         links = [item for item in links if len(item.containers) <= 0]
@@ -218,7 +218,7 @@ class DockerLink(object):
         bridge_list = self.client.networks.list(names="bridge")
         return bridge_list.pop() if bridge_list else None
 
-    def get_links_api_object_by_filters(self, lab_hash: str = None, link_name: str = None, user: str = None) -> \
+    def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None, user: str = None) -> \
             List[docker.models.networks.Network]:
         """
         Return the Docker networks specified by lab_hash, machine_name and user.
