@@ -33,6 +33,10 @@ DEFAULTS = {
 
 
 class Setting(object):
+    """
+    Class responsible for interacting with Kathara Settings.
+    """
+
     __slots__ = ['image', 'manager_type', 'terminal', 'open_terminals', 'device_shell', 'net_prefix',
                  'device_prefix', 'debug_level', 'print_startup_log', 'enable_ipv6', 'last_checked', 'addons']
 
@@ -43,6 +47,12 @@ class Setting(object):
 
     @staticmethod
     def get_instance() -> Setting:
+        """
+        Return an instance of Setting.
+
+        Returns:
+            Kathara.setting.Setting: An instanche of Setting.
+        """
         if Setting.__instance is None:
             Setting()
 
@@ -77,6 +87,12 @@ class Setting(object):
         setattr(self.addons, name, value)
 
     def load(self) -> None:
+        """
+        Load the Kathara settings from disk.
+
+        Returns:
+            None
+        """
         if not os.path.exists(Setting.SETTING_PATH):  # If settings file don't exist, create with defaults
             if not os.path.isdir(Setting.SETTING_FOLDER):  # Create .config folder if doesn't exists, create it
                 os.mkdir(Setting.SETTING_FOLDER)
@@ -109,12 +125,21 @@ class Setting(object):
 
     @staticmethod
     def wipe() -> None:
+        """
+        Remove the all saved settings from disk.
+
+        Returns:
+            None
+        """
         if os.path.exists(Setting.SETTING_PATH):
             os.remove(Setting.SETTING_PATH)
 
     def save(self) -> None:
         """
         Saves settings to a config.json file in the Kathara path.
+
+        Returns:
+            None
         """
         to_save = self.addons.merge(self._to_dict())
 
@@ -122,6 +147,13 @@ class Setting(object):
             settings_file.write(json.dumps(to_save, indent=True))
 
     def check(self) -> None:
+        """
+        Check if the the selected manager and terminal are available. Check the presence of Kathara updates.
+        Check the correctness and validity of the net_prefix, device_prefix and debug level.
+
+        Returns:
+            None
+        """
         self.check_manager()
 
         self.check_terminal()
@@ -166,6 +198,15 @@ class Setting(object):
             raise SettingsError("Debug Level must be one of the following: %s." % (", ".join(AVAILABLE_DEBUG_LEVELS)))
 
     def check_manager(self) -> None:
+        """
+        Check if the selected manager is available.
+
+        Returns:
+            None
+
+        Raises:
+            SettingsError: "Manager Type not allowed."
+        """
         from ..manager.Kathara import Kathara
         managers = Kathara.get_available_managers_name()
 
@@ -173,6 +214,19 @@ class Setting(object):
             raise SettingsError("Manager Type not allowed.")
 
     def check_image(self, image: str = None) -> None:
+        """
+        Check if the specified image is valid.
+
+        Args:
+            image (str): The name of the image to check. If None, check the default image.
+
+        Returns:
+            None
+
+        Raises:
+            ConnectionError: The image is not locally available and there is no connection to a remote image repository.
+            Exception: The image is not found.
+        """
         image = self.image if not image else image
 
         # Required to import here because otherwise there is a cyclic dependency
@@ -180,6 +234,16 @@ class Setting(object):
         Kathara.get_instance().check_image(image)
 
     def check_terminal(self, terminal: str = None) -> bool:
+        """
+        Check that the selected terminal is available.
+
+        Args:
+            terminal (str): The selected terminal path. If None, check the availability of the default terminal.
+
+        Returns:
+            bool: True if the selected terminal is TMUX (that do not require path), else False.
+
+        """
         terminal = self.terminal if not terminal else terminal
 
         # Skip check for TMUX (special value)
@@ -205,6 +269,12 @@ class Setting(object):
         return True
 
     def load_settings_addon(self) -> None:
+        """
+        Load a setting addon to the base settings.
+
+        Returns:
+            None
+        """
         self.addons = SettingsAddonFactory().create_instance(class_args=(self.manager_type.capitalize(),))
 
     def _to_dict(self) -> Dict[str, Any]:
