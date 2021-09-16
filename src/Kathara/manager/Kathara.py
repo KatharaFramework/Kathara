@@ -19,7 +19,7 @@ class Kathara(IManager):
     def get_instance() -> Kathara:
         """
         Get an instance of the current Kathara Manager.
-
+    
         Returns:
             Kathara: instance of the current Kathara Manager.
         """
@@ -43,11 +43,11 @@ class Kathara(IManager):
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """
         Deploy a Kathara network scenario.
-
+        
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
             selected_machines (Set[str]): If not None, deploy only the specified devices.
-
+            
         Returns:
             None
         """
@@ -56,10 +56,10 @@ class Kathara(IManager):
     def update_lab(self, lab: Lab) -> None:
         """
         Update a running network scenario.
-
+        
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
-
+            
         Returns:
             None
         """
@@ -68,11 +68,11 @@ class Kathara(IManager):
     def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
         """
         Undeploy a Kathara network scenario.
-
+        
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
             selected_machines (Set[str]): If not None, undeploy only the specified devices.
-
+            
         Returns:
             None
         """
@@ -81,11 +81,11 @@ class Kathara(IManager):
     def wipe(self, all_users: bool = False) -> None:
         """
         Undeploy all the running network scenarios.
-
+        
         Args:
             all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
                 running network scenarios of all users.
-
+                
         Returns:
             None
         """
@@ -94,13 +94,13 @@ class Kathara(IManager):
     def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False) -> None:
         """
         Connect to a device in a running network scenario, using the specified shell.
-
+        
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
             machine_name (str): The name of the device to connect.
             shell (str): The name of the shell to use for connecting.
             logs (bool): If True, print startup logs on stdout.
-
+            
         Returns:
             None
         """
@@ -109,7 +109,7 @@ class Kathara(IManager):
     def exec(self, lab_hash: str, machine_name: str, command: str) -> (str, str):
         """
         Exec a command on a device in a running network scenario.
-
+        
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
             machine_name (str): The name of the device to connect.
@@ -123,12 +123,12 @@ class Kathara(IManager):
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
         """
         Copy files on a running machine in the specified paths.
-
+        
         Args:
             machine (Kathara.model.Machine.Machine): A running machine object. It must have the api_object field populated.
             guest_to_host (Dict[str, io.IOBase]): A dict containing the device path as key and
                 fileobj to copy in path as value.
-
+                
         Returns:
             None
         """
@@ -138,7 +138,7 @@ class Kathara(IManager):
             Generator[Dict[str, Any], None, None]:
         """
         Return information about the running devices.
-
+        
         Args:
             lab_hash (str): If not None, return information of the corresponding network scenario.
             machine_name (str): If not None, return information of the specified device.
@@ -153,7 +153,7 @@ class Kathara(IManager):
     def get_formatted_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> str:
         """
         Return a formatted string with the information about the running devices.
-
+        
         Args:
             lab_hash (str): If not None, return information of the corresponding network scenario.
             machine_name (str): If not None, return information of the specified device.
@@ -167,7 +167,7 @@ class Kathara(IManager):
     def get_machine_api_object(self, lab_hash: str, machine_name: str) -> Any:
         """
         Return the corresponding API object of a running device in a network scenario.
-
+        
         Args:
             lab_hash (str): The hash of the network scenario.
             machine_name (str): The name of the device.
@@ -180,7 +180,7 @@ class Kathara(IManager):
     def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> Dict[str, Any]:
         """
         Return information of a running device.
-
+        
         Args:
             machine_name (str): The device name.
             lab_hash (str): If not None, search the device in the specified network scenario.
@@ -194,7 +194,7 @@ class Kathara(IManager):
     def get_formatted_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> str:
         """
         Return formatted information of a running device.
-
+        
         Args:
             machine_name (str): The device name.
             lab_hash (str): If not None, search the device in the specified network scenario.
@@ -208,10 +208,10 @@ class Kathara(IManager):
     def check_image(self, image_name: str) -> None:
         """
         Check if the specified image is valid.
-
+        
         Args:
             image_name (str): The name of the image
-
+            
         Returns:
             None
 
@@ -224,7 +224,7 @@ class Kathara(IManager):
     def get_release_version(self) -> str:
         """
         Return the current manager version.
-
+        
         Returns:
             str: The current manager version.
         """
@@ -233,7 +233,7 @@ class Kathara(IManager):
     def get_formatted_manager_name(self) -> str:
         """
         Return a formatted string containing the current manager name.
-
+        
         Returns:
             str: A formatted string containing the current manager name.
         """
