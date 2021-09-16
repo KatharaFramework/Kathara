@@ -20,21 +20,20 @@ from ..setting.Setting import Setting
 
 class Machine(object):
     """
-    A Kathara device. Contains information about the device and the API object to interact with the manager.
+    A Kathara device. Contains information about the device and the API object to interact with the Manager.
 
     Attributes:
         lab (Kathara.model.Lab): The Kathara network Scenario of the device.
         name (str): The name of the device.
         interfaces (List[Kathara.model.Link]): A list of the collision domains of the device.
         meta (Dict[str, Any]): Keys are meta properties name, values are meta properties values.
-        startup_commands (List[str]): A list of the command to execute at the device startup.
-        api_object (Any): To interact with the current Kathara manager.
-        capabilities (List[str]): The selected capibilities for the device.
+        startup_commands (List[str]): A list of commands to execute at the device startup.
+        api_object (Any): To interact with the current Kathara Manager.
+        capabilities (List[str]): The selected capabilities for the device.
         startup_path (str): The path of the device startup file, if exists.
         shutdown_path (str): The path of the device shutdown file, if exists.
         folder (str): The path of the device folder, if exists.
     """
-
     __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities',
                  'startup_path', 'shutdown_path', 'folder']
 
@@ -93,15 +92,14 @@ class Machine(object):
         Add an interface to the device attached to the specified collision domain.
 
         Args:
-            link (Kathara.model.Link): The Kathara collision domain to attach
-            number (int): the number of the new interface. If it is None, the first free number is selected.
+            link (Kathara.model.Link): The Kathara collision domain to attach.
+            number (int): The number of the new interface. If it is None, the first free number is selected.
 
         Returns:
             None
 
         Raises:
             Exception: The interface number specified is already used on the device.
-
         """
         if number is None:
             number = len(self.interfaces.keys())
@@ -176,10 +174,13 @@ class Machine(object):
 
     def check(self) -> None:
         """
-        Sorts interfaces ignoring the missing positions.
+        Sorts interfaces check if there are missing positions.
 
         Returns:
             None
+
+        Raises:
+            NonSequentialMachineInterfaceError: If there is a missing interface number.
         """
         sorted_interfaces = sorted(self.interfaces.items(), key=lambda kv: kv[0])
 
@@ -200,7 +201,6 @@ class Machine(object):
         Returns:
             bytes: the tar content.
         """
-
         # Make a temp folder and create a tar.gz of the lab directory
         temp_path = tempfile.mkdtemp()
 
@@ -277,7 +277,6 @@ class Machine(object):
                 This option is only visible on Linux and macOS.
                 On Linux, options are /usr/bin/xterm, TMUX or an user-defined path.
                 On macOS, options are Terminal (default system terminal), iTerm or TMUX.
-                Default to /usr/bin/xterm on Linux and Terminal on macOS.
 
         Returns:
             None
@@ -348,7 +347,7 @@ class Machine(object):
 
     def get_image(self) -> str:
         """
-        Get the image of the device, if defined in options or machine meta. If not use default one.
+        Get the image of the device, if defined in options or machine meta. If not, use default one.
 
         Returns:
             str: The name of the device image.
@@ -358,7 +357,8 @@ class Machine(object):
 
     def get_mem(self) -> str:
         """
-        Get memory limit, if defined in options. If not use the value from device meta.
+        Get memory limit, if defined in options. If not, use the value from device meta.
+        Otherwise, return None.
 
         Returns:
             str: The memory limit of the device.
@@ -385,7 +385,7 @@ class Machine(object):
         """
         Get the CPU limit, multiplied by a specific multiplier.
         User should pass a float value ranging from 0 to max user CPUs.
-        It is took from options, or machine meta.
+        It is took from options, or machine meta. Otherwise, return None.
 
         Args:
             multiplier (int):
@@ -444,7 +444,7 @@ class Machine(object):
 
     def is_ipv6_enabled(self) -> bool:
         """
-        Check if ipv6 is enabled on the device.
+        Check if IPv6 is enabled on the device.
 
         Returns:
             bool: True if it is enabled, else False.
@@ -457,7 +457,7 @@ class Machine(object):
 
     def update_meta(self, args: Dict[str, Any]) -> None:
         """
-        Update the device meta.
+        Update the device metas from a dict.
 
         Args:
             args (Dict[str, Any]): Keys are the meta properties names, values are the updated meta properties values.

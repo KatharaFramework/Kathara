@@ -1,7 +1,7 @@
 import io
 from copy import copy
 from datetime import datetime
-from typing import Set, Dict, Generator, Any
+from typing import Set, Dict, Generator, Any, Tuple
 
 import docker
 import docker.models.containers
@@ -65,9 +65,8 @@ def check_docker_status(method):
 
 class DockerManager(IManager):
     """
-    Class responsible for interacting with Docker API.
+    The class responsible to interact between Kathara and the Docker APIs.
     """
-
     __slots__ = ['client', 'docker_image', 'docker_machine', 'docker_link']
 
     @check_docker_status
@@ -192,7 +191,7 @@ class DockerManager(IManager):
                                     )
 
     @privileged
-    def exec(self, lab_hash: str, machine_name: str, command: str) -> (str, str):
+    def exec(self, lab_hash: str, machine_name: str, command: str) -> Tuple[str, str]:
         """
         Exec a command on a device in a running network scenario.
 

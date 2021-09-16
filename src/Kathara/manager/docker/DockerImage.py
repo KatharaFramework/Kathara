@@ -12,7 +12,6 @@ class DockerImage(object):
     """
     Class responsible for interacting with Docker Images.
     """
-
     __slots__ = ['client']
 
     def __init__(self, client: DockerClient) -> None:

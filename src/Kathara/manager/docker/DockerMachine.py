@@ -86,9 +86,8 @@ SHUTDOWN_COMMANDS = [
 
 class DockerMachine(object):
     """
-    Class responsible for interacting with Docker Container.
+    The class responsible for deploying Kathara devices as Docker container and interact with them.
     """
-
     __slots__ = ['client', 'docker_image']
 
     def __init__(self, client: DockerClient, docker_image: DockerImage) -> None:
@@ -98,7 +97,7 @@ class DockerMachine(object):
 
     def deploy_machines(self, lab: Lab) -> None:
         """
-        Deploy all the devices contained in lab.machines
+        Deploy all the lab devices as Docker containers.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
@@ -148,7 +147,7 @@ class DockerMachine(object):
     def _deploy_and_start_machine(self, progress_bar: Optional[progressbar.ProgressBar],
                                   machine_item: Tuple[str, Machine]) -> None:
         """
-        Deploy and start a docker container from the device contained in machine_item.
+        Deploy and start a Docker container from the device contained in machine_item.
 
         Args:
             progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
@@ -167,10 +166,10 @@ class DockerMachine(object):
 
     def create(self, machine: Machine) -> None:
         """
-        Create a docker container representing the machine and assign it to machine.api_object.
+        Create a Docker container representing the device and assign it to machine.api_object.
 
         Args:
-            machine (Kathara.model.Machine.Machine): a Kathara device.
+            machine (Kathara.model.Machine.Machine): A Kathara device.
 
         Returns:
             None
@@ -288,11 +287,11 @@ class DockerMachine(object):
 
     def update(self, machine: Machine) -> None:
         """
-        Update the docker container representing the machine creating a docker network for each link contained in
+        Update the Docker container representing the machine creating a new Docker network for each link contained in
         machine.interfaces that is not already attached to the container.
 
         Args:
-            machine (Kathara.model.Machine.Machine): a Kathara device.
+            machine (Kathara.model.Machine.Machine): A Kathara device.
 
         Returns:
             None
@@ -313,10 +312,11 @@ class DockerMachine(object):
     @staticmethod
     def start(machine: Machine) -> None:
         """
-        Start the docker container representing the machine. Connect the container to the networks, run the startup
-        commands and open a terminal (if requested)
+        Start the Docker container representing the device. Connect the container to the networks, run the startup
+        commands and open a terminal (if requested).
+
         Args:
-           machine (Kathara.model.Machine.Machine): a Kathara device.
+           machine (Kathara.model.Machine.Machine): A Kathara device.
         """
         logging.debug("Starting device `%s`..." % machine.name)
 
@@ -366,7 +366,7 @@ class DockerMachine(object):
     def undeploy(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
         """
         Undeploy the devices contained in the network scenario defined by the lab_hash.
-        If selected_machines is not None, undeploy only the specified devices.
+        If a set of selected_machines is specified, undeploy only the specified devices.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
@@ -408,7 +408,7 @@ class DockerMachine(object):
         If user is None, it undeploy all the running devices.
 
         Args:
-            user (str): The name of a current user on the host
+            user (str): The name of a current user on the host.
 
         Returns:
             None
@@ -430,7 +430,7 @@ class DockerMachine(object):
 
         Args:
             progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
-            machine_api_object (docker.models.containers.Container): The docker container to undeploy
+            machine_api_object (docker.models.containers.Container): The Docker container to undeploy.
 
         Returns:
             None
@@ -534,9 +534,9 @@ class DockerMachine(object):
         Copy the files contained in tar_data in the Docker container path specified by the machine_api_object.
 
         Args:
-            machine_api_object (docker.models.containers.Container): A docker Container.
+            machine_api_object (docker.models.containers.Container): A Docker container.
             path (str): The path of the container where copy the tar_data.
-            tar_data (bytes): the data to copy in the container.
+            tar_data (bytes): The data to copy in the container.
 
         Returns:
             None
@@ -546,7 +546,7 @@ class DockerMachine(object):
     def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None, user: str = None) -> \
             List[docker.models.containers.Container]:
         """
-        Return the Docker containers specified by lab_hash, machine_name and user.
+        Return the Docker containers objects specified by lab_hash, machine_name and user.
 
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return all the devices in the scenario.
@@ -554,7 +554,7 @@ class DockerMachine(object):
             user (str): The name of a user on the host. If specified, return only the containers of the user.
 
         Returns:
-            List[docker.models.containers.Container]: A list of Docker Containers.
+            List[docker.models.containers.Container]: A list of Docker containers.
         """
         filters = {"label": ["app=kathara"]}
         if user:
@@ -568,14 +568,14 @@ class DockerMachine(object):
 
     def get_machine_api_object(self, lab_hash: str, machine_name: str) -> docker.models.containers.Container:
         """
-        Return the Docker container specified by lab_hash and machine_name.
+        Return the Docker container object specified by lab_hash and machine_name.
 
         Args:
             lab_hash (str): The hash of a network scenario.
             machine_name (str): The name of a device.
 
         Returns:
-            docker.models.containers.Container: A Docker Container.
+            docker.models.containers.Container: A Docker container.
         """
         logging.debug("Searching container `%s` with lab hash `%s`" % (machine_name, lab_hash))
 
@@ -590,7 +590,7 @@ class DockerMachine(object):
 
     def get_machine_info(self, machine_name: str, lab_hash: str = None, user: str = None) -> Dict[str, Any]:
         """
-        Return a dict containing the machine info.
+        Return a dict containing the device info.
 
         Args:
             machine_name (str): The name of a device
@@ -716,14 +716,15 @@ class DockerMachine(object):
     @staticmethod
     def get_container_name(name: str, lab_hash: str) -> str:
         """
-        Return the Docker container name.
+        Return the name of a Docker container.
 
         Args:
             name (str): The name of a Kathara device.
             lab_hash (str): The hash of a running scenario.
 
         Returns:
-            str: The complete name of the Docker container.
+            str: The name of the Docker container in the format "|dev_prefix|_|username_prefix|_|name|_|lab_hash|".
+                If multiuser, the format is: "|dev_prefix|_|name|_|lab_hash|".
         """
         lab_hash = lab_hash if "_%s" % lab_hash else ""
         username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().multiuser else ""

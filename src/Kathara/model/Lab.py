@@ -11,7 +11,7 @@ from .. import utils
 
 class Lab(object):
     """
-    A Kathara network scenario, containing information about devices and interfaces.
+    A Kathara network scenario, containing information about devices and collision domains.
 
     Attributes:
         name (str): The name of the network scenario.
@@ -21,18 +21,17 @@ class Lab(object):
         email (str): The email of the author of the network scenario.
         web (str): The web address of the author of the network scenario.
         path (str): The path of the network scenario, if exists.
-        hash (str): The hash identifier of of the network scenario.
+        hash (str): The hash identifier of the network scenario.
         machines (Dict[str, Kathara.model.Machine]): The devices of the network scenario. Keys are device names, Values
-            are Kathara device object.
+            are Kathara device objects.
         links (Dict[str, Kathara.model.Link]): The collision domains of the network scenario.
-            Keys are collision domains names, Values are Kathara collision domain object.
-        general_options (Dict[str, Any]): Keys are option name, values are option values.
+            Keys are collision domains names, Values are Kathara collision domain objects.
+        general_options (Dict[str, Any]): Keys are option names, values are option values.
         has_dependencies (bool): True if there are dependencies among the devices boot.
         shared_startup_path(str) The path of the shared startup file, if exists.
         shared_shutdown_path(str) The path of the shared shutdown file, if exists.
         shared_folder(str) The path of the shared folder, if exists.
     """
-
     __slots__ = ['name', 'description', 'version', 'author', 'email', 'web',
                  'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
@@ -83,12 +82,12 @@ class Lab(object):
 
     def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None) -> None:
         """
-        Connect the specified machine to the specified collision domain.
+        Connect the specified device to the specified collision domain.
 
         Args:
             machine_name (str): The device name.
-            link_name (str): The collision domain.
-            machine_iface_number (int): The number of the device interface to connect. If it is None, the fist free
+            link_name (str): The collision domain name.
+            machine_iface_number (int): The number of the device interface to connect. If it is None, the first free
                 number is used.
 
         Returns:
@@ -96,7 +95,6 @@ class Lab(object):
 
         Raises:
             Exception: If an already used interface number is specified.
-
         """
         machine = self.get_or_new_machine(machine_name)
         link = self.get_or_new_link(link_name)
@@ -117,7 +115,6 @@ class Lab(object):
 
         Raises:
             MachineOptionError: If invalid values are specified for meta properties.
-
         """
         machine = self.get_or_new_machine(machine_name)
 
@@ -125,7 +122,7 @@ class Lab(object):
 
     def attach_external_links(self, external_links: Dict[str, ExternalLink]) -> None:
         """
-        Attach external links to the network scenario.
+        Attach external collision domains to the network scenario.
 
         Args:
             external_links (Dict[Kathara.model.Link, Kathara.model.ExternalLink]): Keys are Link objects,
@@ -143,14 +140,14 @@ class Lab(object):
 
     def check_integrity(self) -> None:
         """
-        Check the integrity of the image of all the devices in the network scenario.
+        Check the if the network interfaces numbers of all the devices in the network scenario are correctly assigned.
         """
         for machine in self.machines:
             self.machines[machine].check()
 
     def intersect_machines(self, selected_machines: Union[List[str], Set[str]]) -> None:
         """
-        Delete network scenario devices and collision domains not in selected devices, passed from command line.
+        Delete network scenario devices and collision domains not in selected devices.
         It has side effect on the current network scenario.
 
         Args:
@@ -174,15 +171,14 @@ class Lab(object):
 
     def apply_dependencies(self, dependencies: List[str]) -> None:
         """
-        Order the machines list of the network scenario to respect the boot dependencies.
+        Order the list of devices of the network scenario to satisfy the boot dependencies.
 
         Args:
-            dependencies (List[str]): If True, dependencies are applied.
+            dependencies (List[str]): If not empty, dependencies are applied.
 
         Returns:
             None
         """
-
         def dep_sort(item: str) -> int:
             try:
                 return dependencies.index(item) + 1
@@ -194,7 +190,7 @@ class Lab(object):
 
     def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> Machine:
         """
-        Get the specified device. If it not exists, create and add it to the machines list.
+        Get the specified device. If it not exists, create and add it to the devices list.
 
         Args:
             name (str): The name of the device
@@ -203,9 +199,7 @@ class Lab(object):
 
         Returns:
             Kathara.model.Machine: A Kathara device.
-
         """
-
         if name not in self.machines:
             self.machines[name] = Machine(self, name, **kwargs)
 
@@ -220,7 +214,6 @@ class Lab(object):
 
         Returns:
             Kathara.model.Link: A Kathara collision domain.
-
         """
         if name not in self.links:
             self.links[name] = Link(self, name)

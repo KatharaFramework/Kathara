@@ -18,10 +18,10 @@ class ExternalLink(object):
         Return a tuple composed by the name of the attached interface and, if present, the vlan tag.
         The interface name is computed appending the interface name to the vlan tag (if present).
         If the length of interface name + vlan tag is more than 15 chars, the interface name is truncated in order
-        to fit the whole string in 15 chars.
+        to fit the whole string in 15 chars (due to Linux limitations).
 
         Returns:
-            Tuple[str, Optional[int]]: a tuple composed by the name of the attached interface and the vlan tag.
+            Tuple[str, Optional[int]]: A tuple composed by the name of the attached interface and the vlan tag.
         """
         # VLAN is defined
         if self.vlan:
@@ -36,10 +36,10 @@ class ExternalLink(object):
 
     def get_full_name(self) -> str:
         """
-        Return the external link full name: <name>.<vlan-tag>
+        Return the external collision domain full name in the format: |name|.|vlan_tag|
 
         Returns:
-            (str): external link full name
+            (str): The external collision domain full name
         """
         (name, vlan) = self.get_name_and_vlan()
         return name if not vlan else "%s.%s" % (name, vlan)

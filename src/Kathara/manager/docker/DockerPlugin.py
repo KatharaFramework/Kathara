@@ -16,7 +16,6 @@ class DockerPlugin(object):
     """
     Class responsible for interacting with Docker Plugins.
     """
-
     __slots__ = ['client']
 
     def __init__(self, client: DockerClient):
@@ -24,7 +23,7 @@ class DockerPlugin(object):
 
     def check_and_download_plugin(self) -> None:
         """
-        Check the presence of the plugin and download it or upgrade it, if needed.
+        Check the presence of the Kathara Network Plugin and download it or upgrade it, if needed.
 
         Returns:
             None
