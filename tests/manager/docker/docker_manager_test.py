@@ -130,5 +130,5 @@ def test_wipe_all_users_and_multiuser(mock_setting_get_instance, mock_get_curren
 
     docker_manager.wipe(all_users=True)
     assert mock_get_current_user_name.called
-    mock_wipe_machines.assert_called_once()
-    mock_wipe_links.assert_called_once()
+    mock_wipe_machines.assert_called_once_with(user="kathara_user")
+    mock_wipe_links.assert_called_once_with(user="kathara_user")
