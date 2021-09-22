@@ -1,4 +1,5 @@
 import io
+import logging
 from copy import copy
 from datetime import datetime
 from typing import Set, Dict, Generator, Any, Tuple
@@ -157,6 +158,7 @@ class DockerManager(IManager):
     def wipe(self, all_users: bool = False) -> None:
         """
         Undeploy all the running network scenarios.
+        If multiuser scenarios are active, undeploy only current user devices.
 
         Args:
         all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
@@ -165,6 +167,10 @@ class DockerManager(IManager):
         Returns:
             None
         """
+        if Setting.get_instance().multiuser:
+            all_users = False
+            logging.warning("Multiuser scenarios are active. Cannot wipe devices of other users.")
+
         user_name = utils.get_current_user_name() if not all_users else None
 
         self.docker_machine.wipe(user=user_name)
