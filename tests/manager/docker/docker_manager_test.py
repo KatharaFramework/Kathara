@@ -97,7 +97,7 @@ def test_undeploy_lab_selected_machines(mock_undeploy_machine, mock_undeploy_lin
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.wipe")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.wipe")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_wipe(mock_get_current_user_name, mock_wipe_links, mock_wipe_machines, docker_manager):
+def test_wipe(mock_get_current_user_name, mock_wipe_machines, mock_wipe_links, docker_manager):
     mock_get_current_user_name.return_value = "kathara_user"
     docker_manager.wipe()
     mock_get_current_user_name.assert_called_once()
@@ -108,8 +108,27 @@ def test_wipe(mock_get_current_user_name, mock_wipe_links, mock_wipe_machines, d
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.wipe")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.wipe")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_wipe_all_users(mock_get_current_user_name, mock_wipe_links, mock_wipe_machines, docker_manager):
+def test_wipe_all_users(mock_get_current_user_name, mock_wipe_machines, mock_wipe_links, docker_manager):
     docker_manager.wipe(all_users=True)
     assert not mock_get_current_user_name.called
     mock_wipe_machines.assert_called_once_with(user=None)
     mock_wipe_links.assert_called_once_with(user=None)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.wipe")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.wipe")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_wipe_all_users_and_multiuser(mock_setting_get_instance, mock_get_current_user_name, mock_wipe_machines,
+                                      mock_wipe_links, docker_manager):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'multiuser': True
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.wipe(all_users=True)
+    assert mock_get_current_user_name.called
+    mock_wipe_machines.assert_called_once()
+    mock_wipe_links.assert_called_once()
