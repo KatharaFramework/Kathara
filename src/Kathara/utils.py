@@ -13,6 +13,7 @@ import tempfile
 from io import BytesIO
 from itertools import islice
 from multiprocessing import cpu_count
+from platform import platform, node
 from sys import platform as _platform
 from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable
 
@@ -171,13 +172,15 @@ def get_current_user_uid_gid() -> (int, int):
 
 
 def get_current_user_name() -> str:
+    hostname = node()
+
     def unix():
         user_info = get_current_user_info()
-        return user_info.pw_name
+        return "%s_%s" % (user_info.pw_name, hostname)
 
     def windows():
         import getpass
-        return getpass.getuser()
+        return "%s_%s" % (getpass.getuser(), hostname)
 
     return slug(exec_by_platform(unix, windows, unix))
 
