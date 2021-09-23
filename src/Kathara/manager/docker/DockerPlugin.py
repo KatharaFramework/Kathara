@@ -6,6 +6,7 @@ from docker.errors import NotFound
 
 from ... import utils
 from ...os.Networking import Networking
+from ...setting.Setting import Setting
 
 PLUGIN_NAME = "kathara/katharanp:latest"
 XTABLES_CONFIGURATION_KEY = "xtables_lock"
@@ -30,34 +31,37 @@ class DockerPlugin(object):
         """
         try:
             logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)
-
             plugin = self.client.plugins.get(PLUGIN_NAME)
             # Check for plugin updates.
             plugin.upgrade()
         except NotFound:
-            logging.info("Installing Kathara Network Plugin...")
-            plugin = self.client.plugins.install(PLUGIN_NAME)
-            logging.info("Kathara Network Plugin installed successfully!")
+            if Setting.get_instance().remote_url is None:
+                logging.info("Installing Kathara Network Plugin...")
+                plugin = self.client.plugins.install(PLUGIN_NAME)
+                logging.info("Kathara Network Plugin installed successfully!")
+            else:
+                raise Exception("Kathara Network Plugin not found on Docker remote server.")
 
-        xtables_lock_mount = self._get_xtables_lock_mount()
-        if not plugin.enabled:
-            self._configure_xtables_mount(plugin, xtables_lock_mount)
-
-            logging.debug("Enabling plugin `%s`..." % PLUGIN_NAME)
-            plugin.enable()
-        else:
-            # Get the mount of xtables.lock from the current plugin configuration
-            mount_obj = list(filter(lambda x: x["Name"] == XTABLES_CONFIGURATION_KEY,
-                                    plugin.attrs["Settings"]["Mounts"])).pop()
-
-            # If it's not equal to the computed one, fix the mount
-            if mount_obj["Source"] != xtables_lock_mount:
-                plugin.disable()
-
+        if Setting.get_instance().remote_url is None:
+            xtables_lock_mount = self._get_xtables_lock_mount()
+            if not plugin.enabled:
                 self._configure_xtables_mount(plugin, xtables_lock_mount)
-
                 logging.debug("Enabling plugin `%s`..." % PLUGIN_NAME)
                 plugin.enable()
+            else:
+                # Get the mount of xtables.lock from the current plugin configuration
+                mount_obj = list(filter(lambda x: x["Name"] == XTABLES_CONFIGURATION_KEY,
+                                        plugin.attrs["Settings"]["Mounts"])).pop()
+
+                # If it's not equal to the computed one, fix the mount
+                if mount_obj["Source"] != xtables_lock_mount:
+                    plugin.disable()
+                    self._configure_xtables_mount(plugin, xtables_lock_mount)
+                    logging.debug("Enabling plugin `%s`..." % PLUGIN_NAME)
+                    plugin.enable()
+        else:
+            if not plugin.enabled:
+                raise Exception("Kathara Network Plugin not enabled on Docker remote server.")
 
     def _get_xtables_lock_mount(self) -> Callable:
         def _mount_xtables_lock_linux():
