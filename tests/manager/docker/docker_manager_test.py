@@ -108,7 +108,15 @@ def test_wipe(mock_get_current_user_name, mock_wipe_machines, mock_wipe_links, d
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.wipe")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.wipe")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_wipe_all_users(mock_get_current_user_name, mock_wipe_machines, mock_wipe_links, docker_manager):
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_wipe_all_users(mock_setting_get_instance, mock_get_current_user_name, mock_wipe_machines, mock_wipe_links,
+                        docker_manager):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'multiuser': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
     docker_manager.wipe(all_users=True)
     assert not mock_get_current_user_name.called
     mock_wipe_machines.assert_called_once_with(user=None)
