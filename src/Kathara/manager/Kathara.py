@@ -233,7 +233,7 @@ class Kathara(IManager):
         """
         return self.manager.get_release_version()
 
-    def get_formatted_manager_name() -> str:
+    def get_formatted_manager_name(self) -> str:
         """
         Return a formatted string containing the current manager name.
 

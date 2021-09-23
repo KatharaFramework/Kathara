@@ -33,7 +33,6 @@ class CheckCommand(Command):
         )
 
     def run(self, current_path: str, argv: List[str]) -> None:
-        print(argv)
         self.parse_args(argv)
         args = self.get_args()
 
