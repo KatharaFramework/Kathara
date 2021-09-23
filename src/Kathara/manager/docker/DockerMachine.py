@@ -176,6 +176,10 @@ class DockerMachine(object):
         """
         logging.debug("Creating device `%s`..." % machine.name)
 
+        machines = self.get_machines_api_objects_by_filters(machine_name=machine.name, lab_hash=machine.lab.hash)
+        if machines:
+            raise MachineAlreadyExistsError("Device with name `%s` already exists." % machine.name)
+
         image = machine.get_image()
         memory = machine.get_mem()
         cpus = machine.get_cpu(multiplier=1000000000)
@@ -247,6 +251,7 @@ class DockerMachine(object):
             logging.warning("Privileged flag is ignored with multiuser scenarios.")
 
         container_name = self.get_container_name(machine.name, machine.lab.hash)
+
         try:
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,
@@ -273,10 +278,7 @@ class DockerMachine(object):
                                                                       }
                                                               )
         except APIError as e:
-            if e.response.status_code == 409 and e.explanation.startswith('Conflict.'):
-                raise MachineAlreadyExistsError("Device with name `%s` already exists." % machine.name)
-            else:
-                raise e
+            raise e
 
         # Pack machine files into a tar.gz and extract its content inside `/`
         tar_data = machine.pack_data()
