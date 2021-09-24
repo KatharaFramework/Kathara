@@ -179,6 +179,7 @@ class Lab(object):
         Returns:
             None
         """
+
         def dep_sort(item: str) -> int:
             try:
                 return dependencies.index(item) + 1

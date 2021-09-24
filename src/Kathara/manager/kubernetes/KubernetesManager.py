@@ -99,7 +99,8 @@ class KubernetesManager(IManager):
             all_networks = set([network["metadata"]["name"] for network in networks])
 
             # Get all current running machines (not Terminating)
-            running_machines = [machine for machine in self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash)
+            running_machines = [machine for machine in
+                                self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash)
                                 if 'Terminating' not in machine.status.phase
                                 ]
 

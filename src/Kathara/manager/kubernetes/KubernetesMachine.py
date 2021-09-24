@@ -491,7 +491,7 @@ class KubernetesMachine(object):
         except ApiException:
             return
 
-    def connect(self, lab_hash: str, machine_name: str, shell: Union[str, List[str]] = None, logs: bool = False)\
+    def connect(self, lab_hash: str, machine_name: str, shell: Union[str, List[str]] = None, logs: bool = False) \
             -> None:
         """
         Open a stream to the Kubernetes PoD specified by machine_name using the specified shell.

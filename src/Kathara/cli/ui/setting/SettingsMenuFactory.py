@@ -10,11 +10,11 @@ class SettingsMenuFactory(object):
 
     def __init__(self) -> None:
         self.menu_formatter: MenuFormatBuilder = MenuFormatBuilder().set_title_align('center') \
-                                                .set_subtitle_align('center') \
-                                                .set_prologue_text_align('center') \
-                                                .set_border_style_type(MenuBorderStyleType.DOUBLE_LINE_BORDER) \
-                                                .show_prologue_top_border(True) \
-                                                .show_prologue_bottom_border(True)
+            .set_subtitle_align('center') \
+            .set_prologue_text_align('center') \
+            .set_border_style_type(MenuBorderStyleType.DOUBLE_LINE_BORDER) \
+            .show_prologue_top_border(True) \
+            .show_prologue_bottom_border(True)
 
     def create_menu(self) -> ConsoleMenu:
         menu = ConsoleMenu(title="Kathara Settings",
