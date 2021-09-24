@@ -66,33 +66,33 @@ class DockerOptionsHandler(OptionsHandler):
 
         shared_item = SubmenuItem(shared_string, shared_menu, current_menu)
 
-        # Multiuser Option
-        multiuser_string = "Enable multiuser scenarios"
-        multiuser_menu = SelectionMenu(strings=[],
-                                       title=multiuser_string,
-                                       subtitle=setting_utils.current_bool("multiuser"),
-                                       prologue_text="""This option disables the per-user scenario creation and """
-                                                     """allows to interact on the same devices and collision domains.
+        # Shared Links Option
+        shared_cd_string = "Share Collision Domains between users"
+        shared_cd_menu = SelectionMenu(strings=[],
+                                       title=shared_cd_string,
+                                       subtitle=setting_utils.current_bool("shared_cd"),
+                                       prologue_text="""This option allows to connect devices of different users to """
+                                                     """the same collision domains.
                                                      
                                                      Default is %s.""" %
-                                                     setting_utils.format_bool(DEFAULTS['multiuser']),
+                                                     setting_utils.format_bool(DEFAULTS['shared_cd']),
                                        formatter=menu_formatter
                                        )
 
-        multiuser_menu.append_item(FunctionItem(text="Yes",
+        shared_cd_menu.append_item(FunctionItem(text="Yes",
                                                 function=setting_utils.update_setting_value,
-                                                args=["multiuser", True],
+                                                args=["shared_cd", True],
                                                 should_exit=True
                                                 )
                                    )
-        multiuser_menu.append_item(FunctionItem(text="No",
+        shared_cd_menu.append_item(FunctionItem(text="No",
                                                 function=setting_utils.update_setting_value,
-                                                args=["multiuser", False],
+                                                args=["shared_cd", False],
                                                 should_exit=True
                                                 )
                                    )
 
-        multiuser_item = SubmenuItem(multiuser_string, multiuser_menu, current_menu)
+        shared_cd_item = SubmenuItem(shared_cd_string, shared_cd_menu, current_menu)
 
         # Remote Docker Daemon Option
         remote_url_string = "Insert a remote Docker Daemon URL"
@@ -155,6 +155,6 @@ class DockerOptionsHandler(OptionsHandler):
 
         current_menu.append_item(hosthome_item)
         current_menu.append_item(shared_item)
-        current_menu.append_item(multiuser_item)
+        current_menu.append_item(shared_cd_item)
         current_menu.append_item(remote_url_item)
         current_menu.append_item(cert_path_item)

@@ -120,12 +120,12 @@ class Lab(object):
 
         machine.add_meta(meta_name, meta_value)
 
-    def attach_external_links(self, external_links: Dict[str, ExternalLink]) -> None:
+    def attach_external_links(self, external_links: Dict[str, List[ExternalLink]]) -> None:
         """
         Attach external collision domains to the network scenario.
 
         Args:
-            external_links (Dict[Kathara.model.Link, Kathara.model.ExternalLink]): Keys are Link objects,
+            external_links (Dict[Kathara.model.Link, List[Kathara.model.ExternalLink]]): Keys are Link objects,
             values are ExternalLink objects.
 
         Returns:

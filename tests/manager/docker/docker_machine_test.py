@@ -356,7 +356,7 @@ def test_undeploy_machine(mock_delete_machine, docker_machine, default_device):
 def test_exec(mock_get_machine_api_object, docker_machine, default_device):
     mock_get_machine_api_object.return_value = default_device.api_object
     default_device.api_object.exec_run.return_value = (None, (None, None))
-    docker_machine.exec(default_device.lab, "test_device", "kathara --help", False)
+    docker_machine.exec(default_device.lab, "test_device", "kathara --help", tty=False)
     default_device.api_object.exec_run.assert_called_once_with(
         cmd="kathara --help",
         stdout=True,

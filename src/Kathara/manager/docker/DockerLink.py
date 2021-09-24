@@ -111,7 +111,7 @@ class DockerLink(object):
         else:
             network_ipam_config = docker.types.IPAMConfig(driver='null')
 
-            user_label = "shared" if Setting.get_instance().multiuser else utils.get_current_user_name()
+            user_label = "shared_cd" if Setting.get_instance().shared_cd else utils.get_current_user_name()
             link.api_object = self.client.networks.create(name=link_name,
                                                           driver=PLUGIN_NAME,
                                                           check_duplicate=True,
@@ -178,7 +178,7 @@ class DockerLink(object):
         Returns:
             None
         """
-        user_label = "shared" if Setting.get_instance().multiuser else user
+        user_label = "shared_cd" if Setting.get_instance().shared_cd else user
         links = self.get_links_api_objects_by_filters(user=user_label)
         for item in links:
             item.reload()
@@ -283,9 +283,9 @@ class DockerLink(object):
 
         Returns:
             str: The name of the Docker network in the format "|net_prefix|_|username_prefix|_|name|".
-                If multiuser, the format is: "|net_prefix|_|lab_hash|".
+                If shared collision domains, the format is: "|net_prefix|_|lab_hash|".
         """
-        username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().multiuser else ""
+        username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().shared_cd else ""
         return "%s%s_%s" % (Setting.get_instance().net_prefix, username_prefix, name)
 
     @staticmethod

@@ -176,7 +176,8 @@ class DockerMachine(object):
         """
         logging.debug("Creating device `%s`..." % machine.name)
 
-        machines = self.get_machines_api_objects_by_filters(machine_name=machine.name, lab_hash=machine.lab.hash)
+        machines = self.get_machines_api_objects_by_filters(machine_name=machine.name, lab_hash=machine.lab.hash,
+                                                            user=utils.get_current_user_name())
         if machines:
             raise MachineAlreadyExistsError("Device with name `%s` already exists." % machine.name)
 
@@ -246,9 +247,9 @@ class DockerMachine(object):
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
         privileged = options['privileged_machines'] if 'privileged_machines' in options else False
-        if Setting.get_instance().multiuser:
+        if Setting.get_instance().remote_url is not None and privileged:
             privileged = False
-            logging.warning("Privileged flag is ignored with multiuser scenarios.")
+            logging.warning("Privileged flag is ignored with a remote Docker connection.")
 
         container_name = self.get_container_name(machine.name, machine.lab.hash)
 
@@ -298,7 +299,8 @@ class DockerMachine(object):
         Returns:
             None
         """
-        machines = self.get_machines_api_objects_by_filters(machine_name=machine.name, lab_hash=machine.lab.hash)
+        machines = self.get_machines_api_objects_by_filters(machine_name=machine.name, lab_hash=machine.lab.hash,
+                                                            user=utils.get_current_user_name())
 
         if not machines:
             raise Exception("Device `%s` not found." % machine.name)
@@ -377,7 +379,7 @@ class DockerMachine(object):
         Returns:
             None
         """
-        machines = self.get_machines_api_objects_by_filters(lab_hash=lab_hash)
+        machines = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, user=utils.get_current_user_name())
 
         if selected_machines is not None and len(selected_machines) > 0:
             machines = [item for item in machines if item.labels["name"] in selected_machines]
@@ -442,20 +444,22 @@ class DockerMachine(object):
         if progress_bar is not None:
             progress_bar += 1
 
-    def connect(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False) -> None:
+    def connect(self, lab_hash: str, machine_name: str, user: str = None, shell: str = None,
+                logs: bool = False) -> None:
         """
         Open a stream to the Docker container specified by machine_name using the specified shell.
 
         Args:
             lab_hash (str): The hash of the network scenario containing the device.
             machine_name (str): The name of the device to connect.
+            user (str): The name of a current user on the host.
             shell (str): The path to the desired shell.
             logs (bool): If True, print the logs of the startup command.
 
         Returns:
             None
         """
-        container = self.get_machine_api_object(lab_hash=lab_hash, machine_name=machine_name)
+        container = self.get_machine_api_object(lab_hash=lab_hash, machine_name=machine_name, user=user)
 
         if not shell:
             shell = shlex.split(container.labels['shell'])
@@ -467,6 +471,7 @@ class DockerMachine(object):
         if logs and Setting.get_instance().print_startup_log:
             (result_string, _) = self.exec(lab_hash,
                                            machine_name,
+                                           user=user,
                                            command="cat /var/log/shared.log /var/log/startup.log",
                                            tty=False
                                            )
@@ -475,8 +480,6 @@ class DockerMachine(object):
                 print("--- Startup Commands Log\n")
                 print(result_string)
                 print("--- End Startup Commands Log\n")
-
-        container = self.get_machine_api_object(lab_hash=lab_hash, machine_name=machine_name)
 
         resp = self.client.api.exec_create(container.id,
                                            shell,
@@ -502,13 +505,15 @@ class DockerMachine(object):
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
-    def exec(self, lab_hash: str, machine_name: str, command: str, tty: bool = True) -> Tuple[str, str]:
+    def exec(self, lab_hash: str, machine_name: str, command: str, user: str = None,
+             tty: bool = True) -> Tuple[str, str]:
         """
         Execute the command on the Docker container specified by the lab_hash and the machine_name.
 
         Args:
             lab_hash (str): The hash of the network scenario containing the device.
             machine_name (str): The name of the device.
+            user (str): The name of a current user on the host.
             command (str): The command to execute.
             tty (bool): If True, open a new tty.
 
@@ -517,7 +522,7 @@ class DockerMachine(object):
         """
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
-        container = self.get_machine_api_object(lab_hash, machine_name)
+        container = self.get_machine_api_object(lab_hash=lab_hash, machine_name=machine_name, user=user)
 
         (exit_code, (stdout, stderr)) = container.exec_run(cmd=command,
                                                            stdout=True,
@@ -568,21 +573,22 @@ class DockerMachine(object):
 
         return self.client.containers.list(all=True, filters=filters)
 
-    def get_machine_api_object(self, lab_hash: str, machine_name: str) -> docker.models.containers.Container:
+    def get_machine_api_object(self, lab_hash: str, machine_name: str,
+                               user: str = None) -> docker.models.containers.Container:
         """
         Return the Docker container object specified by lab_hash and machine_name.
 
         Args:
             lab_hash (str): The hash of a network scenario.
             machine_name (str): The name of a device.
+            user (str): The name of a current user on the host.
 
         Returns:
             docker.models.containers.Container: A Docker container.
         """
-        logging.debug("Searching container `%s` with lab hash `%s`" % (machine_name, lab_hash))
+        logging.debug("Searching container `%s` with lab hash `%s` for user `%s`" % (machine_name, lab_hash, user))
 
-        containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
-
+        containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         logging.debug("Found containers: %s" % str(containers))
 
         if len(containers) != 1:
@@ -590,9 +596,9 @@ class DockerMachine(object):
         else:
             return containers[0]
 
-    def get_machine_info(self, machine_name: str, lab_hash: str = None, user: str = None) -> Dict[str, Any]:
+    def get_machine_info(self, machine_name: str, lab_hash: str = None, user: str = None) -> List[Dict[str, Any]]:
         """
-        Return a dict containing the device info.
+        Return a list of dicts containing the devices info.
 
         Args:
             machine_name (str): The name of a device
@@ -601,20 +607,19 @@ class DockerMachine(object):
             user (str): The name of a user on the host. If specified, search only the containers of the user.
 
         Returns:
-            Dict[str, Any]: A dict containing the machine info.
+            List[Dict[str, Any]]: A list of dicts containing the devices info.
         """
         machines_api_objects = self.get_machines_api_objects_by_filters(machine_name=machine_name, lab_hash=lab_hash,
                                                                         user=user)
         if not machines_api_objects:
             raise Exception("The specified device `%s` is not running." % machine_name)
-        elif len(machines_api_objects) > 1:
-            raise Exception("There is more than one device matching the name `%s`." % machine_name)
 
-        machine_api_object = machines_api_objects[0]
+        all_stats = []
+        for machine_api_object in machines_api_objects:
+            machine_stats = machine_api_object.stats(stream=False)
+            all_stats.append(self._get_stats_by_machine(machine_api_object, machine_stats))
 
-        machine_stats = machine_api_object.stats(stream=False)
-
-        return self._get_stats_by_machine(machine_api_object, machine_stats)
+        return all_stats
 
     def get_machines_info(self, lab_hash: str = None, machine_name: str = None, user: str = None) -> \
             Generator[Dict[str, Any], None, None]:
@@ -726,11 +731,9 @@ class DockerMachine(object):
 
         Returns:
             str: The name of the Docker container in the format "|dev_prefix|_|username_prefix|_|name|_|lab_hash|".
-                If multiuser, the format is: "|dev_prefix|_|name|_|lab_hash|".
         """
         lab_hash = lab_hash if "_%s" % lab_hash else ""
-        username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().multiuser else ""
-        return "%s%s_%s_%s" % (Setting.get_instance().device_prefix, username_prefix, name, lab_hash)
+        return "%s_%s_%s_%s" % (Setting.get_instance().device_prefix, utils.get_current_user_name(), name, lab_hash)
 
     @staticmethod
     def _delete_machine(machine: docker.models.containers.Container) -> None:

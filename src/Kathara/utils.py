@@ -13,7 +13,7 @@ import tempfile
 from io import BytesIO
 from itertools import islice
 from multiprocessing import cpu_count
-from platform import platform, node
+from platform import node
 from sys import platform as _platform
 from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable
 
