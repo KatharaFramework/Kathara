@@ -83,6 +83,21 @@ Each Manager specifies additional parameters which are used only when the Manage
 
 	Default to `true`.
 
+* `shared_cd` (boolean):
+    This parameter allows to connect devices of different users to the same collision domains.
+
+    Default to `false`.
+
+* `remote_url` (string):
+    This parameter specifies a Remote Docker daemon URL to connect to, instead of a local one.
+
+    Default to null.
+
+* `cert_path` (string):
+    This parameter specifies a TLS Cert path that could be required when using a Remote Docker daemon.
+
+    Default to null.
+
 ### MEGALOS (Kubernetes)
 
 * `api_server_url` (string):
@@ -123,7 +138,10 @@ Each Manager specifies additional parameters which are used only when the Manage
             "enable_ipv6": true,
             "last_checked": 1600087624.6843708,
             "hosthome_mount": false,
-            "shared_mount": true
+            "shared_mount": true,
+            "shared_cd": false,
+            "remote_url": "http://192.168.127.78:2375",
+            "cert_path": null
         }
 
 Example of the default `kathara.conf`(5) file using Docker Manager.

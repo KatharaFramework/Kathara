@@ -113,7 +113,8 @@ def test_wipe_all_users(mock_setting_get_instance, mock_get_current_user_name, m
                         docker_manager):
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'multiuser': False
+        'shared_cd': False,
+        'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock
 
@@ -127,16 +128,17 @@ def test_wipe_all_users(mock_setting_get_instance, mock_get_current_user_name, m
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.wipe")
 @mock.patch("src.Kathara.utils.get_current_user_name")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_wipe_all_users_and_multiuser(mock_setting_get_instance, mock_get_current_user_name, mock_wipe_machines,
+def test_wipe_all_users_and_shared_cd(mock_setting_get_instance, mock_get_current_user_name, mock_wipe_machines,
                                       mock_wipe_links, docker_manager):
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'multiuser': True
+        'shared_cd': True,
+        'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock
     mock_get_current_user_name.return_value = "kathara_user"
 
     docker_manager.wipe(all_users=True)
-    assert mock_get_current_user_name.called
-    mock_wipe_machines.assert_called_once_with(user="kathara_user")
-    mock_wipe_links.assert_called_once_with(user="kathara_user")
+    assert not mock_get_current_user_name.called
+    mock_wipe_machines.assert_called_once_with(user=None)
+    mock_wipe_links.assert_called_once_with(user=None)

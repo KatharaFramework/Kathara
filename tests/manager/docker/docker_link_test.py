@@ -42,8 +42,9 @@ def test_get_network_name(mock_get_current_user_name, mock_setting_get_instance)
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'multiuser': False,
-        'net_prefix': 'kathara'
+        'shared_cd': False,
+        'net_prefix': 'kathara',
+        'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock
     link_name = DockerLink.get_network_name("A")
@@ -52,12 +53,13 @@ def test_get_network_name(mock_get_current_user_name, mock_setting_get_instance)
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_get_network_name_multiuser(mock_get_current_user_name, mock_setting_get_instance):
+def test_get_network_name_shared_cd(mock_get_current_user_name, mock_setting_get_instance):
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'multiuser': True,
-        'net_prefix': 'CUSTOM_PREFIX'
+        'shared_cd': True,
+        'net_prefix': 'CUSTOM_PREFIX',
+        'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock
     link_name = DockerLink.get_network_name("A")
@@ -72,8 +74,9 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_li
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'multiuser': False,
+        'shared_cd': False,
         'net_prefix': 'kathara',
+        'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock
     docker_link.create(default_link)
@@ -94,14 +97,15 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_li
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_multiuser(mock_get_current_user_name, mock_setting_get_instance, docker_link, default_link):
+def test_create_shared_cd(mock_get_current_user_name, mock_setting_get_instance, docker_link, default_link):
     docker_link.client.networks.list.return_value = []
 
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'multiuser': True,
-        'net_prefix': 'kathara'
+        'shared_cd': True,
+        'net_prefix': 'kathara',
+        'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock
     docker_link.create(default_link)
@@ -113,7 +117,7 @@ def test_create_multiuser(mock_get_current_user_name, mock_setting_get_instance,
         labels={
             "lab_hash": utils.generate_urlsafe_hash("default_scenario"),
             "name": "A",
-            "user": "shared",
+            "user": "shared_cd",
             "app": "kathara",
             "external": ""
         }

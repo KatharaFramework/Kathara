@@ -48,18 +48,22 @@ def default_link(default_device):
     return link
 
 
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files, docker_machine, default_device):
+def test_create(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
+                mock_get_machines_api_objects_by_filters, docker_machine, default_device):
+    mock_get_machines_api_objects_by_filters.return_value = []
     mock_get_current_user_name.return_value = "test-user"
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'multiuser': False,
+        'shared_cd': False,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
-        'enable_ipv6': False
+        'enable_ipv6': False,
+        'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock
     docker_machine.create(default_device)
@@ -91,19 +95,22 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, mock_copy
     assert not mock_copy_files.called
 
 
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files, docker_machine,
-                     default_device):
+def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
+                     mock_get_machines_api_objects_by_filters, docker_machine, default_device):
+    mock_get_machines_api_objects_by_filters.return_value = []
     mock_get_current_user_name.return_value = "test-user"
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'multiuser': False,
+        'shared_cd': False,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
-        'enable_ipv6': True
+        'enable_ipv6': True,
+        'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock
     docker_machine.create(default_device)
@@ -139,18 +146,22 @@ def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock
     assert not mock_copy_files.called
 
 
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files, docker_machine,
-                           default_device):
+def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
+                           mock_get_machines_api_objects_by_filters, docker_machine, default_device):
+    mock_get_machines_api_objects_by_filters.return_value = []
+
     default_device.lab.add_option("privileged_machines", True)
     mock_get_current_user_name.return_value = "test-user"
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'multiuser': False,
+        'shared_cd': False,
         'device_prefix': 'dev_prefix',
-        "device_shell": '/bin/bash'
+        "device_shell": '/bin/bash',
+        'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock
     docker_machine.create(default_device)
@@ -171,49 +182,6 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
                  'net.ipv6.icmp.ratelimit': 0,
                  'net.ipv6.conf.default.disable_ipv6': 0,
                  'net.ipv6.conf.all.disable_ipv6': 0},
-        mem_limit='64m',
-        nano_cpus=2000000000,
-        ports=None,
-        tty=True,
-        stdin_open=True,
-        detach=True,
-        volumes={},
-        labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
-    )
-    assert not mock_copy_files.called
-
-
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
-@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-@mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_multiuser_with_privileged(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
-                                          docker_machine, default_device):
-    default_device.lab.add_option("privileged_machines", True)
-    mock_get_current_user_name.return_value = "test-user"
-    setting_mock = Mock()
-    setting_mock.configure_mock(**{
-        'multiuser': True,
-        'device_prefix': 'dev_prefix',
-        "device_shell": '/bin/bash',
-        'enable_ipv6': False
-    })
-    mock_setting_get_instance.return_value = setting_mock
-    docker_machine.create(default_device)
-    docker_machine.client.containers.create.assert_called_once_with(
-        image='kathara/test',
-        name='dev_prefix_test_device_9pe3y6IDMwx4PfOPu5mbNg',
-        hostname='test_device',
-        cap_add=['NET_ADMIN', 'NET_RAW', 'NET_BROADCAST', 'NET_BIND_SERVICE', 'SYS_ADMIN'],
-        privileged=False,
-        network=None,
-        network_mode='none',
-        sysctls={'net.ipv4.conf.all.rp_filter': 0,
-                 'net.ipv4.conf.default.rp_filter': 0,
-                 'net.ipv4.conf.lo.rp_filter': 0,
-                 'net.ipv4.ip_forward': 1,
-                 'net.ipv4.icmp_ratelimit': 0
-                 },
         mem_limit='64m',
         nano_cpus=2000000000,
         ports=None,
@@ -407,7 +375,10 @@ def test_get_machines_api_objects_by_filters_user_filter(docker_machine):
 def test_get_machine_api_object(mock_get_machines_api_objects_by_filters, docker_machine, default_device):
     mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
     docker_machine.get_machine_api_object("lab_hash", "test_device")
-    mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", machine_name="test_device")
+    mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash",
+                                                                     machine_name="test_device",
+                                                                     user=None
+                                                                     )
 
 
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
@@ -424,7 +395,7 @@ def test_get_container_name_lab_hash(mock_get_current_user_name, mock_setting_ge
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'multiuser': False,
+        'shared_cd': False,
         'device_prefix': 'dev_prefix'
     })
     mock_setting_get_instance.return_value = setting_mock
@@ -463,12 +434,12 @@ def test_get_machines_info(mock_get_machines_api_objects_by_filters, mock_get_st
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_get_container_name_lab_hash_multiuser(mock_get_current_user_name, mock_setting_get_instance):
+def test_get_container_name_lab_hash_shared_cd(mock_get_current_user_name, mock_setting_get_instance):
     mock_get_current_user_name.return_value = "kathara-user"
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'multiuser': True,
+        'shared_cd': True,
         'device_prefix': 'dev_prefix'
     })
     mock_setting_get_instance.return_value = setting_mock
