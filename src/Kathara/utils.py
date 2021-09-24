@@ -172,17 +172,17 @@ def get_current_user_uid_gid() -> (int, int):
 
 
 def get_current_user_name() -> str:
-    hostname = node()
+    hostname = generate_urlsafe_hash(node())
 
     def unix():
         user_info = get_current_user_info()
-        return "%s_%s" % (user_info.pw_name, hostname)
+        return user_info.pw_name
 
     def windows():
         import getpass
-        return "%s_%s" % (getpass.getuser(), hostname)
+        return getpass.getuser()
 
-    return slug(exec_by_platform(unix, windows, unix))
+    return slug("%s-%s" % (exec_by_platform(unix, windows, unix), hostname))
 
 
 def get_current_user_info() -> Any:
