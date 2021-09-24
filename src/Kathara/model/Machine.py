@@ -324,7 +324,8 @@ class Machine(object):
                              )
 
         def osx_connect() -> None:
-            complete_osx_command = "cd \"%s\" && clear && %s && exit" % (self.lab.path, connect_command)
+            cd_to_lab_path = "cd \"%s\" &&" % self.lab.path if self.lab.path is not None else ""
+            complete_osx_command = "%s clear && %s && exit" % (cd_to_lab_path, connect_command)
 
             if terminal == "TMUX":
                 from ..trdparty.libtmux.tmux import TMUX
