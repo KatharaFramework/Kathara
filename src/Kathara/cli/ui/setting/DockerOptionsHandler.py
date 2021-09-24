@@ -67,7 +67,7 @@ class DockerOptionsHandler(OptionsHandler):
         shared_item = SubmenuItem(shared_string, shared_menu, current_menu)
 
         # Shared Links Option
-        shared_cd_string = "Share Collision Domains between users"
+        shared_cd_string = "Enable Shared Collision Domains between users"
         shared_cd_menu = SelectionMenu(strings=[],
                                        title=shared_cd_string,
                                        subtitle=setting_utils.current_bool("shared_cd"),
@@ -108,7 +108,8 @@ class DockerOptionsHandler(OptionsHandler):
                                                  function=setting_utils.read_value,
                                                  args=['remote_url',
                                                        RegexValidator(setting_utils.URL_REGEX),
-                                                       'Write a Docker Daemon URL:',
+                                                       'Write a Docker Daemon URL '
+                                                       '(format http://<remote-url>:<remote-port>):',
                                                        'Docker Daemon URL is not a valid URL (remove '
                                                        'the trailing slash, if present)'
                                                        ],
