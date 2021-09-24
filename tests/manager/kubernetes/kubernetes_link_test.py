@@ -31,7 +31,7 @@ class FakeManager(object):
     def dict(self):
         return {}
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, exit_type, value, traceback):
         return True
 
 

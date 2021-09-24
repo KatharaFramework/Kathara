@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import Set, Dict, Generator, Any
+from typing import Set, Dict, Generator, Any, Tuple
 
 from ..foundation.manager.IManager import IManager
 from ..foundation.manager.ManagerFactory import ManagerFactory

@@ -94,6 +94,7 @@ class KubernetesLink(object):
 
         Args:
             link (Kathara.model.Link.Link): A Kathara collision domain.
+            network_id (int): The Network ID.
         """
         # If a network with the same name exists, return it instead of creating a new one.
         network_objects = self.get_links_api_objects_by_filters(lab_hash=link.lab.hash, link_name=link.name)
