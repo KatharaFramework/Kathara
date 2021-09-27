@@ -6,7 +6,7 @@ setup(
     name='kathara',
     package_dir={'': 'src'},
     packages=find_packages('src', exclude=["Kathara.cli", "Kathara.cli.*"]),
-    version='3.2.0',
+    version='0.8.0',
     license='gpl-3.0',
     description='A lightweight container based emulation system.',
     author='Tommaso Caiazzi',
