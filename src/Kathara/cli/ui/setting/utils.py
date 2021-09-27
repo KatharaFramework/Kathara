@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Any
+from typing import Optional, Callable, Any, Tuple, List
 
 from ....exceptions import SettingsError
 from ....setting.Setting import Setting
@@ -35,7 +35,7 @@ def current_string(attribute_name: str, text: Optional[str] = None) -> Callable[
                                         )
 
 
-def update_setting_value(attribute_name: str, value: Any) -> None:
+def update_setting_value(attribute_name: str, value: Any, stdout: bool = True) -> None:
     reload = False
 
     if attribute_name == "manager_type" and Setting.get_instance().manager_type != value:
@@ -51,10 +51,20 @@ def update_setting_value(attribute_name: str, value: Any) -> None:
 
         Setting.get_instance().save()
 
-        print(SAVED_STRING)
+        if stdout:
+            print(SAVED_STRING)
     except SettingsError as e:
         print(str(e))
 
+    if stdout:
+        Screen().input(PRESS_ENTER_STRING)
+
+
+def update_setting_values(attribute_values: List[Tuple[str, Any]]) -> None:
+    for attribute_name, value in attribute_values:
+        update_setting_value(attribute_name, value, stdout=False)
+
+    print(SAVED_STRING)
     Screen().input(PRESS_ENTER_STRING)
 
 
