@@ -6,7 +6,7 @@ TARGET_DIRECTORY=Output
 APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
 ROFF_DIR=../../docs/Roff
 
-.PHONY : all allSigned
+.PHONY : all allSigned deps binary manpages createInstaller signProduct clean
 all: deps binary manpages createInstaller clean
 allSigned: deps binary manpages createInstaller signProduct clean
 
