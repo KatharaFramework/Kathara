@@ -186,9 +186,8 @@ class Machine(object):
 
         logging.debug("`%s` interfaces are %s." % (self.name, sorted_interfaces))
 
-        for i in range(1, len(sorted_interfaces)):
-            if sorted_interfaces[i - 1][0] != sorted_interfaces[i][0] - 1:
-                # If a number is non sequential, raise the exception.
+        for i, (num_iface, _) in enumerate(sorted_interfaces):
+            if num_iface != i:
                 raise NonSequentialMachineInterfaceError("Interface %d missing on device %s." % (i, self.name))
 
         self.interfaces = collections.OrderedDict(sorted_interfaces)

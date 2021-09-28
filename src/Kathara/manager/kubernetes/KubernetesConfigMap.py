@@ -43,7 +43,7 @@ class KubernetesConfigMap(object):
 
         Args:
             machine_name (str): The name of a Kathara device.
-            machine_namespace (str): the name of the namespace the machine belongs to.
+            machine_namespace (str): the name of the namespace the device belongs to.
 
         Returns:
             None
@@ -59,22 +59,22 @@ class KubernetesConfigMap(object):
 
         Args:
             machine_name (str): The name of a Kathara device.
-            machine_namespace (str): the name of the namespace the machine belongs to.
+            machine_namespace (str): the name of the namespace the device belongs to.
 
         Returns:
-            str: The name for the ConfigMap in the format '<machine_name>-<machine_namespace>-files'.
+            str: The name for the ConfigMap in the format '|machine_name|-|machine_namespace|-files'.
         """
         return "%s-%s-files" % (machine_name, machine_namespace)
 
     def _build_for_machine(self, machine: Machine) -> Optional[client.V1ConfigMap]:
         """
-        Build and return a Kubernetes ConfigMap for the machine.
+        Build and return a Kubernetes ConfigMap for the device.
 
         Args:
             machine (Kathara.model.Machine.Machine): A Kathara device.
 
         Returns:
-            Optional[client.V1ConfigMap]: The Kubernetes ConfigMap for the machine.
+            Optional[client.V1ConfigMap]: The Kubernetes ConfigMap for the device.
         """
         tar_data = machine.pack_data()
 

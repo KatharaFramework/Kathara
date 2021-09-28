@@ -109,7 +109,7 @@ class DockerOptionsHandler(OptionsHandler):
                                                  args=['remote_url',
                                                        RegexValidator(setting_utils.URL_REGEX),
                                                        'Write a Docker Daemon URL '
-                                                       '(format http://<remote-url>:<remote-port>):',
+                                                       '(format http[s]://<remote-url>:<remote-port>):',
                                                        'Docker Daemon URL is not a valid URL (remove '
                                                        'the trailing slash, if present)'
                                                        ],

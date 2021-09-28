@@ -155,6 +155,26 @@ class LstartCommand(Command):
         if dependencies:
             lab.apply_dependencies(dependencies)
 
+        lab_meta_information = str(lab)
+
+        if lab_meta_information:
+            logging.info("\n" + lab_meta_information)
+            logging.info(utils.format_headers())
+
+        if len(lab.machines) <= 0:
+            raise Exception("No devices in the current lab. Exiting...")
+
+        try:
+            options = OptionParser.parse(args['options'])
+            lab.general_options = {**lab.general_options, **options}
+        except ValueError as e:
+            raise e
+
+        # If dry mode, we just check if the lab.conf is correct.
+        if args['dry_mode']:
+            logging.info("lab.conf file is correct. Exiting...")
+            sys.exit(0)
+
         lab.add_option('hosthome_mount', args['no_hosthome'])
         lab.add_option('shared_mount', args['no_shared'])
         lab.add_option('privileged_machines', args['privileged'])
@@ -176,29 +196,9 @@ class LstartCommand(Command):
             else:
                 raise OSError("lab.ext is only available on UNIX systems.")
 
-        lab_meta_information = str(lab)
-
-        if lab_meta_information:
-            logging.info("\n" + lab_meta_information)
-            logging.info(utils.format_headers())
-
-        # If dry mode, we just check if the lab.conf is correct.
-        if args['dry_mode']:
-            logging.info("lab.conf file is correct. Exiting...")
-            sys.exit(0)
-
-        if len(lab.machines) <= 0:
-            raise Exception("No devices in the current lab. Exiting...")
-
-        try:
-            options = OptionParser.parse(args['options'])
-            lab.general_options = {**lab.general_options, **options}
-        except ValueError as e:
-            raise e
-
         Kathara.get_instance().deploy_lab(lab, selected_machines=args['machine_name'])
 
         if args['list']:
-            print(next(Kathara.get_instance().get_lab_info(lab.hash)))
+            print(next(Kathara.get_instance().get_formatted_lab_info(lab.hash)))
 
         return lab

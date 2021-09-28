@@ -186,7 +186,7 @@ class KubernetesMachine(object):
 
     def create(self, machine: Machine) -> None:
         """
-        Create a Kubernetes deployment and a PoD representing the machine and assign it to machine.api_object.
+        Create a Kubernetes deployment and a PoD representing the device and assign it to machine.api_object.
 
         Args:
             machine (Kathara.model.Machine.Machine): a Kathara device.
@@ -691,9 +691,9 @@ class KubernetesMachine(object):
         else:
             return pods[0]
 
-    def get_machine_info(self, machine_name: str, lab_hash: str = None) -> Dict[str, Any]:
+    def get_machine_info(self, machine_name: str, lab_hash: str = None) -> List[Dict[str, Any]]:
         """
-        Return a dict containing the machine info.
+        Return a list of dicts containing the devices info.
 
         Args:
             machine_name (str): The name of a device
@@ -701,18 +701,18 @@ class KubernetesMachine(object):
             scenario.
 
         Returns:
-            Dict[str, Any]: A dict containing the machine info.
+            List[Dict[str, Any]]: A list of dicts containing the devices info.
         """
-        machines = self.get_machines_api_objects_by_filters(machine_name=machine_name, lab_hash=lab_hash)
+        machines_api_objects = self.get_machines_api_objects_by_filters(machine_name=machine_name, lab_hash=lab_hash)
 
-        if not machines:
+        if not machines_api_objects:
             raise Exception("The specified device is not running.")
-        elif len(machines) > 1:
-            raise Exception("There is more than one device matching the name `%s`." % machine_name)
 
-        machine = machines[0]
+        all_stats = []
+        for machine_api_object in machines_api_objects:
+            all_stats.append(self._get_stats_by_machine(machine_api_object))
 
-        return self._get_stats_by_machine(machine)
+        return all_stats
 
     def get_machines_info(self, lab_hash: str, machine_name: str = None) -> Generator[Dict[str, Any], None, None]:
         """

@@ -113,7 +113,10 @@ class DockerMachine(object):
             else Setting.get_instance().shared_mount
 
         if shared_mount:
-            lab.create_shared_folder()
+            if Setting.get_instance().remote_url is not None:
+                logging.warning("Shared folder cannot be mounted with a remote Docker connection.")
+            else:
+                lab.create_shared_folder()
 
         machines = lab.machines.items()
 
@@ -243,7 +246,7 @@ class DockerMachine(object):
         # Mount the host home only if specified in settings.
         hosthome_mount = options['hosthome_mount'] if 'hosthome_mount' in options else machine.meta['hosthome_mount'] \
             if 'hosthome_mount' in machine.meta else Setting.get_instance().hosthome_mount
-        if hosthome_mount:
+        if hosthome_mount and Setting.get_instance().remote_url is None:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
         privileged = options['privileged_machines'] if 'privileged_machines' in options else False

@@ -181,4 +181,6 @@ class VstartCommand(Command):
                 except ValueError:
                     raise Exception("Interface number in `--eth %s` is not a number." % eth)
 
+        lab.check_integrity()
+
         Kathara.get_instance().deploy_lab(lab)

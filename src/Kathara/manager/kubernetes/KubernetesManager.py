@@ -2,7 +2,7 @@ import io
 import json
 from copy import copy
 from datetime import datetime
-from typing import Set, Dict, Generator, Any
+from typing import Set, Dict, Generator, Any, List
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -191,10 +191,10 @@ class KubernetesManager(IManager):
     @privileged
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
         """
-        Copy files on a running machine in the specified paths.
+        Copy files on a running device in the specified paths.
 
         Args:
-            machine (Kathara.model.Machine): A running machine object. It must have the api_object field populated.
+            machine (Kathara.model.Machine): A running device object. It must have the api_object field populated.
             guest_to_host (Dict[str, io.IOBase]): A dict containing the device path as key and
                 fileobj to copy in path as value.
 
@@ -291,9 +291,10 @@ class KubernetesManager(IManager):
         return self.k8s_machine.get_machine_api_object(lab_hash, machine_name)
 
     @privileged
-    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> Dict[str, Any]:
+    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
+            -> List[Dict[str, Any]]:
         """
-        Return information of a running device.
+        Return information of running devices with a specified name.
 
         Args:
             machine_name (str): The device name.
@@ -301,7 +302,7 @@ class KubernetesManager(IManager):
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
-            Dict[str, Any]: The device properties.
+            List[Dict[str, Any]]: A list of dicts containing the devices info.
         """
         if lab_hash:
             lab_hash = lab_hash.lower()
@@ -313,7 +314,7 @@ class KubernetesManager(IManager):
     @privileged
     def get_formatted_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> str:
         """
-        Return formatted information of a running device.
+        Return formatted information of running devices with a specified name.
 
         Args:
             machine_name (str): The device name.
@@ -321,23 +322,28 @@ class KubernetesManager(IManager):
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
-            str: The formatted device properties.
+            str: The formatted devices properties.
         """
         if all_users:
             raise NotSupportedError("Cannot use `--all` flag.")
 
-        machine_stats = self.get_machine_info(machine_name, lab_hash=lab_hash)
+        machines_stats = self.get_machine_info(machine_name, lab_hash=lab_hash)
 
-        machine_info = utils.format_headers("Device information") + "\n"
-        machine_info += "Lab Hash: %s\n" % machine_stats["real_lab_hash"]
-        machine_info += "Device Name: %s\n" % machine_stats["name"]
-        machine_info += "Real Device Name: %s\n" % machine_stats["real_name"]
-        machine_info += "Status: %s\n" % machine_stats["status"]
-        machine_info += "Image: %s\n" % machine_stats["image"]
-        machine_info += "Assigned Node: %s\n" % machine_stats["assigned_node"]
-        machine_info += utils.format_headers()
+        machines_info = []
 
-        return machine_info
+        for machine_stats in machines_stats:
+            machine_info = utils.format_headers("Device information") + "\n"
+            machine_info += "Lab Hash: %s\n" % machine_stats["real_lab_hash"]
+            machine_info += "Device Name: %s\n" % machine_stats["name"]
+            machine_info += "Real Device Name: %s\n" % machine_stats["real_name"]
+            machine_info += "Status: %s\n" % machine_stats["status"]
+            machine_info += "Image: %s\n" % machine_stats["image"]
+            machine_info += "Assigned Node: %s\n" % machine_stats["assigned_node"]
+            machine_info += utils.format_headers()
+
+            machines_info.append(machine_info)
+
+        return "\n\n".join(machines_info)
 
     @privileged
     def check_image(self, image_name: str) -> None:

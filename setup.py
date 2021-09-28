@@ -6,13 +6,13 @@ setup(
     name='kathara',
     package_dir={'': 'src'},
     packages=find_packages('src', exclude=["Kathara.cli", "Kathara.cli.*"]),
-    version='0.8.0',
+    version='3.2.0',
     license='gpl-3.0',
     description='A lightweight container based emulation system.',
-    author='Tommaso Caiazzi',
+    author='Kathara Framework',
     author_email='contact@kathara.org',
     url='https://www.kathara.org',
-    download_url='https://github.com/KatharaFramework/Kathara/archive/refs/tags/3.1.0.tar.gz',
+    download_url='https://github.com/KatharaFramework/Kathara/archive/refs/tags/3.2.0.tar.gz',
     keywords=['NETWORK-EMULATION', 'CONTAINERS', 'NFV'],
     install_requires=[
         "binaryornot>=0.4.4",
@@ -34,7 +34,7 @@ setup(
         "windows-curses>=2.1.0; platform_system == 'win32'"
     ],
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Build Tools',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
@@ -42,5 +42,8 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
 )
