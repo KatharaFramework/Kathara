@@ -144,7 +144,7 @@ class LstartCommand(Command):
 
         try:
             lab = LabParser.parse(lab_path)
-        except FileNotFoundError as e:
+        except IOError as e:
             if not args['force_lab']:
                 raise Exception(str(e))
             else:
@@ -170,17 +170,7 @@ class LstartCommand(Command):
         except ValueError as e:
             raise e
 
-        # If dry mode, we just check if the lab.conf is correct.
-        if args['dry_mode']:
-            logging.info("lab.conf file is correct. Exiting...")
-            sys.exit(0)
-
-        lab.add_option('hosthome_mount', args['no_hosthome'])
-        lab.add_option('shared_mount', args['no_shared'])
-        lab.add_option('privileged_machines', args['privileged'])
-
         lab_ext_path = os.path.join(lab_path, 'lab.ext')
-
         if os.path.exists(lab_ext_path):
             if utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2):
                 if utils.is_admin():
@@ -195,6 +185,22 @@ class LstartCommand(Command):
                     raise PrivilegeError("You must be root in order to use lab.ext file.")
             else:
                 raise OSError("lab.ext is only available on UNIX systems.")
+
+        # If dry mode, we just check if the lab.conf is correct.
+        if args['dry_mode']:
+            logging.info("lab.conf file is correct.")
+            if dependencies:
+                logging.info("lab.dep file is correct.")
+            if os.path.exists(lab_ext_path):
+                logging.info("lab.ext file is correct.")
+
+            logging.info("Exiting...")
+
+            sys.exit(0)
+
+        lab.add_option('hosthome_mount', args['no_hosthome'])
+        lab.add_option('shared_mount', args['no_shared'])
+        lab.add_option('privileged_machines', args['privileged'])
 
         Kathara.get_instance().deploy_lab(lab, selected_machines=args['machine_name'])
 

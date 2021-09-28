@@ -1,3 +1,4 @@
+import logging
 import mmap
 import os
 import re
@@ -30,11 +31,18 @@ class DepParser(object):
         if not os.path.exists(lab_dep_path):
             return None
 
+        if os.stat(lab_dep_path).st_size == 0:
+            logging.warning("lab.dep file is empty. Ignoring...")
+            return None
+
         dependencies = {}
 
         # Reads lab.dep in memory so it is faster.
-        with open(lab_dep_path, 'r') as lab_file:
-            dep_mem_file = mmap.mmap(lab_file.fileno(), 0, access=mmap.ACCESS_READ)
+        try:
+            with open(lab_dep_path, 'r') as dep_file:
+                dep_mem_file = mmap.mmap(dep_file.fileno(), 0, access=mmap.ACCESS_READ)
+        except Exception:
+            raise IOError("Cannot open lab.dep file.")
 
         line_number = 1
         line = dep_mem_file.readline().decode('utf-8')

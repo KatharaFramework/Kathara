@@ -2,6 +2,7 @@ import os
 from glob import glob
 
 from ...model.Lab import Lab
+from ...utils import RESERVED_MACHINE_NAMES
 
 
 class FolderParser(object):
@@ -31,7 +32,7 @@ class FolderParser(object):
             machine_name = os.path.basename(machine_folder[:-1])
 
             # Shared is a reserved name, ignore it.
-            if machine_name == "shared":
+            if machine_name in RESERVED_MACHINE_NAMES:
                 continue
 
             lab.get_or_new_machine(machine_name)

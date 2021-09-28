@@ -23,16 +23,19 @@ from slug import slug
 from .trdparty.consolemenu import PromptUtils, Screen
 
 # Platforms constants definition.
-MAC_OS = "darwin"
-WINDOWS = "win32"
-LINUX = "linux"
-LINUX2 = "linux2"
+MAC_OS: str = "darwin"
+WINDOWS: str = "win32"
+LINUX: str = "linux"
+LINUX2: str = "linux2"
 
 # List of ignored files
-EXCLUDED_FILES = ['.DS_Store']
+EXCLUDED_FILES: List[str] = ['.DS_Store']
 
 # True if launched from CLI
-CLI_ENV = False
+CLI_ENV: bool = False
+
+# Reserved names for devices
+RESERVED_MACHINE_NAMES: List[str] = ['shared', '_test']
 
 
 # Generic Functions

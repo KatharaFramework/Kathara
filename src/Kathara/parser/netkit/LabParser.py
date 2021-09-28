@@ -3,6 +3,7 @@ import os
 import re
 
 from ...model.Lab import Lab
+from ...utils import RESERVED_MACHINE_NAMES
 
 
 class LabParser(object):
@@ -24,11 +25,17 @@ class LabParser(object):
         lab_conf_path = os.path.join(path, 'lab.conf')
 
         if not os.path.exists(lab_conf_path):
-            raise FileNotFoundError("No lab.conf in given directory: %s\n" % path)
+            raise IOError("No lab.conf in given directory.\n")
+
+        if os.stat(lab_conf_path).st_size == 0:
+            raise IOError("lab.conf file is empty.\n")
 
         # Reads lab.conf in memory so it is faster.
-        with open(lab_conf_path, 'r') as lab_file:
-            lab_mem_file = mmap.mmap(lab_file.fileno(), 0, access=mmap.ACCESS_READ)
+        try:
+            with open(lab_conf_path, 'r') as lab_file:
+                lab_mem_file = mmap.mmap(lab_file.fileno(), 0, access=mmap.ACCESS_READ)
+        except Exception:
+            raise IOError("Cannot open lab.conf file.")
 
         lab = Lab(None, path=path)
 
@@ -44,9 +51,9 @@ class LabParser(object):
                 arg = matches.group("arg").strip()
                 value = matches.group("value").replace('"', '').replace("'", '')
 
-                if key == "shared":
+                if key in RESERVED_MACHINE_NAMES:
                     raise Exception("[ERROR] In line %d: "
-                                    "`shared` is a reserved name, you can not use it for a device." % line_number)
+                                    "`%s` is a reserved name, you can not use it for a device." % (line_number, key))
 
                 try:
                     # It's an interface, handle it.

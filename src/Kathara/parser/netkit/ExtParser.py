@@ -1,3 +1,4 @@
+import logging
 import mmap
 import os
 import re
@@ -29,9 +30,16 @@ class ExtParser(object):
         if not os.path.exists(lab_ext_path):
             return None
 
+        if os.stat(lab_ext_path).st_size == 0:
+            logging.warning("lab.ext file is empty. Ignoring...")
+            return None
+
         # Reads lab.ext in memory so it is faster.
-        with open(lab_ext_path, 'r') as ext_file:
-            ext_mem_file = mmap.mmap(ext_file.fileno(), 0, access=mmap.ACCESS_READ)
+        try:
+            with open(lab_ext_path, 'r') as ext_file:
+                ext_mem_file = mmap.mmap(ext_file.fileno(), 0, access=mmap.ACCESS_READ)
+        except Exception:
+            raise IOError("Cannot open lab.ext file.")
 
         external_links = {}
 
