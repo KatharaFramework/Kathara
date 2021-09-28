@@ -189,7 +189,7 @@ def test_get_num_terms_mix():
 
 @mock.patch("src.Kathara.utils.pack_file_for_tar")
 def test_pack_data_hidden_files(pack_file_for_tar_mock):
-    lab_path = "tests/model/hiddenfiles"
+    lab_path = os.path.join("tests", "model", "hiddenfiles")
     lab = Lab(None, lab_path)
     device = lab.get_or_new_machine("test_machine")
 
@@ -199,12 +199,12 @@ def test_pack_data_hidden_files(pack_file_for_tar_mock):
 
     pack_file_for_tar_mock.assert_any_call(
         os.path.join(lab_path, "test_machine", ".hidden"),
-        arc_name=os.path.join("hostlab", device.name, ".hidden")
+        arc_name="hostlab/" + os.path.join(device.name, ".hidden")
     )
 
     pack_file_for_tar_mock.assert_any_call(
         os.path.join(lab_path, "test_machine", "nothidden"),
-        arc_name=os.path.join("hostlab", device.name, "nothidden")
+        arc_name="hostlab/" + os.path.join(device.name, "nothidden")
     )
 
     assert pack_file_for_tar_mock.call_count == 2
@@ -212,7 +212,7 @@ def test_pack_data_hidden_files(pack_file_for_tar_mock):
 
 @mock.patch("src.Kathara.utils.pack_file_for_tar")
 def test_pack_data_hidden_files_recursive(pack_file_for_tar_mock):
-    lab_path = "tests/model/hiddenfilesrecursive"
+    lab_path = os.path.join("tests", "model", "hiddenfilesrecursive")
     lab = Lab(None, lab_path)
     device = lab.get_or_new_machine("test_machine")
 
@@ -222,32 +222,32 @@ def test_pack_data_hidden_files_recursive(pack_file_for_tar_mock):
 
     pack_file_for_tar_mock.assert_any_call(
         os.path.join(lab_path, "test_machine", ".hidden"),
-        arc_name=os.path.join("hostlab", device.name, ".hidden")
+        arc_name="hostlab/" + os.path.join(device.name, ".hidden")
     )
 
     pack_file_for_tar_mock.assert_any_call(
         os.path.join(lab_path, "test_machine", "nothidden"),
-        arc_name=os.path.join("hostlab", device.name, "nothidden")
+        arc_name="hostlab/" + os.path.join(device.name, "nothidden")
     )
 
     pack_file_for_tar_mock.assert_any_call(
         os.path.join(lab_path, "test_machine", "etc", ".hidden"),
-        arc_name=os.path.join("hostlab", device.name, "etc", ".hidden")
+        arc_name="hostlab/" + os.path.join(device.name, "etc", ".hidden")
     )
 
     pack_file_for_tar_mock.assert_any_call(
         os.path.join(lab_path, "test_machine", "etc", "nothidden"),
-        arc_name=os.path.join("hostlab", device.name, "etc", "nothidden")
+        arc_name="hostlab/" + os.path.join(device.name, "etc", "nothidden")
     )
 
     pack_file_for_tar_mock.assert_any_call(
         os.path.join(lab_path, "test_machine", "etc", "log", ".hidden"),
-        arc_name=os.path.join("hostlab", device.name, "etc", "log", ".hidden")
+        arc_name="hostlab/" + os.path.join(device.name, "etc", "log", ".hidden")
     )
 
     pack_file_for_tar_mock.assert_any_call(
         os.path.join(lab_path, "test_machine", "etc", "log", "nothidden"),
-        arc_name=os.path.join("hostlab", device.name, "etc", "log", "nothidden")
+        arc_name="hostlab/" + os.path.join(device.name, "etc", "log", "nothidden")
     )
 
     assert pack_file_for_tar_mock.call_count == 6
@@ -255,7 +255,7 @@ def test_pack_data_hidden_files_recursive(pack_file_for_tar_mock):
 
 @mock.patch("src.Kathara.utils.pack_file_for_tar")
 def test_pack_data_only_hidden_files(pack_file_for_tar_mock):
-    lab_path = "tests/model/hiddenfilesonly"
+    lab_path = os.path.join("tests", "model", "hiddenfilesonly")
     lab = Lab(None, lab_path)
     device = lab.get_or_new_machine("test_machine")
 
@@ -265,17 +265,17 @@ def test_pack_data_only_hidden_files(pack_file_for_tar_mock):
 
     pack_file_for_tar_mock.assert_any_call(
         os.path.join(lab_path, "test_machine", ".hidden"),
-        arc_name=os.path.join("hostlab", device.name, ".hidden")
+        arc_name="hostlab/" + os.path.join(device.name, ".hidden")
     )
 
     pack_file_for_tar_mock.assert_any_call(
         os.path.join(lab_path, "test_machine", "etc", ".hidden"),
-        arc_name=os.path.join("hostlab", device.name, "etc", ".hidden")
+        arc_name="hostlab/" + os.path.join(device.name, "etc", ".hidden")
     )
 
     pack_file_for_tar_mock.assert_any_call(
         os.path.join(lab_path, "test_machine", "etc", "log", ".hidden"),
-        arc_name=os.path.join("hostlab", device.name, "etc", "log", ".hidden")
+        arc_name="hostlab/" + os.path.join(device.name, "etc", "log", ".hidden")
     )
 
     assert pack_file_for_tar_mock.call_count == 3

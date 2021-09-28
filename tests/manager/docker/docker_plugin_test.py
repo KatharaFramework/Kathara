@@ -104,7 +104,7 @@ def test_check_and_download_remote_plugin_not_installed(mock_setting_get_instanc
     with pytest.raises(Exception) as e:
         docker_plugin.check_and_download_plugin()
 
-    assert str(e.value) == "Kathara Network Plugin not found on Docker remote server."
+    assert str(e.value) == "Kathara Network Plugin not found on remote Docker connection."
     assert not mock_get_xtables_lock_mount.called
     assert not mock_configure_xtables_mount.called
 
@@ -121,6 +121,6 @@ def test_check_and_download_remote_plugin_not_enabled(mock_setting_get_instance,
     with pytest.raises(Exception) as e:
         docker_plugin.check_and_download_plugin()
 
-    assert str(e.value) == "Kathara Network Plugin not enabled on Docker remote server."
+    assert str(e.value) == "Kathara Network Plugin not enabled on remote Docker connection."
     assert not mock_get_xtables_lock_mount.called
     assert not mock_configure_xtables_mount.called

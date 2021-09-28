@@ -127,7 +127,7 @@ class Machine(object):
             self.startup_commands.append(value)
             return
 
-        if name in ["bridged", "hosthome_mount", "shared_mount"]:
+        if name == "bridged":
             self.meta[name] = bool(strtobool(str(value)))
             return
 
@@ -491,12 +491,6 @@ class Machine(object):
         if 'sysctls' in args and args['sysctls'] is not None:
             for sysctl in args['sysctls']:
                 self.add_meta("sysctl", sysctl)
-
-        if 'no_hosthome' in args and args['no_hosthome'] is not None and args['no_hosthome']:
-            self.add_meta('hosthome_mount', True)
-
-        if 'no_shared' in args and args['no_shared'] is not None and args['no_shared']:
-            self.add_meta('shared_mount', True)
 
     def __repr__(self) -> str:
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

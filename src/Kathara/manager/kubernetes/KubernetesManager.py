@@ -13,7 +13,6 @@ from .KubernetesLink import KubernetesLink
 from .KubernetesMachine import KubernetesMachine
 from .KubernetesNamespace import KubernetesNamespace
 from ... import utils
-from ...decorators import privileged
 from ...exceptions import NotSupportedError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
@@ -65,7 +64,6 @@ class KubernetesManager(IManager):
             else:
                 raise e
 
-    @privileged
     def update_lab(self, lab: Lab) -> None:
         """
         Update a running network scenario.
@@ -78,7 +76,6 @@ class KubernetesManager(IManager):
         """
         raise NotSupportedError("Unable to update a running lab.")
 
-    @privileged
     def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
         """
         Undeploy a Kathara network scenario.
@@ -129,7 +126,6 @@ class KubernetesManager(IManager):
         if not selected_machines or len(running_machines - selected_machines) <= 0:
             self.k8s_namespace.undeploy(lab_hash=lab_hash)
 
-    @privileged
     def wipe(self, all_users: bool = False) -> None:
         """
         Undeploy all the running network scenarios.
@@ -149,7 +145,6 @@ class KubernetesManager(IManager):
 
         self.k8s_namespace.wipe()
 
-    @privileged
     def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False) -> None:
         """
         Connect to a device in a running network scenario, using the specified shell.
@@ -171,7 +166,6 @@ class KubernetesManager(IManager):
                                  logs=logs
                                  )
 
-    @privileged
     def exec(self, lab_hash: str, machine_name: str, command: str) -> (str, str):
         """
         Exec a command on a device in a running network scenario.
@@ -188,7 +182,6 @@ class KubernetesManager(IManager):
 
         return self.k8s_machine.exec(lab_hash, machine_name, command, stderr=True, tty=False)
 
-    @privileged
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
         """
         Copy files on a running device in the specified paths.
@@ -208,7 +201,6 @@ class KubernetesManager(IManager):
                                     tar_data=tar_data
                                     )
 
-    @privileged
     def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> \
             Generator[Dict[str, Any], None, None]:
         """
@@ -230,7 +222,6 @@ class KubernetesManager(IManager):
 
         return lab_info
 
-    @privileged
     def get_formatted_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> str:
         """
         Return a formatted string with the information about the running devices.
@@ -276,7 +267,6 @@ class KubernetesManager(IManager):
 
             yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
 
-    @privileged
     def get_machine_api_object(self, lab_hash: str, machine_name: str) -> client.V1Pod:
         """
         Return the corresponding API object of a running device in a network scenario.
@@ -288,9 +278,9 @@ class KubernetesManager(IManager):
         Returns:
             client.V1Pod: A Kubernetes PoD.
         """
+        lab_hash = lab_hash.lower()
         return self.k8s_machine.get_machine_api_object(lab_hash, machine_name)
 
-    @privileged
     def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
             -> List[Dict[str, Any]]:
         """
@@ -311,7 +301,6 @@ class KubernetesManager(IManager):
 
         return machine_stats
 
-    @privileged
     def get_formatted_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> str:
         """
         Return formatted information of running devices with a specified name.
@@ -345,7 +334,6 @@ class KubernetesManager(IManager):
 
         return "\n\n".join(machines_info)
 
-    @privileged
     def check_image(self, image_name: str) -> None:
         """
         Useless. The Check of the image is delegated to Kubernetes.
@@ -359,7 +347,6 @@ class KubernetesManager(IManager):
         # Delegate the image check to Kubernetes
         return
 
-    @privileged
     def get_release_version(self) -> str:
         """
         Return the current manager version.

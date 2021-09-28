@@ -34,8 +34,6 @@ def default_device(mock_docker_container):
     device.add_meta("cpus", "2")
     device.add_meta("image", "kathara/test")
     device.add_meta("bridged", False)
-    device.add_meta("hosthome_mount", False)
-    device.add_meta("shared_mount", False)
     device.api_object = mock_docker_container
     return device
 
@@ -63,7 +61,9 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, mock_copy
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': False,
-        'remote_url': None
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
     })
     mock_setting_get_instance.return_value = setting_mock
     docker_machine.create(default_device)
@@ -110,7 +110,9 @@ def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': True,
-        'remote_url': None
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
     })
     mock_setting_get_instance.return_value = setting_mock
     docker_machine.create(default_device)
@@ -161,6 +163,8 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
         'shared_cd': False,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
+        "hosthome_mount": False,
+        "shared_mount": False,
         'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock

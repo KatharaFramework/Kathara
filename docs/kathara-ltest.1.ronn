@@ -21,6 +21,8 @@ A directory `lab-path/_test` is created inside and the results of the test are s
 
 **NOTE**: `ltest` runs devices without a terminal window. Therefore, no window will pop up and no output will be shown during a test.
 
+**NOTE**: On Megalos, `ltest` should wait that the devices are started, so the user must specify the `--wait` parameter with a value different from zero.
+
 ## OPTIONS
 
 * `-h`, `--help`:

@@ -166,12 +166,12 @@ class VstartCommand(Command):
 
         lab = Lab("kathara_vlab")
         lab.add_option('hosthome_mount', args['no_hosthome'])
+        lab.add_option('shared_mount', False)
         lab.add_option('privileged_machines', args['privileged'])
 
         name = args.pop('name')
 
         device = lab.get_or_new_machine(name, **args)
-        device.add_meta('shared_mount', False)
 
         if args['eths']:
             for eth in args['eths']:

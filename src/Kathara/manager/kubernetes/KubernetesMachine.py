@@ -574,7 +574,7 @@ class KubernetesMachine(object):
         return None
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], tty: bool = False, stdin: bool = False,
-             stdin_buffer: List[str] = None, stderr: bool = False) -> Optional[Tuple[str, str]]:
+             stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False) -> Optional[Tuple[str, str]]:
         """
          Execute the command on the Kubernetes PoD specified by the lab_hash and the machine_name.
 
@@ -584,7 +584,7 @@ class KubernetesMachine(object):
             command (str): The command to execute.
             tty (bool): If True, open a new tty.
             stdin (bool): If True, open the stdin channel.
-            stdin_buffer (List[str]): List of command to pass to the stdin.
+            stdin_buffer (List[Union[str, bytes]]): List of command to pass to the stdin.
             stderr (bool): If True, return the stderr.
 
         Returns:
@@ -626,12 +626,14 @@ class KubernetesMachine(object):
             if stdin and stdin_buffer:
                 param = stdin_buffer.pop(0)
                 response.write_stdin(param)
+                if len(stdin_buffer) <= 0:
+                    break
+
         response.close()
 
         return result['stdout'], result['stderr']
 
     def copy_files(self, deployment: client.V1Deployment, path: str, tar_data: bytes) -> None:
-        # TODO: Test it!
         machine_name = deployment.metadata.labels["name"]
         machine_namespace = deployment.metadata.namespace
 
@@ -725,21 +727,22 @@ class KubernetesMachine(object):
         Returns:
             Generator[Dict[str, Any], None, None]: A generator containing the info of the specified device.
         """
-        machines = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+        while True:
+            machines = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
 
-        if not machines:
-            if not lab_hash:
-                raise Exception("No devices running.")
-            else:
-                raise Exception("Lab is not started.")
+            if not machines:
+                if not lab_hash:
+                    raise Exception("No devices running.")
+                else:
+                    raise Exception("Lab is not started.")
 
-        machines = sorted(machines, key=lambda x: x.metadata.labels["name"])
+            machines = sorted(machines, key=lambda x: x.metadata.labels["name"])
 
-        machines_stats = []
-        for machine in machines:
-            machines_stats.append(self._get_stats_by_machine(machine))
+            machines_stats = []
+            for machine in machines:
+                machines_stats.append(self._get_stats_by_machine(machine))
 
-        yield machines_stats
+            yield machines_stats
 
     def _get_stats_by_machine(self, pod_api_object: client.V1Pod) -> Dict[str, str]:
         """
