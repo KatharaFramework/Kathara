@@ -46,19 +46,6 @@ NETWORK_IDS_DOUBLE = {
 
 
 @pytest.fixture()
-@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def default_settings(mock_setting_get_instance):
-    setting_mock = Mock()
-    setting_mock.configure_mock(**{
-        'manager': 'kubernetes',
-        'net_prefix': 'kathara'
-    })
-    mock_setting_get_instance.return_value = setting_mock
-
-    return mock_setting_get_instance
-
-
-@pytest.fixture()
 def default_link():
     from src.Kathara.model.Link import Link
     return Link(Lab("default_scenario"), "A")
@@ -79,7 +66,7 @@ def kubernetes_network():
         "apiVersion": "k8s.cni.cncf.io/v1",
         "kind": "NetworkAttachmentDefinition",
         "metadata": {
-            "name": "kathara-a",
+            "name": "netprefix-a",
             "namespace": "FwFaxbiuhvSWb2KpN5zw",
             "labels": {
                 "name": "A",
@@ -104,30 +91,61 @@ def progress_bar(mock_progress_bar):
     return mock_progress_bar
 
 
-def test_get_network_name(default_settings, kubernetes_link):
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_get_network_name(mock_setting_get_instance, kubernetes_link):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'manager': 'kubernetes',
+        'net_prefix': 'netprefix'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
     link_name = kubernetes_link.get_network_name("a")
-    assert link_name == "kathara-a"
+    assert link_name == "netprefix-a"
 
 
-def test_get_network_name_with_underscore(default_settings, kubernetes_link):
-    link_name = "a_b"
-    k8s_link_name = kubernetes_link.get_network_name(link_name)
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_get_network_name_with_underscore(mock_setting_get_instance, kubernetes_link):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'manager': 'kubernetes',
+        'net_prefix': 'netprefix'
+    })
+    mock_setting_get_instance.return_value = setting_mock
 
-    assert k8s_link_name == "kathara-a-b-dbf08e00"
+    k8s_link_name = kubernetes_link.get_network_name("a_b")
+
+    assert k8s_link_name == "netprefix-a-b-dbf08e00"
 
 
-def test_get_network_name_remove_invalid_chars(default_settings, kubernetes_link):
-    k8s_link_name = kubernetes_link.get_network_name("A05")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_get_network_name_remove_invalid_chars(mock_setting_get_instance, kubernetes_link):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'manager': 'kubernetes',
+        'net_prefix': 'netprefix'
+    })
+    mock_setting_get_instance.return_value = setting_mock
 
-    assert k8s_link_name == "kathara-a05"
+    k8s_link_name = kubernetes_link.get_network_name("A05#")
+
+    assert k8s_link_name == "netprefix-a05"
 
 
-def test_build_definition(default_settings, default_link, kubernetes_link):
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_build_definition(mock_setting_get_instance, default_link, kubernetes_link):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'manager': 'kubernetes',
+        'net_prefix': 'netprefix'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
     expected_definition = {
         "apiVersion": "k8s.cni.cncf.io/v1",
         "kind": "NetworkAttachmentDefinition",
         "metadata": {
-            "name": "kathara-a",
+            "name": "netprefix-a",
             "labels": {
                 "name": "A",
                 "app": "kathara"
@@ -186,7 +204,15 @@ def test_get_unique_network_id_double_collision(kubernetes_link):
     assert NETWORK_IDS_DOUBLE == {4694369: 1, 4694370: 1, expected_network_id: 1}
 
 
-def test_create(kubernetes_link, default_link):
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_create(mock_setting_get_instance, kubernetes_link, default_link):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'manager': 'kubernetes',
+        'net_prefix': 'netprefix'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
     kubernetes_link.client.list_namespaced_custom_object.return_value = {
         "items": []
     }
@@ -195,7 +221,7 @@ def test_create(kubernetes_link, default_link):
         "apiVersion": "k8s.cni.cncf.io/v1",
         "kind": "NetworkAttachmentDefinition",
         "metadata": {
-            "name": "kathara-a",
+            "name": "netprefix-a",
             "labels": {
                 "name": "A",
                 "app": "kathara"
@@ -259,14 +285,26 @@ def test_deploy_links_no_link(mock_deploy_link, kubernetes_link, progress_bar):
     assert not mock_deploy_link.called
 
 
-def test_delete_link(kubernetes_network, progress_bar, kubernetes_link, default_link):
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_delete_link(mock_setting_get_instance, kubernetes_network, progress_bar, kubernetes_link, default_link):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'manager': 'kubernetes',
+        'net_prefix': 'netprefix'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    kubernetes_link.client.list_namespaced_custom_object.return_value = {
+        "items": []
+    }
+
     kubernetes_link._undeploy_link(progress_bar, kubernetes_network)
 
     kubernetes_link.client.delete_namespaced_custom_object.assert_called_once_with(
         body=client.V1DeleteOptions(grace_period_seconds=0),
         grace_period_seconds=0,
         group="k8s.cni.cncf.io",
-        name="kathara-a",
+        name="netprefix-a",
         plural="network-attachment-definitions",
         namespace=default_link.lab.hash,
         version="v1"

@@ -20,12 +20,6 @@ def docker_machine(mock_docker_client, mock_docker_image):
 
 
 @pytest.fixture()
-@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def default_setting(mock_setting):
-    return mock_setting
-
-
-@pytest.fixture()
 @mock.patch("docker.models.containers.Container")
 def default_device(mock_docker_container):
     device = Machine(Lab('Default scenario'), "test_device")

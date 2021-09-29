@@ -5,7 +5,6 @@ class OptionParser(object):
     """
     Class responsible for parsing the network scenario options from CLI.
     """
-
     @staticmethod
     def parse(options: List[str]) -> Dict[str, Any]:
         """

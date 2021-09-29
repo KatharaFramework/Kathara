@@ -9,7 +9,6 @@ class FolderParser(object):
     """
     Class responsible for parsing the folder in the network scenario directory.
     """
-
     @staticmethod
     def parse(path: str) -> Lab:
         """

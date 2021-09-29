@@ -7,7 +7,6 @@ class KubernetesConfig(object):
     """
     Class responsible for loading Kubernetes configurations.
     """
-
     @staticmethod
     def get_cluster_user() -> str:
         """

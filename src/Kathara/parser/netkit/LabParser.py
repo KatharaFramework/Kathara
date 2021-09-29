@@ -10,7 +10,6 @@ class LabParser(object):
     """
     Class responsible for parsing the lab.conf file.
     """
-
     @staticmethod
     def parse(path: str) -> Lab:
         """

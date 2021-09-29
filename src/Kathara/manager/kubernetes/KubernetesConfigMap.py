@@ -14,7 +14,6 @@ class KubernetesConfigMap(object):
     """
     Class responsible for interacting with Kubernetes ConfigMap.
     """
-
     __slots__ = ['client']
 
     def __init__(self) -> None:

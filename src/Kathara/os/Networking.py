@@ -7,7 +7,6 @@ class Networking(object):
     """
     Class responsible for managing ExternalLink objects attaching Kathara collision domain to host interfaces.
     """
-
     @staticmethod
     def get_or_new_interface(full_interface_name: str, vlan_interface_name: str, vlan_id: Optional[int] = None) -> int:
         """
@@ -139,6 +138,5 @@ class Networking(object):
 
         Returns:
             str: The iptables version.
-
         """
         return os.popen("/sbin/iptables --version").read().strip()

@@ -11,7 +11,6 @@ class ExtParser(object):
     """
     Class responsible for parsing lab.ext file.
     """
-
     @staticmethod
     def parse(path: str) -> Optional[Dict[str, List[ExternalLink]]]:
         """
