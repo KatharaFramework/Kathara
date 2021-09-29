@@ -32,8 +32,8 @@ binary:
 	cd ../../src && pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
 
 clean: cleanbinary cleanman
-	if [ -d $(TARGET_DIRECTORY)/Kathara ]; then \
-		rm -Rf $(TARGET_DIRECTORY)/Kathara; \
+	if [ -d $(TARGET_DIRECTORY)/Resources ]; then \
+		rm -Rf $(TARGET_DIRECTORY)/Resources; \
 	fi
 	if [ -d $(TARGET_DIRECTORY)/darwinpkg ]; then \
 		rm -Rf $(TARGET_DIRECTORY)/darwinpkg; \
@@ -52,12 +52,12 @@ cleanbinary:
 	fi
 
 copyBuildDirectory: binary manpages
-	mkdir $(TARGET_DIRECTORY)
-	cp -r darwin/Kathara $(TARGET_DIRECTORY)/
-	chmod -R 755 $(TARGET_DIRECTORY)/Kathara
+	[ -d $(TARGET_DIRECTORY) ] || mkdir $(TARGET_DIRECTORY)
+	cp -r darwin/Resources $(TARGET_DIRECTORY)/
+	chmod -R 755 $(TARGET_DIRECTORY)/Resources
 
-	sed -i '' -e 's/__VERSION__/'$(VERSION)'/g' $(TARGET_DIRECTORY)/Kathara/*.html
-	chmod -R 755 $(TARGET_DIRECTORY)/Kathara/
+	sed -i '' -e 's/__VERSION__/'$(VERSION)'/g' $(TARGET_DIRECTORY)/Resources/*.html
+	chmod -R 755 $(TARGET_DIRECTORY)/Resources/
 
 	mkdir -p $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)
 	mkdir -p $(TARGET_DIRECTORY)/darwinpkg/usr/local/share/man/
@@ -73,7 +73,7 @@ copyBuildDirectory: binary manpages
 	mkdir -p $(TARGET_DIRECTORY)/package
 	chmod -R 755 $(TARGET_DIRECTORY)/package
 
-	cp ../../LICENSE $(TARGET_DIRECTORY)/Kathara/
+	cp ../../LICENSE $(TARGET_DIRECTORY)/Resources/
 
 	cp darwin/uninstall.sh $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)
 
