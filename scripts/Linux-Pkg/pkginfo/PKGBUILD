@@ -16,17 +16,18 @@ source=("kathara.tar.gz")
 md5sums=('SKIP')
 
 prepare() {
-  python3 -m pip install -r requirements.txt
+  python3 -m pip install -r src/requirements.txt
   python3 -m pip install nuitka
   python3 -m pip install pytest
 }
 
 build() {
   python3 -m pytest
-  python3 -m nuitka --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
+  cd src && python3 -m nuitka --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
 }
 
 package() {
+  mv src/kathara.dist .
   rm -f kathara.dist/libbz2.so.1.0
   rm -f kathara.dist/libexpat.so.1
   rm -f kathara.dist/libtinfo.so.6

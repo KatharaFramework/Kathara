@@ -21,8 +21,10 @@ docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-pkg .
 
 prepare-source:
-	mkdir -p Output
+	mkdir -p Output/kathara/src
 	cp -r ../../src Output/kathara
+	mkdir -p Output/kathara/tests
+	cp -r ../../tests Output/kathara
 
 prepare-man-pages:
 	mkdir -p Output
