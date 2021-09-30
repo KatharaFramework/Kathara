@@ -23,8 +23,10 @@ new network protocols.
 %autosetup
 python3 -m pip install -r requirements.txt
 python3 -m pip install nuitka
+python3 -m pip install pytest
 
 %build
+python3 -m pytest
 python3 -m nuitka --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
 
 %install
@@ -66,9 +68,10 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- Add option to specify number of terminals to open for a device
-- Add advanced port forwarding options
-- Add sysctl option in vstart
-- Minor fixes (fix lstart directory parsing)
-- Bump Dockerpy version to 4.4.0 and use max_pool_size = cpu_count with no limit (before the limit was 10)
-- Fix Kubernetes timeout on big list requests
+- (Docker) Add possibility to share the same collision domains between different users
+- (Docker) Add possibility to connect to a remote Docker daemon instead of local one (only on UNIX systems)
+- (Docker) Checks on external interfaces are now always executed, even if the collision domain already exists
+- (Kubernetes) Fix ltest, which never terminated due to a bug in "copy_files"
+- Hidden files in a machine folder (like .htaccess) are now correctly copied into the container
+- Commands are now accepted only if they are entirely lowercase
+- Minor fixes (better lab integrity checks, better file I/O checks)

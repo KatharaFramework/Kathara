@@ -6,7 +6,7 @@ TARGET_DIRECTORY=Output
 APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
 ROFF_DIR=../../docs/Roff
 
-.PHONY : all allSigned deps binary manpages createInstaller signProduct clean
+.PHONY : all allSigned deps test binary manpages createInstaller signProduct clean
 all: deps binary manpages createInstaller clean
 allSigned: deps binary manpages createInstaller signProduct clean
 
@@ -16,6 +16,7 @@ deps:
 	python3 -m pip install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
 	export ARCHFLAGS="-arch x86_64"
 	python3 -m pip install -r ../../src/requirements.txt
+	python3 -m pip install pytest
 	gem install ronn-ng
 
 manpages:
@@ -27,7 +28,10 @@ manpages:
 		mv $$man_file $(ROFF_DIR)/$$man_file_dir; \
 	done;
 
-binary:
+test:
+    cd ../.. && python3 -m pytest
+
+binary: test
 	cp ./kathara.spec ../../src/
 	cd ../../src && pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
 
