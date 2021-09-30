@@ -29,7 +29,7 @@ manpages:
 	done;
 
 test:
-    cd ../.. && python3 -m pytest
+	cd ../.. && python3 -m pytest
 
 binary: test
 	cp ./kathara.spec ../../src/
