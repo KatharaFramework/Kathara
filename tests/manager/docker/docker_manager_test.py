@@ -14,13 +14,17 @@ from src.Kathara.model.Lab import Lab
 
 
 @pytest.fixture()
+@mock.patch("src.Kathara.manager.docker.DockerPlugin.DockerPlugin.check_and_download_plugin")
+@mock.patch("docker.from_env")
 @mock.patch("docker.DockerClient")
-def docker_manager(mock_docker_client):
+def docker_manager(mock_docker_client, mock_from_env, mock_check_and_download_plugin):
+    mock_check_and_download_plugin.return_value = True
+
+    client_mock = Mock()
+    mock_from_env = client_mock
+
     docker_manager = DockerManager()
-    docker_manager.client = mock_docker_client
-    docker_manager.docker_image = DockerImage(mock_docker_client)
-    docker_manager.docker_machine = DockerMachine(mock_docker_client, docker_manager.docker_image)
-    docker_manager.docker_link = DockerLink(mock_docker_client)
+    
     return docker_manager
 
 

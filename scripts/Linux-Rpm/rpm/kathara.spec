@@ -21,15 +21,16 @@ new network protocols.
 
 %prep
 %autosetup
-python3 -m pip install -r requirements.txt
+python3 -m pip install -r src/requirements.txt
 python3 -m pip install nuitka
 python3 -m pip install pytest
 
 %build
 python3 -m pytest
-python3 -m nuitka --plugin-enable=pylint-warnings --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
+cd src && python3 -m nuitka --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
 
 %install
+mv %{_builddir}/%{buildsubdir}/src/kathara.dist %{_builddir}/%{buildsubdir}/kathara.dist
 rm -rf %{buildroot}
 rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libbz2.so.1.0
 rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libexpat.so.1

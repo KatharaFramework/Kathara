@@ -18,7 +18,10 @@ prepare-source:
 	sed -i -e "s|__DATE__|$$(date +'%a %b %d %Y')|g" ~/rpmbuild/SPECS/kathara.spec
 	sed -i -e 's/__VERSION__/$(VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
 	sed -i -e 's/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
+	mkdir -p ~/rpmbuild/SOURCES/kathara-$(VERSION)/src
 	cp -r ../../src ~/rpmbuild/SOURCES/kathara-$(VERSION)
+	mkdir -p ~/rpmbuild/SOURCES/kathara-$(VERSION)/tests
+	cp -r ../../tests ~/rpmbuild/SOURCES/kathara-$(VERSION)
 
 prepare-man-pages:
 	cd ../../docs && make roff-build
