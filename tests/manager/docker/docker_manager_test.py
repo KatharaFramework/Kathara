@@ -7,9 +7,6 @@ import pytest
 sys.path.insert(0, './')
 
 from src.Kathara.manager.docker.DockerManager import DockerManager
-from src.Kathara.manager.docker.DockerImage import DockerImage
-from src.Kathara.manager.docker.DockerMachine import DockerMachine
-from src.Kathara.manager.docker.DockerLink import DockerLink
 from src.Kathara.model.Lab import Lab
 
 
@@ -24,7 +21,7 @@ def docker_manager(mock_docker_client, mock_from_env, mock_check_and_download_pl
     mock_from_env = client_mock
 
     docker_manager = DockerManager()
-    
+
     return docker_manager
 
 

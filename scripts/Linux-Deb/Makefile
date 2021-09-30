@@ -6,7 +6,7 @@ LAUNCHPAD_NAME=user
 
 .PHONY: allSigned docker-unsigned docker-signed_% docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean
 
-allSigned: clean docker-build-image prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_groovy
+allSigned: clean docker-build-image prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_hirsute
 
 docker-unsigned: clean prepare-deb-source docker-build-image
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb /bin/bash -c "make build-deb-unsigned"
@@ -18,8 +18,10 @@ docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-deb .
 
 prepare-deb-source:
-	mkdir Output
+	mkdir -p Output/kathara-$(VERSION)/src
 	cp -r ../../src Output/kathara-$(VERSION)
+	mkdir -p Output/kathara-$(VERSION)/tests
+	cp -r ../../tests Output/kathara-$(VERSION)
 	cd Output; tar -zcf kathara_$(VERSION).orig.tar.gz kathara-$(VERSION)
 
 unpack-deb-source:
@@ -41,8 +43,9 @@ copy-debian-folder:
 
 download-pip: copy-debian-folder
 	mkdir Output/kathara-$(VERSION)/debian/pythonLibs
-	cd Output/kathara-$(VERSION)/debian/pythonLibs; python3 -m pip download -r ../../requirements.txt
+	cd Output/kathara-$(VERSION)/debian/pythonLibs; python3 -m pip download -r ../../src/requirements.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs; python3 -m pip download nuitka
+	cd Output/kathara-$(VERSION)/debian/pythonLibs; python3 -m pip download pytest
 	ls Output/kathara-$(VERSION)/debian/pythonLibs/ | awk '{print "debian/pythonLibs/"$$0}' > Output/kathara-$(VERSION)/debian/source/include-binaries
 
 build-man: copy-debian-folder
