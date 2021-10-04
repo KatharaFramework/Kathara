@@ -4,24 +4,25 @@ VERSION=3.2.0
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 
-.PHONY: allSigned docker-unsigned docker-signed_% docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean
+.PHONY: allSigned docker-unsigned docker-signed_% docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean venv autocompletion
 
-allSigned: clean docker-build-image prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_hirsute
+allSigned: clean prepare-deb-source docker-signed_bionic
 
-docker-unsigned: clean prepare-deb-source docker-build-image
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb /bin/bash -c "make build-deb-unsigned"
+docker-unsigned_%: clean prepare-deb-source docker-build-image_%
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c "make build-deb-unsigned distro=$*"
 
-docker-signed_%:
-	docker run -ti --rm -v $(HOME)/.gnupg:/root/.gnupg -v `pwd`/../../:/opt/kathara kathara/linux-build-deb /bin/bash -c "make unpack-deb-source && make build-deb-signed distro=$* && make ppa && make clean-output-folder distro=$*"
+docker-signed_%: docker-build-image_%
+	docker run -ti --rm -v $(HOME)/.gnupg:/root/gnupg-host -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c "make unpack-deb-source && make build-deb-signed distro=$* && make ppa && make clean-output-folder distro=$*"
 
-docker-build-image:
-	cd Docker-Linux-Build && docker build -t kathara/linux-build-deb .
+docker-build-image_%:
+	cd Docker-Linux-Build && cp Dockerfile_template Dockerfile
+	cd Docker-Linux-Build && sed -i -e "s|__DISTRO__|$*|g" Dockerfile
+	cd Docker-Linux-Build && docker build -t kathara/linux-build-deb:$* .
+	cd Docker-Linux-Build && rm Dockerfile
 
 prepare-deb-source:
-	mkdir -p Output/kathara-$(VERSION)/src
+	mkdir Output
 	cp -r ../../src Output/kathara-$(VERSION)
-	mkdir -p Output/kathara-$(VERSION)/tests
-	cp -r ../../tests Output/kathara-$(VERSION)
 	cd Output; tar -zcf kathara_$(VERSION).orig.tar.gz kathara-$(VERSION)
 
 unpack-deb-source:
@@ -40,12 +41,15 @@ copy-debian-folder:
 	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog
 	sed -i -e 's/__DEBIAN_PACKAGE_VERSION__/$(DEBIAN_PACKAGE_VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
 	sed -i -e 's/__VERSION__/$(VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
+	
+venv:
+	python3.9 -m venv /root/3.9-env 
 
 download-pip: copy-debian-folder
 	mkdir Output/kathara-$(VERSION)/debian/pythonLibs
-	cd Output/kathara-$(VERSION)/debian/pythonLibs; python3 -m pip download -r ../../src/requirements.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs; python3 -m pip download nuitka
-	cd Output/kathara-$(VERSION)/debian/pythonLibs; python3 -m pip download pytest
+	/root/3.9-env/bin/pip3.9 install --upgrade setuptools
+	cd Output/kathara-$(VERSION)/debian/pythonLibs && /root/3.9-env/bin/pip3.9 download -r ../../requirements.txt
+	cd Output/kathara-$(VERSION)/debian/pythonLibs && /root/3.9-env/bin/pip3.9 download nuitka
 	ls Output/kathara-$(VERSION)/debian/pythonLibs/ | awk '{print "debian/pythonLibs/"$$0}' > Output/kathara-$(VERSION)/debian/source/include-binaries
 
 build-man: copy-debian-folder
@@ -54,14 +58,16 @@ build-man: copy-debian-folder
 	cd ../../docs && make cleanall
 	ls Output/kathara-$(VERSION)/debian/manpages/ | awk '{print "debian/manpages/"$$0}' > Output/kathara-$(VERSION)/debian/kathara.manpages
 
-	/usr/bin/python3 -m pip install -r ../autocompletion/requirements.txt
-	/usr/bin/python3 ../autocompletion/generate_autocompletion.py Output/kathara-$(VERSION)/debian/kathara.bash-completion
+autocompletion:
+	/root/3.9-env/bin/pip3.9 install -r ../autocompletion/requirements.txt
+	/root/3.9-env/bin/python3.9 ../autocompletion/generate_autocompletion.py Output/kathara-$(VERSION)/debian/kathara.bash-completion
 
-build-deb-unsigned: build-man download-pip
-	sed -i -e 's/__UBUNTU_VERSION__/focal/g' Output/kathara-$(VERSION)/debian/changelog
+build-deb-unsigned: venv build-man autocompletion download-pip
+	sed -i -e 's/__UBUNTU_VERSION__/$(distro)/g' Output/kathara-$(VERSION)/debian/changelog
 	cd Output/kathara-$(VERSION); debuild -us -uc
 
-build-deb-signed: build-man download-pip
+build-deb-signed: venv build-man autocompletion download-pip
+	cp -r /root/gnupg-host/. /root/.gnupg
 	sed -i -e 's/__UBUNTU_VERSION__/$(distro)/g' Output/kathara-$(VERSION)/debian/changelog
 	cd Output/kathara-$(VERSION); debuild -S -sa
 
