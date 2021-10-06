@@ -1,12 +1,12 @@
 #!/usr/bin/make -s
 
 PRODUCT=Kathara
-VERSION=3.1.0
+VERSION=3.2.0
 TARGET_DIRECTORY=Output
 APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
 ROFF_DIR=../../docs/Roff
 
-.PHONY : all allSigned
+.PHONY : all allSigned deps test binary manpages createInstaller signProduct clean
 all: deps binary manpages createInstaller clean
 allSigned: deps binary manpages createInstaller signProduct clean
 
@@ -16,6 +16,7 @@ deps:
 	python3 -m pip install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
 	export ARCHFLAGS="-arch x86_64"
 	python3 -m pip install -r ../../src/requirements.txt
+	python3 -m pip install pytest
 	gem install ronn-ng
 
 manpages:
@@ -27,7 +28,10 @@ manpages:
 		mv $$man_file $(ROFF_DIR)/$$man_file_dir; \
 	done;
 
-binary:
+test:
+	cd ../.. && python3 -m pytest
+
+binary: test
 	cp ./kathara.spec ../../src/
 	cd ../../src && pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
 
@@ -52,7 +56,7 @@ cleanbinary:
 	fi
 
 copyBuildDirectory: binary manpages
-	mkdir $(TARGET_DIRECTORY)
+	[ -d $(TARGET_DIRECTORY) ] || mkdir $(TARGET_DIRECTORY)
 	cp -r darwin/Resources $(TARGET_DIRECTORY)/
 	chmod -R 755 $(TARGET_DIRECTORY)/Resources
 
@@ -86,7 +90,7 @@ createInstaller: copyBuildDirectory
 	pkgbuild --identifier org.kathara.kathara --version $(VERSION) --scripts darwin/scripts \
 	--root $(TARGET_DIRECTORY)/darwinpkg $(TARGET_DIRECTORY)/package/$(PRODUCT).pkg > /dev/null 2>&1
 	
-	productbuild --distribution darwin/Distribution --resources $(TARGET_DIRECTORY)/Resources \
+	productbuild --distribution darwin/Distribution --resources $(TARGET_DIRECTORY)/Kathara \
 	--package-path $(TARGET_DIRECTORY)/package $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-x64-$(VERSION).pkg > /dev/null 2>&1
 
 

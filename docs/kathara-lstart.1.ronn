@@ -67,12 +67,12 @@ The configuration of a Kathara lab consists of some files described in `kathara-
     Open the lab.conf file and check if it is correct (dry run).
 
 * `-H`, `--no-hosthome`:
-    `/hosthome` dir will not be mounted inside the device.
+    `/hosthome` dir will not be mounted inside the devices.
 
     By default, the home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
 
 * `-S`, `--no-shared`:
-    `/shared` dir will not be mounted inside the device.
+    `/shared` dir will not be mounted inside the devices.
 
     By default, the "shared" directory inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
 

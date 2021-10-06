@@ -6,10 +6,10 @@ import sys
 src_dir = os.path.join('..', '..', 'src')
 sys.path.insert(0, src_dir)
 
-from Resources.foundation.cli.command.CommandFactory import CommandFactory
+from Kathara.foundation.cli.command.CommandFactory import CommandFactory
 
 if __name__ == '__main__':
-    COMMAND_DIR = os.path.join(src_dir, 'Resources', 'cli', 'command')
+    COMMAND_DIR = os.path.join(src_dir, 'Kathara', 'cli', 'command')
 
     FILE_TEMPLATE = '''
     _remove_used_args()

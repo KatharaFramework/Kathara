@@ -1,7 +1,7 @@
 # Compiling Kathara Signed for Linux (DEB)
 
 1. Change the Kathara version number in the following files:
-    1. `src/Resources/version.py`
+    1. `src/Kathara/version.py`
     2. `Makefile`
 2. Set your [LaunchPad](https://launchpad.net/) name into the `Makefile`.
 3. Write a proper `debian/changelog` file.
@@ -16,7 +16,7 @@
 # Compiling Kathara Unsigned for Linux (DEB)
 
 1. Change the Kathara version number in the following files:
-    1. `src/Resources/version.py`
+    1. `src/Kathara/version.py`
     2. `Makefile`
 2. Write a proper `debian/changelog` file. 
 3. Run `make docker-unsigned`. This will:

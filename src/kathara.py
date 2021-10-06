@@ -7,13 +7,14 @@ import os
 import sys
 
 import coloredlogs
-from Resources import utils
-from Resources.auth.PrivilegeHandler import PrivilegeHandler
-from Resources.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError
-from Resources.foundation.cli.command.CommandFactory import CommandFactory
-from Resources.setting.Setting import Setting
-from Resources.strings import formatted_strings
-from Resources.version import CURRENT_VERSION
+
+from Kathara import utils
+from Kathara.auth.PrivilegeHandler import PrivilegeHandler
+from Kathara.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError
+from Kathara.foundation.cli.command.CommandFactory import CommandFactory
+from Kathara.setting.Setting import Setting
+from Kathara.strings import formatted_strings
+from Kathara.version import CURRENT_VERSION
 
 description_msg = """kathara [-h] [-v] <command> [<args>]
 
@@ -23,7 +24,7 @@ Possible Kathara commands are:\n
 
 
 class KatharaEntryPoint(object):
-    def __init__(self):
+    def __init__(self) -> None:
         parser = argparse.ArgumentParser(
             description='A network emulation tool.',
             usage=description_msg,
@@ -58,7 +59,7 @@ class KatharaEntryPoint(object):
             print('Current version: %s' % CURRENT_VERSION)
             sys.exit(0)
 
-        if args.command is None:
+        if args.command is None or not args.command.islower():
             parser.print_help()
             sys.exit(1)
 
@@ -70,7 +71,7 @@ class KatharaEntryPoint(object):
             sys.exit(1)
 
         try:
-            command_object = CommandFactory().create_instance(class_args=(args.command.capitalize(), ))
+            command_object = CommandFactory().create_instance(class_args=(args.command.capitalize(),))
         except ClassNotFoundError:
             logging.error('Unrecognized command `%s`.\n' % args.command)
             parser.print_help()
@@ -97,6 +98,7 @@ class KatharaEntryPoint(object):
 if __name__ == '__main__':
     multiprocessing.freeze_support()
 
+    utils.CLI_ENV = True
     utils.check_python_version()
 
     utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
