@@ -6,7 +6,7 @@ LAUNCHPAD_NAME=user
 
 .PHONY: allSigned docker-unsigned docker-signed_% docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean venv autocompletion
 
-allSigned: clean prepare-deb-source docker-signed_bionic
+allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_hirsute
 
 docker-unsigned_%: clean prepare-deb-source docker-build-image_%
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c "make build-deb-unsigned distro=$*"
