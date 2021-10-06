@@ -37,6 +37,11 @@ STARTUP_COMMANDS = [
     # Removes /etc/bind already existing configuration from k8s internal DNS
     "rm -Rf /etc/bind/*",
 
+    # Unmount the /etc/resolv.conf and /etc/hosts files, automatically mounted by Docker inside the container.
+    # In this way, they can be overwritten by custom user files.
+    "umount /etc/resolv.conf",
+    "umount /etc/hosts",
+
     # Parse hostlab.b64
     "base64 -d /tmp/kathara/hostlab.b64 > /hostlab.tar.gz",
     # Extract hostlab.tar.gz data into /
@@ -46,13 +51,6 @@ STARTUP_COMMANDS = [
     # In this way, files are all replaced in the container root folder
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
     "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf -); fi",
-
-    # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
-    # If not, clear the content of the file.
-    # This should be patched with "cat" because file is already in use by Kubernetes internal DNS.
-    "if [ -f \"/hostlab/{machine_name}/etc/resolv.conf\" ]; then "
-    "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else "
-    "echo \"\" > /etc/resolv.conf; fi",
 
     # Give proper permissions to /var/www
     "if [ -d \"/var/www\" ]; then "

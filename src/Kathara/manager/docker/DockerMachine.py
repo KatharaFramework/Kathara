@@ -23,17 +23,15 @@ RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 # Known commands that each container should execute
 # Run order: shared.startup, machine.startup and machine.startup_commands
 STARTUP_COMMANDS = [
+    # Unmount the /etc/resolv.conf and /etc/hosts files, automatically mounted by Docker inside the container.
+    # In this way, they can be overwritten by custom user files.
+    "umount /etc/resolv.conf",
+    "umount /etc/hosts",
+
     # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
     # In this way, files are all replaced in the container root folder
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
     "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf -); fi",
-
-    # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
-    # If not, clear the content of the file.
-    # This should be patched with "cat" because file is already in use by Docker internal DNS.
-    "if [ -f \"/hostlab/{machine_name}/etc/resolv.conf\" ]; then "
-    "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else "
-    "echo \"\" > /etc/resolv.conf; fi",
 
     # Give proper permissions to /var/www
     "if [ -d \"/var/www\" ]; then "
