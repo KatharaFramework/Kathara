@@ -33,9 +33,7 @@ DEFAULTS = {
 
 
 class Setting(object):
-    """
-    Class responsible for interacting with Kathara Settings.
-    """
+    """Class responsible for interacting with Kathara Settings."""
 
     __slots__ = ['image', 'manager_type', 'terminal', 'open_terminals', 'device_shell', 'net_prefix',
                  'device_prefix', 'debug_level', 'print_startup_log', 'enable_ipv6', 'last_checked', 'addons']
@@ -47,8 +45,7 @@ class Setting(object):
 
     @staticmethod
     def get_instance() -> Setting:
-        """
-        Return an instance of Setting.
+        """Return an instance of Setting.
 
         Returns:
             Kathara.setting.Setting: An instanche of Setting.
@@ -87,8 +84,7 @@ class Setting(object):
         setattr(self.addons, name, value)
 
     def load(self) -> None:
-        """
-        Load the Kathara settings from disk.
+        """Load the Kathara settings from disk.
 
         Returns:
             None
@@ -125,8 +121,7 @@ class Setting(object):
 
     @staticmethod
     def wipe() -> None:
-        """
-        Remove the all saved settings from disk.
+        """Remove the all saved settings from disk.
 
         Returns:
             None
@@ -135,8 +130,7 @@ class Setting(object):
             os.remove(Setting.SETTING_PATH)
 
     def save(self) -> None:
-        """
-        Saves settings to a config.json file in the Kathara path.
+        """Saves settings to a config.json file in the Kathara path.
 
         Returns:
             None
@@ -147,7 +141,8 @@ class Setting(object):
             settings_file.write(json.dumps(to_save, indent=True))
 
     def check(self) -> None:
-        """
+        """Chek if Kathara is correctly working.
+
         Check if the the selected manager and terminal are available. Check the presence of Kathara updates.
         Check the correctness and validity of the net_prefix, device_prefix and debug level.
 
@@ -198,8 +193,7 @@ class Setting(object):
             raise SettingsError("Debug Level must be one of the following: %s." % (", ".join(AVAILABLE_DEBUG_LEVELS)))
 
     def check_manager(self) -> None:
-        """
-        Check if the selected manager is available.
+        """Check if the selected manager is available.
 
         Returns:
             None
@@ -214,8 +208,7 @@ class Setting(object):
             raise SettingsError("Manager Type not allowed.")
 
     def check_image(self, image: str = None) -> None:
-        """
-        Check if the specified image is valid.
+        """Check if the specified image is valid.
 
         Args:
             image (str): The name of the image to check. If None, check the default image.
@@ -234,8 +227,7 @@ class Setting(object):
         Kathara.get_instance().check_image(image)
 
     def check_terminal(self, terminal: str = None) -> bool:
-        """
-        Check that the selected terminal is available.
+        """Check that the selected terminal is available.
 
         Args:
             terminal (str): The selected terminal path. If None, check the availability of the default terminal.
@@ -269,8 +261,7 @@ class Setting(object):
         return True
 
     def load_settings_addon(self) -> None:
-        """
-        Load a setting addon to the base settings.
+        """Load a setting addon to the base settings.
 
         Returns:
             None

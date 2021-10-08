@@ -21,9 +21,7 @@ from ...utils import pack_files_for_tar
 
 
 class KubernetesManager(IManager):
-    """
-    Class responsible for interacting with Kubernetes API.
-    """
+    """Class responsible for interacting with Kubernetes API."""
 
     __slots__ = ['k8s_namespace', 'k8s_machine', 'k8s_link']
 
@@ -35,8 +33,7 @@ class KubernetesManager(IManager):
         self.k8s_link: KubernetesLink = KubernetesLink()
 
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
-        """
-        Deploy a Kathara network scenario.
+        """Deploy a Kathara network scenario.
 
         Args:
             lab (Kathara.model.Lab): A Kathara network scenario.
@@ -65,8 +62,7 @@ class KubernetesManager(IManager):
                 raise e
 
     def update_lab(self, lab: Lab) -> None:
-        """
-        Update a running network scenario.
+        """Update a running network scenario.
 
         Args:
             lab (Kathara.model.Lab): A Kathara network scenario.
@@ -77,8 +73,7 @@ class KubernetesManager(IManager):
         raise NotSupportedError("Unable to update a running lab.")
 
     def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
-        """
-        Undeploy a Kathara network scenario.
+        """Undeploy a Kathara network scenario.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
@@ -127,8 +122,7 @@ class KubernetesManager(IManager):
             self.k8s_namespace.undeploy(lab_hash=lab_hash)
 
     def wipe(self, all_users: bool = False) -> None:
-        """
-        Undeploy all the running network scenarios.
+        """Undeploy all the running network scenarios.
 
         Args:
         all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
@@ -146,8 +140,7 @@ class KubernetesManager(IManager):
         self.k8s_namespace.wipe()
 
     def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False) -> None:
-        """
-        Connect to a device in a running network scenario, using the specified shell.
+        """Connect to a device in a running network scenario, using the specified shell.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
@@ -167,8 +160,7 @@ class KubernetesManager(IManager):
                                  )
 
     def exec(self, lab_hash: str, machine_name: str, command: str) -> (str, str):
-        """
-        Exec a command on a device in a running network scenario.
+        """Exec a command on a device in a running network scenario.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
@@ -183,8 +175,7 @@ class KubernetesManager(IManager):
         return self.k8s_machine.exec(lab_hash, machine_name, command, stderr=True, tty=False)
 
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
-        """
-        Copy files on a running device in the specified paths.
+        """Copy files on a running device in the specified paths.
 
         Args:
             machine (Kathara.model.Machine): A running device object. It must have the api_object field populated.
@@ -203,8 +194,7 @@ class KubernetesManager(IManager):
 
     def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> \
             Generator[Dict[str, Any], None, None]:
-        """
-        Return information about the running devices.
+        """Return information about the running devices.
 
         Args:
             lab_hash (str): If not None, return information of the corresponding network scenario.
@@ -223,8 +213,7 @@ class KubernetesManager(IManager):
         return lab_info
 
     def get_formatted_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> str:
-        """
-        Return a formatted string with the information about the running devices.
+        """Return a formatted string with the information about the running devices.
 
         Args:
             lab_hash (str): If not None, return information of the corresponding network scenario.
@@ -268,8 +257,7 @@ class KubernetesManager(IManager):
             yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
 
     def get_machine_api_object(self, lab_hash: str, machine_name: str) -> client.V1Pod:
-        """
-        Return the corresponding API object of a running device in a network scenario.
+        """Return the corresponding API object of a running device in a network scenario.
 
         Args:
             lab_hash (str): The hash of the network scenario.
@@ -283,8 +271,7 @@ class KubernetesManager(IManager):
 
     def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
             -> List[Dict[str, Any]]:
-        """
-        Return information of running devices with a specified name.
+        """Return information of running devices with a specified name.
 
         Args:
             machine_name (str): The device name.
@@ -302,8 +289,7 @@ class KubernetesManager(IManager):
         return machine_stats
 
     def get_formatted_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> str:
-        """
-        Return formatted information of running devices with a specified name.
+        """Return formatted information of running devices with a specified name.
 
         Args:
             machine_name (str): The device name.
@@ -335,8 +321,7 @@ class KubernetesManager(IManager):
         return "\n\n".join(machines_info)
 
     def check_image(self, image_name: str) -> None:
-        """
-        Useless. The Check of the image is delegated to Kubernetes.
+        """Useless. The Check of the image is delegated to Kubernetes.
 
         Args:
             image_name (str): The name of the image
@@ -348,8 +333,7 @@ class KubernetesManager(IManager):
         return
 
     def get_release_version(self) -> str:
-        """
-        Return the current manager version.
+        """Return the current manager version.
 
         Returns:
             str: The current manager version.
@@ -358,8 +342,7 @@ class KubernetesManager(IManager):
 
     @staticmethod
     def get_formatted_manager_name() -> str:
-        """
-        Return a formatted string containing the current manager name.
+        """Return a formatted string containing the current manager name.
 
         Returns:
             str: A formatted string containing the current manager name.

@@ -25,9 +25,7 @@ K8S_NET_PLURAL = "network-attachment-definitions"
 
 
 class KubernetesLink(object):
-    """
-    Class responsible for interacting with Kubernetes
-    """
+    """Class responsible for interacting with Kubernetes."""
     __slots__ = ['client', 'seed']
 
     def __init__(self) -> None:
@@ -36,8 +34,7 @@ class KubernetesLink(object):
         self.seed: str = KubernetesConfig.get_cluster_user()
 
     def deploy_links(self, lab: Lab) -> None:
-        """
-        Deploy all the links contained in lab.links.
+        """Deploy all the links contained in lab.links.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
@@ -69,8 +66,7 @@ class KubernetesLink(object):
                 progress_bar.finish()
 
     def _deploy_link(self, progress_bar: progressbar.ProgressBar, network_ids: Dict, link_item: (str, Link)) -> None:
-        """
-        Deploy the Link contained in the link_item.
+        """Deploy the Link contained in the link_item.
 
         Args:
             progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
@@ -78,7 +74,7 @@ class KubernetesLink(object):
             link_item (Tuple[str, Link]): A tuple composed by the name of the link and a Link object
 
         Returns:
-
+            None
         """
         (_, link) = link_item
 
@@ -89,8 +85,7 @@ class KubernetesLink(object):
             progress_bar += 1
 
     def create(self, link: Link, network_id: int) -> None:
-        """
-        Create a Docker Network representing the link object and assign it to link.api_object.
+        """Create a Docker Network representing the link object and assign it to link.api_object.
 
         Args:
             link (Kathara.model.Link.Link): A Kathara collision domain.
@@ -114,8 +109,7 @@ class KubernetesLink(object):
             logging.warning('External is not supported on Megalos. It will be ignored.')
 
     def undeploy(self, lab_hash: str, networks_to_delete: Optional[Set] = None) -> None:
-        """
-        Undeploy all the links of the scenario specified by lab_hash.
+        """Undeploy all the links of the scenario specified by lab_hash.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
@@ -150,8 +144,7 @@ class KubernetesLink(object):
                 progress_bar.finish()
 
     def wipe(self) -> None:
-        """
-        Undeploy all the running networks of the specified user.
+        """Undeploy all the running networks of the specified user.
 
         Returns:
             None
@@ -168,8 +161,7 @@ class KubernetesLink(object):
             links_pool.map(func=partial(self._undeploy_link, None), iterable=chunk)
 
     def _undeploy_link(self, progress_bar: progressbar.ProgressBar, link_item: Any) -> None:
-        """
-        Undeploy a Kubernetes network.
+        """Undeploy a Kubernetes network.
 
         Args:
             progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
@@ -196,8 +188,7 @@ class KubernetesLink(object):
             progress_bar += 1
 
     def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None) -> List[Any]:
-        """
-         Return the List of Kubernetes networks.
+        """Return the List of Kubernetes networks.
 
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return only the networks in the scenario, else
@@ -221,8 +212,7 @@ class KubernetesLink(object):
                                                          )["items"]
 
     def _build_definition(self, link: Link, network_id: int) -> Dict[str, str]:
-        """
-        Return a Dict containing the network definition for Kubernetes API corresponding to link.
+        """Return a Dict containing the network definition for Kubernetes API corresponding to link.
 
         Args:
             link (Kathara.model.Link.Link): A Kathara collision domain.
@@ -253,8 +243,7 @@ class KubernetesLink(object):
         }
 
     def _get_unique_network_id(self, name: str, network_ids: Dict[int, int]) -> int:
-        """
-        Return a unique network id.
+        """Return a unique network id.
 
         Args:
             name (str): The name of the network.
@@ -276,8 +265,7 @@ class KubernetesLink(object):
         return network_id
 
     def _get_network_id(self, name: str, offset: int = 0) -> int:
-        """
-        Return the Kubernetes network ID from a Kathara collision domain name.
+        """Return the Kubernetes network ID from a Kathara collision domain name.
 
         Args:
             name (str): The name of a Kathara collision domain.
@@ -291,8 +279,7 @@ class KubernetesLink(object):
 
     @staticmethod
     def get_network_name(name: str) -> str:
-        """
-        Return the name of a Kubernetes Network.
+        """Return the name of a Kubernetes Network.
 
         Args:
             name (str): The name of a Kathara Link.

@@ -11,17 +11,14 @@ MAX_FILE_SIZE = 3145728
 
 
 class KubernetesConfigMap(object):
-    """
-    Class responsible for interacting with Kubernetes ConfigMap.
-    """
+    """Class responsible for interacting with Kubernetes ConfigMap."""
     __slots__ = ['client']
 
     def __init__(self) -> None:
         self.client: core_v1_api.CoreV1Api = core_v1_api.CoreV1Api()
 
     def deploy_for_machine(self, machine: Machine) -> Optional[client.V1ConfigMap]:
-        """
-        Deploy and return a Kubernetes ConfigMap for the machine.
+        """Deploy and return a Kubernetes ConfigMap for the machine.
 
         Args:
             machine (Kathara.model.Machine.Machine): A Kathara device.
@@ -37,8 +34,7 @@ class KubernetesConfigMap(object):
         return self.client.create_namespaced_config_map(body=config_map, namespace=machine.lab.hash)
 
     def delete_for_machine(self, machine_name: str, machine_namespace: str) -> None:
-        """
-        Delete the Kubernetes ConfigMap associated with the device.
+        """Delete the Kubernetes ConfigMap associated with the device.
 
         Args:
             machine_name (str): The name of a Kathara device.
@@ -53,8 +49,7 @@ class KubernetesConfigMap(object):
 
     @staticmethod
     def build_name_for_machine(machine_name: str, machine_namespace: str) -> str:
-        """
-        Return the name for the Kubernetes deployment.
+        """Return the name for the Kubernetes deployment.
 
         Args:
             machine_name (str): The name of a Kathara device.
@@ -66,8 +61,7 @@ class KubernetesConfigMap(object):
         return "%s-%s-files" % (machine_name, machine_namespace)
 
     def _build_for_machine(self, machine: Machine) -> Optional[client.V1ConfigMap]:
-        """
-        Build and return a Kubernetes ConfigMap for the device.
+        """Build and return a Kubernetes ConfigMap for the device.
 
         Args:
             machine (Kathara.model.Machine.Machine): A Kathara device.

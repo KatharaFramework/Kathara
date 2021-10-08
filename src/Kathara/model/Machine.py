@@ -19,8 +19,9 @@ from ..setting.Setting import Setting
 
 
 class Machine(object):
-    """
-    A Kathara device. Contains information about the device and the API object to interact with the Manager.
+    """A Kathara device.
+
+    Contains information about the device and the API object to interact with the Manager.
 
     Attributes:
         lab (Kathara.model.Lab): The Kathara network Scenario of the device.
@@ -38,8 +39,7 @@ class Machine(object):
                  'startup_path', 'shutdown_path', 'folder']
 
     def __init__(self, lab: 'LabPackage.Lab', name: str, **kwargs) -> None:
-        """
-        Create a new instance of a Kathara device.
+        """Create a new instance of a Kathara device.
 
         Args:
             lab (Kathara.model.Lab): The Kathara network scenario of the new device.
@@ -88,8 +88,7 @@ class Machine(object):
         self.update_meta(kwargs)
 
     def add_interface(self, link: 'LinkPackage.Link', number: int = None) -> None:
-        """
-        Add an interface to the device attached to the specified collision domain.
+        """Add an interface to the device attached to the specified collision domain.
 
         Args:
             link (Kathara.model.Link): The Kathara collision domain to attach.
@@ -110,8 +109,7 @@ class Machine(object):
         self.interfaces[number] = link
 
     def add_meta(self, name: str, value: Any) -> None:
-        """
-        Add a meta property to the device.
+        """Add a meta property to the device.
 
         Args:
             name (str): The name of the property.
@@ -173,8 +171,7 @@ class Machine(object):
         self.meta[name] = value
 
     def check(self) -> None:
-        """
-        Sorts interfaces check if there are missing positions.
+        """Sorts interfaces check if there are missing positions.
 
         Returns:
             None
@@ -193,8 +190,8 @@ class Machine(object):
         self.interfaces = collections.OrderedDict(sorted_interfaces)
 
     def pack_data(self) -> Optional[bytes]:
-        """
-        Pack machine data into a .tar.gz file and returns the tar content as a byte array.
+        """Pack machine data into a .tar.gz file and returns the tar content as a byte array.
+
         While packing files, it also applies the win2linux patch in order to remove UTF-8 BOM.
 
         Returns:
@@ -267,8 +264,7 @@ class Machine(object):
         return tar_data
 
     def connect(self, terminal_name: str) -> None:
-        """
-        Connect to the device with the specified terminal.
+        """Connect to the device with the specified terminal.
 
         Args:
             terminal_name (str): The name of the terminal to use for the connection.
@@ -346,8 +342,7 @@ class Machine(object):
         utils.exec_by_platform(unix_connect, windows_connect, osx_connect)
 
     def get_image(self) -> str:
-        """
-        Get the image of the device, if defined in options or machine meta. If not, use default one.
+        """Get the image of the device, if defined in options or machine meta. If not, use default one.
 
         Returns:
             str: The name of the device image.
@@ -356,9 +351,7 @@ class Machine(object):
             self.meta["image"] if "image" in self.meta else Setting.get_instance().image
 
     def get_mem(self) -> str:
-        """
-        Get memory limit, if defined in options. If not, use the value from device meta.
-        Otherwise, return None.
+        """Get memory limit, if defined in options. If not, use the value from device meta. Otherwise, return None.
 
         Returns:
             str: The memory limit of the device.
@@ -382,10 +375,10 @@ class Machine(object):
         return memory
 
     def get_cpu(self, multiplier: int = 1) -> Optional[int]:
-        """
-        Get the CPU limit, multiplied by a specific multiplier.
+        """Get the CPU limit, multiplied by a specific multiplier.
+
         User should pass a float value ranging from 0 to max user CPUs.
-        It is took from options, or machine meta. Otherwise, return None.
+        Try to took it from options, or machine meta. Otherwise, return None.
 
         Args:
             multiplier (int):
@@ -407,8 +400,7 @@ class Machine(object):
         return None
 
     def get_ports(self) -> Optional[Dict[Tuple[int, str], int]]:
-        """
-        Get the port mapping of the device.
+        """Get the port mapping of the device.
 
         Returns:
             Dict[(int, str), int]: Keys are pairs (host_port, protocol), values specifies the guest_port.
@@ -419,8 +411,7 @@ class Machine(object):
         return None
 
     def get_num_terms(self) -> int:
-        """
-        Get the number of terminal to be opened for the device.
+        """Get the number of terminal to be opened for the device.
 
         Returns:
             int: The number of terminal to be opened.
@@ -443,8 +434,7 @@ class Machine(object):
         return num_terms
 
     def is_ipv6_enabled(self) -> bool:
-        """
-        Check if IPv6 is enabled on the device.
+        """Check if IPv6 is enabled on the device.
 
         Returns:
             bool: True if it is enabled, else False.
@@ -456,8 +446,7 @@ class Machine(object):
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
 
     def update_meta(self, args: Dict[str, Any]) -> None:
-        """
-        Update the device metas from a dict.
+        """Update the device metas from a dict.
 
         Args:
             args (Dict[str, Any]): Keys are the meta properties names, values are the updated meta properties values.

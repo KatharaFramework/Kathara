@@ -10,8 +10,7 @@ from .. import utils
 
 
 class Lab(object):
-    """
-    A Kathara network scenario, containing information about devices and collision domains.
+    """A Kathara network scenario, containing information about devices and collision domains.
 
     Attributes:
         name (str): The name of the network scenario.
@@ -37,8 +36,7 @@ class Lab(object):
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
     def __init__(self, name: Optional[str], path: str = None) -> None:
-        """
-        Create a new instance of a Kathara network scenario.
+        """Create a new instance of a Kathara network scenario.
 
         Args:
             name (str): The name of the network scenario.
@@ -81,8 +79,7 @@ class Lab(object):
         self.shared_folder: Optional[str] = None
 
     def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None) -> None:
-        """
-        Connect the specified device to the specified collision domain.
+        """Connect the specified device to the specified collision domain.
 
         Args:
             machine_name (str): The device name.
@@ -102,8 +99,7 @@ class Lab(object):
         machine.add_interface(link, number=machine_iface_number)
 
     def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> None:
-        """
-        Assign a meta information to the specified device.
+        """Assign a meta information to the specified device.
 
         Args:
             machine_name (str): The name of the device.
@@ -121,8 +117,7 @@ class Lab(object):
         machine.add_meta(meta_name, meta_value)
 
     def attach_external_links(self, external_links: Dict[str, List[ExternalLink]]) -> None:
-        """
-        Attach external collision domains to the network scenario.
+        """Attach external collision domains to the network scenario.
 
         Args:
             external_links (Dict[Kathara.model.Link, List[Kathara.model.ExternalLink]]): Keys are Link objects,
@@ -139,16 +134,14 @@ class Lab(object):
             self.links[link_name].external += link_external_links
 
     def check_integrity(self) -> None:
-        """
-        Check the if the network interfaces numbers of all the devices in the network scenario are correctly assigned.
-        """
+        """Check if the network interfaces numbers of all the devices in the network scenario are correctly assigned."""
         for machine in self.machines:
             self.machines[machine].check()
 
     def intersect_machines(self, selected_machines: Union[List[str], Set[str]]) -> None:
-        """
-        Delete network scenario devices and collision domains not in selected devices.
-        It has side effect on the current network scenario.
+        """Delete devices and collision domains not in selected devices.
+
+        The deletion has has a side effect on the current network scenario.
 
         Args:
             selected_machines (Set[str]): A set with selected devices names.
@@ -170,8 +163,7 @@ class Lab(object):
         self.links = {k: v for (k, v) in self.links.items() if k in selected_links}
 
     def apply_dependencies(self, dependencies: List[str]) -> None:
-        """
-        Order the list of devices of the network scenario to satisfy the boot dependencies.
+        """Order the list of devices of the network scenario to satisfy the boot dependencies.
 
         Args:
             dependencies (List[str]): If not empty, dependencies are applied.
@@ -190,8 +182,7 @@ class Lab(object):
         self.has_dependencies = True
 
     def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> Machine:
-        """
-        Get the specified device. If it not exists, create and add it to the devices list.
+        """Get the specified device. If it not exists, create and add it to the devices list.
 
         Args:
             name (str): The name of the device
@@ -207,8 +198,7 @@ class Lab(object):
         return self.machines[name]
 
     def get_or_new_link(self, name: str) -> Link:
-        """
-        Get the specified collision domain. If it not exists, create and add it to the collision domains list.
+        """Get the specified collision domain. If it not exists, create and add it to the collision domains list.
 
         Args:
             name (str): The name of the collision domain.
@@ -222,8 +212,7 @@ class Lab(object):
         return self.links[name]
 
     def create_shared_folder(self) -> None:
-        """
-        If the network scenario has a directory, create the network scenario shared folder.
+        """If the network scenario has a directory, create the network scenario shared folder.
 
         Returns:
             None
@@ -245,8 +234,7 @@ class Lab(object):
             return
 
     def has_path(self) -> bool:
-        """
-        Check if the network scenario has a directory.
+        """Check if the network scenario has a directory.
 
         Returns:
             bool: True if it self.path is not None, else False.
@@ -254,8 +242,7 @@ class Lab(object):
         return self.path is not None
 
     def add_option(self, name: str, value: Any) -> None:
-        """
-        Add an option to the network scenario.
+        """Add an option to the network scenario.
 
         Args:
             name (str): The name of the option.

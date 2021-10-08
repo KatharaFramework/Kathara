@@ -4,13 +4,10 @@ from ...setting.Setting import Setting
 
 
 class KubernetesConfig(object):
-    """
-    Class responsible for loading Kubernetes configurations.
-    """
+    """Class responsible for loading Kubernetes configurations."""
     @staticmethod
     def get_cluster_user() -> str:
-        """
-        Return the name of the current c
+        """Return the name of the current cluster user.
 
         Returns:
             str:
@@ -26,8 +23,7 @@ class KubernetesConfig(object):
 
     @staticmethod
     def load_kube_config() -> None:
-        """
-        Load a Kubernetes Configuration if Kathara is launched on a k8s master.
+        """Load a Kubernetes Configuration if Kathara is launched on a k8s master.
 
         Returns:
             None

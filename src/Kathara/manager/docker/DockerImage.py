@@ -9,17 +9,14 @@ from ... import utils
 
 
 class DockerImage(object):
-    """
-    Class responsible for interacting with Docker Images.
-    """
+    """Class responsible for interacting with Docker Images."""
     __slots__ = ['client']
 
     def __init__(self, client: DockerClient) -> None:
         self.client: DockerClient = client
 
     def get_local(self, image_name: str) -> docker.models.images.Image:
-        """
-        Return the specified Docker Image.
+        """Return the specified Docker Image.
 
         Args:
             image_name (str): The name of a Docker Image.
@@ -30,8 +27,7 @@ class DockerImage(object):
         return self.client.images.get(image_name)
 
     def get_remote(self, image_name: str) -> docker.models.images.RegistryData:
-        """
-        Gets the registry data for an image.
+        """Gets the registry data for an image.
 
         Args:
             image_name (str): The name of the image.
@@ -45,8 +41,7 @@ class DockerImage(object):
         return self.client.images.get_registry_data(image_name)
 
     def pull(self, image_name: str) -> docker.models.images.Image:
-        """
-        Pull and return the specified Docker Image.
+        """Pull and return the specified Docker Image.
 
         Args:
             image_name (str): The name of a Docker Image.
@@ -62,8 +57,7 @@ class DockerImage(object):
         return self.client.images.pull(image_name)
 
     def check_for_updates(self, image_name: str) -> None:
-        """
-        Update the specified image.
+        """Update the specified image.
 
         Args:
             image_name (str): The name of a Docker Image.
@@ -102,8 +96,7 @@ class DockerImage(object):
                 self.pull(image_name)
 
     def check(self, image_name: str) -> None:
-        """
-        Check the existence of the specified image.
+        """Check the existence of the specified image.
 
         Args:
             image_name (str): The name of a Docker Image.
@@ -114,8 +107,7 @@ class DockerImage(object):
         self._check_and_pull(image_name, pull=False)
 
     def check_and_pull_from_list(self, images: Union[List[str], Set[str]]) -> None:
-        """
-        Check and pull a list of specified images.
+        """Check and pull a list of specified images.
 
         Args:
             images (Union[List[str], Set[str]]): A list of Docker images name to pull.
@@ -127,8 +119,7 @@ class DockerImage(object):
             self._check_and_pull(image)
 
     def _check_and_pull(self, image_name: str, pull: bool = True) -> None:
-        """
-        Check and pull of the specified image.
+        """Check and pull of the specified image.
 
         Args:
             image_name (str): The name of a Docker Image.

@@ -116,3 +116,6 @@ Dockerfile~
 /docs/MD/
 /docs/Roff/
 .DS_Store
+
+# Pydoc
+/scripts/pydoc/docs

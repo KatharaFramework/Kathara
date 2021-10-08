@@ -7,6 +7,7 @@ package: clean
 	cd ../../ && python3 setup.py sdist --dist-dir='scripts/pip-package/dist'
 
 upload: package
+	python3 -m pip install twine
 	twine upload dist/*
 
 clean:

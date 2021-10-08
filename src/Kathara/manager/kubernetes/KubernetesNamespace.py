@@ -8,9 +8,7 @@ from ...model.Lab import Lab
 
 
 class KubernetesNamespace(object):
-    """
-    Class responsible for interacting with Kubernetes namespaces.
-    """
+    """Class responsible for interacting with Kubernetes namespaces."""
 
     __slots__ = ['client']
 
@@ -18,8 +16,7 @@ class KubernetesNamespace(object):
         self.client: core_v1_api.CoreV1Api = core_v1_api.CoreV1Api()
 
     def create(self, lab: Lab) -> Optional[client.V1Namespace]:
-        """
-        Return a Kubernetes namespace from a Kathara network scenario.
+        """Return a Kubernetes namespace from a Kathara network scenario.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
@@ -38,8 +35,7 @@ class KubernetesNamespace(object):
             return None
 
     def undeploy(self, lab_hash: str = None) -> None:
-        """
-        Delete the Kubernetes namespace corresponding to the lab_hash.
+        """Delete the Kubernetes namespace corresponding to the lab_hash.
 
         Args:
             lab_hash (str): The hash of a Kathara network scenario.
@@ -53,8 +49,7 @@ class KubernetesNamespace(object):
             return
 
     def wipe(self) -> None:
-        """
-        Delete all the Kathara Kubernetes namespaces.
+        """Delete all the Kathara Kubernetes namespaces.
 
         Returns:
             None
@@ -65,8 +60,7 @@ class KubernetesNamespace(object):
             self.client.delete_namespace(namespace.metadata.name)
 
     def get_all(self) -> Iterable[client.V1Namespace]:
-        """
-        Return an Iterable containing all the Kubernetes namespaces relatively to Kathara.
+        """Return an Iterable containing all the Kubernetes namespaces relatively to Kathara.
 
         Returns:
             Iterable[client.V1Namespace]: an Iterable containing all the Kubernetes namespaces relatively to Kathara.

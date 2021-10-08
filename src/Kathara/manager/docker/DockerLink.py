@@ -21,17 +21,14 @@ from ...setting.Setting import Setting
 
 
 class DockerLink(object):
-    """
-    The class responsible for deploying Kathara collision domains as Docker networks and interact with them.
-    """
+    """The class responsible for deploying Kathara collision domains as Docker networks and interact with them."""
     __slots__ = ['client']
 
     def __init__(self, client: DockerClient) -> None:
         self.client: DockerClient = client
 
     def deploy_links(self, lab: Lab) -> None:
-        """
-        Deploy all the lab collision domains as Docker networks.
+        """Deploy all the lab collision domains as Docker networks.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
@@ -68,8 +65,7 @@ class DockerLink(object):
         link.api_object = docker_bridge
 
     def _deploy_link(self, progress_bar: progressbar.ProgressBar, link_item: (str, Link)) -> None:
-        """
-        Deploy the collision domain contained in the link_item as a Docker network.
+        """Deploy the collision domain contained in the link_item as a Docker network.
 
         Args:
             progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
@@ -89,9 +85,9 @@ class DockerLink(object):
             progress_bar += 1
 
     def create(self, link: Link) -> None:
-        """
-        Create a Docker network representing the collision domain object and assign it to link.api_object.
-        Also, connect external collision domains, if present.
+        """Create a Docker network representing the collision domain object and assign it to link.api_object.
+
+        It also connect external collision domains, if present.
 
         Args:
             link (Kathara.model.Link.Link): A Kathara collision domain.
@@ -132,8 +128,7 @@ class DockerLink(object):
             self._attach_external_interfaces(link.external, link.api_object)
 
     def undeploy(self, lab_hash: str) -> None:
-        """
-        Undeploy all the collision domains of the scenario specified by lab_hash.
+        """Undeploy all the collision domains of the scenario specified by lab_hash.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
@@ -168,9 +163,7 @@ class DockerLink(object):
                 progress_bar.finish()
 
     def wipe(self, user: str = None) -> None:
-        """
-        Undeploy all the Docker networks of the specified user.
-        If user is None, it undeploy all the Docker networks.
+        """Undeploy all the Docker networks of the specified user. If user is None, it undeploy all the Docker networks.
 
         Args:
             user (str): The name of a current user on the host
@@ -193,8 +186,7 @@ class DockerLink(object):
             links_pool.map(func=partial(self._undeploy_link, None), iterable=chunk)
 
     def _undeploy_link(self, progress_bar: progressbar.ProgressBar, network: docker.models.networks.Network) -> None:
-        """
-        Undeploy a Docker network.
+        """Undeploy a Docker network.
 
         Args:
             progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
@@ -209,8 +201,7 @@ class DockerLink(object):
             progress_bar += 1
 
     def get_docker_bridge(self) -> Union[None, docker.models.networks.Network]:
-        """
-        Return the Docker bridged network.
+        """Return the Docker bridged network.
 
         Returns:
             Union[None, docker.models.networks.Network]: The Docker bridged network if exists, else None
@@ -220,8 +211,7 @@ class DockerLink(object):
 
     def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None, user: str = None) -> \
             List[docker.models.networks.Network]:
-        """
-        Return the Docker networks specified by lab_hash, machine_name and user.
+        """Return the Docker networks specified by lab_hash, machine_name and user.
 
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return all the networks in the scenario.
@@ -243,8 +233,7 @@ class DockerLink(object):
 
     def _attach_external_interfaces(self, external_links: List[ExternalLink],
                                     network: docker.models.networks.Network) -> None:
-        """
-        Attach an external collision domain to a Docker network.
+        """Attach an external collision domain to a Docker network.
 
         Args:
             external_links (Kathara.model.ExternalLink): A Kathara external collision domain. It is used to create
@@ -262,8 +251,7 @@ class DockerLink(object):
 
     @staticmethod
     def _get_bridge_name(network: docker.models.networks.Network) -> str:
-        """
-        Return the name of the host bridge associated to the Docker network.
+        """Return the name of the host bridge associated to the Docker network.
 
         Args:
             network (docker.models.networks.Network): A Docker network.
@@ -275,8 +263,7 @@ class DockerLink(object):
 
     @staticmethod
     def get_network_name(name: str) -> str:
-        """
-        Return the name of a Docker network.
+        """Return the name of a Docker network.
 
         Args:
             name (str): The name of a Kathara collision domain.
@@ -290,8 +277,7 @@ class DockerLink(object):
 
     @staticmethod
     def _delete_link(network: docker.models.networks.Network) -> None:
-        """
-        Delete a Docker network.
+        """Delete a Docker network.
 
         Args:
             network (docker.models.networks.Network): A Docker network.
