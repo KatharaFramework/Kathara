@@ -4,10 +4,9 @@ kathara-lstart(1) -- Start a Kathara lab
 
 ## SYNOPSIS
 
-`kathara lstart`
->           [`-h`] [`--noterminals` | `--terminals` | `--privileged`] [`-d` <DIRECTORY>] [`-F`] [`-l`]
->           [`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>] [`--print`]  
->           [`-H`] [`-S`] [<DEVICE_NAME> [<DEVICE_NAME> ...]]
+`kathara lstart` [`-h`] [`--noterminals` \| `--terminals` \| `--privileged`]  
+[`-d` <DIRECTORY>] [`-F`] [`-l`] [`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>]  
+[`--print`]  [`-H`] [`-S`] [<DEVICE_NAME> [<DEVICE_NAME> ...]]  
 
 
 ## DESCRIPTION

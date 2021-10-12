@@ -4,9 +4,8 @@ kathara-ltest(1) -- Test a Kathara lab
 
 ## SYNOPSIS
 
-`kathara ltest`  
->           [`-h`] [`-d` <DIRECTORY>] [`-R`] [`--wait` <MINUTES>]  
->           [--verify {builtin,user,both}]
+`kathara ltest` [`-h`] [`-d` <DIRECTORY>] [`-R`] [`--wait` <MINUTES>]  
+[--verify {builtin,user,both}]
 
 
 ## DESCRIPTION

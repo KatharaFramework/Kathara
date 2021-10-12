@@ -4,7 +4,7 @@ kathara-vclean(1) -- Stop a single Kathara device
 
 ## SYNOPSIS
 
-`kathara vclean` [`-h`] `-n` <DEVICE_NAME>
+`kathara vclean` [`-h`] `-n` <DEVICE_NAME>  
 
 ## DESCRIPTION
 

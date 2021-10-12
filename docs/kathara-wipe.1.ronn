@@ -4,7 +4,7 @@ kathara-wipe(1) -- Delete all Kathara devices and collision domains, optionally 
 
 ## SYNOPSIS
 
-`kathara wipe` [`-h`] [`-f`] [`-s` | `-a`]
+`kathara wipe` [`-h`] [`-f`] [`-s` \| `-a`]  
 
 ## DESCRIPTION
 

@@ -4,10 +4,10 @@ kathara-lrestart(1) -- Restart a Kathara lab
 
 ## SYNOPSIS
 
-`kathara lrestart`
->           [`-h`] [`--noterminals` | `--terminals` | `--privileged`] [`-d` <DIRECTORY>] [`-F`] [`-l`]
->           [`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>]  
->           [`-H`] [`-S`]
+`kathara lrestart` [`-h`] [`-F`] [`-l`]  
+[`--noterminals` | `--terminals` | `--privileged`] [`-d` <DIRECTORY>]  
+[`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>]  
+[`-H`] [`-S`]
 
 
 ## DESCRIPTION

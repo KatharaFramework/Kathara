@@ -7,10 +7,13 @@ manual ::= "Kathara manual"
 all: markdown-build roff-build html-build docker-build-image build-%
 
 build-%: docker-build-image
-	docker run -ti --rm -v `pwd`:/opt/kathara kathara/linux-build-deb /bin/bash -c "cd ../../ && make $*-build"
+	docker run -ti --rm -v `pwd`:/root/docs kathara/linux-build-deb /bin/bash -c "cd /root/docs && make $*-build"
 
 docker-build-image:
-	cd ../scripts/Linux-Deb/Docker-Linux-Build && docker build -t kathara/linux-build-deb .
+	cp ../scripts/Linux-Deb/Docker-Linux-Build/Dockerfile_template ../scripts/Linux-Deb/Docker-Linux-Build/Dockerfile
+	sed -i -e "s|__DISTRO__|focal|g" ../scripts/Linux-Deb/Docker-Linux-Build/Dockerfile
+	cd ../scripts/Linux-Deb/Docker-Linux-Build/ && docker build -t kathara/linux-build-deb .
+	rm -f ../scripts/Linux-Deb/Docker-Linux-Build/Dockerfile
 
 markdown-build: $(foreach name,$(shell basename -as .ronn *.ronn),MD/$(name).markdown)
 roff-build: $(foreach name,$(shell basename -as .ronn *.ronn),Roff/$(name))

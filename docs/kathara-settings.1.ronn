@@ -4,7 +4,7 @@ kathara-settings(1) -- Show and edit settings
 
 ## SYNOPSIS
 
-`kathara settings` [`-h`]
+`kathara settings` [`-h`]  
 
 
 ## DESCRIPTION

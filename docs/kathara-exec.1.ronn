@@ -4,10 +4,9 @@ kathara-exec(1) -- Execute a command in a Kathara device
 
 ## SYNOPSIS
 
-`kathara exec`
->	[`-h`] [`-d` <DIRECTORY> | `-v`]
->	[`--no-stdout`] [`--no-stderr`]
->	<DEVICE_NAME> <COMMAND> [<COMMAND> ...]
+`kathara exec` [`-h`] [`-d` <DIRECTORY> \| `-v`]  
+[`--no-stdout`] [`--no-stderr`]  
+<DEVICE_NAME> <COMMAND> [<COMMAND> ...]
 
 ## DESCRIPTION
 

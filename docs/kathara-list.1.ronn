@@ -4,7 +4,7 @@ kathara-list(1) -- Show all running Kathara devices of the current user
 
 ## SYNOPSIS
 
-`kathara list` [`-h`] [`-a`] [`-l`] [`-n` <DEVICE_NAME>]
+`kathara list` [`-h`] [`-a`] [`-l`] [`-n` <DEVICE_NAME>]  
 
 
 ## DESCRIPTION

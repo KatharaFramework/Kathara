@@ -4,7 +4,7 @@ kathara(1) -- A network emulation tool
 
 ## SYNOPSIS
 
-`kathara` [`-h`] [`-v`] <command> [<args>]
+`kathara` [`-h`] [`-v`] <command> [<args>]  
 
 ## DESCRIPTION
 

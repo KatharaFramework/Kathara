@@ -4,10 +4,9 @@ kathara-connect(1) -- Connect to a Kathara device
 
 ## SYNOPSIS
 
-`kathara connect`
->	[`-h`] [`-d` <DIRECTORY> | `-v`]
->	[`--shell` <SHELL>] [`-l`]
->	<DEVICE_NAME>
+`kathara connect` [`-h`] [`-d` <DIRECTORY> \| `-v`]  
+[`--shell` <SHELL>] [`-l`]  
+<DEVICE_NAME>
 
 ## DESCRIPTION
 

@@ -4,7 +4,7 @@ kathara-lconfig(1) -- Attach network interfaces to a running Kathara device of a
 
 ## SYNOPSIS
 
-`kathara lconfig` [`-h`] [`-d` <DIRECTORY>] `-n` <DEVICE_NAME> `--eth` <CD> [<CD> ...]
+`kathara lconfig` [`-h`] [`-d` <DIRECTORY>] `-n` <DEVICE_NAME> `--eth` <CD> [<CD> ...]  
 
 ## DESCRIPTION
 
