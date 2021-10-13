@@ -13,7 +13,7 @@ import tempfile
 from io import BytesIO
 from itertools import islice
 from multiprocessing import cpu_count
-from platform import node
+from platform import node, machine
 from sys import platform as _platform
 from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable
 
@@ -291,3 +291,11 @@ def is_excluded_file(path: str) -> bool:
     _, filename = os.path.split(path)
 
     return filename in EXCLUDED_FILES
+
+
+# Architecture test
+def arch():
+    if machine() in ['arm64', 'aarch64']:
+        return 'arm64'
+    else:
+        return 'amd64'
