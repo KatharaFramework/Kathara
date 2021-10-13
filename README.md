@@ -50,7 +50,7 @@ Install Docker and then run the installer specific for your Operating System. Fo
 For further information on how to use Kathará on Kubernetes please refer to the [Wiki Page](https://github.com/KatharaFramework/Kathara/wiki/Megalos-(Kathara-over-Kubernetes)).
 
 Kathará provides also a set of Python APIs.
-See the [Python APIs Tutorial](https://github.com/KatharaFramework/Kathara/wiki/Kathara-Python-API) and the [docs](Kathara-API-Docs).
+See the [Python APIs Tutorial](https://github.com/KatharaFramework/Kathara/wiki/Kathara-Python-API) and the [docs](https://github.com/KatharaFramework/Kathara/wiki/Kathara-API-Docs).
 
 ## Quick Example
 <p align="center">
