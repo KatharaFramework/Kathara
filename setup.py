@@ -16,9 +16,7 @@ setup(
     keywords=['NETWORK-EMULATION', 'CONTAINERS', 'NFV'],
     install_requires=[
         "binaryornot>=0.4.4",
-        "urllib3<1.26,>=1.24.1",
         "docker>=4.4.0",
-        "pyyaml<5.4,>=5",
         "kubernetes>=11.0.0",
         "requests>=2.22.0",
         "coloredlogs>=10.0",
@@ -38,12 +36,6 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Build Tools',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
     ],
 )
