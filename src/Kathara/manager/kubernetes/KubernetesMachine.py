@@ -116,16 +116,19 @@ class KubernetesMachine(object):
 
         self.kubernetes_namespace: KubernetesNamespace = kubernetes_namespace
 
-    def deploy_machines(self, lab: Lab) -> None:
+    def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """Deploy all the devices contained in lab.machines.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
+            selected_machines (Set[str]): A set containing the name of the devices to deploy.
 
         Returns:
             None
         """
-        machines = lab.machines.items()
+
+        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
+            else lab.machines.items()
 
         privileged = lab.general_options['privileged_machines'] if 'privileged_machines' in lab.general_options \
             else False

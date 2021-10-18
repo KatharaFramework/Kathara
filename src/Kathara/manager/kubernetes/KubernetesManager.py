@@ -46,15 +46,15 @@ class KubernetesManager(IManager):
         # We force the hash to be lowercase
         lab.hash = lab.hash.lower()
 
+        selected_links = None
         if selected_machines:
-            lab = copy(lab)
-            lab.intersect_machines(selected_machines)
+            selected_links = lab.get_links_from_machines(selected_machines)
 
         self.k8s_namespace.create(lab)
         try:
-            self.k8s_link.deploy_links(lab)
+            self.k8s_link.deploy_links(lab, selected_links=selected_links)
 
-            self.k8s_machine.deploy_machines(lab)
+            self.k8s_machine.deploy_machines(lab, selected_machines=selected_machines)
         except ApiException as e:
             if e.status == 403 and 'Forbidden' in e.reason:
                 raise Exception("Previous lab execution is still terminating. Please wait.")

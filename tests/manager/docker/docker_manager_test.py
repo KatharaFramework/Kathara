@@ -40,8 +40,8 @@ def two_device_scenario():
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
 def test_deploy_lab(mock_deploy_links, mock_deploy_machines, docker_manager, two_device_scenario):
     docker_manager.deploy_lab(two_device_scenario)
-    mock_deploy_links.assert_called_once_with(two_device_scenario)
-    mock_deploy_machines.assert_called_once_with(two_device_scenario)
+    mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links=None)
+    mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines=None)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_lab")

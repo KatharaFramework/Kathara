@@ -94,15 +94,15 @@ class DockerManager(IManager):
         Returns:
             None
         """
+        selected_links = None
         if selected_machines:
-            lab = copy(lab)
-            lab.intersect_machines(selected_machines)
+            selected_links = lab.get_links_from_machines(selected_machines)
 
         # Deploy all lab links.
-        self.docker_link.deploy_links(lab)
+        self.docker_link.deploy_links(lab, selected_links=selected_links)
 
         # Deploy all lab machines.
-        self.docker_machine.deploy_machines(lab)
+        self.docker_machine.deploy_machines(lab, selected_machines=selected_machines)
 
     @privileged
     def update_lab(self, lab: Lab) -> None:

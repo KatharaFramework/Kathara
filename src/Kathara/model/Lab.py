@@ -138,29 +138,25 @@ class Lab(object):
         for machine in self.machines:
             self.machines[machine].check()
 
-    def intersect_machines(self, selected_machines: Union[List[str], Set[str]]) -> None:
-        """Delete devices and collision domains not in selected devices.
-
-        The deletion has has a side effect on the current network scenario.
+    def get_links_from_machines(self, selected_machines: Union[List[str], Set[str]]) -> Dict[str, Link]:
+        """Return the name of the links connected to the selected_machines.
 
         Args:
             selected_machines (Set[str]): A set with selected devices names.
 
         Returns:
-            None
+            Dict[str, Link]: Keys are Link names, values are Link objects.
         """
         # Intersect selected machines names with self.machines keys
         selected_machines = set(self.machines.keys()) & set(selected_machines)
         # Apply filtering
-        self.machines = {k: v for (k, v) in self.machines.items() if k in selected_machines}
+        machines = [v for (k, v) in self.machines.items() if k in selected_machines]
 
-        # Also updates lab links in order to avoid deploying unused ones.
         # Get only selected machines Link objects.
-        selected_links = chain.from_iterable([machine.interfaces.values() for (_, machine) in self.machines.items()])
-        # Get names of links (which are also the keys of self.links dict)
-        selected_links = set([link.name for link in selected_links])
-        # Apply filtering
-        self.links = {k: v for (k, v) in self.links.items() if k in selected_links}
+        selected_links = set(chain.from_iterable([machine.interfaces.values() for machine in machines]))
+        selected_links = {link.name: link for link in selected_links}
+
+        return selected_links
 
     def apply_dependencies(self, dependencies: List[str]) -> None:
         """Order the list of devices of the network scenario to satisfy the boot dependencies.

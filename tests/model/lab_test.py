@@ -161,12 +161,12 @@ def test_intersect_machines(default_scenario: Lab):
     default_scenario.connect_machine_to_link("pc2", "A")
     default_scenario.connect_machine_to_link("pc2", "B")
     assert len(default_scenario.machines) == 2
-    default_scenario.intersect_machines(selected_machines=["pc1"])
-    assert len(default_scenario.machines) == 1
+    links = default_scenario.get_links_from_machines(selected_machines=["pc1"])
+    assert len(default_scenario.machines) == 2
     assert 'pc1' in default_scenario.machines
-    assert 'pc2' not in default_scenario.machines
-    assert 'A' in default_scenario.links
-    assert 'B' not in default_scenario.links
+    assert 'pc2' in default_scenario.machines
+    assert 'A' in links
+    assert 'B' not in links
 
 
 def test_create_shared_folder(directory_scenario: Lab):

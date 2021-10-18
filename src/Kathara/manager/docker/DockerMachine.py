@@ -91,11 +91,12 @@ class DockerMachine(object):
 
         self.docker_image: DockerImage = docker_image
 
-    def deploy_machines(self, lab: Lab) -> None:
+    def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """Deploy all the lab devices as Docker containers.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
+            selected_machines (Set[str]): A set containing the name of the devices to deploy.
 
         Returns:
             None
@@ -113,7 +114,8 @@ class DockerMachine(object):
             else:
                 lab.create_shared_folder()
 
-        machines = lab.machines.items()
+        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
+            else lab.machines.items()
 
         progress_bar = None
         if utils.CLI_ENV:
