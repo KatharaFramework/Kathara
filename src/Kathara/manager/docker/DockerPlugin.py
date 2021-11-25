@@ -1,4 +1,5 @@
 import logging
+import platform
 from typing import Callable
 
 from docker import DockerClient
@@ -8,7 +9,8 @@ from ... import utils
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
 
-PLUGIN_NAME = "kathara/katharanp:latest"
+# Create Plugins on Dockerhub with :{arch}
+PLUGIN_NAME = ("kathara/katharanp:%s" % DockerPlugin.getArchitecture())
 XTABLES_CONFIGURATION_KEY = "xtables_lock"
 XTABLES_LOCK_PATH = "/run/xtables.lock"
 
@@ -77,3 +79,17 @@ class DockerPlugin(object):
         plugin.configure({
             XTABLES_CONFIGURATION_KEY + '.source': xtables_lock_mount
         })
+
+    @staticmethod
+    def getArchitecture():
+        machine = platform.uname().machine
+        arch = ""
+        if machine == "x86_64" or machine == "AMD64":
+            arch = "amd64"
+        elif machine == "i686":
+            arch = "386"
+        elif machine == "aarch64":
+            arch = "arm64"
+        elif machine == "armv7l" or machine == "armv6l":
+            arch = "arm"
+        return arch
