@@ -9,7 +9,6 @@ from ... import utils
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
 
-PLUGIN_NAME = "kathara/katharanp"
 XTABLES_CONFIGURATION_KEY = "xtables_lock"
 XTABLES_LOCK_PATH = "/run/xtables.lock"
 
@@ -20,7 +19,6 @@ class DockerPlugin(object):
 
     def __init__(self, client: DockerClient):
         self.client: DockerClient = client
-        self.plugin_name_arch = "%s:%s" % (PLUGIN_NAME, self._getArchitecture())
 
     def check_and_download_plugin(self) -> None:
         """Check the presence of the Kathara Network Plugin and download it or upgrade it, if needed.
@@ -28,6 +26,8 @@ class DockerPlugin(object):
         Returns:
             None
         """
+        self.plugin_name_arch = Setting.get_instance().plugin
+
         try:
             logging.debug("Checking plugin `%s`..." % self.plugin_name_arch)
             plugin = self.client.plugins.get(self.plugin_name_arch)
@@ -79,17 +79,3 @@ class DockerPlugin(object):
         plugin.configure({
             XTABLES_CONFIGURATION_KEY + '.source': xtables_lock_mount
         })
-
-    @staticmethod
-    def _getArchitecture():
-        machine = platform.uname().machine
-        arch = ""
-        if machine == "x86_64" or machine == "AMD64":
-            arch = "amd64"
-        elif machine == "i686":
-            arch = "386"
-        elif machine == "aarch64":
-            arch = "arm64"
-        elif machine == "armv7l" or machine == "armv6l":
-            arch = "arm"
-        return arch
