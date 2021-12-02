@@ -1,5 +1,4 @@
 import logging
-import platform
 from typing import Callable
 
 from docker import DockerClient
