@@ -506,7 +506,7 @@ class DockerMachine(object):
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
     def exec(self, lab_hash: str, machine_name: str, command: str, user: str = None,
-             tty: bool = True) -> Generator[Tuple[bytes, bytes]]:
+             tty: bool = True) -> Generator[Tuple[bytes, bytes], None, None]:
         """Execute the command on the Docker container specified by the lab_hash and the machine_name.
 
         Args:

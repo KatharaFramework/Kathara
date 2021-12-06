@@ -101,7 +101,7 @@ class Kathara(IManager):
         """
         self.manager.connect_tty(lab_hash, machine_name, shell, logs)
 
-    def exec(self, lab_hash: str, machine_name: str, command: str) -> Generator[Tuple[bytes, bytes]]:
+    def exec(self, lab_hash: str, machine_name: str, command: str) -> Generator[Tuple[bytes, bytes], None, None]:
         """Exec a command on a device in a running network scenario.
 
         Args:
