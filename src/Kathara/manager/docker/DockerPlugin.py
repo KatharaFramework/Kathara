@@ -8,6 +8,7 @@ from ... import utils
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
 
+PLUGIN_NAME = "kathara/katharanp:" + utils.arch()
 XTABLES_CONFIGURATION_KEY = "xtables_lock"
 XTABLES_LOCK_PATH = "/run/xtables.lock"
 

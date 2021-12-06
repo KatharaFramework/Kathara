@@ -292,6 +292,8 @@ def is_excluded_file(path: str) -> bool:
 
     return filename in EXCLUDED_FILES
 
+
+# Architecture test
 def getArchitecture():
     architecture = str.lower(machine())
     logging.debug("Identifying machine architecture: %s" % architecture)
