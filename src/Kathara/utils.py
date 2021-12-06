@@ -294,8 +294,18 @@ def is_excluded_file(path: str) -> bool:
 
 
 # Architecture test
-def arch():
-    if machine() in ['arm64', 'aarch64']:
-        return 'arm64'
+def getArchitecture():
+    architecture = str.lower(machine())
+    logging.debug("Identifying machine architecture: %s" % architecture)
+    if architecture == "x86_64" or architecture == "amd64":
+        return "amd64"
+    elif architecture == "i686":
+        return "386"
+    elif architecture == "aarch64" or architecture == "arm64":
+        return "arm64v8"
+    elif architecture == "armv7l":
+        return "armv7"
+    elif architecture == "armv6l":
+        return "armv6"
     else:
-        return 'amd64'
+        return "Not implemented for %s" % architecture
