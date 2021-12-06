@@ -73,11 +73,17 @@ class ExecCommand(Command):
             lab_path = utils.get_absolute_path(lab_path)
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
+        exec_output = Kathara.get_instance().exec(lab_hash, args['machine_name'], args['command'])
 
-        (stdout, stderr) = Kathara.get_instance().exec(lab_hash, args['machine_name'], args['command'])
+        try:
+            while True:
+                (stdout, stderr) = next(exec_output)
+                stdout = stdout.decode('utf-8') if stdout else ""
+                stderr = stderr.decode('utf-8') if stderr else ""
 
-        if not args['no_stdout']:
-            sys.stdout.write(stdout)
-
-        if stderr and not args['no_stderr']:
-            sys.stderr.write(stderr)
+                if not args['no_stdout']:
+                    sys.stdout.write(stdout)
+                if stderr and not args['no_stderr']:
+                    sys.stderr.write(stderr)
+        except StopIteration:
+            pass

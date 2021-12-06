@@ -564,7 +564,8 @@ class KubernetesMachine(object):
         return None
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], tty: bool = False, stdin: bool = False,
-             stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False) -> Optional[Tuple[str, str]]:
+             stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False, is_stream: bool = False) \
+            -> Union[Tuple[str, str], Generator[Tuple[bytes, bytes]]]:
         """Execute the command on the Kubernetes PoD specified by the lab_hash and the machine_name.
 
         Args:
@@ -575,9 +576,12 @@ class KubernetesMachine(object):
             stdin (bool): If True, open the stdin channel.
             stdin_buffer (List[Union[str, bytes]]): List of command to pass to the stdin.
             stderr (bool): If True, return the stderr.
+            is_stream (bool): If True, return an iterator.
 
         Returns:
-            Optional[Tuple[str, str]]: A tuple formed by (stdout, stderr) relative to the commands to exec.
+            Union[Tuple[str, str], Generator[Tuple[bytes, bytes]]]: If is_stream is False, a tuple formed by
+            (stdout, stderr) relative to the commands to exec. Else a generator of tuples containing the stdout and
+            stderr in bytes.
         """
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
@@ -607,20 +611,31 @@ class KubernetesMachine(object):
             'stdout': '',
             'stderr': ''
         }
+
         while response.is_open():
+            stdout = None
+            stderr = None
             if response.peek_stdout():
-                result['stdout'] += response.read_stdout()
+                stdout = response.read_stdout()
+                if not is_stream:
+                    result['stdout'] += stdout
             if stderr and response.peek_stderr():
-                result['stderr'] += response.read_stderr()
+                stderr = response.read_stderr()
+                if not is_stream:
+                    result['stderr'] += stderr
             if stdin and stdin_buffer:
                 param = stdin_buffer.pop(0)
                 response.write_stdin(param)
                 if len(stdin_buffer) <= 0:
                     break
 
+            if is_stream:
+                yield stdout.encode('utf-8'), stderr.encode('utf-8')
+
         response.close()
 
-        return result['stdout'], result['stderr']
+        if not is_stream:
+            return result['stdout'], result['stderr']
 
     def copy_files(self, deployment: client.V1Deployment, path: str, tar_data: bytes) -> None:
         machine_name = deployment.metadata.labels["name"]

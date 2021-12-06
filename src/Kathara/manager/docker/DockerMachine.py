@@ -500,7 +500,7 @@ class DockerMachine(object):
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
     def exec(self, lab_hash: str, machine_name: str, command: str, user: str = None,
-             tty: bool = True) -> Tuple[str, str]:
+             tty: bool = True) -> Generator[Tuple[bytes, bytes]]:
         """Execute the command on the Docker container specified by the lab_hash and the machine_name.
 
         Args:
@@ -511,22 +511,23 @@ class DockerMachine(object):
             tty (bool): If True, open a new tty.
 
         Returns:
-            Tuple[stdout: str, stderr: str]: A tuple containing the stdout and stderr.
+            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
         """
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
         container = self.get_machine_api_object(lab_hash=lab_hash, machine_name=machine_name, user=user)
 
-        (exit_code, (stdout, stderr)) = container.exec_run(cmd=command,
-                                                           stdout=True,
-                                                           stderr=True,
-                                                           tty=tty,
-                                                           privileged=False,
-                                                           demux=True,
-                                                           detach=False
-                                                           )
+        exec_result = container.exec_run(cmd=command,
+                                         stdout=True,
+                                         stderr=True,
+                                         tty=tty,
+                                         privileged=False,
+                                         stream=True,
+                                         demux=True,
+                                         detach=False
+                                         )
 
-        return stdout.decode('utf-8') if stdout else "", stderr.decode('utf-8') if stderr else ""
+        return exec_result.output
 
     @staticmethod
     def copy_files(machine_api_object: docker.models.containers.Container, path: str, tar_data: bytes) -> None:
