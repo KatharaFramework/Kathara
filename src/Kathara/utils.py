@@ -13,7 +13,7 @@ import tempfile
 from io import BytesIO
 from itertools import islice
 from multiprocessing import cpu_count
-from platform import node
+from platform import node, machine
 from sys import platform as _platform
 from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable
 
@@ -291,3 +291,19 @@ def is_excluded_file(path: str) -> bool:
     _, filename = os.path.split(path)
 
     return filename in EXCLUDED_FILES
+
+def getArchitecture():
+    architecture = str.lower(machine())
+    logging.debug("Identifying machine architecture: %s" % architecture)
+    if architecture == "x86_64" or architecture == "amd64":
+        return "amd64"
+    elif architecture == "i686":
+        return "386"
+    elif architecture == "aarch64" or architecture == "arm64":
+        return "arm64v8"
+    elif architecture == "armv7l":
+        return "armv7"
+    elif architecture == "armv6l":
+        return "armv6"
+    else:
+        return "Not implemented for %s" % architecture
