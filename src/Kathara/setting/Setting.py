@@ -28,8 +28,7 @@ DEFAULTS = {
     "device_prefix": 'kathara',
     "debug_level": 'INFO',
     "print_startup_log": True,
-    "enable_ipv6": False,
-    "plugin": 'kathara/katharanp:%s-latest' % utils.getArchitecture()
+    "enable_ipv6": False
 }
 
 
@@ -37,7 +36,7 @@ class Setting(object):
     """Class responsible for interacting with Kathara Settings."""
 
     __slots__ = ['image', 'manager_type', 'terminal', 'open_terminals', 'device_shell', 'net_prefix',
-                 'device_prefix', 'debug_level', 'print_startup_log', 'enable_ipv6', 'last_checked', 'addons', 'plugin']
+                 'device_prefix', 'debug_level', 'print_startup_log', 'enable_ipv6', 'last_checked', 'addons']
 
     SETTING_FOLDER: str = None
     SETTING_PATH: str = None
@@ -280,6 +279,5 @@ class Setting(object):
                 "debug_level": self.debug_level,
                 "print_startup_log": self.print_startup_log,
                 "enable_ipv6": self.enable_ipv6,
-                "last_checked": self.last_checked,
-                "plugin": self.plugin
+                "last_checked": self.last_checked
                 }

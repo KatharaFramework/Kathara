@@ -8,7 +8,7 @@ from ... import utils
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
 
-PLUGIN_NAME = "kathara/katharanp:" + utils.arch()
+PLUGIN_NAME = "kathara/katharanp:" + utils.get_architecture()
 XTABLES_CONFIGURATION_KEY = "xtables_lock"
 XTABLES_LOCK_PATH = "/run/xtables.lock"
 
@@ -26,17 +26,16 @@ class DockerPlugin(object):
         Returns:
             None
         """
-        self.plugin_name = Setting.get_instance().plugin
 
         try:
-            logging.debug("Checking plugin `%s`..." % self.plugin_name)
-            plugin = self.client.plugins.get(self.plugin_name)
+            logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)
+            plugin = self.client.plugins.get(PLUGIN_NAME)
             # Check for plugin updates.
             plugin.upgrade()
         except NotFound:
             if Setting.get_instance().remote_url is None:
                 logging.info("Installing Kathara Network Plugin...")
-                plugin = self.client.plugins.install(self.plugin_name)
+                plugin = self.client.plugins.install(PLUGIN_NAME)
                 logging.info("Kathara Network Plugin installed successfully!")
             else:
                 raise Exception("Kathara Network Plugin not found on remote Docker connection.")
@@ -45,7 +44,7 @@ class DockerPlugin(object):
             xtables_lock_mount = self._get_xtables_lock_mount()
             if not plugin.enabled:
                 self._configure_xtables_mount(plugin, xtables_lock_mount)
-                logging.debug("Enabling plugin `%s`..." % self.plugin_name)
+                logging.debug("Enabling plugin `%s`..." % PLUGIN_NAME)
                 plugin.enable()
             else:
                 # Get the mount of xtables.lock from the current plugin configuration
@@ -56,7 +55,7 @@ class DockerPlugin(object):
                 if mount_obj["Source"] != xtables_lock_mount:
                     plugin.disable()
                     self._configure_xtables_mount(plugin, xtables_lock_mount)
-                    logging.debug("Enabling plugin `%s`..." % self.plugin_name)
+                    logging.debug("Enabling plugin `%s`..." % PLUGIN_NAME)
                     plugin.enable()
         else:
             if not plugin.enabled:

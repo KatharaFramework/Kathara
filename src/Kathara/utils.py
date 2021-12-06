@@ -136,6 +136,26 @@ def exec_by_platform(fun_linux: Callable, fun_windows: Callable, fun_mac: Callab
         return fun_mac()
 
 
+# Architecture Test
+def get_architecture() -> str:
+    architecture = machine().lower()
+
+    logging.debug("Machine architecture is `%s`." % architecture)
+
+    if architecture == "x86_64" or architecture == "amd64":
+        return "amd64"
+    elif architecture == "i686":
+        return "386"
+    elif architecture in ['arm64', 'aarch64']:
+        return "arm64"
+    elif architecture == "armv7l":
+        return "armv7"
+    elif architecture == "armv6l":
+        return "armv6"
+    else:
+        raise Exception("Not implemented for %s." % architecture)
+
+
 def convert_win_2_linux(filename: str) -> bytes:
     if not is_binary(filename):
         file_content = open(filename, mode='r', encoding='utf-8-sig').read()
@@ -291,21 +311,3 @@ def is_excluded_file(path: str) -> bool:
     _, filename = os.path.split(path)
 
     return filename in EXCLUDED_FILES
-
-
-# Architecture test
-def getArchitecture():
-    architecture = str.lower(machine())
-    logging.debug("Identifying machine architecture: %s" % architecture)
-    if architecture == "x86_64" or architecture == "amd64":
-        return "amd64"
-    elif architecture == "i686":
-        return "386"
-    elif architecture == "aarch64" or architecture == "arm64":
-        return "arm64v8"
-    elif architecture == "armv7l":
-        return "armv7"
-    elif architecture == "armv6l":
-        return "armv6"
-    else:
-        return "Not implemented for %s" % architecture

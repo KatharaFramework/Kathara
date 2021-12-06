@@ -10,7 +10,7 @@ import progressbar
 from docker import DockerClient
 from docker import types
 
-#from ..docker.DockerPlugin import PLUGIN_NAME
+from ..docker.DockerPlugin import PLUGIN_NAME
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...model.ExternalLink import ExternalLink
@@ -109,7 +109,7 @@ class DockerLink(object):
 
             user_label = "shared_cd" if Setting.get_instance().shared_cd else utils.get_current_user_name()
             link.api_object = self.client.networks.create(name=link_name,
-                                                          driver=Setting.get_instance.plugin,
+                                                          driver=PLUGIN_NAME,
                                                           check_duplicate=True,
                                                           ipam=network_ipam_config,
                                                           labels={"lab_hash": link.lab.hash,
