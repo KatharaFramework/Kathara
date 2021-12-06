@@ -62,7 +62,8 @@ class Machine(object):
         self.meta: Dict[str, Any] = {
             'sysctls': {},
             'bridged': False,
-            'ports': {}
+            'ports': {},
+            'inception': os.getenv('INCEPTION') is not None
         }
 
         self.startup_commands = []

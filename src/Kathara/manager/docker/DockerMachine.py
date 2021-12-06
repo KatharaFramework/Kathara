@@ -11,6 +11,7 @@ from docker import DockerClient
 from docker.errors import APIError
 
 from .DockerImage import DockerImage
+from ..inception.InceptionManager import InceptionManager
 from ... import utils
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
 from ...model.Lab import Lab
@@ -248,6 +249,10 @@ class DockerMachine(object):
             privileged = False
             logging.warning("Privileged flag is ignored with a remote Docker connection.")
 
+        mount_volumes = None
+        if machine.meta['inception']:
+            mount_volumes = InceptionManager.get_instance().get_mount_volumes()
+
         container_name = self.get_container_name(machine.name, machine.lab.hash)
 
         try:
@@ -265,6 +270,7 @@ class DockerMachine(object):
                                                               tty=True,
                                                               stdin_open=True,
                                                               detach=True,
+                                                              mounts=mount_volumes,
                                                               volumes=volumes,
                                                               labels={"name": machine.name,
                                                                       "lab_hash": machine.lab.hash,

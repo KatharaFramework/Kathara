@@ -17,6 +17,7 @@ RUN apt update \
 		git \
 		ruby-full \
 		bash-completion \
+		patchelf \
 		software-properties-common
 		
 RUN add-apt-repository ppa:deadsnakes/ppa \
