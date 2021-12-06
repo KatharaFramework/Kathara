@@ -565,7 +565,7 @@ class KubernetesMachine(object):
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], tty: bool = False, stdin: bool = False,
              stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False, is_stream: bool = False) \
-            -> Union[Tuple[str, str], Generator[Tuple[bytes, bytes]]]:
+            -> Union[Tuple[str, str], Generator[Tuple[bytes, bytes], None, None]]:
         """Execute the command on the Kubernetes PoD specified by the lab_hash and the machine_name.
 
         Args:
