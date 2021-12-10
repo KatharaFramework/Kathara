@@ -321,7 +321,11 @@ def test_undeploy_machine(mock_delete_machine, docker_machine, default_device):
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machine_api_object")
 def test_exec(mock_get_machine_api_object, docker_machine, default_device):
     mock_get_machine_api_object.return_value = default_device.api_object
-    default_device.api_object.exec_run.return_value = (None, (None, None))
+    exec_run_mock = Mock()
+    exec_run_mock.configure_mock(**{
+        'output': (None, None),
+    })
+    default_device.api_object.exec_run.return_value = exec_run_mock
     docker_machine.exec(default_device.lab, "test_device", "kathara --help", tty=False)
     default_device.api_object.exec_run.assert_called_once_with(
         cmd="kathara --help",
@@ -329,6 +333,7 @@ def test_exec(mock_get_machine_api_object, docker_machine, default_device):
         stderr=True,
         tty=False,
         privileged=False,
+        stream=True,
         demux=True,
         detach=False
     )

@@ -123,8 +123,7 @@ def get_pool_size() -> int:
 
 # Platform Specific Functions
 def is_platform(desired_platform: str) -> bool:
-    platforms = [LINUX, LINUX2, WINDOWS, MAC_OS]
-    return desired_platform in platforms
+    return _platform == desired_platform
 
 
 def exec_by_platform(fun_linux: Callable, fun_windows: Callable, fun_mac: Callable) -> Any:
