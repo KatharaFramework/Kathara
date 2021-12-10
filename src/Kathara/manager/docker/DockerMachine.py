@@ -1,5 +1,6 @@
 import logging
 import shlex
+import sys
 from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
@@ -463,17 +464,22 @@ class DockerMachine(object):
         logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
 
         if logs and Setting.get_instance().print_startup_log:
-            (result_string, _) = self.exec(lab_hash,
-                                           machine_name,
-                                           user=user,
-                                           command="cat /var/log/shared.log /var/log/startup.log",
-                                           tty=False
-                                           )
+            exec_output = self.exec(lab_hash,
+                                    machine_name,
+                                    user=user,
+                                    command="cat /var/log/shared.log /var/log/startup.log",
+                                    tty=False
+                                    )
 
-            if result_string:
+            try:
                 print("--- Startup Commands Log\n")
-                print(result_string)
-                print("--- End Startup Commands Log\n")
+                while True:
+                    (stdout, _) = next(exec_output)
+                    stdout = stdout.decode('utf-8') if stdout else ""
+                    sys.stdout.write(stdout)
+            except StopIteration:
+                print("\n--- End Startup Commands Log\n")
+                pass
 
         resp = self.client.api.exec_create(container.id,
                                            shell,
