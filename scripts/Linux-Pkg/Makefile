@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=3.2.0
+VERSION=3.3.0
 PACKAGE_VERSION=1
 AUR_NAME=user
 AUR_MAIL=your@mail.com
