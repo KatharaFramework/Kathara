@@ -2,6 +2,7 @@ import sys
 
 import pytest
 
+from src.Kathara.exceptions import MachineCollisionDomainConflictError
 from src.Kathara.parser.netkit.LabParser import LabParser
 
 sys.path.insert(0, './')
@@ -42,6 +43,11 @@ def test_one_device_interface_name_error():
 def test_one_device_shared_name_error():
     with pytest.raises(Exception):
         LabParser.parse("tests/parser/labconf/one_device_shared_error")
+
+
+def test_one_device_same_collision_domain_error():
+    with pytest.raises(MachineCollisionDomainConflictError):
+        LabParser.parse("tests/parser/labconf/one_device_same_collision_domain_error")
 
 
 def test_two_device_one_cd():
