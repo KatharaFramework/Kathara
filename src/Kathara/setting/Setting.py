@@ -279,5 +279,5 @@ class Setting(object):
                 "debug_level": self.debug_level,
                 "print_startup_log": self.print_startup_log,
                 "enable_ipv6": self.enable_ipv6,
-                "last_checked": self.last_checked,
+                "last_checked": self.last_checked
                 }
