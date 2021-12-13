@@ -7,22 +7,21 @@ APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
 ROFF_DIR=../../docs/Roff
 VENV_DIR:=${CURDIR}/venv
 
-.PHONY: all_x86 allSigned_x86 all_arm64 allSigned_arm64 test manpages cleanall cleanman cleanbinary cleanenv
+.PHONY: all_x86 allSigned_x86 all_arm64 allSigned_arm64 test deps manpages cleanall cleanman cleanbinary cleanenv
 all: all_x86 all_arm64
 allSigned: allSigned_x86 allSigned_arm64
-all_x86: deps_x86_64 binary_x86_64 manpages createInstaller_x86_64 clean
-allSigned_x86: deps_x86_64 binary_x86_64 manpages createInstaller_x86_64 signProduct_x86_64 clean
-all_arm64: deps_arm64 binary_arm64 manpages createInstaller_arm64 clean
-allSigned_arm64: deps_arm64 binary_arm64 manpages createInstaller_arm64 signProduct_arm64 clean
+all_x86: deps binary_x86_64 manpages createInstaller_x86_64 clean
+allSigned_x86: deps binary_x86_64 manpages createInstaller_x86_64 signProduct_x86_64 clean
+all_arm64: deps binary_arm64 manpages createInstaller_arm64 clean
+allSigned_arm64: deps binary_arm64 manpages createInstaller_arm64 signProduct_arm64 clean
 
 default: all
 
 py_env:
 	python3 -m venv $(VENV_DIR)
 
-deps_%: py_env
+deps: py_env
 	$(VENV_DIR)/bin/pip3.9 install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
-	export ARCHFLAGS="-arch $*"
 	$(VENV_DIR)/bin/pip3.9 install -r ../../src/requirements.txt
 	$(VENV_DIR)/bin/pip3.9 install pytest
 	gem install ronn-ng --user-install

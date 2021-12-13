@@ -8,7 +8,7 @@ Build-Depends: debhelper (>= 10),
 	python3-pip (>= 9.0.0),
 	python3.9-dev (>= 3.9.0),
 	python3.9-venv (>= 3.9.0),
-	python3-distutils (>= 3.8.0),
+	python3.9-distutils (>= 3.9.0) | python3-distutils (>= 3.8.0),
 	patchelf,
 	bash-completion
 Vcs-Git: https://github.com/KatharaFramework/Kathara.git
@@ -16,7 +16,7 @@ Vcs-Browser: https://github.com/KatharaFramework/Kathara
 Homepage: https://www.kathara.org/
 
 Package: kathara
-Architecture: amd64
+Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Suggests: docker.io (>= 17.03.2) | docker-ce (>= 17.03.2), xterm
 Description: Lightweight network emulation tool.

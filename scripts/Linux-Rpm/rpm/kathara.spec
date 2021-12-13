@@ -8,7 +8,6 @@ URL:		    https://www.kathara.org/
 Source:		    %{name}-%{version}.tar.gz
 BuildRequires:	python3
 BuildRequires:	python3-pip
-BuildArch:		x86_64
 
 %description
 Lightweight network emulation system based on Docker containers.
