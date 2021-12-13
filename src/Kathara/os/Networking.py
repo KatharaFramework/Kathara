@@ -21,8 +21,11 @@ class Networking(object):
         Returns:
             int: The link index.
         """
+        # disable pyroute2 logging to avoid warning about project structure changes
+        logging.getLogger('pyroute2').disabled = True
         from pyroute2 import IPRoute
         ip = IPRoute()
+        logging.getLogger('pyroute2').disabled = False
 
         logging.debug("Searching for interface `%s`..." % full_interface_name)
 
