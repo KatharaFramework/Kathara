@@ -17,7 +17,8 @@ RUN apt update \
 		git \
 		ruby-full \
 		bash-completion \
-		software-properties-common
+		software-properties-common \
+        patchelf
 		
 RUN add-apt-repository ppa:deadsnakes/ppa \
 	&& DEBIAN_FRONTEND=noninteractive apt install -y \
