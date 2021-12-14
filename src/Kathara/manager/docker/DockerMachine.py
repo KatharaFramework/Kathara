@@ -1,6 +1,5 @@
 import logging
 import shlex
-import sys
 from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
@@ -348,6 +347,14 @@ class DockerMachine(object):
             bridge_link = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
             bridge_link.connect(machine.api_object)
 
+        # Append executed machine startup commands inside the /var/log/startup.log file
+        if machine.startup_commands:
+            new_commands = []
+            for command in machine.startup_commands:
+                new_commands.append("echo \"++ %s\" &>> /var/log/startup.log" % command)
+                new_commands.append(command)
+            machine.startup_commands = new_commands
+
         # Build the final startup commands string
         startup_commands_string = "; ".join(STARTUP_COMMANDS).format(
             machine_name=machine.name,
@@ -471,15 +478,18 @@ class DockerMachine(object):
                                     tty=False
                                     )
 
+            startup_output = ""
             try:
-                print("--- Startup Commands Log\n")
                 while True:
                     (stdout, _) = next(exec_output)
-                    stdout = stdout.decode('utf-8') if stdout else ""
-                    sys.stdout.write(stdout)
+                    startup_output += stdout.decode('utf-8') if stdout else ""
             except StopIteration:
-                print("\n--- End Startup Commands Log\n")
                 pass
+
+            if startup_output:
+                print("--- Startup Commands Log\n")
+                print(startup_output)
+                print("--- End Startup Commands Log\n")
 
         resp = self.client.api.exec_create(container.id,
                                            shell,
