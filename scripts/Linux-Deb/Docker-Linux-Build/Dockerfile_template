@@ -4,9 +4,10 @@ ENV TZ=Europe/Rome
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apt update \
-	&& DEBIAN_FRONTEND=noninteractive apt upgrade -y \
-	&& apt install -y \
+ARG DEBIAN_FRONTEND="noninteractive"
+RUN apt update &&\
+    apt upgrade -y &&\
+	apt install -y \
 		apt-utils \
 		debhelper \
 		libxml2-dev \
@@ -19,6 +20,7 @@ RUN apt update \
 		bash-completion \
 		software-properties-common \
         patchelf
+
 		
 RUN add-apt-repository ppa:deadsnakes/ppa \
 	&& DEBIAN_FRONTEND=noninteractive apt install -y \
@@ -35,5 +37,7 @@ RUN mkdir /root/.gnupg && chmod 700 /root/.gnupg
 COPY dput.cf /root/.dput.cf
 
 ENV RUBYOPT="-KU -E utf-8:utf-8"
+ENV LANG="C.UTF-8"
+ENV LC_ALL="C.UTF-8"
 
 WORKDIR /opt/kathara/scripts/Linux-Deb
