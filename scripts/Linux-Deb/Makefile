@@ -5,7 +5,7 @@ DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 NO_BINARY_PACKAGES=pyroute2|pyuv|deepdiff
 
-.PHONY: allSigned docker-unsigned docker-signed_% docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean venv autocompletion
+.PHONY: allSigned docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean venv autocompletion
 
 allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_hirsute docker-signed_impish
 
