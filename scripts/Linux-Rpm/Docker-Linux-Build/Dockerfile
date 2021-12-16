@@ -10,6 +10,8 @@ RUN dnf install -y rubygem-rails \
     python3-pip \
     m4 \
 	@development-tools \
+    @rpm-development-tools \
+    @c-development \
     fedora-packager \
     rpmdevtools \
     patchelf
