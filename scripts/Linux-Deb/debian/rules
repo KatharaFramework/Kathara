@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+ARCHITECTURE:=$(shell dpkg-architecture -qDEB_HOST_ARCH)
+
 %:
 	dh $@ --with bash-completion
 
@@ -10,7 +12,7 @@ override_dh_auto_clean:
 
 override_dh_auto_configure:
 	python3.9 -m venv $(CURDIR)/venv
-	$(CURDIR)/venv/bin/pip3.9 install --no-index --find-links $(CURDIR)/debian/pythonLibs/ $(CURDIR)/debian/pythonLibs/*
+	$(CURDIR)/venv/bin/pip3.9 install --no-index --find-links $(CURDIR)/debian/pythonLibs_$(ARCHITECTURE)/ $(CURDIR)/debian/pythonLibs_$(ARCHITECTURE)/*
 
 override_dh_auto_build:
 	$(CURDIR)/venv/bin/python3.9 -m nuitka --show-progress --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py

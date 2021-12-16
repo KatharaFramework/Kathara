@@ -1,6 +1,9 @@
 FROM ubuntu:__DISTRO__
 
 ENV TZ=Europe/Rome
+ENV RUBYOPT="-KU -E utf-8:utf-8"
+ENV LANG="C.UTF-8"
+ENV LC_ALL="C.UTF-8"
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -35,9 +38,5 @@ RUN gem install ronn-ng
 RUN mkdir /root/.gnupg && chmod 700 /root/.gnupg
 
 COPY dput.cf /root/.dput.cf
-
-ENV RUBYOPT="-KU -E utf-8:utf-8"
-ENV LANG="C.UTF-8"
-ENV LC_ALL="C.UTF-8"
 
 WORKDIR /opt/kathara/scripts/Linux-Deb
