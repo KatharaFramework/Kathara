@@ -5,7 +5,8 @@ from setuptools import find_packages
 setup(
     name='kathara',
     package_dir={'': 'src'},
-    packages=find_packages('src', exclude=["Kathara.cli", "Kathara.cli.*"]),
+    packages=find_packages('src'),
+    py_modules=['kathara'],
     version='3.3.0',
     license='gpl-3.0',
     description='A lightweight container based emulation system.',
