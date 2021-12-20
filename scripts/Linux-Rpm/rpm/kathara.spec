@@ -6,8 +6,6 @@ Group: 		    Applications/Emulators
 License:	    GPLv3
 URL:		    https://www.kathara.org/
 Source:		    %{name}-%{version}.tar.gz
-BuildRequires:	python3
-BuildRequires:	python3-pip
 
 %description
 Lightweight network emulation system based on Docker containers.
@@ -20,13 +18,15 @@ new network protocols.
 
 %prep
 %autosetup
-python3 -m pip install -r src/requirements.txt
-python3 -m pip install nuitka
-python3 -m pip install pytest
+python3.9 -m venv %{_builddir}/venv
+%{_builddir}/venv/bin/pip3.9 install --upgrade pip
+%{_builddir}/venv/bin/pip3.9 install -r src/requirements.txt
+%{_builddir}/venv/bin/pip3.9 install nuitka
+%{_builddir}/venv/bin/pip3.9 install pytest
 
 %build
-python3 -m pytest
-cd src && python3 -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
+%{_builddir}/venv/bin/python3.9 -m pytest
+cd src && %{_builddir}/venv/bin/python3.9 -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
 
 %install
 mv %{_builddir}/%{buildsubdir}/src/kathara.dist %{_builddir}/%{buildsubdir}/kathara.dist

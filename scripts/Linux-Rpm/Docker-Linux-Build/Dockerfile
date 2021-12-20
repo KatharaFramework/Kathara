@@ -6,17 +6,27 @@ RUN dnf install -y rubygem-rails \
     ruby-devel \
     zlib-devel \
     make \
-	python3-devel \
-    python3-pip \
     m4 \
-	@development-tools \
+    @development-tools \
     @rpm-development-tools \
     @c-development \
     fedora-packager \
     rpmdevtools \
     patchelf
 
-RUN dnf remove -y python3-pyroute2
+RUN dnf install -y wget \
+    openssl-devel \
+    bzip2-devel \
+    ncurses-devel \
+    sqlite-devel \
+    libffi-devel && \
+ wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz && \
+ tar xfvz Python-3.9.9.tgz && cd Python-3.9.9 && \
+ ./configure --enable-optimizations && \
+ make -j8 && \
+ make install && \
+ dnf remove -y wget && \
+ cd .. && rm -Rf Python3.9.9*
 
 RUN gem install ronn-ng
 
