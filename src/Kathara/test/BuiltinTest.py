@@ -8,7 +8,6 @@ from deepdiff import DeepDiff
 from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
-from ..manager.Kathara import Kathara
 from ..model.Lab import Lab
 from ..model.Machine import Machine
 
@@ -72,43 +71,47 @@ class BuiltInTest(Test):
     @staticmethod
     def _get_machine_status(machine: Machine) -> Dict:
         # Machine interfaces
-        (ip_addr, _) = Kathara.get_instance().exec(lab_hash=machine.lab.hash,
-                                                   machine_name=machine.name,
-                                                   command="ip -j addr show"
-                                                   )
-        ip_addr = json.loads(ip_addr)
+        (ip_addr, _) = Test._get_machine_command_output(lab_hash=machine.lab.hash,
+                                                        machine_name=machine.name,
+                                                        command="ip -j addr show"
+                                                        )
+        if ip_addr:
+            ip_addr = json.loads(ip_addr)
 
-        # Get only relevant information (interface name, state and list of address/prefix)
-        ip_addr_clean = {}
-        for info in ip_addr:
-            ip_addr_clean[info['ifname']] = {'ip_addresses': [x["local"] + "/" + str(x["prefixlen"])
-                                                              for x in info["addr_info"]
-                                                              ],
-                                             'state': info['operstate']
-                                             }
+            # Get only relevant information (interface name, state and list of address/prefix)
+            ip_addr_clean = {}
+            for info in ip_addr:
+                ip_addr_clean[info['ifname']] = {'ip_addresses': [x["local"] + "/" + str(x["prefixlen"])
+                                                                  for x in info["addr_info"]
+                                                                  ],
+                                                 'state': info['operstate']
+                                                 }
+        else:
+            ip_addr_clean = {}
 
         # Machine routes
-        (ip_route, _) = Kathara.get_instance().exec(lab_hash=machine.lab.hash,
-                                                    machine_name=machine.name,
-                                                    command="ip -j route show"
-                                                    )
-        ip_route = json.loads(ip_route)
+        (ip_route, _) = Test._get_machine_command_output(lab_hash=machine.lab.hash,
+                                                         machine_name=machine.name,
+                                                         command="ip -j route show"
+                                                         )
+
+        ip_route = json.loads(ip_route) if ip_route else []
 
         # Machine opened ports
-        (net_stat, _) = Kathara.get_instance().exec(lab_hash=machine.lab.hash,
-                                                    machine_name=machine.name,
-                                                    command="netstat -tuwln"
-                                                    )
+        (net_stat, _) = Test._get_machine_command_output(lab_hash=machine.lab.hash,
+                                                         machine_name=machine.name,
+                                                         command="netstat -tuwln"
+                                                         )
         # Remove Docker ports and header lines. Sort the array alphabetically.
-        net_stat = sorted([filter(lambda x: "127.0.0.11" not in x, net_stat.splitlines())][2:])
+        net_stat = sorted([filter(lambda x: "127.0.0.11" not in x, net_stat.splitlines())][2:]) if net_stat else []
 
         # Machine processes
-        (processes, _) = Kathara.get_instance().exec(lab_hash=machine.lab.hash,
-                                                     machine_name=machine.name,
-                                                     command="ps -e -o command"
-                                                     )
+        (processes, _) = Test._get_machine_command_output(lab_hash=machine.lab.hash,
+                                                          machine_name=machine.name,
+                                                          command="ps -e -o command"
+                                                          )
         # Remove header line and sort the array alphabetically.
-        processes = sorted([x.strip() for x in processes.splitlines()[1:]])
+        processes = sorted([x.strip() for x in processes.splitlines()[1:]]) if processes else []
 
         return {
             "interfaces": ip_addr_clean,

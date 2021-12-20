@@ -1,12 +1,13 @@
 #!/usr/bin/make -f
 
-VERSION=3.2.0
+VERSION=3.3.0
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
+NO_BINARY_PACKAGES=pyroute2|pyuv|deepdiff
 
-.PHONY: allSigned docker-unsigned docker-signed_% docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean venv autocompletion
+.PHONY: allSigned docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean venv autocompletion
 
-allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_hirsute
+allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_hirsute docker-signed_impish
 
 docker-unsigned_%: clean prepare-deb-source docker-build-image_%
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c "make build-deb-unsigned distro=$*"
@@ -46,11 +47,20 @@ venv:
 	python3.9 -m venv /root/3.9-env 
 
 download-pip: copy-debian-folder
-	mkdir Output/kathara-$(VERSION)/debian/pythonLibs
+	mkdir Output/kathara-$(VERSION)/debian/pythonLibs_amd64
+	mkdir Output/kathara-$(VERSION)/debian/pythonLibs_arm64
+	grep -Ev "$(NO_BINARY_PACKAGES)" Output/kathara-$(VERSION)/requirements.txt > Output/kathara-$(VERSION)/requirements-binary.txt
+	grep -E "$(NO_BINARY_PACKAGES)" Output/kathara-$(VERSION)/requirements.txt > Output/kathara-$(VERSION)/requirements-no-binary.txt
 	/root/3.9-env/bin/pip3.9 install --upgrade setuptools
-	cd Output/kathara-$(VERSION)/debian/pythonLibs && /root/3.9-env/bin/pip3.9 download -r ../../requirements.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs && /root/3.9-env/bin/pip3.9 download nuitka
-	ls Output/kathara-$(VERSION)/debian/pythonLibs/ | awk '{print "debian/pythonLibs/"$$0}' > Output/kathara-$(VERSION)/debian/source/include-binaries
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.9-env/bin/pip3.9 download --no-binary=:all: -r ../../requirements-no-binary.txt
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.9-env/bin/pip3.9 download --platform manylinux2014_x86_64 --platform x86_64 --only-binary=:all: -r ../../requirements-binary.txt
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.9-env/bin/pip3.9 download nuitka
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.9-env/bin/pip3.9 download --no-binary=:all: -r ../../requirements-no-binary.txt
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.9-env/bin/pip3.9 download --platform manylinux2014_aarch64 --platform arm64 --only-binary=:all: -r ../../requirements-binary.txt
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.9-env/bin/pip3.9 download nuitka
+	rm -Rf Output/kathara-$(VERSION)/requirements-binary.txt Output/kathara-$(VERSION)/requirements-no-binary.txt
+	ls Output/kathara-$(VERSION)/debian/pythonLibs_amd64/ | awk '{print "debian/pythonLibs_amd64/"$$0}' > Output/kathara-$(VERSION)/debian/source/include-binaries
+	ls Output/kathara-$(VERSION)/debian/pythonLibs_arm64/ | awk '{print "debian/pythonLibs_arm64/"$$0}' >> Output/kathara-$(VERSION)/debian/source/include-binaries
 
 build-man: copy-debian-folder
 	cd ../../docs && make roff-build

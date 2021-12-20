@@ -3,4 +3,4 @@ requests>=2.22.0;
 terminaltables>=3.1.0;
 slug>=2.0;
 deepdiff>=4.0.9;
-kubernetes>=11.0.0;
+kubernetes>=20.13.0;

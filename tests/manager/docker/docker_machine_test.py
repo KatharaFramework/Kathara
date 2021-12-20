@@ -40,6 +40,14 @@ def default_link(default_device):
     return link
 
 
+@pytest.fixture()
+def default_link_b(default_device):
+    link = Link(default_device.lab, "B")
+    link.api_object = Mock()
+    link.api_object.connect = Mock(return_value=True)
+    return link
+
+
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
@@ -194,10 +202,10 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
 
 
 @mock.patch("src.Kathara.model.Machine.Machine.connect")
-def test_start(mock_machine_connect, docker_machine, default_device, default_link):
-    # add the interface two times because interace 0 is excluded
+def test_start(mock_machine_connect, docker_machine, default_device, default_link, default_link_b):
+    # add two interfaces because interace 0 is excluded
     default_device.add_interface(default_link)
-    default_device.add_interface(default_link)
+    default_device.add_interface(default_link_b)
     default_device.add_meta("num_terms", 3)
     default_device.api_object.start.return_value = True
     default_device.api_object.exec_run.return_value = True
@@ -205,7 +213,7 @@ def test_start(mock_machine_connect, docker_machine, default_device, default_lin
     docker_machine.start(default_device)
     default_device.api_object.start.assert_called_once()
     default_device.api_object.exec_run.assert_called_once()
-    default_link.api_object.connect.assert_called_once()
+    default_link_b.api_object.connect.assert_called_once()
     assert mock_machine_connect.call_count == 3
 
 
@@ -233,16 +241,17 @@ def test_deploy_machines(mock_deploy_and_start, docker_machine):
 
 
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
-def test_update(mock_get_machines_api_objects_by_filters, docker_machine, default_device, default_link):
+def test_update(mock_get_machines_api_objects_by_filters, docker_machine, default_device, default_link, default_link_b):
     mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
     default_device.api_object.connect.return_value = None
     default_device.api_object.attrs["NetworkSettings"] = {}
     default_device.api_object.attrs["NetworkSettings"]["Networks"] = ["A"]
     default_link.api_object.name = "A"
     default_device.add_interface(default_link)
-    default_device.add_interface(default_link)
+    default_device.add_interface(default_link_b)
     docker_machine.update(default_device)
-    assert default_link.api_object.connect.call_count == 2
+    default_link.api_object.connect.assert_called_once()
+    default_link_b.api_object.connect.assert_called_once()
 
 
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._undeploy_machine")
@@ -321,7 +330,11 @@ def test_undeploy_machine(mock_delete_machine, docker_machine, default_device):
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machine_api_object")
 def test_exec(mock_get_machine_api_object, docker_machine, default_device):
     mock_get_machine_api_object.return_value = default_device.api_object
-    default_device.api_object.exec_run.return_value = (None, (None, None))
+    exec_run_mock = Mock()
+    exec_run_mock.configure_mock(**{
+        'output': (None, None),
+    })
+    default_device.api_object.exec_run.return_value = exec_run_mock
     docker_machine.exec(default_device.lab, "test_device", "kathara --help", tty=False)
     default_device.api_object.exec_run.assert_called_once_with(
         cmd="kathara --help",
@@ -329,6 +342,7 @@ def test_exec(mock_get_machine_api_object, docker_machine, default_device):
         stderr=True,
         tty=False,
         privileged=False,
+        stream=True,
         demux=True,
         detach=False
     )

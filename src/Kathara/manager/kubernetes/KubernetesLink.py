@@ -33,13 +33,17 @@ class KubernetesLink(object):
 
         self.seed: str = KubernetesConfig.get_cluster_user()
 
-    def deploy_links(self, lab: Lab) -> None:
+    def deploy_links(self, lab: Lab, selected_links: Dict[str, Link] = None) -> None:
         """Deploy all the links contained in lab.links.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
+            selected_links (Dict[str, Link]): Keys are Link names, values are Link objects.
+
+        Returns:
+            None
         """
-        links = lab.links.items()
+        links = selected_links.items() if selected_links else lab.links.items()
 
         if len(links) > 0:
             pool_size = utils.get_pool_size()
@@ -90,6 +94,9 @@ class KubernetesLink(object):
         Args:
             link (Kathara.model.Link.Link): A Kathara collision domain.
             network_id (int): The Network ID.
+
+        Returns:
+            None
         """
         # If a network with the same name exists, return it instead of creating a new one.
         network_objects = self.get_links_api_objects_by_filters(lab_hash=link.lab.hash, link_name=link.name)
@@ -148,7 +155,6 @@ class KubernetesLink(object):
 
         Returns:
             None
-
         """
         links = self.get_links_api_objects_by_filters()
 
@@ -197,7 +203,6 @@ class KubernetesLink(object):
 
         Returns:
             List[Any]: A list of Kubernetes networks.
-
         """
         filters = ["app=kathara"]
         if link_name:

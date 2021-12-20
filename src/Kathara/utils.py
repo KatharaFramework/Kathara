@@ -13,7 +13,7 @@ import tempfile
 from io import BytesIO
 from itertools import islice
 from multiprocessing import cpu_count
-from platform import node
+from platform import node, machine
 from sys import platform as _platform
 from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable
 
@@ -123,8 +123,7 @@ def get_pool_size() -> int:
 
 # Platform Specific Functions
 def is_platform(desired_platform: str) -> bool:
-    platforms = [LINUX, LINUX2, WINDOWS, MAC_OS]
-    return desired_platform in platforms
+    return _platform == desired_platform
 
 
 def exec_by_platform(fun_linux: Callable, fun_windows: Callable, fun_mac: Callable) -> Any:
@@ -134,6 +133,26 @@ def exec_by_platform(fun_linux: Callable, fun_windows: Callable, fun_mac: Callab
         return fun_windows()
     elif _platform == MAC_OS:
         return fun_mac()
+
+
+# Architecture Test
+def get_architecture() -> str:
+    architecture = machine().lower()
+
+    logging.debug("Machine architecture is `%s`." % architecture)
+
+    if architecture == "x86_64" or architecture == "amd64":
+        return "amd64"
+    elif architecture == "i686":
+        return "386"
+    elif architecture in ['arm64', 'aarch64']:
+        return "arm64"
+    elif architecture == "armv7l":
+        return "armv7"
+    elif architecture == "armv6l":
+        return "armv6"
+    else:
+        raise Exception("Not implemented for %s." % architecture)
 
 
 def convert_win_2_linux(filename: str) -> bytes:

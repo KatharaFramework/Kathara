@@ -2,7 +2,7 @@ import logging
 import re
 from functools import partial
 from multiprocessing.dummy import Pool
-from typing import List, Union
+from typing import List, Union, Dict
 
 import docker
 import docker.models.networks
@@ -27,23 +27,23 @@ class DockerLink(object):
     def __init__(self, client: DockerClient) -> None:
         self.client: DockerClient = client
 
-    def deploy_links(self, lab: Lab) -> None:
+    def deploy_links(self, lab: Lab, selected_links: Dict[str, Link] = None) -> None:
         """Deploy all the lab collision domains as Docker networks.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
+            selected_links (Dict[str, Link]): Keys are Link names, values are Link objects.
 
         Returns:
             None
         """
-        links = lab.links.items()
+        links = selected_links.items() if selected_links else lab.links.items()
 
         if len(links) > 0:
             pool_size = utils.get_pool_size()
             link_pool = Pool(pool_size)
 
             items = utils.chunk_list(links, pool_size)
-
             progress_bar = None
             if utils.CLI_ENV:
                 progress_bar = progressbar.ProgressBar(

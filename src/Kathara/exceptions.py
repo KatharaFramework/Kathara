@@ -48,6 +48,10 @@ class MachineOptionError(Exception):
     pass
 
 
+class MachineCollisionDomainConflictError(Exception):
+    pass
+
+
 # Test Exceptions
 class TestError(Exception):
     pass

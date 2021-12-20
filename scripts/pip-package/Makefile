@@ -1,6 +1,6 @@
 #!/usr/bin/make -s
 
-.PHONY : all
+.PHONY: all package upload clean
 all: clean package upload
 
 package: clean

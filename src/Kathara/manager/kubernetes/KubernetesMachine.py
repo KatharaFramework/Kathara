@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import shlex
+import sys
 import uuid
 from functools import partial
 from multiprocessing.dummy import Pool
@@ -37,6 +38,11 @@ STARTUP_COMMANDS = [
     # Removes /etc/bind already existing configuration from k8s internal DNS
     "rm -Rf /etc/bind/*",
 
+    # Unmount the /etc/resolv.conf and /etc/hosts files, automatically mounted by Docker inside the container.
+    # In this way, they can be overwritten by custom user files.
+    "umount /etc/resolv.conf",
+    "umount /etc/hosts",
+
     # Parse hostlab.b64
     "base64 -d /tmp/kathara/hostlab.b64 > /hostlab.tar.gz",
     # Extract hostlab.tar.gz data into /
@@ -46,13 +52,6 @@ STARTUP_COMMANDS = [
     # In this way, files are all replaced in the container root folder
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
     "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf -); fi",
-
-    # Patch the /etc/resolv.conf file. If present, replace the content with the one of the machine.
-    # If not, clear the content of the file.
-    # This should be patched with "cat" because file is already in use by Kubernetes internal DNS.
-    "if [ -f \"/hostlab/{machine_name}/etc/resolv.conf\" ]; then "
-    "cat /hostlab/{machine_name}/etc/resolv.conf > /etc/resolv.conf; else "
-    "echo \"\" > /etc/resolv.conf; fi",
 
     # Give proper permissions to /var/www
     "if [ -d \"/var/www\" ]; then "
@@ -118,16 +117,19 @@ class KubernetesMachine(object):
 
         self.kubernetes_namespace: KubernetesNamespace = kubernetes_namespace
 
-    def deploy_machines(self, lab: Lab) -> None:
+    def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """Deploy all the devices contained in lab.machines.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
+            selected_machines (Set[str]): A set containing the name of the devices to deploy.
 
         Returns:
             None
         """
-        machines = lab.machines.items()
+
+        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
+            else lab.machines.items()
 
         privileged = lab.general_options['privileged_machines'] if 'privileged_machines' in lab.general_options \
             else False
@@ -468,10 +470,15 @@ class KubernetesMachine(object):
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine_name)
 
         try:
-            self.exec(machine_namespace,
-                      machine_name,
-                      command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
-                      )
+            output = self.exec(machine_namespace,
+                               machine_name,
+                               command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
+                               )
+
+            try:
+                next(output)
+            except StopIteration:
+                pass
 
             deployment_name = self.get_deployment_name(machine_name)
             self.kubernetes_config_map.delete_for_machine(deployment_name, machine_namespace)
@@ -509,14 +516,19 @@ class KubernetesMachine(object):
         logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
 
         if logs and Setting.get_instance().print_startup_log:
-            (result_string, _) = self.exec(lab_hash,
-                                           machine_name,
-                                           command="/bin/cat /var/log/shared.log /var/log/startup.log"
-                                           )
-            if result_string:
+            exec_output = self.exec(lab_hash,
+                                    machine_name,
+                                    command="/bin/cat /var/log/shared.log /var/log/startup.log"
+                                    )
+            try:
                 print("--- Startup Commands Log\n")
-                print(result_string)
-                print("--- End Startup Commands Log\n")
+                while True:
+                    (stdout, _) = next(exec_output)
+                    stdout = stdout.decode('utf-8') if stdout else ""
+                    sys.stdout.write(stdout)
+            except StopIteration:
+                print("\n--- End Startup Commands Log\n")
+                pass
 
         resp = stream(self.core_client.connect_get_namespaced_pod_exec,
                       name=pod.metadata.name,
@@ -563,7 +575,8 @@ class KubernetesMachine(object):
         return None
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], tty: bool = False, stdin: bool = False,
-             stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False) -> Optional[Tuple[str, str]]:
+             stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False, is_stream: bool = False) \
+            -> Generator[Tuple[bytes, bytes], None, None]:
         """Execute the command on the Kubernetes PoD specified by the lab_hash and the machine_name.
 
         Args:
@@ -574,13 +587,15 @@ class KubernetesMachine(object):
             stdin (bool): If True, open the stdin channel.
             stdin_buffer (List[Union[str, bytes]]): List of command to pass to the stdin.
             stderr (bool): If True, return the stderr.
+            is_stream (bool): If True, return a generator with each line.
+                If False, returns a generator with the complete output.
 
         Returns:
-            Optional[Tuple[str, str]]: A tuple formed by (stdout, stderr) relative to the commands to exec.
+            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
         """
-        logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
-
         command = shlex.split(command) if type(command) == str else command
+
+        logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
         try:
             # Retrieve the pod of current Deployment
@@ -606,31 +621,47 @@ class KubernetesMachine(object):
             'stdout': '',
             'stderr': ''
         }
+
         while response.is_open():
+            stdout = None
+            stderr = None
             if response.peek_stdout():
-                result['stdout'] += response.read_stdout()
+                stdout = response.read_stdout()
+                if not is_stream:
+                    result['stdout'] += stdout
             if stderr and response.peek_stderr():
-                result['stderr'] += response.read_stderr()
+                stderr = response.read_stderr()
+                if not is_stream:
+                    result['stderr'] += stderr
             if stdin and stdin_buffer:
                 param = stdin_buffer.pop(0)
                 response.write_stdin(param)
                 if len(stdin_buffer) <= 0:
                     break
 
+            if is_stream and (stdout or stderr):
+                yield stdout.encode('utf-8') if stdout else None, stderr.encode('utf-8') if stderr else None
+
         response.close()
 
-        return result['stdout'], result['stderr']
+        if not is_stream:
+            yield result['stdout'].encode('utf-8'), result['stderr'].encode('utf-8')
 
     def copy_files(self, deployment: client.V1Deployment, path: str, tar_data: bytes) -> None:
         machine_name = deployment.metadata.labels["name"]
         machine_namespace = deployment.metadata.namespace
 
-        self.exec(machine_namespace,
-                  machine_name,
-                  command=['tar', 'xvfz', '-', '-C', path],
-                  stdin=True,
-                  stdin_buffer=[tar_data]
-                  )
+        exec_output = self.exec(machine_namespace,
+                                machine_name,
+                                command=['tar', 'xvfz', '-', '-C', path],
+                                stdin=True,
+                                stdin_buffer=[tar_data]
+                                )
+
+        try:
+            next(exec_output)
+        except StopIteration:
+            pass
 
     def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None) -> List[client.V1Pod]:
         """Return the List of Kubernetes PoD.

@@ -6,9 +6,6 @@ Group: 		    Applications/Emulators
 License:	    GPLv3
 URL:		    https://www.kathara.org/
 Source:		    %{name}-%{version}.tar.gz
-BuildRequires:	python3
-BuildRequires:	python3-pip
-BuildArch:		x86_64
 
 %description
 Lightweight network emulation system based on Docker containers.
@@ -21,13 +18,15 @@ new network protocols.
 
 %prep
 %autosetup
-python3 -m pip install -r src/requirements.txt
-python3 -m pip install nuitka
-python3 -m pip install pytest
+python3.9 -m venv %{_builddir}/venv
+%{_builddir}/venv/bin/pip3.9 install --upgrade pip
+%{_builddir}/venv/bin/pip3.9 install -r src/requirements.txt
+%{_builddir}/venv/bin/pip3.9 install nuitka
+%{_builddir}/venv/bin/pip3.9 install pytest
 
 %build
-python3 -m pytest
-cd src && python3 -m nuitka --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
+%{_builddir}/venv/bin/python3.9 -m pytest
+cd src && %{_builddir}/venv/bin/python3.9 -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
 
 %install
 mv %{_builddir}/%{buildsubdir}/src/kathara.dist %{_builddir}/%{buildsubdir}/kathara.dist
@@ -69,10 +68,8 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- (Docker) Add possibility to share the same collision domains between different users
-- (Docker) Add possibility to connect to a remote Docker daemon instead of local one (only on UNIX systems)
-- (Docker) Checks on external interfaces are now always executed, even if the collision domain already exists
-- (Kubernetes) Fix ltest, which never terminated due to a bug in "copy_files"
-- Hidden files in a machine folder (like .htaccess) are now correctly copied into the container
-- Commands are now accepted only if they are entirely lowercase
-- Minor fixes (better lab integrity checks, better file I/O checks)
+- Add multi-arch support (thanks to Nicolas Ollinger and Marcel Großmann)
+- Unmount /etc/resolv.conf and /etc/hosts instead of patching them with cat
+- Lab object has no side-effect when it is deployed with selected devices
+- Fix exec command with non-returning commands (like ping)
+- Add check that throws an exception when a device is connected multiple times on the same CD
