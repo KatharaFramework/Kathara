@@ -10,8 +10,7 @@ RUN pacman -S --noconfirm git \
 			  			  base-devel \
 			  			  ruby \
 			  			  chrpath \
-                          patchelf \
-                          wget
+                          patchelf
                           
 RUN pacman -S --noconfirm wget \
 						  bzip2 \
