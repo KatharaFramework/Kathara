@@ -5,16 +5,31 @@ ENV RUBYOPT="-KU -E utf-8:utf-8"
 RUN pacman -Syyu --noconfirm
 RUN pacman-db-upgrade
 
-RUN echo "[community]\nInclude = /etc/pacman.d/mirrorlist\n" >> /etc/pacman.conf
-
 RUN pacman -S --noconfirm git \
 			  			  openssh \
-				 		  base-devel \
-				 		  python-pip \
-				 		  ruby \
-						  chrpath \
-                          patchelf
-
+			  			  base-devel \
+			  			  ruby \
+			  			  chrpath \
+                          patchelf \
+                          wget
+                          
+RUN pacman -S --noconfirm wget \
+						  bzip2 \
+						  expat \
+						  gdbm \
+						  libffi \
+						  libnsl \
+						  libxcrypt \
+						  openssl \
+						  zlib && \
+	wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz && \
+	tar xfvz Python-3.9.9.tgz && cd Python-3.9.9 && \
+	./configure --enable-optimizations && \
+	make -j8 && \
+	make install && \
+	pacman -R --noconfirm wget && \
+    cd .. && rm -Rf Python-3.9.9*
+                          
 RUN useradd -m -s /bin/bash builduser
 
 RUN su -c "gem install ronn-ng" builduser

@@ -7,7 +7,7 @@ url="https://www.kathara.org/"
 license=('GPL3')
 install="kathara.install"
 changelog="kathara.changelog"
-makedepends=('python>=3.5.0' 'python-pip' 'chrpath')
+makedepends=('chrpath')
 optdepends=(
   'docker: for running network scenarios in a local environment'
   'xterm: for opening devices terminals'
@@ -16,14 +16,16 @@ source=("kathara.tar.gz")
 md5sums=('SKIP')
 
 prepare() {
-  python3 -m pip install -r src/requirements.txt
-  python3 -m pip install nuitka
-  python3 -m pip install pytest
+  python3 -m venv $srcdir/venv
+  $srcdir/venv/bin/pip3.9 install --upgrade setuptools
+  $srcdir/venv/bin/pip3.9 install -r src/requirements.txt
+  $srcdir/venv/bin/pip3.9 install nuitka
+  $srcdir/venv/bin/pip3.9 install pytest
 }
 
 build() {
-  python3 -m pytest
-  cd src && python3 -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
+  $srcdir/venv/bin/python3.9 -m pytest
+  cd src && $srcdir/venv/bin/python3.9 -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
 }
 
 package() {
