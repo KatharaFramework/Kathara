@@ -71,8 +71,8 @@ def get_executable_path(exec_path: str) -> Optional[str]:
         if exec_path.endswith(".py"):
             # Prepend python in windows because it has no shebang
             return exec_by_platform(lambda: exec_abs_path,
-                                    lambda: "python %s" % exec_abs_path,
-                                    lambda: "python3 %s" % exec_abs_path
+                                    lambda: "%s %s" % (sys.executable, exec_abs_path),
+                                    lambda: "%s %s" % (sys.executable, exec_abs_path)
                                     )
         else:
             # Maybe the executable is not in path, but is still a binary file
