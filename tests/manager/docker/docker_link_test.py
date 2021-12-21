@@ -82,7 +82,7 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_li
     docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
         name="kathara_user_A",
-        driver="kathara/katharanp:latest",
+        driver="kathara/katharanp:" + utils.get_architecture(),
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
@@ -111,7 +111,7 @@ def test_create_shared_cd(mock_get_current_user_name, mock_setting_get_instance,
     docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
         name="kathara_A",
-        driver="kathara/katharanp:latest",
+        driver="kathara/katharanp:" + utils.get_architecture(),
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={

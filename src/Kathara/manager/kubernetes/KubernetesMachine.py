@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import shlex
+import sys
 import uuid
 from functools import partial
 from multiprocessing.dummy import Pool
@@ -469,10 +470,15 @@ class KubernetesMachine(object):
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine_name)
 
         try:
-            self.exec(machine_namespace,
-                      machine_name,
-                      command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
-                      )
+            output = self.exec(machine_namespace,
+                               machine_name,
+                               command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
+                               )
+
+            try:
+                next(output)
+            except StopIteration:
+                pass
 
             deployment_name = self.get_deployment_name(machine_name)
             self.kubernetes_config_map.delete_for_machine(deployment_name, machine_namespace)
@@ -510,14 +516,19 @@ class KubernetesMachine(object):
         logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
 
         if logs and Setting.get_instance().print_startup_log:
-            (result_string, _) = self.exec(lab_hash,
-                                           machine_name,
-                                           command="/bin/cat /var/log/shared.log /var/log/startup.log"
-                                           )
-            if result_string:
+            exec_output = self.exec(lab_hash,
+                                    machine_name,
+                                    command="/bin/cat /var/log/shared.log /var/log/startup.log"
+                                    )
+            try:
                 print("--- Startup Commands Log\n")
-                print(result_string)
-                print("--- End Startup Commands Log\n")
+                while True:
+                    (stdout, _) = next(exec_output)
+                    stdout = stdout.decode('utf-8') if stdout else ""
+                    sys.stdout.write(stdout)
+            except StopIteration:
+                print("\n--- End Startup Commands Log\n")
+                pass
 
         resp = stream(self.core_client.connect_get_namespaced_pod_exec,
                       name=pod.metadata.name,
@@ -565,7 +576,7 @@ class KubernetesMachine(object):
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], tty: bool = False, stdin: bool = False,
              stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False, is_stream: bool = False) \
-            -> Union[Tuple[str, str], Generator[Tuple[bytes, bytes], None, None]]:
+            -> Generator[Tuple[bytes, bytes], None, None]:
         """Execute the command on the Kubernetes PoD specified by the lab_hash and the machine_name.
 
         Args:
@@ -576,16 +587,15 @@ class KubernetesMachine(object):
             stdin (bool): If True, open the stdin channel.
             stdin_buffer (List[Union[str, bytes]]): List of command to pass to the stdin.
             stderr (bool): If True, return the stderr.
-            is_stream (bool): If True, return an iterator.
+            is_stream (bool): If True, return a generator with each line.
+                If False, returns a generator with the complete output.
 
         Returns:
-            Union[Tuple[str, str], Generator[Tuple[bytes, bytes]]]: If is_stream is False, a tuple formed by
-            (stdout, stderr) relative to the commands to exec. Else a generator of tuples containing the stdout and
-            stderr in bytes.
+            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
         """
-        logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
-
         command = shlex.split(command) if type(command) == str else command
+
+        logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
         try:
             # Retrieve the pod of current Deployment
@@ -629,24 +639,29 @@ class KubernetesMachine(object):
                 if len(stdin_buffer) <= 0:
                     break
 
-            if is_stream:
-                yield stdout.encode('utf-8'), stderr.encode('utf-8')
+            if is_stream and (stdout or stderr):
+                yield stdout.encode('utf-8') if stdout else None, stderr.encode('utf-8') if stderr else None
 
         response.close()
 
         if not is_stream:
-            return result['stdout'], result['stderr']
+            yield result['stdout'].encode('utf-8'), result['stderr'].encode('utf-8')
 
     def copy_files(self, deployment: client.V1Deployment, path: str, tar_data: bytes) -> None:
         machine_name = deployment.metadata.labels["name"]
         machine_namespace = deployment.metadata.namespace
 
-        self.exec(machine_namespace,
-                  machine_name,
-                  command=['tar', 'xvfz', '-', '-C', path],
-                  stdin=True,
-                  stdin_buffer=[tar_data]
-                  )
+        exec_output = self.exec(machine_namespace,
+                                machine_name,
+                                command=['tar', 'xvfz', '-', '-C', path],
+                                stdin=True,
+                                stdin_buffer=[tar_data]
+                                )
+
+        try:
+            next(exec_output)
+        except StopIteration:
+            pass
 
     def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None) -> List[client.V1Pod]:
         """Return the List of Kubernetes PoD.

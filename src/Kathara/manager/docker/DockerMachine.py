@@ -353,6 +353,14 @@ class DockerMachine(object):
             bridge_link = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
             bridge_link.connect(machine.api_object)
 
+        # Append executed machine startup commands inside the /var/log/startup.log file
+        if machine.startup_commands:
+            new_commands = []
+            for command in machine.startup_commands:
+                new_commands.append("echo \"++ %s\" &>> /var/log/startup.log" % command)
+                new_commands.append(command)
+            machine.startup_commands = new_commands
+
         # Build the final startup commands string
         startup_commands_string = "; ".join(STARTUP_COMMANDS).format(
             machine_name=machine.name,
@@ -469,16 +477,24 @@ class DockerMachine(object):
         logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
 
         if logs and Setting.get_instance().print_startup_log:
-            (result_string, _) = self.exec(lab_hash,
-                                           machine_name,
-                                           user=user,
-                                           command="cat /var/log/shared.log /var/log/startup.log",
-                                           tty=False
-                                           )
+            exec_output = self.exec(lab_hash,
+                                    machine_name,
+                                    user=user,
+                                    command="cat /var/log/shared.log /var/log/startup.log",
+                                    tty=False
+                                    )
 
-            if result_string:
+            startup_output = ""
+            try:
+                while True:
+                    (stdout, _) = next(exec_output)
+                    startup_output += stdout.decode('utf-8') if stdout else ""
+            except StopIteration:
+                pass
+
+            if startup_output:
                 print("--- Startup Commands Log\n")
-                print(result_string)
+                print(startup_output)
                 print("--- End Startup Commands Log\n")
 
         resp = self.client.api.exec_create(container.id,

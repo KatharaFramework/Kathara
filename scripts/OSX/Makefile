@@ -1,23 +1,30 @@
 #!/usr/bin/make -s
 
 PRODUCT=Kathara
-VERSION=3.2.0
+VERSION=3.3.0
 TARGET_DIRECTORY=Output
 APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
 ROFF_DIR=../../docs/Roff
+VENV_DIR:=${CURDIR}/venv
 
-.PHONY : all allSigned deps test binary manpages createInstaller signProduct clean
-all: deps binary manpages createInstaller clean
-allSigned: deps binary manpages createInstaller signProduct clean
+.PHONY: all_x86 allSigned_x86 all_arm64 allSigned_arm64 test deps manpages cleanall cleanman cleanbinary cleanenv
+all: all_x86 all_arm64
+allSigned: allSigned_x86 allSigned_arm64
+all_x86: deps binary_x86_64 manpages createInstaller_x86_64 clean
+allSigned_x86: deps binary_x86_64 manpages createInstaller_x86_64 signProduct_x86_64 clean
+all_arm64: deps binary_arm64 manpages createInstaller_arm64 clean
+allSigned_arm64: deps binary_arm64 manpages createInstaller_arm64 signProduct_arm64 clean
 
 default: all
 
-deps:
-	python3 -m pip install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
-	export ARCHFLAGS="-arch x86_64"
-	python3 -m pip install -r ../../src/requirements.txt
-	python3 -m pip install pytest
-	gem install ronn-ng
+py_env:
+	python3 -m venv $(VENV_DIR)
+
+deps: py_env
+	$(VENV_DIR)/bin/pip3.9 install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+	$(VENV_DIR)/bin/pip3.9 install -r ../../src/requirements.txt
+	$(VENV_DIR)/bin/pip3.9 install pytest
+	gem install ronn-ng --user-install
 
 manpages:
 	cd ../../docs && make roff-build;
@@ -29,33 +36,13 @@ manpages:
 	done;
 
 test:
-	cd ../.. && python3 -m pytest
+	cd ../.. && $(VENV_DIR)/bin/python3 -m pytest
 
-binary: test
+binary_%: test
 	cp ./kathara.spec ../../src/
-	cd ../../src && pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
+	cd ../../src && $(VENV_DIR)/bin/pyinstaller --distpath=./kathara.dist --workpath=./kathara.build --target-arch $* kathara.spec
 
-clean: cleanbinary cleanman
-	if [ -d $(TARGET_DIRECTORY)/Resources ]; then \
-		rm -Rf $(TARGET_DIRECTORY)/Resources; \
-	fi
-	if [ -d $(TARGET_DIRECTORY)/darwinpkg ]; then \
-		rm -Rf $(TARGET_DIRECTORY)/darwinpkg; \
-	fi
-	if [ -d $(TARGET_DIRECTORY)/package ]; then \
-		rm -Rf $(TARGET_DIRECTORY)/package; \
-	fi
-
-cleanbinary:
-	cd ../../src && find . | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
-	if [ -e ../../src/kathara.spec ]; then \
-		rm ../../src/kathara.spec; \
-	fi
-	if [ -d ../../src/kathara.build ]; then \
-		rm -r ../../src/kathara.build; \
-	fi
-
-copyBuildDirectory: binary manpages
+copyBuildDirectory_%: binary_% manpages
 	[ -d $(TARGET_DIRECTORY) ] || mkdir $(TARGET_DIRECTORY)
 	cp -r darwin/Resources $(TARGET_DIRECTORY)/
 	chmod -R 755 $(TARGET_DIRECTORY)/Resources
@@ -86,21 +73,32 @@ copyBuildDirectory: binary manpages
 	sed -i '' -e "s:__MANPAGES__:$$installed_man_pages:g" $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/uninstall.sh
 
 
-createInstaller: copyBuildDirectory
+createInstaller_%: copyBuildDirectory_%
 	pkgbuild --identifier org.kathara.kathara --version $(VERSION) --scripts darwin/scripts \
 	--root $(TARGET_DIRECTORY)/darwinpkg $(TARGET_DIRECTORY)/package/$(PRODUCT).pkg > /dev/null 2>&1
 	
 	productbuild --distribution darwin/Distribution --resources $(TARGET_DIRECTORY)/Kathara \
-	--package-path $(TARGET_DIRECTORY)/package $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-x64-$(VERSION).pkg > /dev/null 2>&1
+	--package-path $(TARGET_DIRECTORY)/package $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION).pkg > /dev/null 2>&1
 
 
-signProduct:
-	productsign --sign "Developer ID Installer: $(APPLE_DEVELOPER_CERTIFICATE_ID)" $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-x64-$(VERSION).pkg \
-	$(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-x64-$(VERSION)-signed.pkg
+signProduct_%:
+	productsign --sign "Developer ID Installer: $(APPLE_DEVELOPER_CERTIFICATE_ID)" $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION).pkg \
+	$(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg
 
-	pkgutil --check-signature $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-x64-$(VERSION)-signed.pkg
+	pkgutil --check-signature $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg
 
-cleanall: cleanbinary cleanman
+clean: cleanbinary cleanman cleanenv
+	if [ -d $(TARGET_DIRECTORY)/Resources ]; then \
+		rm -Rf $(TARGET_DIRECTORY)/Resources; \
+	fi
+	if [ -d $(TARGET_DIRECTORY)/darwinpkg ]; then \
+		rm -Rf $(TARGET_DIRECTORY)/darwinpkg; \
+	fi
+	if [ -d $(TARGET_DIRECTORY)/package ]; then \
+		rm -Rf $(TARGET_DIRECTORY)/package; \
+	fi
+
+cleanall: cleanbinary cleanman cleanenv
 	if [ -d ../../src/kathara.dist ]; then \
 		rm -r ../../src/kathara.dist; \
 	fi
@@ -108,7 +106,21 @@ cleanall: cleanbinary cleanman
 		rm -Rf $(TARGET_DIRECTORY); \
 	fi
 
+cleanbinary:
+	cd ../../src && find . | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
+	if [ -e ../../src/kathara.spec ]; then \
+		rm ../../src/kathara.spec; \
+	fi
+	if [ -d ../../src/kathara.build ]; then \
+		rm -r ../../src/kathara.build; \
+	fi
+
 cleanman:
 	if [ -d $(ROFF_DIR) ]; then \
 		rm -Rf $(ROFF_DIR); \
+	fi
+
+cleanenv:
+	if [ -d $(VENV_DIR) ]; then \
+		rm -Rf $(VENV_DIR); \
 	fi

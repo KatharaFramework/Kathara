@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=3.2.0
+VERSION=3.3.0
 PACKAGE_VERSION=1
 AUR_NAME=user
 AUR_MAIL=your@mail.com
@@ -12,10 +12,10 @@ all: clean docker-build-image docker-build-local
 allRemote: clean docker-build-image docker-build-remote
 
 docker-build-local: docker-build-image
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c "PATH=$$PATH:/home/builduser/.gem/ruby/2.7.0/bin:/home/builduser/.local/share/gem/ruby/2.7.0/bin make build-local" builduser
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c "PATH=$$PATH:/home/builduser/.local/bin:/home/builduser/.gem/ruby/3.0.0/bin:/home/builduser/.local/share/gem/ruby/3.0.0/bin make build-local" builduser
 
 docker-build-remote: docker-build-image
-	docker run -ti --rm -v ~/.ssh:/opt/kathara/.ssh -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c "PATH=$$PATH:/home/builduser/.gem/ruby/2.7.0/bin:/home/builduser/.local/share/gem/ruby/2.7.0/bin make build-remote" builduser
+	docker run -ti --rm -v ~/.ssh:/opt/kathara/.ssh -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c "PATH=$$PATH:/home/builduser/.local/bin:/home/builduser/.gem/ruby/3.0.0/bin:/home/builduser/.local/share/gem/ruby/3.0.0/bin make build-remote" builduser
 
 docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-pkg .

@@ -14,7 +14,7 @@ from typing import Dict, Any, Tuple, Optional
 from . import Lab as LabPackage
 from . import Link as LinkPackage
 from .. import utils
-from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError
+from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainConflictError
 from ..setting.Setting import Setting
 
 
@@ -106,6 +106,11 @@ class Machine(object):
 
         if number in self.interfaces:
             raise Exception("Interface %d already set on device `%s`." % (number, self.name))
+
+        if any(x.name == link.name for x in self.interfaces.values()):
+            raise MachineCollisionDomainConflictError(
+                "Device `%s` is already connected to collision domain `%s`" % (self.name, link.name)
+            )
 
         self.interfaces[number] = link
 

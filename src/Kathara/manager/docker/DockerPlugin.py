@@ -8,7 +8,7 @@ from ... import utils
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
 
-PLUGIN_NAME = "kathara/katharanp:latest"
+PLUGIN_NAME = "kathara/katharanp:" + utils.get_architecture()
 XTABLES_CONFIGURATION_KEY = "xtables_lock"
 XTABLES_LOCK_PATH = "/run/xtables.lock"
 
@@ -26,6 +26,7 @@ class DockerPlugin(object):
         Returns:
             None
         """
+
         try:
             logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)
             plugin = self.client.plugins.get(PLUGIN_NAME)

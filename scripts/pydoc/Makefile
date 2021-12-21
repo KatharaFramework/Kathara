@@ -1,6 +1,7 @@
 #!/usr/bin/make -s
 
-.PHONY : all
+.PHONY: all doc verify-doc clean
+
 all: clean doc verify-doc
 
 doc: clean verify-doc
@@ -16,11 +17,8 @@ doc: clean verify-doc
 	sed -i 's/\.\///g' ./docs/Kathara-API-Docs.md
 	sed -i 's/\.md//g' ./docs/Kathara-API-Docs.md
 	sed -i '/Modules/,/Classes/d' ./docs/Kathara-API-Docs.md
-#	sed -i '/Classes/,$!d' ./docs/Kathara-API-Docs.md
 	sed -i '/Functions/q' ./docs/Kathara-API-Docs.md
 	sed -i '/Functions/d' ./docs/Kathara-API-Docs.md
-
-
 
 verify-doc:
 	python3 -m pip install lazydocs

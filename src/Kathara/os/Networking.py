@@ -7,6 +7,7 @@ class Networking(object):
     """
     Class responsible for managing ExternalLink objects attaching Kathara collision domain to host interfaces.
     """
+
     @staticmethod
     def get_or_new_interface(full_interface_name: str, vlan_interface_name: str, vlan_id: Optional[int] = None) -> int:
         """
@@ -20,8 +21,11 @@ class Networking(object):
         Returns:
             int: The link index.
         """
+        # disable pyroute2 logging to avoid warning about project structure changes
+        logging.getLogger('pyroute2').disabled = True
         from pyroute2 import IPRoute
         ip = IPRoute()
+        logging.getLogger('pyroute2').disabled = False
 
         logging.debug("Searching for interface `%s`..." % full_interface_name)
 
