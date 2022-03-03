@@ -197,6 +197,12 @@ class DockerMachine(object):
         if "bridged" in options and not machine.meta['bridged']:
             machine.add_meta("bridged", True)
 
+        if ports and not machine.meta['bridged']:
+            logging.warning(
+                "To expose ports of device `%s` on the host, "
+                "you have to specify the `bridged` option on that device." % machine.name
+            )
+
         # If any exec command is passed in command line, add it.
         if "exec" in options:
             machine.add_meta("exec", options["exec"])
