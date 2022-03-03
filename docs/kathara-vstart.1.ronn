@@ -10,7 +10,7 @@ kathara-vstart(1) -- Start a new Kathara device
 [`-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]] [`--mem` <MEM>]  
 [`--cpus` <CPUS>] [`-i` <IMAGE>] [`-H`]  
 [`--xterm` <XTERM>] [`--print`] [`--bridged`]  
-[--port <[HOST\:]GUEST[/PROTOCOL]> [<[HOST\:]GUEST[/PROTOCOL]> ...]] [--sysctl <SYSCTL> [<SYSCTL> ...]]
+[--port <[HOST\:]GUEST[/PROTOCOL]> [<[HOST\:]GUEST[/PROTOCOL]> ...]] [--env <ENV> [<ENV> ...]] [--sysctl <SYSCTL> [<SYSCTL> ...]]
 [`--shell` <SHELL>]  
 
 ## DESCRIPTION
@@ -95,6 +95,9 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
 
 * `--sysctl` <SYSCTL> [<SYSCTL> ...]:
     Set a sysctl option for the device. Only the `net.` namespace is allowed to be set.
+
+* `--env` <ENV> [<ENV> ...]:
+    Set an environment variable for the device.
 
 * `--num_terms` <NUM_TERMS>:
     Choose the number of terminals to open for the device.

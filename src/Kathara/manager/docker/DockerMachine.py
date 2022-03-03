@@ -258,6 +258,7 @@ class DockerMachine(object):
                                                               privileged=privileged,
                                                               network=first_network.name if first_network else None,
                                                               network_mode="bridge" if first_network else "none",
+                                                              environment=machine.meta['envs'],
                                                               sysctls=sysctl_parameters,
                                                               mem_limit=memory,
                                                               nano_cpus=cpus,

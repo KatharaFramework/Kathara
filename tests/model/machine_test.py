@@ -28,6 +28,7 @@ def test_default_device_parameters(default_device: Machine):
     assert len(default_device.interfaces) == 0
     assert default_device.meta == {
         'sysctls': {},
+        'envs': {},
         'bridged': False,
         'ports': {}
     }
@@ -71,6 +72,21 @@ def test_add_meta_sysctl_not_net_exception(default_device: Machine):
 def test_add_meta_sysctl_not_format_exception(default_device: Machine):
     with pytest.raises(MachineOptionError):
         default_device.add_meta("sysctl", "kernel.shm_rmid_forced")
+
+
+def test_add_meta_env(default_device: Machine):
+    default_device.add_meta("env", "MY_ENV_VAR=test")
+    assert default_device.meta['envs']['MY_ENV_VAR'] == "test"
+
+
+def test_add_meta_env_number(default_device: Machine):
+    default_device.add_meta("env", "MY_ENV_VAR=1")
+    assert default_device.meta['envs']['MY_ENV_VAR'] == "1"
+
+
+def test_add_meta_env_not_format_exception(default_device: Machine):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta("env", "MY_ENV_VAR")
 
 
 def test_add_meta_port_only_guest(default_device: Machine):

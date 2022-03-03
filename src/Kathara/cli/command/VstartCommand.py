@@ -137,6 +137,14 @@ class VstartCommand(Command):
             help='Set sysctl option for the device.'
         )
         self.parser.add_argument(
+            '--env',
+            dest='envs',
+            metavar='ENV',
+            nargs='+',
+            required=False,
+            help='Set environment variable for the device.'
+        )
+        self.parser.add_argument(
             '--shell',
             required=False,
             help='Set the shell (sh, bash, etc.) that should be used inside the device.'

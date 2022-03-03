@@ -83,6 +83,7 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, mock_copy
                  'net.ipv4.ip_forward': 1,
                  'net.ipv4.icmp_ratelimit': 0
                  },
+        environment={},
         mem_limit='64m',
         nano_cpus=2000000000,
         ports=None,
@@ -136,6 +137,7 @@ def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock
                  'net.ipv6.conf.default.disable_ipv6': 0,
                  'net.ipv6.conf.all.disable_ipv6': 0
                  },
+        environment={},
         mem_limit='64m',
         nano_cpus=2000000000,
         ports=None,
@@ -188,6 +190,7 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
                  'net.ipv6.icmp.ratelimit': 0,
                  'net.ipv6.conf.default.disable_ipv6': 0,
                  'net.ipv6.conf.all.disable_ipv6': 0},
+        environment={},
         mem_limit='64m',
         nano_cpus=2000000000,
         ports=None,

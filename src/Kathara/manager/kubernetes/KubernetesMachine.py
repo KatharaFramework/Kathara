@@ -300,10 +300,14 @@ class KubernetesMachine(object):
         )
         lifecycle = client.V1Lifecycle(post_start=post_start)
 
-        env = [client.V1EnvVar("_MEGALOS_SHELL",
-                               machine.meta["shell"] if "shell" in machine.meta else Setting.get_instance().device_shell
-                               )
-               ]
+        env = [
+            client.V1EnvVar("_MEGALOS_SHELL",
+                            machine.meta["shell"] if "shell" in machine.meta else Setting.get_instance().device_shell
+                            )
+        ]
+
+        for env_var_name, env_var_value in machine.meta['envs'].items():
+            env.append(client.V1EnvVar(env_var_name, env_var_value))
 
         container_definition = client.V1Container(
             name=machine.meta['real_name'],

@@ -46,6 +46,9 @@ In order to establish a uniform convention, comment lines should always start wi
 * `sysctl` (string):
 	Set a sysctl option for this device. Only the `net.` namespace is allowed to be set. Can be set multiple times per device, each will add a new entry (unless the same config item is used again).
 
+* `env` (string):
+	Set an environment variable for the device. Can be set multiple times per device, each will add a new entry (unless the same variable is used again).
+
 * `shell` (string):
     Use the specified shell to connect to the device, e.g., when `kathara connect` is called.
 

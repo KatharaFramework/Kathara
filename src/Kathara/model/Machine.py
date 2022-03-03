@@ -61,6 +61,7 @@ class Machine(object):
 
         self.meta: Dict[str, Any] = {
             'sysctls': {},
+            'envs': {},
             'bridged': False,
             'ports': {}
         }
@@ -135,21 +136,33 @@ class Machine(object):
             return
 
         if name == "sysctl":
+            matches = re.search(r"^(?P<key>net\.(\w+\.)+\w+)=(?P<value>\w+)$", value)
+
             # Check for valid kv-pair
-            if '=' in value:
-                (key, val) = value.split('=')
-                key = key.strip()
-                val = val.strip()
-                # Only allow `net.` namespace
-                if key.startswith('net.'):
-                    # Convert to int if possible
-                    self.meta['sysctls'][key] = int(val) if val.isdigit() else val
-                else:
-                    raise MachineOptionError(
-                        "Invalid sysctl value (`%s`) on `%s`, only `net.` namespace is allowed." % (value, self.name)
-                    )
+            if matches:
+                key = matches.group("key").strip()
+                val = matches.group("value").strip()
+
+                # Convert to int if possible
+                self.meta['sysctls'][key] = int(val) if val.isdigit() else val
             else:
-                raise MachineOptionError("Invalid sysctl value (`%s`) on `%s`, missing `=`." % (value, self.name))
+                raise MachineOptionError(
+                    "Invalid sysctl value (`%s`) on `%s`, missing `=` or value not in `net.` namespace."
+                    % (value, self.name)
+                )
+            return
+
+        if name == "env":
+            matches = re.search(r"^(?P<key>\w+)=(?P<value>\w+)$", value)
+
+            # Check for valid kv-pair
+            if matches:
+                key = matches.group("key").strip()
+                val = matches.group("value").strip()
+
+                self.meta['envs'][key] = val
+            else:
+                raise MachineOptionError("Invalid env value (`%s`) on `%s`." % (value, self.name))
             return
 
         if name == "port":
@@ -485,6 +498,10 @@ class Machine(object):
         if 'sysctls' in args and args['sysctls'] is not None:
             for sysctl in args['sysctls']:
                 self.add_meta("sysctl", sysctl)
+
+        if 'envs' in args and args['envs'] is not None:
+            for envs in args['envs']:
+                self.add_meta("env", envs)
 
     def __repr__(self) -> str:
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)
