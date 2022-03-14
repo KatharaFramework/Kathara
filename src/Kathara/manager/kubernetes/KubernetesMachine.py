@@ -53,6 +53,9 @@ STARTUP_COMMANDS = [
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
     "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf -); fi",
 
+    # If /etc/hosts is not configured by the user, add the localhost mapping
+    "if [ ! -s \"/etc/hosts\" ]; then echo '127.0.0.1 localhost' > /etc/hosts; fi",
+
     # Give proper permissions to /var/www
     "if [ -d \"/var/www\" ]; then "
     "chmod -R 777 /var/www/*; fi",
