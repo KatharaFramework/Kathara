@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 from typing import Optional
 
 
@@ -138,9 +139,21 @@ class Networking(object):
     @staticmethod
     def get_iptables_version() -> str:
         """
-        Return the iptables version.
+        Return the iptables version on a Linux host.
 
         Returns:
             str: The iptables version.
         """
-        return os.popen("/sbin/iptables --version").read().strip()
+        iptables_binary = shutil.which("iptables")
+        if iptables_binary is None:
+            if os.path.exists("/sbin/iptables"):
+                iptables_binary = "/sbin/iptables"
+            elif os.path.exists("/usr/sbin/iptables"):
+                iptables_binary = "/usr/sbin/iptables"
+
+        if iptables_binary is None:
+            raise Exception("Cannot find `iptables` in the host.")
+
+        logging.debug("Found iptables binary in `%s`." % iptables_binary)
+
+        return os.popen("%s --version" % iptables_binary).read().strip()
