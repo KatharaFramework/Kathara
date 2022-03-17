@@ -379,7 +379,7 @@ class DockerMachine(object):
                                     detach=True
                                     )
 
-        if Setting.get_instance().open_terminals:
+        if utils.CLI_ENV and Setting.get_instance().open_terminals:
             for i in range(0, machine.get_num_terms()):
                 machine.connect(Setting.get_instance().terminal)
 
