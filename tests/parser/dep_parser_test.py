@@ -1,6 +1,5 @@
-import sys
-
 import pytest
+import sys
 
 sys.path.insert(0, './')
 
@@ -15,3 +14,13 @@ def test_three_devices_dependencies():
 def test_devices_loop():
     with pytest.raises(Exception):
         DepParser.parse("tests/parser/labdep/devices_loop")
+
+
+def test_with_comment():
+    dependencies = DepParser.parse("tests/parser/labdep/comments_empty_lines")
+    assert dependencies == ['r2', 'pc3', 'pc2', 'pc1']
+
+
+def test_syntax_error():
+    with pytest.raises(Exception):
+        DepParser.parse("tests/parser/labdep/syntax_error")

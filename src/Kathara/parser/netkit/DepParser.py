@@ -1,8 +1,9 @@
 import logging
-import mmap
 import os
 import re
 from typing import List, Optional
+
+import mmap
 
 from ...trdparty.depgen import depgen
 
@@ -11,6 +12,7 @@ class DepParser(object):
     """
     Class responsible for parsing the lab.dep file.
     """
+
     @staticmethod
     def parse(path: str) -> Optional[List[str]]:
         """
@@ -46,22 +48,21 @@ class DepParser(object):
         line = dep_mem_file.readline().decode('utf-8')
         while line:
             line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-            # E.g. MACHINE: MACHINE1 MACHINE2 MACHINE3
-            # Or MACHINE:MACHINE1 MACHINE2 MACHINE3
-            matches = re.search(r"^(?P<key>\w+):\s?(?P<deps>(\w+ ?)+)$",
-                                line
-                                )
+            if line and not line.startswith('#'):
+                # E.g. MACHINE: MACHINE1 MACHINE2 MACHINE3
+                # Or MACHINE:MACHINE1 MACHINE2 MACHINE3
+                matches = re.search(r"^(?P<key>\w+):\s?(?P<deps>(\w+ ?)+)$",
+                                    line
+                                    )
 
-            if matches:
-                key = matches.group("key").strip()
-                deps = matches.group("deps").strip().split(" ")
+                if matches:
+                    key = matches.group("key").strip()
+                    deps = list(map(lambda x: x.strip(), matches.group("deps").split(" ")))
 
-                # Dependencies are saved as dependencies[machine3] = [machine1, machine2]
-                dependencies[key] = deps
-            else:
-                raise Exception("[ERROR] In lab.dep - line %d: Syntax error." % line_number)
+                    # Dependencies are saved as dependencies[machine3] = [machine1, machine2]
+                    dependencies[key] = deps
+                else:
+                    raise Exception("[ERROR] In lab.dep - line %d: Syntax error." % line_number)
 
             line_number += 1
             line = dep_mem_file.readline().decode('utf-8')
