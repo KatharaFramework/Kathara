@@ -49,7 +49,7 @@ def update_setting_value(attribute_name: str, value: Any, stdout: bool = True) -
 
         Setting.get_instance().check()
 
-        Setting.get_instance().save()
+        Setting.get_instance().save_to_disk()
 
         if stdout:
             print(SAVED_STRING)
@@ -97,7 +97,7 @@ def read_value(attribute_name: str, validator: BaseValidator, prompt_msg: str, e
         return
 
     setattr(Setting.get_instance(), attribute_name, answer.input_string)
-    Setting.get_instance().save()
+    Setting.get_instance().save_to_disk()
 
     print(SAVED_STRING)
 

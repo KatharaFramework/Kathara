@@ -281,15 +281,8 @@ class Machine(object):
 
         return tar_data
 
-    def connect(self, terminal_name: str) -> None:
-        """Connect to the device with the specified terminal.
-
-        Args:
-            terminal_name (str): The name of the terminal to use for the connection.
-                The application must be correctly installed in the host system.
-                This option is only visible on Linux and macOS.
-                On Linux, options are /usr/bin/xterm, TMUX or an user-defined path.
-                On macOS, options are Terminal (default system terminal), iTerm or TMUX.
+    def connect(self) -> None:
+        """Connect to the device with the terminal specified in the settings.
 
         Returns:
             None
@@ -297,6 +290,9 @@ class Machine(object):
         if not utils.CLI_ENV:
             logging.error("Machine.connect is not supported using Python APIs.")
             return
+
+        Setting.get_instance().check_terminal()
+        terminal = Setting.get_instance().terminal
 
         logging.debug("Opening terminal for device %s.", self.name)
 
@@ -307,7 +303,6 @@ class Machine(object):
 
         is_vmachine = "-v" if self.lab.path is None else ""
         connect_command = "%s connect %s -l %s" % (executable_path, is_vmachine, self.name)
-        terminal = terminal_name if terminal_name else Setting.get_instance().terminal
 
         logging.debug("Terminal will open in directory %s." % self.lab.path)
 

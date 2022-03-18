@@ -59,7 +59,7 @@ class WipeCommand(Command):
             utils.confirmation_prompt("Are you sure to wipe Kathara?", lambda: None, sys.exit)
 
         if args['settings']:
-            Setting.wipe()
+            Setting.wipe_from_disk()
         else:
             if args['all'] and not utils.is_admin():
                 raise Exception("You must be root in order to wipe all Kathara devices of all users.")

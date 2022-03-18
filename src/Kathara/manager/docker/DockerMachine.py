@@ -381,7 +381,7 @@ class DockerMachine(object):
 
         if utils.CLI_ENV and Setting.get_instance().open_terminals:
             for i in range(0, machine.get_num_terms()):
-                machine.connect(Setting.get_instance().terminal)
+                machine.connect()
 
     def undeploy(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
         """Undeploy the devices contained in the network scenario defined by the lab_hash.
