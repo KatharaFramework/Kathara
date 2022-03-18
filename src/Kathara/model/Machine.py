@@ -294,6 +294,10 @@ class Machine(object):
         Returns:
             None
         """
+        if not utils.CLI_ENV:
+            logging.error("Machine.connect is not supported using Python APIs.")
+            return
+
         logging.debug("Opening terminal for device %s.", self.name)
 
         executable_path = utils.get_executable_path(sys.argv[0])
