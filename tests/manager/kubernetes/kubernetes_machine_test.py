@@ -51,7 +51,7 @@ def kubernetes_device_definition():
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands=sysctl_commands, machine_commands="ls")
 
-    post_start = client.V1Handler(
+    post_start = client.V1LifecycleHandler(
         _exec=client.V1ExecAction(
             command=["/bin/bash", "-c", startup_commands_string]
         )
@@ -157,7 +157,7 @@ def test_build_definition_no_config(mock_setting_get_instance, default_device, k
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands="", machine_commands="ls")
 
-    post_start = client.V1Handler(
+    post_start = client.V1LifecycleHandler(
         _exec=client.V1ExecAction(
             command=["/bin/bash", "-c", startup_commands_string]
         )
@@ -229,7 +229,7 @@ def test_build_definition(mock_setting_get_instance, config_map_mock, default_de
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands="", machine_commands="ls")
 
-    post_start = client.V1Handler(
+    post_start = client.V1LifecycleHandler(
         _exec=client.V1ExecAction(
             command=["/bin/bash", "-c", startup_commands_string]
         )
@@ -331,7 +331,7 @@ def test_create_ipv6(mock_setting_get_instance, kubernetes_machine, default_devi
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands=sysctl_commands, machine_commands="ls")
 
-    post_start = client.V1Handler(
+    post_start = client.V1LifecycleHandler(
         _exec=client.V1ExecAction(
             command=["/bin/bash", "-c", startup_commands_string]
         )

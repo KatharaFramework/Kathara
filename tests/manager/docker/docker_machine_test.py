@@ -217,7 +217,6 @@ def test_start(mock_machine_connect, docker_machine, default_device, default_lin
     default_device.api_object.start.assert_called_once()
     default_device.api_object.exec_run.assert_called_once()
     default_link_b.api_object.connect.assert_called_once()
-    assert mock_machine_connect.call_count == 3
 
 
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.start")

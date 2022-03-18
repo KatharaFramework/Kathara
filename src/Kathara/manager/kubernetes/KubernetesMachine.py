@@ -296,7 +296,7 @@ class KubernetesMachine(object):
                     machine_commands="; ".join(machine.startup_commands)
                     )
 
-        post_start = client.V1Handler(
+        post_start = client.V1LifecycleHandler(
             _exec=client.V1ExecAction(
                 command=[Setting.get_instance().device_shell, "-c", startup_commands_string]
             )
