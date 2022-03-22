@@ -10,7 +10,7 @@ import coloredlogs
 
 from Kathara import utils
 from Kathara.auth.PrivilegeHandler import PrivilegeHandler
-from Kathara.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError
+from Kathara.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError, SettingsNotFound
 from Kathara.foundation.cli.command.CommandFactory import CommandFactory
 from Kathara.setting.Setting import Setting
 from Kathara.strings import formatted_strings
@@ -64,8 +64,9 @@ class KatharaEntryPoint(object):
             sys.exit(1)
 
         try:
-            # Check settings
-            Setting.get_instance().check()
+            # Check settings only if the user is not executing "settings" command.
+            if "settings" not in args.command:
+                Setting.get_instance().check()
         except (SettingsError, DockerDaemonConnectionError) as e:
             logging.critical(str(e))
             sys.exit(1)
@@ -104,6 +105,11 @@ if __name__ == '__main__':
     utils.check_python_version()
 
     utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
+
+    try:
+        Setting.get_instance().load_from_disk()
+    except SettingsNotFound:
+        Setting.get_instance().save_to_disk()
 
     try:
         debug_level = Setting.get_instance().debug_level
