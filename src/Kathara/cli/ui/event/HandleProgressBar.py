@@ -4,7 +4,7 @@ from typing import List
 import progressbar
 
 
-class ProgressBarHandler(object):
+class HandleProgressBar(object):
     """Generic listener for handling a progress bar."""
     __slots__ = ['message', 'progress_bar']
 
