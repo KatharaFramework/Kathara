@@ -30,12 +30,6 @@ def docker_network(mock_network):
     return mock_network
 
 
-@pytest.fixture()
-@mock.patch("progressbar.ProgressBar")
-def progress_bar(mock_progress_bar):
-    return mock_progress_bar
-
-
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
 def test_get_network_name(mock_get_current_user_name, mock_setting_get_instance):
@@ -125,26 +119,26 @@ def test_create_shared_cd(mock_get_current_user_name, mock_setting_get_instance,
 
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.create")
-def test_deploy_link(mock_create, docker_link, progress_bar, default_link):
-    docker_link._deploy_link(progress_bar, ("", default_link))
+def test_deploy_link(mock_create, docker_link, default_link):
+    docker_link._deploy_link(("", default_link))
     mock_create.called_once_with(default_link)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._deploy_link")
-def test_deploy_links(mock_deploy_link, docker_link, progress_bar):
+def test_deploy_links(mock_deploy_link, docker_link):
     lab = Lab("Default scenario")
     link_a = lab.get_or_new_link("A")
     link_b = lab.get_or_new_link("B")
     link_c = lab.get_or_new_link("C")
     docker_link.deploy_links(lab)
-    mock_deploy_link.assert_any_call(None, ("A", link_a))
-    mock_deploy_link.assert_any_call(None, ("B", link_b))
-    mock_deploy_link.assert_any_call(None, ("C", link_c))
+    mock_deploy_link.assert_any_call(("A", link_a))
+    mock_deploy_link.assert_any_call(("B", link_b))
+    mock_deploy_link.assert_any_call(("C", link_c))
     assert mock_deploy_link.call_count == 3
 
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._deploy_link")
-def test_deploy_links_no_link(mock_deploy_link, docker_link, progress_bar):
+def test_deploy_links_no_link(mock_deploy_link, docker_link):
     lab = Lab("Default scenario")
     docker_link.deploy_links(lab)
     assert not mock_deploy_link.called
@@ -157,8 +151,8 @@ def test_delete_link(docker_network):
 
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._undeploy_link")
-def test_undeploy_link(mock_undeploy_link, docker_link, docker_network, progress_bar):
-    docker_link._undeploy_link(progress_bar, docker_network)
+def test_undeploy_link(mock_undeploy_link, docker_link, docker_network):
+    docker_link._undeploy_link(docker_network)
     mock_undeploy_link.called_once_with(docker_network)
 
 
