@@ -97,7 +97,7 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
     Set a sysctl option for the device. Only the `net.` namespace is allowed to be set.
 
 * `--env` <ENV> [<ENV> ...]:
-    Set an environment variable for the device.
+    Set an environment variable for the device. The format is: ENV_NAME=ENV_VALUE.
 
 * `--num_terms` <NUM_TERMS>:
     Choose the number of terminals to open for the device.
