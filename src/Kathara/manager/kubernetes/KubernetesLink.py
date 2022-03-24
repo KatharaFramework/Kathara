@@ -6,13 +6,13 @@ from multiprocessing import Manager
 from multiprocessing.dummy import Pool
 from typing import Dict, Optional, Set, Any, List
 
-import progressbar
 from kubernetes import client
 from kubernetes.client.api import custom_objects_api
 from kubernetes.client.rest import ApiException
 
 from .KubernetesConfig import KubernetesConfig
 from ... import utils
+from ...event.EventDispatcher import EventDispatcher
 from ...model.Lab import Lab
 from ...model.Link import Link
 from ...setting.Setting import Setting
@@ -51,29 +51,20 @@ class KubernetesLink(object):
 
             items = utils.chunk_list(links, pool_size)
 
-            progress_bar = None
-            if utils.CLI_ENV:
-                progress_bar = progressbar.ProgressBar(
-                    widgets=['Deploying collision domains... ', progressbar.Bar(),
-                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                    redirect_stdout=True,
-                    max_value=len(links)
-                )
+            EventDispatcher.get_instance().dispatch("links_deploy_started", items=links)
 
             with Manager() as manager:
                 network_ids = manager.dict()
 
                 for chunk in items:
-                    link_pool.map(func=partial(self._deploy_link, progress_bar, network_ids), iterable=chunk)
+                    link_pool.map(func=partial(self._deploy_link, network_ids), iterable=chunk)
 
-            if utils.CLI_ENV:
-                progress_bar.finish()
+            EventDispatcher.get_instance().dispatch("links_deploy_ended")
 
-    def _deploy_link(self, progress_bar: progressbar.ProgressBar, network_ids: Dict, link_item: (str, Link)) -> None:
+    def _deploy_link(self, network_ids: Dict, link_item: (str, Link)) -> None:
         """Deploy the Link contained in the link_item.
 
         Args:
-            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             network_ids (Dict):
             link_item (Tuple[str, Link]): A tuple composed by the name of the link and a Link object
 
@@ -85,8 +76,7 @@ class KubernetesLink(object):
         network_id = self._get_unique_network_id(link.name, network_ids)
         self.create(link, network_id)
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("link_deployed", item=link)
 
     def create(self, link: Link, network_id: int) -> None:
         """Create a Docker Network representing the link object and assign it to link.api_object.
@@ -135,20 +125,12 @@ class KubernetesLink(object):
 
             items = utils.chunk_list(links, pool_size)
 
-            progress_bar = None
-            if utils.CLI_ENV:
-                progress_bar = progressbar.ProgressBar(
-                    widgets=['Deleting collision domains... ', progressbar.Bar(),
-                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                    redirect_stdout=True,
-                    max_value=len(links)
-                )
+            EventDispatcher.get_instance().dispatch("links_undeploy_started", items=links)
 
             for chunk in items:
-                links_pool.map(func=partial(self._undeploy_link, progress_bar), iterable=chunk)
+                links_pool.map(func=self._undeploy_link, iterable=chunk)
 
-            if utils.CLI_ENV:
-                progress_bar.finish()
+            EventDispatcher.get_instance().dispatch("links_undeploy_ended")
 
     def wipe(self) -> None:
         """Undeploy all the running networks of the specified user.
@@ -164,13 +146,12 @@ class KubernetesLink(object):
         items = utils.chunk_list(links, pool_size)
 
         for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, None), iterable=chunk)
+            links_pool.map(func=self._undeploy_link, iterable=chunk)
 
-    def _undeploy_link(self, progress_bar: progressbar.ProgressBar, link_item: Any) -> None:
+    def _undeploy_link(self, link_item: Any) -> None:
         """Undeploy a Kubernetes network.
 
         Args:
-            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             link_item (): The Kubernetes network to undeploy.
 
         Returns:
@@ -190,8 +171,7 @@ class KubernetesLink(object):
         except ApiException:
             pass
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("link_undeployed", item=link_item)
 
     def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None) -> List[Any]:
         """Return the List of Kubernetes networks.

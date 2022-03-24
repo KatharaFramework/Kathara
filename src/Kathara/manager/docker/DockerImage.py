@@ -6,6 +6,7 @@ from docker import DockerClient
 from docker.errors import APIError
 
 from ... import utils
+from ...event.EventDispatcher import EventDispatcher
 
 
 class DockerImage(object):
@@ -87,11 +88,9 @@ class DockerImage(object):
         # We only need to update tagged images, not the ones with digests.
         if remote_image_digest != local_image_digest:
             if utils.CLI_ENV:
-                utils.confirmation_prompt("A new version of image `%s` has been found on Docker Hub. "
-                                          "Do you want to pull it?" % image_name,
-                                          lambda: self.pull(image_name),
-                                          lambda: None
-                                          )
+                EventDispatcher.get_instance().dispatch("docker_image_update_found",
+                                                        docker_image=self,
+                                                        image_name=image_name)
             else:
                 self.pull(image_name)
 

@@ -5,11 +5,9 @@ import re
 import shlex
 import sys
 import uuid
-from functools import partial
 from multiprocessing.dummy import Pool
 from typing import Optional, Set, List, Union, Dict, Generator, Tuple, Any
 
-import progressbar
 from kubernetes import client
 from kubernetes.client.api import apps_v1_api
 from kubernetes.client.api import core_v1_api
@@ -19,6 +17,7 @@ from kubernetes.stream import stream
 from .KubernetesConfigMap import KubernetesConfigMap
 from .KubernetesNamespace import KubernetesNamespace
 from ... import utils
+from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MachineAlreadyExistsError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
@@ -139,14 +138,7 @@ class KubernetesMachine(object):
         if privileged:
             logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
 
-        progress_bar = None
-        if utils.CLI_ENV:
-            progress_bar = progressbar.ProgressBar(
-                widgets=['Deploying devices... ', progressbar.Bar(),
-                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                redirect_stdout=True,
-                max_value=len(machines)
-            )
+        EventDispatcher.get_instance().dispatch("machines_deploy_started", items=machines)
 
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
@@ -158,21 +150,17 @@ class KubernetesMachine(object):
             items = utils.chunk_list(machines, pool_size)
 
             for chunk in items:
-                machines_pool.map(func=partial(self._deploy_machine, progress_bar),
-                                  iterable=chunk
-                                  )
+                machines_pool.map(func=self._deploy_machine, iterable=chunk)
         else:
             for item in machines:
-                self._deploy_machine(progress_bar, item)
+                self._deploy_machine(item)
 
-        if utils.CLI_ENV:
-            progress_bar.finish()
+        EventDispatcher.get_instance().dispatch("machines_deploy_ended")
 
-    def _deploy_machine(self, progress_bar: progressbar.ProgressBar, machine_item: Tuple[str, Machine]) -> None:
+    def _deploy_machine(self, machine_item: Tuple[str, Machine]) -> None:
         """Deploy a Kubernetes deployment from the Kathara device contained in machine_item.
 
         Args:
-           progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
            machine_item (Tuple[str, Machine]): A tuple composed by the name of the device and a device object
 
         Returns:
@@ -182,8 +170,7 @@ class KubernetesMachine(object):
 
         self.create(machine)
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("machine_deployed", item=machine)
 
     def create(self, machine: Machine) -> None:
         """Create a Kubernetes deployment and a PoD representing the device and assign it to machine.api_object.
@@ -413,21 +400,12 @@ class KubernetesMachine(object):
 
             items = utils.chunk_list(machines, pool_size)
 
-            progress_bar = None
-            if utils.CLI_ENV:
-                progress_bar = progressbar.ProgressBar(
-                    widgets=['Deleting devices... ', progressbar.Bar(),
-                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                    redirect_stdout=True,
-                    max_value=len(machines)
-                )
+            EventDispatcher.get_instance().dispatch("machines_undeploy_started", items=machines)
 
             for chunk in items:
-                machines_pool.map(func=partial(self._undeploy_machine, progress_bar),
-                                  iterable=chunk
-                                  )
-            if utils.CLI_ENV:
-                progress_bar.finish()
+                machines_pool.map(func=self._undeploy_machine, iterable=chunk)
+
+            EventDispatcher.get_instance().dispatch("machines_undeploy_ended")
 
     def wipe(self) -> None:
         """Undeploy all the running Kubernetes deployments and PoDs.
@@ -443,13 +421,12 @@ class KubernetesMachine(object):
         items = utils.chunk_list(machines, pool_size)
 
         for chunk in items:
-            machines_pool.map(func=partial(self._undeploy_machine, None), iterable=chunk)
+            machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
-    def _undeploy_machine(self, progress_bar: progressbar.ProgressBar, pod_api_object: client.V1Pod) -> None:
+    def _undeploy_machine(self, pod_api_object: client.V1Pod) -> None:
         """Undeploy a Kubernetes pod.
 
         Args:
-            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             pod_api_object (client.V1Pod): The Kubernetes pod to undeploy.
 
         Returns:
@@ -458,8 +435,7 @@ class KubernetesMachine(object):
 
         self._delete_machine(pod_api_object)
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("machine_undeployed", item=pod_api_object)
 
     def _delete_machine(self, pod_api_object: client.V1Pod) -> None:
         """Delete the Kubernetes deployment and PoD associated to pod_api_object.

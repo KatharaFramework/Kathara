@@ -10,6 +10,7 @@ import coloredlogs
 
 from Kathara import utils
 from Kathara.auth.PrivilegeHandler import PrivilegeHandler
+from Kathara.cli.ui.event.register import register_cli_events
 from Kathara.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError, SettingsNotFound
 from Kathara.foundation.cli.command.CommandFactory import CommandFactory
 from Kathara.setting.Setting import Setting
@@ -102,6 +103,8 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
 
     utils.CLI_ENV = True
+    register_cli_events()
+
     utils.check_python_version()
 
     utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)

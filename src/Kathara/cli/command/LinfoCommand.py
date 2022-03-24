@@ -1,6 +1,7 @@
 import argparse
 from typing import List
 
+from ..ui.utils import format_headers
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -116,14 +117,14 @@ class LinfoCommand(Command):
 
     @staticmethod
     def _get_conf_info(lab_path: str) -> None:
-        print(utils.format_headers("Lab Information"))
+        print(format_headers("Lab Information"))
 
         lab = LabParser.parse(lab_path)
         lab_meta_information = str(lab)
 
         if lab_meta_information:
             print(lab_meta_information)
-            print(utils.format_headers())
+            print(format_headers())
 
         n_machines = len(lab.machines)
         n_links = len(lab.links) if BRIDGE_LINK_NAME not in lab.links else len(lab.links) - 1
@@ -131,4 +132,4 @@ class LinfoCommand(Command):
         print("There are %d devices." % n_machines)
         print("There are %d collision domains." % n_links)
 
-        print(utils.format_headers())
+        print(format_headers())

@@ -3,9 +3,9 @@ import os
 from itertools import chain
 from typing import Dict, Set, Any, List, Union, Optional
 
+from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
 from .Link import Link
-from .Machine import Machine
 from .. import utils
 
 
@@ -52,7 +52,7 @@ class Lab(object):
         self.email: Optional[str] = None
         self.web: Optional[str] = None
 
-        self.machines: Dict[str, Machine] = {}
+        self.machines: Dict[str, 'MachinePackage.Machine'] = {}
         self.links: Dict[str, Link] = {}
 
         self.general_options: Dict[str, Any] = {}
@@ -177,7 +177,7 @@ class Lab(object):
         self.machines = collections.OrderedDict(sorted(self.machines.items(), key=lambda t: dep_sort(t[0])))
         self.has_dependencies = True
 
-    def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> Machine:
+    def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> 'MachinePackage.Machine':
         """Get the specified device. If it not exists, create and add it to the devices list.
 
         Args:
@@ -189,7 +189,7 @@ class Lab(object):
             Kathara.model.Machine: A Kathara device.
         """
         if name not in self.machines:
-            self.machines[name] = Machine(self, name, **kwargs)
+            self.machines[name] = MachinePackage.Machine(self, name, **kwargs)
 
         return self.machines[name]
 

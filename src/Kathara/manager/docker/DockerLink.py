@@ -1,17 +1,16 @@
 import logging
 import re
-from functools import partial
 from multiprocessing.dummy import Pool
 from typing import List, Union, Dict
 
 import docker
 import docker.models.networks
-import progressbar
 from docker import DockerClient
 from docker import types
 
 from ..docker.DockerPlugin import PLUGIN_NAME
 from ... import utils
+from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import PrivilegeError
 from ...model.ExternalLink import ExternalLink
 from ...model.Lab import Lab
@@ -44,31 +43,23 @@ class DockerLink(object):
             link_pool = Pool(pool_size)
 
             items = utils.chunk_list(links, pool_size)
-            progress_bar = None
-            if utils.CLI_ENV:
-                progress_bar = progressbar.ProgressBar(
-                    widgets=['Deploying collision domains... ', progressbar.Bar(),
-                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                    redirect_stdout=True,
-                    max_value=len(links)
-                )
+
+            EventDispatcher.get_instance().dispatch("links_deploy_started", items=links)
 
             for chunk in items:
-                link_pool.map(func=partial(self._deploy_link, progress_bar), iterable=chunk)
+                link_pool.map(func=self._deploy_link, iterable=chunk)
 
-            if utils.CLI_ENV:
-                progress_bar.finish()
+            EventDispatcher.get_instance().dispatch("links_deploy_ended")
 
         # Create a docker bridge link in the lab object and assign the Docker Network object associated to it.
         docker_bridge = self.get_docker_bridge()
         link = lab.get_or_new_link(BRIDGE_LINK_NAME)
         link.api_object = docker_bridge
 
-    def _deploy_link(self, progress_bar: progressbar.ProgressBar, link_item: (str, Link)) -> None:
+    def _deploy_link(self, link_item: (str, Link)) -> None:
         """Deploy the collision domain contained in the link_item as a Docker network.
 
         Args:
-            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             link_item (Tuple[str, Link]): A tuple composed by the name of the collision domain and a Link object
 
         Returns:
@@ -81,8 +72,7 @@ class DockerLink(object):
 
         self.create(link)
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("link_deployed", item=link)
 
     def create(self, link: Link) -> None:
         """Create a Docker network representing the collision domain object and assign it to link.api_object.
@@ -147,20 +137,12 @@ class DockerLink(object):
 
             items = utils.chunk_list(links, pool_size)
 
-            progress_bar = None
-            if utils.CLI_ENV:
-                progress_bar = progressbar.ProgressBar(
-                    widgets=['Deleting collision domains... ', progressbar.Bar(),
-                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                    redirect_stdout=True,
-                    max_value=len(links)
-                )
+            EventDispatcher.get_instance().dispatch("links_undeploy_started", items=links)
 
             for chunk in items:
-                links_pool.map(func=partial(self._undeploy_link, progress_bar), iterable=chunk)
+                links_pool.map(func=self._undeploy_link, iterable=chunk)
 
-            if utils.CLI_ENV:
-                progress_bar.finish()
+            EventDispatcher.get_instance().dispatch("links_undeploy_ended")
 
     def wipe(self, user: str = None) -> None:
         """Undeploy all the Docker networks of the specified user. If user is None, it undeploy all the Docker networks.
@@ -183,13 +165,12 @@ class DockerLink(object):
         items = utils.chunk_list(links, pool_size)
 
         for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, None), iterable=chunk)
+            links_pool.map(func=self._undeploy_link, iterable=chunk)
 
-    def _undeploy_link(self, progress_bar: progressbar.ProgressBar, network: docker.models.networks.Network) -> None:
+    def _undeploy_link(self, network: docker.models.networks.Network) -> None:
         """Undeploy a Docker network.
 
         Args:
-            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             network (docker.models.networks.Network): The Docker network to undeploy.
 
         Returns:
@@ -197,8 +178,7 @@ class DockerLink(object):
         """
         self._delete_link(network)
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("link_undeployed", item=network)
 
     def get_docker_bridge(self) -> Union[None, docker.models.networks.Network]:
         """Return the Docker bridged network.

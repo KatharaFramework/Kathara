@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, List
 
 from .. import utils
 from .. import version
-from ..connectors.GitHubApi import GitHubApi
+from ..webhooks.GitHubApi import GitHubApi
 from ..exceptions import HTTPConnectionError, SettingsError, SettingsNotFound
 from ..foundation.setting.SettingsAddon import SettingsAddon
 from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
@@ -179,7 +179,7 @@ class Setting(object):
         current_time = time.time()
         # After 1 week, check if a new Kathara version has been released.
         if current_time - self.last_checked > ONE_WEEK:
-            logging.debug(utils.format_headers("Checking Updates"))
+            logging.debug("Checking Updates...")
             checked = True
 
             try:
@@ -199,8 +199,6 @@ class Setting(object):
             if checked:
                 self.last_checked = current_time
                 self.save_to_disk()
-
-            logging.debug(utils.format_headers())
 
         try:
             utils.re_search_fail(r"^[a-z]+_?[a-z_]+$", self.net_prefix)
