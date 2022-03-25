@@ -67,6 +67,39 @@ class DockerOptionsHandler(OptionsHandler):
 
         shared_item = SubmenuItem(shared_string, shared_menu, current_menu)
 
+        # Image Update Policy Option
+        image_update_policy_string = "Docker Image Update Policy"
+        image_update_policy_menu = SelectionMenu(strings=[],
+                                                 title=image_update_policy_string,
+                                                 subtitle=setting_utils.current_string("image_update_policy"),
+                                                 prologue_text="""Choose the policy when a Docker image update """
+                                                               """is available for a running device.             
+
+                                                               Default is %s.""" % DEFAULTS['image_update_policy'],
+                                                 formatter=menu_formatter
+                                                 )
+
+        image_update_policy_menu.append_item(FunctionItem(text="Prompt",
+                                                          function=setting_utils.update_setting_value,
+                                                          args=["image_update_policy", "Prompt"],
+                                                          should_exit=True
+                                                          )
+                                             )
+        image_update_policy_menu.append_item(FunctionItem(text="Always",
+                                                          function=setting_utils.update_setting_value,
+                                                          args=["image_update_policy", "Always"],
+                                                          should_exit=True
+                                                          )
+                                             )
+        image_update_policy_menu.append_item(FunctionItem(text="Never",
+                                                          function=setting_utils.update_setting_value,
+                                                          args=["image_update_policy", "Never"],
+                                                          should_exit=True
+                                                          )
+                                             )
+
+        image_update_policy_item = SubmenuItem(image_update_policy_string, image_update_policy_menu, current_menu)
+
         # Shared Links Option
         shared_cd_string = "Enable Shared Collision Domains between users"
         shared_cd_menu = SelectionMenu(strings=[],
@@ -102,7 +135,8 @@ class DockerOptionsHandler(OptionsHandler):
                                             title=remote_url_string,
                                             subtitle=setting_utils.current_string("remote_url"),
                                             prologue_text="""You can specify a remote Docker Daemon URL.
-                                            Default is %s.""" % DEFAULTS['remote_url'],
+                                            
+                                                          Default is %s.""" % DEFAULTS['remote_url'],
                                             formatter=menu_formatter
                                             )
 
@@ -126,8 +160,10 @@ class DockerOptionsHandler(OptionsHandler):
             cert_path_menu = SelectionMenu(strings=[],
                                            title=cert_path_string,
                                            subtitle=setting_utils.current_string("cert_path"),
-                                           prologue_text="""When using a remote Docker Daemon, a TLS Cert could be required.
-                                           Default is %s.""" % DEFAULTS['cert_path'],
+                                           prologue_text="""When using a remote Docker Daemon, a TLS Cert could be """
+                                                         """required.
+                                                         
+                                                            Default is %s.""" % DEFAULTS['cert_path'],
                                            formatter=menu_formatter
                                            )
 
@@ -164,6 +200,7 @@ class DockerOptionsHandler(OptionsHandler):
 
         current_menu.append_item(hosthome_item)
         current_menu.append_item(shared_item)
+        current_menu.append_item(image_update_policy_item)
         current_menu.append_item(shared_cd_item)
         if remote_url_item:
             current_menu.append_item(remote_url_item)
