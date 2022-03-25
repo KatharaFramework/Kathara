@@ -5,7 +5,6 @@ import docker.models.images
 from docker import DockerClient
 from docker.errors import APIError
 
-from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 
 
@@ -87,12 +86,9 @@ class DockerImage(object):
         (_, local_image_digest) = local_repo_digest.split("@")
         # We only need to update tagged images, not the ones with digests.
         if remote_image_digest != local_image_digest:
-            if utils.CLI_ENV:
-                EventDispatcher.get_instance().dispatch("docker_image_update_found",
-                                                        docker_image=self,
-                                                        image_name=image_name)
-            else:
-                self.pull(image_name)
+            EventDispatcher.get_instance().dispatch("docker_image_update_found",
+                                                    docker_image=self,
+                                                    image_name=image_name)
 
     def check(self, image_name: str) -> None:
         """Check the existence of the specified image.

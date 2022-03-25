@@ -102,7 +102,6 @@ class KatharaEntryPoint(object):
 if __name__ == '__main__':
     multiprocessing.freeze_support()
 
-    utils.CLI_ENV = True
     register_cli_events()
 
     utils.check_python_version()

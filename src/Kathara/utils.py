@@ -29,9 +29,6 @@ LINUX2: str = "linux2"
 # List of ignored files
 EXCLUDED_FILES: List[str] = ['.DS_Store']
 
-# True if launched from CLI
-CLI_ENV: bool = False
-
 # Reserved names for devices
 RESERVED_MACHINE_NAMES: List[str] = ['shared', '_test']
 
