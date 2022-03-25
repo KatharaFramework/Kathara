@@ -1,5 +1,6 @@
 import io
 import json
+import logging
 from datetime import datetime
 from typing import Set, Dict, Generator, Any, List, Tuple
 
@@ -131,7 +132,7 @@ class KubernetesManager(IManager):
             None
         """
         if all_users:
-            raise NotSupportedError("Cannot use `--all` flag.")
+            logging.warning("User-specific options have no effect on Megalos.")
 
         self.k8s_machine.wipe()
         self.k8s_link.wipe()
@@ -223,7 +224,7 @@ class KubernetesManager(IManager):
              str: String containing devices info
         """
         if all_users:
-            raise NotSupportedError("Cannot use `--all` flag on Megalos.")
+            logging.warning("User-specific options have no effect on Megalos.")
 
         table_header = ["LAB HASH", "DEVICE NAME", "STATUS", "ASSIGNED NODE"]
         stats_table = DoubleTable([])
@@ -255,18 +256,56 @@ class KubernetesManager(IManager):
 
             yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
 
-    def get_machine_api_object(self, lab_hash: str, machine_name: str) -> client.V1Pod:
-        """Return the corresponding API object of a running device in a network scenario.
+    def get_machine_api_object(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
+                               all_users: bool = False) -> client.V1Pod:
+        """
+        Return the corresponding API object of a running device in a network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario.
             machine_name (str): The name of the device.
+            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            all_users (bool): If True, return information about the device of all users.
 
         Returns:
-            client.V1Pod: A Kubernetes PoD.
+            client.V1Pod: A Kubernetes Pod.
         """
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
+
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
         lab_hash = lab_hash.lower()
-        return self.k8s_machine.get_machine_api_object(lab_hash, machine_name)
+
+        return self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+
+    def get_machines_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
+            List[client.V1Pod]:
+        """
+        Return API objects of running devices in a network scenario.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            all_users (bool): If True, return information about the device of all users.
+
+        Returns:
+            List[client.V1Pod]: Kubernetes Pod objects of devices.
+        """
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
+
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        return self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash)
 
     def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
             -> List[Dict[str, Any]]:
@@ -299,7 +338,7 @@ class KubernetesManager(IManager):
             str: The formatted devices properties.
         """
         if all_users:
-            raise NotSupportedError("Cannot use `--all` flag.")
+            logging.warning("User-specific options have no effect on Megalos.")
 
         machines_stats = self.get_machine_info(machine_name, lab_hash=lab_hash)
 

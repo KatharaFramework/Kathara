@@ -485,7 +485,9 @@ class KubernetesMachine(object):
         Returns:
             None
         """
-        pod = self.get_machine_api_object(lab_hash=lab_hash, machine_name=machine_name)
+        pod = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+        if not pod:
+            raise Exception("The specified device `%s` is not running." % machine_name)
 
         if 'Running' not in pod.status.phase:
             raise Exception('Device `%s` is not ready.' % machine_name)
@@ -582,7 +584,9 @@ class KubernetesMachine(object):
 
         try:
             # Retrieve the pod of current Deployment
-            pod = self.get_machine_api_object(lab_hash=lab_hash, machine_name=machine_name)
+            pod = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+            if not pod:
+                raise Exception("The specified device `%s` is not running." % machine_name)
 
             response = stream(self.core_client.connect_get_namespaced_pod_exec,
                               name=pod.metadata.name,
@@ -646,15 +650,17 @@ class KubernetesMachine(object):
         except StopIteration:
             pass
 
-    def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None) -> List[client.V1Pod]:
-        """Return the List of Kubernetes PoD.
+    def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None) -> \
+            Union[List[client.V1Pod], client.V1Pod]:
+        """Return the List of Kubernetes Pods. If machine_name is specified, return the single device API object.
 
         Args:
-            lab_hash (str): The hash of a network scenario. If specified, return all the Kubernetes PoD in the scenario.
-            machine_name (str): The name of a device. If specified, return the specified Kubernetes PoD of the scenario.
+            lab_hash (str): The hash of a network scenario. If specified, return all the Kubernetes Pod in the scenario.
+            machine_name (str): The name of a device. If specified, return the specified Kubernetes Pod of the scenario.
 
         Returns:
-            List[client.V1Pod]: A list of Kubernetes PoDs.
+            Union[List[client.V1Pod], client.V1Pod]: A list of Kubernetes Pods objects. If machine_name is specified,
+            a single Kubernetes Pods object.
         """
         filters = ["app=kathara"]
         if machine_name:
@@ -672,26 +678,12 @@ class KubernetesMachine(object):
                                                                  ).items
                             )
 
+        if machine_name:
+            # In case a specific machine is searched, return the object if the list is of one element.
+            # Otherwise, return None if 0 or >1 devices are found
+            return machines.pop() if len(machines) == 1 else None
+
         return machines
-
-    def get_machine_api_object(self, lab_hash: str, machine_name: str) -> client.V1Pod:
-        """Return the Kubernetes PoD specified by lab_hash and machine_name.
-
-        Args:
-            lab_hash (str): The hash of a network scenario.
-            machine_name (str): The name of a device.
-
-        Returns:
-            client.V1Pod: A Kubernets PoD.
-        """
-        pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
-
-        logging.debug("Found pods: %s" % len(pods))
-
-        if len(pods) != 1:
-            raise Exception("Error getting the device `%s` inside the lab." % machine_name)
-        else:
-            return pods[0]
 
     def get_machine_info(self, machine_name: str, lab_hash: str = None) -> List[Dict[str, Any]]:
         """Return a list of dicts containing the devices info.

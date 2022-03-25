@@ -11,17 +11,17 @@ from ..setting.Setting import Setting, AVAILABLE_MANAGERS
 
 
 class Kathara(IManager):
-    """Facade class for interacting with Kathara. It is a proxy for the selected virtualization manager."""
+    """Facade class for interacting with Kathara. It is a proxy for the selected Manager."""
     __slots__ = ['manager']
 
     __instance: Kathara = None
 
     @staticmethod
     def get_instance() -> Kathara:
-        """Get an instance of the current Kathara Manager.
+        """Get an instance of Kathara.
     
         Returns:
-            Kathara: instance of the current Kathara Manager.
+            Kathara: instance of Kathara.
         """
         if Kathara.__instance is None:
             Kathara()
@@ -155,17 +155,36 @@ class Kathara(IManager):
         """
         return self.manager.get_formatted_lab_info(lab_hash, machine_name, all_users)
 
-    def get_machine_api_object(self, lab_hash: str, machine_name: str) -> Any:
-        """Return the corresponding API object of a running device in a network scenario.
+    def get_machine_api_object(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
+                               all_users: bool = False) -> Any:
+        """
+        Return the corresponding API object of a running device in a network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario.
             machine_name (str): The name of the device.
+            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            all_users (bool): If True, return information about the device of all users.
 
         Returns:
-            Any: The Api object of the device specific for the current manager.
+            Any: API object of the device specific for the current manager.
         """
-        return self.manager.get_machine_api_object(lab_hash, machine_name)
+        return self.manager.get_machine_api_object(machine_name, lab_hash, lab_name, all_users)
+
+    def get_machines_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) \
+            -> List[Any]:
+        """
+        Return API objects of running devices in a network scenario.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            all_users (bool): If True, return information about the device of all users.
+
+        Returns:
+            List[Any]: API objects of devices, specific for the current manager.
+        """
+        return self.manager.get_machines_api_objects(lab_hash, lab_name, all_users)
 
     def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
             -> List[Dict[str, Any]]:

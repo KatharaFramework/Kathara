@@ -1,6 +1,5 @@
 import io
 import logging
-from copy import copy
 from datetime import datetime
 from typing import Set, Dict, Generator, Any, Tuple, List
 
@@ -291,19 +290,52 @@ class DockerManager(IManager):
             yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
 
     @privileged
-    def get_machine_api_object(self, lab_hash: str, machine_name: str) -> docker.models.containers.Container:
-        """Return the corresponding API object of a running device in a network scenario.
+    def get_machine_api_object(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
+                               all_users: bool = False) -> docker.models.containers.Container:
+        """
+        Return the corresponding API object of a running device in a network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario.
             machine_name (str): The name of the device.
+            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            all_users (bool): If True, return information about the device of all users.
 
         Returns:
-            docker.models.containers.Container: docker machine api object.
+            docker.models.containers.Container: Docker API object of devices.
         """
-        user_name = utils.get_current_user_name()
+        user_name = utils.get_current_user_name() if not all_users else None
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
 
-        return self.docker_machine.get_machine_api_object(lab_hash, machine_name, user=user_name)
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        return self.docker_machine.get_machines_api_objects_by_filters(
+            lab_hash=lab_hash, machine_name=machine_name, user=user_name
+        )
+
+    def get_machines_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
+            List[docker.models.containers.Container]:
+        """
+        Return API objects of running devices in a network scenario.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            all_users (bool): If True, return information about the device of all users.
+
+        Returns:
+            List[docker.models.containers.Container]: Docker API objects of devices.
+        """
+        user_name = utils.get_current_user_name() if not all_users else None
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        return self.docker_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash, user=user_name)
 
     @privileged
     def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
