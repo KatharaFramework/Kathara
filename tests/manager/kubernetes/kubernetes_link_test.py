@@ -85,12 +85,6 @@ def kubernetes_network():
     }
 
 
-@pytest.fixture()
-@mock.patch("progressbar.ProgressBar")
-def progress_bar(mock_progress_bar):
-    return mock_progress_bar
-
-
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 def test_get_network_name(mock_setting_get_instance, kubernetes_link):
     setting_mock = Mock()
@@ -249,20 +243,20 @@ def test_create(mock_setting_get_instance, kubernetes_link, default_link):
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.create")
-def test_deploy_link(mock_create, kubernetes_link, progress_bar, default_link):
-    kubernetes_link._deploy_link(progress_bar, {}, ("", default_link))
+def test_deploy_link(mock_create, kubernetes_link, default_link):
+    kubernetes_link._deploy_link({}, ("", default_link))
     mock_create.called_once_with(default_link, EXPECTED_NETWORK_ID)
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.create")
-def test_deploy_link_collision(mock_create, kubernetes_link, progress_bar, default_link):
-    kubernetes_link._deploy_link(progress_bar, NETWORK_IDS_SINGLE, ("", default_link))
+def test_deploy_link_collision(mock_create, kubernetes_link, default_link):
+    kubernetes_link._deploy_link(NETWORK_IDS_SINGLE, ("", default_link))
     mock_create.called_once_with(default_link, EXPECTED_NETWORK_ID + 1)
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._deploy_link")
 @mock.patch("multiprocessing.managers.SyncManager", new=FakeManager)
-def test_deploy_links(mock_deploy_link, kubernetes_link, progress_bar):
+def test_deploy_links(mock_deploy_link, kubernetes_link):
     lab = Lab("Default scenario")
     link_a = lab.get_or_new_link("A")
     link_b = lab.get_or_new_link("B")
@@ -270,14 +264,14 @@ def test_deploy_links(mock_deploy_link, kubernetes_link, progress_bar):
 
     kubernetes_link.deploy_links(lab)
 
-    mock_deploy_link.assert_any_call(None, {}, ("A", link_a))
-    mock_deploy_link.assert_any_call(None, {}, ("B", link_b))
-    mock_deploy_link.assert_any_call(None, {}, ("C", link_c))
+    mock_deploy_link.assert_any_call({}, ("A", link_a))
+    mock_deploy_link.assert_any_call({}, ("B", link_b))
+    mock_deploy_link.assert_any_call({}, ("C", link_c))
     assert mock_deploy_link.call_count == 3
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._deploy_link")
-def test_deploy_links_no_link(mock_deploy_link, kubernetes_link, progress_bar):
+def test_deploy_links_no_link(mock_deploy_link, kubernetes_link):
     lab = Lab("Default scenario")
 
     kubernetes_link.deploy_links(lab)
@@ -286,7 +280,7 @@ def test_deploy_links_no_link(mock_deploy_link, kubernetes_link, progress_bar):
 
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_delete_link(mock_setting_get_instance, kubernetes_network, progress_bar, kubernetes_link, default_link):
+def test_delete_link(mock_setting_get_instance, kubernetes_network, kubernetes_link, default_link):
     setting_mock = Mock()
     setting_mock.configure_mock(**{
         'manager': 'kubernetes',
@@ -298,7 +292,7 @@ def test_delete_link(mock_setting_get_instance, kubernetes_network, progress_bar
         "items": []
     }
 
-    kubernetes_link._undeploy_link(progress_bar, kubernetes_network)
+    kubernetes_link._undeploy_link(kubernetes_network)
 
     kubernetes_link.client.delete_namespaced_custom_object.assert_called_once_with(
         body=client.V1DeleteOptions(grace_period_seconds=0),

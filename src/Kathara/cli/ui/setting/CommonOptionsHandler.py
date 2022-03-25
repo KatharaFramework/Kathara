@@ -1,5 +1,5 @@
 from . import utils as setting_utils
-from ....connectors.DockerHubApi import DockerHubApi
+from ....webhooks.DockerHubApi import DockerHubApi
 from ....exceptions import HTTPConnectionError
 from ....foundation.cli.ui.setting.OptionsHandler import OptionsHandler
 from ....manager.Kathara import Kathara

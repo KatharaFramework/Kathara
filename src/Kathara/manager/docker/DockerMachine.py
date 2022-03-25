@@ -1,17 +1,16 @@
 import logging
 import shlex
-from functools import partial
 from itertools import islice
 from multiprocessing.dummy import Pool
 from typing import List, Any, Dict, Generator, Optional, Set, Tuple
 
 import docker.models.containers
-import progressbar
 from docker import DockerClient
 from docker.errors import APIError
 
 from .DockerImage import DockerImage
 from ... import utils
+from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
 from ...model.Lab import Lab
 from ...model.Link import BRIDGE_LINK_NAME
@@ -120,14 +119,7 @@ class DockerMachine(object):
         machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
             else lab.machines.items()
 
-        progress_bar = None
-        if utils.CLI_ENV:
-            progress_bar = progressbar.ProgressBar(
-                widgets=['Deploying devices... ', progressbar.Bar(),
-                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                redirect_stdout=True,
-                max_value=len(machines)
-            )
+        EventDispatcher.get_instance().dispatch("machines_deploy_started", items=machines)
 
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
@@ -139,20 +131,17 @@ class DockerMachine(object):
             items = utils.chunk_list(machines, pool_size)
 
             for chunk in items:
-                machines_pool.map(func=partial(self._deploy_and_start_machine, progress_bar), iterable=chunk)
+                machines_pool.map(func=self._deploy_and_start_machine, iterable=chunk)
         else:
             for item in machines:
-                self._deploy_and_start_machine(progress_bar, item)
+                self._deploy_and_start_machine(item)
 
-        if utils.CLI_ENV:
-            progress_bar.finish()
+        EventDispatcher.get_instance().dispatch("machines_deploy_ended")
 
-    def _deploy_and_start_machine(self, progress_bar: Optional[progressbar.ProgressBar],
-                                  machine_item: Tuple[str, Machine]) -> None:
+    def _deploy_and_start_machine(self, machine_item: Tuple[str, Machine]) -> None:
         """Deploy and start a Docker container from the device contained in machine_item.
 
         Args:
-            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             machine_item (Tuple[str, Machine]): A tuple composed by the name of the device and a device object
 
         Returns:
@@ -163,8 +152,7 @@ class DockerMachine(object):
         self.create(machine)
         self.start(machine)
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("machine_deployed", item=machine)
 
     def create(self, machine: Machine) -> None:
         """Create a Docker container representing the device and assign it to machine.api_object.
@@ -379,10 +367,6 @@ class DockerMachine(object):
                                     detach=True
                                     )
 
-        if utils.CLI_ENV and Setting.get_instance().open_terminals:
-            for i in range(0, machine.get_num_terms()):
-                machine.connect()
-
     def undeploy(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
         """Undeploy the devices contained in the network scenario defined by the lab_hash.
 
@@ -406,21 +390,12 @@ class DockerMachine(object):
 
             items = utils.chunk_list(machines, pool_size)
 
-            progress_bar = None
-            if utils.CLI_ENV:
-                progress_bar = progressbar.ProgressBar(
-                    widgets=['Deleting devices... ', progressbar.Bar(),
-                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                    redirect_stdout=True,
-                    max_value=len(machines)
-                )
+            EventDispatcher.get_instance().dispatch("machines_undeploy_started", items=machines)
 
             for chunk in items:
-                machines_pool.map(func=partial(self._undeploy_machine, progress_bar),
-                                  iterable=chunk
-                                  )
-            if utils.CLI_ENV:
-                progress_bar.finish()
+                machines_pool.map(func=self._undeploy_machine, iterable=chunk)
+
+            EventDispatcher.get_instance().dispatch("machines_undeploy_ended")
 
     def wipe(self, user: str = None) -> None:
         """Undeploy all the running devices of the specified user. If user is None, it undeploy all the running devices.
@@ -439,14 +414,12 @@ class DockerMachine(object):
         items = utils.chunk_list(machines, pool_size)
 
         for chunk in items:
-            machines_pool.map(func=partial(self._undeploy_machine, None), iterable=chunk)
+            machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
-    def _undeploy_machine(self, progress_bar: Optional[progressbar.ProgressBar],
-                          machine_api_object: docker.models.containers.Container) -> None:
+    def _undeploy_machine(self, machine_api_object: docker.models.containers.Container) -> None:
         """Undeploy a Docker container.
 
         Args:
-            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             machine_api_object (docker.models.containers.Container): The Docker container to undeploy.
 
         Returns:
@@ -454,8 +427,7 @@ class DockerMachine(object):
         """
         self._delete_machine(machine_api_object)
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("machine_undeployed", item=machine_api_object)
 
     def connect(self, lab_hash: str, machine_name: str, user: str = None, shell: str = None,
                 logs: bool = False) -> None:

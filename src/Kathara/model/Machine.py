@@ -3,8 +3,6 @@ import logging
 import os
 import re
 import shutil
-import subprocess
-import sys
 import tarfile
 import tempfile
 from distutils.util import strtobool
@@ -280,83 +278,6 @@ class Machine(object):
         shutil.rmtree(temp_path)
 
         return tar_data
-
-    def connect(self) -> None:
-        """Connect to the device with the terminal specified in the settings.
-
-        Returns:
-            None
-        """
-        if not utils.CLI_ENV:
-            logging.error("Machine.connect is not supported using Python APIs.")
-            return
-
-        Setting.get_instance().check_terminal()
-        terminal = Setting.get_instance().terminal
-
-        logging.debug("Opening terminal for device %s.", self.name)
-
-        executable_path = utils.get_executable_path(sys.argv[0])
-
-        if not executable_path:
-            raise Exception("Unable to find Kathara.")
-
-        is_vmachine = "-v" if self.lab.path is None else ""
-        connect_command = "%s connect %s -l %s" % (executable_path, is_vmachine, self.name)
-
-        logging.debug("Terminal will open in directory %s." % self.lab.path)
-
-        def unix_connect() -> None:
-            if terminal == "TMUX":
-                from ..trdparty.libtmux.tmux import TMUX
-
-                logging.debug("Attaching `%s` to TMUX session `%s` with command `%s`" % (self.name, self.lab.name,
-                                                                                         connect_command))
-
-                TMUX.get_instance().add_window(self.lab.name, self.name, connect_command, cwd=self.lab.path)
-            else:
-                logging.debug("Opening Linux terminal with command: %s." % connect_command)
-
-                # Command should be passed as an array
-                # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
-                subprocess.Popen([terminal, "-e", connect_command],
-                                 cwd=self.lab.path,
-                                 start_new_session=True
-                                 )
-
-        def windows_connect() -> None:
-            complete_win_command = "& %s" % connect_command
-            logging.debug("Opening Windows terminal with command: %s." % complete_win_command)
-            subprocess.Popen(["powershell.exe",
-                              '-Command',
-                              complete_win_command
-                              ],
-                             creationflags=subprocess.CREATE_NEW_CONSOLE,
-                             cwd=self.lab.path
-                             )
-
-        def osx_connect() -> None:
-            cd_to_lab_path = "cd \"%s\" &&" % self.lab.path if self.lab.path is not None else ""
-            complete_osx_command = "%s clear && %s && exit" % (cd_to_lab_path, connect_command)
-
-            if terminal == "TMUX":
-                from ..trdparty.libtmux.tmux import TMUX
-
-                logging.debug("Attaching `%s` to TMUX session `%s` with command `%s`" % (self.name, self.lab.name,
-                                                                                         complete_osx_command))
-
-                TMUX.get_instance().add_window(self.lab.name, self.name, complete_osx_command, cwd=self.lab.path)
-            else:
-                import appscript
-                logging.debug("Opening OSX terminal with command: %s." % complete_osx_command)
-                terminal_app = appscript.app(terminal)
-                if terminal == 'iTerm':
-                    window = terminal_app.create_window_with_default_profile()
-                    window.current_session.write(text=complete_osx_command)
-                elif terminal == 'Terminal':
-                    terminal_app.do_script(complete_osx_command)
-
-        utils.exec_by_platform(unix_connect, windows_connect, osx_connect)
 
     def get_image(self) -> str:
         """Get the image of the device, if defined in options or machine meta. If not, use default one.

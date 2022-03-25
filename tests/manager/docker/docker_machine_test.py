@@ -204,15 +204,13 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
     assert not mock_copy_files.called
 
 
-@mock.patch("src.Kathara.model.Machine.Machine.connect")
-def test_start(mock_machine_connect, docker_machine, default_device, default_link, default_link_b):
+def test_start(docker_machine, default_device, default_link, default_link_b):
     # add two interfaces because interace 0 is excluded
     default_device.add_interface(default_link)
     default_device.add_interface(default_link_b)
     default_device.add_meta("num_terms", 3)
     default_device.api_object.start.return_value = True
     default_device.api_object.exec_run.return_value = True
-    mock_machine_connect.return_value = True
     docker_machine.start(default_device)
     default_device.api_object.start.assert_called_once()
     default_device.api_object.exec_run.assert_called_once()
@@ -225,7 +223,7 @@ def test_deploy_and_start_machine(mock_create, mock_start, docker_machine, defau
     machine_item = ("", default_device)
     mock_create.return_value = True
     mock_start.return_value = True
-    docker_machine._deploy_and_start_machine(None, machine_item)
+    docker_machine._deploy_and_start_machine(machine_item)
     mock_create.assert_called_once()
     mock_start.assert_called_once()
 
@@ -265,7 +263,7 @@ def test_undeploy_one_device(mock_get_machines_api_objects_by_filters, mock_unde
     mock_undeploy_machine.return_value = None
     docker_machine.undeploy("lab_hash", selected_machines={default_device.name})
     mock_get_machines_api_objects_by_filters.assert_called_once()
-    mock_undeploy_machine.assert_called_once_with(None, default_device.api_object)
+    mock_undeploy_machine.assert_called_once_with(default_device.api_object)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._undeploy_machine")
@@ -325,7 +323,7 @@ def test_wipe_three_devices(mock_get_machines_api_objects_by_filters, mock_undep
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._delete_machine")
 def test_undeploy_machine(mock_delete_machine, docker_machine, default_device):
     mock_delete_machine.return_value = None
-    docker_machine._undeploy_machine(None, default_device.api_object)
+    docker_machine._undeploy_machine(default_device.api_object)
     mock_delete_machine.assert_called_once()
 
 

@@ -4,9 +4,19 @@ from unittest import mock
 import pytest
 from docker.errors import APIError
 
+from src.Kathara.event.EventDispatcher import EventDispatcher
+
 sys.path.insert(0, './')
 
 from src.Kathara.manager.docker.DockerImage import DockerImage
+
+
+class MockPullEvent(object):
+    def run(self, docker_image, image_name):
+        docker_image.pull(image_name)
+
+
+EventDispatcher.get_instance().register("docker_image_update_found", MockPullEvent())
 
 
 @pytest.fixture()

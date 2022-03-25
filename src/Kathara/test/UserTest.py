@@ -5,7 +5,6 @@ from typing import Union, Dict, List, Optional
 
 from deepdiff import DeepDiff
 
-from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
 from ..manager.Kathara import Kathara
@@ -62,9 +61,8 @@ class UserTest(Test):
 
                 machine_diff_path = "%s/%s.diff" % (self.results_path, machine.name)
                 with open(machine_diff_path, 'a') as machine_diff_file:
-                    machine_diff_file.write(utils.format_headers("User Test Result") + '\n')
+                    machine_diff_file.write("User Test Result:\n")
                     machine_diff_file.write("\n".join(diff) + "\n" if diff else "OK\n")
-                    machine_diff_file.write(utils.format_headers() + "\n\n")
 
         return test_passed
 
