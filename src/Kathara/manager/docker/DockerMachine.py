@@ -286,7 +286,7 @@ class DockerMachine(object):
     def update(self, machine: Machine) -> None:
         """Update the Docker container representing the machine.
 
-        Create a new Docker network for each link contained in
+        Create a new Docker network for each collision domain contained in
         machine.interfaces that is not already attached to the container.
 
         Args:

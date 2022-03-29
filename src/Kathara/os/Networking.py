@@ -12,7 +12,7 @@ class Networking(object):
     @staticmethod
     def get_or_new_interface(full_interface_name: str, vlan_interface_name: str, vlan_id: Optional[int] = None) -> int:
         """
-        Get or create an interface on the host. Return the link index.
+        Get or create an interface on the host. Return the OS link index.
 
         Args:
             full_interface_name (str): The name of the network interface of the host.

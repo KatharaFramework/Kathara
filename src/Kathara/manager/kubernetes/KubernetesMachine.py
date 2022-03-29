@@ -173,7 +173,7 @@ class KubernetesMachine(object):
         EventDispatcher.get_instance().dispatch("machine_deployed", item=machine)
 
     def create(self, machine: Machine) -> None:
-        """Create a Kubernetes deployment and a PoD representing the device and assign it to machine.api_object.
+        """Create a Kubernetes deployment and a Pod representing the device and assign it to machine.api_object.
 
         Args:
             machine (Kathara.model.Machine.Machine): a Kathara device.
@@ -379,7 +379,7 @@ class KubernetesMachine(object):
                                    )
 
     def undeploy(self, lab_hash: str, selected_machines: Optional[Set[str]] = None) -> None:
-        """Undeploy all the running Kubernetes deployments and PoDs contained in the scenario defined by the lab_hash.
+        """Undeploy all the running Kubernetes deployments and Pods contained in the scenario defined by the lab_hash.
 
         If selected_machines is not None, undeploy only the specified devices.
 
@@ -408,7 +408,7 @@ class KubernetesMachine(object):
             EventDispatcher.get_instance().dispatch("machines_undeploy_ended")
 
     def wipe(self) -> None:
-        """Undeploy all the running Kubernetes deployments and PoDs.
+        """Undeploy all the running Kubernetes deployments and Pods.
 
         Returns:
             None
@@ -441,7 +441,7 @@ class KubernetesMachine(object):
         """Delete the Kubernetes deployment and PoD associated to pod_api_object.
 
         Args:
-            pod_api_object (client.V1Pod): A Kubernetes PoD API object.
+            pod_api_object (client.V1Pod): A Kubernetes Pod API object.
 
         Returns:
             None
@@ -474,7 +474,7 @@ class KubernetesMachine(object):
 
     def connect(self, lab_hash: str, machine_name: str, shell: Union[str, List[str]] = None, logs: bool = False) \
             -> None:
-        """Open a stream to the Kubernetes PoD specified by machine_name using the specified shell.
+        """Open a stream to the Kubernetes Pod specified by machine_name using the specified shell.
 
         Args:
             lab_hash (str): The hash of the network scenario containing the device.
@@ -531,10 +531,10 @@ class KubernetesMachine(object):
 
     @staticmethod
     def get_env_var_value_from_pod(pod: client.V1Pod, var_name: str) -> Optional[str]:
-        """Return the value of an environment variable of the Kubernetes PoD.
+        """Return the value of an environment variable of the Kubernetes Pod.
 
         Args:
-            pod (client.V1Pod): A Kubernetes PoD.
+            pod (client.V1Pod): A Kubernetes Pod.
             var_name (str): The name of the environment variable.
 
         Returns:
@@ -562,7 +562,7 @@ class KubernetesMachine(object):
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], tty: bool = False, stdin: bool = False,
              stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False, is_stream: bool = False) \
             -> Generator[Tuple[bytes, bytes], None, None]:
-        """Execute the command on the Kubernetes PoD specified by the lab_hash and the machine_name.
+        """Execute the command on the Kubernetes Pod specified by the lab_hash and the machine_name.
 
         Args:
             lab_hash (str): The hash of the network scenario containing the device.
@@ -735,10 +735,10 @@ class KubernetesMachine(object):
             yield machines_stats
 
     def _get_stats_by_machine(self, pod_api_object: client.V1Pod) -> Dict[str, str]:
-        """Return the stats of the specified Kubernetes PoD.
+        """Return the stats of the specified Kubernetes Pod.
 
         Args:
-            pod_api_object (client.V1Pod): A Docker container.
+            pod_api_object (client.V1Pod): A Kubernetes Pod.
 
         Returns:
             Dict[str, Any]: A dict containing formatted Kathara device stats.
@@ -758,13 +758,13 @@ class KubernetesMachine(object):
 
     @staticmethod
     def _get_detailed_machine_status(pod_api_object: client.V1Pod) -> str:
-        """Return a string containing the Kubernetes PoD status.
+        """Return a string containing the Kubernetes Pod status.
 
         Args:
-            pod_api_object (client.V1Pod): A Kubernetes PoD.
+            pod_api_object (client.V1Pod): A Kubernetes Pod.
 
         Returns:
-            str: A string containing the Kubernetes PoD status.
+            str: A string containing the Kubernetes Pod status.
         """
         container_statuses = pod_api_object.status.container_statuses
 

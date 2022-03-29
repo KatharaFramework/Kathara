@@ -31,7 +31,7 @@ class DockerLink(object):
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
-            selected_links (Dict[str, Link]): Keys are Link names, values are Link objects.
+            selected_links (Dict[str, Link]): Keys are collision domains names, values are Link objects.
 
         Returns:
             None
@@ -91,9 +91,9 @@ class DockerLink(object):
 
         # If a network with the same name exists, return it instead of creating a new one.
         link_name = self.get_network_name(link.name)
-        network_objects = self.get_links_api_objects_by_filters(link_name=link_name)
-        if network_objects:
-            link.api_object = network_objects.pop()
+        network_object = self.get_links_api_objects_by_filters(link_name=link_name)
+        if network_object:
+            link.api_object = network_object
         else:
             network_ipam_config = docker.types.IPAMConfig(driver='null')
 
@@ -190,16 +190,18 @@ class DockerLink(object):
         return bridge_list.pop() if bridge_list else None
 
     def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None, user: str = None) -> \
-            List[docker.models.networks.Network]:
-        """Return the Docker networks specified by lab_hash, machine_name and user.
+            Union[List[docker.models.networks.Network], docker.models.networks.Network]:
+        """Return the Docker networks specified by lab_hash and user. If link_name is specified,
+        return the single network API object.
 
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return all the networks in the scenario.
-            link_name (str): The name of a network. If specified, return the specified networks of the scenario.
+            link_name (str): The name of a network. If specified, return the specified network of the scenario.
             user (str): The name of a user on the host. If specified, return only the networks of the user.
 
         Returns:
-            List[docker.models.networks.Network]: A list of Docker networks.
+            Union[List[docker.models.networks.Network], docker.models.networks.Network]: A list of Docker networks.
+            If link_name is specified, a single Docker network object.
         """
         filters = {"label": ["app=kathara"]}
         if user:
@@ -209,7 +211,11 @@ class DockerLink(object):
         if link_name:
             filters["name"] = link_name
 
-        return self.client.networks.list(filters=filters)
+        networks = self.client.networks.list(filters=filters)
+        if link_name:
+            return networks.pop() if len(networks) == 1 else None
+
+        return networks
 
     def _attach_external_interfaces(self, external_links: List[ExternalLink],
                                     network: docker.models.networks.Network) -> None:

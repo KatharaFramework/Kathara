@@ -11,7 +11,7 @@ class OpenMachineTerminal(object):
         If allowed, open a terminal, with the emulator specified in the settings, into the device.
 
         Args:
-            item (Kathara.model.Machine): Machine instance where open a terminal.
+            item (Kathara.model.Machine): Device where open a terminal.
 
         Returns:
             None

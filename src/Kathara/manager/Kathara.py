@@ -118,7 +118,7 @@ class Kathara(IManager):
         """Copy files on a running device in the specified paths.
 
         Args:
-            machine (Kathara.model.Machine): A running machine object. It must have the api_object field populated.
+            machine (Kathara.model.Machine): A running device object. It must have the api_object field populated.
             guest_to_host (Dict[str, io.IOBase]): A dict containing the device path as key and
                 fileobj to copy in path as value.
 
@@ -164,7 +164,7 @@ class Kathara(IManager):
             machine_name (str): The name of the device.
             lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
             lab_name (str): The name of the network scenario. If None, lab_hash should be set.
-            all_users (bool): If True, return information about the device of all users.
+            all_users (bool): If True, return information about devices of all users.
 
         Returns:
             Any: API object of the device specific for the current manager.
@@ -179,12 +179,42 @@ class Kathara(IManager):
         Args:
             lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
             lab_name (str): The name of the network scenario. If None, lab_hash should be set.
-            all_users (bool): If True, return information about the device of all users.
+            all_users (bool): If True, return information about devices of all users.
 
         Returns:
             List[Any]: API objects of devices, specific for the current manager.
         """
         return self.manager.get_machines_api_objects(lab_hash, lab_name, all_users)
+
+    def get_link_api_object(self, link_name: str, lab_hash: str = None, lab_name: str = None,
+                            all_users: bool = False) -> Any:
+        """
+        Return the corresponding API object of a collision domain in a network scenario.
+
+        Args:
+            link_name (str): The name of the collision domain.
+            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            all_users (bool): If True, return information about collision domains of all users.
+
+        Returns:
+            Any: API object of the collision domain specific for the current manager.
+        """
+        return self.manager.get_link_api_object(link_name, lab_hash, lab_name, all_users)
+
+    def get_links_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> List[Any]:
+        """
+        Return API objects of collision domains in a network scenario.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            all_users (bool): If True, return information about collision domains of all users.
+
+        Returns:
+            List[Any]: API objects of collision domains, specific for the current manager.
+        """
+        return self.manager.get_links_api_objects(lab_hash, lab_name, all_users)
 
     def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
             -> List[Dict[str, Any]]:

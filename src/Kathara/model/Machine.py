@@ -280,7 +280,7 @@ class Machine(object):
         return tar_data
 
     def get_image(self) -> str:
-        """Get the image of the device, if defined in options or machine meta. If not, use default one.
+        """Get the image of the device, if defined in options or device meta. If not, use default one.
 
         Returns:
             str: The name of the device image.
@@ -316,7 +316,7 @@ class Machine(object):
         """Get the CPU limit, multiplied by a specific multiplier.
 
         User should pass a float value ranging from 0 to max user CPUs.
-        Try to took it from options, or machine meta. Otherwise, return None.
+        Try to took it from options, or device meta. Otherwise, return None.
 
         Args:
             multiplier (int):

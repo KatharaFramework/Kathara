@@ -265,7 +265,7 @@ class KubernetesManager(IManager):
             machine_name (str): The name of the device.
             lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
             lab_name (str): The name of the network scenario. If None, lab_hash should be set.
-            all_users (bool): If True, return information about the device of all users.
+            all_users (bool): If True, return information about devices of all users.
 
         Returns:
             client.V1Pod: A Kubernetes Pod.
@@ -291,7 +291,7 @@ class KubernetesManager(IManager):
         Args:
             lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
             lab_name (str): The name of the network scenario. If None, lab_hash should be set.
-            all_users (bool): If True, return information about the device of all users.
+            all_users (bool): If True, return information about devices of all users.
 
         Returns:
             List[client.V1Pod]: Kubernetes Pod objects of devices.
@@ -306,6 +306,57 @@ class KubernetesManager(IManager):
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         return self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash)
+
+    def get_link_api_object(self, link_name: str, lab_hash: str = None, lab_name: str = None,
+                            all_users: bool = False) -> Any:
+        """
+        Return the corresponding API object of a collision domain in a network scenario.
+
+        Args:
+            link_name (str): The name of the collision domain.
+            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            all_users (bool): If True, return information about collision domains of all users.
+
+        Returns:
+            Any: Kubernetes API object of the network.
+        """
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
+
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        lab_hash = lab_hash.lower()
+
+        return self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name)
+
+    def get_links_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
+            List[Any]:
+        """
+        Return API objects of collision domains in a network scenario.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            all_users (bool): If True, return information about collision domains of all users.
+
+        Returns:
+            List[Any]: Kubernetes API objects of networks.
+        """
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
+
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        return self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash)
 
     def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
             -> List[Dict[str, Any]]:

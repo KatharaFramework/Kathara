@@ -139,13 +139,13 @@ class Lab(object):
             self.machines[machine].check()
 
     def get_links_from_machines(self, selected_machines: Union[List[str], Set[str]]) -> Dict[str, Link]:
-        """Return the name of the links connected to the selected_machines.
+        """Return the name of the collision domains connected to the selected_machines.
 
         Args:
             selected_machines (Set[str]): A set with selected devices names.
 
         Returns:
-            Dict[str, Link]: Keys are Link names, values are Link objects.
+            Dict[str, Link]: Keys are collision domains names, values are Link objects.
         """
         # Intersect selected machines names with self.machines keys
         selected_machines = set(self.machines.keys()) & set(selected_machines)

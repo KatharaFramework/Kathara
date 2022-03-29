@@ -4,7 +4,7 @@ import re
 from functools import partial
 from multiprocessing import Manager
 from multiprocessing.dummy import Pool
-from typing import Dict, Optional, Set, Any, List
+from typing import Dict, Optional, Set, Any, List, Union
 
 from kubernetes import client
 from kubernetes.client.api import custom_objects_api
@@ -38,7 +38,7 @@ class KubernetesLink(object):
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
-            selected_links (Dict[str, Link]): Keys are Link names, values are Link objects.
+            selected_links (Dict[str, Link]): Keys are collision domains names, values are Link objects.
 
         Returns:
             None
@@ -66,7 +66,7 @@ class KubernetesLink(object):
 
         Args:
             network_ids (Dict):
-            link_item (Tuple[str, Link]): A tuple composed by the name of the link and a Link object
+            link_item (Tuple[str, Link]): A tuple composed by the name of the collision domain and a Link object
 
         Returns:
             None
@@ -79,7 +79,7 @@ class KubernetesLink(object):
         EventDispatcher.get_instance().dispatch("link_deployed", item=link)
 
     def create(self, link: Link, network_id: int) -> None:
-        """Create a Docker Network representing the link object and assign it to link.api_object.
+        """Create a Kubernetes Network representing the collision domain object and assign it to link.api_object.
 
         Args:
             link (Kathara.model.Link.Link): A Kathara collision domain.
@@ -89,9 +89,9 @@ class KubernetesLink(object):
             None
         """
         # If a network with the same name exists, return it instead of creating a new one.
-        network_objects = self.get_links_api_objects_by_filters(lab_hash=link.lab.hash, link_name=link.name)
-        if network_objects:
-            link.api_object = network_objects.pop()
+        network_object = self.get_links_api_objects_by_filters(lab_hash=link.lab.hash, link_name=link.name)
+        if network_object:
+            link.api_object = network_object
             return
 
         link.api_object = self.client.create_namespaced_custom_object(group=K8S_NET_GROUP,
@@ -173,28 +173,33 @@ class KubernetesLink(object):
 
         EventDispatcher.get_instance().dispatch("link_undeployed", item=link_item)
 
-    def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None) -> List[Any]:
-        """Return the List of Kubernetes networks.
+    def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None) -> Union[List[Any], Any]:
+        """Return the List of Kubernetes networks. If link_name is specified, return the single network API object.
 
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return only the networks in the scenario, else
             return the networks in the 'default' namespace.
-            link_name (str): The name of a network. If specified, return the specified networks of the scenario.
+            link_name (str): The name of a network. If specified, return the specified network of the scenario.
 
         Returns:
-            List[Any]: A list of Kubernetes networks.
+            Union[List[Any], Any]: A list of Kubernetes networks. If link_name is specified, a single
+            Kubernetes network object.
         """
         filters = ["app=kathara"]
         if link_name:
             filters.append("name=%s" % link_name)
 
-        return self.client.list_namespaced_custom_object(group=K8S_NET_GROUP,
-                                                         version=K8S_NET_VERSION,
-                                                         namespace=lab_hash if lab_hash else "default",
-                                                         plural=K8S_NET_PLURAL,
-                                                         label_selector=",".join(filters),
-                                                         timeout_seconds=9999
-                                                         )["items"]
+        networks = self.client.list_namespaced_custom_object(group=K8S_NET_GROUP,
+                                                             version=K8S_NET_VERSION,
+                                                             namespace=lab_hash if lab_hash else "default",
+                                                             plural=K8S_NET_PLURAL,
+                                                             label_selector=",".join(filters),
+                                                             timeout_seconds=9999
+                                                             )["items"]
+        if link_name:
+            return networks.pop() if len(networks) == 1 else None
+
+        return networks
 
     def _build_definition(self, link: Link, network_id: int) -> Dict[str, str]:
         """Return a Dict containing the network definition for Kubernetes API corresponding to link.
@@ -267,7 +272,7 @@ class KubernetesLink(object):
         """Return the name of a Kubernetes Network.
 
         Args:
-            name (str): The name of a Kathara Link.
+            name (str): The name of a Kathara collision domain.
 
         Returns:
             str: The name of the Kubernetes Network in the format "<net_prefix>-<name><suffix>".
