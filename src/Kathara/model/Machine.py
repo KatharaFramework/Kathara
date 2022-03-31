@@ -7,10 +7,11 @@ import tarfile
 import tempfile
 from distutils.util import strtobool
 from pathlib import Path
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, List, OrderedDict
 
 from . import Lab as LabPackage
 from . import Link as LinkPackage
+from .Link import Link
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainConflictError
 from ..setting.Setting import Setting
@@ -24,7 +25,7 @@ class Machine(object):
     Attributes:
         lab (Kathara.model.Lab): The Kathara network Scenario of the device.
         name (str): The name of the device.
-        interfaces (List[Kathara.model.Link]): A list of the collision domains of the device.
+        interfaces (collection.OrderedDict[int, Kathara.model.Link]): A list of the collision domains of the device.
         meta (Dict[str, Any]): Keys are meta properties name, values are meta properties values.
         startup_commands (List[str]): A list of commands to execute at the device startup.
         api_object (Any): To interact with the current Kathara Manager.
@@ -53,9 +54,9 @@ class Machine(object):
             raise Exception("Invalid device name `%s`." % name)
 
         self.lab: LabPackage.Lab = lab
-        self.name = name
+        self.name: str = name
 
-        self.interfaces = {}
+        self.interfaces: OrderedDict[int, Link] = collections.OrderedDict()
 
         self.meta: Dict[str, Any] = {
             'sysctls': {},
@@ -64,15 +65,15 @@ class Machine(object):
             'ports': {}
         }
 
-        self.startup_commands = []
+        self.startup_commands: List[str] = []
 
-        self.api_object = None
+        self.api_object: Any = None
 
-        self.capabilities = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
+        self.capabilities: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
 
-        self.startup_path = None
-        self.shutdown_path = None
-        self.folder = None
+        self.startup_path: Optional[str] = None
+        self.shutdown_path: Optional[str] = None
+        self.folder: Optional[str] = None
 
         if lab.has_path():
             startup_file = os.path.join(lab.path, '%s.startup' % self.name)
@@ -425,3 +426,26 @@ class Machine(object):
 
     def __repr__(self) -> str:
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)
+
+    def __str__(self) -> str:
+        formatted_machine = f"Name: {self.name}"
+        formatted_machine += f"\nImage: {self.get_image()}"
+
+        if self.interfaces:
+            formatted_machine += "\nInterfaces: "
+            for (iface_num, link) in self.interfaces.items():
+                formatted_machine += f"\n\t- {iface_num}: {link.name}"
+
+        formatted_machine += f"\nBridged Connection: {self.meta['bridged']}"
+
+        if self.meta["sysctls"]:
+            formatted_machine += "\nSysctls:"
+            for (key, value) in self.meta["sysctls"].items():
+                formatted_machine += f"\n\t- {key} = {value}"
+
+        if self.meta["ports"]:
+            formatted_machine += "\nExposed Ports:"
+            for (key, value) in self.meta["ports"].items():
+                formatted_machine += f"\n\t- Host: {key} -> Guest: {value}"
+
+        return formatted_machine

@@ -5,6 +5,7 @@ from typing import Set, Dict, Generator, Any, Tuple, List
 
 from ..foundation.manager.IManager import IManager
 from ..foundation.manager.ManagerFactory import ManagerFactory
+from ..foundation.manager.stats.IMachineStats import IMachineStats
 from ..model.Lab import Lab
 from ..model.Machine import Machine
 from ..setting.Setting import Setting, AVAILABLE_MANAGERS
@@ -127,43 +128,16 @@ class Kathara(IManager):
         """
         self.manager.copy_files(machine, guest_to_host)
 
-    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> \
-            Generator[Dict[str, Any], None, None]:
-        """Return information about the running devices.
-
-        Args:
-            lab_hash (str): If not None, return information of the corresponding network scenario.
-            machine_name (str): If not None, return information of the specified device.
-            all_users (bool): If True, return information about the device of all users.
-
-        Returns:
-              Generator[Dict[str, Any], None, None]: A generator containing dicts containing device names as keys and
-              their info as values.
-        """
-        return self.manager.get_lab_info(lab_hash, machine_name, all_users)
-
-    def get_formatted_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> str:
-        """Return a formatted string with the information about the running devices.
-
-        Args:
-            lab_hash (str): If not None, return information of the corresponding network scenario.
-            machine_name (str): If not None, return information of the specified device.
-            all_users (bool): If True, return information about the device of all users.
-
-        Returns:
-             str: String containing devices info
-        """
-        return self.manager.get_formatted_lab_info(lab_hash, machine_name, all_users)
-
     def get_machine_api_object(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
                                all_users: bool = False) -> Any:
-        """
-        Return the corresponding API object of a running device in a network scenario.
+        """Return the corresponding API object of a running device in a network scenario.
 
         Args:
             machine_name (str): The name of the device.
-            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+            If None, lab_hash should be set.
             all_users (bool): If True, return information about devices of all users.
 
         Returns:
@@ -173,12 +147,11 @@ class Kathara(IManager):
 
     def get_machines_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) \
             -> List[Any]:
-        """
-        Return API objects of running devices in a network scenario.
+        """Return API objects of running devices.
 
         Args:
-            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
             all_users (bool): If True, return information about devices of all users.
 
         Returns:
@@ -188,13 +161,14 @@ class Kathara(IManager):
 
     def get_link_api_object(self, link_name: str, lab_hash: str = None, lab_name: str = None,
                             all_users: bool = False) -> Any:
-        """
-        Return the corresponding API object of a collision domain in a network scenario.
+        """Return the corresponding API object of a collision domain in a network scenario.
 
         Args:
             link_name (str): The name of the collision domain.
-            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+            If None, lab_hash should be set.
             all_users (bool): If True, return information about collision domains of all users.
 
         Returns:
@@ -203,12 +177,11 @@ class Kathara(IManager):
         return self.manager.get_link_api_object(link_name, lab_hash, lab_name, all_users)
 
     def get_links_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> List[Any]:
-        """
-        Return API objects of collision domains in a network scenario.
+        """Return API objects of collision domains in a network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
             all_users (bool): If True, return information about collision domains of all users.
 
         Returns:
@@ -216,32 +189,39 @@ class Kathara(IManager):
         """
         return self.manager.get_links_api_objects(lab_hash, lab_name, all_users)
 
-    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
-            -> List[Dict[str, Any]]:
-        """Return information of running devices with a specified name.
+    def get_machines_stats(self, lab_hash: str = None, lab_name: str = None, machine_name: str = None,
+                           all_users: bool = False) -> Generator[Dict[str, IMachineStats], None, None]:
+        """Return information about the running devices.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+            machine_name (str): If specified return all the devices with machine_name.
+            all_users (bool): If True, return information about the device of all users.
+
+        Returns:
+              Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
+              identifier as keys and IMachineStats objects as values.
+        """
+        return self.manager.get_machines_stats(lab_hash, lab_name, machine_name, all_users)
+
+    def get_machine_stats(self, machine_name: str, lab_hash: str = None,
+                          lab_name: str = None, all_users: bool = False) -> Generator[IMachineStats, None, None]:
+        """
+        Return information of the specified device in a specified network scenario.
 
         Args:
             machine_name (str): The device name.
-            lab_hash (str): If not None, search the device in the specified network scenario.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+            If None, lab_hash should be set.
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
-            List[Dict[str, Any]]: A list of dicts containing the devices info.
+            IMachineStats: IMachineStats object containing the device info.
         """
-        return self.manager.get_machine_info(machine_name, lab_hash, all_users)
-
-    def get_formatted_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> str:
-        """Return formatted information of running devices with a specified name.
-
-        Args:
-            machine_name (str): The device name.
-            lab_hash (str): If not None, search the device in the specified network scenario.
-            all_users (bool): If True, search the device among all the users devices.
-
-        Returns:
-            str: The formatted devices properties.
-        """
-        return self.manager.get_formatted_machine_info(machine_name, lab_hash, all_users)
+        return self.manager.get_machine_stats(machine_name, lab_hash, lab_name, all_users)
 
     def check_image(self, image_name: str) -> None:
         """Check if the specified image is valid.

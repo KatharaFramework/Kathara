@@ -1,12 +1,18 @@
 import logging
 import subprocess
 import sys
-from typing import Any
+from datetime import datetime
+from typing import Any, Dict, Generator, List
 from typing import Callable
 
+from terminaltables import DoubleTable
+
 from ... import utils
+from ...foundation.manager.stats.IMachineStats import IMachineStats
 from ...setting.Setting import Setting
 from ...trdparty.consolemenu import PromptUtils, Screen
+
+FORBIDDEN_TABLE_COLUMNS = ["container_name"]
 
 
 def confirmation_prompt(prompt_string: str, callback_yes: Callable, callback_no: Callable) -> Any:
@@ -29,6 +35,33 @@ def format_headers(message: str = "") -> str:
 
     message = " " + message + " " if message != "" else "=="
     return footer[half_message:] + message + footer[second_half_message:]
+
+
+def create_table(streams: Generator[Dict[str, IMachineStats], None, None]) -> \
+        Generator[str, None, None]:
+    table = DoubleTable([])
+    table.inner_row_border = True
+
+    while True:
+        try:
+            result = next(streams)
+        except StopIteration:
+            return
+
+        if not result:
+            return
+
+        table.table_data = []
+        for item in result.values():
+            row_data = item.to_dict()
+            row_data = dict(filter(lambda x: x[0] not in FORBIDDEN_TABLE_COLUMNS, row_data.items()))
+
+            if not table.table_data:
+                table.table_data.append(list(map(lambda x: x.replace('_', ' ').upper(), row_data.keys())))
+
+            table.table_data.append(row_data.values())
+
+        yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + table.table
 
 
 def open_machine_terminal(machine) -> None:

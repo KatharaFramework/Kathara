@@ -1,17 +1,16 @@
 import io
 import json
 import logging
-from datetime import datetime
 from typing import Set, Dict, Generator, Any, List, Tuple
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
-from terminaltables import DoubleTable
 
 from .KubernetesConfig import KubernetesConfig
 from .KubernetesLink import KubernetesLink
 from .KubernetesMachine import KubernetesMachine
 from .KubernetesNamespace import KubernetesNamespace
+from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...exceptions import NotSupportedError
 from ...foundation.manager.IManager import IManager
@@ -30,7 +29,7 @@ class KubernetesManager(IManager):
 
         self.k8s_namespace: KubernetesNamespace = KubernetesNamespace()
         self.k8s_machine: KubernetesMachine = KubernetesMachine(self.k8s_namespace)
-        self.k8s_link: KubernetesLink = KubernetesLink()
+        self.k8s_link: KubernetesLink = KubernetesLink(self.k8s_namespace)
 
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """Deploy a Kathara network scenario.
@@ -192,79 +191,16 @@ class KubernetesManager(IManager):
                                     tar_data=tar_data
                                     )
 
-    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> \
-            Generator[Dict[str, Any], None, None]:
-        """Return information about the running devices.
-
-        Args:
-            lab_hash (str): If not None, return information of the corresponding network scenario.
-            machine_name (str): If not None, return information of the specified device.
-            all_users (bool): If True, return information about the device of all users.
-
-        Returns:
-              Generator[Dict[str, Any], None, None]: A generator containing dicts containing device names as keys and
-              their info as values.
-        """
-        if lab_hash:
-            lab_hash = lab_hash.lower()
-
-        lab_info = self.k8s_machine.get_machines_info(lab_hash=lab_hash, machine_name=machine_name)
-
-        return lab_info
-
-    def get_formatted_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> str:
-        """Return a formatted string with the information about the running devices.
-
-        Args:
-            lab_hash (str): If not None, return information of the corresponding network scenario.
-            machine_name (str): If not None, return information of the specified device.
-            all_users (bool): If True, return information about the device of all users.
-
-        Returns:
-             str: String containing devices info
-        """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
-        table_header = ["LAB HASH", "DEVICE NAME", "STATUS", "ASSIGNED NODE"]
-        stats_table = DoubleTable([])
-        stats_table.inner_row_border = True
-
-        lab_info = self.get_lab_info(lab_hash=lab_hash, machine_name=machine_name)
-
-        while True:
-            machines_data = [
-                table_header
-            ]
-
-            try:
-                result = next(lab_info)
-            except StopIteration:
-                return
-
-            if not result:
-                return
-
-            for machine_stats in result:
-                machines_data.append([machine_stats["real_lab_hash"],
-                                      machine_stats["name"],
-                                      machine_stats["status"],
-                                      machine_stats["assigned_node"]
-                                      ])
-
-            stats_table.table_data = machines_data
-
-            yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
-
     def get_machine_api_object(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
                                all_users: bool = False) -> client.V1Pod:
-        """
-        Return the corresponding API object of a running device in a network scenario.
+        """Return the corresponding API object of a running device in a network scenario.
 
         Args:
             machine_name (str): The name of the device.
-            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+            If None, lab_hash should be set.
             all_users (bool): If True, return information about devices of all users.
 
         Returns:
@@ -281,16 +217,19 @@ class KubernetesManager(IManager):
 
         lab_hash = lab_hash.lower()
 
-        return self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+        pods = self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+        if pods:
+            return pods.pop()
+
+        raise Exception(f"Device {machine_name} not found.")
 
     def get_machines_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
             List[client.V1Pod]:
-        """
-        Return API objects of running devices in a network scenario.
+        """Return API objects of running devices.
 
         Args:
-            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
             all_users (bool): If True, return information about devices of all users.
 
         Returns:
@@ -309,13 +248,14 @@ class KubernetesManager(IManager):
 
     def get_link_api_object(self, link_name: str, lab_hash: str = None, lab_name: str = None,
                             all_users: bool = False) -> Any:
-        """
-        Return the corresponding API object of a collision domain in a network scenario.
+        """Return the corresponding API object of a collision domain in a network scenario.
 
         Args:
             link_name (str): The name of the collision domain.
-            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+            If None, lab_hash should be set.
             all_users (bool): If True, return information about collision domains of all users.
 
         Returns:
@@ -332,16 +272,19 @@ class KubernetesManager(IManager):
 
         lab_hash = lab_hash.lower()
 
-        return self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name)
+        networks = self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name)
+        if networks:
+            return networks.pop()
+
+        raise Exception(f"Collision Domain {link_name} not found.")
 
     def get_links_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
             List[Any]:
-        """
-        Return API objects of collision domains in a network scenario.
+        """Return API objects of collision domains in a network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario. If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. If None, lab_hash should be set.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
             all_users (bool): If True, return information about collision domains of all users.
 
         Returns:
@@ -356,58 +299,66 @@ class KubernetesManager(IManager):
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
+        lab_hash = lab_hash.lower()
+
         return self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash)
 
-    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
-            -> List[Dict[str, Any]]:
-        """Return information of running devices with a specified name.
+    def get_machines_stats(self, lab_hash: str = None, lab_name: str = None, machine_name: str = None,
+                           all_users: bool = False) -> Generator[Dict[str, KubernetesMachineStats], None, None]:
+        """Return information about the running devices.
 
         Args:
-            machine_name (str): The device name.
-            lab_hash (str): If not None, search the device in the specified network scenario.
-            all_users (bool): If True, search the device among all the users devices.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+            machine_name (str): If specified return all the devices with machine_name.
+            all_users (bool): If True, return information about the device of all users.
 
         Returns:
-            List[Dict[str, Any]]: A list of dicts containing the devices info.
-        """
-        if lab_hash:
-            lab_hash = lab_hash.lower()
-
-        machine_stats = self.k8s_machine.get_machine_info(machine_name=machine_name, lab_hash=lab_hash)
-
-        return machine_stats
-
-    def get_formatted_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> str:
-        """Return formatted information of running devices with a specified name.
-
-        Args:
-            machine_name (str): The device name.
-            lab_hash (str): If not None, search the device in the specified network scenario.
-            all_users (bool): If True, search the device among all the users devices.
-
-        Returns:
-            str: The formatted devices properties.
+              Generator[Dict[str, KubernetesMachineStats], None, None]: A generator containing dicts that has API Object
+              identifier as keys and KubernetesMachineStats objects as values.
         """
         if all_users:
             logging.warning("User-specific options have no effect on Megalos.")
 
-        machines_stats = self.get_machine_info(machine_name, lab_hash=lab_hash)
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        machines_info = []
+        lab_hash = lab_hash.lower()
 
-        for machine_stats in machines_stats:
-            machine_info = utils.format_headers("Device information") + "\n"
-            machine_info += "Lab Hash: %s\n" % machine_stats["real_lab_hash"]
-            machine_info += "Device Name: %s\n" % machine_stats["name"]
-            machine_info += "Real Device Name: %s\n" % machine_stats["real_name"]
-            machine_info += "Status: %s\n" % machine_stats["status"]
-            machine_info += "Image: %s\n" % machine_stats["image"]
-            machine_info += "Assigned Node: %s\n" % machine_stats["assigned_node"]
-            machine_info += utils.format_headers()
+        machines_stats = self.k8s_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name)
 
-            machines_info.append(machine_info)
+        return machines_stats
 
-        return "\n\n".join(machines_info)
+    def get_machine_stats(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
+                          all_users: bool = False) -> Generator[KubernetesMachineStats, None, None]:
+        """Return information of the specified device in a specified network scenario.
+
+        Args:
+            machine_name (str): The device name.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+            If None, lab_hash should be set.
+            all_users (bool): If True, search the device among all the users devices.
+
+        Returns:
+            KubernetesMachineStats: KubernetesMachineStats object containing the device info.
+        """
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
+
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        lab_hash = lab_hash.lower()
+
+        machines_stats = self.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name)
+        (_, machine_stats) = next(machines_stats).popitem()
+
+        yield machine_stats
 
     def check_image(self, image_name: str) -> None:
         """Useless. The Check of the image is delegated to Kubernetes.

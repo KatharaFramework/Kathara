@@ -91,9 +91,9 @@ class DockerLink(object):
 
         # If a network with the same name exists, return it instead of creating a new one.
         link_name = self.get_network_name(link.name)
-        network_object = self.get_links_api_objects_by_filters(link_name=link_name)
-        if network_object:
-            link.api_object = network_object
+        networks = self.get_links_api_objects_by_filters(link_name=link_name)
+        if networks:
+            link.api_object = networks.pop()
         else:
             network_ipam_config = docker.types.IPAMConfig(driver='null')
 
@@ -126,18 +126,18 @@ class DockerLink(object):
         Returns:
             None
         """
-        links = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
-        for item in links:
+        networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
+        for item in networks:
             item.reload()
-        links = [item for item in links if len(item.containers) <= 0]
+        networks = [item for item in networks if len(item.containers) <= 0]
 
-        if len(links) > 0:
+        if len(networks) > 0:
             pool_size = utils.get_pool_size()
             links_pool = Pool(pool_size)
 
-            items = utils.chunk_list(links, pool_size)
+            items = utils.chunk_list(networks, pool_size)
 
-            EventDispatcher.get_instance().dispatch("links_undeploy_started", items=links)
+            EventDispatcher.get_instance().dispatch("links_undeploy_started", items=networks)
 
             for chunk in items:
                 links_pool.map(func=self._undeploy_link, iterable=chunk)
@@ -154,15 +154,15 @@ class DockerLink(object):
             None
         """
         user_label = "shared_cd" if Setting.get_instance().shared_cd else user
-        links = self.get_links_api_objects_by_filters(user=user_label)
-        for item in links:
+        networks = self.get_links_api_objects_by_filters(user=user_label)
+        for item in networks:
             item.reload()
-        links = [item for item in links if len(item.containers) <= 0]
+        networks = [item for item in networks if len(item.containers) <= 0]
 
         pool_size = utils.get_pool_size()
         links_pool = Pool(pool_size)
 
-        items = utils.chunk_list(links, pool_size)
+        items = utils.chunk_list(networks, pool_size)
 
         for chunk in items:
             links_pool.map(func=self._undeploy_link, iterable=chunk)
@@ -190,9 +190,8 @@ class DockerLink(object):
         return bridge_list.pop() if bridge_list else None
 
     def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None, user: str = None) -> \
-            Union[List[docker.models.networks.Network], docker.models.networks.Network]:
-        """Return the Docker networks specified by lab_hash and user. If link_name is specified,
-        return the single network API object.
+            List[docker.models.networks.Network]:
+        """Return the Docker networks specified by lab_hash and user.
 
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return all the networks in the scenario.
@@ -200,8 +199,7 @@ class DockerLink(object):
             user (str): The name of a user on the host. If specified, return only the networks of the user.
 
         Returns:
-            Union[List[docker.models.networks.Network], docker.models.networks.Network]: A list of Docker networks.
-            If link_name is specified, a single Docker network object.
+            List[docker.models.networks.Network]: A list of Docker networks.
         """
         filters = {"label": ["app=kathara"]}
         if user:
@@ -211,11 +209,7 @@ class DockerLink(object):
         if link_name:
             filters["name"] = link_name
 
-        networks = self.client.networks.list(filters=filters)
-        if link_name:
-            return networks.pop() if len(networks) == 1 else None
-
-        return networks
+        return self.client.networks.list(filters=filters)
 
     def _attach_external_interfaces(self, external_links: List[ExternalLink],
                                     network: docker.models.networks.Network) -> None:

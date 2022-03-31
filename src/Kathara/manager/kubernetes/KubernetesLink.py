@@ -4,13 +4,14 @@ import re
 from functools import partial
 from multiprocessing import Manager
 from multiprocessing.dummy import Pool
-from typing import Dict, Optional, Set, Any, List, Union
+from typing import Dict, Optional, Set, Any, List
 
 from kubernetes import client
 from kubernetes.client.api import custom_objects_api
 from kubernetes.client.rest import ApiException
 
 from .KubernetesConfig import KubernetesConfig
+from .KubernetesNamespace import KubernetesNamespace
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...model.Lab import Lab
@@ -26,10 +27,12 @@ K8S_NET_PLURAL = "network-attachment-definitions"
 
 class KubernetesLink(object):
     """Class responsible for interacting with Kubernetes."""
-    __slots__ = ['client', 'seed']
+    __slots__ = ['client', 'kubernetes_namespace', 'seed']
 
-    def __init__(self) -> None:
+    def __init__(self, kubernetes_namespace: KubernetesNamespace) -> None:
         self.client: custom_objects_api.CustomObjectsApi = custom_objects_api.CustomObjectsApi()
+
+        self.kubernetes_namespace: KubernetesNamespace = kubernetes_namespace
 
         self.seed: str = KubernetesConfig.get_cluster_user()
 
@@ -89,9 +92,9 @@ class KubernetesLink(object):
             None
         """
         # If a network with the same name exists, return it instead of creating a new one.
-        network_object = self.get_links_api_objects_by_filters(lab_hash=link.lab.hash, link_name=link.name)
-        if network_object:
-            link.api_object = network_object
+        networks = self.get_links_api_objects_by_filters(lab_hash=link.lab.hash, link_name=link.name)
+        if networks:
+            link.api_object = networks.pop()
             return
 
         link.api_object = self.client.create_namespaced_custom_object(group=K8S_NET_GROUP,
@@ -115,17 +118,17 @@ class KubernetesLink(object):
         Returns:
             None
         """
-        links = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
+        networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
         if networks_to_delete is not None and len(networks_to_delete) > 0:
-            links = [item for item in links if item["metadata"]["name"] in networks_to_delete]
+            networks = [item for item in networks if item["metadata"]["name"] in networks_to_delete]
 
-        if len(links) > 0:
+        if len(networks) > 0:
             pool_size = utils.get_pool_size()
             links_pool = Pool(pool_size)
 
-            items = utils.chunk_list(links, pool_size)
+            items = utils.chunk_list(networks, pool_size)
 
-            EventDispatcher.get_instance().dispatch("links_undeploy_started", items=links)
+            EventDispatcher.get_instance().dispatch("links_undeploy_started", items=networks)
 
             for chunk in items:
                 links_pool.map(func=self._undeploy_link, iterable=chunk)
@@ -138,12 +141,12 @@ class KubernetesLink(object):
         Returns:
             None
         """
-        links = self.get_links_api_objects_by_filters()
+        networks = self.get_links_api_objects_by_filters()
 
         pool_size = utils.get_pool_size()
         links_pool = Pool(pool_size)
 
-        items = utils.chunk_list(links, pool_size)
+        items = utils.chunk_list(networks, pool_size)
 
         for chunk in items:
             links_pool.map(func=self._undeploy_link, iterable=chunk)
@@ -173,8 +176,8 @@ class KubernetesLink(object):
 
         EventDispatcher.get_instance().dispatch("link_undeployed", item=link_item)
 
-    def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None) -> Union[List[Any], Any]:
-        """Return the List of Kubernetes networks. If link_name is specified, return the single network API object.
+    def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None) -> List[Any]:
+        """Return the List of Kubernetes networks.
 
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return only the networks in the scenario, else
@@ -182,22 +185,27 @@ class KubernetesLink(object):
             link_name (str): The name of a network. If specified, return the specified network of the scenario.
 
         Returns:
-            Union[List[Any], Any]: A list of Kubernetes networks. If link_name is specified, a single
-            Kubernetes network object.
+            List[Any]: A list of Kubernetes networks.
         """
         filters = ["app=kathara"]
         if link_name:
             filters.append("name=%s" % link_name)
 
-        networks = self.client.list_namespaced_custom_object(group=K8S_NET_GROUP,
-                                                             version=K8S_NET_VERSION,
-                                                             namespace=lab_hash if lab_hash else "default",
-                                                             plural=K8S_NET_PLURAL,
-                                                             label_selector=",".join(filters),
-                                                             timeout_seconds=9999
-                                                             )["items"]
-        if link_name:
-            return networks.pop() if len(networks) == 1 else None
+        # Get all Kathara namespaces if lab_hash is None
+        namespaces = list(map(lambda x: x.metadata.name, self.kubernetes_namespace.get_all())) \
+            if not lab_hash else [lab_hash]
+
+        networks = []
+        for namespace in namespaces:
+            networks.extend(
+                self.client.list_namespaced_custom_object(group=K8S_NET_GROUP,
+                                                          version=K8S_NET_VERSION,
+                                                          namespace=namespace,
+                                                          plural=K8S_NET_PLURAL,
+                                                          label_selector=",".join(filters),
+                                                          timeout_seconds=9999
+                                                          )["items"]
+            )
 
         return networks
 
