@@ -1,6 +1,6 @@
 import io
 import logging
-from typing import Set, Dict, Generator, Tuple, List
+from typing import Set, Dict, Generator, Tuple, List, Optional
 
 import docker
 import docker.models.containers
@@ -131,16 +131,29 @@ class DockerManager(IManager):
                 self.docker_machine.update(machine)
 
     @privileged
-    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
+    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                     selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario to undeploy.
-            selected_machines (Set[str]): If not None, undeploy only the specified devices.
+            lab_hash (Optional[str]): The hash of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_name should be set.
+            lab_name (Optional[str]): The name of the network scenario. Can be used as an alternative to lab_hash.
+                If None, lab_hash should be set.
+            selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
 
         Returns:
             None
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
         self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines)
 
         self.docker_link.undeploy(lab_hash)
@@ -168,18 +181,29 @@ class DockerManager(IManager):
         self.docker_link.wipe(user=user_name)
 
     @privileged
-    def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False) -> None:
+    def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                    shell: str = None, logs: bool = False) -> None:
         """Connect to a device in a running network scenario, using the specified shell.
 
         Args:
-            lab_hash (str): The hash of the network scenario to undeploy.
             machine_name (str): The name of the device to connect.
+            lab_hash (str): The hash of the network scenario where the device is deployed.
+            lab_name (str): The name of the network scenario where the device is deployed.
             shell (str): The name of the shell to use for connecting.
             logs (bool): If True, print startup logs on stdout.
 
         Returns:
             None
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
         user_name = utils.get_current_user_name()
 
         self.docker_machine.connect(lab_hash=lab_hash,
@@ -239,6 +263,9 @@ class DockerManager(IManager):
 
         Returns:
             docker.models.containers.Container: Docker API object of devices.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
         user_name = utils.get_current_user_name() if not all_users else None
         if not lab_hash and not lab_name:
@@ -288,6 +315,10 @@ class DockerManager(IManager):
 
         Returns:
             docker.models.networks.Network: Docker API object of the network.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
+            Exception: Collision Domain not found.
         """
         user_name = utils.get_current_user_name() if not all_users else None
         if not lab_hash and not lab_name:
@@ -366,6 +397,9 @@ class DockerManager(IManager):
         Returns:
             Generator[DockerMachineStats, None, None]: A generator containing DockerMachineStats objects with
             the device info.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
         if not lab_hash and not lab_name:
             raise Exception("You must specify a running network scenario hash or name.")
@@ -416,6 +450,9 @@ class DockerManager(IManager):
         Returns:
             Generator[DockerLinkStats, None, None]: A generator containing DockerLinkStats objects with the network
             statistics.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
         if not lab_hash and not lab_name:
             raise Exception("You must specify a running network scenario hash or name.")

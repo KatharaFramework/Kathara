@@ -3,7 +3,7 @@ from typing import Dict, Any, List
 from docker.models.containers import Container
 from docker.models.networks import Network
 
-from Kathara.foundation.manager.stats.ILinkStats import ILinkStats
+from ....foundation.manager.stats.ILinkStats import ILinkStats
 
 
 class DockerLinkStats(ILinkStats):

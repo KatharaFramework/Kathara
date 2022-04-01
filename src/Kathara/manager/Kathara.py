@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import Set, Dict, Generator, Any, Tuple, List
+from typing import Set, Dict, Generator, Any, Tuple, List, Optional
 
 from ..foundation.manager.IManager import IManager
 from ..foundation.manager.ManagerFactory import ManagerFactory
@@ -65,15 +65,22 @@ class Kathara(IManager):
         """
         self.manager.update_lab(lab)
 
-    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
+    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                     selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario to undeploy.
-            selected_machines (Set[str]): If not None, undeploy only the specified devices.
+            lab_hash (Optional[str]): The hash of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_name should be set.
+            lab_name (Optional[str]): The name of the network scenario. Can be used as an alternative to lab_hash.
+                If None, lab_hash should be set.
+            selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
 
         Returns:
             None
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
         self.manager.undeploy_lab(lab_hash, selected_machines)
 
@@ -89,19 +96,24 @@ class Kathara(IManager):
         """
         self.manager.wipe(all_users)
 
-    def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False) -> None:
+    def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                    shell: str = None, logs: bool = False) -> None:
         """Connect to a device in a running network scenario, using the specified shell.
 
         Args:
-            lab_hash (str): The hash of the network scenario to undeploy.
             machine_name (str): The name of the device to connect.
+            lab_hash (str): The hash of the network scenario where the device is deployed.
+            lab_name (str): The name of the network scenario where the device is deployed.
             shell (str): The name of the shell to use for connecting.
             logs (bool): If True, print startup logs on stdout.
 
         Returns:
             None
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
-        self.manager.connect_tty(lab_hash, machine_name, shell, logs)
+        self.manager.connect_tty(machine_name, lab_hash, lab_name, shell, logs)
 
     def exec(self, lab_hash: str, machine_name: str, command: str) -> Generator[Tuple[bytes, bytes], None, None]:
         """Exec a command on a device in a running network scenario.
@@ -221,6 +233,9 @@ class Kathara(IManager):
 
         Returns:
             IMachineStats: IMachineStats object containing the device info.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
         return self.manager.get_machine_stats(machine_name, lab_hash, lab_name, all_users)
 
@@ -255,6 +270,9 @@ class Kathara(IManager):
         Returns:
              Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
              identifier as keys and ILinksStats objects as values.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
         return self.manager.get_link_stats(link_name, lab_hash, lab_name, all_users)
 
