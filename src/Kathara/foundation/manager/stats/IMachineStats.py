@@ -3,8 +3,15 @@ from typing import Any, Dict
 
 
 class IMachineStats(ABC):
+    """Interface for handling the statistics of deployed devices"""
+
     @abstractmethod
     def update(self) -> None:
+        """Update dynamic statistics with the current ones.
+
+        Returns:
+            None
+        """
         raise NotImplementedError("You must implement `update` method.")
 
     @abstractmethod

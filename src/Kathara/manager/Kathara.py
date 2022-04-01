@@ -5,6 +5,7 @@ from typing import Set, Dict, Generator, Any, Tuple, List
 
 from ..foundation.manager.IManager import IManager
 from ..foundation.manager.ManagerFactory import ManagerFactory
+from ..foundation.manager.stats.ILinkStats import ILinkStats
 from ..foundation.manager.stats.IMachineStats import IMachineStats
 from ..model.Lab import Lab
 from ..model.Machine import Machine
@@ -222,6 +223,40 @@ class Kathara(IManager):
             IMachineStats: IMachineStats object containing the device info.
         """
         return self.manager.get_machine_stats(machine_name, lab_hash, lab_name, all_users)
+
+    def get_links_stats(self, lab_hash: str = None, lab_name: str = None, link_name: str = None,
+                        all_users: bool = False) -> Generator[Dict[str, ILinkStats], None, None]:
+        """Return information about deployed networks.
+
+        Args:
+           lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+           lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+           link_name (str): If specified return all the networks with link_name.
+           all_users (bool): If True, return information about the networks of all users.
+
+        Returns:
+             Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
+             identifier as keys and ILinksStats objects as values.
+        """
+        return self.manager.get_links_stats(lab_hash, lab_name, link_name, all_users)
+
+    def get_link_stats(self, link_name: str, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
+            Generator[ILinkStats, None, None]:
+        """Return information of the specified deployed network in a specified network scenario.
+
+        Args:
+           link_name (str): If specified return all the networks with link_name.
+           lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+           If None, lab_name should be set.
+           lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+           If None, lab_hash should be set.
+           all_users (bool): If True, return information about the networks of all users.
+
+        Returns:
+             Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
+             identifier as keys and ILinksStats objects as values.
+        """
+        return self.manager.get_link_stats(link_name, lab_hash, lab_name, all_users)
 
     def check_image(self, image_name: str) -> None:
         """Check if the specified image is valid.

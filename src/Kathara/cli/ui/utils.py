@@ -2,7 +2,7 @@ import logging
 import subprocess
 import sys
 from datetime import datetime
-from typing import Any, Dict, Generator, List
+from typing import Any, Dict, Generator
 from typing import Callable
 
 from terminaltables import DoubleTable
@@ -12,7 +12,7 @@ from ...foundation.manager.stats.IMachineStats import IMachineStats
 from ...setting.Setting import Setting
 from ...trdparty.consolemenu import PromptUtils, Screen
 
-FORBIDDEN_TABLE_COLUMNS = ["container_name"]
+FORBIDDEN_TABLE_COLUMNS = ["container_id"]
 
 
 def confirmation_prompt(prompt_string: str, callback_yes: Callable, callback_no: Callable) -> Any:

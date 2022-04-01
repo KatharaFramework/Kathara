@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, Generator, Optional
 
 from docker.models.containers import Container
 
@@ -7,26 +7,42 @@ from ....utils import human_readable_bytes
 
 
 class DockerMachineStats(IMachineStats):
-    """The class responsible to handle Docker Machine statistics."""
-    __slots__ = ['machine_api_object', 'stats', 'lab_hash', 'name', 'container_name', 'user', 'status', 'image',
+    """The class responsible to handle Docker Machine statistics.
+
+    Attributes:
+        machine_api_object (Container): The Docker Container associated with this statistics.
+        stats (Generator[Dict[str, Any], None, None]): A generator containing dicts with the Docker statistics
+        lab_hash (str): The hash identifier of the network scenario of the Docker Container.
+        name (str): The name of the device.
+        container_id (str): The Docker Container ID.
+        user (str): The user that deployed the associated Docker Network.
+        image (str): The Docker Image used for deploying the Docker Container.
+        status (Optional[str]): The status of the Docker Container.
+        pids (Optional[int]): The number of PIDs associated with the Docker Container.
+        cpu_usage (str): The cpu usage of the Docker Container.
+        mem_usage (str): The memory usage of the Docker Container.
+        mem_percent (str): The memory usage of the Docker Container as a percentage.
+        net_usage (str): The network usage of the Docker Container.
+    """
+    __slots__ = ['machine_api_object', 'stats', 'lab_hash', 'name', 'container_id', 'user', 'status', 'image',
                  'pids', 'cpu_usage', 'mem_usage', 'mem_percent', 'net_usage']
 
     def __init__(self, machine_api_object: Container):
-        self.machine_api_object = machine_api_object
-        self.stats = machine_api_object.stats(stream=True, decode=True)
+        self.machine_api_object: Container = machine_api_object
+        self.stats: Generator[Dict[str, Any], None, None] = machine_api_object.stats(stream=True, decode=True)
         # Static Information
-        self.lab_hash = machine_api_object.labels['lab_hash']
-        self.name = machine_api_object.labels['name']
-        self.container_name = machine_api_object.name
-        self.user = machine_api_object.labels['user']
-        self.image = machine_api_object.image.tags[0]
+        self.lab_hash: str = machine_api_object.labels['lab_hash']
+        self.name: str = machine_api_object.labels['name']
+        self.container_id: str = machine_api_object.name
+        self.user: Optional[str] = machine_api_object.labels['user']
+        self.image: str = machine_api_object.image.tags[0]
         # Dynamic Information
-        self.status = None
-        self.pids = None
-        self.cpu_usage = "-"
-        self.mem_usage = "- / -"
-        self.mem_percent = "-"
-        self.net_usage = "-"
+        self.status: Optional[str] = None
+        self.pids: Optional[int] = None
+        self.cpu_usage: str = "-"
+        self.mem_usage: str = "- / -"
+        self.mem_percent: str = "-"
+        self.net_usage: str = "-"
 
         self.update()
 
@@ -62,7 +78,7 @@ class DockerMachineStats(IMachineStats):
         return {
             "network_scenario_id": self.lab_hash,
             "name": self.name,
-            "container_name": self.container_name,
+            "container_id": self.container_id,
             "user": self.user,
             "status": self.status,
             "image": self.image,
@@ -77,14 +93,9 @@ class DockerMachineStats(IMachineStats):
         return str(self.to_dict())
 
     def __str__(self) -> str:
-        """Return a formatted string with the device statistics.
-
-        Returns:
-           str: a formatted string with the device statistics
-        """
         formatted_stats = f"Network Scenario ID: {self.lab_hash}\n"
         formatted_stats += f"Device Name: {self.name}\n"
-        formatted_stats += f"Container Name: {self.container_name}\n"
+        formatted_stats += f"Container Name: {self.container_id}\n"
         formatted_stats += f"Status: {self.status}\n"
         formatted_stats += f"Image: {self.image}\n"
         formatted_stats += f"PIDs: {self.pids}\n"

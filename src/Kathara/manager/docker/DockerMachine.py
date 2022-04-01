@@ -582,7 +582,7 @@ class DockerMachine(object):
             user (str): The name of a user on the host. If specified, return only the stats of the specified user.
 
         Returns:
-            Generator[Dict[str, DockerMachineStats], None, None]: A generator containing device name as keys and
+            Generator[Dict[str, DockerMachineStats], None, None]: A generator containing device names as keys and
             DockerMachineStats as values.
         """
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)

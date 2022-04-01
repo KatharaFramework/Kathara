@@ -11,6 +11,7 @@ from .DockerImage import DockerImage
 from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
 from .DockerPlugin import DockerPlugin
+from .stats.DockerLinkStats import DockerLinkStats
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...decorators import privileged
@@ -357,25 +358,75 @@ class DockerManager(IManager):
         Args:
             machine_name (str): The device name.
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_name should be set.
+                If None, lab_name should be set.
             lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
-            If None, lab_hash should be set.
+                If None, lab_hash should be set.
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
-            DockerMachineStats: DockerMachineStats object containing the device info.
+            Generator[DockerMachineStats, None, None]: A generator containing DockerMachineStats objects with
+            the device info.
         """
-        user_name = utils.get_current_user_name() if not all_users else None
         if not lab_hash and not lab_name:
             raise Exception("You must specify a running network scenario hash or name.")
 
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        machines_stats = self.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name, user=user_name)
+        machines_stats = self.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name, all_users=all_users)
         (_, machine_stats) = next(machines_stats).popitem()
 
         yield machine_stats
+
+    def get_links_stats(self, lab_hash: str = None, lab_name: str = None, link_name: str = None,
+                        all_users: bool = False) -> Generator[Dict[str, DockerLinkStats], None, None]:
+        """Return information about deployed Docker networks.
+
+        Args:
+           lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+           lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+           link_name (str): If specified return all the networks with link_name.
+           all_users (bool): If True, return information about the networks of all users.
+
+        Returns:
+             Generator[Dict[str, DockerLinkStats], None, None]: A generator containing dicts that has API Object
+             identifier as keys and DockerLinksStats objects as values.
+        """
+        user_name = utils.get_current_user_name() if not all_users else None
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        links_stats = self.docker_link.get_links_stats(lab_hash=lab_hash, link_name=link_name, user=user_name)
+
+        return links_stats
+
+    def get_link_stats(self, link_name: str, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
+            Generator[DockerLinkStats, None, None]:
+        """Return information of the specified deployed network in a specified network scenario.
+
+        Args:
+            link_name (str): The link name.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+                If None, lab_hash should be set.
+            all_users (bool): If True, search the network among all the users networks.
+
+        Returns:
+            Generator[DockerLinkStats, None, None]: A generator containing DockerLinkStats objects with the network
+            statistics.
+        """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        machines_stats = self.get_links_stats(lab_hash=lab_hash, link_name=link_name, all_users=all_users)
+        (_, link_stats) = next(machines_stats).popitem()
+
+        yield link_stats
 
     @privileged
     def check_image(self, image_name: str) -> None:

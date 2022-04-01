@@ -2,12 +2,14 @@ import io
 from abc import ABC, abstractmethod
 from typing import Dict, Set, Any, Generator, Tuple, List
 
+from .stats.ILinkStats import ILinkStats
 from .stats.IMachineStats import IMachineStats
 from ...model.Lab import Lab
 from ...model.Machine import Machine
 
 
 class IManager(ABC):
+    """Interface to be implemented in the virtualization managers"""
     @abstractmethod
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """
@@ -193,8 +195,7 @@ class IManager(ABC):
     @abstractmethod
     def get_machine_stats(self, machine_name: str, lab_hash: str = None,
                           lab_name: str = None, all_users: bool = False) -> Generator[IMachineStats, None, None]:
-        """
-        Return information of the specified device in a specified network scenario.
+        """Return information of the specified device in a specified network scenario.
 
         Args:
             machine_name (str): The device name.
@@ -210,9 +211,44 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `get_machine_info` method.")
 
     @abstractmethod
-    def check_image(self, image_name: str) -> None:
+    def get_links_stats(self, lab_hash: str = None, lab_name: str = None, link_name: str = None,
+                        all_users: bool = False) -> Generator[Dict[str, ILinkStats], None, None]:
+        """Return information about deployed networks.
+
+        Args:
+           lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+           lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+           link_name (str): If specified return all the networks with link_name.
+           all_users (bool): If True, return information about the networks of all users.
+
+        Returns:
+             Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
+             identifier as keys and ILinksStats objects as values.
         """
-        Check if the specified image is valid.
+        raise NotImplementedError("You must implement `get_links_stats` method.")
+
+    @abstractmethod
+    def get_link_stats(self, link_name: str, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
+            Generator[ILinkStats, None, None]:
+        """Return information of the specified deployed network in a specified network scenario.
+
+        Args:
+           link_name (str): If specified return all the networks with link_name.
+           lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+           If None, lab_name should be set.
+           lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+           If None, lab_hash should be set.
+           all_users (bool): If True, return information about the networks of all users.
+
+        Returns:
+             Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
+             identifier as keys and ILinksStats objects as values.
+        """
+        raise NotImplementedError("You must implement `get_link_stats` method.")
+
+    @abstractmethod
+    def check_image(self, image_name: str) -> None:
+        """Check if the specified image is valid.
 
         Args:
             image_name (str): The name of the image
@@ -228,8 +264,7 @@ class IManager(ABC):
 
     @abstractmethod
     def get_release_version(self) -> str:
-        """
-        Return the current manager version.
+        """Return the current manager version.
 
         Returns:
             str: The current manager version.
@@ -238,8 +273,7 @@ class IManager(ABC):
 
     @staticmethod
     def get_formatted_manager_name() -> str:
-        """
-        Return a formatted string containing the current manager name.
+        """Return a formatted string containing the current manager name.
 
         Returns:
             str: A formatted string containing the current manager name.
