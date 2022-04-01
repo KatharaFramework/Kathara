@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import Set, Dict, Generator, Any, Tuple, List
+from typing import Set, Dict, Generator, Any, Tuple, List, Optional
 
 from ..foundation.manager.IManager import IManager
 from ..foundation.manager.ManagerFactory import ManagerFactory
@@ -65,15 +65,22 @@ class Kathara(IManager):
         """
         self.manager.update_lab(lab)
 
-    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
+    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                     selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario to undeploy.
-            selected_machines (Set[str]): If not None, undeploy only the specified devices.
+            lab_hash (Optional[str]): The hash of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_name should be set.
+            lab_name (Optional[str]): The name of the network scenario. Can be used as an alternative to lab_hash.
+                If None, lab_hash should be set.
+            selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
 
         Returns:
             None
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
         self.manager.undeploy_lab(lab_hash, selected_machines)
 
@@ -221,6 +228,9 @@ class Kathara(IManager):
 
         Returns:
             IMachineStats: IMachineStats object containing the device info.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
         return self.manager.get_machine_stats(machine_name, lab_hash, lab_name, all_users)
 
@@ -255,6 +265,9 @@ class Kathara(IManager):
         Returns:
              Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
              identifier as keys and ILinksStats objects as values.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
         return self.manager.get_link_stats(link_name, lab_hash, lab_name, all_users)
 

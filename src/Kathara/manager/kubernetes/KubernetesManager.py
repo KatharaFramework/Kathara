@@ -1,7 +1,7 @@
 import io
 import json
 import logging
-from typing import Set, Dict, Generator, Any, List, Tuple
+from typing import Set, Dict, Generator, Any, List, Tuple, Optional
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -71,16 +71,29 @@ class KubernetesManager(IManager):
         """
         raise NotSupportedError("Unable to update a running lab.")
 
-    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
+    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                     selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario to undeploy.
-            selected_machines (Set[str]): If not None, undeploy only the specified devices.
+            lab_hash (Optional[str]): The hash of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_name should be set.
+            lab_name (Optional[str]): The name of the network scenario. Can be used as an alternative to lab_hash.
+                If None, lab_hash should be set.
+            selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
 
         Returns:
             None
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
         lab_hash = lab_hash.lower()
 
         # When only some machines should be undeployed, special checks are required.
