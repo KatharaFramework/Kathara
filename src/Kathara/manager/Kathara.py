@@ -82,14 +82,14 @@ class Kathara(IManager):
         Raises:
             Exception: You must specify a running network scenario hash or name.
         """
-        self.manager.undeploy_lab(lab_hash, selected_machines)
+        self.manager.undeploy_lab(lab_hash, lab_name, selected_machines)
 
     def wipe(self, all_users: bool = False) -> None:
         """Undeploy all the running network scenarios.
 
         Args:
-        all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
-           running network scenarios of all users.
+            all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
+                running network scenarios of all users.
 
         Returns:
             None
@@ -153,9 +153,9 @@ class Kathara(IManager):
         Args:
             machine_name (str): The name of the device.
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_name should be set.
+                If None, lab_name should be set.
             lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_hash should be set.
+                If None, lab_hash should be set.
             all_users (bool): If True, return information about devices of all users.
 
         Returns:
@@ -184,9 +184,9 @@ class Kathara(IManager):
         Args:
             link_name (str): The name of the collision domain.
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_name should be set.
+                If None, lab_name should be set.
             lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_hash should be set.
+                If None, lab_hash should be set.
             all_users (bool): If True, return information about collision domains of all users.
 
         Returns:
@@ -225,15 +225,14 @@ class Kathara(IManager):
 
     def get_machine_stats(self, machine_name: str, lab_hash: str = None,
                           lab_name: str = None, all_users: bool = False) -> Generator[IMachineStats, None, None]:
-        """
-        Return information of the specified device in a specified network scenario.
+        """Return information of the specified device in a specified network scenario.
 
         Args:
             machine_name (str): The device name.
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_name should be set.
+                If None, lab_name should be set.
             lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
-            If None, lab_hash should be set.
+                If None, lab_hash should be set.
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
@@ -255,7 +254,7 @@ class Kathara(IManager):
            all_users (bool): If True, return information about the networks of all users.
 
         Returns:
-             Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
+             Generator[Dict[str, ILinkStats], None, None]: A generator containing dicts that has API Object
              identifier as keys and ILinksStats objects as values.
         """
         return self.manager.get_links_stats(lab_hash, lab_name, link_name, all_users)
@@ -267,13 +266,13 @@ class Kathara(IManager):
         Args:
            link_name (str): If specified return all the networks with link_name.
            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-           If None, lab_name should be set.
+                If None, lab_name should be set.
            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
-           If None, lab_hash should be set.
+                If None, lab_hash should be set.
            all_users (bool): If True, return information about the networks of all users.
 
         Returns:
-             Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
+             Generator[Dict[str, ILinkStats], None, None]: A generator containing dicts that has API Object
              identifier as keys and ILinksStats objects as values.
 
         Raises:

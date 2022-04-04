@@ -99,7 +99,7 @@ class Lab(object):
         machine.add_interface(link, number=machine_iface_number)
 
     def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> None:
-        """Assign a meta information to the specified device.
+        """Assign meta information to the specified device.
 
         Args:
             machine_name (str): The name of the device.
@@ -134,7 +134,11 @@ class Lab(object):
             self.links[link_name].external += link_external_links
 
     def check_integrity(self) -> None:
-        """Check if the network interfaces numbers of all the devices in the network scenario are correctly assigned."""
+        """Check if the network interfaces numbers of all the devices in the network scenario are correctly assigned.
+
+        Returns:
+            None
+        """
         for machine in self.machines:
             self.machines[machine].check()
 
@@ -167,7 +171,6 @@ class Lab(object):
         Returns:
             None
         """
-
         def dep_sort(item: str) -> int:
             try:
                 return dependencies.index(item) + 1

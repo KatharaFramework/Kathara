@@ -4,7 +4,7 @@ import re
 from functools import partial
 from multiprocessing import Manager
 from multiprocessing.dummy import Pool
-from typing import Dict, Optional, Set, Any, List
+from typing import Dict, Optional, Set, Any, List, Generator
 
 from kubernetes import client
 from kubernetes.client.api import custom_objects_api
@@ -12,6 +12,7 @@ from kubernetes.client.rest import ApiException
 
 from .KubernetesConfig import KubernetesConfig
 from .KubernetesNamespace import KubernetesNamespace
+from .stats.KubernetesLinkStats import KubernetesLinkStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...model.Lab import Lab
@@ -26,7 +27,7 @@ K8S_NET_PLURAL = "network-attachment-definitions"
 
 
 class KubernetesLink(object):
-    """Class responsible for interacting with Kubernetes."""
+    """The class responsible for deploying Kathara collision domains as Kubernetes networks and interact with them."""
     __slots__ = ['client', 'kubernetes_namespace', 'seed']
 
     def __init__(self, kubernetes_namespace: KubernetesNamespace) -> None:
@@ -68,7 +69,8 @@ class KubernetesLink(object):
         """Deploy the Link contained in the link_item.
 
         Args:
-            network_ids (Dict):
+            network_ids (Dict): A Dict for reserving network IDs. The Key is the network_id, value is 1 if it
+                is currently used.
             link_item (Tuple[str, Link]): A tuple composed by the name of the collision domain and a Link object
 
         Returns:
@@ -155,7 +157,7 @@ class KubernetesLink(object):
         """Undeploy a Kubernetes network.
 
         Args:
-            link_item (): The Kubernetes network to undeploy.
+            link_item (Any): The Kubernetes network to undeploy.
 
         Returns:
             None
@@ -181,7 +183,7 @@ class KubernetesLink(object):
 
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return only the networks in the scenario, else
-            return the networks in the 'default' namespace.
+                return the networks in the 'default' namespace.
             link_name (str): The name of a network. If specified, return the specified network of the scenario.
 
         Returns:
@@ -208,6 +210,40 @@ class KubernetesLink(object):
             )
 
         return networks
+
+    def get_links_stats(self, lab_hash: str = None, link_name: str = None) -> \
+            Generator[Dict[str, KubernetesLinkStats], None, None]:
+        """Return a generator containing the Kubernetes networks' stats.
+
+        Args:
+           lab_hash (str): The hash of a network scenario. If specified, return all the stats of the networks in the
+                scenario.
+           link_name (str): The name of a device. If specified, return the specified network stats.
+
+        Returns:
+           Generator[Dict[str, KubernetesLinkStats], None, None]: A generator containing network names as keys and
+                KubernetesLinkStats as values.
+        """
+        networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name)
+        if not networks:
+            if not link_name:
+                raise Exception("No collision domains found.")
+            else:
+                raise Exception(f"Collision domains with name {link_name} not found.")
+
+        network_streams = {}
+
+        for network in networks:
+            network_streams[network.metadata.name] = KubernetesLinkStats(network)
+
+        while True:
+            for network_stats in network_streams.values():
+                try:
+                    network_stats.update()
+                except StopIteration:
+                    continue
+
+            yield network_streams
 
     def _build_definition(self, link: Link, network_id: int) -> Dict[str, str]:
         """Return a Dict containing the network definition for Kubernetes API corresponding to link.
@@ -246,7 +282,7 @@ class KubernetesLink(object):
         Args:
             name (str): The name of the network.
             network_ids (Dict[int, int]): A Dict for reserving network IDs. The Key is the network_id, value is 1 if it
-            is currently used.
+                is currently used.
 
         Returns:
             int: A network ID.

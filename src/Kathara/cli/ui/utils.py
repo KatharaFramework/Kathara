@@ -12,7 +12,7 @@ from ...foundation.manager.stats.IMachineStats import IMachineStats
 from ...setting.Setting import Setting
 from ...trdparty.consolemenu import PromptUtils, Screen
 
-FORBIDDEN_TABLE_COLUMNS = ["container_id"]
+FORBIDDEN_TABLE_COLUMNS = ["container_name"]
 
 
 def confirmation_prompt(prompt_string: str, callback_yes: Callable, callback_no: Callable) -> Any:

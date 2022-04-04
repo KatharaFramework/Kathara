@@ -287,8 +287,8 @@ class DockerMachine(object):
     def update(self, machine: Machine) -> None:
         """Update the Docker container representing the machine.
 
-        Create a new Docker network for each collision domain contained in
-        machine.interfaces that is not already attached to the container.
+        Create a new Docker network for each collision domain contained in machine.interfaces that is not already
+        attached to the container.
 
         Args:
             machine (Kathara.model.Machine.Machine): A Kathara device.
@@ -577,7 +577,7 @@ class DockerMachine(object):
 
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return all the stats of the devices in the
-            scenario.
+                scenario.
             machine_name (str): The name of a device. If specified, return the specified device stats.
             user (str): The name of a user on the host. If specified, return only the stats of the specified user.
 

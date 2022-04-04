@@ -229,9 +229,9 @@ class DockerLink(object):
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name, user=user)
         if not networks:
             if not link_name:
-                raise Exception("No devices found.")
+                raise Exception("No collision domains found.")
             else:
-                raise Exception(f"Devices with name {link_name} not found.")
+                raise Exception(f"Collision domains with name {link_name} not found.")
 
         networks = sorted(networks, key=lambda x: x.name)
 
@@ -255,7 +255,7 @@ class DockerLink(object):
 
         Args:
             external_links (Kathara.model.ExternalLink): A Kathara external collision domain. It is used to create
-            a collision domain attached to a host interface.
+                a collision domain attached to a host interface.
             network (docker.models.networks.Network): A Docker network.
 
         Returns:

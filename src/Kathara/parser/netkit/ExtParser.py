@@ -8,13 +8,11 @@ from ...model.ExternalLink import ExternalLink
 
 
 class ExtParser(object):
-    """
-    Class responsible for parsing lab.ext file.
-    """
+    """Class responsible for parsing lab.ext file."""
+
     @staticmethod
     def parse(path: str) -> Optional[Dict[str, List[ExternalLink]]]:
-        """
-        Parse the lab.ext and return a Dict. Keys are name of collision domain and values are List of ExternalLink
+        """Parse the lab.ext and return a Dict. Keys are name of collision domain and values are List of ExternalLink
         attached to that interface.
 
         Args:
@@ -22,7 +20,7 @@ class ExtParser(object):
 
         Returns:
             Optional[Dict[str, List[ExternalLink]]]: Keys are name of collision domain and values are List of
-            ExternalLink attached to that interface.
+                ExternalLink attached to that interface.
         """
         lab_ext_path = os.path.join(path, 'lab.ext')
 

@@ -18,7 +18,7 @@ class KubernetesConfigMap(object):
         self.client: core_v1_api.CoreV1Api = core_v1_api.CoreV1Api()
 
     def deploy_for_machine(self, machine: Machine) -> Optional[client.V1ConfigMap]:
-        """Deploy and return a Kubernetes ConfigMap for the machine.
+        """Deploy and return a Kubernetes ConfigMap for the device.
 
         Args:
             machine (Kathara.model.Machine.Machine): A Kathara device.

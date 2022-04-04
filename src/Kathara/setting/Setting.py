@@ -255,7 +255,6 @@ class Setting(object):
 
         Returns:
             bool: True if the selected terminal is TMUX (that do not require path), else False.
-
         """
         terminal = self.terminal if not terminal else terminal
 

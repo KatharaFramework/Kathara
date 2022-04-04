@@ -73,7 +73,7 @@ class ExecCommand(Command):
             lab_path = utils.get_absolute_path(lab_path)
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
-        exec_output = Kathara.get_instance().exec(args['machine_name'], args['command'], lab_hash)
+        exec_output = Kathara.get_instance().exec(args['machine_name'], args['command'], lab_hash=lab_hash)
 
         try:
             while True:

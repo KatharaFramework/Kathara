@@ -14,7 +14,7 @@ class DockerMachineStats(IMachineStats):
         stats (Generator[Dict[str, Any], None, None]): A generator containing dicts with the Docker statistics
         lab_hash (str): The hash identifier of the network scenario of the Docker Container.
         name (str): The name of the device.
-        container_id (str): The Docker Container ID.
+        container_name (str): The Docker Container Name.
         user (str): The user that deployed the associated Docker Network.
         image (str): The Docker Image used for deploying the Docker Container.
         status (Optional[str]): The status of the Docker Container.
@@ -24,7 +24,7 @@ class DockerMachineStats(IMachineStats):
         mem_percent (str): The memory usage of the Docker Container as a percentage.
         net_usage (str): The network usage of the Docker Container.
     """
-    __slots__ = ['machine_api_object', 'stats', 'lab_hash', 'name', 'container_id', 'user', 'status', 'image',
+    __slots__ = ['machine_api_object', 'stats', 'lab_hash', 'name', 'container_name', 'user', 'status', 'image',
                  'pids', 'cpu_usage', 'mem_usage', 'mem_percent', 'net_usage']
 
     def __init__(self, machine_api_object: Container):
@@ -33,7 +33,7 @@ class DockerMachineStats(IMachineStats):
         # Static Information
         self.lab_hash: str = machine_api_object.labels['lab_hash']
         self.name: str = machine_api_object.labels['name']
-        self.container_id: str = machine_api_object.name
+        self.container_name: str = machine_api_object.name
         self.user: Optional[str] = machine_api_object.labels['user']
         self.image: str = machine_api_object.image.tags[0]
         # Dynamic Information
@@ -47,8 +47,7 @@ class DockerMachineStats(IMachineStats):
         self.update()
 
     def update(self) -> None:
-        """
-        Update dynamic statistics with the current ones.
+        """Update dynamic statistics with the current ones.
 
         Returns:
             None
@@ -75,10 +74,15 @@ class DockerMachineStats(IMachineStats):
             self.net_usage = human_readable_bytes(rx_bytes) + " / " + human_readable_bytes(tx_bytes)
 
     def to_dict(self) -> Dict[str, Any]:
+        """Transform statistics into a dict representation.
+
+        Returns:
+            Dict[str, Any]: Dict containing statistics.
+        """
         return {
             "network_scenario_id": self.lab_hash,
             "name": self.name,
-            "container_id": self.container_id,
+            "container_name": self.container_name,
             "user": self.user,
             "status": self.status,
             "image": self.image,
@@ -93,9 +97,14 @@ class DockerMachineStats(IMachineStats):
         return str(self.to_dict())
 
     def __str__(self) -> str:
+        """Return a formatted string with the device statistics.
+
+        Returns:
+           str: A formatted string with the device statistics
+        """
         formatted_stats = f"Network Scenario ID: {self.lab_hash}\n"
         formatted_stats += f"Device Name: {self.name}\n"
-        formatted_stats += f"Container Name: {self.container_id}\n"
+        formatted_stats += f"Container Name: {self.container_name}\n"
         formatted_stats += f"Status: {self.status}\n"
         formatted_stats += f"Image: {self.image}\n"
         formatted_stats += f"PIDs: {self.pids}\n"

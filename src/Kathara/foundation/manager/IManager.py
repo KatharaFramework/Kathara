@@ -12,8 +12,7 @@ class IManager(ABC):
     """Interface to be implemented in the virtualization managers"""
     @abstractmethod
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
-        """
-        Deploy a Kathara network scenario.
+        """Deploy a Kathara network scenario.
 
         Args:
             lab (Kathara.model.Lab): A Kathara network scenario.
@@ -26,8 +25,7 @@ class IManager(ABC):
 
     @abstractmethod
     def update_lab(self, lab: Lab) -> None:
-        """
-        Update a running network scenario.
+        """Update a running network scenario.
 
         Args:
             lab (Kathara.model.Lab): A Kathara network scenario.
@@ -59,12 +57,11 @@ class IManager(ABC):
 
     @abstractmethod
     def wipe(self, all_users: bool = False) -> None:
-        """
-        Undeploy all the running network scenarios.
+        """Undeploy all the running network scenarios.
 
         Args:
-        all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
-           running network scenarios of all users.
+            all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
+                running network scenarios of all users.
 
         Returns:
             None
@@ -112,8 +109,7 @@ class IManager(ABC):
 
     @abstractmethod
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
-        """
-        Copy files on a running device in the specified paths.
+        """Copy files on a running device in the specified paths.
 
         Args:
             machine (Kathara.model.Machine): A running device object. It must have the api_object field populated.
@@ -133,9 +129,9 @@ class IManager(ABC):
         Args:
             machine_name (str): The name of the device.
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_name should be set.
+                If None, lab_name should be set.
             lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_hash should be set.
+                If None, lab_hash should be set.
             all_users (bool): If True, return information about devices of all users.
 
         Returns:
@@ -166,9 +162,9 @@ class IManager(ABC):
         Args:
             link_name (str): The name of the collision domain.
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_name should be set.
+                If None, lab_name should be set.
             lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_hash should be set.
+                If None, lab_hash should be set.
             all_users (bool): If True, return information about collision domains of all users.
 
         Returns:
@@ -215,9 +211,9 @@ class IManager(ABC):
         Args:
             machine_name (str): The device name.
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_name should be set.
+                If None, lab_name should be set.
             lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
-            If None, lab_hash should be set.
+                If None, lab_hash should be set.
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
@@ -237,7 +233,7 @@ class IManager(ABC):
            all_users (bool): If True, return information about the networks of all users.
 
         Returns:
-             Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
+             Generator[Dict[str, ILinkStats], None, None]: A generator containing dicts that has API Object
              identifier as keys and ILinksStats objects as values.
         """
         raise NotImplementedError("You must implement `get_links_stats` method.")
@@ -250,13 +246,13 @@ class IManager(ABC):
         Args:
            link_name (str): If specified return all the networks with link_name.
            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-           If None, lab_name should be set.
+                If None, lab_name should be set.
            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
-           If None, lab_hash should be set.
+                If None, lab_hash should be set.
            all_users (bool): If True, return information about the networks of all users.
 
         Returns:
-             Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
+             Generator[Dict[str, ILinkStats], None, None]: A generator containing dicts that has API Object
              identifier as keys and ILinksStats objects as values.
         """
         raise NotImplementedError("You must implement `get_link_stats` method.")

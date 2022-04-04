@@ -26,7 +26,6 @@ class DockerPlugin(object):
         Returns:
             None
         """
-
         try:
             logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)
             plugin = self.client.plugins.get(PLUGIN_NAME)

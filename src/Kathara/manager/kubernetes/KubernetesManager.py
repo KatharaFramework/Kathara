@@ -10,6 +10,7 @@ from .KubernetesConfig import KubernetesConfig
 from .KubernetesLink import KubernetesLink
 from .KubernetesMachine import KubernetesMachine
 from .KubernetesNamespace import KubernetesNamespace
+from .stats.KubernetesLinkStats import KubernetesLinkStats
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...exceptions import NotSupportedError
@@ -137,8 +138,8 @@ class KubernetesManager(IManager):
         """Undeploy all the running network scenarios.
 
         Args:
-        all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
-           running network scenarios of all users.
+            all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
+                running network scenarios of all users.
 
         Returns:
             None
@@ -173,7 +174,7 @@ class KubernetesManager(IManager):
 
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
-            
+
         lab_hash = lab_hash.lower()
 
         self.k8s_machine.connect(lab_hash=lab_hash,
@@ -221,10 +222,7 @@ class KubernetesManager(IManager):
         """
         tar_data = pack_files_for_tar(guest_to_host)
 
-        self.k8s_machine.copy_files(machine.api_object,
-                                    path="/",
-                                    tar_data=tar_data
-                                    )
+        self.k8s_machine.copy_files(machine.api_object, path="/", tar_data=tar_data)
 
     def get_machine_api_object(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
                                all_users: bool = False) -> client.V1Pod:
@@ -233,9 +231,9 @@ class KubernetesManager(IManager):
         Args:
             machine_name (str): The name of the device.
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_name should be set.
+                If None, lab_name should be set.
             lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_hash should be set.
+                If None, lab_hash should be set.
             all_users (bool): If True, return information about devices of all users.
 
         Returns:
@@ -279,6 +277,8 @@ class KubernetesManager(IManager):
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
+        lab_hash = lab_hash.lower()
+
         return self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash)
 
     def get_link_api_object(self, link_name: str, lab_hash: str = None, lab_name: str = None,
@@ -288,9 +288,9 @@ class KubernetesManager(IManager):
         Args:
             link_name (str): The name of the collision domain.
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_name should be set.
+                If None, lab_name should be set.
             lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_hash should be set.
+                If None, lab_hash should be set.
             all_users (bool): If True, return information about collision domains of all users.
 
         Returns:
@@ -350,7 +350,7 @@ class KubernetesManager(IManager):
 
         Returns:
               Generator[Dict[str, KubernetesMachineStats], None, None]: A generator containing dicts that has API Object
-              identifier as keys and KubernetesMachineStats objects as values.
+                identifier as keys and KubernetesMachineStats objects as values.
         """
         if all_users:
             logging.warning("User-specific options have no effect on Megalos.")
@@ -360,9 +360,7 @@ class KubernetesManager(IManager):
 
         lab_hash = lab_hash.lower()
 
-        machines_stats = self.k8s_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name)
-
-        return machines_stats
+        return self.k8s_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name)
 
     def get_machine_stats(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
                           all_users: bool = False) -> Generator[KubernetesMachineStats, None, None]:
@@ -371,17 +369,14 @@ class KubernetesManager(IManager):
         Args:
             machine_name (str): The device name.
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_name should be set.
+                If None, lab_name should be set.
             lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
-            If None, lab_hash should be set.
+                If None, lab_hash should be set.
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
             KubernetesMachineStats: KubernetesMachineStats object containing the device info.
         """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
         if not lab_hash and not lab_name:
             raise Exception("You must specify a running network scenario hash or name.")
 
@@ -394,6 +389,62 @@ class KubernetesManager(IManager):
         (_, machine_stats) = next(machines_stats).popitem()
 
         yield machine_stats
+
+    def get_links_stats(self, lab_hash: str = None, lab_name: str = None, link_name: str = None,
+                        all_users: bool = False) -> Generator[Dict[str, KubernetesLinkStats], None, None]:
+        """Return information about deployed Kubernetes networks.
+
+        Args:
+           lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+           lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+           link_name (str): If specified return all the networks with link_name.
+           all_users (bool): If True, return information about the networks of all users.
+
+        Returns:
+             Generator[Dict[str, KubernetesLinkStats], None, None]: A generator containing dicts that has API Object
+                identifier as keys and KubernetesLinkStats objects as values.
+        """
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        lab_hash = lab_hash.lower()
+
+        return self.k8s_link.get_links_stats(lab_hash=lab_hash, link_name=link_name)
+
+    def get_link_stats(self, link_name: str, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
+            Generator[KubernetesLinkStats, None, None]:
+        """Return information of the specified deployed network in a specified network scenario.
+
+        Args:
+            link_name (str): The link name.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+                If None, lab_hash should be set.
+            all_users (bool): If True, search the network among all the users networks.
+
+        Returns:
+            Generator[KubernetesLinkStats, None, None]: A generator containing KubernetesLinkStats objects with
+                the network statistics.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
+        """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        lab_hash = lab_hash.lower()
+
+        links_stats = self.get_links_stats(lab_hash=lab_hash, link_name=link_name, all_users=all_users)
+        (_, link_stats) = next(links_stats).popitem()
+
+        yield link_stats
 
     def check_image(self, image_name: str) -> None:
         """Useless. The Check of the image is delegated to Kubernetes.

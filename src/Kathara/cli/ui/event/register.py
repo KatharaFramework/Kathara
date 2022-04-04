@@ -5,8 +5,7 @@ from ....event.EventDispatcher import EventDispatcher
 
 
 def register_cli_events() -> None:
-    """
-    Register events to handle UI from CLI.
+    """Register events to handle UI from CLI.
 
     Returns:
         None

@@ -165,8 +165,8 @@ class DockerManager(IManager):
         If multiuser scenarios are active, undeploy only current user devices.
 
         Args:
-        all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
-           running network scenarios of all users.
+            all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
+                running network scenarios of all users.
 
         Returns:
             None
@@ -233,10 +233,9 @@ class DockerManager(IManager):
         if not lab_hash and not lab_name:
             raise Exception("You must specify a running network scenario hash or name.")
 
+        user_name = utils.get_current_user_name()
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
-
-        user_name = utils.get_current_user_name()
 
         return self.docker_machine.exec(lab_hash, machine_name, command, user=user_name, tty=False)
 
@@ -267,9 +266,9 @@ class DockerManager(IManager):
         Args:
             machine_name (str): The name of the device.
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_name should be set.
+                If None, lab_name should be set.
             lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_hash should be set.
+                If None, lab_hash should be set.
             all_users (bool): If True, return information about devices of all users.
 
         Returns:
@@ -278,10 +277,10 @@ class DockerManager(IManager):
         Raises:
             Exception: You must specify a running network scenario hash or name.
         """
-        user_name = utils.get_current_user_name() if not all_users else None
         if not lab_hash and not lab_name:
             raise Exception("You must specify a running network scenario hash or name.")
 
+        user_name = utils.get_current_user_name() if not all_users else None
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
@@ -306,7 +305,6 @@ class DockerManager(IManager):
             List[docker.models.containers.Container]: Docker API objects of devices.
         """
         user_name = utils.get_current_user_name() if not all_users else None
-
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
@@ -319,9 +317,9 @@ class DockerManager(IManager):
         Args:
             link_name (str): The name of the collision domain.
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_name should be set.
+                If None, lab_name should be set.
             lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
-            If None, lab_hash should be set.
+                If None, lab_hash should be set.
             all_users (bool): If True, return information about collision domains of all users.
 
         Returns:
@@ -331,10 +329,10 @@ class DockerManager(IManager):
             Exception: You must specify a running network scenario hash or name.
             Exception: Collision Domain not found.
         """
-        user_name = utils.get_current_user_name() if not all_users else None
         if not lab_hash and not lab_name:
             raise Exception("You must specify a running network scenario hash or name.")
 
+        user_name = utils.get_current_user_name() if not all_users else None
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
@@ -359,9 +357,6 @@ class DockerManager(IManager):
             List[docker.models.networks.Network]: Docker API objects of networks.
         """
         user_name = utils.get_current_user_name() if not all_users else None
-        if not lab_hash and not lab_name:
-            raise Exception("You must specify a running network scenario hash or name.")
-
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
@@ -383,14 +378,11 @@ class DockerManager(IManager):
               identifier as keys and DockerMachineStats objects as values.
         """
         user_name = utils.get_current_user_name() if not all_users else None
-
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        machines_stats = self.docker_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name,
-                                                                user=user_name)
-
-        return machines_stats
+        return self.docker_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name,
+                                                      user=user_name)
 
     @privileged
     def get_machine_stats(self, machine_name: str, lab_hash: str = None,
@@ -435,16 +427,13 @@ class DockerManager(IManager):
 
         Returns:
              Generator[Dict[str, DockerLinkStats], None, None]: A generator containing dicts that has API Object
-             identifier as keys and DockerLinksStats objects as values.
+                identifier as keys and DockerLinksStats objects as values.
         """
         user_name = utils.get_current_user_name() if not all_users else None
-
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        links_stats = self.docker_link.get_links_stats(lab_hash=lab_hash, link_name=link_name, user=user_name)
-
-        return links_stats
+        return self.docker_link.get_links_stats(lab_hash=lab_hash, link_name=link_name, user=user_name)
 
     def get_link_stats(self, link_name: str, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
             Generator[DockerLinkStats, None, None]:
@@ -460,7 +449,7 @@ class DockerManager(IManager):
 
         Returns:
             Generator[DockerLinkStats, None, None]: A generator containing DockerLinkStats objects with the network
-            statistics.
+                statistics.
 
         Raises:
             Exception: You must specify a running network scenario hash or name.
@@ -471,8 +460,8 @@ class DockerManager(IManager):
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        machines_stats = self.get_links_stats(lab_hash=lab_hash, link_name=link_name, all_users=all_users)
-        (_, link_stats) = next(machines_stats).popitem()
+        links_stats = self.get_links_stats(lab_hash=lab_hash, link_name=link_name, all_users=all_users)
+        (_, link_stats) = next(links_stats).popitem()
 
         yield link_stats
 

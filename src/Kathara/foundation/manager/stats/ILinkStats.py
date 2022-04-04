@@ -16,4 +16,9 @@ class ILinkStats(ABC):
 
     @abstractmethod
     def to_dict(self) -> Dict[str, Any]:
+        """Transform statistics into a dict representation.
+
+        Returns:
+            Dict[str, Any]: Dict containing statistics.
+        """
         raise NotImplementedError("You must implement `to_dict` method.")

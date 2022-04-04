@@ -7,8 +7,7 @@ class UpdateDockerImage(object):
     """Listener fired when there is a Docker Image update."""
 
     def run(self, docker_image: DockerImage, image_name: str) -> None:
-        """
-        Prompt the user for Docker Image Update.
+        """Prompt the user for Docker Image Update.
 
         Args:
             docker_image (DockerImage): DockerImage instance.

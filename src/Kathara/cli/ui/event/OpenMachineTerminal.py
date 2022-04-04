@@ -7,8 +7,7 @@ class OpenMachineTerminal(object):
     """Listener fired when a device is deployed and started."""
 
     def run(self, item: 'MachinePackage.Machine') -> None:
-        """
-        If allowed, open a terminal, with the emulator specified in the settings, into the device.
+        """If allowed, open a terminal, with the emulator specified in the settings, into the device.
 
         Args:
             item (Kathara.model.Machine): Device where open a terminal.

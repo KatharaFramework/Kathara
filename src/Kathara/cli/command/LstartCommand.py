@@ -4,6 +4,7 @@ import os
 import sys
 from typing import List
 
+from ..ui.utils import create_table
 from ..ui.utils import format_headers
 from ... import utils
 from ...exceptions import PrivilegeError
@@ -206,6 +207,7 @@ class LstartCommand(Command):
         Kathara.get_instance().deploy_lab(lab, selected_machines=args['machine_name'])
 
         if args['list']:
-            print(next(Kathara.get_instance().get_formatted_lab_info(lab.hash)))
+            machines_stats = Kathara.get_instance().get_machines_stats(lab_hash=lab.hash)
+            print(next(create_table(machines_stats)))
 
         return lab

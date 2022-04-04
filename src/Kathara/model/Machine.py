@@ -320,7 +320,7 @@ class Machine(object):
         Try to took it from options, or device meta. Otherwise, return None.
 
         Args:
-            multiplier (int):
+            multiplier (int): A numeric multiplier for the CPU limit value.
 
         Returns:
             Optional[int]: The CPU limit of the device.

@@ -32,7 +32,7 @@ class Test(ABC):
 
     @staticmethod
     def _get_machine_command_output(lab_hash, machine_name, command):
-        exec_output = Kathara.get_instance().exec(machine_name, command, lab_hash)
+        exec_output = Kathara.get_instance().exec(machine_name, command, lab_hash=lab_hash)
 
         result = {
             'stdout': '',

@@ -26,8 +26,7 @@ class KubernetesMachineStats(IMachineStats):
         self.update()
 
     def update(self) -> None:
-        """
-        Update dynamic statistics with the current ones.
+        """Update dynamic statistics with the current ones.
 
         Returns:
             None
@@ -63,6 +62,11 @@ class KubernetesMachineStats(IMachineStats):
         return string_status.split(': ')[0] if string_status is not None else pod_api_object.status.phase
 
     def to_dict(self) -> Dict[str, Any]:
+        """Transform statistics into a dict representation.
+
+        Returns:
+            Dict[str, Any]: Dict containing statistics.
+        """
         return {
             "network_scenario_id": self.lab_hash,
             "name": self.name,

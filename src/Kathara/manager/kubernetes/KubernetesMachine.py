@@ -130,7 +130,6 @@ class KubernetesMachine(object):
         Returns:
             None
         """
-
         machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
             else lab.machines.items()
 
@@ -439,7 +438,7 @@ class KubernetesMachine(object):
         EventDispatcher.get_instance().dispatch("machine_undeployed", item=pod_api_object)
 
     def _delete_machine(self, pod_api_object: client.V1Pod) -> None:
-        """Delete the Kubernetes deployment and PoD associated to pod_api_object.
+        """Delete the Kubernetes deployment and Pod associated to pod_api_object.
 
         Args:
             pod_api_object (client.V1Pod): A Kubernetes Pod API object.
@@ -480,7 +479,7 @@ class KubernetesMachine(object):
         Args:
             lab_hash (str): The hash of the network scenario containing the device.
             machine_name (str): The name of the device to connect.
-            shell (Union[str, List[str]): The path to the desired shell.
+            shell (Union[str, List[str]]): The path to the desired shell.
             logs (bool): If True, print the logs of the startup command.
 
         Returns:
@@ -637,9 +636,19 @@ class KubernetesMachine(object):
         if not is_stream:
             yield result['stdout'].encode('utf-8'), result['stderr'].encode('utf-8')
 
-    def copy_files(self, deployment: client.V1Deployment, path: str, tar_data: bytes) -> None:
-        machine_name = deployment.metadata.labels["name"]
-        machine_namespace = deployment.metadata.namespace
+    def copy_files(self, machine_api_object: client.V1Deployment, path: str, tar_data: bytes) -> None:
+        """Copy the files contained in tar_data in the Kubernetes deployment path specified by the machine_api_object.
+
+        Args:
+            machine_api_object (client.V1Deployment): A Kubernetes deployment.
+            path (str): The path of where copy the tar_data.
+            tar_data (bytes): The data to copy in the deployment.
+
+        Returns:
+            None
+        """
+        machine_name = machine_api_object.metadata.labels["name"]
+        machine_namespace = machine_api_object.metadata.namespace
 
         exec_output = self.exec(machine_namespace,
                                 machine_name,
@@ -687,12 +696,12 @@ class KubernetesMachine(object):
 
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return all the stats of the devices in the
-            scenario.
+                scenario.
             machine_name (str): The name of a device. If specified, return the specified device stats.
 
         Returns:
             Generator[Dict[str, KubernetesMachineStats], None, None]: A generator containing device name as keys and
-            KubernetesMachineStats as values.
+                KubernetesMachineStats as values.
         """
         deployments = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
         if not deployments:
