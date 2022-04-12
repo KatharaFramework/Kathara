@@ -138,6 +138,9 @@ class KubernetesMachine(object):
         if privileged:
             logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
 
+        # Do not open terminals on Megalos
+        Setting.get_instance().open_terminals = False
+
         EventDispatcher.get_instance().dispatch("machines_deploy_started", items=machines)
 
         # Deploy all lab machines.
@@ -390,17 +393,17 @@ class KubernetesMachine(object):
         Returns:
             None
         """
-        deployments = self.get_machines_api_objects_by_filters(lab_hash=lab_hash)
+        pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash)
         if selected_machines is not None and len(selected_machines) > 0:
-            deployments = [item for item in deployments if item.metadata.labels["name"] in selected_machines]
+            pods = [item for item in pods if item.metadata.labels["name"] in selected_machines]
 
-        if len(deployments) > 0:
+        if len(pods) > 0:
             pool_size = utils.get_pool_size()
             machines_pool = Pool(pool_size)
 
-            items = utils.chunk_list(deployments, pool_size)
+            items = utils.chunk_list(pods, pool_size)
 
-            EventDispatcher.get_instance().dispatch("machines_undeploy_started", items=deployments)
+            EventDispatcher.get_instance().dispatch("machines_undeploy_started", items=pods)
 
             for chunk in items:
                 machines_pool.map(func=self._undeploy_machine, iterable=chunk)
@@ -413,12 +416,12 @@ class KubernetesMachine(object):
         Returns:
             None
         """
-        deployments = self.get_machines_api_objects_by_filters()
+        pods = self.get_machines_api_objects_by_filters()
 
         pool_size = utils.get_pool_size()
         machines_pool = Pool(pool_size)
 
-        items = utils.chunk_list(deployments, pool_size)
+        items = utils.chunk_list(pods, pool_size)
 
         for chunk in items:
             machines_pool.map(func=self._undeploy_machine, iterable=chunk)
@@ -485,10 +488,10 @@ class KubernetesMachine(object):
         Returns:
             None
         """
-        deployments = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
-        if not deployments:
+        pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+        if not pods:
             raise Exception("The specified device `%s` is not running." % machine_name)
-        deployment = deployments.pop()
+        deployment = pods.pop()
 
         if 'Running' not in deployment.status.phase:
             raise Exception('Device `%s` is not ready.' % machine_name)
@@ -585,13 +588,13 @@ class KubernetesMachine(object):
 
         try:
             # Retrieve the pod of current Deployment
-            deployments = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
-            if not deployments:
+            pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+            if not pods:
                 raise Exception("The specified device `%s` is not running." % machine_name)
-            deployment = deployments.pop()
+            pod = pods.pop()
 
             response = stream(self.core_client.connect_get_namespaced_pod_exec,
-                              name=deployment.metadata.name,
+                              name=pod.metadata.name,
                               namespace=lab_hash,
                               command=command,
                               stdout=True,
@@ -703,26 +706,26 @@ class KubernetesMachine(object):
             Generator[Dict[str, KubernetesMachineStats], None, None]: A generator containing device name as keys and
                 KubernetesMachineStats as values.
         """
-        deployments = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
-        if not deployments:
-            if not machine_name:
-                raise Exception("No devices found.")
-            else:
-                raise Exception(f"Devices with name {machine_name} not found.")
-
-        machine_streams = {}
-
-        for deployment in deployments:
-            machine_streams[deployment.metadata.name] = KubernetesMachineStats(deployment)
-
         while True:
-            for machine_stats in machine_streams.values():
+            pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+            if not pods:
+                if not machine_name:
+                    raise Exception("No devices found.")
+                else:
+                    raise Exception(f"Devices with name {machine_name} not found.")
+
+            machines_stats = {}
+
+            for pod in pods:
+                machines_stats[pod.metadata.name] = KubernetesMachineStats(pod)
+
+            for machine_stats in machines_stats.values():
                 try:
                     machine_stats.update()
                 except StopIteration:
                     continue
 
-            yield machine_streams
+            yield machines_stats
 
     @staticmethod
     def get_deployment_name(name: str) -> str:

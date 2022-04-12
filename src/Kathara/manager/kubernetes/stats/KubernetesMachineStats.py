@@ -7,14 +7,14 @@ from ....foundation.manager.stats.IMachineStats import IMachineStats
 
 class KubernetesMachineStats(IMachineStats):
     """The class responsible to handle Kubernetes Machine statistics."""
-    __slots__ = ['machine_api_object', 'lab_hash', 'name', 'deployment_name', 'image', 'status', 'assigned_node']
+    __slots__ = ['machine_api_object', 'lab_hash', 'name', 'pod_name', 'image', 'status', 'assigned_node']
 
     def __init__(self, machine_api_object: V1Pod):
         self.machine_api_object = machine_api_object
         # Static Information
         self.lab_hash = machine_api_object.metadata.namespace
         self.name = machine_api_object.metadata.labels["name"]
-        self.deployment_name = machine_api_object.metadata.name
+        self.pod_name = machine_api_object.metadata.name
 
         container_statuses = machine_api_object.status.container_statuses
         self.image = container_statuses[0].image.replace('docker.io/', '') if container_statuses else "N/A"
@@ -70,7 +70,7 @@ class KubernetesMachineStats(IMachineStats):
         return {
             "network_scenario_id": self.lab_hash,
             "name": self.name,
-            "deployment_name": self.deployment_name,
+            "pod_name": self.pod_name,
             "image": self.image,
             "status": self.status,
             "assigned_node": self.assigned_node
@@ -87,7 +87,7 @@ class KubernetesMachineStats(IMachineStats):
         """
         formatted_stats = f"Network Scenario ID: {self.lab_hash}\n"
         formatted_stats += f"Device Name: {self.name}\n"
-        formatted_stats += f"Deployment Name: {self.deployment_name}\n"
+        formatted_stats += f"Pod Name: {self.pod_name}\n"
         formatted_stats += f"Image: {self.image}\n"
         formatted_stats += f"Status: {self.status}\n"
         formatted_stats += f"Assigned Node: {self.assigned_node}"

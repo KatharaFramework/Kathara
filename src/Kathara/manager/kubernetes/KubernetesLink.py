@@ -224,26 +224,26 @@ class KubernetesLink(object):
            Generator[Dict[str, KubernetesLinkStats], None, None]: A generator containing network names as keys and
                 KubernetesLinkStats as values.
         """
-        networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name)
-        if not networks:
-            if not link_name:
-                raise Exception("No collision domains found.")
-            else:
-                raise Exception(f"Collision domains with name {link_name} not found.")
-
-        network_streams = {}
-
-        for network in networks:
-            network_streams[network.metadata.name] = KubernetesLinkStats(network)
-
         while True:
-            for network_stats in network_streams.values():
+            networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name)
+            if not networks:
+                if not link_name:
+                    raise Exception("No collision domains found.")
+                else:
+                    raise Exception(f"Collision domains with name {link_name} not found.")
+
+            networks_stats = {}
+
+            for network in networks:
+                networks_stats[network.metadata.name] = KubernetesLinkStats(network)
+
+            for network_stats in networks_stats.values():
                 try:
                     network_stats.update()
                 except StopIteration:
                     continue
 
-            yield network_streams
+            yield networks_stats
 
     def _build_definition(self, link: Link, network_id: int) -> Dict[str, str]:
         """Return a Dict containing the network definition for Kubernetes API corresponding to link.

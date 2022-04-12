@@ -271,13 +271,10 @@ class KubernetesManager(IManager):
         if all_users:
             logging.warning("User-specific options have no effect on Megalos.")
 
-        if not lab_hash and not lab_name:
-            raise Exception("You must specify a running network scenario hash or name.")
-
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        lab_hash = lab_hash.lower()
+        lab_hash = lab_hash.lower() if lab_hash else None
 
         return self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash)
 
@@ -328,13 +325,10 @@ class KubernetesManager(IManager):
         if all_users:
             logging.warning("User-specific options have no effect on Megalos.")
 
-        if not lab_hash and not lab_name:
-            raise Exception("You must specify a running network scenario hash or name.")
-
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        lab_hash = lab_hash.lower()
+        lab_hash = lab_hash.lower() if lab_hash else None
 
         return self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash)
 
@@ -358,7 +352,7 @@ class KubernetesManager(IManager):
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        lab_hash = lab_hash.lower()
+        lab_hash = lab_hash.lower() if lab_hash else None
 
         return self.k8s_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name)
 
@@ -410,7 +404,7 @@ class KubernetesManager(IManager):
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        lab_hash = lab_hash.lower()
+        lab_hash = lab_hash.lower() if lab_hash else None
 
         return self.k8s_link.get_links_stats(lab_hash=lab_hash, link_name=link_name)
 

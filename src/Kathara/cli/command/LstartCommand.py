@@ -140,9 +140,9 @@ class LstartCommand(Command):
                 Setting.get_instance().open_terminals = False
 
         if args['dry_mode']:
-            logging.info(format_headers("Checking Lab"))
+            logging.info(format_headers("Checking Network Scenario"))
         else:
-            logging.info(format_headers("Starting Lab"))
+            logging.info(format_headers("Starting Network Scenario"))
 
         try:
             lab = LabParser.parse(lab_path)

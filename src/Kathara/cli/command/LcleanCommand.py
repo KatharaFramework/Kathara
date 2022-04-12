@@ -1,6 +1,8 @@
 import argparse
+import logging
 from typing import List
 
+from ..ui.utils import format_headers
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -45,5 +47,7 @@ class LcleanCommand(Command):
         lab_path = utils.get_absolute_path(lab_path)
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
+
+        logging.info(format_headers("Stopping Network Scenario"))
 
         Kathara.get_instance().undeploy_lab(lab_hash=lab_hash, selected_machines=set(args['machine_names']))
