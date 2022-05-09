@@ -17,7 +17,7 @@ docker-signed_%: docker-build-image_%
 
 docker-build-image_%:
 	cd Docker-Linux-Build && cp Dockerfile_template Dockerfile
-	if [ $* == "bionic" ]; then \
+	if [ "$*" = "bionic" ]; then \
 		cd Docker-Linux-Build && sed -i -e "s|__NOKOGIRI__|RUN gem install nokogiri -v 1.12.5|g" Dockerfile; \
 	else \
 		cd Docker-Linux-Build && sed -i -e "s|__NOKOGIRI__||g" Dockerfile; \
