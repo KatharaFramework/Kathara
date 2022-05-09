@@ -235,7 +235,7 @@ class KubernetesLink(object):
             networks_stats = {}
 
             for network in networks:
-                networks_stats[network.metadata.name] = KubernetesLinkStats(network)
+                networks_stats[network['metadata']['name']] = KubernetesLinkStats(network)
 
             for network_stats in networks_stats.values():
                 try:

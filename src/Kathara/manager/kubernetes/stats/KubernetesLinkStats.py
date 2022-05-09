@@ -18,10 +18,10 @@ class KubernetesLinkStats(ILinkStats):
 
     def __init__(self, link_api_object: Any):
         self.link_api_object: Any = link_api_object
-        self.lab_hash: str = link_api_object.metadata.namespace
-        self.name: str = link_api_object.metadata.labels["name"]
-        self.network_name: str = link_api_object.metadata.name
-        self.vxlan_id = json.loads(link_api_object.spec.config)['vxlanId']
+        self.lab_hash: str = link_api_object['metadata']['namespace']
+        self.name: str = link_api_object['metadata']['labels']['name']
+        self.network_name: str = link_api_object['metadata']['name']
+        self.vxlan_id = json.loads(link_api_object['spec']['config'])['vxlanId']
 
     def update(self) -> None:
         """Update dynamic statistics with the current ones.

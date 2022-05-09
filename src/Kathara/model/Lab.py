@@ -66,7 +66,6 @@ class Lab(object):
         self.hash: str = ""
 
         if self.path:
-            self.path = path
             self.hash = utils.generate_urlsafe_hash(self.path)
             shared_startup_file = os.path.join(self.path, 'shared.startup')
             self.shared_startup_path = shared_startup_file if os.path.exists(shared_startup_file) else None
