@@ -62,4 +62,5 @@ exe = EXE(pyz,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
+          target_arch='__ARCH__',
           console=True )

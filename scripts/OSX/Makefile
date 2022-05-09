@@ -21,7 +21,7 @@ py_env:
 	python3 -m venv $(VENV_DIR)
 
 deps: py_env
-	$(VENV_DIR)/bin/pip3.9 install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+	$(VENV_DIR)/bin/pip3.9 install pyinstaller
 	$(VENV_DIR)/bin/pip3.9 install -r ../../src/requirements.txt
 	$(VENV_DIR)/bin/pip3.9 install pytest
 	gem install ronn-ng --user-install
@@ -40,7 +40,8 @@ test:
 
 binary_%: test
 	cp ./kathara.spec ../../src/
-	cd ../../src && $(VENV_DIR)/bin/pyinstaller --distpath=./kathara.dist --workpath=./kathara.build --target-arch $* kathara.spec
+	sed -i '' -e "s:__ARCH__:$*:g" ../../src/kathara.spec
+	cd ../../src && $(VENV_DIR)/bin/pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
 
 copyBuildDirectory_%: binary_% manpages
 	[ -d $(TARGET_DIRECTORY) ] || mkdir $(TARGET_DIRECTORY)
