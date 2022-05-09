@@ -9,14 +9,11 @@ from ...trdparty.depgen import depgen
 
 
 class DepParser(object):
-    """
-    Class responsible for parsing the lab.dep file.
-    """
+    """Class responsible for parsing the lab.dep file."""
 
     @staticmethod
     def parse(path: str) -> Optional[List[str]]:
-        """
-        Parse the lab.dep file and return a List of string containing the names of the device ordered considering the
+        """Parse the lab.dep file and return a List of string containing the names of the device ordered considering the
         dependencies.
 
         Args:
@@ -24,7 +21,7 @@ class DepParser(object):
 
         Returns:
             Optional[List[str]]: A List of string containing the names of the device ordered considering the
-            dependencies.
+                dependencies.
         """
         lab_dep_path = os.path.join(path, 'lab.dep')
 

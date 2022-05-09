@@ -13,8 +13,7 @@ class HandleProgressBar(object):
         self.progress_bar = None
 
     def init(self, items: List[Any]) -> None:
-        """
-        Initialize a progress bar on the items.
+        """Initialize a progress bar on the items.
 
         Args:
             items (List[Any]): List of items on which init the progress bar.
@@ -29,8 +28,7 @@ class HandleProgressBar(object):
         )
 
     def update(self, item: Any) -> None:
-        """
-        Update the progress bar with the item.
+        """Update the progress bar with the item.
 
         Args:
             item (Any): Item that triggered the progress bar update.
@@ -42,8 +40,7 @@ class HandleProgressBar(object):
             self.progress_bar += 1
 
     def finish(self) -> None:
-        """
-        Closes a progress bar.
+        """Closes a progress bar.
 
         Returns:
             None

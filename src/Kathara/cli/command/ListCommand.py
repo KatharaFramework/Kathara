@@ -1,6 +1,7 @@
 import argparse
 from typing import List
 
+from ..ui.utils import create_table
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -57,39 +58,21 @@ class ListCommand(Command):
         all_users = bool(args['all'])
 
         if args['live']:
-            if args['name']:
-                self._get_machine_live_info(args['name'], all_users)
-            else:
-                self._get_lab_live_info(all_users)
+            self._get_live_info(machine_name=args['name'], all_users=all_users)
         else:
-            if args['name']:
-                print(Kathara.get_instance().get_formatted_machine_info(args['name'], all_users=all_users))
-            else:
-                lab_info = Kathara.get_instance().get_formatted_lab_info(all_users=all_users)
-
-                print(next(lab_info))
+            machines_stats = Kathara.get_instance().get_machines_stats(machine_name=args['name'], all_users=all_users)
+            print(next(create_table(machines_stats)))
 
     @staticmethod
-    def _get_machine_live_info(machine_name: str, all_users: bool) -> None:
-        Curses.get_instance().init_window()
-
-        try:
-            while True:
-                Curses.get_instance().print_string(
-                    Kathara.get_instance().get_formatted_machine_info(machine_name, all_users=all_users)
-                )
-        finally:
-            Curses.get_instance().close()
-
-    @staticmethod
-    def _get_lab_live_info(all_users: bool) -> None:
-        lab_info = Kathara.get_instance().get_formatted_lab_info(all_users=all_users)
+    def _get_live_info(machine_name: str, all_users: bool) -> None:
+        machines_stats = Kathara.get_instance().get_machines_stats(machine_name=machine_name, all_users=all_users)
+        table = create_table(machines_stats)
 
         Curses.get_instance().init_window()
 
         try:
             while True:
-                Curses.get_instance().print_string(next(lab_info))
+                Curses.get_instance().print_string(next(table))
         except StopIteration:
             pass
         finally:

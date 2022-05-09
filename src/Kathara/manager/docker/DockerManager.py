@@ -1,18 +1,18 @@
 import io
 import logging
-from copy import copy
-from datetime import datetime
-from typing import Set, Dict, Generator, Any, Tuple, List
+from typing import Set, Dict, Generator, Tuple, List, Optional
 
 import docker
 import docker.models.containers
+import docker.models.networks
 from requests.exceptions import ConnectionError as RequestsConnectionError
-from terminaltables import DoubleTable
 
 from .DockerImage import DockerImage
 from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
 from .DockerPlugin import DockerPlugin
+from .stats.DockerLinkStats import DockerLinkStats
+from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError
@@ -131,16 +131,29 @@ class DockerManager(IManager):
                 self.docker_machine.update(machine)
 
     @privileged
-    def undeploy_lab(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
+    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                     selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario to undeploy.
-            selected_machines (Set[str]): If not None, undeploy only the specified devices.
+            lab_hash (Optional[str]): The hash of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_name should be set.
+            lab_name (Optional[str]): The name of the network scenario. Can be used as an alternative to lab_hash.
+                If None, lab_hash should be set.
+            selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
 
         Returns:
             None
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
         self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines)
 
         self.docker_link.undeploy(lab_hash)
@@ -152,8 +165,8 @@ class DockerManager(IManager):
         If multiuser scenarios are active, undeploy only current user devices.
 
         Args:
-        all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
-           running network scenarios of all users.
+            all_users (bool): If false, undeploy only the current user network scenarios. If true, undeploy the
+                running network scenarios of all users.
 
         Returns:
             None
@@ -168,18 +181,29 @@ class DockerManager(IManager):
         self.docker_link.wipe(user=user_name)
 
     @privileged
-    def connect_tty(self, lab_hash: str, machine_name: str, shell: str = None, logs: bool = False) -> None:
+    def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                    shell: str = None, logs: bool = False) -> None:
         """Connect to a device in a running network scenario, using the specified shell.
 
         Args:
-            lab_hash (str): The hash of the network scenario to undeploy.
             machine_name (str): The name of the device to connect.
+            lab_hash (str): The hash of the network scenario where the device is deployed.
+            lab_name (str): The name of the network scenario where the device is deployed.
             shell (str): The name of the shell to use for connecting.
             logs (bool): If True, print startup logs on stdout.
 
         Returns:
             None
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
         user_name = utils.get_current_user_name()
 
         self.docker_machine.connect(lab_hash=lab_hash,
@@ -190,18 +214,28 @@ class DockerManager(IManager):
                                     )
 
     @privileged
-    def exec(self, lab_hash: str, machine_name: str, command: str) -> Generator[Tuple[bytes, bytes], None, None]:
+    def exec(self, machine_name: str, command: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None) -> \
+            Generator[Tuple[bytes, bytes], None, None]:
         """Exec a command on a device in a running network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario to undeploy.
             machine_name (str): The name of the device to connect.
             command (str): The command to exec on the device.
+            lab_hash (Optional[str]): The hash of the network scenario where the device is deployed.
+            lab_name (Optional[str]): The name of the network scenario where the device is deployed.
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
         user_name = utils.get_current_user_name()
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         return self.docker_machine.exec(lab_hash, machine_name, command, user=user_name, tty=False)
 
@@ -210,7 +244,7 @@ class DockerManager(IManager):
         """Copy files on a running device in the specified paths.
 
         Args:
-            machine (Kathara.model.Machine): A running machine object. It must have the api_object field populated.
+            machine (Kathara.model.Machine): A running device object. It must have the api_object field populated.
             guest_to_host (Dict[str, io.IOBase]): A dict containing the device path as key and
                 fileobj to copy in path as value.
 
@@ -225,137 +259,211 @@ class DockerManager(IManager):
                                        )
 
     @privileged
-    def get_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> \
-            Generator[Dict[str, Any], None, None]:
-        """Return information about the running devices.
-
-        Args:
-            lab_hash (str): If not None, return information of the corresponding network scenario.
-            machine_name (str): If not None, return information of the specified device.
-            all_users (bool): If True, return information about the device of all users.
-
-        Returns:
-              Generator[Dict[str, Any], None, None]: A generator containing dicts containing device names as keys and
-              their info as values.
-        """
-        user_name = utils.get_current_user_name() if not all_users else None
-
-        lab_info = self.docker_machine.get_machines_info(lab_hash, machine_name=machine_name, user=user_name)
-
-        return lab_info
-
-    @privileged
-    def get_formatted_lab_info(self, lab_hash: str = None, machine_name: str = None, all_users: bool = False) -> str:
-        """Return a formatted string with the information about the running devices.
-
-        Args:
-            lab_hash (str): If not None, return information of the corresponding network scenario.
-            machine_name (str): If not None, return information of the specified device.
-            all_users (bool): If True, return information about the device of all users.
-
-        Returns:
-             str: String containing devices info
-        """
-        table_header = ["LAB HASH", "USER", "DEVICE NAME", "STATUS", "CPU %", "MEM USAGE / LIMIT", "MEM %", "NET I/O"]
-        stats_table = DoubleTable([])
-        stats_table.inner_row_border = True
-
-        lab_info = self.get_lab_info(lab_hash, machine_name, all_users)
-
-        while True:
-            machines_data = [
-                table_header
-            ]
-
-            try:
-                result = next(lab_info)
-            except StopIteration:
-                return
-
-            if not result:
-                return
-
-            for machine_stats in result:
-                machines_data.append([machine_stats['real_lab_hash'],
-                                      machine_stats['user'],
-                                      machine_stats['name'],
-                                      machine_stats['status'],
-                                      machine_stats['cpu_usage'],
-                                      machine_stats['mem_usage'],
-                                      machine_stats['mem_percent'],
-                                      machine_stats['net_usage']
-                                      ])
-
-            stats_table.table_data = machines_data
-
-            yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + stats_table.table
-
-    @privileged
-    def get_machine_api_object(self, lab_hash: str, machine_name: str) -> docker.models.containers.Container:
+    def get_machine_api_object(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
+                               all_users: bool = False) -> docker.models.containers.Container:
         """Return the corresponding API object of a running device in a network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario.
             machine_name (str): The name of the device.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_hash should be set.
+            all_users (bool): If True, return information about devices of all users.
 
         Returns:
-            docker.models.containers.Container: docker machine api object.
+            docker.models.containers.Container: Docker API object of devices.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
-        user_name = utils.get_current_user_name()
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
 
-        return self.docker_machine.get_machine_api_object(lab_hash, machine_name, user=user_name)
+        user_name = utils.get_current_user_name() if not all_users else None
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-    @privileged
-    def get_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) \
-            -> List[Dict[str, Any]]:
-        """Return information of running devices with a specified name.
+        containers = self.docker_machine.get_machines_api_objects_by_filters(
+            lab_hash=lab_hash, machine_name=machine_name, user=user_name
+        )
+        if containers:
+            return containers.pop()
+
+        raise Exception(f"Device {machine_name} not found.")
+
+    def get_machines_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
+            List[docker.models.containers.Container]:
+        """Return API objects of running devices.
 
         Args:
-            machine_name (str): The device name.
-            lab_hash (str): If not None, search the device in the specified network scenario.
-            all_users (bool): If True, search the device among all the users devices.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+            all_users (bool): If True, return information about devices of all users.
 
         Returns:
-            List[Dict[str, Any]]: A list of dicts containing the devices info.
+            List[docker.models.containers.Container]: Docker API objects of devices.
         """
         user_name = utils.get_current_user_name() if not all_users else None
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        machines_stats = self.docker_machine.get_machine_info(machine_name, lab_hash=lab_hash, user=user_name)
+        return self.docker_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash, user=user_name)
 
-        return machines_stats
+    def get_link_api_object(self, link_name: str, lab_hash: str = None, lab_name: str = None,
+                            all_users: bool = False) -> docker.models.networks.Network:
+        """Return the corresponding API object of a collision domain in a network scenario.
+
+        Args:
+            link_name (str): The name of the collision domain.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_hash should be set.
+            all_users (bool): If True, return information about collision domains of all users.
+
+        Returns:
+            docker.models.networks.Network: Docker API object of the network.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
+            Exception: Collision Domain not found.
+        """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        user_name = utils.get_current_user_name() if not all_users else None
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        networks = self.docker_link.get_links_api_objects_by_filters(
+            lab_hash=lab_hash, link_name=link_name, user=user_name
+        )
+        if networks:
+            return networks.pop()
+
+        raise Exception(f"Collision Domain {link_name} not found.")
+
+    def get_links_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
+            List[docker.models.networks.Network]:
+        """Return API objects of collision domains in a network scenario.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+            all_users (bool): If True, return information about collision domains of all users.
+
+        Returns:
+            List[docker.models.networks.Network]: Docker API objects of networks.
+        """
+        user_name = utils.get_current_user_name() if not all_users else None
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        return self.docker_link.get_links_api_objects_by_filters(lab_hash=lab_hash, user=user_name)
 
     @privileged
-    def get_formatted_machine_info(self, machine_name: str, lab_hash: str = None, all_users: bool = False) -> str:
-        """Return formatted information of running devices with a specified name.
+    def get_machines_stats(self, lab_hash: str = None, lab_name: str = None, machine_name: str = None,
+                           all_users: bool = False) -> Generator[Dict[str, DockerMachineStats], None, None]:
+        """Return information about the running devices.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+            machine_name (str): If specified return all the devices with machine_name.
+            all_users (bool): If True, return information about the device of all users.
+
+        Returns:
+              Generator[Dict[str, DockerMachineStats], None, None]: A generator containing dicts that has API Object
+              identifier as keys and DockerMachineStats objects as values.
+        """
+        user_name = utils.get_current_user_name() if not all_users else None
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        return self.docker_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name,
+                                                      user=user_name)
+
+    @privileged
+    def get_machine_stats(self, machine_name: str, lab_hash: str = None,
+                          lab_name: str = None, all_users: bool = False) -> Generator[DockerMachineStats, None, None]:
+        """Return information of the specified device in a specified network scenario.
 
         Args:
             machine_name (str): The device name.
-            lab_hash (str): If not None, search the device in the specified network scenario.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+                If None, lab_hash should be set.
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
-            str: The formatted devices properties.
+            Generator[DockerMachineStats, None, None]: A generator containing DockerMachineStats objects with
+            the device info.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
         """
-        machines_stats = self.get_machine_info(machine_name, lab_hash, all_users)
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
 
-        machines_info = []
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        for machine_stats in machines_stats:
-            machine_info = utils.format_headers("Device information") + "\n"
-            machine_info += "Lab Hash: %s\n" % machine_stats['real_lab_hash']
-            machine_info += "Device Name: %s\n" % machine_stats['name']
-            machine_info += "Real Device Name: %s\n" % machine_stats['real_name']
-            machine_info += "Status: %s\n" % machine_stats['status']
-            machine_info += "Image: %s\n\n" % machine_stats['image']
-            machine_info += "PIDs: %s\n" % machine_stats['pids']
-            machine_info += "CPU Usage: %s\n" % machine_stats["cpu_usage"]
-            machine_info += "Memory Usage: %s\n" % machine_stats["mem_usage"]
-            machine_info += "Network Usage (DL/UL): %s\n" % machine_stats["net_usage"]
-            machine_info += utils.format_headers()
+        machines_stats = self.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name, all_users=all_users)
+        (_, machine_stats) = next(machines_stats).popitem()
 
-            machines_info.append(machine_info)
+        yield machine_stats
 
-        return "\n\n".join(machines_info)
+    def get_links_stats(self, lab_hash: str = None, lab_name: str = None, link_name: str = None,
+                        all_users: bool = False) -> Generator[Dict[str, DockerLinkStats], None, None]:
+        """Return information about deployed Docker networks.
+
+        Args:
+           lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+           lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+           link_name (str): If specified return all the networks with link_name.
+           all_users (bool): If True, return information about the networks of all users.
+
+        Returns:
+             Generator[Dict[str, DockerLinkStats], None, None]: A generator containing dicts that has API Object
+                identifier as keys and DockerLinksStats objects as values.
+        """
+        user_name = utils.get_current_user_name() if not all_users else None
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        return self.docker_link.get_links_stats(lab_hash=lab_hash, link_name=link_name, user=user_name)
+
+    def get_link_stats(self, link_name: str, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
+            Generator[DockerLinkStats, None, None]:
+        """Return information of the specified deployed network in a specified network scenario.
+
+        Args:
+            link_name (str): The link name.
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+                If None, lab_name should be set.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+                If None, lab_hash should be set.
+            all_users (bool): If True, search the network among all the users networks.
+
+        Returns:
+            Generator[DockerLinkStats, None, None]: A generator containing DockerLinkStats objects with the network
+                statistics.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
+        """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        links_stats = self.get_links_stats(lab_hash=lab_hash, link_name=link_name, all_users=all_users)
+        (_, link_stats) = next(links_stats).popitem()
+
+        yield link_stats
 
     @privileged
     def check_image(self, image_name: str) -> None:

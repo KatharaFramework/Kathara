@@ -68,5 +68,5 @@ class ConnectCommand(Command):
 
         lab_hash = utils.generate_urlsafe_hash(lab_path)
 
-        Kathara.get_instance().connect_tty(lab_hash, machine_name=args['machine_name'], shell=args['shell'],
+        Kathara.get_instance().connect_tty(machine_name=args['machine_name'], lab_hash=lab_hash, shell=args['shell'],
                                            logs=args['logs'])

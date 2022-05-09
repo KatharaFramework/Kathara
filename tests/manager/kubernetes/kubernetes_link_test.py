@@ -54,10 +54,11 @@ def default_link():
 @pytest.fixture()
 @mock.patch("kubernetes.client.api.custom_objects_api.CustomObjectsApi")
 @mock.patch("kubernetes.client.Configuration")
-def kubernetes_link(config_mock, _):
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace")
+def kubernetes_link(kubernetes_namespace_mock, config_mock, _):
     config_mock.get_default_copy.return_value = FakeConfig()
 
-    return KubernetesLink()
+    return KubernetesLink(kubernetes_namespace_mock)
 
 
 @pytest.fixture()

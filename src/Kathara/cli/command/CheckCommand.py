@@ -65,6 +65,6 @@ class CheckCommand(Command):
         try:
             Kathara.get_instance().deploy_lab(lab)
             print("*\tContainer run successfully.")
-            Kathara.get_instance().undeploy_lab(lab.hash)
+            Kathara.get_instance().undeploy_lab(lab_hash=lab.hash)
         except Exception as e:
             logging.exception("\t! Running `Hello World` failed: %s" % str(e))
