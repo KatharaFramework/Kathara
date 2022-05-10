@@ -23,8 +23,7 @@ class KubernetesConfig(object):
 
     @staticmethod
     def load_kube_config() -> None:
-        """Load a Kubernetes Configuration if Kathara is launched on a Kubernetes master. Otherwise, setup
-        the configuration to connect to a remote master.
+        """Load the in-cluster config if launched on a master. Otherwise, setup the config for a remote master.
 
         Returns:
             None
