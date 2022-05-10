@@ -4,10 +4,9 @@ from unittest import mock
 import pytest
 from docker.errors import APIError
 
-from src.Kathara.event.EventDispatcher import EventDispatcher
-
 sys.path.insert(0, './')
 
+from src.Kathara.event.EventDispatcher import EventDispatcher
 from src.Kathara.manager.docker.DockerImage import DockerImage
 
 
