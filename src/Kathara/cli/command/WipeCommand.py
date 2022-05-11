@@ -3,6 +3,7 @@ import shutil
 import sys
 from typing import List
 
+from ..ui.utils import confirmation_prompt
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -56,10 +57,10 @@ class WipeCommand(Command):
         args = self.get_args()
 
         if not args['force']:
-            utils.confirmation_prompt("Are you sure to wipe Kathara?", lambda: None, sys.exit)
+            confirmation_prompt("Are you sure to wipe Kathara?", lambda: None, sys.exit)
 
         if args['settings']:
-            Setting.wipe()
+            Setting.wipe_from_disk()
         else:
             if args['all'] and not utils.is_admin():
                 raise Exception("You must be root in order to wipe all Kathara devices of all users.")

@@ -10,7 +10,7 @@ class KubernetesConfig(object):
         """Return the name of the current cluster user.
 
         Returns:
-            str:
+            str: The name of the current cluster user.
         """
         try:
             # Remote configuration is present, use the API Token as user
@@ -23,7 +23,7 @@ class KubernetesConfig(object):
 
     @staticmethod
     def load_kube_config() -> None:
-        """Load a Kubernetes Configuration if Kathara is launched on a k8s master.
+        """Load the in-cluster config if launched on a master. Otherwise, setup the config for a remote master.
 
         Returns:
             None

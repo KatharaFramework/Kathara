@@ -2,13 +2,11 @@ from typing import List, Dict, Any
 
 
 class OptionParser(object):
-    """
-    Class responsible for parsing the network scenario options from CLI.
-    """
+    """Class responsible for parsing the network scenario options from CLI."""
+
     @staticmethod
     def parse(options: List[str]) -> Dict[str, Any]:
-        """
-        Parse the CLI options and return a Dict containing their values.
+        """Parse the CLI options and return a Dict containing their values.
         
         Args:
             options (List[str]): A list of string taken from CLI.

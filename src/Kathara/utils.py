@@ -20,8 +20,6 @@ from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict,
 from binaryornot.check import is_binary
 from slug import slug
 
-from .trdparty.consolemenu import PromptUtils, Screen
-
 # Platforms constants definition.
 MAC_OS: str = "darwin"
 WINDOWS: str = "win32"
@@ -30,9 +28,6 @@ LINUX2: str = "linux2"
 
 # List of ignored files
 EXCLUDED_FILES: List[str] = ['.DS_Store']
-
-# True if launched from CLI
-CLI_ENV: bool = False
 
 # Reserved names for devices
 RESERVED_MACHINE_NAMES: List[str] = ['shared', '_test']
@@ -105,16 +100,6 @@ def list_chunks(iterable: List, size: int) -> Generator:
 
 def chunk_list(iterable: Union[List, Iterable], size: int) -> List[List]:
     return [iterable] if len(iterable) < size else list_chunks(iterable, size)
-
-
-def confirmation_prompt(prompt_string: str, callback_yes: Callable, callback_no: Callable) -> Any:
-    prompt_utils = PromptUtils(Screen())
-    answer = prompt_utils.prompt_for_bilateral_choice(prompt_string, 'y', 'n')
-
-    if answer == "n":
-        return callback_no()
-
-    return callback_yes()
 
 
 def get_pool_size() -> int:
@@ -227,18 +212,6 @@ def get_current_user_info() -> Any:
 
 
 # Formatting Functions
-def format_headers(message: str = "") -> str:
-    footer = "=============================="
-    half_message = int((len(message) / 2) + 1)
-    second_half_message = half_message
-
-    if len(message) % 2 == 0:
-        second_half_message -= 1
-
-    message = " " + message + " " if message != "" else "=="
-    return footer[half_message:] + message + footer[second_half_message:]
-
-
 def human_readable_bytes(size_bytes: int) -> str:
     if size_bytes == 0:
         return "0 B"

@@ -1,13 +1,13 @@
 #!/usr/bin/make -f
 
-VERSION=3.3.0
+VERSION=3.5.0
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 NO_BINARY_PACKAGES=pyroute2|pyuv|deepdiff
 
-.PHONY: allSigned docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa deps clean venv autocompletion
+.PHONY: allSigned docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa clean venv autocompletion
 
-allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_hirsute docker-signed_impish
+allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_impish docker-signed_jammy
 
 docker-unsigned_%: clean prepare-deb-source docker-build-image_%
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c "make build-deb-unsigned distro=$*"
@@ -17,6 +17,11 @@ docker-signed_%: docker-build-image_%
 
 docker-build-image_%:
 	cd Docker-Linux-Build && cp Dockerfile_template Dockerfile
+	if [ "$*" = "bionic" ]; then \
+		cd Docker-Linux-Build && sed -i -e "s|__NOKOGIRI__|RUN gem install nokogiri -v 1.12.5|g" Dockerfile; \
+	else \
+		cd Docker-Linux-Build && sed -i -e "s|__NOKOGIRI__||g" Dockerfile; \
+	fi;
 	cd Docker-Linux-Build && sed -i -e "s|__DISTRO__|$*|g" Dockerfile
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-deb:$* .
 	cd Docker-Linux-Build && rm Dockerfile
@@ -44,7 +49,7 @@ copy-debian-folder:
 	sed -i -e 's/__VERSION__/$(VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
 	
 venv:
-	python3.9 -m venv /root/3.9-env 
+	python3.9 -m venv /root/3.9-env
 
 download-pip: copy-debian-folder
 	mkdir Output/kathara-$(VERSION)/debian/pythonLibs_amd64
@@ -52,9 +57,11 @@ download-pip: copy-debian-folder
 	grep -Ev "$(NO_BINARY_PACKAGES)" Output/kathara-$(VERSION)/requirements.txt > Output/kathara-$(VERSION)/requirements-binary.txt
 	grep -E "$(NO_BINARY_PACKAGES)" Output/kathara-$(VERSION)/requirements.txt > Output/kathara-$(VERSION)/requirements-no-binary.txt
 	/root/3.9-env/bin/pip3.9 install --upgrade setuptools
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.9-env/bin/pip3.9 download flit_core
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.9-env/bin/pip3.9 download --no-binary=:all: -r ../../requirements-no-binary.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.9-env/bin/pip3.9 download --platform manylinux2014_x86_64 --platform x86_64 --only-binary=:all: -r ../../requirements-binary.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.9-env/bin/pip3.9 download nuitka
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.9-env/bin/pip3.9 download flit_core
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.9-env/bin/pip3.9 download --no-binary=:all: -r ../../requirements-no-binary.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.9-env/bin/pip3.9 download --platform manylinux2014_aarch64 --platform arm64 --only-binary=:all: -r ../../requirements-binary.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.9-env/bin/pip3.9 download nuitka
@@ -84,9 +91,6 @@ build-deb-signed: venv build-man autocompletion download-pip
 ppa:
 	sed -i -e 's/__LAUNCHPAD_NAME__/$(LAUNCHPAD_NAME)/g' $(HOME)/.dput.cf
 	dput -U ppa:katharaframework/kathara Output/*.changes
-
-deps:
-	gem install ronn-ng
 
 clean:
 	if [ -d Output ]; then \

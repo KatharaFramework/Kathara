@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 from typing import Optional
 
 
@@ -10,8 +11,7 @@ class Networking(object):
 
     @staticmethod
     def get_or_new_interface(full_interface_name: str, vlan_interface_name: str, vlan_id: Optional[int] = None) -> int:
-        """
-        Get or create an interface on the host. Return the link index.
+        """Get or create an interface on the host. Return the OS link index.
 
         Args:
             full_interface_name (str): The name of the network interface of the host.
@@ -74,8 +74,7 @@ class Networking(object):
 
     @staticmethod
     def attach_interface_to_bridge(interface_index: int, bridge_name: str) -> None:
-        """
-        Attach an interface to the bridge.
+        """Attach an interface to the bridge.
 
         Args:
             interface_index (int): The interface index of the interface to attach.
@@ -103,8 +102,7 @@ class Networking(object):
 
     @staticmethod
     def remove_interface(interface_name: str) -> None:
-        """
-        Remove an interface from the host.
+        """Remove an interface from the host.
 
         Args:
             interface_name (str): The name of the interface to remove.
@@ -137,10 +135,21 @@ class Networking(object):
 
     @staticmethod
     def get_iptables_version() -> str:
-        """
-        Return the iptables version.
+        """Return the iptables version on a Linux host.
 
         Returns:
             str: The iptables version.
         """
-        return os.popen("/sbin/iptables --version").read().strip()
+        iptables_binary = shutil.which("iptables")
+        if iptables_binary is None:
+            if os.path.exists("/sbin/iptables"):
+                iptables_binary = "/sbin/iptables"
+            elif os.path.exists("/usr/sbin/iptables"):
+                iptables_binary = "/usr/sbin/iptables"
+
+        if iptables_binary is None:
+            raise Exception("Cannot find `iptables` in the host.")
+
+        logging.debug("Found iptables binary in `%s`." % iptables_binary)
+
+        return os.popen("%s --version" % iptables_binary).read().strip()

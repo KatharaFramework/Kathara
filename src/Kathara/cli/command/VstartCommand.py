@@ -3,6 +3,7 @@ import logging
 import sys
 from typing import List
 
+from ..ui.utils import format_headers
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -137,6 +138,14 @@ class VstartCommand(Command):
             help='Set sysctl option for the device.'
         )
         self.parser.add_argument(
+            '--env',
+            dest='envs',
+            metavar='ENV',
+            nargs='+',
+            required=False,
+            help='Set environment variable for the device.'
+        )
+        self.parser.add_argument(
             '--shell',
             required=False,
             help='Set the shell (sh, bash, etc.) that should be used inside the device.'
@@ -150,7 +159,7 @@ class VstartCommand(Command):
             logging.info("Device configuration is correct. Exiting...")
             sys.exit(0)
         else:
-            logging.info(utils.format_headers("Starting Device"))
+            logging.info(format_headers("Starting Device"))
 
         Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
             else Setting.get_instance().open_terminals

@@ -51,7 +51,7 @@ def kubernetes_device_definition():
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands=sysctl_commands, machine_commands="ls")
 
-    post_start = client.V1Handler(
+    post_start = client.V1LifecycleHandler(
         _exec=client.V1ExecAction(
             command=["/bin/bash", "-c", startup_commands_string]
         )
@@ -157,7 +157,7 @@ def test_build_definition_no_config(mock_setting_get_instance, default_device, k
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands="", machine_commands="ls")
 
-    post_start = client.V1Handler(
+    post_start = client.V1LifecycleHandler(
         _exec=client.V1ExecAction(
             command=["/bin/bash", "-c", startup_commands_string]
         )
@@ -229,7 +229,7 @@ def test_build_definition(mock_setting_get_instance, config_map_mock, default_de
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands="", machine_commands="ls")
 
-    post_start = client.V1Handler(
+    post_start = client.V1LifecycleHandler(
         _exec=client.V1ExecAction(
             command=["/bin/bash", "-c", startup_commands_string]
         )
@@ -331,7 +331,7 @@ def test_create_ipv6(mock_setting_get_instance, kubernetes_machine, default_devi
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands=sysctl_commands, machine_commands="ls")
 
-    post_start = client.V1Handler(
+    post_start = client.V1LifecycleHandler(
         _exec=client.V1ExecAction(
             command=["/bin/bash", "-c", startup_commands_string]
         )
@@ -388,7 +388,7 @@ def test_deploy_machine(mock_create, kubernetes_machine, default_device):
 
     mock_create.return_value = True
 
-    kubernetes_machine._deploy_machine(None, machine_item)
+    kubernetes_machine._deploy_machine(machine_item)
 
     mock_create.assert_called_once()
 
@@ -418,7 +418,7 @@ def test_undeploy_one_device(mock_get_machines_api_objects_by_filters, mock_unde
     kubernetes_machine.undeploy("lab_hash", selected_machines={default_device.name})
 
     mock_get_machines_api_objects_by_filters.assert_called_once()
-    mock_undeploy_machine.assert_called_once_with(None, default_device.api_object)
+    mock_undeploy_machine.assert_called_once_with(default_device.api_object)
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._undeploy_machine")
@@ -489,6 +489,6 @@ def test_wipe_three_devices(mock_get_machines_api_objects_by_filters, mock_undep
 def test_undeploy_machine(mock_delete_machine, kubernetes_machine, default_device):
     mock_delete_machine.return_value = None
 
-    kubernetes_machine._undeploy_machine(None, default_device.api_object)
+    kubernetes_machine._undeploy_machine(default_device.api_object)
 
     mock_delete_machine.assert_called_once()

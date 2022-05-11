@@ -1,0 +1,7 @@
+# This is a comment
+pc1: r1
+pc2: r2 pc3
+
+pc3: r2
+pc2: pc3
+pc1: pc2

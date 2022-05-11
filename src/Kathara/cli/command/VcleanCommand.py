@@ -39,8 +39,6 @@ class VcleanCommand(Command):
 
         lab_hash = utils.generate_urlsafe_hash("kathara_vlab")
 
-        Kathara.get_instance().undeploy_lab(lab_hash,
-                                            selected_machines={args['name']}
-                                            )
+        Kathara.get_instance().undeploy_lab(lab_hash=lab_hash, selected_machines={args['name']})
 
         logging.info("Device `%s` deleted successfully!" % args['name'])
