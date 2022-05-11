@@ -1,9 +1,10 @@
 from lazydocs import generate_docs
 
 ignored_modules = [
-    "Kathara.version", "Kathara.auth", "Kathara.cli", "Kathara.connectors", "Kathara.foundation", "Kathara.os",
+    "Kathara.version", "Kathara.auth", "Kathara.cli", "Kathara.event", "Kathara.foundation",
+    "Kathara.manager.docker.terminal", "Kathara.manager.kubernetes.terminal", "Kathara.os",
     "Kathara.parser", "Kathara.test", "Kathara.trdparty", "Kathara.validator", "Kathara.kathara", "Kathara.decorators",
-    "Kathara.exceptions", "Kathara.strings", "Kathara.utils", "kathara"
+    "Kathara.exceptions", "Kathara.strings", "Kathara.utils", "Kathara.webhooks", "kathara"
 ]
 
 generate_docs(["../../src"], src_base_url="https://github.com/KatharaFramework/Kathara/tree/master", output_path="./docs",
