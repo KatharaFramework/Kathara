@@ -5,6 +5,8 @@ from typing import List
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
+from ...model.Lab import Lab
+from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
 
 
@@ -67,13 +69,16 @@ class ExecCommand(Command):
         args = self.get_args()
 
         if args['vmachine']:
-            lab_path = "kathara_vlab"
+            lab = Lab("kathara_vlab")
         else:
             lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
             lab_path = utils.get_absolute_path(lab_path)
+            try:
+                lab = LabParser.parse(lab_path)
+            except (Exception, IOError):
+                lab = Lab(None, path=lab_path)
 
-        lab_hash = utils.generate_urlsafe_hash(lab_path)
-        exec_output = Kathara.get_instance().exec(args['machine_name'], args['command'], lab_hash=lab_hash)
+        exec_output = Kathara.get_instance().exec(args['machine_name'], args['command'], lab_hash=lab.hash)
 
         try:
             while True:

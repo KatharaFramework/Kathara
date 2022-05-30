@@ -31,7 +31,7 @@ class Lab(object):
         shared_shutdown_path(str) The path of the shared shutdown file, if exists.
         shared_folder(str) The path of the shared folder, if exists.
     """
-    __slots__ = ['name', 'description', 'version', 'author', 'email', 'web',
+    __slots__ = ['_name', 'description', 'version', 'author', 'email', 'web',
                  'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
@@ -45,7 +45,7 @@ class Lab(object):
         Returns:
             None
         """
-        self.name: Optional[str] = name
+        self._name: Optional[str] = name
         self.description: Optional[str] = None
         self.version: Optional[str] = None
         self.author: Optional[str] = None
@@ -63,19 +63,25 @@ class Lab(object):
         self.shared_startup_path: Optional[str] = None
         self.shared_shutdown_path: Optional[str] = None
 
-        self.hash: str = ""
+        self.hash: str = utils.generate_urlsafe_hash(self.path if self._name is None else self._name)
 
         if self.path:
-            self.hash = utils.generate_urlsafe_hash(self.path)
             shared_startup_file = os.path.join(self.path, 'shared.startup')
             self.shared_startup_path = shared_startup_file if os.path.exists(shared_startup_file) else None
 
             shared_shutdown_file = os.path.join(self.path, 'shared.shutdown')
             self.shared_shutdown_path = shared_shutdown_file if os.path.exists(shared_shutdown_file) else None
-        else:
-            self.hash = utils.generate_urlsafe_hash(self.name)
 
         self.shared_folder: Optional[str] = None
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+        self.hash = utils.generate_urlsafe_hash(value)
 
     def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None) -> None:
         """Connect the specified device to the specified collision domain.
@@ -258,8 +264,8 @@ class Lab(object):
     def __str__(self) -> str:
         lab_info = ""
 
-        if self.name:
-            lab_info += "Name: %s\n" % self.name
+        if self._name:
+            lab_info += "Name: %s\n" % self._name
 
         if self.description:
             lab_info += "Description: %s\n" % self.description
