@@ -2,9 +2,9 @@ import argparse
 import logging
 from typing import List
 
-from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
+from ...model.Lab import Lab
 from ...strings import strings, wiki_description
 
 
@@ -37,8 +37,7 @@ class VcleanCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        lab_hash = utils.generate_urlsafe_hash("kathara_vlab")
-
-        Kathara.get_instance().undeploy_lab(lab_hash=lab_hash, selected_machines={args['name']})
+        lab = Lab("kathara_vlab")
+        Kathara.get_instance().undeploy_lab(lab_name=lab.name, selected_machines={args['name']})
 
         logging.info("Device `%s` deleted successfully!" % args['name'])

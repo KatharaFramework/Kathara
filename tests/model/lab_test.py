@@ -18,6 +18,11 @@ def default_scenario():
 
 
 @pytest.fixture()
+def default_scenario_path():
+    return Lab(None, path="/lab/path")
+
+
+@pytest.fixture()
 def temporary_path():
     return mkdtemp("kathara_test")
 
@@ -47,6 +52,31 @@ def test_default_scenario_creation(default_scenario: Lab):
     assert default_scenario.hash == utils.generate_urlsafe_hash(default_scenario.name)
 
 
+def test_default_scenario_creation_with_path(default_scenario_path: Lab):
+    assert default_scenario_path.name is None
+    assert default_scenario_path.description is None
+    assert default_scenario_path.version is None
+    assert default_scenario_path.author is None
+    assert default_scenario_path.email is None
+    assert default_scenario_path.web is None
+    assert default_scenario_path.machines == {}
+    assert default_scenario_path.links == {}
+    assert default_scenario_path.general_options == {}
+    assert not default_scenario_path.has_dependencies
+    assert default_scenario_path.path == "/lab/path"
+    assert default_scenario_path.shared_shutdown_path is None
+    assert default_scenario_path.shared_startup_path is None
+    assert default_scenario_path.shared_folder is None
+    assert default_scenario_path.hash == utils.generate_urlsafe_hash(default_scenario_path.path)
+
+
+def test_default_scenario_creation_with_path_and_name(default_scenario_path: Lab):
+    default_scenario_path.name = "lab_with_path"
+    assert default_scenario_path.name == "lab_with_path"
+    assert default_scenario_path.path == "/lab/path"
+    assert default_scenario_path.hash == utils.generate_urlsafe_hash(default_scenario_path.name)
+
+
 def test_directory_scenario_creation_no_shared_files(directory_scenario: Lab, temporary_path: str):
     assert directory_scenario.name == "directory_scenario"
     assert directory_scenario.description is None
@@ -62,7 +92,7 @@ def test_directory_scenario_creation_no_shared_files(directory_scenario: Lab, te
     assert directory_scenario.shared_shutdown_path == os.path.join(temporary_path, 'shared.shutdown')
     assert directory_scenario.shared_startup_path == os.path.join(temporary_path, 'shared.startup')
     assert directory_scenario.shared_folder is None
-    assert directory_scenario.hash == utils.generate_urlsafe_hash(temporary_path)
+    assert directory_scenario.hash == utils.generate_urlsafe_hash(directory_scenario.name)
 
 
 def test_get_or_new_machine_not_exist(default_scenario: Lab):
