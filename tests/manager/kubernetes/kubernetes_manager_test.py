@@ -12,6 +12,7 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Machine import Machine
 from src.Kathara.utils import generate_urlsafe_hash
 from src.Kathara.manager.kubernetes.KubernetesLink import KubernetesLink
+from src.Kathara.manager.kubernetes.stats.KubernetesMachineStats import KubernetesMachineStats
 
 
 class FakeConfig(object):
@@ -254,3 +255,51 @@ def test_get_link_api_object_lab_hash_cd_not_found(mock_get_links_api_objects, k
     with pytest.raises(Exception):
         kubernetes_manager.get_link_api_object(link_name="test_network", lab_hash="lab_hash_value")
     mock_get_links_api_objects.assert_called_once_with(link_name="test_network", lab_hash="lab_hash_value")
+
+
+#
+# TEST: get_machines_stats
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_stats")
+def test_get_machines_stats_lab_hash(mock_get_machines_stats, kubernetes_manager):
+    kubernetes_manager.get_machines_stats(lab_hash="lab_hash")
+    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", machine_name=None)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_stats")
+def test_get_machines_stats_lab_name(mock_get_machines_stats, kubernetes_manager):
+    kubernetes_manager.get_machines_stats(lab_name="lab_name")
+    mock_get_machines_stats.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name").lower(),
+                                                    machine_name=None)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_stats")
+def test_get_machines_stats_no_hash_no_name(mock_get_machines_stats, kubernetes_manager):
+    kubernetes_manager.get_machines_stats(all_users=True)
+    mock_get_machines_stats.assert_called_once_with(lab_hash=None, machine_name=None)
+
+
+#
+# TEST: get_machine_stats
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesManager.KubernetesManager.get_machines_stats")
+def test_get_machine_stats_lab_hash(mock_get_machines_stats, default_device, kubernetes_manager):
+    mock_get_machines_stats.return_value = iter([{"test_device": KubernetesMachineStats(default_device.api_object)}])
+    next(kubernetes_manager.get_machine_stats(machine_name="test_device", lab_hash="lab_hash"))
+    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", machine_name="test_device")
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesManager.KubernetesManager.get_machines_stats")
+def test_get_machine_stats_lab_name(mock_get_machines_stats, default_device, kubernetes_manager):
+    mock_get_machines_stats.return_value = iter([{"test_device": KubernetesMachineStats(default_device.api_object)}])
+    next(kubernetes_manager.get_machine_stats(machine_name="test_device", lab_name="lab_name"))
+    mock_get_machines_stats.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name").lower(),
+                                                    machine_name="test_device")
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesManager.KubernetesManager.get_machines_stats")
+def test_get_machine_stats_no_hash_no_name(mock_get_machines_stats, kubernetes_manager):
+    mock_get_machines_stats.return_value = iter([])
+    with pytest.raises(Exception):
+        next(kubernetes_manager.get_machine_stats(machine_name="test_device"))
+    assert not mock_get_machines_stats.called
