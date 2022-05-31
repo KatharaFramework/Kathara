@@ -296,7 +296,7 @@ def test_get_links_stats_lab_hash_link_name(mock_get_links_api_objects_by_filter
                                             docker_network):
     docker_network.api_object.name = "test_network"
     mock_get_links_api_objects_by_filters.return_value = [docker_network.api_object]
-    stat = next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_network"))
+    next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_network"))
     mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name="test_network",
                                                                   user=None)
 
@@ -307,7 +307,7 @@ def test_get_links_stats_lab_hash_link_name_user(mock_get_links_api_objects_by_f
     docker_network.api_object.name = "test_network"
 
     mock_get_links_api_objects_by_filters.return_value = [docker_network.api_object]
-    stat = next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_network", user="kathara-user"))
+    next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_network", user="kathara-user"))
     mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name="test_network",
                                                                   user="kathara-user")
 
