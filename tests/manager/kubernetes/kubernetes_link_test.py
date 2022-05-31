@@ -443,3 +443,46 @@ def test_wipe(mock_get_links_by_filters, mock_undeploy_link, kubernetes_link, ku
 
     mock_get_links_by_filters.called_once_with(lab.hash)
     assert mock_undeploy_link.call_count == 3
+
+
+#
+# TEST: get_links_stats
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_links_stats_lab_hash(mock_get_links_api_objects_by_filters, kubernetes_link,
+                                  kubernetes_network):
+    kubernetes_network['metadata']['name'] = "test_network"
+    mock_get_links_api_objects_by_filters.return_value = [kubernetes_network]
+    stat = next(kubernetes_link.get_links_stats(lab_hash="lab_hash"))
+    mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name=None)
+    assert stat['test_network']
+    assert stat['test_network'].network_name == "test_network"
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_links_stats_lab_hash_link_name(mock_get_links_api_objects_by_filters, kubernetes_link,
+                                            kubernetes_network):
+    kubernetes_network['metadata']['name'] = "test_network"
+    mock_get_links_api_objects_by_filters.return_value = [kubernetes_network]
+    next(kubernetes_link.get_links_stats(lab_hash="lab_hash", link_name="test_network"))
+    mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name="test_network")
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_links_stats_lab_hash_link_not_found(mock_get_links_api_objects_by_filters, kubernetes_link,
+                                                 kubernetes_network):
+    kubernetes_network['metadata']['name'] = "test_network"
+    mock_get_links_api_objects_by_filters.return_value = []
+    with pytest.raises(Exception):
+        next(kubernetes_link.get_links_stats(lab_hash="lab_hash"))
+    mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name=None)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_links_stats_lab_hash_link_name_not_found(mock_get_links_api_objects_by_filters, kubernetes_link,
+                                                      kubernetes_network):
+    kubernetes_network['metadata']['name'] = "test_network"
+    mock_get_links_api_objects_by_filters.return_value = []
+    with pytest.raises(Exception):
+        next(kubernetes_link.get_links_stats(lab_hash="lab_hash", link_name="test_network"))
+    mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name="test_network")
