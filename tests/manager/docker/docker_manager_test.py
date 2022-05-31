@@ -505,7 +505,7 @@ def test_get_links_stats_no_hash_user(mock_get_links_stats, mock_get_current_use
 
 @mock.patch("src.Kathara.utils.get_current_user_name")
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_stats")
-def test_get_links_stats_lab_hash_no_user(mock_get_links_stats, mock_get_current_user_name, docker_manager):
+def test_get_links_stats_lab_hash_user(mock_get_links_stats, mock_get_current_user_name, docker_manager):
     mock_get_current_user_name.return_value = "kathara-user"
     docker_manager.get_links_stats(lab_hash="lab_hash")
     mock_get_links_stats.assert_called_once_with(lab_hash="lab_hash", link_name=None, user="kathara-user")
@@ -534,3 +534,11 @@ def test_get_link_stats_lab_hash_user(mock_get_links_stats, docker_network, dock
     mock_get_links_stats.return_value = iter([{"test_network": DockerLinkStats(docker_network)}])
     next(docker_manager.get_link_stats(link_name="test_network", lab_hash="lab_hash"))
     mock_get_links_stats.assert_called_once_with(lab_hash="lab_hash", link_name="test_network", all_users=False)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_stats")
+def test_get_link_stats_no_lab_hash_and_no_name(mock_get_links_stats, docker_network, docker_manager):
+    mock_get_links_stats.return_value = iter([{"test_network": DockerLinkStats(docker_network)}])
+    with pytest.raises(Exception):
+        next(docker_manager.get_link_stats(link_name="test_network"))
+    assert not mock_get_links_stats.called
