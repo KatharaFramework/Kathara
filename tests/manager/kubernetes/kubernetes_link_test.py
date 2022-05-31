@@ -45,6 +45,9 @@ NETWORK_IDS_DOUBLE = {
 }
 
 
+#
+# FIXTURE
+#
 @pytest.fixture()
 def default_link():
     from src.Kathara.model.Link import Link
@@ -86,6 +89,9 @@ def kubernetes_network():
     }
 
 
+#
+# TEST: get_network_name
+#
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 def test_get_network_name(mock_setting_get_instance, kubernetes_link):
     setting_mock = Mock()
@@ -127,6 +133,9 @@ def test_get_network_name_remove_invalid_chars(mock_setting_get_instance, kubern
     assert k8s_link_name == "netprefix-a05"
 
 
+#
+# TEST: _build_definition
+#
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 def test_build_definition(mock_setting_get_instance, default_link, kubernetes_link):
     setting_mock = Mock()
@@ -161,6 +170,9 @@ def test_build_definition(mock_setting_get_instance, default_link, kubernetes_li
     assert actual_definition == expected_definition
 
 
+#
+# TEST: _get_network_id
+#
 def test_get_network_id(kubernetes_link):
     actual_id = kubernetes_link._get_network_id("a", 0)
 
@@ -174,6 +186,9 @@ def test_get_network_id_offset(kubernetes_link):
     assert actual_id == expected_id
 
 
+#
+# TEST: _get_unique_network_id
+#
 def test_get_unique_network_id(kubernetes_link):
     network_ids = {}
 
@@ -199,6 +214,9 @@ def test_get_unique_network_id_double_collision(kubernetes_link):
     assert NETWORK_IDS_DOUBLE == {4694369: 1, 4694370: 1, expected_network_id: 1}
 
 
+#
+# TEST: create
+#
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 def test_create(mock_setting_get_instance, kubernetes_link, default_link):
     setting_mock = Mock()
@@ -243,6 +261,9 @@ def test_create(mock_setting_get_instance, kubernetes_link, default_link):
     )
 
 
+#
+# TEST: _deploy_link
+#
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.create")
 def test_deploy_link(mock_create, kubernetes_link, default_link):
     kubernetes_link._deploy_link({}, ("", default_link))
@@ -255,6 +276,9 @@ def test_deploy_link_collision(mock_create, kubernetes_link, default_link):
     mock_create.called_once_with(default_link, EXPECTED_NETWORK_ID + 1)
 
 
+#
+# TEST: deploy_links
+#
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._deploy_link")
 @mock.patch("multiprocessing.managers.SyncManager", new=FakeManager)
 def test_deploy_links(mock_deploy_link, kubernetes_link):
@@ -280,6 +304,9 @@ def test_deploy_links_no_link(mock_deploy_link, kubernetes_link):
     assert not mock_deploy_link.called
 
 
+#
+# TEST: _undeploy_link
+#
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 def test_delete_link(mock_setting_get_instance, kubernetes_network, kubernetes_link, default_link):
     setting_mock = Mock()
@@ -306,6 +333,9 @@ def test_delete_link(mock_setting_get_instance, kubernetes_network, kubernetes_l
     )
 
 
+#
+# TEST: get_links_api_objects_by_filters
+#
 def test_get_links_by_filters(kubernetes_link):
     kubernetes_link.get_links_api_objects_by_filters("lab_hash_value", "link_name_value")
     filters = ["app=kathara", "name=link_name_value"]
@@ -365,6 +395,9 @@ def test_get_links_by_filters_only_link_name(kubernetes_link):
     )
 
 
+#
+# TEST: undeploy
+#
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._undeploy_link")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
 def undeploy(mock_get_links_by_filters, mock_undeploy_link, kubernetes_network):
@@ -393,6 +426,9 @@ def test_undeploy_empty_lab(mock_get_links_by_filters, mock_undeploy_link, kuber
     assert not mock_undeploy_link.called
 
 
+#
+# TEST: wipe
+#
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._undeploy_link")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
 def test_wipe(mock_get_links_by_filters, mock_undeploy_link, kubernetes_link, kubernetes_network):
