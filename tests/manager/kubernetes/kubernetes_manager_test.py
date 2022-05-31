@@ -13,6 +13,7 @@ from src.Kathara.model.Machine import Machine
 from src.Kathara.utils import generate_urlsafe_hash
 from src.Kathara.manager.kubernetes.KubernetesLink import KubernetesLink
 from src.Kathara.manager.kubernetes.stats.KubernetesMachineStats import KubernetesMachineStats
+from src.Kathara.manager.kubernetes.stats.KubernetesLinkStats import KubernetesLinkStats
 
 
 class FakeConfig(object):
@@ -303,3 +304,49 @@ def test_get_machine_stats_no_hash_no_name(mock_get_machines_stats, kubernetes_m
     with pytest.raises(Exception):
         next(kubernetes_manager.get_machine_stats(machine_name="test_device"))
     assert not mock_get_machines_stats.called
+
+
+#
+# TESTS: get_links_stats
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_stats")
+def test_get_links_stats_lab_hash(mock_get_links_stats, kubernetes_manager):
+    kubernetes_manager.get_links_stats(lab_hash="lab_hash")
+    mock_get_links_stats.assert_called_once_with(lab_hash="lab_hash", link_name=None)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_stats")
+def test_get_links_stats_lab_name(mock_get_links_stats, kubernetes_manager):
+    kubernetes_manager.get_links_stats(lab_name="lab_name")
+    mock_get_links_stats.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name").lower(), link_name=None)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_stats")
+def test_get_links_stats_no_lab_hash(mock_get_links_stats, kubernetes_manager):
+    kubernetes_manager.get_links_stats()
+    mock_get_links_stats.assert_called_once_with(lab_hash=None, link_name=None)
+
+
+#
+# TESTS: get_link_stats
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_stats")
+def test_get_link_stats_lab_hash(mock_get_links_stats, kubernetes_network, kubernetes_manager):
+    mock_get_links_stats.return_value = iter([{"test_network": KubernetesLinkStats(kubernetes_network)}])
+    next(kubernetes_manager.get_link_stats(link_name="test_network", lab_hash="lab_hash"))
+    mock_get_links_stats.assert_called_once_with(lab_hash="lab_hash", link_name="test_network")
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_stats")
+def test_get_link_stats_lab_name(mock_get_links_stats, kubernetes_network, kubernetes_manager):
+    mock_get_links_stats.return_value = iter([{"test_network": KubernetesLinkStats(kubernetes_network)}])
+    next(kubernetes_manager.get_links_stats(link_name="test_network", lab_name="lab_name"))
+    mock_get_links_stats.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name").lower(),
+                                                 link_name="test_network")
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_stats")
+def test_get_link_stats_no_lab_hash_and_no_name(mock_get_links_stats, kubernetes_manager):
+    with pytest.raises(Exception):
+        next(kubernetes_manager.get_link_stats(link_name="test_network"))
+    assert not mock_get_links_stats.called
