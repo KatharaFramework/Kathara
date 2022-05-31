@@ -11,6 +11,41 @@ from src.Kathara.manager.kubernetes.KubernetesManager import KubernetesManager
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Machine import Machine
 from src.Kathara.utils import generate_urlsafe_hash
+from src.Kathara.manager.kubernetes.KubernetesLink import KubernetesLink
+
+
+class FakeConfig(object):
+    def __init__(self):
+        self.api_key = {
+            'authorization': 'user123'
+        }
+
+
+class FakeManager(object):
+    def __init__(self, ctx):
+        pass
+
+    def start(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def dict(self):
+        return {}
+
+    def __exit__(self, exit_type, value, traceback):
+        return True
+
+
+EXPECTED_NETWORK_ID = 4694369
+NETWORK_IDS_SINGLE = {
+    4694369: 1
+}
+NETWORK_IDS_DOUBLE = {
+    4694369: 1,
+    4694370: 1
+}
 
 
 #
@@ -56,6 +91,47 @@ def default_device(mock_kubernetes_deployment):
     device.api_object = mock_kubernetes_deployment
 
     return device
+
+
+@pytest.fixture()
+def default_link():
+    from src.Kathara.model.Link import Link
+    return Link(Lab("default_scenario"), "A")
+
+
+@pytest.fixture()
+def kubernetes_network():
+    return {
+        "apiVersion": "k8s.cni.cncf.io/v1",
+        "kind": "NetworkAttachmentDefinition",
+        "metadata": {
+            "name": "netprefix-a",
+            "namespace": "FwFaxbiuhvSWb2KpN5zw",
+            "labels": {
+                "name": "A",
+                "app": "kathara"
+            }
+        },
+        "spec": {
+            "config": """{
+                            "cniVersion": "0.3.0",
+                            "name": "a",
+                            "type": "megalos",
+                            "suffix": "FwFaxb",
+                            "vxlanId": 1
+                        }"""
+        }
+    }
+
+
+@pytest.fixture()
+@mock.patch("kubernetes.client.api.custom_objects_api.CustomObjectsApi")
+@mock.patch("kubernetes.client.Configuration")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace")
+def kubernetes_link(kubernetes_namespace_mock, config_mock, _):
+    config_mock.get_default_copy.return_value = FakeConfig()
+
+    return KubernetesLink(kubernetes_namespace_mock)
 
 
 #
@@ -119,3 +195,62 @@ def test_get_machines_api_objects_lab_name(mock_get_machines_api_objects, kubern
     mock_get_machines_api_objects.return_value = [default_device.api_object]
     kubernetes_manager.get_machines_api_objects(lab_name="lab_name")
     mock_get_machines_api_objects.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name").lower())
+
+
+#
+# TEST: get_links_api_objects
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_links_api_objects_lab_hash(mock_get_links_api_objects, kubernetes_manager, kubernetes_network):
+    mock_get_links_api_objects.return_value = [kubernetes_network]
+    kubernetes_manager.get_links_api_objects(lab_hash="lab_hash_value")
+    mock_get_links_api_objects.assert_called_once_with(lab_hash="lab_hash_value")
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_links_api_objects_lab_name(mock_get_links_api_objects, kubernetes_manager, kubernetes_network):
+    mock_get_links_api_objects.return_value = [kubernetes_network]
+    kubernetes_manager.get_links_api_objects(lab_name="lab_name")
+    mock_get_links_api_objects.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name").lower())
+
+
+#
+# TEST: get_link_api_object
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_link_api_object_lab_hash(mock_get_links_api_objects, kubernetes_manager, kubernetes_network):
+    mock_get_links_api_objects.return_value = [kubernetes_network]
+    kubernetes_manager.get_link_api_object(link_name="test_network", lab_hash="lab_hash_value")
+    mock_get_links_api_objects.assert_called_once_with(link_name="test_network", lab_hash="lab_hash_value")
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_link_api_object_lab_name(mock_get_links_api_objects, kubernetes_manager, kubernetes_network):
+    mock_get_links_api_objects.return_value = [kubernetes_network]
+    kubernetes_manager.get_link_api_object(link_name="test_network", lab_name="lab_name")
+    mock_get_links_api_objects.assert_called_once_with(link_name="test_network",
+                                                       lab_hash=generate_urlsafe_hash("lab_name").lower())
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_link_api_object_lab_hash_and_name(mock_get_links_api_objects, kubernetes_manager, kubernetes_network):
+    mock_get_links_api_objects.return_value = [kubernetes_network]
+    kubernetes_manager.get_link_api_object(link_name="test_network", lab_name="lab_name", lab_hash="lab_hash")
+    mock_get_links_api_objects.assert_called_once_with(link_name="test_network",
+                                                       lab_hash=generate_urlsafe_hash("lab_name").lower())
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_link_api_object_no_hash_no_name(mock_get_links_api_objects, kubernetes_manager, kubernetes_network):
+    mock_get_links_api_objects.return_value = [kubernetes_network]
+    with pytest.raises(Exception):
+        kubernetes_manager.get_link_api_object(link_name="test_network")
+    assert not mock_get_links_api_objects.called
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_link_api_object_lab_hash_cd_not_found(mock_get_links_api_objects, kubernetes_manager, kubernetes_network):
+    mock_get_links_api_objects.return_value = []
+    with pytest.raises(Exception):
+        kubernetes_manager.get_link_api_object(link_name="test_network", lab_hash="lab_hash_value")
+    mock_get_links_api_objects.assert_called_once_with(link_name="test_network", lab_hash="lab_hash_value")
