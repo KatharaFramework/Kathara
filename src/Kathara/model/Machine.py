@@ -153,7 +153,7 @@ class Machine(object):
             return
 
         if name == "env":
-            matches = re.search(r"^(?P<key>\w+)=(?P<value>.+)$", value)
+            matches = re.search(r"^(?P<key>\w+)=(?P<value>\S+)$", value)
 
             # Check for valid kv-pair
             if matches:
