@@ -106,12 +106,13 @@ class Machine(object):
         if number in self.interfaces:
             raise Exception("Interface %d already set on device `%s`." % (number, self.name))
 
-        if any(x.name == link.name for x in self.interfaces.values()):
+        if self.name in link.machines:
             raise MachineCollisionDomainConflictError(
                 "Device `%s` is already connected to collision domain `%s`" % (self.name, link.name)
             )
 
         self.interfaces[number] = link
+        link.machines[self.name] = self
 
     def add_meta(self, name: str, value: Any) -> None:
         """Add a meta property to the device.

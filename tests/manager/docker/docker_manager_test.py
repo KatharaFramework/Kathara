@@ -27,9 +27,7 @@ def docker_manager(mock_docker_client, mock_from_env, mock_check_and_download_pl
     client_mock = Mock()
     mock_from_env = client_mock
 
-    docker_manager = DockerManager()
-
-    return docker_manager
+    return DockerManager()
 
 
 @pytest.fixture()

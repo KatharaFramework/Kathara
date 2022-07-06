@@ -8,6 +8,7 @@ from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
+from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
 
 
@@ -53,9 +54,6 @@ class LconfigCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
-        lab_path = utils.get_absolute_path(lab_path)
-
         for eth in args['eths']:
             # Only alphanumeric characters are allowed
             matches = re.search(r"^\w+$", eth)
@@ -65,13 +63,22 @@ class LconfigCommand(Command):
                 self.parser.print_help()
                 exit(1)
 
-        lab = Lab(None, path=lab_path)
+        lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
+        lab_path = utils.get_absolute_path(lab_path)
+        try:
+            lab = LabParser.parse(lab_path)
+        except (Exception, IOError):
+            lab = Lab(None, path=lab_path)
 
-        device = lab.get_or_new_machine(args['name'])
-        device.api_object = Kathara.get_instance().get_machine_api_object(args['name'], lab_hash=lab.hash)
+        machine_name = args['name']
+        device = lab.get_or_new_machine(machine_name)
+        device.api_object = Kathara.get_instance().get_machine_api_object(machine_name, lab_hash=lab.hash)
 
         for eth in args['eths']:
-            logging.info("Adding interface to device `%s` for collision domain `%s`..." % (args['name'], eth))
-            lab.connect_machine_to_link(args['name'], eth)
+            logging.info("Adding interface to device `%s` for collision domain `%s`..." % (machine_name, eth))
+            lab.connect_machine_to_link(machine_name, eth)
+
+        # Remove all the lab machines, except the one to update
+        lab.machines = {machine_name: device}
 
         Kathara.get_instance().update_lab(lab)

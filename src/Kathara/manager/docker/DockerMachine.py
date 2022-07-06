@@ -296,18 +296,10 @@ class DockerMachine(object):
         Returns:
             None
         """
-        containers = self.get_machines_api_objects_by_filters(
-            machine_name=machine.name, lab_hash=machine.lab.hash, user=utils.get_current_user_name()
-        )
-
-        if not containers:
-            raise Exception("The specified device `%s` is not running." % machine.name)
-
-        machine.api_object = containers.pop()
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
         # Connect the container to its new networks
-        for (_, machine_link) in machine.interfaces.items():
+        for machine_link in machine.interfaces.values():
             if machine_link.api_object.name not in attached_networks:
                 machine_link.api_object.connect(machine.api_object)
 
