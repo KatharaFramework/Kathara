@@ -3,6 +3,7 @@ from unittest import mock
 from unittest.mock import Mock
 
 import pytest
+from kubernetes.client import V1PodList
 
 sys.path.insert(0, './')
 
@@ -12,6 +13,9 @@ from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.kubernetes.KubernetesMachine import KubernetesMachine, STARTUP_COMMANDS
 
 
+#
+# FIXTURE
+#
 @pytest.fixture()
 @mock.patch("kubernetes.client.api.apps_v1_api.AppsV1Api")
 @mock.patch("kubernetes.client.api.core_v1_api.CoreV1Api")
@@ -51,7 +55,7 @@ def kubernetes_device_definition():
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands=sysctl_commands, machine_commands="ls")
 
-    post_start = client.V1Handler(
+    post_start = client.V1LifecycleHandler(
         _exec=client.V1ExecAction(
             command=["/bin/bash", "-c", startup_commands_string]
         )
@@ -95,6 +99,22 @@ def kubernetes_device_definition():
                                )
 
 
+@pytest.fixture()
+def kubernetes_namespace():
+    kubernetes_namespace_mock = Mock()
+    metadata_mock = Mock()
+    metadata_mock.configure_mock(**{
+        'name': 'test_namespace',
+    })
+    kubernetes_namespace_mock.configure_mock(**{
+        'metadata': metadata_mock
+    })
+    return kubernetes_namespace_mock
+
+
+#
+# TEST: get_deployment_name
+#
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 def test_get_deployment_name(mock_setting_get_instance, kubernetes_machine):
     setting_mock = Mock()
@@ -136,6 +156,9 @@ def test_get_deployment_name_remove_invalid_chars(mock_setting_get_instance, kub
     assert k8s_device_name == "devprefix-device05a"
 
 
+#
+# TEST: _build_definition
+#
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 def test_build_definition_no_config(mock_setting_get_instance, default_device, kubernetes_machine):
     setting_mock = Mock()
@@ -157,7 +180,7 @@ def test_build_definition_no_config(mock_setting_get_instance, default_device, k
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands="", machine_commands="ls")
 
-    post_start = client.V1Handler(
+    post_start = client.V1LifecycleHandler(
         _exec=client.V1ExecAction(
             command=["/bin/bash", "-c", startup_commands_string]
         )
@@ -229,7 +252,7 @@ def test_build_definition(mock_setting_get_instance, config_map_mock, default_de
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands="", machine_commands="ls")
 
-    post_start = client.V1Handler(
+    post_start = client.V1LifecycleHandler(
         _exec=client.V1ExecAction(
             command=["/bin/bash", "-c", startup_commands_string]
         )
@@ -280,6 +303,9 @@ def test_build_definition(mock_setting_get_instance, config_map_mock, default_de
     assert actual_definition == expected_definition
 
 
+#
+# TEST: create
+#
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 def test_create(mock_setting_get_instance, kubernetes_machine, default_device, kubernetes_device_definition):
     setting_mock = Mock()
@@ -331,7 +357,7 @@ def test_create_ipv6(mock_setting_get_instance, kubernetes_machine, default_devi
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands=sysctl_commands, machine_commands="ls")
 
-    post_start = client.V1Handler(
+    post_start = client.V1LifecycleHandler(
         _exec=client.V1ExecAction(
             command=["/bin/bash", "-c", startup_commands_string]
         )
@@ -382,17 +408,23 @@ def test_create_ipv6(mock_setting_get_instance, kubernetes_machine, default_devi
     )
 
 
+#
+# TEST: _deploy_machine
+#
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.create")
 def test_deploy_machine(mock_create, kubernetes_machine, default_device):
     machine_item = ("", default_device)
 
     mock_create.return_value = True
 
-    kubernetes_machine._deploy_machine(None, machine_item)
+    kubernetes_machine._deploy_machine(machine_item)
 
     mock_create.assert_called_once()
 
 
+#
+# TEST: deploy_machines
+#
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._deploy_machine")
 def test_deploy_machines(mock_deploy, kubernetes_machine):
     lab = Lab("Default scenario")
@@ -407,6 +439,9 @@ def test_deploy_machines(mock_deploy, kubernetes_machine):
     assert mock_deploy.call_count == 2
 
 
+#
+# TEST: undeploy
+#
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._undeploy_machine")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
 def test_undeploy_one_device(mock_get_machines_api_objects_by_filters, mock_undeploy_machine, kubernetes_machine,
@@ -418,7 +453,7 @@ def test_undeploy_one_device(mock_get_machines_api_objects_by_filters, mock_unde
     kubernetes_machine.undeploy("lab_hash", selected_machines={default_device.name})
 
     mock_get_machines_api_objects_by_filters.assert_called_once()
-    mock_undeploy_machine.assert_called_once_with(None, default_device.api_object)
+    mock_undeploy_machine.assert_called_once_with(default_device.api_object)
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._undeploy_machine")
@@ -449,6 +484,9 @@ def test_undeploy_no_devices(mock_get_machines_api_objects_by_filters, mock_unde
     assert not mock_undeploy_machine.called
 
 
+#
+# TEST: wipe
+#
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._undeploy_machine")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
 def test_wipe_one_device(mock_get_machines_api_objects_by_filters, mock_undeploy_machine, kubernetes_machine,
@@ -485,10 +523,125 @@ def test_wipe_three_devices(mock_get_machines_api_objects_by_filters, mock_undep
     assert mock_undeploy_machine.call_count == 3
 
 
+#
+# TEST: _undeploy_machine
+#
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._delete_machine")
 def test_undeploy_machine(mock_delete_machine, kubernetes_machine, default_device):
     mock_delete_machine.return_value = None
 
-    kubernetes_machine._undeploy_machine(None, default_device.api_object)
+    kubernetes_machine._undeploy_machine(default_device.api_object)
 
     mock_delete_machine.assert_called_once()
+
+
+#
+# TEST: get_machines_api_objects_by_filter
+#
+@mock.patch("kubernetes.client.api.core_v1_api.CoreV1Api.list_namespaced_pod")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace.KubernetesNamespace.get_all")
+def test_get_machines_api_objects_by_filter_empty_filter(mock_namespace_get_all, mock_list_namespaced_pod,
+                                                         kubernetes_namespace, default_device, kubernetes_machine):
+    mock_namespace_get_all.return_value = [kubernetes_namespace]
+    kubernetes_machine.kubernetes_namespace.get_all = mock_namespace_get_all
+    mock_list_namespaced_pod.return_value = V1PodList(items=[default_device])
+    kubernetes_machine.core_client.list_namespaced_pod = mock_list_namespaced_pod
+    kubernetes_machine.get_machines_api_objects_by_filters()
+    mock_namespace_get_all.assert_called_once()
+    mock_list_namespaced_pod.assert_called_once_with(namespace="test_namespace",
+                                                     label_selector="app=kathara",
+                                                     timeout_seconds=9999)
+
+
+@mock.patch("kubernetes.client.api.core_v1_api.CoreV1Api.list_namespaced_pod")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace.KubernetesNamespace.get_all")
+def test_get_machines_api_objects_by_filter_machine_name(mock_namespace_get_all, mock_list_namespaced_pod,
+                                                         kubernetes_namespace, default_device, kubernetes_machine):
+    mock_namespace_get_all.return_value = [kubernetes_namespace]
+    kubernetes_machine.kubernetes_namespace.get_all = mock_namespace_get_all
+    default_device.api_object.name = "test_device"
+    mock_list_namespaced_pod.return_value = V1PodList(items=[default_device.api_object])
+    kubernetes_machine.core_client.list_namespaced_pod = mock_list_namespaced_pod
+    kubernetes_machine.get_machines_api_objects_by_filters(machine_name="test_device")
+    mock_namespace_get_all.assert_called_once()
+    mock_list_namespaced_pod.assert_called_once_with(namespace="test_namespace",
+                                                     label_selector="app=kathara,name=test_device",
+                                                     timeout_seconds=9999)
+
+
+@mock.patch("kubernetes.client.api.core_v1_api.CoreV1Api.list_namespaced_pod")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace.KubernetesNamespace.get_all")
+def test_get_machines_api_objects_by_filter_lab_hash(mock_namespace_get_all, mock_list_namespaced_pod,
+                                                     kubernetes_namespace, default_device, kubernetes_machine):
+    mock_list_namespaced_pod.return_value = V1PodList(items=[default_device.api_object])
+    kubernetes_machine.core_client.list_namespaced_pod = mock_list_namespaced_pod
+    kubernetes_machine.get_machines_api_objects_by_filters(lab_hash="lab_hash")
+    assert not mock_namespace_get_all.called
+    mock_list_namespaced_pod.assert_called_once_with(namespace="lab_hash",
+                                                     label_selector="app=kathara",
+                                                     timeout_seconds=9999)
+
+
+@mock.patch("kubernetes.client.api.core_v1_api.CoreV1Api.list_namespaced_pod")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace.KubernetesNamespace.get_all")
+def test_get_machines_api_objects_by_filter_lab_hash_machine_name(mock_namespace_get_all, mock_list_namespaced_pod,
+                                                                  kubernetes_namespace, default_device,
+                                                                  kubernetes_machine):
+    default_device.api_object.name = "test_device"
+    mock_list_namespaced_pod.return_value = V1PodList(items=[default_device.api_object])
+    kubernetes_machine.core_client.list_namespaced_pod = mock_list_namespaced_pod
+    kubernetes_machine.get_machines_api_objects_by_filters(lab_hash="lab_hash", machine_name="test_device")
+    assert not mock_namespace_get_all.called
+    mock_list_namespaced_pod.assert_called_once_with(namespace="lab_hash",
+                                                     label_selector="app=kathara,name=test_device",
+                                                     timeout_seconds=9999)
+
+
+#
+# TEST: get_machines_stats
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+def test_get_machines_stats_lab_hash(mock_get_machines_api_objects_by_filters, kubernetes_machine, default_device):
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
+    next(kubernetes_machine.get_machines_stats(lab_hash="lab_hash"))
+    mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash",
+                                                                     machine_name=None)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+def test_get_machines_stats_lab_hash_device_name(mock_get_machines_api_objects_by_filters, kubernetes_machine,
+                                                 default_device):
+    default_device.api_object.name = "test_device"
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
+    next(kubernetes_machine.get_machines_stats(lab_hash="lab_hash", machine_name="test_device"))
+    mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash",
+                                                                     machine_name="test_device")
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+def test_get_machines_stats_no_hash_no_name(mock_get_machines_api_objects_by_filters, kubernetes_machine,
+                                            default_device):
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
+    next(kubernetes_machine.get_machines_stats())
+    mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash=None,
+                                                                     machine_name=None)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+def test_get_machines_stats_lab_hash_device_not_found(mock_get_machines_api_objects_by_filters, kubernetes_machine,
+                                                      default_device):
+    mock_get_machines_api_objects_by_filters.return_value = []
+    with pytest.raises(Exception):
+        next(kubernetes_machine.get_machines_stats(lab_hash="lab_hash"))
+    mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash",
+                                                                     machine_name=None)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+def test_get_machines_stats_device_not_found(mock_get_machines_api_objects_by_filters, kubernetes_machine,
+                                             default_device):
+    mock_get_machines_api_objects_by_filters.return_value = []
+    with pytest.raises(Exception):
+        next(kubernetes_machine.get_machines_stats())
+    mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash=None,
+                                                                     machine_name=None)

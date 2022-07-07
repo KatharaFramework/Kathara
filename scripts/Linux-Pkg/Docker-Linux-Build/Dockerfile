@@ -1,4 +1,4 @@
-FROM archlinux:base-20210131.0.14634
+FROM archlinux:latest
 
 ENV RUBYOPT="-KU -E utf-8:utf-8"
 

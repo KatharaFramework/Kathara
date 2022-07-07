@@ -5,11 +5,9 @@ import re
 import shlex
 import sys
 import uuid
-from functools import partial
 from multiprocessing.dummy import Pool
-from typing import Optional, Set, List, Union, Dict, Generator, Tuple, Any
+from typing import Optional, Set, List, Union, Generator, Tuple, Dict
 
-import progressbar
 from kubernetes import client
 from kubernetes.client.api import apps_v1_api
 from kubernetes.client.api import core_v1_api
@@ -18,7 +16,9 @@ from kubernetes.stream import stream
 
 from .KubernetesConfigMap import KubernetesConfigMap
 from .KubernetesNamespace import KubernetesNamespace
+from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
+from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MachineAlreadyExistsError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
@@ -52,6 +52,9 @@ STARTUP_COMMANDS = [
     # In this way, files are all replaced in the container root folder
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
     "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf -); fi",
+
+    # If /etc/hosts is not configured by the user, add the localhost mapping
+    "if [ ! -s \"/etc/hosts\" ]; then echo '127.0.0.1 localhost' > /etc/hosts; fi",
 
     # Give proper permissions to /var/www
     "if [ -d \"/var/www\" ]; then "
@@ -127,7 +130,6 @@ class KubernetesMachine(object):
         Returns:
             None
         """
-
         machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
             else lab.machines.items()
 
@@ -136,14 +138,10 @@ class KubernetesMachine(object):
         if privileged:
             logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
 
-        progress_bar = None
-        if utils.CLI_ENV:
-            progress_bar = progressbar.ProgressBar(
-                widgets=['Deploying devices... ', progressbar.Bar(),
-                         ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                redirect_stdout=True,
-                max_value=len(machines)
-            )
+        # Do not open terminals on Megalos
+        Setting.get_instance().open_terminals = False
+
+        EventDispatcher.get_instance().dispatch("machines_deploy_started", items=machines)
 
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
@@ -155,21 +153,17 @@ class KubernetesMachine(object):
             items = utils.chunk_list(machines, pool_size)
 
             for chunk in items:
-                machines_pool.map(func=partial(self._deploy_machine, progress_bar),
-                                  iterable=chunk
-                                  )
+                machines_pool.map(func=self._deploy_machine, iterable=chunk)
         else:
             for item in machines:
-                self._deploy_machine(progress_bar, item)
+                self._deploy_machine(item)
 
-        if utils.CLI_ENV:
-            progress_bar.finish()
+        EventDispatcher.get_instance().dispatch("machines_deploy_ended")
 
-    def _deploy_machine(self, progress_bar: progressbar.ProgressBar, machine_item: Tuple[str, Machine]) -> None:
+    def _deploy_machine(self, machine_item: Tuple[str, Machine]) -> None:
         """Deploy a Kubernetes deployment from the Kathara device contained in machine_item.
 
         Args:
-           progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
            machine_item (Tuple[str, Machine]): A tuple composed by the name of the device and a device object
 
         Returns:
@@ -179,11 +173,10 @@ class KubernetesMachine(object):
 
         self.create(machine)
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("machine_deployed", item=machine)
 
     def create(self, machine: Machine) -> None:
-        """Create a Kubernetes deployment and a PoD representing the device and assign it to machine.api_object.
+        """Create a Kubernetes deployment and a Pod representing the device and assign it to machine.api_object.
 
         Args:
             machine (Kathara.model.Machine.Machine): a Kathara device.
@@ -293,17 +286,21 @@ class KubernetesMachine(object):
                     machine_commands="; ".join(machine.startup_commands)
                     )
 
-        post_start = client.V1Handler(
+        post_start = client.V1LifecycleHandler(
             _exec=client.V1ExecAction(
                 command=[Setting.get_instance().device_shell, "-c", startup_commands_string]
             )
         )
         lifecycle = client.V1Lifecycle(post_start=post_start)
 
-        env = [client.V1EnvVar("_MEGALOS_SHELL",
-                               machine.meta["shell"] if "shell" in machine.meta else Setting.get_instance().device_shell
-                               )
-               ]
+        env = [
+            client.V1EnvVar("_MEGALOS_SHELL",
+                            machine.meta["shell"] if "shell" in machine.meta else Setting.get_instance().device_shell
+                            )
+        ]
+
+        for env_var_name, env_var_value in machine.meta['envs'].items():
+            env.append(client.V1EnvVar(env_var_name, env_var_value))
 
         container_definition = client.V1Container(
             name=machine.meta['real_name'],
@@ -385,7 +382,7 @@ class KubernetesMachine(object):
                                    )
 
     def undeploy(self, lab_hash: str, selected_machines: Optional[Set[str]] = None) -> None:
-        """Undeploy all the running Kubernetes deployments and PoDs contained in the scenario defined by the lab_hash.
+        """Undeploy all the running Kubernetes deployments and Pods contained in the scenario defined by the lab_hash.
 
         If selected_machines is not None, undeploy only the specified devices.
 
@@ -396,53 +393,43 @@ class KubernetesMachine(object):
         Returns:
             None
         """
-        machines = self.get_machines_api_objects_by_filters(lab_hash=lab_hash)
+        pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash)
         if selected_machines is not None and len(selected_machines) > 0:
-            machines = [item for item in machines if item.metadata.labels["name"] in selected_machines]
+            pods = [item for item in pods if item.metadata.labels["name"] in selected_machines]
 
-        if len(machines) > 0:
+        if len(pods) > 0:
             pool_size = utils.get_pool_size()
             machines_pool = Pool(pool_size)
 
-            items = utils.chunk_list(machines, pool_size)
+            items = utils.chunk_list(pods, pool_size)
 
-            progress_bar = None
-            if utils.CLI_ENV:
-                progress_bar = progressbar.ProgressBar(
-                    widgets=['Deleting devices... ', progressbar.Bar(),
-                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                    redirect_stdout=True,
-                    max_value=len(machines)
-                )
+            EventDispatcher.get_instance().dispatch("machines_undeploy_started", items=pods)
 
             for chunk in items:
-                machines_pool.map(func=partial(self._undeploy_machine, progress_bar),
-                                  iterable=chunk
-                                  )
-            if utils.CLI_ENV:
-                progress_bar.finish()
+                machines_pool.map(func=self._undeploy_machine, iterable=chunk)
+
+            EventDispatcher.get_instance().dispatch("machines_undeploy_ended")
 
     def wipe(self) -> None:
-        """Undeploy all the running Kubernetes deployments and PoDs.
+        """Undeploy all the running Kubernetes deployments and Pods.
 
         Returns:
             None
         """
-        machines = self.get_machines_api_objects_by_filters()
+        pods = self.get_machines_api_objects_by_filters()
 
         pool_size = utils.get_pool_size()
         machines_pool = Pool(pool_size)
 
-        items = utils.chunk_list(machines, pool_size)
+        items = utils.chunk_list(pods, pool_size)
 
         for chunk in items:
-            machines_pool.map(func=partial(self._undeploy_machine, None), iterable=chunk)
+            machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
-    def _undeploy_machine(self, progress_bar: progressbar.ProgressBar, pod_api_object: client.V1Pod) -> None:
+    def _undeploy_machine(self, pod_api_object: client.V1Pod) -> None:
         """Undeploy a Kubernetes pod.
 
         Args:
-            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             pod_api_object (client.V1Pod): The Kubernetes pod to undeploy.
 
         Returns:
@@ -451,14 +438,13 @@ class KubernetesMachine(object):
 
         self._delete_machine(pod_api_object)
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("machine_undeployed", item=pod_api_object)
 
     def _delete_machine(self, pod_api_object: client.V1Pod) -> None:
-        """Delete the Kubernetes deployment and PoD associated to pod_api_object.
+        """Delete the Kubernetes deployment and Pod associated to pod_api_object.
 
         Args:
-            pod_api_object (client.V1Pod): A Kubernetes PoD API object.
+            pod_api_object (client.V1Pod): A Kubernetes Pod API object.
 
         Returns:
             None
@@ -491,24 +477,27 @@ class KubernetesMachine(object):
 
     def connect(self, lab_hash: str, machine_name: str, shell: Union[str, List[str]] = None, logs: bool = False) \
             -> None:
-        """Open a stream to the Kubernetes PoD specified by machine_name using the specified shell.
+        """Open a stream to the Kubernetes Pod specified by machine_name using the specified shell.
 
         Args:
             lab_hash (str): The hash of the network scenario containing the device.
             machine_name (str): The name of the device to connect.
-            shell (Union[str, List[str]): The path to the desired shell.
+            shell (Union[str, List[str]]): The path to the desired shell.
             logs (bool): If True, print the logs of the startup command.
 
         Returns:
             None
         """
-        pod = self.get_machine_api_object(lab_hash=lab_hash, machine_name=machine_name)
+        pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+        if not pods:
+            raise Exception("The specified device `%s` is not running." % machine_name)
+        deployment = pods.pop()
 
-        if 'Running' not in pod.status.phase:
+        if 'Running' not in deployment.status.phase:
             raise Exception('Device `%s` is not ready.' % machine_name)
 
         if not shell:
-            shell_env_value = self.get_env_var_value_from_pod(pod, "_MEGALOS_SHELL")
+            shell_env_value = self.get_env_var_value_from_pod(deployment, "_MEGALOS_SHELL")
             shell = shlex.split(shell_env_value if shell_env_value else Setting.get_instance().device_shell)
         else:
             shell = shlex.split(shell) if type(shell) == str else shell
@@ -531,7 +520,7 @@ class KubernetesMachine(object):
                 pass
 
         resp = stream(self.core_client.connect_get_namespaced_pod_exec,
-                      name=pod.metadata.name,
+                      name=deployment.metadata.name,
                       namespace=lab_hash,
                       command=shell,
                       stdout=True,
@@ -546,10 +535,10 @@ class KubernetesMachine(object):
 
     @staticmethod
     def get_env_var_value_from_pod(pod: client.V1Pod, var_name: str) -> Optional[str]:
-        """Return the value of an environment variable of the Kubernetes PoD.
+        """Return the value of an environment variable of the Kubernetes Pod.
 
         Args:
-            pod (client.V1Pod): A Kubernetes PoD.
+            pod (client.V1Pod): A Kubernetes Pod.
             var_name (str): The name of the environment variable.
 
         Returns:
@@ -577,7 +566,7 @@ class KubernetesMachine(object):
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], tty: bool = False, stdin: bool = False,
              stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False, is_stream: bool = False) \
             -> Generator[Tuple[bytes, bytes], None, None]:
-        """Execute the command on the Kubernetes PoD specified by the lab_hash and the machine_name.
+        """Execute the command on the Kubernetes Pod specified by the lab_hash and the machine_name.
 
         Args:
             lab_hash (str): The hash of the network scenario containing the device.
@@ -599,7 +588,10 @@ class KubernetesMachine(object):
 
         try:
             # Retrieve the pod of current Deployment
-            pod = self.get_machine_api_object(lab_hash=lab_hash, machine_name=machine_name)
+            pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+            if not pods:
+                raise Exception("The specified device `%s` is not running." % machine_name)
+            pod = pods.pop()
 
             response = stream(self.core_client.connect_get_namespaced_pod_exec,
                               name=pod.metadata.name,
@@ -647,9 +639,19 @@ class KubernetesMachine(object):
         if not is_stream:
             yield result['stdout'].encode('utf-8'), result['stderr'].encode('utf-8')
 
-    def copy_files(self, deployment: client.V1Deployment, path: str, tar_data: bytes) -> None:
-        machine_name = deployment.metadata.labels["name"]
-        machine_namespace = deployment.metadata.namespace
+    def copy_files(self, machine_api_object: client.V1Deployment, path: str, tar_data: bytes) -> None:
+        """Copy the files contained in tar_data in the Kubernetes deployment path specified by the machine_api_object.
+
+        Args:
+            machine_api_object (client.V1Deployment): A Kubernetes deployment.
+            path (str): The path of where copy the tar_data.
+            tar_data (bytes): The data to copy in the deployment.
+
+        Returns:
+            None
+        """
+        machine_name = machine_api_object.metadata.labels["name"]
+        machine_namespace = machine_api_object.metadata.namespace
 
         exec_output = self.exec(machine_namespace,
                                 machine_name,
@@ -664,14 +666,14 @@ class KubernetesMachine(object):
             pass
 
     def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None) -> List[client.V1Pod]:
-        """Return the List of Kubernetes PoD.
+        """Return the List of Kubernetes Pods.
 
         Args:
-            lab_hash (str): The hash of a network scenario. If specified, return all the Kubernetes PoD in the scenario.
-            machine_name (str): The name of a device. If specified, return the specified Kubernetes PoD of the scenario.
+            lab_hash (str): The hash of a network scenario. If specified, return all the Kubernetes Pod in the scenario.
+            machine_name (str): The name of a device. If specified, return the specified Kubernetes Pod of the scenario.
 
         Returns:
-            List[client.V1Pod]: A list of Kubernetes PoDs.
+            List[client.V1Pod]: A list of Kubernetes Pods objects.
         """
         filters = ["app=kathara"]
         if machine_name:
@@ -691,122 +693,39 @@ class KubernetesMachine(object):
 
         return machines
 
-    def get_machine_api_object(self, lab_hash: str, machine_name: str) -> client.V1Pod:
-        """Return the Kubernetes PoD specified by lab_hash and machine_name.
+    def get_machines_stats(self, lab_hash: str = None, machine_name: str = None) -> \
+            Generator[Dict[str, KubernetesMachineStats], None, None]:
+        """Return a generator containing the Kubernetes devices' stats.
 
         Args:
-            lab_hash (str): The hash of a network scenario.
-            machine_name (str): The name of a device.
+            lab_hash (str): The hash of a network scenario. If specified, return all the stats of the devices in the
+                scenario.
+            machine_name (str): The name of a device. If specified, return the specified device stats.
 
         Returns:
-            client.V1Pod: A Kubernets PoD.
-        """
-        pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
-
-        logging.debug("Found pods: %s" % len(pods))
-
-        if len(pods) != 1:
-            raise Exception("Error getting the device `%s` inside the lab." % machine_name)
-        else:
-            return pods[0]
-
-    def get_machine_info(self, machine_name: str, lab_hash: str = None) -> List[Dict[str, Any]]:
-        """Return a list of dicts containing the devices info.
-
-        Args:
-            machine_name (str): The name of a device
-            lab_hash (str): The hash of a network scenario. If specified, search only the devices in the corresponding
-            scenario.
-
-        Returns:
-            List[Dict[str, Any]]: A list of dicts containing the devices info.
-        """
-        machines_api_objects = self.get_machines_api_objects_by_filters(machine_name=machine_name, lab_hash=lab_hash)
-
-        if not machines_api_objects:
-            raise Exception("The specified device is not running.")
-
-        all_stats = []
-        for machine_api_object in machines_api_objects:
-            all_stats.append(self._get_stats_by_machine(machine_api_object))
-
-        return all_stats
-
-    def get_machines_info(self, lab_hash: str, machine_name: str = None) -> Generator[Dict[str, Any], None, None]:
-        """Return a generator containing the info of the specified device.
-
-        Args:
-            lab_hash (str): The hash of a network scenario. If specified, return all the devices in the scenario.
-            machine_name (str): The name of a device. If specified, return the specified container of the scenario.
-
-        Returns:
-            Generator[Dict[str, Any], None, None]: A generator containing the info of the specified device.
+            Generator[Dict[str, KubernetesMachineStats], None, None]: A generator containing device name as keys and
+                KubernetesMachineStats as values.
         """
         while True:
-            machines = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
-
-            if not machines:
-                if not lab_hash:
-                    raise Exception("No devices running.")
+            pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
+            if not pods:
+                if not machine_name:
+                    raise Exception("No devices found.")
                 else:
-                    raise Exception("Lab is not started.")
+                    raise Exception(f"Devices with name {machine_name} not found.")
 
-            machines = sorted(machines, key=lambda x: x.metadata.labels["name"])
+            machines_stats = {}
 
-            machines_stats = []
-            for machine in machines:
-                machines_stats.append(self._get_stats_by_machine(machine))
+            for pod in pods:
+                machines_stats[pod.metadata.name] = KubernetesMachineStats(pod)
+
+            for machine_stats in machines_stats.values():
+                try:
+                    machine_stats.update()
+                except StopIteration:
+                    continue
 
             yield machines_stats
-
-    def _get_stats_by_machine(self, pod_api_object: client.V1Pod) -> Dict[str, str]:
-        """Return the stats of the specified Kubernetes PoD.
-
-        Args:
-            pod_api_object (client.V1Pod): A Docker container.
-
-        Returns:
-            Dict[str, Any]: A dict containing formatted Kathara device stats.
-        """
-
-        container_statuses = pod_api_object.status.container_statuses
-        image_name = container_statuses[0].image.replace('docker.io/', '') if container_statuses else "N/A"
-
-        return {
-            "real_lab_hash": pod_api_object.metadata.namespace,
-            "name": pod_api_object.metadata.labels["name"],
-            "real_name": pod_api_object.metadata.name,
-            "status": self._get_detailed_machine_status(pod_api_object),
-            "image": image_name,
-            "assigned_node": pod_api_object.spec.node_name
-        }
-
-    @staticmethod
-    def _get_detailed_machine_status(pod_api_object: client.V1Pod) -> str:
-        """Return a string containing the Kubernetes PoD status.
-
-        Args:
-            pod_api_object (client.V1Pod): A Kubernetes PoD.
-
-        Returns:
-            str: A string containing the Kubernetes PoD status.
-        """
-        container_statuses = pod_api_object.status.container_statuses
-
-        if not container_statuses:
-            return pod_api_object.status.phase
-
-        container_status = container_statuses[0].state
-
-        string_status = None
-        if container_status.terminated is not None:
-            string_status = container_status.terminated.reason if container_status.terminated.reason is not None \
-                else "Terminating"
-        elif container_status.waiting is not None:
-            string_status = container_status.waiting.reason
-
-        # In case the status contains an error message, split it to the first ": " and take the left part
-        return string_status.split(': ')[0] if string_status is not None else pod_api_object.status.phase
 
     @staticmethod
     def get_deployment_name(name: str) -> str:

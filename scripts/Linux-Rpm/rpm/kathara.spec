@@ -68,8 +68,8 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- Add multi-arch support (thanks to Nicolas Ollinger and Marcel Großmann)
-- Unmount /etc/resolv.conf and /etc/hosts instead of patching them with cat
-- Lab object has no side-effect when it is deployed with selected devices
-- Fix exec command with non-returning commands (like ping)
-- Add check that throws an exception when a device is connected multiple times on the same CD
+- Fix lab.dep parser
+- Refactor of Managers and add more expressive Python APIs
+- Decouple UI Logic from Business Logic
+- Add Settings option to select the Docker Image Update Policy
+- Add possibility to declare container environment variables from vstart and lab.conf

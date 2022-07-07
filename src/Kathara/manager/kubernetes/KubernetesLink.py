@@ -4,15 +4,17 @@ import re
 from functools import partial
 from multiprocessing import Manager
 from multiprocessing.dummy import Pool
-from typing import Dict, Optional, Set, Any, List
+from typing import Dict, Optional, Set, Any, List, Generator
 
-import progressbar
 from kubernetes import client
 from kubernetes.client.api import custom_objects_api
 from kubernetes.client.rest import ApiException
 
 from .KubernetesConfig import KubernetesConfig
+from .KubernetesNamespace import KubernetesNamespace
+from .stats.KubernetesLinkStats import KubernetesLinkStats
 from ... import utils
+from ...event.EventDispatcher import EventDispatcher
 from ...model.Lab import Lab
 from ...model.Link import Link
 from ...setting.Setting import Setting
@@ -25,11 +27,13 @@ K8S_NET_PLURAL = "network-attachment-definitions"
 
 
 class KubernetesLink(object):
-    """Class responsible for interacting with Kubernetes."""
-    __slots__ = ['client', 'seed']
+    """The class responsible for deploying Kathara collision domains as Kubernetes networks and interact with them."""
+    __slots__ = ['client', 'kubernetes_namespace', 'seed']
 
-    def __init__(self) -> None:
+    def __init__(self, kubernetes_namespace: KubernetesNamespace) -> None:
         self.client: custom_objects_api.CustomObjectsApi = custom_objects_api.CustomObjectsApi()
+
+        self.kubernetes_namespace: KubernetesNamespace = kubernetes_namespace
 
         self.seed: str = KubernetesConfig.get_cluster_user()
 
@@ -38,7 +42,7 @@ class KubernetesLink(object):
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
-            selected_links (Dict[str, Link]): Keys are Link names, values are Link objects.
+            selected_links (Dict[str, Link]): Keys are collision domains names, values are Link objects.
 
         Returns:
             None
@@ -51,31 +55,23 @@ class KubernetesLink(object):
 
             items = utils.chunk_list(links, pool_size)
 
-            progress_bar = None
-            if utils.CLI_ENV:
-                progress_bar = progressbar.ProgressBar(
-                    widgets=['Deploying collision domains... ', progressbar.Bar(),
-                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                    redirect_stdout=True,
-                    max_value=len(links)
-                )
+            EventDispatcher.get_instance().dispatch("links_deploy_started", items=links)
 
             with Manager() as manager:
                 network_ids = manager.dict()
 
                 for chunk in items:
-                    link_pool.map(func=partial(self._deploy_link, progress_bar, network_ids), iterable=chunk)
+                    link_pool.map(func=partial(self._deploy_link, network_ids), iterable=chunk)
 
-            if utils.CLI_ENV:
-                progress_bar.finish()
+            EventDispatcher.get_instance().dispatch("links_deploy_ended")
 
-    def _deploy_link(self, progress_bar: progressbar.ProgressBar, network_ids: Dict, link_item: (str, Link)) -> None:
+    def _deploy_link(self, network_ids: Dict, link_item: (str, Link)) -> None:
         """Deploy the Link contained in the link_item.
 
         Args:
-            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
-            network_ids (Dict):
-            link_item (Tuple[str, Link]): A tuple composed by the name of the link and a Link object
+            network_ids (Dict): A Dict for reserving network IDs. The Key is the network_id, value is 1 if it
+                is currently used.
+            link_item (Tuple[str, Link]): A tuple composed by the name of the collision domain and a Link object
 
         Returns:
             None
@@ -85,11 +81,10 @@ class KubernetesLink(object):
         network_id = self._get_unique_network_id(link.name, network_ids)
         self.create(link, network_id)
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("link_deployed", item=link)
 
     def create(self, link: Link, network_id: int) -> None:
-        """Create a Docker Network representing the link object and assign it to link.api_object.
+        """Create a Kubernetes Network representing the collision domain object and assign it to link.api_object.
 
         Args:
             link (Kathara.model.Link.Link): A Kathara collision domain.
@@ -99,9 +94,9 @@ class KubernetesLink(object):
             None
         """
         # If a network with the same name exists, return it instead of creating a new one.
-        network_objects = self.get_links_api_objects_by_filters(lab_hash=link.lab.hash, link_name=link.name)
-        if network_objects:
-            link.api_object = network_objects.pop()
+        networks = self.get_links_api_objects_by_filters(lab_hash=link.lab.hash, link_name=link.name)
+        if networks:
+            link.api_object = networks.pop()
             return
 
         link.api_object = self.client.create_namespaced_custom_object(group=K8S_NET_GROUP,
@@ -125,30 +120,22 @@ class KubernetesLink(object):
         Returns:
             None
         """
-        links = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
+        networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
         if networks_to_delete is not None and len(networks_to_delete) > 0:
-            links = [item for item in links if item["metadata"]["name"] in networks_to_delete]
+            networks = [item for item in networks if item["metadata"]["name"] in networks_to_delete]
 
-        if len(links) > 0:
+        if len(networks) > 0:
             pool_size = utils.get_pool_size()
             links_pool = Pool(pool_size)
 
-            items = utils.chunk_list(links, pool_size)
+            items = utils.chunk_list(networks, pool_size)
 
-            progress_bar = None
-            if utils.CLI_ENV:
-                progress_bar = progressbar.ProgressBar(
-                    widgets=['Deleting collision domains... ', progressbar.Bar(),
-                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                    redirect_stdout=True,
-                    max_value=len(links)
-                )
+            EventDispatcher.get_instance().dispatch("links_undeploy_started", items=networks)
 
             for chunk in items:
-                links_pool.map(func=partial(self._undeploy_link, progress_bar), iterable=chunk)
+                links_pool.map(func=self._undeploy_link, iterable=chunk)
 
-            if utils.CLI_ENV:
-                progress_bar.finish()
+            EventDispatcher.get_instance().dispatch("links_undeploy_ended")
 
     def wipe(self) -> None:
         """Undeploy all the running networks of the specified user.
@@ -156,22 +143,21 @@ class KubernetesLink(object):
         Returns:
             None
         """
-        links = self.get_links_api_objects_by_filters()
+        networks = self.get_links_api_objects_by_filters()
 
         pool_size = utils.get_pool_size()
         links_pool = Pool(pool_size)
 
-        items = utils.chunk_list(links, pool_size)
+        items = utils.chunk_list(networks, pool_size)
 
         for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, None), iterable=chunk)
+            links_pool.map(func=self._undeploy_link, iterable=chunk)
 
-    def _undeploy_link(self, progress_bar: progressbar.ProgressBar, link_item: Any) -> None:
+    def _undeploy_link(self, link_item: Any) -> None:
         """Undeploy a Kubernetes network.
 
         Args:
-            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
-            link_item (): The Kubernetes network to undeploy.
+            link_item (Any): The Kubernetes network to undeploy.
 
         Returns:
             None
@@ -190,16 +176,15 @@ class KubernetesLink(object):
         except ApiException:
             pass
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("link_undeployed", item=link_item)
 
     def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None) -> List[Any]:
         """Return the List of Kubernetes networks.
 
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return only the networks in the scenario, else
-            return the networks in the 'default' namespace.
-            link_name (str): The name of a network. If specified, return the specified networks of the scenario.
+                return the networks in the 'default' namespace.
+            link_name (str): The name of a network. If specified, return the specified network of the scenario.
 
         Returns:
             List[Any]: A list of Kubernetes networks.
@@ -208,13 +193,57 @@ class KubernetesLink(object):
         if link_name:
             filters.append("name=%s" % link_name)
 
-        return self.client.list_namespaced_custom_object(group=K8S_NET_GROUP,
-                                                         version=K8S_NET_VERSION,
-                                                         namespace=lab_hash if lab_hash else "default",
-                                                         plural=K8S_NET_PLURAL,
-                                                         label_selector=",".join(filters),
-                                                         timeout_seconds=9999
-                                                         )["items"]
+        # Get all Kathara namespaces if lab_hash is None
+        namespaces = list(map(lambda x: x.metadata.name, self.kubernetes_namespace.get_all())) \
+            if not lab_hash else [lab_hash]
+
+        networks = []
+        for namespace in namespaces:
+            networks.extend(
+                self.client.list_namespaced_custom_object(group=K8S_NET_GROUP,
+                                                          version=K8S_NET_VERSION,
+                                                          namespace=namespace,
+                                                          plural=K8S_NET_PLURAL,
+                                                          label_selector=",".join(filters),
+                                                          timeout_seconds=9999
+                                                          )["items"]
+            )
+
+        return networks
+
+    def get_links_stats(self, lab_hash: str = None, link_name: str = None) -> \
+            Generator[Dict[str, KubernetesLinkStats], None, None]:
+        """Return a generator containing the Kubernetes networks' stats.
+
+        Args:
+           lab_hash (str): The hash of a network scenario. If specified, return all the stats of the networks in the
+                scenario.
+           link_name (str): The name of a device. If specified, return the specified network stats.
+
+        Returns:
+           Generator[Dict[str, KubernetesLinkStats], None, None]: A generator containing network names as keys and
+                KubernetesLinkStats as values.
+        """
+        while True:
+            networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name)
+            if not networks:
+                if not link_name:
+                    raise Exception("No collision domains found.")
+                else:
+                    raise Exception(f"Collision domains with name {link_name} not found.")
+
+            networks_stats = {}
+
+            for network in networks:
+                networks_stats[network['metadata']['name']] = KubernetesLinkStats(network)
+
+            for network_stats in networks_stats.values():
+                try:
+                    network_stats.update()
+                except StopIteration:
+                    continue
+
+            yield networks_stats
 
     def _build_definition(self, link: Link, network_id: int) -> Dict[str, str]:
         """Return a Dict containing the network definition for Kubernetes API corresponding to link.
@@ -253,7 +282,7 @@ class KubernetesLink(object):
         Args:
             name (str): The name of the network.
             network_ids (Dict[int, int]): A Dict for reserving network IDs. The Key is the network_id, value is 1 if it
-            is currently used.
+                is currently used.
 
         Returns:
             int: A network ID.
@@ -287,7 +316,7 @@ class KubernetesLink(object):
         """Return the name of a Kubernetes Network.
 
         Args:
-            name (str): The name of a Kathara Link.
+            name (str): The name of a Kathara collision domain.
 
         Returns:
             str: The name of the Kubernetes Network in the format "<net_prefix>-<name><suffix>".

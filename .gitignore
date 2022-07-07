@@ -45,6 +45,7 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
+.pytest_cache/
 
 # Translations
 *.mo
@@ -97,6 +98,10 @@ Dockerfile~
 # builds
 /src/kathara.build/
 /src/kathara.dist/
+
+# Packages
+*.rpm
+*.tar.zst
 
 
 /config

@@ -4,6 +4,8 @@ import os
 import sys
 from typing import List
 
+from ..ui.utils import create_table
+from ..ui.utils import format_headers
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
@@ -138,9 +140,9 @@ class LstartCommand(Command):
                 Setting.get_instance().open_terminals = False
 
         if args['dry_mode']:
-            logging.info(utils.format_headers("Checking Lab"))
+            logging.info(format_headers("Checking Network Scenario"))
         else:
-            logging.info(utils.format_headers("Starting Lab"))
+            logging.info(format_headers("Starting Network Scenario"))
 
         try:
             lab = LabParser.parse(lab_path)
@@ -159,7 +161,7 @@ class LstartCommand(Command):
 
         if lab_meta_information:
             logging.info("\n" + lab_meta_information)
-            logging.info(utils.format_headers())
+            logging.info(format_headers())
 
         if len(lab.machines) <= 0:
             raise Exception("No devices in the current lab. Exiting...")
@@ -205,6 +207,7 @@ class LstartCommand(Command):
         Kathara.get_instance().deploy_lab(lab, selected_machines=args['machine_name'])
 
         if args['list']:
-            print(next(Kathara.get_instance().get_formatted_lab_info(lab.hash)))
+            machines_stats = Kathara.get_instance().get_machines_stats(lab_hash=lab.hash)
+            print(next(create_table(machines_stats)))
 
         return lab

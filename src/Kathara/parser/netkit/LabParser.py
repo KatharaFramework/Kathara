@@ -7,13 +7,11 @@ from ...utils import RESERVED_MACHINE_NAMES
 
 
 class LabParser(object):
-    """
-    Class responsible for parsing the lab.conf file.
-    """
+    """Class responsible for parsing the lab.conf file."""
+
     @staticmethod
     def parse(path: str) -> Lab:
-        """
-        Parse the lab.conf and return the corresponding Kathara network scenario.
+        """Parse the lab.conf and return the corresponding Kathara network scenario.
 
         Args:
             path (str): The path to lab.conf file.

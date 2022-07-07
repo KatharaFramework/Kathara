@@ -1,9 +1,12 @@
 import argparse
 from typing import List
 
+from ..ui.utils import create_table
+from ..ui.utils import format_headers
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
+from ...model.Lab import Lab
 from ...model.Link import BRIDGE_LINK_NAME
 from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
@@ -63,67 +66,74 @@ class LinfoCommand(Command):
 
         lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
-        lab_hash = utils.generate_urlsafe_hash(lab_path)
+        try:
+            lab = LabParser.parse(lab_path)
+        except (Exception, IOError):
+            lab = Lab(None, path=lab_path)
 
         if args['live']:
             if args['name']:
-                self._get_machine_live_info(lab_hash, args['name'])
+                self._get_machine_live_info(lab, args['name'])
             else:
-                self._get_lab_live_info(lab_hash)
+                self._get_lab_live_info(lab)
 
             return
 
         if args['conf']:
-            if args['name']:
-                print(Kathara.get_instance().get_formatted_machine_info(args['name'], lab_hash))
-            else:
-                self._get_conf_info(lab_path)
-
+            self._get_conf_info(lab, machine_name=args['name'])
             return
 
         if args['name']:
-            print(Kathara.get_instance().get_formatted_machine_info(args['name'], lab_hash))
+            print(format_headers("Device Information"))
+            print(str(next(Kathara.get_instance().get_machine_stats(args['name'], lab.hash))))
+            print(format_headers())
         else:
-            lab_info = Kathara.get_instance().get_formatted_lab_info(lab_hash)
-
-            print(next(lab_info))
+            machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
+            print(next(create_table(machines_stats)))
 
     @staticmethod
-    def _get_machine_live_info(lab_hash, machine_name):
+    def _get_machine_live_info(lab: Lab, machine_name: str) -> None:
         Curses.get_instance().init_window()
 
         try:
             while True:
                 Curses.get_instance().print_string(
-                    Kathara.get_instance().get_formatted_machine_info(machine_name, lab_hash)
+                    format_headers("Device Information") + "\n" +
+                    str(next(Kathara.get_instance().get_machine_stats(machine_name, lab.hash))) + "\n" +
+                    format_headers()
                 )
         finally:
             Curses.get_instance().close()
 
     @staticmethod
-    def _get_lab_live_info(lab_hash: str) -> None:
-        lab_info = Kathara.get_instance().get_formatted_lab_info(lab_hash)
+    def _get_lab_live_info(lab: Lab) -> None:
+        machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
+        table = create_table(machines_stats)
 
         Curses.get_instance().init_window()
 
         try:
             while True:
-                Curses.get_instance().print_string(next(lab_info))
+                Curses.get_instance().print_string(next(table))
         except StopIteration:
             pass
         finally:
             Curses.get_instance().close()
 
     @staticmethod
-    def _get_conf_info(lab_path: str) -> None:
-        print(utils.format_headers("Lab Information"))
+    def _get_conf_info(lab: Lab, machine_name: str = None) -> None:
+        if machine_name:
+            print(format_headers("Device Information"))
+            print(str(lab.machines[machine_name]))
+            print(format_headers())
+            return
 
-        lab = LabParser.parse(lab_path)
+        print(format_headers("Network Scenario Information"))
         lab_meta_information = str(lab)
 
         if lab_meta_information:
             print(lab_meta_information)
-            print(utils.format_headers())
+            print(format_headers())
 
         n_machines = len(lab.machines)
         n_links = len(lab.links) if BRIDGE_LINK_NAME not in lab.links else len(lab.links) - 1
@@ -131,4 +141,4 @@ class LinfoCommand(Command):
         print("There are %d devices." % n_machines)
         print("There are %d collision domains." % n_links)
 
-        print(utils.format_headers())
+        print(format_headers())

@@ -5,7 +5,6 @@ from typing import Dict, Union, List
 
 from deepdiff import DeepDiff
 
-from .. import utils
 from ..exceptions import MachineSignatureNotFoundError
 from ..foundation.test.Test import Test
 from ..model.Lab import Lab
@@ -52,9 +51,8 @@ class BuiltInTest(Test):
 
             machine_diff_path = "%s/%s.diff" % (self.results_path, machine.name)
             with open(machine_diff_path, 'w') as machine_diff_file:
-                machine_diff_file.write(utils.format_headers("Builtin Test Result") + '\n')
+                machine_diff_file.write("Builtin Test Result:\n")
                 machine_diff_file.write(json.dumps(diff, indent=4) + "\n" if diff else "OK\n")
-                machine_diff_file.write(utils.format_headers() + "\n\n")
 
         return test_passed
 

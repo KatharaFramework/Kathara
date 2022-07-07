@@ -3,9 +3,9 @@ import os
 from itertools import chain
 from typing import Dict, Set, Any, List, Union, Optional
 
+from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
 from .Link import Link
-from .Machine import Machine
 from .. import utils
 
 
@@ -31,7 +31,7 @@ class Lab(object):
         shared_shutdown_path(str) The path of the shared shutdown file, if exists.
         shared_folder(str) The path of the shared folder, if exists.
     """
-    __slots__ = ['name', 'description', 'version', 'author', 'email', 'web',
+    __slots__ = ['_name', 'description', 'version', 'author', 'email', 'web',
                  'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
@@ -45,14 +45,14 @@ class Lab(object):
         Returns:
             None
         """
-        self.name: Optional[str] = name
+        self._name: Optional[str] = name
         self.description: Optional[str] = None
         self.version: Optional[str] = None
         self.author: Optional[str] = None
         self.email: Optional[str] = None
         self.web: Optional[str] = None
 
-        self.machines: Dict[str, Machine] = {}
+        self.machines: Dict[str, 'MachinePackage.Machine'] = {}
         self.links: Dict[str, Link] = {}
 
         self.general_options: Dict[str, Any] = {}
@@ -63,20 +63,25 @@ class Lab(object):
         self.shared_startup_path: Optional[str] = None
         self.shared_shutdown_path: Optional[str] = None
 
-        self.hash: str = ""
+        self.hash: str = utils.generate_urlsafe_hash(self.path if self._name is None else self._name)
 
         if self.path:
-            self.path = path
-            self.hash = utils.generate_urlsafe_hash(self.path)
             shared_startup_file = os.path.join(self.path, 'shared.startup')
             self.shared_startup_path = shared_startup_file if os.path.exists(shared_startup_file) else None
 
             shared_shutdown_file = os.path.join(self.path, 'shared.shutdown')
             self.shared_shutdown_path = shared_shutdown_file if os.path.exists(shared_shutdown_file) else None
-        else:
-            self.hash = utils.generate_urlsafe_hash(self.name)
 
         self.shared_folder: Optional[str] = None
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+        self.hash = utils.generate_urlsafe_hash(value)
 
     def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None) -> None:
         """Connect the specified device to the specified collision domain.
@@ -99,7 +104,7 @@ class Lab(object):
         machine.add_interface(link, number=machine_iface_number)
 
     def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> None:
-        """Assign a meta information to the specified device.
+        """Assign meta information to the specified device.
 
         Args:
             machine_name (str): The name of the device.
@@ -134,18 +139,22 @@ class Lab(object):
             self.links[link_name].external += link_external_links
 
     def check_integrity(self) -> None:
-        """Check if the network interfaces numbers of all the devices in the network scenario are correctly assigned."""
+        """Check if the network interfaces numbers of all the devices in the network scenario are correctly assigned.
+
+        Returns:
+            None
+        """
         for machine in self.machines:
             self.machines[machine].check()
 
     def get_links_from_machines(self, selected_machines: Union[List[str], Set[str]]) -> Dict[str, Link]:
-        """Return the name of the links connected to the selected_machines.
+        """Return the name of the collision domains connected to the selected_machines.
 
         Args:
             selected_machines (Set[str]): A set with selected devices names.
 
         Returns:
-            Dict[str, Link]: Keys are Link names, values are Link objects.
+            Dict[str, Link]: Keys are collision domains names, values are Link objects.
         """
         # Intersect selected machines names with self.machines keys
         selected_machines = set(self.machines.keys()) & set(selected_machines)
@@ -167,7 +176,6 @@ class Lab(object):
         Returns:
             None
         """
-
         def dep_sort(item: str) -> int:
             try:
                 return dependencies.index(item) + 1
@@ -177,7 +185,7 @@ class Lab(object):
         self.machines = collections.OrderedDict(sorted(self.machines.items(), key=lambda t: dep_sort(t[0])))
         self.has_dependencies = True
 
-    def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> Machine:
+    def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> 'MachinePackage.Machine':
         """Get the specified device. If it not exists, create and add it to the devices list.
 
         Args:
@@ -189,7 +197,7 @@ class Lab(object):
             Kathara.model.Machine: A Kathara device.
         """
         if name not in self.machines:
-            self.machines[name] = Machine(self, name, **kwargs)
+            self.machines[name] = MachinePackage.Machine(self, name, **kwargs)
 
         return self.machines[name]
 
@@ -256,8 +264,8 @@ class Lab(object):
     def __str__(self) -> str:
         lab_info = ""
 
-        if self.name:
-            lab_info += "Name: %s\n" % self.name
+        if self._name:
+            lab_info += "Name: %s\n" % self._name
 
         if self.description:
             lab_info += "Description: %s\n" % self.description

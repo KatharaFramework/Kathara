@@ -34,6 +34,7 @@ RUN add-apt-repository ppa:deadsnakes/ppa \
 		python3.9-distutils \
 	&& python3.9 -m pip install --upgrade pip
 
+__NOKOGIRI__
 RUN gem install ronn-ng
 RUN mkdir /root/.gnupg && chmod 700 /root/.gnupg
 

@@ -10,7 +10,8 @@ Build-Depends: debhelper (>= 10),
 	python3.9-venv (>= 3.9.0),
 	python3.9-distutils (>= 3.9.0) | python3-distutils (>= 3.8.0),
 	patchelf,
-	bash-completion
+	bash-completion,
+	zlib1g-dev
 Vcs-Git: https://github.com/KatharaFramework/Kathara.git
 Vcs-Browser: https://github.com/KatharaFramework/Kathara
 Homepage: https://www.kathara.org/

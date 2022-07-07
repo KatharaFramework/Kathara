@@ -3,16 +3,15 @@ import logging
 import os
 import re
 import shutil
-import subprocess
-import sys
 import tarfile
 import tempfile
 from distutils.util import strtobool
 from pathlib import Path
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, List, OrderedDict
 
 from . import Lab as LabPackage
 from . import Link as LinkPackage
+from .Link import Link
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainConflictError
 from ..setting.Setting import Setting
@@ -26,7 +25,7 @@ class Machine(object):
     Attributes:
         lab (Kathara.model.Lab): The Kathara network Scenario of the device.
         name (str): The name of the device.
-        interfaces (List[Kathara.model.Link]): A list of the collision domains of the device.
+        interfaces (collection.OrderedDict[int, Kathara.model.Link]): A list of the collision domains of the device.
         meta (Dict[str, Any]): Keys are meta properties name, values are meta properties values.
         startup_commands (List[str]): A list of commands to execute at the device startup.
         api_object (Any): To interact with the current Kathara Manager.
@@ -55,26 +54,27 @@ class Machine(object):
             raise Exception("Invalid device name `%s`." % name)
 
         self.lab: LabPackage.Lab = lab
-        self.name = name
+        self.name: str = name
 
-        self.interfaces = {}
+        self.interfaces: OrderedDict[int, Link] = collections.OrderedDict()
 
         self.meta: Dict[str, Any] = {
             'sysctls': {},
+            'envs': {},
             'bridged': False,
             'ports': {},
             'inception': os.getenv('INCEPTION') is not None
         }
 
-        self.startup_commands = []
+        self.startup_commands: List[str] = []
 
-        self.api_object = None
+        self.api_object: Any = None
 
-        self.capabilities = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
+        self.capabilities: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
 
-        self.startup_path = None
-        self.shutdown_path = None
-        self.folder = None
+        self.startup_path: Optional[str] = None
+        self.shutdown_path: Optional[str] = None
+        self.folder: Optional[str] = None
 
         if lab.has_path():
             startup_file = os.path.join(lab.path, '%s.startup' % self.name)
@@ -107,12 +107,13 @@ class Machine(object):
         if number in self.interfaces:
             raise Exception("Interface %d already set on device `%s`." % (number, self.name))
 
-        if any(x.name == link.name for x in self.interfaces.values()):
+        if self.name in link.machines:
             raise MachineCollisionDomainConflictError(
                 "Device `%s` is already connected to collision domain `%s`" % (self.name, link.name)
             )
 
         self.interfaces[number] = link
+        link.machines[self.name] = self
 
     def add_meta(self, name: str, value: Any) -> None:
         """Add a meta property to the device.
@@ -136,21 +137,33 @@ class Machine(object):
             return
 
         if name == "sysctl":
+            matches = re.search(r"^(?P<key>net\.(\w+\.)+\w+)=(?P<value>\w+)$", value)
+
             # Check for valid kv-pair
-            if '=' in value:
-                (key, val) = value.split('=')
-                key = key.strip()
-                val = val.strip()
-                # Only allow `net.` namespace
-                if key.startswith('net.'):
-                    # Convert to int if possible
-                    self.meta['sysctls'][key] = int(val) if val.isdigit() else val
-                else:
-                    raise MachineOptionError(
-                        "Invalid sysctl value (`%s`) on `%s`, only `net.` namespace is allowed." % (value, self.name)
-                    )
+            if matches:
+                key = matches.group("key").strip()
+                val = matches.group("value").strip()
+
+                # Convert to int if possible
+                self.meta['sysctls'][key] = int(val) if val.isdigit() else val
             else:
-                raise MachineOptionError("Invalid sysctl value (`%s`) on `%s`, missing `=`." % (value, self.name))
+                raise MachineOptionError(
+                    "Invalid sysctl value (`%s`) on `%s`, missing `=` or value not in `net.` namespace."
+                    % (value, self.name)
+                )
+            return
+
+        if name == "env":
+            matches = re.search(r"^(?P<key>\w+)=(?P<value>\S+)$", value)
+
+            # Check for valid kv-pair
+            if matches:
+                key = matches.group("key").strip()
+                val = matches.group("value").strip()
+
+                self.meta['envs'][key] = val
+            else:
+                raise MachineOptionError("Invalid env value (`%s`) on `%s`." % (value, self.name))
             return
 
         if name == "port":
@@ -269,86 +282,8 @@ class Machine(object):
 
         return tar_data
 
-    def connect(self, terminal_name: str) -> None:
-        """Connect to the device with the specified terminal.
-
-        Args:
-            terminal_name (str): The name of the terminal to use for the connection.
-                The application must be correctly installed in the host system.
-                This option is only visible on Linux and macOS.
-                On Linux, options are /usr/bin/xterm, TMUX or an user-defined path.
-                On macOS, options are Terminal (default system terminal), iTerm or TMUX.
-
-        Returns:
-            None
-        """
-        logging.debug("Opening terminal for device %s.", self.name)
-
-        executable_path = utils.get_executable_path(sys.argv[0])
-
-        if not executable_path:
-            raise Exception("Unable to find Kathara.")
-
-        is_vmachine = "-v" if self.lab.path is None else ""
-        connect_command = "%s connect %s -l %s" % (executable_path, is_vmachine, self.name)
-        terminal = terminal_name if terminal_name else Setting.get_instance().terminal
-
-        logging.debug("Terminal will open in directory %s." % self.lab.path)
-
-        def unix_connect() -> None:
-            if terminal == "TMUX":
-                from ..trdparty.libtmux.tmux import TMUX
-
-                logging.debug("Attaching `%s` to TMUX session `%s` with command `%s`" % (self.name, self.lab.name,
-                                                                                         connect_command))
-
-                TMUX.get_instance().add_window(self.lab.name, self.name, connect_command, cwd=self.lab.path)
-            else:
-                logging.debug("Opening Linux terminal with command: %s." % connect_command)
-
-                # Command should be passed as an array
-                # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
-                subprocess.Popen([terminal, "-e", connect_command],
-                                 cwd=self.lab.path,
-                                 start_new_session=True
-                                 )
-
-        def windows_connect() -> None:
-            complete_win_command = "& %s" % connect_command
-            logging.debug("Opening Windows terminal with command: %s." % complete_win_command)
-            subprocess.Popen(["powershell.exe",
-                              '-Command',
-                              complete_win_command
-                              ],
-                             creationflags=subprocess.CREATE_NEW_CONSOLE,
-                             cwd=self.lab.path
-                             )
-
-        def osx_connect() -> None:
-            cd_to_lab_path = "cd \"%s\" &&" % self.lab.path if self.lab.path is not None else ""
-            complete_osx_command = "%s clear && %s && exit" % (cd_to_lab_path, connect_command)
-
-            if terminal == "TMUX":
-                from ..trdparty.libtmux.tmux import TMUX
-
-                logging.debug("Attaching `%s` to TMUX session `%s` with command `%s`" % (self.name, self.lab.name,
-                                                                                         complete_osx_command))
-
-                TMUX.get_instance().add_window(self.lab.name, self.name, complete_osx_command, cwd=self.lab.path)
-            else:
-                import appscript
-                logging.debug("Opening OSX terminal with command: %s." % complete_osx_command)
-                terminal_app = appscript.app(terminal)
-                if terminal == 'iTerm':
-                    window = terminal_app.create_window_with_default_profile()
-                    window.current_session.write(text=complete_osx_command)
-                elif terminal == 'Terminal':
-                    terminal_app.do_script(complete_osx_command)
-
-        utils.exec_by_platform(unix_connect, windows_connect, osx_connect)
-
     def get_image(self) -> str:
-        """Get the image of the device, if defined in options or machine meta. If not, use default one.
+        """Get the image of the device, if defined in options or device meta. If not, use default one.
 
         Returns:
             str: The name of the device image.
@@ -384,10 +319,10 @@ class Machine(object):
         """Get the CPU limit, multiplied by a specific multiplier.
 
         User should pass a float value ranging from 0 to max user CPUs.
-        Try to took it from options, or machine meta. Otherwise, return None.
+        Try to took it from options, or device meta. Otherwise, return None.
 
         Args:
-            multiplier (int):
+            multiplier (int): A numeric multiplier for the CPU limit value.
 
         Returns:
             Optional[int]: The CPU limit of the device.
@@ -487,5 +422,32 @@ class Machine(object):
             for sysctl in args['sysctls']:
                 self.add_meta("sysctl", sysctl)
 
+        if 'envs' in args and args['envs'] is not None:
+            for envs in args['envs']:
+                self.add_meta("env", envs)
+
     def __repr__(self) -> str:
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)
+
+    def __str__(self) -> str:
+        formatted_machine = f"Name: {self.name}"
+        formatted_machine += f"\nImage: {self.get_image()}"
+
+        if self.interfaces:
+            formatted_machine += "\nInterfaces: "
+            for (iface_num, link) in self.interfaces.items():
+                formatted_machine += f"\n\t- {iface_num}: {link.name}"
+
+        formatted_machine += f"\nBridged Connection: {self.meta['bridged']}"
+
+        if self.meta["sysctls"]:
+            formatted_machine += "\nSysctls:"
+            for (key, value) in self.meta["sysctls"].items():
+                formatted_machine += f"\n\t- {key} = {value}"
+
+        if self.meta["ports"]:
+            formatted_machine += "\nExposed Ports:"
+            for (key, value) in self.meta["ports"].items():
+                formatted_machine += f"\n\t- Host: {key} -> Guest: {value}"
+
+        return formatted_machine

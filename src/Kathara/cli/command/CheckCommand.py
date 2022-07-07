@@ -59,12 +59,12 @@ class CheckCommand(Command):
         args['no_shared'] = False
         args['no_hosthome'] = False
 
-        lab = Lab("kathara_vlab")
+        lab = Lab("kathara_test")
         lab.get_or_new_machine("hello_world")
 
         try:
             Kathara.get_instance().deploy_lab(lab)
             print("*\tContainer run successfully.")
-            Kathara.get_instance().undeploy_lab(lab.hash)
+            Kathara.get_instance().undeploy_lab(lab_hash=lab.hash)
         except Exception as e:
             logging.exception("\t! Running `Hello World` failed: %s" % str(e))

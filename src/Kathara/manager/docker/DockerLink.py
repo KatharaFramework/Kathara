@@ -1,17 +1,17 @@
 import logging
 import re
-from functools import partial
 from multiprocessing.dummy import Pool
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Generator
 
 import docker
 import docker.models.networks
-import progressbar
 from docker import DockerClient
 from docker import types
 
+from .stats.DockerLinkStats import DockerLinkStats
 from ..docker.DockerPlugin import PLUGIN_NAME
 from ... import utils
+from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import PrivilegeError
 from ...model.ExternalLink import ExternalLink
 from ...model.Lab import Lab
@@ -32,7 +32,7 @@ class DockerLink(object):
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
-            selected_links (Dict[str, Link]): Keys are Link names, values are Link objects.
+            selected_links (Dict[str, Link]): Keys are collision domains names, values are Link objects.
 
         Returns:
             None
@@ -44,31 +44,23 @@ class DockerLink(object):
             link_pool = Pool(pool_size)
 
             items = utils.chunk_list(links, pool_size)
-            progress_bar = None
-            if utils.CLI_ENV:
-                progress_bar = progressbar.ProgressBar(
-                    widgets=['Deploying collision domains... ', progressbar.Bar(),
-                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                    redirect_stdout=True,
-                    max_value=len(links)
-                )
+
+            EventDispatcher.get_instance().dispatch("links_deploy_started", items=links)
 
             for chunk in items:
-                link_pool.map(func=partial(self._deploy_link, progress_bar), iterable=chunk)
+                link_pool.map(func=self._deploy_link, iterable=chunk)
 
-            if utils.CLI_ENV:
-                progress_bar.finish()
+            EventDispatcher.get_instance().dispatch("links_deploy_ended")
 
         # Create a docker bridge link in the lab object and assign the Docker Network object associated to it.
         docker_bridge = self.get_docker_bridge()
         link = lab.get_or_new_link(BRIDGE_LINK_NAME)
         link.api_object = docker_bridge
 
-    def _deploy_link(self, progress_bar: progressbar.ProgressBar, link_item: (str, Link)) -> None:
+    def _deploy_link(self, link_item: (str, Link)) -> None:
         """Deploy the collision domain contained in the link_item as a Docker network.
 
         Args:
-            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             link_item (Tuple[str, Link]): A tuple composed by the name of the collision domain and a Link object
 
         Returns:
@@ -81,8 +73,7 @@ class DockerLink(object):
 
         self.create(link)
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("link_deployed", item=link)
 
     def create(self, link: Link) -> None:
         """Create a Docker network representing the collision domain object and assign it to link.api_object.
@@ -101,9 +92,9 @@ class DockerLink(object):
 
         # If a network with the same name exists, return it instead of creating a new one.
         link_name = self.get_network_name(link.name)
-        network_objects = self.get_links_api_objects_by_filters(link_name=link_name)
-        if network_objects:
-            link.api_object = network_objects.pop()
+        networks = self.get_links_api_objects_by_filters(link_name=link_name)
+        if networks:
+            link.api_object = networks.pop()
         else:
             network_ipam_config = docker.types.IPAMConfig(driver='null')
 
@@ -136,31 +127,23 @@ class DockerLink(object):
         Returns:
             None
         """
-        links = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
-        for item in links:
+        networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
+        for item in networks:
             item.reload()
-        links = [item for item in links if len(item.containers) <= 0]
+        networks = [item for item in networks if len(item.containers) <= 0]
 
-        if len(links) > 0:
+        if len(networks) > 0:
             pool_size = utils.get_pool_size()
             links_pool = Pool(pool_size)
 
-            items = utils.chunk_list(links, pool_size)
+            items = utils.chunk_list(networks, pool_size)
 
-            progress_bar = None
-            if utils.CLI_ENV:
-                progress_bar = progressbar.ProgressBar(
-                    widgets=['Deleting collision domains... ', progressbar.Bar(),
-                             ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-                    redirect_stdout=True,
-                    max_value=len(links)
-                )
+            EventDispatcher.get_instance().dispatch("links_undeploy_started", items=networks)
 
             for chunk in items:
-                links_pool.map(func=partial(self._undeploy_link, progress_bar), iterable=chunk)
+                links_pool.map(func=self._undeploy_link, iterable=chunk)
 
-            if utils.CLI_ENV:
-                progress_bar.finish()
+            EventDispatcher.get_instance().dispatch("links_undeploy_ended")
 
     def wipe(self, user: str = None) -> None:
         """Undeploy all the Docker networks of the specified user. If user is None, it undeploy all the Docker networks.
@@ -172,24 +155,23 @@ class DockerLink(object):
             None
         """
         user_label = "shared_cd" if Setting.get_instance().shared_cd else user
-        links = self.get_links_api_objects_by_filters(user=user_label)
-        for item in links:
+        networks = self.get_links_api_objects_by_filters(user=user_label)
+        for item in networks:
             item.reload()
-        links = [item for item in links if len(item.containers) <= 0]
+        networks = [item for item in networks if len(item.containers) <= 0]
 
         pool_size = utils.get_pool_size()
         links_pool = Pool(pool_size)
 
-        items = utils.chunk_list(links, pool_size)
+        items = utils.chunk_list(networks, pool_size)
 
         for chunk in items:
-            links_pool.map(func=partial(self._undeploy_link, None), iterable=chunk)
+            links_pool.map(func=self._undeploy_link, iterable=chunk)
 
-    def _undeploy_link(self, progress_bar: progressbar.ProgressBar, network: docker.models.networks.Network) -> None:
+    def _undeploy_link(self, network: docker.models.networks.Network) -> None:
         """Undeploy a Docker network.
 
         Args:
-            progress_bar (Optional[progressbar.ProgressBar]): A progress bar object to display if used from cli.
             network (docker.models.networks.Network): The Docker network to undeploy.
 
         Returns:
@@ -197,8 +179,7 @@ class DockerLink(object):
         """
         self._delete_link(network)
 
-        if progress_bar is not None:
-            progress_bar += 1
+        EventDispatcher.get_instance().dispatch("link_undeployed", item=network)
 
     def get_docker_bridge(self) -> Union[None, docker.models.networks.Network]:
         """Return the Docker bridged network.
@@ -211,11 +192,11 @@ class DockerLink(object):
 
     def get_links_api_objects_by_filters(self, lab_hash: str = None, link_name: str = None, user: str = None) -> \
             List[docker.models.networks.Network]:
-        """Return the Docker networks specified by lab_hash, machine_name and user.
+        """Return the Docker networks specified by lab_hash and user.
 
         Args:
             lab_hash (str): The hash of a network scenario. If specified, return all the networks in the scenario.
-            link_name (str): The name of a network. If specified, return the specified networks of the scenario.
+            link_name (str): The name of a network. If specified, return the specified network of the scenario.
             user (str): The name of a user on the host. If specified, return only the networks of the user.
 
         Returns:
@@ -231,13 +212,50 @@ class DockerLink(object):
 
         return self.client.networks.list(filters=filters)
 
+    def get_links_stats(self, lab_hash: str = None, link_name: str = None, user: str = None) -> \
+            Generator[Dict[str, DockerLinkStats], None, None]:
+        """Return a generator containing the Docker networks' stats.
+
+        Args:
+           lab_hash (str): The hash of a network scenario. If specified, return all the stats of the networks in the
+           scenario.
+           link_name (str): The name of a device. If specified, return the specified network stats.
+           user (str): The name of a user on the host. If specified, return only the stats of the specified user.
+
+        Returns:
+           Generator[Dict[str, DockerMachineStats], None, None]: A generator containing network names as keys and
+           DockerLinkStats as values.
+        """
+        networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name, user=user)
+        if not networks:
+            if not link_name:
+                raise Exception("No collision domains found.")
+            else:
+                raise Exception(f"Collision domains with name {link_name} not found.")
+
+        networks = sorted(networks, key=lambda x: x.name)
+
+        network_streams = {}
+
+        for network in networks:
+            network_streams[network.name] = DockerLinkStats(network)
+
+        while True:
+            for network_stats in network_streams.values():
+                try:
+                    network_stats.update()
+                except StopIteration:
+                    continue
+
+            yield network_streams
+
     def _attach_external_interfaces(self, external_links: List[ExternalLink],
                                     network: docker.models.networks.Network) -> None:
         """Attach an external collision domain to a Docker network.
 
         Args:
             external_links (Kathara.model.ExternalLink): A Kathara external collision domain. It is used to create
-            a collision domain attached to a host interface.
+                a collision domain attached to a host interface.
             network (docker.models.networks.Network): A Docker network.
 
         Returns:

@@ -6,13 +6,11 @@ from ...utils import RESERVED_MACHINE_NAMES
 
 
 class FolderParser(object):
-    """
-    Class responsible for parsing the folder in the network scenario directory.
-    """
+    """Class responsible for parsing the folder in the network scenario directory."""
+
     @staticmethod
     def parse(path: str) -> Lab:
-        """
-        Parse the network scenario folders and return a network scenario containing the corresponding devices.
+        """Parse the network scenario folders and return a network scenario containing the corresponding devices.
 
         Args:
             path (str): The path to the network scenario directory.
