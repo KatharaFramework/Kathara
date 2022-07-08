@@ -106,20 +106,6 @@ def get_pool_size() -> int:
     return cpu_count()
 
 
-# Platform Specific Functions
-def is_platform(desired_platform: str) -> bool:
-    return _platform == desired_platform
-
-
-def exec_by_platform(fun_linux: Callable, fun_windows: Callable, fun_mac: Callable) -> Any:
-    if _platform == LINUX or _platform == LINUX2:
-        return fun_linux()
-    elif _platform == WINDOWS:
-        return fun_windows()
-    elif _platform == MAC_OS:
-        return fun_mac()
-
-
 # Architecture Test
 def get_architecture() -> str:
     architecture = machine().lower()
@@ -138,6 +124,20 @@ def get_architecture() -> str:
         return "armv6"
     else:
         raise Exception("Not implemented for %s." % architecture)
+
+
+# Platform Specific Functions
+def is_platform(desired_platform: str) -> bool:
+    return _platform == desired_platform
+
+
+def exec_by_platform(fun_linux: Callable, fun_windows: Callable, fun_mac: Callable) -> Any:
+    if _platform == LINUX or _platform == LINUX2:
+        return fun_linux()
+    elif _platform == WINDOWS:
+        return fun_windows()
+    elif _platform == MAC_OS:
+        return fun_mac()
 
 
 def convert_win_2_linux(filename: str) -> bytes:
@@ -209,6 +209,10 @@ def get_current_user_info() -> Any:
         return pwd.getpwuid(user_id)
 
     return exec_by_platform(passwd_info, lambda: None, passwd_info)
+
+
+def is_running_in_container() -> bool:
+    return os.path.exists("/.dockerenv")
 
 
 # Formatting Functions

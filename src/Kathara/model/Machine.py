@@ -63,7 +63,7 @@ class Machine(object):
             'envs': {},
             'bridged': False,
             'ports': {},
-            'inception': os.getenv('INCEPTION') is not None
+            'inception': False
         }
 
         self.startup_commands: List[str] = []
@@ -130,6 +130,22 @@ class Machine(object):
         """
         if name == "exec":
             self.startup_commands.append(value)
+            return
+
+        if name == "inception":
+            self.meta[name] = bool(strtobool(str(value)))
+
+            if "image" in self.meta and self.meta[name]:
+                raise MachineOptionError("Cannot activate Inception when a device image is specified.")
+
+            return
+
+        if name == "image":
+            if "inception" in self.meta and self.meta["inception"]:
+                raise MachineOptionError("Cannot specify a device image when Inception is activated.")
+
+            self.meta[name] = value
+
             return
 
         if name == "bridged":
@@ -288,6 +304,9 @@ class Machine(object):
         Returns:
             str: The name of the device image.
         """
+        if self.meta['inception']:
+            return 'kathara/inception'
+
         return self.lab.general_options["image"] if "image" in self.lab.general_options else \
             self.meta["image"] if "image" in self.meta else Setting.get_instance().image
 
@@ -410,6 +429,9 @@ class Machine(object):
 
         if 'bridged' in args and args['bridged'] is not None and args['bridged']:
             self.add_meta("bridged", True)
+
+        if 'inception' in args and args['inception'] is not None and args['inception']:
+            self.add_meta("inception", True)
 
         if 'ports' in args and args['ports'] is not None:
             for port in args['ports']:

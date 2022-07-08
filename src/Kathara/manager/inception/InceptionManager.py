@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 from docker.types import Mount
+
+from ... import utils
 
 
 class InceptionManager(object):
@@ -33,5 +35,8 @@ class InceptionManager(object):
 
             InceptionManager.__instance = self
 
-    def get_mount_volumes(self) -> List[Mount]:
-        return self.mount_volumes
+    def get_mount_volumes(self) -> Optional[List[Mount]]:
+        if utils.is_running_in_container():
+            return self.mount_volumes
+
+        return None
