@@ -126,11 +126,11 @@ def get_architecture() -> str:
 
     logging.debug("Machine architecture is `%s`." % architecture)
 
-    if architecture == "x86_64" or architecture == "amd64":
+    if architecture in ["x86_64", "amd64"]:
         return "amd64"
     elif architecture == "i686":
         return "386"
-    elif architecture in ['arm64', 'aarch64']:
+    elif architecture in ["arm64", "aarch64"]:
         return "arm64"
     elif architecture == "armv7l":
         return "armv7"
@@ -142,8 +142,17 @@ def get_architecture() -> str:
 
 def convert_win_2_linux(filename: str) -> bytes:
     if not is_binary(filename):
-        file_content = open(filename, mode='r', encoding='utf-8-sig').read()
-        return file_content.replace("\n\r", "\n").encode('utf-8')
+        file_obj = None
+        try:
+            file_obj = open(filename, mode='r', encoding='utf-8-sig')
+            file_content = file_obj.read()
+            return file_content.replace("\n\r", "\n").encode('utf-8')
+        except Exception:
+            # In any case the binaryornot heuristics fail (so the file is not a text file), close the stream and
+            # read the file as a standard binary file.
+            if file_obj:
+                file_obj.close()
+            pass
 
     return open(filename, mode='rb').read()
 

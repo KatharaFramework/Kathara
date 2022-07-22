@@ -47,7 +47,8 @@ Mainly it has the same options of `lstart` with the lack of some options (e.g. `
 * `-o` [<OPTION> [<OPTION> ...]], `--pass` [<OPTION> [<OPTION> ...]]:
     Apply options to all devices of a lab during startup.
 
-    Should be a list of double quoted strings, like `--pass "mem=64m" "image=kathara/netkit_base"`.
+    Should be a list of double quoted strings, like `--pass "mem=64m" "image=kathara/frr"`.
+    You can specify the same device options described in `kathara-lab.conf`(5).
 
 * `--xterm` <XTERM>:
     Set a different terminal emulator application (Unix only).
