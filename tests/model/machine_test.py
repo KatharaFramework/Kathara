@@ -54,9 +54,11 @@ def test_add_interface_exception(default_device: Machine):
 
 
 def test_add_two_interfaces_on_same_cd(default_device: Machine):
-    default_device.add_interface(Link(default_device.lab, "A"))
+    link = Link(default_device.lab, "A")
+
+    default_device.add_interface(link)
     with pytest.raises(MachineCollisionDomainConflictError):
-        default_device.add_interface(Link(default_device.lab, "A"))
+        default_device.add_interface(link)
 
 
 def test_add_meta_sysctl(default_device: Machine):
