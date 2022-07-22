@@ -64,3 +64,11 @@ class TestError(Exception):
 
 class MachineSignatureNotFoundError(TestError):
     pass
+
+
+# Docker Exceptions
+class InvalidImageArchitectureError(ValueError):
+    __slots__ = ['arch']
+
+    def __init__(self, arch):
+        self.arch = arch

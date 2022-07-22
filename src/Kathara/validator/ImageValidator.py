@@ -10,5 +10,6 @@ class ImageValidator(BaseValidator):
         try:
             Setting.get_instance().check_image(input_string)
             return True
-        except Exception:
+        except Exception as e:
+            print(str(e))
             return False
