@@ -96,6 +96,13 @@ class LrestartCommand(Command):
             help='/shared dir will not be mounted inside the devices.'
         )
 
+        self.parser.add_argument(
+            'machine_name',
+            metavar='DEVICE_NAME',
+            nargs='*',
+            help='Restarts only specified devices.'
+        )
+
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)
         args = self.get_args()
@@ -104,6 +111,9 @@ class LrestartCommand(Command):
         lab_path = utils.get_absolute_path(lab_path)
 
         lclean_argv = ['-d', args['directory']] if args['directory'] else []
+
+        if args['machine_name']:
+            lclean_argv.extend(args['machine_name'])
 
         LcleanCommand().run(lab_path, lclean_argv)
         LstartCommand().run(lab_path, argv)

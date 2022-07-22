@@ -94,6 +94,10 @@ class DockerManager(IManager):
         Returns:
             None
         """
+        if not lab.find_machines(selected_machines):
+            machines_not_in_lab = selected_machines - set(lab.machines.keys())
+            raise Exception(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
+
         selected_links = None
         if selected_machines:
             selected_links = lab.get_links_from_machines(selected_machines)

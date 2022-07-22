@@ -252,6 +252,28 @@ class Lab(object):
         if value is not None:
             self.general_options[name] = value
 
+    def find_machine(self, machine_name: str) -> bool:
+        """Check if the specified device is in the network scenario.
+
+        Args:
+            machine_name (str): The name of the device to search.
+
+        Returns:
+            bool: True if the device is in the network scenario, else False.
+        """
+        return machine_name in self.machines.keys()
+
+    def find_machines(self, machine_names: Set[str]) -> bool:
+        """Check if the specified devices are in the network scenario.
+
+        Args:
+            machine_names (Set[str]): A set of strings containing the names of the devices to search.
+
+        Returns:
+            bool: True if the devices are all in the network scenario, else False.
+        """
+        return all(map(lambda x: self.find_machine(x), machine_names))
+
     def __repr__(self) -> str:
         return "Lab(%s, %s, %s, %s)" % (self.path, self.hash, self.machines, self.links)
 

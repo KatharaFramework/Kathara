@@ -204,7 +204,7 @@ class LstartCommand(Command):
         lab.add_option('shared_mount', args['no_shared'])
         lab.add_option('privileged_machines', args['privileged'])
 
-        Kathara.get_instance().deploy_lab(lab, selected_machines=args['machine_name'])
+        Kathara.get_instance().deploy_lab(lab, selected_machines=set(args['machine_name']))
 
         if args['list']:
             machines_stats = Kathara.get_instance().get_machines_stats(lab_hash=lab.hash)
