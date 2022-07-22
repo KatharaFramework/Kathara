@@ -5,7 +5,9 @@ import docker.models.images
 from docker import DockerClient
 from docker.errors import APIError
 
+from ... import utils
 from ...event.EventDispatcher import EventDispatcher
+from ...exceptions import InvalidImageArchitectureError
 
 
 class DockerImage(object):
@@ -101,8 +103,8 @@ class DockerImage(object):
         """
         self._check_and_pull(image_name, pull=False)
 
-    def check_and_pull_from_list(self, images: Union[List[str], Set[str]]) -> None:
-        """Check and pull a list of specified images.
+    def check_from_list(self, images: Union[List[str], Set[str]]) -> None:
+        """Check a list of specified images.
 
         Args:
             images (Union[List[str], Set[str]]): A list of Docker images name to pull.
@@ -125,21 +127,62 @@ class DockerImage(object):
         """
         try:
             # Tries to get the image from the local Docker repository.
-            self.get_local(image_name)
+            image = self.get_local(image_name)
+            self._check_image_architecture(image)
             try:
                 if pull:
                     self.check_for_updates(image_name)
             except APIError:
                 logging.debug("Cannot check updates, skipping...")
+        except InvalidImageArchitectureError as e:
+            raise Exception(
+                "Docker Image `%s` is not compatible with your host architecture: %s." % (image_name, e.arch)
+            )
         except APIError:
             # If not found, tries on Docker Hub.
             try:
                 # If the image exists on Docker Hub, pulls it.
-                self.get_remote(image_name)
+                registry_data = self.get_remote(image_name)
+                self._check_image_architecture(registry_data)
                 if pull:
                     self.pull(image_name)
             except APIError as e:
                 if e.response.status_code == 500 and 'dial tcp' in e.explanation:
-                    raise ConnectionError("Image `%s` not found in local and no Internet connection." % image_name)
+                    raise ConnectionError(
+                        "Docker Image `%s` is not available in local repository and "
+                        "no Internet connection is available to pull it from Docker Hub." % image_name
+                    )
                 else:
-                    raise Exception("Image `%s` does not exists either in local or on Docker Hub." % image_name)
+                    raise Exception(
+                        "Docker Image `%s` is not available neither on Docker Hub "
+                        "nor in local repository!" % image_name
+                    )
+            except InvalidImageArchitectureError as e:
+                raise Exception(
+                    "Docker Image `%s` is not compatible with your host architecture `%s`." % (image_name, e.arch)
+                )
+
+    @staticmethod
+    def _check_image_architecture(image: Union[docker.models.images.Image, docker.models.images.RegistryData]) -> None:
+        """
+        Check if the specified image is compatible with the host architecture.
+
+        Args:
+            image (Union[docker.models.images.Image, docker.models.images.RegistryData]): Docker Image object.
+
+        Returns:
+            None
+            
+        Raises: 
+            InvalidImageArchitectureError: Docker image is not compatible with the architecture.
+        """
+        host_arch = utils.get_architecture()
+
+        is_compatible = False
+        if isinstance(image, docker.models.images.Image):
+            is_compatible = (image.attrs['Architecture'] == host_arch)
+        elif isinstance(image, docker.models.images.RegistryData):
+            is_compatible = len(list(filter(lambda x: x['architecture'] == host_arch, image.attrs['Platforms']))) > 0
+
+        if not is_compatible:
+            raise InvalidImageArchitectureError(host_arch)

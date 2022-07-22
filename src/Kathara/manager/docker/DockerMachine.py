@@ -106,7 +106,7 @@ class DockerMachine(object):
         """
         # Check and pulling machine images
         lab_images = set(map(lambda x: x.get_image(), lab.machines.values()))
-        self.docker_image.check_and_pull_from_list(lab_images)
+        self.docker_image.check_from_list(lab_images)
 
         shared_mount = lab.general_options['shared_mount'] if 'shared_mount' in lab.general_options \
             else Setting.get_instance().shared_mount

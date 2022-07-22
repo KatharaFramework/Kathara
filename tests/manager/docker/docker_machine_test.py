@@ -248,10 +248,10 @@ def test_deploy_machines(mock_deploy_and_start, docker_machine):
     lab = Lab("Default scenario")
     lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
     lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
-    docker_machine.docker_image.check_and_pull_from_list.return_value = None
+    docker_machine.docker_image.check_from_list.return_value = None
     mock_deploy_and_start.return_value = None
     docker_machine.deploy_machines(lab)
-    docker_machine.docker_image.check_and_pull_from_list.assert_called_once_with({'kathara/test1', 'kathara/test2'})
+    docker_machine.docker_image.check_from_list.assert_called_once_with({'kathara/test1', 'kathara/test2'})
     assert mock_deploy_and_start.call_count == 2
 
 
