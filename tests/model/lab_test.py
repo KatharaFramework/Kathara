@@ -188,3 +188,30 @@ def test_apply_dependencies(default_scenario: Lab):
     assert default_scenario.machines.popitem()[0] == "pc2"
     assert default_scenario.machines.popitem()[0] == "pc1"
     assert default_scenario.machines.popitem()[0] == "pc3"
+
+
+def test_find_machine_true(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+
+    assert default_scenario.find_machine("pc1")
+
+
+def test_find_machine_false(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+
+    assert not default_scenario.find_machine("pc2")
+
+
+def test_find_machines_true(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+    default_scenario.get_or_new_machine("pc2")
+    default_scenario.get_or_new_machine("pc3")
+
+    assert default_scenario.find_machines({"pc1", "pc2", "pc3"})
+
+
+def test_find_machines_false(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+    default_scenario.get_or_new_machine("pc2")
+
+    assert not default_scenario.find_machines({"pc1", "pc2", "pc3"})
