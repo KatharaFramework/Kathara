@@ -54,6 +54,13 @@ NETWORK_IDS_DOUBLE = {
 # FIXTURE
 #
 @pytest.fixture()
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace")
+def kubernetes_namespace(mock_kubernetes_namespace):
+    mock_kubernetes_namespace.create = Mock()
+    return mock_kubernetes_namespace
+
+
+@pytest.fixture()
 @mock.patch("kubernetes.client.api.apps_v1_api.AppsV1Api")
 @mock.patch("kubernetes.client.api.core_v1_api.CoreV1Api")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesConfigMap")
@@ -64,19 +71,16 @@ def kubernetes_machine(mock_kubernetes_namespace, mock_config_map, mock_core_v1_
 
 @pytest.fixture()
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesConfig.KubernetesConfig")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace")
-def kubernetes_manager(mock_kubernetes_namespace, mock_kubernetes_link, mock_kubernetes_machine,
-                       mock_kubernetes_load_config, mock_setting_get_instance):
+def kubernetes_manager(mock_setting_get_instance, kubernetes_namespace):
     mock_setting = Mock()
     mock_setting.configure_mock(**{
         'manager': 'kubernetes',
         'device_prefix': 'devprefix'
     })
+    kube_manager = KubernetesManager()
+    kube_manager.k8s_namespace = kubernetes_namespace
     mock_setting_get_instance.return_value = mock_setting
-    return KubernetesManager()
+    return kube_manager
 
 
 @pytest.fixture()
@@ -99,6 +103,17 @@ def default_device(mock_kubernetes_deployment):
 def default_link():
     from src.Kathara.model.Link import Link
     return Link(Lab("default_scenario"), "A")
+
+
+@pytest.fixture()
+def two_device_scenario():
+    lab = Lab("Default scenario")
+    pc1 = lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
+    pc2 = lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
+    lab.connect_machine_to_link(pc1.name, "A")
+    lab.connect_machine_to_link(pc1.name, "B")
+    lab.connect_machine_to_link(pc2.name, "A")
+    return lab
 
 
 @pytest.fixture()
@@ -134,6 +149,40 @@ def kubernetes_link(kubernetes_namespace_mock, config_mock, _):
     config_mock.get_default_copy.return_value = FakeConfig()
 
     return KubernetesLink(kubernetes_namespace_mock)
+
+
+#
+# TEST: deploy_lab
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.deploy_links")
+def test_deploy_lab(mock_deploy_links, mock_deploy_machines, kubernetes_manager, two_device_scenario):
+    kubernetes_manager.deploy_lab(two_device_scenario)
+    mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links=None)
+    mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines=None)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.deploy_links")
+def test_deploy_lab_selected_machines(mock_deploy_links, mock_deploy_machines, kubernetes_manager,
+                                      two_device_scenario: Lab):
+    kubernetes_manager.deploy_lab(two_device_scenario, selected_machines={"pc1"})
+
+    mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links={
+        "A": two_device_scenario.get_or_new_link("A"),
+        "B": two_device_scenario.get_or_new_link("B")
+    })
+    mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines={"pc1"})
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.deploy_links")
+def test_deploy_lab_selected_machines_exception(mock_deploy_links, mock_deploy_machines, kubernetes_manager,
+                                                two_device_scenario: Lab):
+    with pytest.raises(Exception):
+        kubernetes_manager.deploy_lab(two_device_scenario, selected_machines={"pc3"})
+    assert not mock_deploy_machines.called
+    assert not mock_deploy_links.called
 
 
 #
