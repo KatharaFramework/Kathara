@@ -8,6 +8,7 @@ from ..foundation.manager.ManagerFactory import ManagerFactory
 from ..foundation.manager.stats.ILinkStats import ILinkStats
 from ..foundation.manager.stats.IMachineStats import IMachineStats
 from ..model.Lab import Lab
+from ..model.Link import Link
 from ..model.Machine import Machine
 from ..setting.Setting import Setting, AVAILABLE_MANAGERS
 
@@ -41,6 +42,28 @@ class Kathara(IManager):
                                                                       )
 
             Kathara.__instance = self
+
+    def deploy_machine(self, machine: Machine) -> None:
+        """Deploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        self.manager.deploy_machine(machine)
+
+    def deploy_link(self, link: Link) -> None:
+        """Deploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        self.manager.deploy_link(link)
 
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """Deploy a Kathara network scenario.

@@ -104,8 +104,11 @@ class DockerMachine(object):
         Returns:
             None
         """
+        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
+            else lab.machines.items()
+
         # Check and pulling machine images
-        lab_images = set(map(lambda x: x.get_image(), lab.machines.values()))
+        lab_images = set(map(lambda x: x[1].get_image(), machines))
         self.docker_image.check_from_list(lab_images)
 
         shared_mount = lab.general_options['shared_mount'] if 'shared_mount' in lab.general_options \
@@ -116,9 +119,6 @@ class DockerMachine(object):
                 logging.warning("Shared folder cannot be mounted with a remote Docker connection.")
             else:
                 lab.create_shared_folder()
-
-        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
-            else lab.machines.items()
 
         EventDispatcher.get_instance().dispatch("machines_deploy_started", items=machines)
 

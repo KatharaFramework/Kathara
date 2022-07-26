@@ -147,14 +147,14 @@ class Lab(object):
         for machine in self.machines:
             self.machines[machine].check()
 
-    def get_links_from_machines(self, selected_machines: Union[List[str], Set[str]]) -> Dict[str, Link]:
-        """Return the name of the collision domains connected to the selected_machines.
+    def get_links_from_machines(self, selected_machines: Union[List[str], Set[str]]) -> Set[str]:
+        """Return the name of the collision domains connected to the selected devices.
 
         Args:
             selected_machines (Set[str]): A set with selected devices names.
 
         Returns:
-            Dict[str, Link]: Keys are collision domains names, values are Link objects.
+            Set[str]: A set of names of collision domains to deploy.
         """
         # Intersect selected machines names with self.machines keys
         selected_machines = set(self.machines.keys()) & set(selected_machines)
@@ -163,7 +163,7 @@ class Lab(object):
 
         # Get only selected machines Link objects.
         selected_links = set(chain.from_iterable([machine.interfaces.values() for machine in machines]))
-        selected_links = {link.name: link for link in selected_links}
+        selected_links = {link.name for link in selected_links}
 
         return selected_links
 
@@ -176,6 +176,7 @@ class Lab(object):
         Returns:
             None
         """
+
         def dep_sort(item: str) -> int:
             try:
                 return dependencies.index(item) + 1

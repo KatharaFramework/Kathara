@@ -18,7 +18,7 @@ from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
-from ...model.Link import BRIDGE_LINK_NAME
+from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
 from ...utils import pack_files_for_tar
@@ -82,6 +82,37 @@ class DockerManager(IManager):
 
         self.docker_machine: DockerMachine = DockerMachine(self.client, self.docker_image)
         self.docker_link: DockerLink = DockerLink(self.client)
+
+    @privileged
+    def deploy_machine(self, machine: Machine) -> None:
+        """Deploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        if not machine.lab:
+            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
+
+        self.docker_link.deploy_links(machine.lab, selected_links={x.name for x in machine.interfaces.values()})
+        self.docker_machine.deploy_machines(machine.lab, selected_machines={machine.name})
+
+    @privileged
+    def deploy_link(self, link: Link) -> None:
+        """Deploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        if not link.lab:
+            raise Exception("Collision domain `%s` is not associated to a network scenario." % link.name)
+
+        self.docker_link.deploy_links(link.lab, selected_links={link.name})
 
     @privileged
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:

@@ -10,7 +10,6 @@ sys.path.insert(0, './')
 from src.Kathara.model.Lab import Lab
 from src.Kathara.manager.docker.DockerLink import DockerLink
 from src.Kathara import utils
-from src.Kathara.manager.docker.stats.DockerLinkStats import DockerLinkStats
 
 
 #

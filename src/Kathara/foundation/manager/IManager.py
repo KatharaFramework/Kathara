@@ -5,11 +5,37 @@ from typing import Dict, Set, Any, Generator, Tuple, List, Optional
 from .stats.ILinkStats import ILinkStats
 from .stats.IMachineStats import IMachineStats
 from ...model.Lab import Lab
+from ...model.Link import Link
 from ...model.Machine import Machine
 
 
 class IManager(ABC):
     """Interface to be implemented in the virtualization managers"""
+
+    @abstractmethod
+    def deploy_machine(self, machine: Machine) -> None:
+        """Deploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError("You must implement `deploy_machine` method.")
+
+    @abstractmethod
+    def deploy_link(self, link: Link) -> None:
+        """Deploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError("You must implement `deploy_link` method.")
+
     @abstractmethod
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """Deploy a Kathara network scenario.
@@ -219,7 +245,7 @@ class IManager(ABC):
         Returns:
             IMachineStats: IMachineStats object containing the device info.
         """
-        raise NotImplementedError("You must implement `get_machine_info` method.")
+        raise NotImplementedError("You must implement `get_machine_stats` method.")
 
     @abstractmethod
     def get_links_stats(self, lab_hash: str = None, lab_name: str = None, link_name: str = None,

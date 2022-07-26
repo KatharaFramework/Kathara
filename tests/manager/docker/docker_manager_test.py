@@ -9,6 +9,7 @@ sys.path.insert(0, './')
 from src.Kathara.manager.docker.DockerManager import DockerManager
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Machine import Machine
+from src.Kathara.model.Link import Link
 from src.Kathara.utils import generate_urlsafe_hash
 from src.Kathara.manager.docker.stats.DockerLinkStats import DockerLinkStats
 from src.Kathara.manager.docker.stats.DockerMachineStats import DockerMachineStats
@@ -54,6 +55,12 @@ def default_device(mock_docker_container):
     return device
 
 
+@pytest.fixture()
+def default_link():
+    from src.Kathara.model.Link import Link
+    return Link(Lab("default_scenario"), "A")
+
+
 #
 # TEST: deploy_lab
 #
@@ -63,6 +70,45 @@ def test_deploy_lab(mock_deploy_links, mock_deploy_machines, docker_manager, two
     docker_manager.deploy_lab(two_device_scenario)
     mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links=None)
     mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines=None)
+
+
+#
+# TEST: deploy_machine
+#
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+def test_deploy_machine(mock_deploy_machines, mock_deploy_links, docker_manager, default_device, default_link):
+    default_device.add_interface(default_link)
+
+    docker_manager.deploy_machine(default_device)
+    mock_deploy_links.assert_called_once_with(default_device.lab, selected_links={default_link.name})
+    mock_deploy_machines.assert_called_once_with(default_device.lab, selected_machines={default_device.name})
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+def test_deploy_machine_no_lab(mock_deploy_machines, mock_deploy_links, docker_manager, default_device, default_link):
+    default_device.lab = None
+
+    with pytest.raises(Exception):
+        docker_manager.deploy_machine(default_device)
+
+
+#
+# TEST: deploy_link
+#
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_link(mock_deploy_links, docker_manager, default_link):
+    docker_manager.deploy_link(default_link)
+    mock_deploy_links.assert_called_once_with(default_link.lab, selected_links={default_link.name})
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_link_no_lab(mock_deploy_links, docker_manager, default_link):
+    default_link.lab = None
+
+    with pytest.raises(Exception):
+        docker_manager.deploy_link(default_link)
 
 
 #

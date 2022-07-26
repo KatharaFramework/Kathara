@@ -16,6 +16,7 @@ from ... import utils
 from ...exceptions import NotSupportedError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
+from ...model.Link import Link
 from ...model.Machine import Machine
 from ...utils import pack_files_for_tar
 
@@ -31,6 +32,41 @@ class KubernetesManager(IManager):
         self.k8s_namespace: KubernetesNamespace = KubernetesNamespace()
         self.k8s_machine: KubernetesMachine = KubernetesMachine(self.k8s_namespace)
         self.k8s_link: KubernetesLink = KubernetesLink(self.k8s_namespace)
+
+    def deploy_machine(self, machine: Machine) -> None:
+        """Deploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        if not machine.lab:
+            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
+
+        machine.lab.hash = machine.lab.hash.lower()
+
+        self.k8s_namespace.create(machine.lab)
+        self.k8s_link.deploy_links(machine.lab, selected_links={x.name for x in machine.interfaces.values()})
+        self.k8s_machine.deploy_machines(machine.lab, selected_machines={machine.name})
+
+    def deploy_link(self, link: Link) -> None:
+        """Deploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        if not link.lab:
+            raise Exception("Collision domain `%s` is not associated to a network scenario." % link.name)
+
+        link.lab.hash = link.lab.hash.lower()
+
+        self.k8s_namespace.create(link.lab)
+        self.k8s_link.deploy_links(link.lab, selected_links={link.name})
 
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """Deploy a Kathara network scenario.
