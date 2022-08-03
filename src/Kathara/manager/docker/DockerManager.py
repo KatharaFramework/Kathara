@@ -162,6 +162,37 @@ class DockerManager(IManager):
                 self.docker_machine.update(machine)
 
     @privileged
+    def undeploy_machine(self, machine: Machine) -> None:
+        """Undeploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        if not machine.lab:
+            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
+
+        self.docker_machine.undeploy(machine.lab.hash, selected_machines={machine.name})
+        self.docker_link.undeploy(machine.lab.hash, selected_links={x.name for x in machine.interfaces.values()})
+
+    @privileged
+    def undeploy_link(self, link: Link) -> None:
+        """Undeploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        if not link.lab:
+            raise Exception("Collision domain `%s` is not associated to a network scenario." % link.name)
+
+        self.docker_link.undeploy(link.lab.hash, selected_links={link.name})
+
+    @privileged
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                      selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.

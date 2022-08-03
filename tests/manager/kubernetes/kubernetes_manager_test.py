@@ -43,17 +43,6 @@ def kubernetes_manager(mock_setting_get_instance):
 
 
 @pytest.fixture()
-def two_device_scenario():
-    lab = Lab("Default scenario")
-    pc1 = lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
-    pc2 = lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
-    lab.connect_machine_to_link(pc1.name, "A")
-    lab.connect_machine_to_link(pc1.name, "B")
-    lab.connect_machine_to_link(pc2.name, "A")
-    return lab
-
-
-@pytest.fixture()
 @mock.patch("kubernetes.client.models.v1_deployment.V1Deployment")
 def default_device(mock_kubernetes_deployment):
     device = Machine(Lab("default_scenario"), "test_device")
@@ -103,8 +92,8 @@ def kubernetes_network():
 @pytest.fixture()
 def kubernetes_pod_1():
     networks = [
-        {'name': 'a'},
-        {'name': 'b'}
+        {'name': 'kathara-a'},
+        {'name': 'kathara-b'}
     ]
 
     pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
@@ -122,7 +111,7 @@ def kubernetes_pod_1():
 @pytest.fixture()
 def kubernetes_pod_2():
     networks = [
-        {'name': 'a'}
+        {'name': 'kathara-a'}
     ]
 
     pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
@@ -135,6 +124,19 @@ def kubernetes_pod_2():
         metadata=pod_metadata,
         status=pod_status
     )
+
+
+@pytest.fixture()
+def two_device_scenario(kubernetes_pod_1, kubernetes_pod_2):
+    lab = Lab("Default scenario")
+    pc1 = lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
+    pc1.api_object = kubernetes_pod_1
+    pc2 = lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
+    pc2.api_object = kubernetes_pod_2
+    lab.connect_machine_to_link(pc1.name, "A")
+    lab.connect_machine_to_link(pc1.name, "B")
+    lab.connect_machine_to_link(pc2.name, "A")
+    return lab
 
 
 #
@@ -167,11 +169,7 @@ def test_deploy_machine(mock_deploy_machines, mock_deploy_links, mock_namespace_
     mock_deploy_machines.assert_called_once_with(default_device.lab, selected_machines={default_device.name})
 
 
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace.KubernetesNamespace.create")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.deploy_links")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.deploy_machines")
-def test_deploy_machine_no_lab(mock_deploy_machines, mock_deploy_links, mock_namespace_create, kubernetes_manager,
-                               default_device):
+def test_deploy_machine_no_lab(kubernetes_manager, default_device):
     default_device.lab = None
 
     with pytest.raises(Exception):
@@ -189,9 +187,7 @@ def test_deploy_link(mock_deploy_links, mock_namespace_create, kubernetes_manage
     mock_deploy_links.assert_called_once_with(default_link.lab, selected_links={default_link.name})
 
 
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace.KubernetesNamespace.create")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.deploy_links")
-def test_deploy_link_no_lab(mock_deploy_links, mock_namespace_create, kubernetes_manager, default_link):
+def test_deploy_link_no_lab(kubernetes_manager, default_link):
     default_link.lab = None
 
     with pytest.raises(Exception):
@@ -207,6 +203,88 @@ def test_update_lab_not_supported(kubernetes_manager, two_device_scenario):
 
 
 #
+# TEST: undeploy_machine
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace.KubernetesNamespace.undeploy")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.undeploy")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.undeploy")
+def test_undeploy_machine(mock_machine_undeploy, mock_link_undeploy, mock_namespace_undeploy,
+                          mock_get_machines_api_objects, kubernetes_manager, default_device, default_link):
+    default_device.add_interface(default_link)
+
+    mock_get_machines_api_objects.return_value = []
+
+    kubernetes_manager.undeploy_machine(default_device)
+
+    mock_machine_undeploy.assert_called_once_with(default_device.lab.hash, selected_machines={default_device.name})
+    mock_link_undeploy.assert_called_once_with(default_device.lab.hash, selected_links={'kathara-a'})
+    mock_namespace_undeploy.assert_called_once_with(lab_hash=default_device.lab.hash)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace.KubernetesNamespace.undeploy")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.undeploy")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.undeploy")
+def test_undeploy_machine_two_machines(mock_machine_undeploy, mock_link_undeploy, mock_namespace_undeploy,
+                                       mock_get_machines_api_objects, kubernetes_manager, two_device_scenario):
+    device_1 = two_device_scenario.get_or_new_machine('pc1')
+    device_2 = two_device_scenario.get_or_new_machine('pc2')
+
+    mock_get_machines_api_objects.return_value = [device_2.api_object]
+
+    kubernetes_manager.undeploy_machine(device_1)
+
+    mock_machine_undeploy.assert_called_with(two_device_scenario.hash, selected_machines={device_1.name})
+    mock_link_undeploy.assert_called_with(two_device_scenario.hash, selected_links={'kathara-b'})
+    assert not mock_namespace_undeploy.called
+
+    mock_get_machines_api_objects.return_value = []
+
+    kubernetes_manager.undeploy_machine(device_2)
+
+    mock_machine_undeploy.assert_called_with(two_device_scenario.hash, selected_machines={device_2.name})
+    mock_link_undeploy.assert_called_with(two_device_scenario.hash, selected_links={'kathara-a'})
+    mock_namespace_undeploy.assert_called_once_with(lab_hash=two_device_scenario.hash)
+
+
+def test_undeploy_machine_no_lab(kubernetes_manager, default_device):
+    default_device.lab = None
+
+    with pytest.raises(Exception):
+        kubernetes_manager.undeploy_machine(default_device)
+
+
+#
+# TEST: undeploy_link
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.undeploy")
+def test_undeploy_link(mock_link_undeploy, mock_get_machines_api_objects, kubernetes_manager, default_link):
+    mock_get_machines_api_objects.return_value = []
+
+    kubernetes_manager.undeploy_link(default_link)
+
+    mock_link_undeploy.assert_called_once_with(default_link.lab.hash, selected_links={'kathara-a'})
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.undeploy")
+def test_undeploy_link_machine_running(mock_link_undeploy, mock_get_machines_api_objects, kubernetes_manager,
+                                       default_link, kubernetes_pod_2):
+    mock_get_machines_api_objects.return_value = [kubernetes_pod_2]
+
+    kubernetes_manager.undeploy_link(default_link)
+
+    assert not mock_link_undeploy.called
+
+
+def test_undeploy_link_no_lab(kubernetes_manager, default_link):
+    with pytest.raises(Exception):
+        kubernetes_manager.undeploy_link(default_link)
+
+
+#
 # TEST: undeploy_lab
 #
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace.KubernetesNamespace.undeploy")
@@ -215,7 +293,7 @@ def test_update_lab_not_supported(kubernetes_manager, two_device_scenario):
 def test_undeploy_lab(mock_undeploy_machine, mock_undeploy_link, mock_namespace_undeploy, kubernetes_manager):
     kubernetes_manager.undeploy_lab('lab_hash')
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines=None)
-    mock_undeploy_link.assert_called_once_with('lab_hash', networks_to_delete=None)
+    mock_undeploy_link.assert_called_once_with('lab_hash', selected_links=None)
     mock_namespace_undeploy.assert_called_once_with(lab_hash='lab_hash')
 
 
@@ -227,14 +305,14 @@ def test_undeploy_lab(mock_undeploy_machine, mock_undeploy_link, mock_namespace_
 def test_undeploy_lab_selected_machines(mock_undeploy_machine, mock_undeploy_link, mock_namespace_undeploy,
                                         mock_get_machines_api_objects, mock_get_links_api_objects, kubernetes_manager,
                                         kubernetes_pod_1, kubernetes_pod_2):
-    mock_get_links_api_objects.return_value = [{'metadata': {'name': 'a'}}, {'metadata': {'name': 'b'}}]
+    mock_get_links_api_objects.return_value = [{'metadata': {'name': 'kathara-a'}}, {'metadata': {'name': 'kathara-b'}}]
     mock_get_machines_api_objects.return_value = [kubernetes_pod_1, kubernetes_pod_2]
 
     kubernetes_manager.undeploy_lab('lab_hash', selected_machines={'pc1'})
     mock_get_links_api_objects.assert_called_once_with(lab_hash='lab_hash')
     mock_get_machines_api_objects.assert_called_once_with(lab_hash='lab_hash')
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines={'pc1'})
-    mock_undeploy_link.assert_called_once_with('lab_hash', networks_to_delete={'b'})
+    mock_undeploy_link.assert_called_once_with('lab_hash', selected_links={'kathara-b'})
     assert not mock_namespace_undeploy.called
 
 

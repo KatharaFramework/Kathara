@@ -108,6 +108,73 @@ class KubernetesManager(IManager):
         """
         raise NotSupportedError("Unable to update a running lab.")
 
+    def undeploy_machine(self, machine: Machine) -> None:
+        """Undeploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        if not machine.lab:
+            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
+
+        machine.lab.hash = machine.lab.hash.lower()
+
+        # Get all current running machines (not Terminating), removing the one that we're undeploying
+        running_machines = [running_machine for running_machine in
+                            self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=machine.lab.hash)
+                            if 'Terminating' not in running_machine.status.phase and
+                            running_machine.metadata.labels["name"] != machine.name]
+
+        # From machines, save a set with all the attached networks (still needed)
+        running_networks = set()
+        for running_machine in running_machines:
+            network_annotation = json.loads(running_machine.metadata.annotations["k8s.v1.cni.cncf.io/networks"])
+            running_networks.update([net['name'] for net in network_annotation])
+
+        # Difference between all networks of the machine to undeploy, and attached networks are the ones to delete
+        machine_networks = {self.k8s_link.get_network_name(x.name) for x in machine.interfaces.values()}
+        networks_to_delete = machine_networks - running_networks
+
+        self.k8s_machine.undeploy(machine.lab.hash, selected_machines={machine.name})
+        self.k8s_link.undeploy(machine.lab.hash, selected_links=networks_to_delete)
+
+        if len(running_machines) <= 0:
+            self.k8s_namespace.undeploy(lab_hash=machine.lab.hash)
+
+    def undeploy_link(self, link: Link) -> None:
+        """Undeploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        if not link.lab:
+            raise Exception("Collision domain `%s` is not associated to a network scenario." % link.name)
+
+        link.lab.hash = link.lab.hash.lower()
+
+        network_name = self.k8s_link.get_network_name(link.name)
+
+        # Get all current running machines (not Terminating)
+        running_machines = [running_machine for running_machine in
+                            self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=link.lab.hash)
+                            if 'Terminating' not in running_machine.status.phase]
+
+        # From machines, save a set with all the attached networks (still needed)
+        running_networks = set()
+        for running_machine in running_machines:
+            network_annotation = json.loads(running_machine.metadata.annotations["k8s.v1.cni.cncf.io/networks"])
+            # If the collision domain to undeploy is still used, do nothing
+            if network_name in [net['name'] for net in network_annotation]:
+                return
+
+        self.k8s_link.undeploy(link.lab.hash, selected_links={network_name})
+
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                      selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
@@ -164,7 +231,7 @@ class KubernetesManager(IManager):
             running_machines = set()
 
         self.k8s_machine.undeploy(lab_hash, selected_machines=selected_machines)
-        self.k8s_link.undeploy(lab_hash, networks_to_delete=networks_to_delete)
+        self.k8s_link.undeploy(lab_hash, selected_links=networks_to_delete)
 
         # If no machines are selected or there are no running machines, undeploy the namespace
         if not selected_machines or len(running_machines - selected_machines) <= 0:

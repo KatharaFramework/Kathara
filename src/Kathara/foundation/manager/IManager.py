@@ -62,6 +62,30 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `update_lab` method.")
 
     @abstractmethod
+    def undeploy_machine(self, machine: Machine) -> None:
+        """Undeploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError("You must implement `undeploy_machine` method.")
+
+    @abstractmethod
+    def undeploy_link(self, link: Link) -> None:
+        """Undeploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError("You must implement `undeploy_link` method.")
+
+    @abstractmethod
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                      selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.

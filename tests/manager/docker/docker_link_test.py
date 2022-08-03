@@ -254,6 +254,27 @@ def test_undeploy_empty_lab(mock_get_links_by_filters, mock_undeploy_link, docke
     assert not mock_undeploy_link.called
 
 
+@mock.patch("docker.models.networks.Network")
+@mock.patch("docker.models.networks.Network")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._undeploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_api_objects_by_filters")
+def test_undeploy_selected_links(mock_get_links_by_filters, mock_undeploy_link, mock_net1, mock_net2, docker_link):
+    lab = Lab("Default scenario")
+    lab.get_or_new_link("A")
+    lab.get_or_new_link("B")
+
+    mock_net1.attrs = {"Labels": {"name": "A"}}
+    mock_net2.attrs = {"Labels": {"name": "B"}}
+
+    mock_get_links_by_filters.return_value = [mock_net1, mock_net2]
+
+    docker_link.undeploy("lab_hash", selected_links={"B"})
+    mock_get_links_by_filters.called_once_with(lab.hash)
+    assert mock_net1.reload.call_count == 0
+    assert mock_net2.reload.call_count == 1
+    assert mock_undeploy_link.call_count == 1
+
+
 #
 # TEST: wipe
 #

@@ -111,19 +111,19 @@ class KubernetesLink(object):
         if link.external:
             logging.warning('External is not supported on Megalos. It will be ignored.')
 
-    def undeploy(self, lab_hash: str, networks_to_delete: Optional[Set] = None) -> None:
+    def undeploy(self, lab_hash: str, selected_links: Optional[Set[str]] = None) -> None:
         """Undeploy all the links of the scenario specified by lab_hash.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
-            networks_to_delete (Set): If specified, delete only the networks that contained.
+            selected_links (Set[str]): If specified, delete only the collision domains contained in the set.
 
         Returns:
             None
         """
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
-        if networks_to_delete is not None and len(networks_to_delete) > 0:
-            networks = [item for item in networks if item["metadata"]["name"] in networks_to_delete]
+        if selected_links is not None and len(selected_links) > 0:
+            networks = [item for item in networks if item["metadata"]["name"] in selected_links]
 
         if len(networks) > 0:
             pool_size = utils.get_pool_size()

@@ -1,7 +1,7 @@
 import logging
 import re
 from multiprocessing.dummy import Pool
-from typing import List, Union, Dict, Generator, Set
+from typing import List, Union, Dict, Generator, Set, Optional
 
 import docker
 import docker.models.networks
@@ -119,16 +119,20 @@ class DockerLink(object):
             logging.debug("External Interfaces required, connecting them...")
             self._attach_external_interfaces(link.external, link.api_object)
 
-    def undeploy(self, lab_hash: str) -> None:
+    def undeploy(self, lab_hash: str, selected_links: Optional[Set[str]] = None) -> None:
         """Undeploy all the collision domains of the scenario specified by lab_hash.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
+            selected_links (Set[str]): If specified, delete only the collision domains contained in the set.
 
         Returns:
             None
         """
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
+        if selected_links is not None and len(selected_links) > 0:
+            networks = [item for item in networks if item.attrs["Labels"]["name"] in selected_links]
+
         for item in networks:
             item.reload()
         networks = [item for item in networks if len(item.containers) <= 0]

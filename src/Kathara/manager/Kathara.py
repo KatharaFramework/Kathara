@@ -88,6 +88,28 @@ class Kathara(IManager):
         """
         self.manager.update_lab(lab)
 
+    def undeploy_machine(self, machine: Machine) -> None:
+        """Undeploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        self.manager.undeploy_machine(machine)
+
+    def undeploy_link(self, link: Link) -> None:
+        """Undeploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        self.manager.undeploy_link(link)
+
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                      selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.

@@ -9,7 +9,6 @@ sys.path.insert(0, './')
 from src.Kathara.manager.docker.DockerManager import DockerManager
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Machine import Machine
-from src.Kathara.model.Link import Link
 from src.Kathara.utils import generate_urlsafe_hash
 from src.Kathara.manager.docker.stats.DockerLinkStats import DockerLinkStats
 from src.Kathara.manager.docker.stats.DockerMachineStats import DockerMachineStats
@@ -85,9 +84,7 @@ def test_deploy_machine(mock_deploy_machines, mock_deploy_links, docker_manager,
     mock_deploy_machines.assert_called_once_with(default_device.lab, selected_machines={default_device.name})
 
 
-@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
-def test_deploy_machine_no_lab(mock_deploy_machines, mock_deploy_links, docker_manager, default_device, default_link):
+def test_deploy_machine_no_lab(docker_manager, default_device):
     default_device.lab = None
 
     with pytest.raises(Exception):
@@ -103,8 +100,7 @@ def test_deploy_link(mock_deploy_links, docker_manager, default_link):
     mock_deploy_links.assert_called_once_with(default_link.lab, selected_links={default_link.name})
 
 
-@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
-def test_deploy_link_no_lab(mock_deploy_links, docker_manager, default_link):
+def test_deploy_link_no_lab(docker_manager, default_link):
     default_link.lab = None
 
     with pytest.raises(Exception):
@@ -147,6 +143,55 @@ def test_update_lab_update_machine(mock_create_link, mock_update_machine, mock_d
     mock_deploy_lab.assert_called_once_with(two_device_scenario, selected_machines={"pc2"})
     assert mock_deploy_lab.call_count == 1
     mock_update_machine.assert_called_once_with(two_device_scenario.machines['pc1'])
+
+
+#
+# TEST: undeploy_machine
+#
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
+def test_undeploy_machine(mock_machine_undeploy, mock_link_undeploy, docker_manager, default_device, default_link):
+    default_device.add_interface(default_link)
+
+    docker_manager.undeploy_machine(default_device)
+
+    mock_machine_undeploy.assert_called_once_with(default_device.lab.hash, selected_machines={default_device.name})
+    mock_link_undeploy.assert_called_once_with(default_device.lab.hash, selected_links={default_link.name})
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
+def test_undeploy_machine_two_machines(mock_machine_undeploy, mock_link_undeploy, docker_manager, two_device_scenario):
+    device_1 = two_device_scenario.get_or_new_machine('pc1')
+    device_1_links = {x.name for x in device_1.interfaces.values()}
+
+    docker_manager.undeploy_machine(device_1)
+
+    mock_machine_undeploy.assert_called_once_with(two_device_scenario.hash, selected_machines={device_1.name})
+    mock_link_undeploy.assert_called_once_with(two_device_scenario.hash, selected_links=device_1_links)
+
+
+def test_undeploy_machine_no_lab(docker_manager, default_device):
+    default_device.lab = None
+
+    with pytest.raises(Exception):
+        docker_manager.undeploy_machine(default_device)
+
+
+#
+# TEST: undeploy_link
+#
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+def test_undeploy_link(mock_link_undeploy, docker_manager, default_link):
+    docker_manager.undeploy_link(default_link)
+    mock_link_undeploy.assert_called_once_with(default_link.lab.hash, selected_links={default_link.name})
+
+
+def test_undeploy_link_no_lab(docker_manager, default_link):
+    default_link.lab = None
+
+    with pytest.raises(Exception):
+        docker_manager.undeploy_link(default_link)
 
 
 #
