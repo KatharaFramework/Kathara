@@ -77,16 +77,17 @@ class Kathara(IManager):
         """
         self.manager.deploy_lab(lab, selected_machines)
 
-    def update_lab(self, lab: Lab) -> None:
-        """Update a running network scenario.
+    def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
+        """Connect a Kathara device to a collision domain.
 
         Args:
-            lab (Kathara.model.Lab): A Kathara network scenario.
+            machine (Kathara.model.Machine): A Kathara machine object.
+            link (Kathara.model.Link): A Kathara collision domain object.
 
         Returns:
             None
         """
-        self.manager.update_lab(lab)
+        self.manager.connect_machine_to_link(machine, link)
 
     def undeploy_machine(self, machine: Machine) -> None:
         """Undeploy a Kathara device.

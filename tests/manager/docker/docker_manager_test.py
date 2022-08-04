@@ -60,6 +60,12 @@ def default_link():
     return Link(Lab("default_scenario"), "A")
 
 
+@pytest.fixture()
+def default_link_b():
+    from src.Kathara.model.Link import Link
+    return Link(Lab("default_scenario"), "B")
+
+
 #
 # TEST: deploy_lab
 #
@@ -108,41 +114,58 @@ def test_deploy_link_no_lab(docker_manager, default_link):
 
 
 #
-# TEST: update_lab
+# TEST: connect_machine_to_link
 #
-@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_lab")
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.update")
-@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.create")
-def test_update_lab_empty_lab(mock_create_link, mock_update_machine, mock_deploy_lab, docker_manager,
-                              two_device_scenario):
-    docker_manager.update_lab(two_device_scenario)
-    links = list(two_device_scenario.links.values())
-    mock_create_link.assert_any_call(links.pop())
-    mock_create_link.assert_any_call(links.pop())
-    assert mock_create_link.call_count == 2
-    assert len(links) == 0
-    machines = list(two_device_scenario.machines.values())
-    mock_deploy_lab.assert_any_call(two_device_scenario, selected_machines={machines.pop().name})
-    mock_deploy_lab.assert_any_call(two_device_scenario, selected_machines={machines.pop().name})
-    assert mock_deploy_lab.call_count == 2
-    assert len(machines) == 0
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_to_link")
+def test_connect_machine_to_link_one_link(mock_connect_to_link_machine, mock_deploy_link, docker_manager,
+                                          default_device, default_link):
+    default_device.add_interface(default_link)
+
+    docker_manager.connect_machine_to_link(default_device, default_link)
+
+    mock_deploy_link.assert_called_once_with(default_link)
+    mock_connect_to_link_machine.assert_called_once_with(default_device, default_link)
 
 
-@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_lab")
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.update")
-@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.create")
-def test_update_lab_update_machine(mock_create_link, mock_update_machine, mock_deploy_lab, docker_manager,
-                                   two_device_scenario):
-    two_device_scenario.machines['pc1'].api_object = Mock()
-    docker_manager.update_lab(two_device_scenario)
-    links = list(two_device_scenario.links.values())
-    mock_create_link.assert_any_call(links.pop())
-    mock_create_link.assert_any_call(links.pop())
-    assert mock_create_link.call_count == 2
-    assert len(links) == 0
-    mock_deploy_lab.assert_called_once_with(two_device_scenario, selected_machines={"pc2"})
-    assert mock_deploy_lab.call_count == 1
-    mock_update_machine.assert_called_once_with(two_device_scenario.machines['pc1'])
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_to_link")
+def test_connect_machine_to_link_two_links(mock_connect_to_link_machine, mock_deploy_link, docker_manager,
+                                           default_device, default_link, default_link_b):
+    default_device.add_interface(default_link)
+    default_device.add_interface(default_link_b)
+
+    docker_manager.connect_machine_to_link(default_device, default_link)
+
+    mock_deploy_link.assert_called_with(default_link)
+    mock_connect_to_link_machine.assert_called_with(default_device, default_link)
+
+    docker_manager.connect_machine_to_link(default_device, default_link_b)
+
+    mock_deploy_link.assert_called_with(default_link_b)
+    mock_connect_to_link_machine.assert_called_with(default_device, default_link_b)
+
+    assert mock_deploy_link.call_count == 2
+    assert mock_connect_to_link_machine.call_count == 2
+
+
+def test_connect_machine_to_link_no_machine_lab(docker_manager, default_device, default_link):
+    default_device.lab = None
+
+    with pytest.raises(Exception):
+        docker_manager.connect_machine_to_link(default_device, default_link)
+
+
+def test_connect_machine_to_link_no_link_lab(docker_manager, default_device, default_link):
+    default_link.lab = None
+
+    with pytest.raises(Exception):
+        docker_manager.connect_machine_to_link(default_device, default_link)
+
+
+def test_connect_machine_to_link_machine_not_connected_to_link(docker_manager, default_device, default_link):
+    with pytest.raises(Exception):
+        docker_manager.connect_machine_to_link(default_device, default_link)
 
 
 #

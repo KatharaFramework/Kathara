@@ -195,11 +195,11 @@ def test_deploy_link_no_lab(kubernetes_manager, default_link):
 
 
 #
-# TEST: update_lab
+# TEST: connect_machine_to_link
 #
-def test_update_lab_not_supported(kubernetes_manager, two_device_scenario):
+def test_connect_machine_to_link_not_supported(kubernetes_manager, default_device, default_link):
     with pytest.raises(NotSupportedError):
-        kubernetes_manager.update_lab(two_device_scenario)
+        kubernetes_manager.connect_machine_to_link(default_device, default_link)
 
 
 #

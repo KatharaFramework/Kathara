@@ -18,7 +18,7 @@ from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
-from ...model.Link import Link, BRIDGE_LINK_NAME
+from ...model.Link import Link
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
 from ...utils import pack_files_for_tar
@@ -136,30 +136,24 @@ class DockerManager(IManager):
         self.docker_machine.deploy_machines(lab, selected_machines=selected_machines)
 
     @privileged
-    def update_lab(self, lab: Lab) -> None:
-        """Update a running network scenario.
+    def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
+        """Connect a Kathara device to a collision domain.
 
         Args:
-            lab (Kathara.model.Lab): A Kathara network scenario.
+            machine (Kathara.model.Machine): A Kathara machine object.
+            link (Kathara.model.Link): A Kathara collision domain object.
 
         Returns:
             None
         """
-        # Deploy new links (if present)
-        for (_, link) in lab.links.items():
-            if link.name == BRIDGE_LINK_NAME:
-                continue
+        if not machine.lab:
+            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
 
-            self.docker_link.create(link)
+        if machine.name not in link.machines:
+            raise Exception("Machine `%s` is not connected to collision domain `%s`." % (machine.name, link.name))
 
-        # Update lab devices.
-        for (_, machine) in lab.machines.items():
-            # Device is not deployed, deploy it
-            if machine.api_object is None:
-                self.deploy_lab(lab, selected_machines={machine.name})
-            else:
-                # Device already deployed, update it
-                self.docker_machine.update(machine)
+        self.deploy_link(link)
+        self.docker_machine.connect_to_link(machine, link)
 
     @privileged
     def undeploy_machine(self, machine: Machine) -> None:

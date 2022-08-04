@@ -97,16 +97,17 @@ class KubernetesManager(IManager):
             else:
                 raise e
 
-    def update_lab(self, lab: Lab) -> None:
-        """Update a running network scenario.
+    def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
+        """Connect a Kathara device to a collision domain.
 
         Args:
-            lab (Kathara.model.Lab): A Kathara network scenario.
+            machine (Kathara.model.Machine): A Kathara machine object.
+            link (Kathara.model.Link): A Kathara collision domain object.
 
-        Raises:
-            NotSupportedError: "Unable to update a running lab."
+        Returns:
+            None
         """
-        raise NotSupportedError("Unable to update a running lab.")
+        raise NotSupportedError("Unable to update a running device.")
 
     def undeploy_machine(self, machine: Machine) -> None:
         """Undeploy a Kathara device.

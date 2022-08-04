@@ -50,16 +50,17 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `deploy_lab` method.")
 
     @abstractmethod
-    def update_lab(self, lab: Lab) -> None:
-        """Update a running network scenario.
+    def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
+        """Connect a Kathara device to a collision domain.
 
         Args:
-            lab (Kathara.model.Lab): A Kathara network scenario.
+            machine (Kathara.model.Machine): A Kathara machine object.
+            link (Kathara.model.Link): A Kathara collision domain object.
 
         Returns:
             None
         """
-        raise NotImplementedError("You must implement `update_lab` method.")
+        raise NotImplementedError("You must implement `connect_machine_to_link` method.")
 
     @abstractmethod
     def undeploy_machine(self, machine: Machine) -> None:
