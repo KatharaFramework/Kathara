@@ -42,6 +42,10 @@ class KubernetesManager(IManager):
         Returns:
             None
         """
+        if selected_machines and not lab.find_machines(selected_machines):
+            machines_not_in_lab = selected_machines - set(lab.machines.keys())
+            raise Exception(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
+
         # Kubernetes needs only lowercase letters for resources.
         # We force the hash to be lowercase
         lab.hash = lab.hash.lower()
