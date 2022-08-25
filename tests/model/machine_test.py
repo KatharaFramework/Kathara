@@ -61,6 +61,41 @@ def test_add_two_interfaces_on_same_cd(default_device: Machine):
         default_device.add_interface(link)
 
 
+def test_remove_interface(default_device: Machine):
+    link = Link(default_device.lab, "A")
+    default_device.add_interface(link)
+    assert len(default_device.interfaces) == 1
+    assert default_device.interfaces[0].name == "A"
+    assert default_device.name in link.machines
+    default_device.remove_interface(link)
+    assert len(default_device.interfaces) == 0
+    assert len(link.machines.keys()) == 0
+
+
+def test_remove_interface_one(default_device: Machine):
+    link_a = Link(default_device.lab, "A")
+    link_b = Link(default_device.lab, "B")
+    link_c = Link(default_device.lab, "C")
+    default_device.add_interface(link_a)
+    default_device.add_interface(link_b)
+    default_device.add_interface(link_c)
+    assert len(default_device.interfaces) == 3
+    assert default_device.interfaces[0].name == "A"
+    assert default_device.interfaces[1].name == "B"
+    assert default_device.interfaces[2].name == "C"
+    default_device.remove_interface(link_a)
+    assert len(default_device.interfaces) == 2
+    assert default_device.interfaces[1].name == "B"
+    assert default_device.interfaces[2].name == "C"
+    assert default_device.name not in link_a.machines
+
+
+def test_remove_interface_exception(default_device: Machine):
+    link = Link(default_device.lab, "A")
+    with pytest.raises(Exception):
+        default_device.remove_interface(link)
+
+
 def test_add_meta_sysctl(default_device: Machine):
     default_device.add_meta("sysctl", "net.ipv4.tcp_syncookies=1")
     assert default_device.meta['sysctls']['net.ipv4.tcp_syncookies'] == 1

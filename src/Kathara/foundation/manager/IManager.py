@@ -62,6 +62,18 @@ class IManager(ABC):
         """
         raise NotImplementedError("You must implement `connect_machine_to_link` method.")
 
+    def change_link(self, machine: Machine, src_link: Link, dst_link: Link) -> None:
+        """Disconnect a Kathara device from a collision domain and connect it to another one.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+            src_link (Kathara.model.Link): The Kathara collision domain from which disconnect the device.
+            dst_link (Kathara.model.Link): The Kathara collision domain to which connect the device.
+        Returns:
+            None
+        """
+        raise NotImplementedError("You must implement `change_link` method.")
+
     @abstractmethod
     def undeploy_machine(self, machine: Machine) -> None:
         """Undeploy a Kathara device.

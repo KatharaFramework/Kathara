@@ -76,5 +76,5 @@ class LconfigCommand(Command):
 
         for eth in args['eths']:
             logging.info("Adding interface to device `%s` for collision domain `%s`..." % (machine_name, eth))
-            (_, link) = lab.connect_machine_to_link(machine_name, eth)
+            link = lab.get_or_new_link(eth)
             Kathara.get_instance().connect_machine_to_link(device, link)

@@ -32,6 +32,7 @@ def default_device(mock_docker_container):
     device.add_meta("image", "kathara/test")
     device.add_meta("bridged", False)
     device.api_object = mock_docker_container
+    device.api_object.attrs = {"NetworkSettings": {"Networks": []}}
     return device
 
 
@@ -275,6 +276,24 @@ def test_connect_to_link(mock_get_machines_api_objects_by_filters, docker_machin
     assert not default_link.api_object.connect.called
     default_link_b.api_object.connect.assert_called_once()
 
+
+#
+# TEST: disconnect_to_link
+#
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+def test_disconnect_from_link(mock_get_machines_api_objects_by_filters, docker_machine, default_device, default_link,
+                              default_link_b):
+    mock_get_machines_api_objects_by_filters.return_value = default_device.api_object
+    default_device.api_object.connect.return_value = None
+    default_device.api_object.attrs["NetworkSettings"] = {}
+    default_device.api_object.attrs["NetworkSettings"]["Networks"] = ["A", "B"]
+    default_link.api_object.name = "A"
+    default_link_b.api_object.name = "B"
+    default_device.add_interface(default_link)
+    default_device.add_interface(default_link_b)
+    docker_machine.disconnect_from_link(default_device, default_link_b)
+    assert not default_link.api_object.disconnect.called
+    default_link_b.api_object.disconnect.assert_called_once()
 
 #
 # TEST: undeploy

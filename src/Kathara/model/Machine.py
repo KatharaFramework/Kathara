@@ -114,6 +114,24 @@ class Machine(object):
         self.interfaces[number] = link
         link.machines[self.name] = self
 
+    def remove_interface(self, link: 'LinkPackage.Link') -> None:
+        """Disconnect the device from the specified collision domain.
+
+        Args:
+            link (Kathara.model.Link): The Kathara collision domain to disconnect.
+
+        Returns:
+            None
+
+        Raises:
+            Exception: The interface number specified is already used on the device.
+        """
+        if self.name not in link.machines:
+            raise Exception("Device `%s` is not connected to collision domain `%s`" % (self.name, link.name))
+
+        self.interfaces = collections.OrderedDict([x for x in self.interfaces.items() if x[1].name != link.name])
+        link.machines.pop(self.name)
+
     def add_meta(self, name: str, value: Any) -> None:
         """Add a meta property to the device.
 

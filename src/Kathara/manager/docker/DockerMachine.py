@@ -301,6 +301,21 @@ class DockerMachine(object):
             link.api_object.connect(machine.api_object)
 
     @staticmethod
+    def disconnect_from_link(machine: Machine, link: Link) -> None:
+        """Disconnect the Docker container representing the machine from a specified collision domain.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara device.
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
+        if link.api_object.name in attached_networks:
+            link.api_object.disconnect(machine.api_object)
+
+    @staticmethod
     def start(machine: Machine) -> None:
         """Start the Docker container representing the device.
 
