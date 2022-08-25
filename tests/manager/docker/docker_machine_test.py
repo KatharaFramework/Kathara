@@ -259,11 +259,7 @@ def test_deploy_machines(mock_deploy_and_start, docker_machine):
 #
 # TEST: connect_to_link
 #
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
-def test_connect_to_link(mock_get_machines_api_objects_by_filters, docker_machine, default_device, default_link,
-                         default_link_b):
-    mock_get_machines_api_objects_by_filters.return_value = default_device.api_object
-    default_device.api_object.connect.return_value = None
+def test_connect_to_link(docker_machine, default_device, default_link, default_link_b):
     default_device.api_object.attrs["NetworkSettings"] = {}
     default_device.api_object.attrs["NetworkSettings"]["Networks"] = ["A"]
     default_link.api_object.name = "A"
@@ -278,22 +274,21 @@ def test_connect_to_link(mock_get_machines_api_objects_by_filters, docker_machin
 
 
 #
-# TEST: disconnect_to_link
+# TEST: disconnect_from_link
 #
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
-def test_disconnect_from_link(mock_get_machines_api_objects_by_filters, docker_machine, default_device, default_link,
-                              default_link_b):
-    mock_get_machines_api_objects_by_filters.return_value = default_device.api_object
-    default_device.api_object.connect.return_value = None
+def test_disconnect_from_link(docker_machine, default_device, default_link, default_link_b):
     default_device.api_object.attrs["NetworkSettings"] = {}
     default_device.api_object.attrs["NetworkSettings"]["Networks"] = ["A", "B"]
     default_link.api_object.name = "A"
     default_link_b.api_object.name = "B"
     default_device.add_interface(default_link)
     default_device.add_interface(default_link_b)
+
     docker_machine.disconnect_from_link(default_device, default_link_b)
+    
     assert not default_link.api_object.disconnect.called
     default_link_b.api_object.disconnect.assert_called_once()
+
 
 #
 # TEST: undeploy

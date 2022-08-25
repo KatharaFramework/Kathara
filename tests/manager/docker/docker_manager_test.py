@@ -165,15 +165,15 @@ def test_connect_machine_to_link_no_link_lab(docker_manager, default_device, def
 
 
 #
-# TEST: change_link
+# TEST: change_machine_link
 #
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.undeploy_link")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.disconnect_from_link")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_to_link")
-def test_change_link(mock_connect_to_link, mock_disconnect_from_link, mock_undeploy_link,
-                     docker_manager, default_device, default_link, default_link_b):
+def test_change_machine_link(mock_connect_to_link, mock_disconnect_from_link, mock_undeploy_link,
+                             docker_manager, default_device, default_link, default_link_b):
     default_device.add_interface(default_link)
-    docker_manager.change_link(default_device, default_link, default_link_b)
+    docker_manager.change_machine_link(default_device, default_link, default_link_b)
     assert default_link not in default_device.interfaces.values()
     assert default_link_b == default_device.interfaces[1]
     mock_connect_to_link.assert_called_once_with(default_device, default_link_b)
@@ -184,11 +184,11 @@ def test_change_link(mock_connect_to_link, mock_disconnect_from_link, mock_undep
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.undeploy_link")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.disconnect_from_link")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_to_link")
-def test_change_link(mock_connect_to_link, mock_disconnect_from_link, mock_undeploy_link,
-                     docker_manager, default_device, default_link, default_link_b, default_link_c):
+def test_change_machine_link_two_ifaces(mock_connect_to_link, mock_disconnect_from_link, mock_undeploy_link,
+                                        docker_manager, default_device, default_link, default_link_b, default_link_c):
     default_device.add_interface(default_link)
     default_device.add_interface(default_link_b)
-    docker_manager.change_link(default_device, default_link, default_link_c)
+    docker_manager.change_machine_link(default_device, default_link, default_link_c)
     assert default_link not in default_device.interfaces.values()
     assert default_link_b == default_device.interfaces[1]
     assert default_link_c == default_device.interfaces[2]
@@ -200,12 +200,12 @@ def test_change_link(mock_connect_to_link, mock_disconnect_from_link, mock_undep
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.undeploy_link")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.disconnect_from_link")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_to_link")
-def test_change_link_machine_not_in_lab(mock_connect_to_link, mock_disconnect_from_link, mock_undeploy_link,
-                                        docker_manager, default_device, default_link, default_link_b):
+def test_change_machine_link_machine_not_in_lab(mock_connect_to_link, mock_disconnect_from_link, mock_undeploy_link,
+                                                docker_manager, default_device, default_link, default_link_b):
     default_device.lab = None
 
     with pytest.raises(Exception):
-        docker_manager.change_link(default_device, default_link, default_link_b)
+        docker_manager.change_machine_link(default_device, default_link, default_link_b)
 
     assert not mock_connect_to_link.called
     assert not mock_disconnect_from_link.called
@@ -215,10 +215,42 @@ def test_change_link_machine_not_in_lab(mock_connect_to_link, mock_disconnect_fr
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.undeploy_link")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.disconnect_from_link")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_to_link")
-def test_change_link_machine_not_attached(mock_connect_to_link, mock_disconnect_from_link, mock_undeploy_link,
-                                          docker_manager, default_device, default_link, default_link_b):
+def test_change_machine_link_machine_not_attached(mock_connect_to_link, mock_disconnect_from_link, mock_undeploy_link,
+                                                  docker_manager, default_device, default_link, default_link_b):
     with pytest.raises(Exception):
-        docker_manager.change_link(default_device, default_link, default_link_b)
+        docker_manager.change_machine_link(default_device, default_link, default_link_b)
+
+    assert not mock_connect_to_link.called
+    assert not mock_disconnect_from_link.called
+    assert not mock_undeploy_link.called
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.undeploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.disconnect_from_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_to_link")
+def test_change_machine_link_machine_already_attached(mock_connect_to_link, mock_disconnect_from_link,
+                                                      mock_undeploy_link, docker_manager, default_device, default_link,
+                                                      default_link_b):
+    default_device.add_interface(default_link)
+    default_device.add_interface(default_link_b)
+
+    with pytest.raises(Exception):
+        docker_manager.change_machine_link(default_device, default_link, default_link_b)
+
+    assert not mock_connect_to_link.called
+    assert not mock_disconnect_from_link.called
+    assert not mock_undeploy_link.called
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.undeploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.disconnect_from_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_to_link")
+def test_change_machine_link_machine_same_cd(mock_connect_to_link, mock_disconnect_from_link, mock_undeploy_link,
+                                             docker_manager, default_device, default_link):
+    default_device.add_interface(default_link)
+
+    with pytest.raises(Exception):
+        docker_manager.change_machine_link(default_device, default_link, default_link)
 
     assert not mock_connect_to_link.called
     assert not mock_disconnect_from_link.called

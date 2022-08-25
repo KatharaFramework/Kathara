@@ -312,6 +312,7 @@ class DockerMachine(object):
             None
         """
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
+        
         if link.api_object.name in attached_networks:
             link.api_object.disconnect(machine.api_object)
 

@@ -203,6 +203,14 @@ def test_connect_machine_to_link_not_supported(kubernetes_manager, default_devic
 
 
 #
+# TEST: change_machine_link
+#
+def test_change_machine_link_not_supported(kubernetes_manager, default_device, default_link):
+    with pytest.raises(NotSupportedError):
+        kubernetes_manager.change_machine_link(default_device, default_link, default_link)
+
+
+#
 # TEST: undeploy_machine
 #
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")

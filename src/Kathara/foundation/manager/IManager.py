@@ -62,7 +62,7 @@ class IManager(ABC):
         """
         raise NotImplementedError("You must implement `connect_machine_to_link` method.")
 
-    def change_link(self, machine: Machine, src_link: Link, dst_link: Link) -> None:
+    def change_machine_link(self, machine: Machine, src_link: Link, dst_link: Link) -> None:
         """Disconnect a Kathara device from a collision domain and connect it to another one.
 
         Args:
@@ -72,7 +72,7 @@ class IManager(ABC):
         Returns:
             None
         """
-        raise NotImplementedError("You must implement `change_link` method.")
+        raise NotImplementedError("You must implement `change_machine_link` method.")
 
     @abstractmethod
     def undeploy_machine(self, machine: Machine) -> None:

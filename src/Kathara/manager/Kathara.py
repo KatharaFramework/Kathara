@@ -89,7 +89,7 @@ class Kathara(IManager):
         """
         self.manager.connect_machine_to_link(machine, link)
 
-    def change_link(self, machine: Machine, src_link: Link, dst_link: Link) -> None:
+    def change_machine_link(self, machine: Machine, src_link: Link, dst_link: Link) -> None:
         """Disconnect a Kathara device from a collision domain and connect it to another one.
 
         Args:
@@ -99,7 +99,7 @@ class Kathara(IManager):
         Returns:
             None
         """
-        self.manager.change_link(machine, src_link, dst_link)
+        self.manager.change_machine_link(machine, src_link, dst_link)
 
     def undeploy_machine(self, machine: Machine) -> None:
         """Undeploy a Kathara device.

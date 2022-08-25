@@ -108,7 +108,7 @@ class Machine(object):
 
         if self.name in link.machines:
             raise MachineCollisionDomainConflictError(
-                "Device `%s` is already connected to collision domain `%s`" % (self.name, link.name)
+                "Device `%s` is already connected to collision domain `%s`." % (self.name, link.name)
             )
 
         self.interfaces[number] = link
@@ -127,7 +127,7 @@ class Machine(object):
             Exception: The interface number specified is already used on the device.
         """
         if self.name not in link.machines:
-            raise Exception("Device `%s` is not connected to collision domain `%s`" % (self.name, link.name))
+            raise Exception("Device `%s` is not connected to collision domain `%s`." % (self.name, link.name))
 
         self.interfaces = collections.OrderedDict([x for x in self.interfaces.items() if x[1].name != link.name])
         link.machines.pop(self.name)
