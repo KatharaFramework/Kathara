@@ -179,38 +179,6 @@ class DockerManager(IManager):
         self.undeploy_link(link)
 
     @privileged
-    def swap_machine_link(self, machine: Machine, src_link: Link, dst_link: Link) -> None:
-        """Disconnect a Kathara device from a collision domain and connect it to another one.
-
-        Args:
-            machine (Kathara.model.Machine): A Kathara machine object.
-            src_link (Kathara.model.Link): The Kathara collision domain from which disconnect the device.
-            dst_link (Kathara.model.Link): The Kathara collision domain to which connect the device.
-        Returns:
-            None
-        """
-        if not machine.lab:
-            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
-
-        if src_link == dst_link:
-            raise Exception("Source and Destination collision domains are the same!")
-
-        if machine.name not in src_link.machines:
-            raise Exception("Machine `%s` is not connected to collision domain `%s`." % (machine.name, src_link.name))
-
-        if machine.name in dst_link.machines:
-            raise Exception(
-                "Machine `%s` is already connected to collision domain `%s`." % (machine.name, dst_link.name)
-            )
-
-        self.connect_machine_to_link(machine, dst_link)
-
-        machine.remove_interface(src_link)
-
-        self.docker_machine.disconnect_from_link(machine, src_link)
-        self.undeploy_link(src_link)
-
-    @privileged
     def undeploy_machine(self, machine: Machine) -> None:
         """Undeploy a Kathara device.
 
@@ -401,7 +369,7 @@ class DockerManager(IManager):
         if containers:
             return containers.pop()
 
-        raise Exception(f"Device {machine_name} not found.")
+        raise Exception(f"Device `{machine_name}` not found.")
 
     def get_machines_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
             List[docker.models.containers.Container]:
@@ -453,7 +421,7 @@ class DockerManager(IManager):
         if networks:
             return networks.pop()
 
-        raise Exception(f"Collision Domain {link_name} not found.")
+        raise Exception(f"Collision Domain `{link_name}` not found.")
 
     def get_links_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
             List[docker.models.networks.Network]:

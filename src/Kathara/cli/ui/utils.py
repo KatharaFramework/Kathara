@@ -1,4 +1,6 @@
+import argparse
 import logging
+import re
 import subprocess
 import sys
 from datetime import datetime
@@ -136,3 +138,20 @@ def open_machine_terminal(machine) -> None:
                 terminal_app.do_script(complete_osx_command)
 
     utils.exec_by_platform(unix_connect, windows_connect, osx_connect)
+
+
+# Types for argparse
+def alphanumeric(value, pat=re.compile(r"^\w+$")):
+    if not pat.match(value):
+        raise argparse.ArgumentTypeError("invalid alphanumeric value")
+
+    return value
+
+
+def colon_separated(value):
+    try:
+        (v1, v2) = value.split(':')
+    except ValueError:
+        raise argparse.ArgumentTypeError("invalid colon-separated value: %s" % value)
+
+    return v1, v2

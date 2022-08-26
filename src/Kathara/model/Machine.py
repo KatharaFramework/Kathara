@@ -129,7 +129,9 @@ class Machine(object):
         if self.name not in link.machines:
             raise Exception("Device `%s` is not connected to collision domain `%s`." % (self.name, link.name))
 
-        self.interfaces = collections.OrderedDict([x for x in self.interfaces.items() if x[1].name != link.name])
+        self.interfaces = collections.OrderedDict(
+            map(lambda x: x if x[1] is not None and x[1].name != link.name else (x[0], None), self.interfaces.items())
+        )
         link.machines.pop(self.name)
 
     def add_meta(self, name: str, value: Any) -> None:
@@ -453,7 +455,8 @@ class Machine(object):
         if self.interfaces:
             formatted_machine += "\nInterfaces: "
             for (iface_num, link) in self.interfaces.items():
-                formatted_machine += f"\n\t- {iface_num}: {link.name}"
+                if link:
+                    formatted_machine += f"\n\t- {iface_num}: {link.name}"
 
         formatted_machine += f"\nBridged Connection: {self.meta['bridged']}"
 
