@@ -157,7 +157,29 @@ class DockerManager(IManager):
         self.deploy_link(link)
         self.docker_machine.connect_to_link(machine, link)
 
-    def change_machine_link(self, machine: Machine, src_link: Link, dst_link: Link) -> None:
+    @privileged
+    def disconnect_machine_from_link(self, machine: Machine, link: Link) -> None:
+        """Disconnect a Kathara device from a collision domain.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+            link (Kathara.model.Link): The Kathara collision domain from which disconnect the device.
+        Returns:
+            None
+        """
+        if not machine.lab:
+            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
+
+        if machine.name not in link.machines:
+            raise Exception("Machine `%s` is not connected to collision domain `%s`." % (machine.name, link.name))
+
+        machine.remove_interface(link)
+
+        self.docker_machine.disconnect_from_link(machine, link)
+        self.undeploy_link(link)
+
+    @privileged
+    def swap_machine_link(self, machine: Machine, src_link: Link, dst_link: Link) -> None:
         """Disconnect a Kathara device from a collision domain and connect it to another one.
 
         Args:

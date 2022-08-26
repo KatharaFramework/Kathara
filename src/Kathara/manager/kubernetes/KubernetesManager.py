@@ -109,7 +109,18 @@ class KubernetesManager(IManager):
         """
         raise NotSupportedError("Unable to update a running device.")
 
-    def change_machine_link(self, machine: Machine, src_link: Link, dst_link: Link) -> None:
+    def disconnect_machine_from_link(self, machine: Machine, link: Link) -> None:
+        """Disconnect a Kathara device from a collision domain.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+            link (Kathara.model.Link): The Kathara collision domain from which disconnect the device.
+        Returns:
+            None
+        """
+        raise NotSupportedError("Unable to update a running device.")
+
+    def swap_machine_link(self, machine: Machine, src_link: Link, dst_link: Link) -> None:
         """Disconnect a Kathara device from a collision domain and connect it to another one.
 
         Args:
