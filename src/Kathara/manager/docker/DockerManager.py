@@ -442,6 +442,81 @@ class DockerManager(IManager):
         return self.docker_link.get_links_api_objects_by_filters(lab_hash=lab_hash, user=user_name)
 
     @privileged
+    def get_lab_from_api(self, lab_hash: str = None, lab_name: str = None) -> Lab:
+        """Return the specified Kathara network scenario building it from API objects.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+
+        Returns:
+            Lab: The built network scenario.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
+        """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            reconstructed_lab = Lab(lab_name)
+        else:
+            reconstructed_lab = Lab("reconstructed_lab")
+            reconstructed_lab.hash = lab_hash
+
+        running_containers = self.get_machines_api_objects(lab_hash=reconstructed_lab.hash)
+
+        deployed_networks = dict(
+            map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=reconstructed_lab.hash)))
+
+        for container in running_containers:
+            container.reload()
+            device = reconstructed_lab.get_or_new_machine(container.labels["name"])
+            device.api_object = container
+
+            device.add_meta("privileged", container.attrs["HostConfig"]["Privileged"])
+            device.add_meta("image", container.attrs["Config"]["Image"])
+            device.add_meta("shell", container.attrs["Config"]["Labels"]["shell"])
+
+            if container.attrs['HostConfig']['Memory'] > 0:
+                device.add_meta("mem", f"{int(container.attrs['HostConfig']['Memory'] / (1024 ** 2))}M")
+
+            if container.attrs["HostConfig"]["NanoCpus"] > 0:
+                device.add_meta("cpu", container.attrs["HostConfig"]["NanoCpus"] / 1000000000)
+
+            if container.attrs['HostConfig']['PortBindings']:
+                for port_info, port_data in container.attrs['HostConfig']['PortBindings'].items():
+                    (guest_port, protocol) = port_info.split('/')
+                    host_port = port_data[0]["HostPort"]
+                    device.meta["ports"][(int(host_port), protocol)] = int(guest_port)
+
+            for env in container.attrs["Config"]["Env"]:
+                device.add_meta("env", env)
+
+            device.meta["sysctls"] = container.attrs["HostConfig"]["Sysctls"]
+
+            for network_name in container.attrs["NetworkSettings"]["Networks"]:
+                if network_name == "bridge":
+                    device.add_meta("bridged", True)
+                    continue
+
+                network = deployed_networks[network_name]
+                link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
+                link.api_object = network
+                device.add_interface(link)
+
+        return reconstructed_lab
+
+    @privileged
+    def update_lab_from_api(self, lab: Lab) -> None:
+        """Update the passed network scenario from API objects.
+
+        Args:
+            lab (str): The network scenario to update.
+        """
+        pass
+
+    @privileged
     def get_machines_stats(self, lab_hash: str = None, lab_name: str = None, machine_name: str = None,
                            all_users: bool = False) -> Generator[Dict[str, DockerMachineStats], None, None]:
         """Return information about the running devices.

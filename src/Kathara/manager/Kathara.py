@@ -264,6 +264,29 @@ class Kathara(IManager):
         """
         return self.manager.get_links_api_objects(lab_hash, lab_name, all_users)
 
+    def get_lab_from_api(self, lab_hash: str = None, lab_name: str = None) -> Lab:
+        """Return the specified Kathara network scenario building it from API objects.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+
+        Returns:
+            Lab: The built network scenario.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
+        """
+        return self.manager.get_lab_from_api(lab_hash, lab_name)
+
+    def update_lab_from_api(self, lab: Lab) -> None:
+        """Update the passed network scenario from API objects.
+
+        Args:
+            lab (str): The network scenario to update.
+        """
+        self.manager.update_lab_from_api(lab)
+
     def get_machines_stats(self, lab_hash: str = None, lab_name: str = None, machine_name: str = None,
                            all_users: bool = False) -> Generator[Dict[str, IMachineStats], None, None]:
         """Return information about the running devices.
