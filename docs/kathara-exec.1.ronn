@@ -18,10 +18,10 @@ Execute a command in the Kathara device DEVICE_NAME.
     Show an help message and exit.
 
 * `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
-    Specify the folder containing the lab.
+    Specify the folder containing the network scenario.
 
-    Execute the specified command in a Kathara device belonging to a lab that is located inside DIRECTORY.  
-	If no `-d` option is provided, assume the lab is located in the current directory.
+    Execute the specified command in a Kathara device belonging to a network scenario that is located inside DIRECTORY.  
+	If no `-d` option is provided, assume the network scenario is located in the current directory.
 	This option cannot be used in conjuction with `-v` or `--vmachine`.
 
 * `-v`, `--vmachine`:
@@ -49,7 +49,7 @@ Execute the command ping into a device called `pc1`, started with `kathara-vstar
 
 	kathara exec as1r1 "ping 127.0.0.1"
 
-Execute the command ping into a device called `as1r1` belonging to a lab located in current folder and started with `kathara-lstart`(1).
+Execute the command ping into a device called `as1r1` belonging to a network scenario located in current folder and started with `kathara-lstart`(1).
 
 m4_include(footer.txt)
 

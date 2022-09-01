@@ -1,5 +1,5 @@
 m4_changequote()
-kathara-lclean(1) -- Stop a Kathara lab
+kathara-lclean(1) -- Stop a Kathara network scenario
 =============================================
 
 ## SYNOPSIS
@@ -8,8 +8,8 @@ kathara-lclean(1) -- Stop a Kathara lab
 
 ## DESCRIPTION
 
-Gracefully shut down a running lab.
-By default, stops all the devices of the lab. If a list of <DEVICE_NAME>s is provided, then only devices with a matching name and that are part of the lab will be halted. 
+Gracefully shut down a running network scenario.
+By default, stops all the devices of the network scenario. If a list of <DEVICE_NAME>s is provided, then only devices with a matching name and that are part of the network scenario will be halted. 
 
 ## OPTIONS
 
@@ -17,13 +17,13 @@ By default, stops all the devices of the lab. If a list of <DEVICE_NAME>s is pro
     Show an help message and exit.
 
 * `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
-	Specify the folder containing the lab.
+	Specify the folder containing the network scenario.
 
-	Cleans the Kathara lab that is located inside <DIRECTORY>.  
-	If no `-d` option is provided, assume the lab is located in the current directory.
+	Cleans the Kathara network scenario that is located inside <DIRECTORY>.  
+	If no `-d` option is provided, assume the network scenario is located in the current directory.
 
 * `DEVICE_NAME`:
-    A list of device names. Instead of shutting down the whole lab, only specified devices are stopped.
+    A list of device names. Instead of shutting down the whole network scenario, only specified devices are stopped.
 
 m4_include(footer.txt)
 

@@ -37,27 +37,27 @@ class LtestCommand(Command):
         self.parser.add_argument(
             '-d', '--directory',
             required=False,
-            help='Specify the folder containing the lab.'
+            help='Specify the folder containing the network scenario.'
         )
         self.parser.add_argument(
             '-R', '--rebuild-signature',
             dest="rebuild_signature",
             required=False,
             action='store_true',
-            help='Force generating a new signature for the lab, even if one already exists. '
+            help='Force generating a new signature for the network scenario, even if one already exists. '
                  'Overwrites any existing signature.'
         )
         self.parser.add_argument(
             '--wait',
             required=False,
             metavar='MINUTES',
-            help='Minutes to wait from lab startup before running the tests (can be a decimal number).'
+            help='Minutes to wait from network scenario startup before running the tests (can be a decimal number).'
         )
         self.parser.add_argument(
             '--verify',
             required=False,
             choices=['builtin', 'user', 'both'],
-            help='Compares current lab state with stored signature.'
+            help='Compares current network scenario state with stored signature.'
         )
 
     def run(self, current_path: str, argv: List[str]) -> None:
@@ -72,7 +72,7 @@ class LtestCommand(Command):
             signature_test_path = os.path.join(lab_path, "_test", "signature")
 
             if os.path.exists(signature_test_path) and not args['rebuild_signature']:
-                logging.error("Signature for current lab already exists. Exiting...")
+                logging.error("Signature for current network scenario already exists. Exiting...")
                 sys.exit(1)
 
         # Tests run without terminals, no shared and /hosthome dirs.

@@ -109,11 +109,31 @@ class Machine(object):
 
         if self.name in link.machines:
             raise MachineCollisionDomainConflictError(
-                "Device `%s` is already connected to collision domain `%s`" % (self.name, link.name)
+                "Device `%s` is already connected to collision domain `%s`." % (self.name, link.name)
             )
 
         self.interfaces[number] = link
         link.machines[self.name] = self
+
+    def remove_interface(self, link: 'LinkPackage.Link') -> None:
+        """Disconnect the device from the specified collision domain.
+
+        Args:
+            link (Kathara.model.Link): The Kathara collision domain to disconnect.
+
+        Returns:
+            None
+
+        Raises:
+            Exception: The interface number specified is already used on the device.
+        """
+        if self.name not in link.machines:
+            raise Exception("Device `%s` is not connected to collision domain `%s`." % (self.name, link.name))
+
+        self.interfaces = collections.OrderedDict(
+            map(lambda x: x if x[1] is not None and x[1].name != link.name else (x[0], None), self.interfaces.items())
+        )
+        link.machines.pop(self.name)
 
     def add_meta(self, name: str, value: Any) -> None:
         """Add a meta property to the device.
@@ -338,7 +358,7 @@ class Machine(object):
         """Get the CPU limit, multiplied by a specific multiplier.
 
         User should pass a float value ranging from 0 to max user CPUs.
-        Try to took it from options, or device meta. Otherwise, return None.
+        Try to take it from options, or device meta. Otherwise, return None.
 
         Args:
             multiplier (int): A numeric multiplier for the CPU limit value.
@@ -458,7 +478,8 @@ class Machine(object):
         if self.interfaces:
             formatted_machine += "\nInterfaces: "
             for (iface_num, link) in self.interfaces.items():
-                formatted_machine += f"\n\t- {iface_num}: {link.name}"
+                if link:
+                    formatted_machine += f"\n\t- {iface_num}: {link.name}"
 
         formatted_machine += f"\nBridged Connection: {self.meta['bridged']}"
 

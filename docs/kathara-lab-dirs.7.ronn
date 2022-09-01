@@ -1,10 +1,10 @@
 m4_changequote()
-kathara-lab-dirs(7) -- Lab directory structure
+kathara-lab-dirs(7) -- Network scenario directory structure
 =============================================
 
 ## DESCRIPTION
 
-A generic lab directory `lab-path` should have the following structure.
+A generic network scenario directory `lab-path` should have the following structure.
 
 * `lab-path/lab.conf`:
 	See `kathara-lab.conf`(5)
@@ -31,7 +31,7 @@ A generic lab directory `lab-path` should have the following structure.
 	Note that this script is executed by using the `device_shell` value specified in `kathara.conf`(5) as interpreter. If you would like to use a different interpreter, change it inside `kathara.conf`(5) or with `kathara-settings`(1).
 
 * `lab-path/shared/`:
-	This is a shared folder between the host and all the lab devices. This could be useful to transfer files between the host and a device or viceversa.
+	This is a shared folder between the host and all the network scenario devices. This could be useful to transfer files between the host and a device or viceversa.
 
 * `lab-path/shared.startup`
 	This is a shell script that will be run on every device just before `lab-path/device.startup`. It is not required to assign this script the executable permission.
@@ -44,7 +44,7 @@ A generic lab directory `lab-path` should have the following structure.
 	Note that this script is executed by using the `device_shell` value specified in `kathara.conf`(5) as interpreter. If you would like to use a different interpreter, change it inside `kathara.conf`(5) or with `kathara-settings`(1).
 
 * `lab-path/_test/`
-	This subdirectory contains information for performing a test of the lab. It may be automatically created by `kathara-ltest`(1) or may contain user created files describing customized tests. For more information about this directory, see `kathara-ltest`(1).
+	This subdirectory contains information for performing a test of the network scenario. It may be automatically created by `kathara-ltest`(1) or may contain user created files describing customized tests. For more information about this directory, see `kathara-ltest`(1).
 
 m4_include(footer.txt)
 

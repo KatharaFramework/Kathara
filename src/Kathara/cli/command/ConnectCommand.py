@@ -32,7 +32,7 @@ class ConnectCommand(Command):
 
         group.add_argument(
             '-d', '--directory',
-            help='Specify the folder containing the lab.',
+            help='Specify the folder containing the network scenario.',
         )
         group.add_argument(
             '-v', '--vmachine',

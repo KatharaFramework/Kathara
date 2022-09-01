@@ -15,7 +15,7 @@ from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError
 from ...model.Lab import Lab
-from ...model.Link import BRIDGE_LINK_NAME
+from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
 
@@ -108,8 +108,11 @@ class DockerMachine(object):
         Returns:
             None
         """
+        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
+            else lab.machines.items()
+
         # Check and pulling machine images
-        lab_images = set(map(lambda x: x.get_image(), lab.machines.values()))
+        lab_images = set(map(lambda x: x[1].get_image(), machines))
         self.docker_image.check_from_list(lab_images)
 
         shared_mount = lab.general_options['shared_mount'] if 'shared_mount' in lab.general_options \
@@ -120,9 +123,6 @@ class DockerMachine(object):
                 logging.warning("Shared folder cannot be mounted with a remote Docker connection.")
             else:
                 lab.create_shared_folder()
-
-        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
-            else lab.machines.items()
 
         EventDispatcher.get_instance().dispatch("machines_deploy_started", items=machines)
 
@@ -293,24 +293,37 @@ class DockerMachine(object):
 
         machine.api_object = machine_container
 
-    def update(self, machine: Machine) -> None:
-        """Update the Docker container representing the machine.
-
-        Create a new Docker network for each collision domain contained in machine.interfaces that is not already
-        attached to the container.
+    @staticmethod
+    def connect_to_link(machine: Machine, link: Link) -> None:
+        """Connect the Docker container representing the machine to a specified collision domain.
 
         Args:
-            machine (Kathara.model.Machine.Machine): A Kathara device.
+            machine (Kathara.model.Machine): A Kathara device.
+            link (Kathara.model.Link): A Kathara collision domain object.
 
         Returns:
             None
         """
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
-        # Connect the container to its new networks
-        for machine_link in machine.interfaces.values():
-            if machine_link.api_object.name not in attached_networks:
-                machine_link.api_object.connect(machine.api_object)
+        if link.api_object.name not in attached_networks:
+            link.api_object.connect(machine.api_object)
+
+    @staticmethod
+    def disconnect_from_link(machine: Machine, link: Link) -> None:
+        """Disconnect the Docker container representing the machine from a specified collision domain.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara device.
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
+        
+        if link.api_object.name in attached_networks:
+            link.api_object.disconnect(machine.api_object)
 
     @staticmethod
     def start(machine: Machine) -> None:

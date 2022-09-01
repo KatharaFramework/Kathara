@@ -16,6 +16,7 @@ from ... import utils
 from ...exceptions import NotSupportedError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
+from ...model.Link import Link
 from ...model.Machine import Machine
 from ...utils import pack_files_for_tar
 
@@ -31,6 +32,41 @@ class KubernetesManager(IManager):
         self.k8s_namespace: KubernetesNamespace = KubernetesNamespace()
         self.k8s_machine: KubernetesMachine = KubernetesMachine(self.k8s_namespace)
         self.k8s_link: KubernetesLink = KubernetesLink(self.k8s_namespace)
+
+    def deploy_machine(self, machine: Machine) -> None:
+        """Deploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        if not machine.lab:
+            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
+
+        machine.lab.hash = machine.lab.hash.lower()
+
+        self.k8s_namespace.create(machine.lab)
+        self.k8s_link.deploy_links(machine.lab, selected_links={x.name for x in machine.interfaces.values()})
+        self.k8s_machine.deploy_machines(machine.lab, selected_machines={machine.name})
+
+    def deploy_link(self, link: Link) -> None:
+        """Deploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        if not link.lab:
+            raise Exception("Collision domain `%s` is not associated to a network scenario." % link.name)
+
+        link.lab.hash = link.lab.hash.lower()
+
+        self.k8s_namespace.create(link.lab)
+        self.k8s_link.deploy_links(link.lab, selected_links={link.name})
 
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """Deploy a Kathara network scenario.
@@ -65,16 +101,96 @@ class KubernetesManager(IManager):
             else:
                 raise e
 
-    def update_lab(self, lab: Lab) -> None:
-        """Update a running network scenario.
+    def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
+        """Connect a Kathara device to a collision domain.
 
         Args:
-            lab (Kathara.model.Lab): A Kathara network scenario.
+            machine (Kathara.model.Machine): A Kathara machine object.
+            link (Kathara.model.Link): A Kathara collision domain object.
 
-        Raises:
-            NotSupportedError: "Unable to update a running lab."
+        Returns:
+            None
         """
-        raise NotSupportedError("Unable to update a running lab.")
+        raise NotSupportedError("Unable to update a running device.")
+
+    def disconnect_machine_from_link(self, machine: Machine, link: Link) -> None:
+        """Disconnect a Kathara device from a collision domain.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+            link (Kathara.model.Link): The Kathara collision domain from which disconnect the device.
+
+        Returns:
+            None
+        """
+        raise NotSupportedError("Unable to update a running device.")
+
+    def undeploy_machine(self, machine: Machine) -> None:
+        """Undeploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        if not machine.lab:
+            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
+
+        machine.lab.hash = machine.lab.hash.lower()
+
+        # Get all current running machines (not Terminating), removing the one that we're undeploying
+        running_machines = [running_machine for running_machine in
+                            self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=machine.lab.hash)
+                            if 'Terminating' not in running_machine.status.phase and
+                            running_machine.metadata.labels["name"] != machine.name]
+
+        # From machines, save a set with all the attached networks (still needed)
+        running_networks = set()
+        for running_machine in running_machines:
+            network_annotation = json.loads(running_machine.metadata.annotations["k8s.v1.cni.cncf.io/networks"])
+            running_networks.update([net['name'] for net in network_annotation])
+
+        # Difference between all networks of the machine to undeploy, and attached networks are the ones to delete
+        machine_networks = {self.k8s_link.get_network_name(x.name) for x in machine.interfaces.values()}
+        networks_to_delete = machine_networks - running_networks
+
+        self.k8s_machine.undeploy(machine.lab.hash, selected_machines={machine.name})
+        self.k8s_link.undeploy(machine.lab.hash, selected_links=networks_to_delete)
+
+        if len(running_machines) <= 0:
+            self.k8s_namespace.undeploy(lab_hash=machine.lab.hash)
+
+    def undeploy_link(self, link: Link) -> None:
+        """Undeploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        if not link.lab:
+            raise Exception("Collision domain `%s` is not associated to a network scenario." % link.name)
+
+        link.lab.hash = link.lab.hash.lower()
+
+        network_name = self.k8s_link.get_network_name(link.name)
+
+        # Get all current running machines (not Terminating)
+        running_machines = [running_machine for running_machine in
+                            self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=link.lab.hash)
+                            if 'Terminating' not in running_machine.status.phase]
+
+        # From machines, save a set with all the attached networks (still needed)
+        running_networks = set()
+        for running_machine in running_machines:
+            network_annotation = json.loads(running_machine.metadata.annotations["k8s.v1.cni.cncf.io/networks"])
+            # If the collision domain to undeploy is still used, do nothing
+            if network_name in [net['name'] for net in network_annotation]:
+                return
+
+        self.k8s_link.undeploy(link.lab.hash, selected_links={network_name})
 
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                      selected_machines: Optional[Set[str]] = None) -> None:
@@ -132,7 +248,7 @@ class KubernetesManager(IManager):
             running_machines = set()
 
         self.k8s_machine.undeploy(lab_hash, selected_machines=selected_machines)
-        self.k8s_link.undeploy(lab_hash, networks_to_delete=networks_to_delete)
+        self.k8s_link.undeploy(lab_hash, selected_links=networks_to_delete)
 
         # If no machines are selected or there are no running machines, undeploy the namespace
         if not selected_machines or len(running_machines - selected_machines) <= 0:
@@ -359,6 +475,77 @@ class KubernetesManager(IManager):
         lab_hash = lab_hash.lower() if lab_hash else None
 
         return self.k8s_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name)
+
+    def get_lab_from_api(self, lab_hash: str = None, lab_name: str = None) -> Lab:
+        """Return the network scenario (specified by the hash or name), building it from API objects.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+
+        Returns:
+            Lab: The built network scenario.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
+        """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            reconstructed_lab = Lab(lab_name)
+        else:
+            reconstructed_lab = Lab("reconstructed_lab")
+            reconstructed_lab.hash = lab_hash
+
+        lab_pods = self.get_machines_api_objects(lab_hash=reconstructed_lab.hash)
+        lab_networks = dict(
+            map(lambda x: (x['metadata']['name'], x), self.get_links_api_objects(lab_hash=reconstructed_lab.hash))
+        )
+
+        for pod in lab_pods:
+            device = reconstructed_lab.get_or_new_machine(pod.metadata.labels["name"])
+            device.api_object = pod
+
+            # Rebuild device metas
+            # NOTE: "privileged" and "bridged" are not supported on Megalos
+            # NOTE: We cannot rebuild "sysctls", "exec", "ipv6" and "num_terms" meta.
+            container = pod.spec.containers[0]
+            device.add_meta("image", container.image.replace('docker.io/', ''))
+            device.add_meta("shell", self.k8s_machine.get_env_var_value_from_pod(pod, "_MEGALOS_SHELL"))
+
+            # Memory is always returned in MBytes
+            if container.resources.limits and 'memory' in container.resources.limits:
+                device.add_meta("mem", container.resources.limits['memory'])
+
+            # Reconvert nanocpus to a value passed by the user
+            if container.resources.limits and 'cpu' in container.resources.limits:
+                device.add_meta("cpu", int(container.resources.limits['cpu'].replace('m', '')) / 1000)
+
+            for env in container.env:
+                if env.name != "_MEGALOS_SHELL":
+                    device.meta["envs"][env.name] = env.value
+
+            # Reconvert ports to the device format
+            if container.ports:
+                for port in container.ports:
+                    device.meta["ports"][(port.host_port, port.protocol)] = port.container_port
+
+            for network_conf in json.loads(pod.metadata.annotations["k8s.v1.cni.cncf.io/networks"]):
+                network = lab_networks[network_conf['name']]
+                link = reconstructed_lab.get_or_new_link(network['metadata']['labels']['name'])
+                link.api_object = network
+                device.add_interface(link)
+
+        return reconstructed_lab
+
+    def update_lab_from_api(self, lab: Lab) -> None:
+        """Update the passed network scenario from API objects.
+
+        Args:
+            lab (Lab): The network scenario to update.
+        """
+        raise NotSupportedError("Unable to update a running network scenario.")
 
     def get_machine_stats(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
                           all_users: bool = False) -> Generator[KubernetesMachineStats, None, None]:

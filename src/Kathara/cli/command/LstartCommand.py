@@ -46,14 +46,14 @@ class LstartCommand(Command):
             dest="terminals",
             const=False,
             default=None,
-            help='Start the lab without opening terminal windows.'
+            help='Start the network scenario without opening terminal windows.'
         )
         group.add_argument(
             "--terminals",
             action="store_const",
             dest="terminals",
             const=True,
-            help='Start the lab opening terminal windows.'
+            help='Start the network scenario opening terminal windows.'
         )
         group.add_argument(
             "--privileged",
@@ -65,20 +65,20 @@ class LstartCommand(Command):
         self.parser.add_argument(
             '-d', '--directory',
             required=False,
-            help='Specify the folder containing the lab.'
+            help='Specify the folder containing the network scenario.'
         )
         self.parser.add_argument(
             '-F', '--force-lab',
             dest='force_lab',
             required=False,
             action='store_true',
-            help='Force the lab to start without a lab.conf or lab.dep file.'
+            help='Force the network scenario to start without a lab.conf or lab.dep file.'
         )
         self.parser.add_argument(
             '-l', '--list',
             required=False,
             action='store_true',
-            help='Show information about running devices after the lab has been started.'
+            help='Show information about running devices after the network scenario has been started.'
         )
         self.parser.add_argument(
             '-o', '--pass',
@@ -86,7 +86,7 @@ class LstartCommand(Command):
             metavar="OPTION",
             nargs='*',
             required=False,
-            help="Apply options to all devices of a lab during startup."
+            help="Apply options to all devices of a network scenario during startup."
         )
         self.parser.add_argument(
             '--xterm',
@@ -164,7 +164,7 @@ class LstartCommand(Command):
             logging.info(format_headers())
 
         if len(lab.machines) <= 0:
-            raise Exception("No devices in the current lab. Exiting...")
+            raise Exception("No devices in the current network scenario. Exiting...")
 
         try:
             options = OptionParser.parse(args['options'])

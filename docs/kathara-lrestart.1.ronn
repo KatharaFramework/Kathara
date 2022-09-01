@@ -1,5 +1,5 @@
 m4_changequote()
-kathara-lrestart(1) -- Restart a Kathara lab
+kathara-lrestart(1) -- Restart a Kathara network scenario
 =============================================
 
 ## SYNOPSIS
@@ -12,7 +12,7 @@ kathara-lrestart(1) -- Restart a Kathara lab
 
 ## DESCRIPTION
 
-Restart a Kathara lab. It simply wraps a call to `kathara-lclean`(1) and then `kathara-lstart`(1).
+Restart a Kathara network scenario. It simply wraps a call to `kathara-lclean`(1) and then `kathara-lstart`(1).
 
 Mainly it has the same options of `lstart` with the lack of some options (e.g. `--print`).
 
@@ -22,30 +22,30 @@ Mainly it has the same options of `lstart` with the lack of some options (e.g. `
     Show an help message and exit.
 
 * `--noterminals`:
-    Start the lab devices without opening terminal windows. Override the default setting specified in `kathara.conf`(5) file.
+    Start the network scenario devices without opening terminal windows. Override the default setting specified in `kathara.conf`(5) file.
 
 * `--terminals`:
-    Start the lab devices opening their terminal windows. Override the default setting specified in `kathara.conf`(5) file.
+    Start the network scenario devices opening their terminal windows. Override the default setting specified in `kathara.conf`(5) file.
 
 * `--privileged`:
     Start the devices in privileged mode. MUST BE ROOT FOR THIS OPTION.
 
 * `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
-    Specify the folder containing the lab.
+    Specify the folder containing the network scenario.
 
-    Restart the Kathara lab that is located inside DIRECTORY.  
-    If no `-d` option is provided, assume the lab is located in the current directory.
+    Restart the Kathara network scenario that is located inside DIRECTORY.  
+    If no `-d` option is provided, assume the network scenario is located in the current directory.
 
 * `-F`, `--force-lab`:
-    Force the lab to start without a lab.conf or lab.dep file.
+    Force the network scenario to start without a lab.conf or lab.dep file.
 
-    As a native behaviour, Kathara starts a device for each directory that it finds in a designated path, by default the current directory. In order to prevent the user from accidentally starting random devices from a directory that does not contain a lab, lstart requires the presence of the `kathara-lab.conf`(5) file in the affected directory. If this file is not required for your setting, and you still want to launch your lab without creating it, you can use this option to force Kathara starting a lab in the affected directory.
+    As a native behaviour, Kathara starts a device for each directory that it finds in a designated path, by default the current directory. In order to prevent the user from accidentally starting random devices from a directory that does not contain a network scenario, lstart requires the presence of the `kathara-lab.conf`(5) file in the affected directory. If this file is not required for your setting, and you still want to launch your network scenario without creating it, you can use this option to force Kathara starting a network scenario in the affected directory.
 
 * `-l`, `--list`:
-    Show informarion about running devices after the lab has been started.
+    Show informarion about running devices after the network scenario has been started.
 
 * `-o` [<OPTION> [<OPTION> ...]], `--pass` [<OPTION> [<OPTION> ...]]:
-    Apply options to all devices of a lab during startup.
+    Apply options to all devices of a network scenario during startup.
 
     Should be a list of double quoted strings, like `--pass "mem=64m" "image=kathara/frr"`.
     You can specify the same device options described in `kathara-lab.conf`(5).
@@ -63,7 +63,7 @@ Mainly it has the same options of `lstart` with the lack of some options (e.g. `
 * `-S`, `--no-shared`:
     `/shared` dir will not be mounted inside the device.
 
-    By default, the "shared" directory inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
+    By default, the "shared" directory inside the network scenario folder is made available for reading/writing inside the device under the special directory `/shared`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
 
 * `DEVICE_NAME`:
     A list of device names. Instead of restarting the whole lab, only specified devices are restarted.

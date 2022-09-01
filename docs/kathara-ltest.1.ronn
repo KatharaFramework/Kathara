@@ -1,5 +1,5 @@
 m4_changequote()
-kathara-ltest(1) -- Test a Kathara lab
+kathara-ltest(1) -- Test a Kathara network scenario
 =============================================
 
 ## SYNOPSIS
@@ -10,13 +10,13 @@ kathara-ltest(1) -- Test a Kathara lab
 
 ## DESCRIPTION
 
-Tool for retrieving and saving information about the state of running devices inside a Kathara lab. These information can then be distributed with the lab itself, so that users can easily test whether the lab still behaves in the expected way when it is being launched on a different host.
+Tool for retrieving and saving information about the state of running devices inside a Kathara network scenario. These information can then be distributed with the network scenario itself, so that users can easily test whether the network scenario still behaves in the expected way when it is being launched on a different host.
 
-Takes care of launching the lab in a test mode, running an ad-hoc set of scripts on devices, and storing their output on the host filesystem. If the test is being run for the first time, creates a signature of the test results that is used as a fingerprint of a correctly behaving lab. 
+Takes care of launching the network scenario in a test mode, running an ad-hoc set of scripts on devices, and storing their output on the host filesystem. If the test is being run for the first time, creates a signature of the test results that is used as a fingerprint of a correctly behaving network scenario. 
 
-When `ltest` is run with the `--verify` option, test results are compared with the signature to check that the lab still behaves as expected. After running the test, the lab is then automatically stopped.
+When `ltest` is run with the `--verify` option, test results are compared with the signature to check that the network scenario still behaves as expected. After running the test, the network scenario is then automatically stopped.
 
-A directory `lab-path/_test` is created inside and the results of the test are stored inside it. Any existing results of previous tests are overwritten. Subdirectory `lab-path/_test/signature` and `lab-path/_test/results` will contain the signature of the lab test and the outcome of the last executed test, respectively.
+A directory `lab-path/_test` is created inside and the results of the test are stored inside it. Any existing results of previous tests are overwritten. Subdirectory `lab-path/_test/signature` and `lab-path/_test/results` will contain the signature of the network scenario test and the outcome of the last executed test, respectively.
 
 **NOTE**: `ltest` runs devices without a terminal window. Therefore, no window will pop up and no output will be shown during a test.
 
@@ -28,18 +28,18 @@ A directory `lab-path/_test` is created inside and the results of the test are s
     Show an help message and exit.
 
 * `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
-    Specify the folder containing the lab.
+    Specify the folder containing the network scenario.
 
-    If no `-d` option is provided, assume the lab is located in the current directory.
+    If no `-d` option is provided, assume the network scenario is located in the current directory.
 
 * `-R`, `--rebuild-signature`:
-    Force generating a new signature for the lab, even if one already exists. Overwrites any existing signature.
+    Force generating a new signature for the network scenario, even if one already exists. Overwrites any existing signature.
 
 * `--wait` <MINUTES>:
-    Minutes to wait from lab startup before running the tests (can be a decimal number).
+    Minutes to wait from network scenario startup before running the tests (can be a decimal number).
 
 * `--verify` {builtin,user,both}:
-    Compares current lab state with stored signature.
+    Compares current network scenario state with stored signature.
 
     After a signature has been generated, the outcome of any following tests is compared with information in the signature. Possible values are as follows:
 

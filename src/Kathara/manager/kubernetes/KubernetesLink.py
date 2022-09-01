@@ -37,17 +37,18 @@ class KubernetesLink(object):
 
         self.seed: str = KubernetesConfig.get_cluster_user()
 
-    def deploy_links(self, lab: Lab, selected_links: Dict[str, Link] = None) -> None:
+    def deploy_links(self, lab: Lab, selected_links: Set[str] = None) -> None:
         """Deploy all the links contained in lab.links.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
-            selected_links (Dict[str, Link]): Keys are collision domains names, values are Link objects.
+            selected_links (Set[str]): A set containing the name of the collision domains to deploy.
 
         Returns:
             None
         """
-        links = selected_links.items() if selected_links else lab.links.items()
+        links = {k: v for (k, v) in lab.links.items() if k in selected_links}.items() if selected_links \
+            else lab.links.items()
 
         if len(links) > 0:
             pool_size = utils.get_pool_size()
@@ -110,19 +111,19 @@ class KubernetesLink(object):
         if link.external:
             logging.warning('External is not supported on Megalos. It will be ignored.')
 
-    def undeploy(self, lab_hash: str, networks_to_delete: Optional[Set] = None) -> None:
+    def undeploy(self, lab_hash: str, selected_links: Optional[Set[str]] = None) -> None:
         """Undeploy all the links of the scenario specified by lab_hash.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
-            networks_to_delete (Set): If specified, delete only the networks that contained.
+            selected_links (Set[str]): If specified, delete only the collision domains contained in the set.
 
         Returns:
             None
         """
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
-        if networks_to_delete is not None and len(networks_to_delete) > 0:
-            networks = [item for item in networks if item["metadata"]["name"] in networks_to_delete]
+        if selected_links is not None and len(selected_links) > 0:
+            networks = [item for item in networks if item["metadata"]["name"] in selected_links]
 
         if len(networks) > 0:
             pool_size = utils.get_pool_size()
