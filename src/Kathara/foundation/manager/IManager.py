@@ -250,7 +250,7 @@ class IManager(ABC):
 
     @abstractmethod
     def get_lab_from_api(self, lab_hash: str = None, lab_name: str = None) -> Lab:
-        """Return the specified Kathara network scenario building it from API objects.
+        """Return the network scenario (specified by the hash or name), building it from API objects.
 
         Args:
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
@@ -269,7 +269,7 @@ class IManager(ABC):
         """Update the passed network scenario from API objects.
 
         Args:
-            lab (str): The network scenario to update.
+            lab (Lab): The network scenario to update.
         """
         raise NotImplementedError("You must implement `update_lab_from_api` method.")
 

@@ -443,7 +443,7 @@ class DockerManager(IManager):
 
     @privileged
     def get_lab_from_api(self, lab_hash: str = None, lab_name: str = None) -> Lab:
-        """Return the specified Kathara network scenario building it from API objects.
+        """Return the network scenario (specified by the hash or name), building it from API objects.
 
         Args:
             lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
@@ -465,33 +465,38 @@ class DockerManager(IManager):
             reconstructed_lab.hash = lab_hash
 
         running_containers = self.get_machines_api_objects(lab_hash=reconstructed_lab.hash)
-
         deployed_networks = dict(
-            map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=reconstructed_lab.hash)))
+            map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=reconstructed_lab.hash))
+        )
 
         for container in running_containers:
             container.reload()
             device = reconstructed_lab.get_or_new_machine(container.labels["name"])
             device.api_object = container
 
+            # Rebuild device metas
+            # NOTE: We cannot rebuild "exec", "ipv6" and "num_terms" meta.
             device.add_meta("privileged", container.attrs["HostConfig"]["Privileged"])
             device.add_meta("image", container.attrs["Config"]["Image"])
             device.add_meta("shell", container.attrs["Config"]["Labels"]["shell"])
 
+            # Memory is always returned in MBytes
             if container.attrs['HostConfig']['Memory'] > 0:
                 device.add_meta("mem", f"{int(container.attrs['HostConfig']['Memory'] / (1024 ** 2))}M")
 
+            # Reconvert nanocpus to a value passed by the user
             if container.attrs["HostConfig"]["NanoCpus"] > 0:
                 device.add_meta("cpu", container.attrs["HostConfig"]["NanoCpus"] / 1000000000)
 
+            for env in container.attrs["Config"]["Env"]:
+                device.add_meta("env", env)
+
+            # Reconvert ports to the device format
             if container.attrs['HostConfig']['PortBindings']:
                 for port_info, port_data in container.attrs['HostConfig']['PortBindings'].items():
                     (guest_port, protocol) = port_info.split('/')
                     host_port = port_data[0]["HostPort"]
                     device.meta["ports"][(int(host_port), protocol)] = int(guest_port)
-
-            for env in container.attrs["Config"]["Env"]:
-                device.add_meta("env", env)
 
             device.meta["sysctls"] = container.attrs["HostConfig"]["Sysctls"]
 
@@ -512,7 +517,7 @@ class DockerManager(IManager):
         """Update the passed network scenario from API objects.
 
         Args:
-            lab (str): The network scenario to update.
+            lab (Lab): The network scenario to update.
         """
         pass
 

@@ -338,7 +338,7 @@ class Machine(object):
         """Get the CPU limit, multiplied by a specific multiplier.
 
         User should pass a float value ranging from 0 to max user CPUs.
-        Try to took it from options, or device meta. Otherwise, return None.
+        Try to take it from options, or device meta. Otherwise, return None.
 
         Args:
             multiplier (int): A numeric multiplier for the CPU limit value.
