@@ -33,7 +33,7 @@ class LconfigCommand(Command):
             '-d', '--directory',
             metavar='LAB_PATH',
             required=False,
-            help='Path of the lab to configure, if not specified the current path is used'
+            help='Path of the network scenario to configure, if not specified the current path is used'
         )
         self.parser.add_argument(
             '-n', '--name',

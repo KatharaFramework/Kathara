@@ -34,7 +34,7 @@ class LinfoCommand(Command):
         self.parser.add_argument(
             '-d', '--directory',
             required=False,
-            help='Specify the folder containing the lab.'
+            help='Specify the folder containing the network scenario.'
         )
 
         group = self.parser.add_mutually_exclusive_group(required=False)
@@ -43,7 +43,7 @@ class LinfoCommand(Command):
             '-l', '--live',
             required=False,
             action='store_true',
-            help='Live mode, can be used only when a lab is launched.'
+            help='Live mode, can be used only when a network scenario is launched.'
         )
 
         group.add_argument(

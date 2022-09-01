@@ -32,7 +32,7 @@ class LcleanCommand(Command):
         self.parser.add_argument(
             '-d', '--directory',
             required=False,
-            help='Specify the folder containing the lab.'
+            help='Specify the folder containing the network scenario.'
         )
         self.parser.add_argument(
             'machine_names',
