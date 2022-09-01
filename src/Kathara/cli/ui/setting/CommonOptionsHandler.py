@@ -69,8 +69,7 @@ class CommonOptionsHandler(OptionsHandler):
                                                    args=['image',
                                                          ImageValidator(),
                                                          'Write the name of a Docker image available on Docker Hub:',
-                                                         'Docker Image not available neither on Docker Hub nor '
-                                                         'in local repository!'
+                                                         None
                                                          ],
                                                    should_exit=True
                                                    )

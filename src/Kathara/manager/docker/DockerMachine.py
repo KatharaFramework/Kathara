@@ -35,7 +35,10 @@ STARTUP_COMMANDS = [
     "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf -); fi",
 
     # If /etc/hosts is not configured by the user, add the localhost mapping
-    "if [ ! -s \"/etc/hosts\" ]; then echo '127.0.0.1 localhost' > /etc/hosts; fi",
+    "if [ ! -s \"/etc/hosts\" ]; then "
+    "echo '127.0.0.1 localhost' > /etc/hosts;"
+    "echo '::1 localhost' >> /etc/hosts;"
+    "fi",
 
     # Give proper permissions to /var/www
     "if [ -d \"/var/www\" ]; then "
@@ -107,7 +110,7 @@ class DockerMachine(object):
         """
         # Check and pulling machine images
         lab_images = set(map(lambda x: x.get_image(), lab.machines.values()))
-        self.docker_image.check_and_pull_from_list(lab_images)
+        self.docker_image.check_from_list(lab_images)
 
         shared_mount = lab.general_options['shared_mount'] if 'shared_mount' in lab.general_options \
             else Setting.get_instance().shared_mount

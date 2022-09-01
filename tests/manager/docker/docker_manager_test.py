@@ -65,6 +65,28 @@ def test_deploy_lab(mock_deploy_links, mock_deploy_machines, docker_manager, two
     mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines=None)
 
 
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_lab_selected_machines(mock_deploy_links, mock_deploy_machines, docker_manager,
+                                      two_device_scenario: Lab):
+    docker_manager.deploy_lab(two_device_scenario, selected_machines={"pc1"})
+
+    mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links={
+        "A": two_device_scenario.get_or_new_link("A"),
+        "B": two_device_scenario.get_or_new_link("B")
+    })
+    mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines={"pc1"})
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_lab_selected_machines_exception(mock_deploy_links, mock_deploy_machines, docker_manager,
+                                                two_device_scenario: Lab):
+    with pytest.raises(Exception):
+        docker_manager.deploy_lab(two_device_scenario, selected_machines={"pc3"})
+    assert not mock_deploy_machines.called
+    assert not mock_deploy_links.called
+
 #
 # TEST: update_lab
 #

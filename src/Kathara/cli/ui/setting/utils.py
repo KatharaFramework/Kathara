@@ -76,7 +76,8 @@ def read_and_validate_value(prompt_msg: str, validator: BaseValidator, error_msg
                                 )
 
     if not answer.validation_result:
-        print(error_msg)
+        if error_msg:
+            print(error_msg)
 
     return answer
 
