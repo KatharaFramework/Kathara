@@ -519,7 +519,34 @@ class DockerManager(IManager):
         Args:
             lab (Lab): The network scenario to update.
         """
-        pass
+        running_containers = self.get_machines_api_objects(lab_hash=lab.hash)
+
+        deployed_networks = dict(
+            map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=lab.hash)))
+
+        deployed_networks_by_link_name = dict(
+            map(lambda x: (x.attrs["Labels"]["name"], x), self.get_links_api_objects(lab_hash=lab.hash)))
+
+        for container in running_containers:
+            container.reload()
+            device = lab.get_or_new_machine(container.labels["name"])
+            device.api_object = container
+
+            static_links = set(device.interfaces.values())
+            current_links = set(map(lambda x: lab.get_or_new_link(deployed_networks[x].attrs["Labels"]["name"]),
+                                    container.attrs["NetworkSettings"]["Networks"]))
+            dynamic_links = current_links - static_links
+            deleted_links = static_links - current_links
+            for link in static_links:
+                if link.name in deployed_networks_by_link_name:
+                    link.api_object = deployed_networks_by_link_name[link.name]
+            for link in dynamic_links:
+                link.api_object = deployed_networks_by_link_name[link.name]
+                device.add_interface(link)
+            for link in deleted_links:
+                device.remove_interface(link)
+            for network in deployed_networks.values():
+                network.reload()
 
     @privileged
     def get_machines_stats(self, lab_hash: str = None, lab_name: str = None, machine_name: str = None,
