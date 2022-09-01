@@ -153,6 +153,27 @@ def test_deploy_lab(mock_deploy_links, mock_deploy_machines, mock_namespace_crea
     mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines=None)
 
 
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace.KubernetesNamespace.create")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.deploy_links")
+def test_deploy_lab_selected_machines(mock_deploy_links, mock_deploy_machines, mock_namespace_create,
+                                      kubernetes_manager, two_device_scenario: Lab):
+    kubernetes_manager.deploy_lab(two_device_scenario, selected_machines={"pc1"})
+
+    mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links={"A", "B"})
+    mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines={"pc1"})
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.deploy_links")
+def test_deploy_lab_selected_machines_exception(mock_deploy_links, mock_deploy_machines, kubernetes_manager,
+                                                two_device_scenario: Lab):
+    with pytest.raises(Exception):
+        kubernetes_manager.deploy_lab(two_device_scenario, selected_machines={"pc3"})
+    assert not mock_deploy_machines.called
+    assert not mock_deploy_links.called
+
+
 #
 # TEST: deploy_machine
 #
