@@ -251,7 +251,7 @@ class DockerMachine(object):
             logging.warning("Privileged flag is ignored with a remote Docker connection.")
 
         mount_volumes = None
-        if machine.meta['inception']:
+        if machine.meta['nested']:
             mount_volumes = InceptionManager.get_instance().get_mount_volumes()
 
         container_name = self.get_container_name(machine.name, machine.lab.hash)

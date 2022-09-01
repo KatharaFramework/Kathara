@@ -63,7 +63,7 @@ class Machine(object):
             'envs': {},
             'bridged': False,
             'ports': {},
-            'inception': False
+            'nested': False
         }
 
         self.startup_commands: List[str] = []
@@ -132,17 +132,17 @@ class Machine(object):
             self.startup_commands.append(value)
             return
 
-        if name == "inception":
+        if name == "nested":
             self.meta[name] = bool(strtobool(str(value)))
 
             if "image" in self.meta and self.meta[name]:
-                raise MachineOptionError("Cannot activate Inception when a device image is specified.")
+                raise MachineOptionError("Cannot activate nesting when a device image is specified.")
 
             return
 
         if name == "image":
-            if "inception" in self.meta and self.meta["inception"]:
-                raise MachineOptionError("Cannot specify a device image when Inception is activated.")
+            if "nested" in self.meta and self.meta["nested"]:
+                raise MachineOptionError("Cannot specify a device image when nesting is activated.")
 
             self.meta[name] = value
 
@@ -304,7 +304,7 @@ class Machine(object):
         Returns:
             str: The name of the device image.
         """
-        if self.meta['inception']:
+        if self.meta['nested']:
             return 'kathara/inception'
 
         return self.lab.general_options["image"] if "image" in self.lab.general_options else \
@@ -430,8 +430,8 @@ class Machine(object):
         if 'bridged' in args and args['bridged'] is not None and args['bridged']:
             self.add_meta("bridged", True)
 
-        if 'inception' in args and args['inception'] is not None and args['inception']:
-            self.add_meta("inception", True)
+        if 'nested' in args and args['nested'] is not None and args['nested']:
+            self.add_meta("nested", True)
 
         if 'ports' in args and args['ports'] is not None:
             for port in args['ports']:
