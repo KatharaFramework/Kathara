@@ -16,7 +16,7 @@ Checks on the correctness of the configuration are performed each time a Kathara
     Default to `kathara/quagga`.
 
 * `manager_type` (string):
-    Manager used to launch the lab.
+    Manager used to launch the network scenario.
 
     Default to `docker`.
 
@@ -79,7 +79,7 @@ Each Manager specifies additional parameters which are used only when the Manage
 	Default to `false`.
 
 * `shared_mount` (boolean):
-	This parameter specifies if the `/shared` dir will be mounted inside the device. The "shared" folder inside the lab folder is made available for reading/writing inside the device under the special directory `/shared`.
+	This parameter specifies if the `/shared` dir will be mounted inside the device. The "shared" folder inside the network scenario folder is made available for reading/writing inside the device under the special directory `/shared`.
 
 	Default to `true`.
 

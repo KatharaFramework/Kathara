@@ -18,7 +18,7 @@ from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
-from ...model.Link import BRIDGE_LINK_NAME
+from ...model.Link import Link
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
 from ...utils import pack_files_for_tar
@@ -84,6 +84,37 @@ class DockerManager(IManager):
         self.docker_link: DockerLink = DockerLink(self.client)
 
     @privileged
+    def deploy_machine(self, machine: Machine) -> None:
+        """Deploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        if not machine.lab:
+            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
+
+        self.docker_link.deploy_links(machine.lab, selected_links={x.name for x in machine.interfaces.values()})
+        self.docker_machine.deploy_machines(machine.lab, selected_machines={machine.name})
+
+    @privileged
+    def deploy_link(self, link: Link) -> None:
+        """Deploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        if not link.lab:
+            raise Exception("Collision domain `%s` is not associated to a network scenario." % link.name)
+
+        self.docker_link.deploy_links(link.lab, selected_links={link.name})
+
+    @privileged
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """Deploy a Kathara network scenario.
 
@@ -109,30 +140,79 @@ class DockerManager(IManager):
         self.docker_machine.deploy_machines(lab, selected_machines=selected_machines)
 
     @privileged
-    def update_lab(self, lab: Lab) -> None:
-        """Update a running network scenario.
+    def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
+        """Connect a Kathara device to a collision domain.
 
         Args:
-            lab (Kathara.model.Lab): A Kathara network scenario.
+            machine (Kathara.model.Machine): A Kathara machine object.
+            link (Kathara.model.Link): A Kathara collision domain object.
 
         Returns:
             None
         """
-        # Deploy new links (if present)
-        for (_, link) in lab.links.items():
-            if link.name == BRIDGE_LINK_NAME:
-                continue
+        if not machine.lab:
+            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
 
-            self.docker_link.create(link)
+        if machine.name in link.machines:
+            raise Exception("Machine `%s` is already connected to collision domain `%s`." % (machine.name, link.name))
 
-        # Update lab devices.
-        for (_, machine) in lab.machines.items():
-            # Device is not deployed, deploy it
-            if machine.api_object is None:
-                self.deploy_lab(lab, selected_machines={machine.name})
-            else:
-                # Device already deployed, update it
-                self.docker_machine.update(machine)
+        machine.add_interface(link)
+
+        self.deploy_link(link)
+        self.docker_machine.connect_to_link(machine, link)
+
+    @privileged
+    def disconnect_machine_from_link(self, machine: Machine, link: Link) -> None:
+        """Disconnect a Kathara device from a collision domain.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+            link (Kathara.model.Link): The Kathara collision domain from which disconnect the device.
+
+        Returns:
+            None
+        """
+        if not machine.lab:
+            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
+
+        if machine.name not in link.machines:
+            raise Exception("Machine `%s` is not connected to collision domain `%s`." % (machine.name, link.name))
+
+        machine.remove_interface(link)
+
+        self.docker_machine.disconnect_from_link(machine, link)
+        self.undeploy_link(link)
+
+    @privileged
+    def undeploy_machine(self, machine: Machine) -> None:
+        """Undeploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        if not machine.lab:
+            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
+
+        self.docker_machine.undeploy(machine.lab.hash, selected_machines={machine.name})
+        self.docker_link.undeploy(machine.lab.hash, selected_links={x.name for x in machine.interfaces.values()})
+
+    @privileged
+    def undeploy_link(self, link: Link) -> None:
+        """Undeploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        if not link.lab:
+            raise Exception("Collision domain `%s` is not associated to a network scenario." % link.name)
+
+        self.docker_link.undeploy(link.lab.hash, selected_links={link.name})
 
     @privileged
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
@@ -294,7 +374,7 @@ class DockerManager(IManager):
         if containers:
             return containers.pop()
 
-        raise Exception(f"Device {machine_name} not found.")
+        raise Exception(f"Device `{machine_name}` not found.")
 
     def get_machines_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
             List[docker.models.containers.Container]:
@@ -346,7 +426,7 @@ class DockerManager(IManager):
         if networks:
             return networks.pop()
 
-        raise Exception(f"Collision Domain {link_name} not found.")
+        raise Exception(f"Collision Domain `{link_name}` not found.")
 
     def get_links_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
             List[docker.models.networks.Network]:
@@ -365,6 +445,115 @@ class DockerManager(IManager):
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         return self.docker_link.get_links_api_objects_by_filters(lab_hash=lab_hash, user=user_name)
+
+    @privileged
+    def get_lab_from_api(self, lab_hash: str = None, lab_name: str = None) -> Lab:
+        """Return the network scenario (specified by the hash or name), building it from API objects.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+
+        Returns:
+            Lab: The built network scenario.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
+        """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            reconstructed_lab = Lab(lab_name)
+        else:
+            reconstructed_lab = Lab("reconstructed_lab")
+            reconstructed_lab.hash = lab_hash
+
+        lab_containers = self.get_machines_api_objects(lab_hash=reconstructed_lab.hash)
+        lab_networks = dict(
+            map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=reconstructed_lab.hash))
+        )
+
+        for container in lab_containers:
+            container.reload()
+            device = reconstructed_lab.get_or_new_machine(container.labels["name"])
+            device.api_object = container
+
+            # Rebuild device metas
+            # NOTE: We cannot rebuild "exec", "ipv6" and "num_terms" meta.
+            device.add_meta("privileged", container.attrs["HostConfig"]["Privileged"])
+            device.add_meta("image", container.attrs["Config"]["Image"])
+            device.add_meta("shell", container.attrs["Config"]["Labels"]["shell"])
+
+            # Memory is always returned in MBytes
+            if container.attrs['HostConfig']['Memory'] > 0:
+                device.add_meta("mem", f"{int(container.attrs['HostConfig']['Memory'] / (1024 ** 2))}M")
+
+            # Reconvert nanocpus to a value passed by the user
+            if container.attrs["HostConfig"]["NanoCpus"] > 0:
+                device.add_meta("cpu", container.attrs["HostConfig"]["NanoCpus"] / 1000000000)
+
+            for env in container.attrs["Config"]["Env"]:
+                device.add_meta("env", env)
+
+            # Reconvert ports to the device format
+            if container.attrs['HostConfig']['PortBindings']:
+                for port_info, port_data in container.attrs['HostConfig']['PortBindings'].items():
+                    (guest_port, protocol) = port_info.split('/')
+                    host_port = port_data[0]["HostPort"]
+                    device.meta["ports"][(int(host_port), protocol)] = int(guest_port)
+
+            device.meta["sysctls"] = container.attrs["HostConfig"]["Sysctls"]
+
+            if "none" not in container.attrs["NetworkSettings"]["Networks"]:
+                for network_name in container.attrs["NetworkSettings"]["Networks"]:
+                    if network_name == "bridge":
+                        device.add_meta("bridged", True)
+                        continue
+                    network = lab_networks[network_name]
+                    link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
+                    link.api_object = network
+                    device.add_interface(link)
+
+        return reconstructed_lab
+
+    @privileged
+    def update_lab_from_api(self, lab: Lab) -> None:
+        """Update the passed network scenario from API objects.
+
+        Args:
+            lab (Lab): The network scenario to update.
+        """
+        running_containers = self.get_machines_api_objects(lab_hash=lab.hash)
+
+        deployed_networks = dict(
+            map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=lab.hash)))
+
+        deployed_networks_by_link_name = dict(
+            map(lambda x: (x.attrs["Labels"]["name"], x), self.get_links_api_objects(lab_hash=lab.hash)))
+
+        for container in running_containers:
+            container.reload()
+            device = lab.get_or_new_machine(container.labels["name"])
+            device.api_object = container
+
+            static_links = set(device.interfaces.values())
+            current_links = set(map(lambda x: lab.get_or_new_link(
+                deployed_networks[x].attrs["Labels"]["name"]),
+                                    filter(lambda x: x != "bridge", container.attrs["NetworkSettings"]["Networks"])))
+            dynamic_links = current_links - static_links
+            deleted_links = static_links - current_links
+
+            for link in static_links:
+                if link.name in deployed_networks_by_link_name:
+                    link.api_object = deployed_networks_by_link_name[link.name]
+            for link in dynamic_links:
+                link.api_object = deployed_networks_by_link_name[link.name]
+                device.add_interface(link)
+            for link in deleted_links:
+                device.remove_interface(link)
+            for network in deployed_networks.values():
+                network.reload()
 
     @privileged
     def get_machines_stats(self, lab_hash: str = None, lab_name: str = None, machine_name: str = None,

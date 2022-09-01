@@ -5,11 +5,37 @@ from typing import Dict, Set, Any, Generator, Tuple, List, Optional
 from .stats.ILinkStats import ILinkStats
 from .stats.IMachineStats import IMachineStats
 from ...model.Lab import Lab
+from ...model.Link import Link
 from ...model.Machine import Machine
 
 
 class IManager(ABC):
     """Interface to be implemented in the virtualization managers"""
+
+    @abstractmethod
+    def deploy_machine(self, machine: Machine) -> None:
+        """Deploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError("You must implement `deploy_machine` method.")
+
+    @abstractmethod
+    def deploy_link(self, link: Link) -> None:
+        """Deploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError("You must implement `deploy_link` method.")
+
     @abstractmethod
     def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
         """Deploy a Kathara network scenario.
@@ -24,16 +50,52 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `deploy_lab` method.")
 
     @abstractmethod
-    def update_lab(self, lab: Lab) -> None:
-        """Update a running network scenario.
+    def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
+        """Connect a Kathara device to a collision domain.
 
         Args:
-            lab (Kathara.model.Lab): A Kathara network scenario.
+            machine (Kathara.model.Machine): A Kathara machine object.
+            link (Kathara.model.Link): A Kathara collision domain object.
 
         Returns:
             None
         """
-        raise NotImplementedError("You must implement `update_lab` method.")
+        raise NotImplementedError("You must implement `connect_machine_to_link` method.")
+
+    def disconnect_machine_from_link(self, machine: Machine, link: Link) -> None:
+        """Disconnect a Kathara device from a collision domain.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+            link (Kathara.model.Link): The Kathara collision domain from which disconnect the device.
+        Returns:
+            None
+        """
+        raise NotImplementedError("You must implement `disconnect_machine_from_link` method.")
+
+    @abstractmethod
+    def undeploy_machine(self, machine: Machine) -> None:
+        """Undeploy a Kathara device.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara machine object.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError("You must implement `undeploy_machine` method.")
+
+    @abstractmethod
+    def undeploy_link(self, link: Link) -> None:
+        """Undeploy a Kathara collision domain.
+
+        Args:
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError("You must implement `undeploy_link` method.")
 
     @abstractmethod
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
@@ -187,6 +249,31 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `get_links_api_objects` method.")
 
     @abstractmethod
+    def get_lab_from_api(self, lab_hash: str = None, lab_name: str = None) -> Lab:
+        """Return the network scenario (specified by the hash or name), building it from API objects.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+
+        Returns:
+            Lab: The built network scenario.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
+        """
+        raise NotImplementedError("You must implement `get_lab_from_api` method.")
+
+    @abstractmethod
+    def update_lab_from_api(self, lab: Lab) -> None:
+        """Update the passed network scenario from API objects.
+
+        Args:
+            lab (Lab): The network scenario to update.
+        """
+        raise NotImplementedError("You must implement `update_lab_from_api` method.")
+
+    @abstractmethod
     def get_machines_stats(self, lab_hash: str = None, lab_name: str = None, machine_name: str = None,
                            all_users: bool = False) -> Generator[Dict[str, IMachineStats], None, None]:
         """Return information about the running devices.
@@ -219,7 +306,7 @@ class IManager(ABC):
         Returns:
             IMachineStats: IMachineStats object containing the device info.
         """
-        raise NotImplementedError("You must implement `get_machine_info` method.")
+        raise NotImplementedError("You must implement `get_machine_stats` method.")
 
     @abstractmethod
     def get_links_stats(self, lab_hash: str = None, lab_name: str = None, link_name: str = None,

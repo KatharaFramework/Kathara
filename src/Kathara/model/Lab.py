@@ -1,7 +1,7 @@
 import collections
 import os
 from itertools import chain
-from typing import Dict, Set, Any, List, Union, Optional
+from typing import Dict, Set, Any, List, Union, Optional, Tuple
 
 from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
@@ -35,7 +35,7 @@ class Lab(object):
                  'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
-    def __init__(self, name: Optional[str], path: str = None) -> None:
+    def __init__(self, name: Optional[str], path: Optional[str] = None) -> None:
         """Create a new instance of a Kathara network scenario.
 
         Args:
@@ -83,7 +83,8 @@ class Lab(object):
         self._name = value
         self.hash = utils.generate_urlsafe_hash(value)
 
-    def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None) -> None:
+    def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None) \
+            -> Tuple['MachinePackage.Machine', Link]:
         """Connect the specified device to the specified collision domain.
 
         Args:
@@ -93,7 +94,8 @@ class Lab(object):
                 number is used.
 
         Returns:
-            None
+            Tuple[Kathara.model.Machine, Kathara.model.Link]: A tuple containing the Kathara device and collision domain
+                specified by their names.
 
         Raises:
             Exception: If an already used interface number is specified.
@@ -103,7 +105,9 @@ class Lab(object):
 
         machine.add_interface(link, number=machine_iface_number)
 
-    def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> None:
+        return machine, link
+
+    def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> 'MachinePackage.Machine':
         """Assign meta information to the specified device.
 
         Args:
@@ -112,7 +116,7 @@ class Lab(object):
             meta_value (str): The value of the meta property.
 
         Returns:
-            None
+            Kathara.model.Machine: The Kathara device specified by the name.
 
         Raises:
             MachineOptionError: If invalid values are specified for meta properties.
@@ -120,6 +124,8 @@ class Lab(object):
         machine = self.get_or_new_machine(machine_name)
 
         machine.add_meta(meta_name, meta_value)
+
+        return machine
 
     def attach_external_links(self, external_links: Dict[str, List[ExternalLink]]) -> None:
         """Attach external collision domains to the network scenario.
@@ -147,14 +153,14 @@ class Lab(object):
         for machine in self.machines:
             self.machines[machine].check()
 
-    def get_links_from_machines(self, selected_machines: Union[List[str], Set[str]]) -> Dict[str, Link]:
-        """Return the name of the collision domains connected to the selected_machines.
+    def get_links_from_machines(self, selected_machines: Union[List[str], Set[str]]) -> Set[str]:
+        """Return the name of the collision domains connected to the selected devices.
 
         Args:
             selected_machines (Set[str]): A set with selected devices names.
 
         Returns:
-            Dict[str, Link]: Keys are collision domains names, values are Link objects.
+            Set[str]: A set of names of collision domains to deploy.
         """
         # Intersect selected machines names with self.machines keys
         selected_machines = set(self.machines.keys()) & set(selected_machines)
@@ -163,7 +169,7 @@ class Lab(object):
 
         # Get only selected machines Link objects.
         selected_links = set(chain.from_iterable([machine.interfaces.values() for machine in machines]))
-        selected_links = {link.name: link for link in selected_links}
+        selected_links = {link.name for link in selected_links}
 
         return selected_links
 
@@ -176,6 +182,7 @@ class Lab(object):
         Returns:
             None
         """
+
         def dep_sort(item: str) -> int:
             try:
                 return dependencies.index(item) + 1

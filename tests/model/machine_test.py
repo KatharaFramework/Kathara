@@ -41,6 +41,9 @@ def test_default_device_parameters(default_device: Machine):
     assert not default_device.lab.has_path()
 
 
+#
+# TEST: add_interface
+#
 def test_add_interface(default_device: Machine):
     default_device.add_interface(Link(default_device.lab, "A"))
     assert len(default_device.interfaces) == 1
@@ -61,6 +64,73 @@ def test_add_two_interfaces_on_same_cd(default_device: Machine):
         default_device.add_interface(link)
 
 
+#
+# TEST: remove_interface
+#
+def test_remove_interface(default_device: Machine):
+    link = Link(default_device.lab, "A")
+    default_device.add_interface(link)
+    assert len(default_device.interfaces) == 1
+    assert default_device.interfaces[0].name == "A"
+    assert default_device.name in link.machines
+    default_device.remove_interface(link)
+    assert len(default_device.interfaces) == 1
+    assert len(link.machines.keys()) == 0
+    assert default_device.interfaces[0] is None
+
+
+def test_remove_interface_one(default_device: Machine):
+    link_a = Link(default_device.lab, "A")
+    link_b = Link(default_device.lab, "B")
+    link_c = Link(default_device.lab, "C")
+    default_device.add_interface(link_a)
+    default_device.add_interface(link_b)
+    default_device.add_interface(link_c)
+    assert len(default_device.interfaces) == 3
+    assert default_device.interfaces[0].name == "A"
+    assert default_device.interfaces[1].name == "B"
+    assert default_device.interfaces[2].name == "C"
+    default_device.remove_interface(link_a)
+    assert len(default_device.interfaces) == 3
+    assert default_device.interfaces[0] is None
+    assert default_device.interfaces[1].name == "B"
+    assert default_device.interfaces[2].name == "C"
+    assert default_device.name not in link_a.machines
+
+
+def test_remove_interface_exception(default_device: Machine):
+    link = Link(default_device.lab, "A")
+    with pytest.raises(Exception):
+        default_device.remove_interface(link)
+
+
+def test_add_remove_add_interface(default_device: Machine):
+    link = Link(default_device.lab, "A")
+    default_device.add_interface(link)
+    default_device.remove_interface(link)
+    default_device.add_interface(link)
+    assert default_device.interfaces[1] == link
+
+
+def test_add_remove_three_interfaces(default_device: Machine):
+    link_a = Link(default_device.lab, "A")
+    link_b = Link(default_device.lab, "B")
+    link_c = Link(default_device.lab, "C")
+    link_d = Link(default_device.lab, "D")
+
+    default_device.add_interface(link_a)
+    default_device.add_interface(link_b)
+    default_device.add_interface(link_c)
+
+    default_device.remove_interface(link_c)
+
+    default_device.add_interface(link_d)
+    assert default_device.interfaces[3] == link_d
+
+
+#
+# TEST: add_meta
+#
 def test_add_meta_sysctl(default_device: Machine):
     default_device.add_meta("sysctl", "net.ipv4.tcp_syncookies=1")
     assert default_device.meta['sysctls']['net.ipv4.tcp_syncookies'] == 1
@@ -121,6 +191,9 @@ def test_add_meta_port_format_exception2(default_device: Machine):
         default_device.add_meta("port", ":2000")
 
 
+#
+# TEST: check
+#
 def test_check(default_device: Machine):
     default_device.add_interface(Link(default_device.lab, "A"), number=0)
     default_device.add_interface(Link(default_device.lab, "B"), number=1)
@@ -134,6 +207,9 @@ def test_check_exception(default_device: Machine):
         default_device.check()
 
 
+#
+# TEST: get_image
+#
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 def test_get_image_default(mock_setting_get_instance, default_device: Machine):
     setting_mock = Mock()
@@ -151,6 +227,9 @@ def test_get_image():
     assert device.get_image() == "kathara/frr"
 
 
+#
+# TEST: get_mem
+#
 def test_get_mem_default(default_device: Machine):
     assert default_device.get_mem() is None
 
@@ -168,6 +247,9 @@ def test_get_mem_from_device_meta():
     assert device.get_mem() == "200m"
 
 
+#
+# TEST: get_cpu
+#
 def test_get_cpu_default(default_device: Machine):
     assert default_device.get_cpu() is None
 
@@ -185,6 +267,9 @@ def test_get_cpu_from_device_meta():
     assert device.get_cpu() == 1
 
 
+#
+# TEST: num_terms
+#
 def test_get_num_terms_default(default_device: Machine):
     assert default_device.get_num_terms() == 1
 
@@ -213,6 +298,9 @@ def test_get_num_terms_mix():
     assert device2.get_num_terms() == 2
 
 
+#
+# TEST: pack_data
+#
 @mock.patch("src.Kathara.utils.pack_file_for_tar")
 def test_pack_data_hidden_files(pack_file_for_tar_mock):
     lab_path = os.path.join("tests", "model", "hiddenfiles")

@@ -1,5 +1,5 @@
 m4_changequote()
-kathara-lab.dep(5) -- Lab dependencies file
+kathara-lab.dep(5) -- Network scenario dependencies file
 =============================================
 
 ## DESCRIPTION
