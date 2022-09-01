@@ -1,5 +1,5 @@
 m4_changequote()
-kathara-lab.ext(5) -- Lab external networks file
+kathara-lab.ext(5) -- Network scenario external networks file
 =============================================
 
 ## DESCRIPTION
