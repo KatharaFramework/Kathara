@@ -500,15 +500,15 @@ class DockerManager(IManager):
 
             device.meta["sysctls"] = container.attrs["HostConfig"]["Sysctls"]
 
-            for network_name in container.attrs["NetworkSettings"]["Networks"]:
-                if network_name == "bridge":
-                    device.add_meta("bridged", True)
-                    continue
-
-                network = lab_networks[network_name]
-                link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
-                link.api_object = network
-                device.add_interface(link)
+            if "none" not in container.attrs["NetworkSettings"]["Networks"]:
+                for network_name in container.attrs["NetworkSettings"]["Networks"]:
+                    if network_name == "bridge":
+                        device.add_meta("bridged", True)
+                        continue
+                    network = lab_networks[network_name]
+                    link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
+                    link.api_object = network
+                    device.add_interface(link)
 
         return reconstructed_lab
 
@@ -533,10 +533,12 @@ class DockerManager(IManager):
             device.api_object = container
 
             static_links = set(device.interfaces.values())
-            current_links = set(map(lambda x: lab.get_or_new_link(deployed_networks[x].attrs["Labels"]["name"]),
-                                    container.attrs["NetworkSettings"]["Networks"]))
+            current_links = set(map(lambda x: lab.get_or_new_link(
+                deployed_networks[x].attrs["Labels"]["name"]),
+                                    filter(lambda x: x != "bridge", container.attrs["NetworkSettings"]["Networks"])))
             dynamic_links = current_links - static_links
             deleted_links = static_links - current_links
+
             for link in static_links:
                 if link.name in deployed_networks_by_link_name:
                     link.api_object = deployed_networks_by_link_name[link.name]
