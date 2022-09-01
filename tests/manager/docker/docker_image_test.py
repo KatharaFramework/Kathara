@@ -7,7 +7,6 @@ from docker.errors import APIError
 
 sys.path.insert(0, './')
 
-from src.Kathara.exceptions import InvalidImageArchitectureError
 from src.Kathara.event.EventDispatcher import EventDispatcher
 from src.Kathara.manager.docker.DockerImage import DockerImage
 

@@ -1,7 +1,5 @@
 import argparse
 import logging
-import re
-import sys
 from typing import List
 
 from ... import utils

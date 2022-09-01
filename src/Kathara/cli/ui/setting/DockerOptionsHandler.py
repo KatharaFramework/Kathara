@@ -196,11 +196,11 @@ class DockerOptionsHandler(OptionsHandler):
 
             return remote_url_item
 
-        remote_url_item = exec_by_platform(remote_url_unix, lambda: None, remote_url_unix)
+        platform_remote_url_item = exec_by_platform(remote_url_unix, lambda: None, remote_url_unix)
 
         current_menu.append_item(hosthome_item)
         current_menu.append_item(shared_item)
         current_menu.append_item(image_update_policy_item)
         current_menu.append_item(shared_cd_item)
-        if remote_url_item:
-            current_menu.append_item(remote_url_item)
+        if platform_remote_url_item:
+            current_menu.append_item(platform_remote_url_item)

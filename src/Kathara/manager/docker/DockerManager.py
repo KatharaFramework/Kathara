@@ -541,6 +541,7 @@ class DockerManager(IManager):
             current_links = set(map(lambda x: lab.get_or_new_link(
                 deployed_networks[x].attrs["Labels"]["name"]),
                                     filter(lambda x: x != "bridge", container.attrs["NetworkSettings"]["Networks"])))
+
             dynamic_links = current_links - static_links
             deleted_links = static_links - current_links
 

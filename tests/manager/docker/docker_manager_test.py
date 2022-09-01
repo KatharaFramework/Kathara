@@ -21,14 +21,12 @@ from src.Kathara.manager.docker.stats.DockerMachineStats import DockerMachineSta
 @pytest.fixture()
 @mock.patch("src.Kathara.manager.docker.DockerPlugin.DockerPlugin.check_and_download_plugin")
 @mock.patch("docker.from_env")
-@mock.patch("docker.DockerClient")
-def docker_manager(mock_docker_client, mock_from_env, mock_check_and_download_plugin):
+def docker_manager(mock_from_env, mock_check_and_download_plugin):
     mock_check_and_download_plugin.return_value = True
+    mock_from_env.return_value = Mock()
+    docker_manager = DockerManager()
 
-    client_mock = Mock()
-    mock_from_env = client_mock
-
-    return DockerManager()
+    return docker_manager
 
 
 @pytest.fixture()
@@ -210,6 +208,7 @@ def test_deploy_lab_selected_machines_exception(mock_deploy_links, mock_deploy_m
         docker_manager.deploy_lab(two_device_scenario, selected_machines={"pc3"})
     assert not mock_deploy_machines.called
     assert not mock_deploy_links.called
+
 
 #
 # TEST: deploy_machine

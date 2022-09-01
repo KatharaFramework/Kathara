@@ -183,7 +183,6 @@ class KubernetesManager(IManager):
                             if 'Terminating' not in running_machine.status.phase]
 
         # From machines, save a set with all the attached networks (still needed)
-        running_networks = set()
         for running_machine in running_machines:
             network_annotation = json.loads(running_machine.metadata.annotations["k8s.v1.cni.cncf.io/networks"])
             # If the collision domain to undeploy is still used, do nothing
