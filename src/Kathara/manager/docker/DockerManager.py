@@ -164,6 +164,7 @@ class DockerManager(IManager):
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
             link (Kathara.model.Link): The Kathara collision domain from which disconnect the device.
+
         Returns:
             None
         """

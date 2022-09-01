@@ -164,8 +164,7 @@ class DockerImage(object):
 
     @staticmethod
     def _check_image_architecture(image: Union[docker.models.images.Image, docker.models.images.RegistryData]) -> None:
-        """
-        Check if the specified image is compatible with the host architecture.
+        """Check if the specified image is compatible with the host architecture.
 
         Args:
             image (Union[docker.models.images.Image, docker.models.images.RegistryData]): Docker Image object.
