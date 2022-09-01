@@ -464,12 +464,12 @@ class DockerManager(IManager):
             reconstructed_lab = Lab("reconstructed_lab")
             reconstructed_lab.hash = lab_hash
 
-        running_containers = self.get_machines_api_objects(lab_hash=reconstructed_lab.hash)
-        deployed_networks = dict(
+        lab_containers = self.get_machines_api_objects(lab_hash=reconstructed_lab.hash)
+        lab_networks = dict(
             map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=reconstructed_lab.hash))
         )
 
-        for container in running_containers:
+        for container in lab_containers:
             container.reload()
             device = reconstructed_lab.get_or_new_machine(container.labels["name"])
             device.api_object = container
@@ -505,7 +505,7 @@ class DockerManager(IManager):
                     device.add_meta("bridged", True)
                     continue
 
-                network = deployed_networks[network_name]
+                network = lab_networks[network_name]
                 link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
                 link.api_object = network
                 device.add_interface(link)

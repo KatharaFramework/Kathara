@@ -471,6 +471,77 @@ class KubernetesManager(IManager):
 
         return self.k8s_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name)
 
+    def get_lab_from_api(self, lab_hash: str = None, lab_name: str = None) -> Lab:
+        """Return the network scenario (specified by the hash or name), building it from API objects.
+
+        Args:
+            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
+            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+
+        Returns:
+            Lab: The built network scenario.
+
+        Raises:
+            Exception: You must specify a running network scenario hash or name.
+        """
+        if not lab_hash and not lab_name:
+            raise Exception("You must specify a running network scenario hash or name.")
+
+        if lab_name:
+            reconstructed_lab = Lab(lab_name)
+        else:
+            reconstructed_lab = Lab("reconstructed_lab")
+            reconstructed_lab.hash = lab_hash
+
+        lab_pods = self.get_machines_api_objects(lab_hash=reconstructed_lab.hash)
+        lab_networks = dict(
+            map(lambda x: (x['metadata']['name'], x), self.get_links_api_objects(lab_hash=reconstructed_lab.hash))
+        )
+
+        for pod in lab_pods:
+            device = reconstructed_lab.get_or_new_machine(pod.metadata.labels["name"])
+            device.api_object = pod
+
+            # Rebuild device metas
+            # NOTE: "privileged" and "bridged" are not supported on Megalos
+            # NOTE: We cannot rebuild "sysctls", "exec", "ipv6" and "num_terms" meta.
+            container = pod.spec.containers[0]
+            device.add_meta("image", container.image.replace('docker.io/', ''))
+            device.add_meta("shell", self.k8s_machine.get_env_var_value_from_pod(pod, "_MEGALOS_SHELL"))
+
+            # Memory is always returned in MBytes
+            if container.resources.limits and 'memory' in container.resources.limits:
+                device.add_meta("mem", container.resources.limits['memory'])
+
+            # Reconvert nanocpus to a value passed by the user
+            if container.resources.limits and 'cpu' in container.resources.limits:
+                device.add_meta("cpu", int(container.resources.limits['cpu'].replace('m', '')) / 1000)
+
+            for env in container.env:
+                if env.name != "_MEGALOS_SHELL":
+                    device.meta["envs"][env.name] = env.value
+
+            # Reconvert ports to the device format
+            if container.ports:
+                for port in container.ports:
+                    device.meta["ports"][(port.host_port, port.protocol)] = port.container_port
+
+            for network_conf in json.loads(pod.metadata.annotations["k8s.v1.cni.cncf.io/networks"]):
+                network = lab_networks[network_conf['name']]
+                link = reconstructed_lab.get_or_new_link(network['metadata']['labels']['name'])
+                link.api_object = network
+                device.add_interface(link)
+
+        return reconstructed_lab
+
+    def update_lab_from_api(self, lab: Lab) -> None:
+        """Update the passed network scenario from API objects.
+
+        Args:
+            lab (Lab): The network scenario to update.
+        """
+        raise NotSupportedError("Unable to update a running network scenario.")
+
     def get_machine_stats(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
                           all_users: bool = False) -> Generator[KubernetesMachineStats, None, None]:
         """Return information of the specified device in a specified network scenario.
