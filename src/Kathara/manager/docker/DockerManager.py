@@ -505,6 +505,10 @@ class DockerManager(IManager):
 
             device.meta["sysctls"] = container.attrs["HostConfig"]["Sysctls"]
 
+            # If we're running kathara/inception, means that the device supports nesting
+            if device.get_image() == "kathara/inception":
+                device.meta["nested"] = True
+
             if "none" not in container.attrs["NetworkSettings"]["Networks"]:
                 for network_name in container.attrs["NetworkSettings"]["Networks"]:
                     if network_name == "bridge":

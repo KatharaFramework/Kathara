@@ -153,10 +153,11 @@ class Machine(object):
             return
 
         if name == "nested":
-            self.meta[name] = bool(strtobool(str(value)))
-
             if "image" in self.meta and self.meta[name]:
                 raise MachineOptionError("Cannot activate nesting when a device image is specified.")
+
+            self.meta[name] = bool(strtobool(str(value)))
+            self.meta["image"] = "kathara/inception"
 
             return
 
@@ -324,9 +325,6 @@ class Machine(object):
         Returns:
             str: The name of the device image.
         """
-        if self.meta['nested']:
-            return 'kathara/inception'
-
         return self.lab.general_options["image"] if "image" in self.lab.general_options else \
             self.meta["image"] if "image" in self.meta else Setting.get_instance().image
 

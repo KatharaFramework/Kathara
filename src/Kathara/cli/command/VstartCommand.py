@@ -151,6 +151,11 @@ class VstartCommand(Command):
             required=False,
             help='Set the shell (sh, bash, etc.) that should be used inside the device.'
         )
+        self.parser.add_argument(
+            '--nested',
+            required=False,
+            help='Enables nesting. You can run a nested network scenario in this device.'
+        )
 
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)

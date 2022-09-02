@@ -531,6 +531,10 @@ class KubernetesManager(IManager):
                 for port in container.ports:
                     device.meta["ports"][(port.host_port, port.protocol)] = port.container_port
 
+            # If we're running kathara/inception, means that the device supports nesting
+            if device.get_image() == "kathara/inception":
+                device.meta["nested"] = True
+
             for network_conf in json.loads(pod.metadata.annotations["k8s.v1.cni.cncf.io/networks"]):
                 network = lab_networks[network_conf['name']]
                 link = reconstructed_lab.get_or_new_link(network['metadata']['labels']['name'])

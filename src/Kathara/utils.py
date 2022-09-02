@@ -221,7 +221,8 @@ def get_current_user_info() -> Any:
 
 
 def is_running_in_container() -> bool:
-    return os.path.exists("/.dockerenv")
+    # Check if valid only on Linux.
+    return exec_by_platform(lambda: os.path.exists("/.dockerenv"), lambda: False, lambda: False)
 
 
 # Formatting Functions
