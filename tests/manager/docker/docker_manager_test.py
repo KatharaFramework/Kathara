@@ -697,8 +697,8 @@ def test_get_links_api_objects_not_found(mock_get_links_api_objects, docker_mana
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_api_objects")
 def test_get_lab_from_api_lab_name_all_info(mock_get_links_api_objects, mock_get_machines_api_objects, docker_container,
                                             docker_network, docker_manager):
-    mock_get_machines_api_objects.return_value = {docker_container}
-    mock_get_links_api_objects.return_value = {docker_network}
+    mock_get_machines_api_objects.return_value = [docker_container]
+    mock_get_links_api_objects.return_value = [docker_network]
     lab = docker_manager.get_lab_from_api(lab_name="lab_test")
     assert len(lab.machines) == 1
     assert docker_container.labels["name"] in lab.machines
@@ -718,33 +718,10 @@ def test_get_lab_from_api_lab_name_all_info(mock_get_links_api_objects, mock_get
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_api_objects")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_api_objects")
-def test_get_lab_from_api_lab_name_empty_meta(mock_get_links_api_objects, mock_get_machines_api_objects,
-                                              docker_container_empty_meta,
-                                              docker_network, docker_manager):
-    mock_get_machines_api_objects.return_value = {docker_container_empty_meta}
-    mock_get_links_api_objects.return_value = {}
-    lab = docker_manager.get_lab_from_api(lab_name="lab_test")
-    assert len(lab.machines) == 1
-    assert docker_container_empty_meta.labels["name"] in lab.machines
-    reconstructed_device = lab.get_or_new_machine(docker_container_empty_meta.labels["name"])
-    assert not reconstructed_device.meta["privileged"]
-    assert reconstructed_device.meta["image"] == "test_image"
-    assert reconstructed_device.meta["shell"] == "/bin/bash"
-    assert "mem" not in reconstructed_device.meta
-    assert "cpu" not in reconstructed_device.meta
-    assert reconstructed_device.meta["envs"]["test"] == "path"
-    assert reconstructed_device.meta["ports"] == {}
-    assert reconstructed_device.meta["sysctls"]["sysctl.test"] == "0"
-    assert not reconstructed_device.meta["bridged"]
-    assert len(lab.links) == 0
-
-
-@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_api_objects")
-@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_api_objects")
 def test_get_lab_from_api_lab_hash_all_info(mock_get_links_api_objects, mock_get_machines_api_objects, docker_container,
                                             docker_network, docker_manager):
-    mock_get_machines_api_objects.return_value = {docker_container}
-    mock_get_links_api_objects.return_value = {docker_network}
+    mock_get_machines_api_objects.return_value = [docker_container]
+    mock_get_links_api_objects.return_value = [docker_network]
     lab = docker_manager.get_lab_from_api(lab_hash="lab_hash")
     assert lab.hash == "lab_hash"
     assert lab.name == "reconstructed_lab"
@@ -764,6 +741,28 @@ def test_get_lab_from_api_lab_hash_all_info(mock_get_links_api_objects, mock_get
     assert docker_network.attrs["Labels"]["name"] in lab.links
 
 
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_api_objects")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_api_objects")
+def test_get_lab_from_api_lab_name_empty_meta(mock_get_links_api_objects, mock_get_machines_api_objects,
+                                              docker_container_empty_meta, docker_manager):
+    mock_get_machines_api_objects.return_value = [docker_container_empty_meta]
+    mock_get_links_api_objects.return_value = []
+    lab = docker_manager.get_lab_from_api(lab_name="lab_test")
+    assert len(lab.machines) == 1
+    assert docker_container_empty_meta.labels["name"] in lab.machines
+    reconstructed_device = lab.get_or_new_machine(docker_container_empty_meta.labels["name"])
+    assert not reconstructed_device.meta["privileged"]
+    assert reconstructed_device.meta["image"] == "test_image"
+    assert reconstructed_device.meta["shell"] == "/bin/bash"
+    assert "mem" not in reconstructed_device.meta
+    assert "cpu" not in reconstructed_device.meta
+    assert reconstructed_device.meta["envs"]["test"] == "path"
+    assert reconstructed_device.meta["ports"] == {}
+    assert reconstructed_device.meta["sysctls"]["sysctl.test"] == "0"
+    assert not reconstructed_device.meta["bridged"]
+    assert len(lab.links) == 0
+
+
 def test_get_lab_from_api_exception(docker_manager):
     with pytest.raises(Exception):
         docker_manager.get_lab_from_api()
@@ -780,8 +779,8 @@ def test_update_lab_from_api_add_link(mock_get_links_api_objects, mock_get_machi
     device = lab.get_or_new_machine(docker_container.labels["name"])
     link = Link(lab, docker_network.attrs["Labels"]["name"])
     device.add_interface(link)
-    mock_get_machines_api_objects.return_value = {docker_container}
-    mock_get_links_api_objects.return_value = {docker_network, docker_network_b}
+    mock_get_machines_api_objects.return_value = [docker_container]
+    mock_get_links_api_objects.return_value = [docker_network, docker_network_b]
     docker_container.attrs["NetworkSettings"]["Networks"] = ["kathara_user_hash_test_network",
                                                              "kathara_user_hash_test_network_b"]
     docker_manager.update_lab_from_api(lab)
@@ -800,8 +799,8 @@ def test_update_lab_from_api_remove_link(mock_get_links_api_objects, mock_get_ma
     device = lab.get_or_new_machine(docker_container.labels["name"])
     link = Link(lab, docker_network.attrs["Labels"]["name"])
     device.add_interface(link)
-    mock_get_machines_api_objects.return_value = {docker_container}
-    mock_get_links_api_objects.return_value = {}
+    mock_get_machines_api_objects.return_value = [docker_container]
+    mock_get_links_api_objects.return_value = []
     docker_container.attrs["NetworkSettings"]["Networks"] = []
 
     docker_manager.update_lab_from_api(lab)
@@ -820,8 +819,8 @@ def test_update_lab_from_api_add_remove_link(mock_get_links_api_objects, mock_ge
     link = Link(lab, docker_network.attrs["Labels"]["name"])
     device.add_interface(link)
 
-    mock_get_machines_api_objects.return_value = {docker_container}
-    mock_get_links_api_objects.return_value = {docker_network_b}
+    mock_get_machines_api_objects.return_value = [docker_container]
+    mock_get_links_api_objects.return_value = [docker_network_b]
     docker_container.attrs["NetworkSettings"]["Networks"] = ["kathara_user_hash_test_network_b"]
 
     docker_manager.update_lab_from_api(lab)

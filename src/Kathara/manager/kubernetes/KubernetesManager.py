@@ -513,11 +513,10 @@ class KubernetesManager(IManager):
             device.add_meta("image", container.image.replace('docker.io/', ''))
             device.add_meta("shell", self.k8s_machine.get_env_var_value_from_pod(pod, "_MEGALOS_SHELL"))
 
-            # Memory is always returned in MBytes
             if container.resources.limits and 'memory' in container.resources.limits:
-                device.add_meta("mem", container.resources.limits['memory'])
+                device.add_meta("mem", container.resources.limits['memory'].upper())
 
-            # Reconvert nanocpus to a value passed by the user
+            # Reconvert mcpus to a value passed by the user
             if container.resources.limits and 'cpu' in container.resources.limits:
                 device.add_meta("cpu", int(container.resources.limits['cpu'].replace('m', '')) / 1000)
 
@@ -528,7 +527,7 @@ class KubernetesManager(IManager):
             # Reconvert ports to the device format
             if container.ports:
                 for port in container.ports:
-                    device.meta["ports"][(port.host_port, port.protocol)] = port.container_port
+                    device.meta["ports"][(port.host_port, port.protocol.lower())] = port.container_port
 
             for network_conf in json.loads(pod.metadata.annotations["k8s.v1.cni.cncf.io/networks"]):
                 network = lab_networks[network_conf['name']]
