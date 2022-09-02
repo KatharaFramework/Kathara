@@ -137,6 +137,9 @@ class Lab(object):
 
         Returns:
             None
+
+        Raises:
+            LinkNotFoundError: If the external collision domain specified is not associated to the network scenario.
         """
         for (link_name, link_external_links) in external_links.items():
             if link_name not in self.links:
@@ -230,8 +233,8 @@ class Lab(object):
             None
 
         Raises:
-            Exception: The shared folder is a Symlink, delete it.
-            OSError: Permission error.
+            IOError: If the shared folder is a Symlink, delete it.
+            OSError: If there is a permission error.
         """
         if not self.has_path():
             return
@@ -249,7 +252,7 @@ class Lab(object):
         """Check if the network scenario has a directory.
 
         Returns:
-            bool: True if it self.path is not None, else False.
+            bool: True if self.path is not None, else False.
         """
         return self.path is not None
 

@@ -26,6 +26,10 @@ class DockerPlugin(object):
 
         Returns:
             None
+
+        Raises:
+            DockerPluginError: If the Kathara Network Plugin is not found on remote Docker connection.
+            DockerPluginError: If the Kathara Network Plugin is not enabled on remote Docker connection.
         """
         try:
             logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)

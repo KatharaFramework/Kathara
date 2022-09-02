@@ -69,6 +69,9 @@ class KubernetesConfigMap(object):
 
         Returns:
             Optional[client.V1ConfigMap]: The Kubernetes ConfigMap for the device.
+
+        Raises:
+            KubernetesConfigMapError: If the device folder size exceeds the maximum supported size.
         """
         tar_data = machine.pack_data()
 

@@ -22,6 +22,11 @@ class DepParser(object):
         Returns:
             Optional[List[str]]: A List of string containing the names of the device ordered considering the
                 dependencies.
+
+        Raises:
+            IOError: If there is an error while opening lab.dep file.
+            SyntaxError: If there is a syntax error in lab.dep file.
+            MachineDependencyError: If there is a Machines dependency loop in lab.dep file.
         """
         lab_dep_path = os.path.join(path, 'lab.dep')
 
@@ -65,6 +70,6 @@ class DepParser(object):
             line = dep_mem_file.readline().decode('utf-8')
 
         if depgen.has_loop(dependencies):
-            raise MachineDependencyError("Loop in lab.dep file.")
+            raise MachineDependencyError("Machines' dependency loop in lab.dep file.")
 
         return depgen.flatten(dependencies)

@@ -166,6 +166,9 @@ class DockerMachine(object):
 
         Returns:
             None
+
+        Raises:
+            MachineAlreadyExistsError: If a device with the name specified already exists.
         """
         logging.debug("Creating device `%s`..." % machine.name)
 
@@ -327,6 +330,12 @@ class DockerMachine(object):
 
         Args:
            machine (Kathara.model.Machine.Machine): A Kathara device.
+
+        Returns:
+            None
+
+        Raises:
+            MountDeniedError: If the host drive is not shared with Docker.
         """
         logging.debug("Starting device `%s`..." % machine.name)
 
@@ -452,6 +461,9 @@ class DockerMachine(object):
 
         Returns:
             None
+
+        Raises:
+            MachineNotFoundError: If the specified device is not running.
         """
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:
@@ -523,6 +535,9 @@ class DockerMachine(object):
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+
+        Raises:
+            MachineNotFoundError: If the specified device is not running.
         """
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
@@ -592,6 +607,9 @@ class DockerMachine(object):
         Returns:
             Generator[Dict[str, DockerMachineStats], None, None]: A generator containing device names as keys and
             DockerMachineStats as values.
+
+        Raises:
+            MachineNotFoundError: If the specified devices are not running.
         """
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:

@@ -22,7 +22,7 @@ class DockerHubApi(object):
             filter: filtered list of currently available images that satisfy the previous conditions.
 
         Raises:
-            HTTPConnectionError: errors in connecting with Docker Hub.
+            HTTPConnectionError: If there is a connection error with the Docker Hub.
         """
         try:
             result = requests.get(DOCKER_HUB_KATHARA_URL)

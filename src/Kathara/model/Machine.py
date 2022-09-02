@@ -98,7 +98,8 @@ class Machine(object):
             None
 
         Raises:
-            Exception: The interface number specified is already used on the device.
+            MachineCollisionDomainConflictError: If the interface number specified is already used on the device.
+            MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
         if number is None:
             number = len(self.interfaces.keys())
@@ -124,10 +125,11 @@ class Machine(object):
             None
 
         Raises:
-            Exception: The interface number specified is already used on the device.
+            MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
         """
         if self.name not in link.machines:
-            raise Exception("Device `%s` is not connected to collision domain `%s`." % (self.name, link.name))
+            raise MachineCollisionDomainConflictError(
+                f"Device `{self.name}` is not connected to collision domain `{link.name}`.")
 
         self.interfaces = collections.OrderedDict(
             map(lambda x: x if x[1] is not None and x[1].name != link.name else (x[0], None), self.interfaces.items())
@@ -145,7 +147,7 @@ class Machine(object):
             None
 
         Raises:
-            MachineOptionError: The specified value is not valid for the specified property.
+            MachineOptionError: If the specified value is not valid for the specified property.
         """
         if name == "exec":
             self.startup_commands.append(value)
@@ -315,6 +317,9 @@ class Machine(object):
 
         Returns:
             str: The memory limit of the device.
+
+        Raises:
+            MachineOptionError: If the memory value specified is not valid.
         """
         memory = self.lab.general_options["mem"] if "mem" in self.lab.general_options else \
             self.meta["mem"] if "mem" in self.meta else None
@@ -345,6 +350,9 @@ class Machine(object):
 
         Returns:
             Optional[int]: The CPU limit of the device.
+
+        Raises:
+            MachineOptionError: If the CPU value specified is not valid.
         """
         if "cpus" in self.lab.general_options:
             try:
@@ -375,6 +383,9 @@ class Machine(object):
 
         Returns:
             int: The number of terminal to be opened.
+
+        Raises:
+            MachineOptionError: If the terminals number value specified is not valid.
         """
         num_terms = 1
 
@@ -398,6 +409,9 @@ class Machine(object):
 
         Returns:
             bool: True if it is enabled, else False.
+
+        Raises:
+            MachineOptionError: If the IPv6 value specified is not valid.
         """
         try:
             return bool(strtobool(self.lab.general_options["ipv6"])) if "ipv6" in self.lab.general_options else \

@@ -15,7 +15,10 @@ class EventDispatcher(object):
         """Get an instance of the Dispatcher.
 
         Returns:
-            EventDispatcher: instance of the class.
+            EventDispatcher: An instance of the class.
+
+        Raises:
+            InstantiationError: If two instances of the class are created.
         """
         if EventDispatcher.__instance is None:
             EventDispatcher()

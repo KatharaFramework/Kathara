@@ -225,6 +225,9 @@ class KubernetesLink(object):
         Returns:
            Generator[Dict[str, KubernetesLinkStats], None, None]: A generator containing network names as keys and
                 KubernetesLinkStats as values.
+
+        Raises:
+            LinkNotFoundError: If the collision domains specified are not found.
         """
         while True:
             networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name)

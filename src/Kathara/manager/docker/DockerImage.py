@@ -100,6 +100,10 @@ class DockerImage(object):
 
         Returns:
             None
+
+        Raises:
+            ConnectionError: If there is a connection error while pulling the Docker image from Docker Hub.
+            DockerImageNotFoundError: If the Docker image is not available neither on Docker Hub nor in local repository.
         """
         self._check_and_pull(image_name, pull=False)
 
@@ -124,6 +128,10 @@ class DockerImage(object):
 
         Returns:
             None
+
+        Raises:
+            ConnectionError: If there is a connection error while pulling the Docker image from Docker Hub.
+            DockerImageNotFoundError: If the Docker image is not available neither on Docker Hub nor in local repository.
         """
         try:
             # Tries to get the image from the local Docker repository.
@@ -169,7 +177,7 @@ class DockerImage(object):
             None
             
         Raises: 
-            InvalidImageArchitectureError: Docker image is not compatible with the architecture.
+            InvalidImageArchitectureError: If the Docker image is not compatible with the architecture.
         """
         host_arch = utils.get_architecture()
 

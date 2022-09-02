@@ -21,6 +21,9 @@ class Networking(object):
 
         Returns:
             int: The link index.
+
+        Raises:
+            InterfaceNotFoundError: If the specified interface is not found on the host machine.
         """
         # disable pyroute2 logging to avoid warning about project structure changes
         logging.getLogger('pyroute2').disabled = True
@@ -34,7 +37,7 @@ class Networking(object):
         interface_indexes = ip.link_lookup(ifname=full_interface_name)
         # If not present, raise an error
         if not interface_indexes:
-            raise InterfaceNotFoundError(f"Interface `{full_interface_name}` not found.")
+            raise InterfaceNotFoundError(f"Interface `{full_interface_name}` not found on the host machine.")
 
         interface_index = interface_indexes[0]
         logging.debug("Interface found with ID = %d" % interface_index)

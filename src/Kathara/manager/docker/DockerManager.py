@@ -94,9 +94,12 @@ class DockerManager(IManager):
 
         Returns:
             None
+
+        Raises:
+            MachineNotFoundError: If the specified device is not associated to any network scenario.
         """
         if not machine.lab:
-            raise MachineNotFoundError("Machine `%s` is not associated to a network scenario." % machine.name)
+            raise MachineNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
 
         self.docker_link.deploy_links(machine.lab, selected_links={x.name for x in machine.interfaces.values()})
         self.docker_machine.deploy_machines(machine.lab, selected_machines={machine.name})
@@ -110,6 +113,9 @@ class DockerManager(IManager):
 
         Returns:
             None
+
+        Raises:
+            LinkNotFoundError: If the collision domain is not associated to any network scenario.
         """
         if not link.lab:
             raise LinkNotFoundError("Collision domain `%s` is not associated to a network scenario." % link.name)
@@ -126,6 +132,9 @@ class DockerManager(IManager):
 
         Returns:
             None
+
+        Raises:
+            MachineNotFoundError: If the specified devices are not in the network scenario.
         """
         if selected_machines and not lab.find_machines(selected_machines):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
@@ -151,13 +160,17 @@ class DockerManager(IManager):
 
         Returns:
             None
+
+        Raises:
+            MachineNotFoundError: If the device specified is not associated to any network scenario.
+            MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
         if not machine.lab:
-            raise MachineNotFoundError("Machine `%s` is not associated to a network scenario." % machine.name)
+            raise MachineNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
 
         if machine.name in link.machines:
             raise MachineCollisionDomainConflictError(
-                f"Machine `{machine.name}` is already connected to collision domain `{link.name}`."
+                f"Device `{machine.name}` is already connected to collision domain `{link.name}`."
             )
 
         machine.add_interface(link)
@@ -175,13 +188,17 @@ class DockerManager(IManager):
 
         Returns:
             None
+
+        Raises:
+            MachineNotFoundError: If the device specified is not associated to any network scenario.
+            MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
         """
         if not machine.lab:
-            raise MachineNotFoundError(f"Machine `{machine.name}` is not associated to a network scenario.")
+            raise MachineNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
 
         if machine.name not in link.machines:
             raise MachineCollisionDomainConflictError(
-                f"Machine `{machine.name}` is not connected to collision domain `{link.name}`."
+                f"Device `{machine.name}` is not connected to collision domain `{link.name}`."
             )
 
         machine.remove_interface(link)
@@ -198,9 +215,12 @@ class DockerManager(IManager):
 
         Returns:
             None
+
+        Raises:
+            MachineNotFoundError: If the device specified is not associated to any network scenario.
         """
         if not machine.lab:
-            raise MachineNotFoundError(f"Machine `{machine.name}` is not associated to a network scenario.")
+            raise MachineNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
 
         self.docker_machine.undeploy(machine.lab.hash, selected_machines={machine.name})
         self.docker_link.undeploy(machine.lab.hash, selected_links={x.name for x in machine.interfaces.values()})
@@ -214,6 +234,9 @@ class DockerManager(IManager):
 
         Returns:
             None
+
+        Raises:
+            LinkNotFoundError: If the collision domain is not associated to any network scenario.
         """
         if not link.lab:
             raise LinkNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
@@ -236,7 +259,7 @@ class DockerManager(IManager):
             None
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         if not lab_hash and not lab_name:
             raise InvocationError("You must specify a running network scenario hash or name.")
@@ -286,7 +309,7 @@ class DockerManager(IManager):
             None
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         if not lab_hash and not lab_name:
             raise InvocationError("You must specify a running network scenario hash or name.")
@@ -318,7 +341,7 @@ class DockerManager(IManager):
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         if not lab_hash and not lab_name:
             raise InvocationError("You must specify a running network scenario hash or name.")
@@ -365,7 +388,7 @@ class DockerManager(IManager):
             docker.models.containers.Container: Docker API object of devices.
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         if not lab_hash and not lab_name:
             raise InvocationError("You must specify a running network scenario hash or name.")
@@ -416,8 +439,8 @@ class DockerManager(IManager):
             docker.models.networks.Network: Docker API object of the network.
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
-            Exception: Collision Domain not found.
+            InvocationError: If a running network scenario hash or name is not specified.
+            LinkNotFoundError: If the collision domain is not found.
         """
         if not lab_hash and not lab_name:
             raise InvocationError("You must specify a running network scenario hash or name.")
@@ -464,7 +487,7 @@ class DockerManager(IManager):
             Lab: The built network scenario.
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         if not lab_hash and not lab_name:
             raise InvocationError("You must specify a running network scenario hash or name.")
@@ -612,7 +635,7 @@ class DockerManager(IManager):
             the device info.
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         if not lab_hash and not lab_name:
             raise InvocationError("You must specify a running network scenario hash or name.")
@@ -662,7 +685,7 @@ class DockerManager(IManager):
                 statistics.
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         if not lab_hash and not lab_name:
             raise InvocationError("You must specify a running network scenario hash or name.")
@@ -686,8 +709,8 @@ class DockerManager(IManager):
             None
 
         Raises:
-            ConnectionError: The image is not locally available and there is no connection to a remote image repository.
-            Exception: The image is not found.
+            ConnectionError: If the image is not locally available and there is no connection to a remote image repository.
+            DockerImageNotFoundError: If the image is not found.
         """
         self.docker_image.check(image_name)
 

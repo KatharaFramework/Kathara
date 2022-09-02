@@ -186,6 +186,9 @@ class KubernetesMachine(object):
 
         Returns:
             None
+
+        Raises:
+            MachineAlreadyExistsError: If a device with the name specified already exists.
         """
         logging.debug("Creating device `%s`..." % machine.name)
 
@@ -490,6 +493,9 @@ class KubernetesMachine(object):
 
         Returns:
             None
+
+        Raises:
+            MachineNotReadyError: If the device is not ready.
         """
         pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
         if not pods:

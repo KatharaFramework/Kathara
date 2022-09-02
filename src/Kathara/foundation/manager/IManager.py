@@ -113,7 +113,7 @@ class IManager(ABC):
             None
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         raise NotImplementedError("You must implement `undeploy_lab` method.")
 
@@ -146,7 +146,7 @@ class IManager(ABC):
             None
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         raise NotImplementedError("You must implement `connect_tty` method.")
 
@@ -165,7 +165,7 @@ class IManager(ABC):
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         raise NotImplementedError("You must implement `exec` method.")
 
@@ -260,7 +260,7 @@ class IManager(ABC):
             Lab: The built network scenario.
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         raise NotImplementedError("You must implement `get_lab_from_api` method.")
 
@@ -355,8 +355,8 @@ class IManager(ABC):
             None
 
         Raises:
-            ConnectionError: The image is not locally available and there is no connection to a remote image repository.
-            Exception: The image is not found.
+            ConnectionError: If the image is not locally available and there is no connection to a remote image repository.
+            ImageNotFoundError: If the image is not found.
         """
         raise NotImplementedError("You must implement `check_image` method.")
 
