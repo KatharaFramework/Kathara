@@ -1,10 +1,10 @@
 import logging
+import mmap
 import os
 import re
 from typing import List, Optional
 
-import mmap
-
+from ...exceptions import MachineDependencyError
 from ...trdparty.depgen import depgen
 
 
@@ -59,12 +59,12 @@ class DepParser(object):
                     # Dependencies are saved as dependencies[machine3] = [machine1, machine2]
                     dependencies[key] = deps
                 else:
-                    raise Exception("[ERROR] In lab.dep - line %d: Syntax error." % line_number)
+                    raise SyntaxError(f"[ERROR] In lab.dep - line {line_number}: Syntax error.")
 
             line_number += 1
             line = dep_mem_file.readline().decode('utf-8')
 
         if depgen.has_loop(dependencies):
-            raise Exception("ERROR: Loop in lab.dep.\n")
+            raise MachineDependencyError("Loop in lab.dep file.")
 
         return depgen.flatten(dependencies)

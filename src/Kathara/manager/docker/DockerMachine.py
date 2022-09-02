@@ -12,7 +12,7 @@ from .DockerImage import DockerImage
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MountDeniedError, MachineAlreadyExistsError
+from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine
@@ -455,7 +455,7 @@ class DockerMachine(object):
         """
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:
-            raise Exception("The specified device `%s` is not running." % machine_name)
+            raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
         container = containers.pop()
 
         if not shell:
@@ -528,7 +528,7 @@ class DockerMachine(object):
 
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:
-            raise Exception("The specified device `%s` is not running." % machine_name)
+            raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
         container = containers.pop()
 
         exec_result = container.exec_run(cmd=command,
@@ -596,9 +596,9 @@ class DockerMachine(object):
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:
             if not machine_name:
-                raise Exception("No devices found.")
+                raise MachineNotFoundError("No devices found.")
             else:
-                raise Exception(f"Devices with name {machine_name} not found.")
+                raise MachineNotFoundError(f"Devices with name {machine_name} not found.")
 
         containers = sorted(containers, key=lambda x: x.name)
 

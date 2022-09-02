@@ -4,6 +4,7 @@ from typing import Optional
 from kubernetes import client
 from kubernetes.client.api import core_v1_api
 
+from ...exceptions import KubernetesConfigMapError
 from ...model.Machine import Machine
 from ...utils import human_readable_bytes
 
@@ -77,7 +78,7 @@ class KubernetesConfigMap(object):
             # Before creating the .tar.gz file, check if it is bigger than the maximum allowed size.
             tar_data_size = len(tar_data)
             if tar_data_size > MAX_FILE_SIZE:
-                raise Exception(
+                raise KubernetesConfigMapError(
                     'Unable to upload device folder. Maximum supported size: %s. Current: %s.' % (
                         human_readable_bytes(MAX_FILE_SIZE),
                         human_readable_bytes(tar_data_size)

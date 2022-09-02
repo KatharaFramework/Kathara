@@ -5,6 +5,7 @@ from typing import List
 
 from ..ui.utils import format_headers, colon_separated
 from ... import utils
+from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
@@ -169,7 +170,7 @@ class VstartCommand(Command):
 
         if args['privileged']:
             if not utils.is_admin():
-                raise Exception("You must be root in order to start this Kathara device in privileged mode.")
+                raise PrivilegeError("You must be root in order to start this Kathara device in privileged mode.")
             else:
                 logging.warning("Running device with privileged capabilities, terminal won't open!")
                 Setting.get_instance().open_terminals = False
@@ -188,7 +189,7 @@ class VstartCommand(Command):
                 try:
                     lab.connect_machine_to_link(device.name, cd, machine_iface_number=int(iface_number))
                 except ValueError:
-                    raise Exception("Interface number in `--eth %s:%s` is not a number." % (iface_number, cd))
+                    raise SyntaxError("Interface number in `--eth %s:%s` is not a number." % (iface_number, cd))
 
         lab.check_integrity()
 

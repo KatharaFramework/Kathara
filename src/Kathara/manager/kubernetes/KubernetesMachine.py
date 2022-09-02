@@ -19,7 +19,7 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MachineAlreadyExistsError
+from ...exceptions import MachineAlreadyExistsError, MachineNotFoundError, MachineNotReadyError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
@@ -493,11 +493,11 @@ class KubernetesMachine(object):
         """
         pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
         if not pods:
-            raise Exception("The specified device `%s` is not running." % machine_name)
+            raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
         deployment = pods.pop()
 
         if 'Running' not in deployment.status.phase:
-            raise Exception('Device `%s` is not ready.' % machine_name)
+            raise MachineNotReadyError('Device `%s` is not ready.' % machine_name)
 
         if not shell:
             shell_env_value = self.get_env_var_value_from_pod(deployment, "_MEGALOS_SHELL")
@@ -593,7 +593,7 @@ class KubernetesMachine(object):
             # Retrieve the pod of current Deployment
             pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
             if not pods:
-                raise Exception("The specified device `%s` is not running." % machine_name)
+                raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
             pod = pods.pop()
 
             response = stream(self.core_client.connect_get_namespaced_pod_exec,
@@ -713,9 +713,9 @@ class KubernetesMachine(object):
             pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
             if not pods:
                 if not machine_name:
-                    raise Exception("No devices found.")
+                    raise MachineNotFoundError("No devices found.")
                 else:
-                    raise Exception(f"Devices with name {machine_name} not found.")
+                    raise MachineNotFoundError(f"Devices with name {machine_name} not found.")
 
             machines_stats = {}
 

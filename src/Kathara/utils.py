@@ -20,6 +20,8 @@ from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict,
 from binaryornot.check import is_binary
 from slug import slug
 
+from .exceptions import ArchitectureError
+
 # Platforms constants definition.
 MAC_OS: str = "darwin"
 WINDOWS: str = "win32"
@@ -137,7 +139,7 @@ def get_architecture() -> str:
     elif architecture == "armv6l":
         return "armv6"
     else:
-        raise Exception("Not implemented for %s." % architecture)
+        raise ArchitectureError("Not implemented for %s." % architecture)
 
 
 def convert_win_2_linux(filename: str) -> bytes:

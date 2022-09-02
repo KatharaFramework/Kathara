@@ -56,15 +56,15 @@ class ExtParser(object):
 
                 if vlan:
                     if 0 <= vlan >= 4095:
-                        raise Exception("[ERROR] In file lab.ext, line %d: "
-                                        "VLAN ID must be in range [1, 4094]." % line_number)
+                        raise ValueError(f"[ERROR] In file lab.ext, line {line_number}: "
+                                         "VLAN ID must be in range [1, 4094].")
 
                 if link not in external_links:
                     external_links[link] = []
 
                 external_links[link].append(ExternalLink(interface, vlan))
             elif not line.startswith('#') and line.strip():
-                raise Exception("[ERROR] In file lab.ext, line %d malformed." % line_number)
+                raise SyntaxError(f"[ERROR] In file lab.ext, line {line_number} malformed.")
 
             line_number += 1
             line = ext_mem_file.readline().decode('utf-8')

@@ -7,6 +7,7 @@ from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
 from .Link import Link
 from .. import utils
+from ..exceptions import LinkNotFoundError
 
 
 class Lab(object):
@@ -139,8 +140,8 @@ class Lab(object):
         """
         for (link_name, link_external_links) in external_links.items():
             if link_name not in self.links:
-                raise Exception("Collision domain `%s` (declared in lab.ext) not found in lab "
-                                "collision domains." % link_name)
+                raise LinkNotFoundError("Collision domain `%s` (declared in lab.ext) not found in lab "
+                                        "collision domains." % link_name)
 
             self.links[link_name].external += link_external_links
 
@@ -239,7 +240,7 @@ class Lab(object):
             if not os.path.isdir(self.shared_folder):
                 os.mkdir(self.shared_folder)
             elif os.path.islink(self.shared_folder):
-                raise Exception("`shared` folder is a symlink, delete it.")
+                raise IOError("`shared` folder is a symlink, delete it.")
         except OSError:
             # Do not create shared folder if not permitted.
             return

@@ -7,7 +7,7 @@ from docker.errors import APIError
 
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import InvalidImageArchitectureError
+from ...exceptions import InvalidImageArchitectureError, DockerImageNotFoundError
 
 
 class DockerImage(object):
@@ -135,9 +135,7 @@ class DockerImage(object):
             except APIError:
                 logging.debug("Cannot check updates, skipping...")
         except InvalidImageArchitectureError as e:
-            raise Exception(
-                "Docker Image `%s` is not compatible with your host architecture: %s." % (image_name, e.arch)
-            )
+            raise e
         except APIError:
             # If not found, tries on Docker Hub.
             try:
@@ -153,14 +151,12 @@ class DockerImage(object):
                         "no Internet connection is available to pull it from Docker Hub." % image_name
                     )
                 else:
-                    raise Exception(
+                    raise DockerImageNotFoundError(
                         "Docker Image `%s` is not available neither on Docker Hub "
                         "nor in local repository!" % image_name
                     )
             except InvalidImageArchitectureError as e:
-                raise Exception(
-                    "Docker Image `%s` is not compatible with your host architecture `%s`." % (image_name, e.arch)
-                )
+                raise e
 
     @staticmethod
     def _check_image_architecture(image: Union[docker.models.images.Image, docker.models.images.RegistryData]) -> None:
@@ -184,4 +180,4 @@ class DockerImage(object):
             is_compatible = len(list(filter(lambda x: x['architecture'] == host_arch, image.attrs['Platforms']))) > 0
 
         if not is_compatible:
-            raise InvalidImageArchitectureError(host_arch)
+            raise InvalidImageArchitectureError(image.image_name, host_arch)

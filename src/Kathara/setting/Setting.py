@@ -8,10 +8,11 @@ from typing import Any, Dict, Optional, List
 
 from .. import utils
 from .. import version
-from ..webhooks.GitHubApi import GitHubApi
-from ..exceptions import HTTPConnectionError, SettingsError, SettingsNotFound
+from ..exceptions import HTTPConnectionError, SettingsError, SettingsNotFoundError
+from ..exceptions import InstantiationError
 from ..foundation.setting.SettingsAddon import SettingsAddon
 from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
+from ..webhooks.GitHubApi import GitHubApi
 
 AVAILABLE_DEBUG_LEVELS: List[str] = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "EXCEPTION"]
 AVAILABLE_MANAGERS: List[str] = ["docker", "kubernetes"]
@@ -56,7 +57,7 @@ class Setting(object):
 
     def __init__(self) -> None:
         if Setting.__instance is not None:
-            raise Exception("This class is a singleton!")
+            raise InstantiationError("This class is a singleton!")
         else:
             # Load default settings to use
             for (name, value) in DEFAULTS.items():
@@ -94,7 +95,7 @@ class Setting(object):
         settings_path = os.path.join(path, SETTINGS_FILENAME) if path is not None else DEFAULT_SETTINGS_PATH
 
         if not os.path.exists(settings_path):  # Requested settings file doesn't exist, throw exception
-            raise SettingsNotFound()
+            raise SettingsNotFoundError()
         else:  # Requested settings file exists, read it and check values
             settings = {}
             with open(settings_path, 'r') as settings_file:

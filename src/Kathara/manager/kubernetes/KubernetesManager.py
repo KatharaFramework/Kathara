@@ -13,7 +13,8 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesLinkStats import KubernetesLinkStats
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
-from ...exceptions import NotSupportedError
+from ...exceptions import NotSupportedError, MachineNotFoundError, LinkNotFoundError, LabAlreadyExistsError, \
+    InvocationError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
 from ...model.Link import Link
@@ -43,7 +44,7 @@ class KubernetesManager(IManager):
             None
         """
         if not machine.lab:
-            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
+            raise MachineNotFoundError("Machine `%s` is not associated to a network scenario." % machine.name)
 
         machine.lab.hash = machine.lab.hash.lower()
 
@@ -61,7 +62,7 @@ class KubernetesManager(IManager):
             None
         """
         if not link.lab:
-            raise Exception("Collision domain `%s` is not associated to a network scenario." % link.name)
+            raise LinkNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
 
         link.lab.hash = link.lab.hash.lower()
 
@@ -80,7 +81,7 @@ class KubernetesManager(IManager):
         """
         if selected_machines and not lab.find_machines(selected_machines):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
-            raise Exception(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
+            raise MachineNotFoundError(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
 
         # Kubernetes needs only lowercase letters for resources.
         # We force the hash to be lowercase
@@ -97,7 +98,7 @@ class KubernetesManager(IManager):
             self.k8s_machine.deploy_machines(lab, selected_machines=selected_machines)
         except ApiException as e:
             if e.status == 403 and 'Forbidden' in e.reason:
-                raise Exception("Previous lab execution is still terminating. Please wait.")
+                raise LabAlreadyExistsError("Previous lab execution is still terminating. Please wait.")
             else:
                 raise e
 
@@ -135,7 +136,7 @@ class KubernetesManager(IManager):
             None
         """
         if not machine.lab:
-            raise Exception("Machine `%s` is not associated to a network scenario." % machine.name)
+            raise MachineNotFoundError(f"Machine `{machine.name}` is not associated to a network scenario.")
 
         machine.lab.hash = machine.lab.hash.lower()
 
@@ -171,7 +172,7 @@ class KubernetesManager(IManager):
             None
         """
         if not link.lab:
-            raise Exception("Collision domain `%s` is not associated to a network scenario." % link.name)
+            raise LinkNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
 
         link.lab.hash = link.lab.hash.lower()
 
@@ -209,7 +210,7 @@ class KubernetesManager(IManager):
             Exception: You must specify a running network scenario hash or name.
         """
         if not lab_hash and not lab_name:
-            raise Exception("You must specify a running network scenario hash or name.")
+            raise InvocationError("You must specify a running network scenario hash or name.")
 
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
@@ -289,7 +290,7 @@ class KubernetesManager(IManager):
             Exception: You must specify a running network scenario hash or name.
         """
         if not lab_hash and not lab_name:
-            raise Exception("You must specify a running network scenario hash or name.")
+            raise InvocationError("You must specify a running network scenario hash or name.")
 
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
@@ -319,7 +320,7 @@ class KubernetesManager(IManager):
             Exception: You must specify a running network scenario hash or name.
         """
         if not lab_hash and not lab_name:
-            raise Exception("You must specify a running network scenario hash or name.")
+            raise InvocationError("You must specify a running network scenario hash or name.")
 
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
@@ -362,7 +363,7 @@ class KubernetesManager(IManager):
             logging.warning("User-specific options have no effect on Megalos.")
 
         if not lab_hash and not lab_name:
-            raise Exception("You must specify a running network scenario hash or name.")
+            raise InvocationError("You must specify a running network scenario hash or name.")
 
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
@@ -373,7 +374,7 @@ class KubernetesManager(IManager):
         if pods:
             return pods.pop()
 
-        raise Exception(f"Device {machine_name} not found.")
+        raise MachineNotFoundError(f"Device {machine_name} not found.")
 
     def get_machines_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
             List[client.V1Pod]:
@@ -416,7 +417,7 @@ class KubernetesManager(IManager):
             logging.warning("User-specific options have no effect on Megalos.")
 
         if not lab_hash and not lab_name:
-            raise Exception("You must specify a running network scenario hash or name.")
+            raise InvocationError("You must specify a running network scenario hash or name.")
 
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
@@ -427,7 +428,7 @@ class KubernetesManager(IManager):
         if networks:
             return networks.pop()
 
-        raise Exception(f"Collision Domain {link_name} not found.")
+        raise LinkNotFoundError(f"Collision Domain {link_name} not found.")
 
     def get_links_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
             List[Any]:
@@ -489,7 +490,7 @@ class KubernetesManager(IManager):
             Exception: You must specify a running network scenario hash or name.
         """
         if not lab_hash and not lab_name:
-            raise Exception("You must specify a running network scenario hash or name.")
+            raise InvocationError("You must specify a running network scenario hash or name.")
 
         if lab_name:
             reconstructed_lab = Lab(lab_name)
@@ -562,7 +563,7 @@ class KubernetesManager(IManager):
             KubernetesMachineStats: KubernetesMachineStats object containing the device info.
         """
         if not lab_hash and not lab_name:
-            raise Exception("You must specify a running network scenario hash or name.")
+            raise InvocationError("You must specify a running network scenario hash or name.")
 
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
@@ -618,7 +619,7 @@ class KubernetesManager(IManager):
             Exception: You must specify a running network scenario hash or name.
         """
         if not lab_hash and not lab_name:
-            raise Exception("You must specify a running network scenario hash or name.")
+            raise InvocationError("You must specify a running network scenario hash or name.")
 
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)

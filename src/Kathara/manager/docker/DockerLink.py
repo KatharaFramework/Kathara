@@ -12,6 +12,7 @@ from .stats.DockerLinkStats import DockerLinkStats
 from ..docker.DockerPlugin import PLUGIN_NAME
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
+from ...exceptions import LinkNotFoundError
 from ...exceptions import PrivilegeError
 from ...model.ExternalLink import ExternalLink
 from ...model.Lab import Lab
@@ -234,9 +235,9 @@ class DockerLink(object):
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name, user=user)
         if not networks:
             if not link_name:
-                raise Exception("No collision domains found.")
+                raise LinkNotFoundError("No collision domains found.")
             else:
-                raise Exception(f"Collision domains with name {link_name} not found.")
+                raise LinkNotFoundError(f"Collision domains with name {link_name} not found.")
 
         networks = sorted(networks, key=lambda x: x.name)
 

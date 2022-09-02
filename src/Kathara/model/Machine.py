@@ -51,7 +51,7 @@ class Machine(object):
         name = name.strip()
         matches = re.search(r"^[a-z0-9_]{1,30}$", name)
         if not matches:
-            raise Exception("Invalid device name `%s`." % name)
+            raise SyntaxError(f"Invalid device name `{name}`.")
 
         self.lab: LabPackage.Lab = lab
         self.name: str = name
@@ -104,11 +104,11 @@ class Machine(object):
             number = len(self.interfaces.keys())
 
         if number in self.interfaces:
-            raise Exception("Interface %d already set on device `%s`." % (number, self.name))
+            raise MachineCollisionDomainConflictError(f"Interface {number} already set on device `{self.name}`.")
 
         if self.name in link.machines:
             raise MachineCollisionDomainConflictError(
-                "Device `%s` is already connected to collision domain `%s`." % (self.name, link.name)
+                f"Device `{self.name}` is already connected to collision domain `{link.name}`."
             )
 
         self.interfaces[number] = link

@@ -49,8 +49,8 @@ class LabParser(object):
                 value = matches.group("value").replace('"', '').replace("'", '')
 
                 if key in RESERVED_MACHINE_NAMES:
-                    raise Exception("[ERROR] In line %d: "
-                                    "`%s` is a reserved name, you can not use it for a device." % (line_number, key))
+                    raise ValueError("[ERROR] In line %d: "
+                                     "`%s` is a reserved name, you can not use it for a device." % (line_number, key))
 
                 try:
                     # It's an interface, handle it.
@@ -59,9 +59,9 @@ class LabParser(object):
                     if re.search(r"^\w+$", value):
                         lab.connect_machine_to_link(key, value, machine_iface_number=interface_number)
                     else:
-                        raise Exception("[ERROR] In line %d: "
-                                        "Collision domain `%s` contains non-alphanumeric characters." % (line_number,
-                                                                                                         value))
+                        raise ValueError("[ERROR] In line %d: "
+                                         "Collision domain `%s` contains non-alphanumeric characters." % (line_number,
+                                                                                                          value))
                 except ValueError:
                     # Not an interface, add it to the machine metas.
                     lab.assign_meta_to_machine(key, arg, value)
@@ -74,7 +74,7 @@ class LabParser(object):
                             not line.startswith("LAB_AUTHOR=") and \
                             not line.startswith("LAB_EMAIL=") and \
                             not line.startswith("LAB_WEB="):
-                        raise Exception("[ERROR] In line %d: Invalid characters `%s`." % (line_number, line))
+                        raise SyntaxError("[ERROR] In line %d: Invalid characters `%s`." % (line_number, line))
                     else:
                         (key, value) = line.split("=")
                         key = key.replace("LAB_", "").lower()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import List, Callable, Any, Optional
+from ..exceptions import InstantiationError
 
 
 class EventDispatcher(object):
@@ -23,7 +24,7 @@ class EventDispatcher(object):
 
     def __init__(self) -> None:
         if EventDispatcher.__instance is not None:
-            raise Exception("This class is a singleton!")
+            raise InstantiationError("This class is a singleton!")
         else:
             self.events = {}
 

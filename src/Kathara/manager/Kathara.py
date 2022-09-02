@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 from typing import Set, Dict, Generator, Any, Tuple, List, Optional
 
+from ..exceptions import InstantiationError
 from ..foundation.manager.IManager import IManager
 from ..foundation.manager.ManagerFactory import ManagerFactory
 from ..foundation.manager.stats.ILinkStats import ILinkStats
@@ -33,7 +34,7 @@ class Kathara(IManager):
 
     def __init__(self) -> None:
         if Kathara.__instance is not None:
-            raise Exception("This class is a singleton!")
+            raise InstantiationError("This class is a singleton!")
         else:
             manager_type = Setting.get_instance().manager_type
 
