@@ -153,7 +153,7 @@ class Machine(object):
             return
 
         if name == "nested":
-            if "image" in self.meta and self.meta[name]:
+            if "image" in self.meta:
                 raise MachineOptionError("Cannot activate nesting when a device image is specified.")
 
             self.meta[name] = bool(strtobool(str(value)))

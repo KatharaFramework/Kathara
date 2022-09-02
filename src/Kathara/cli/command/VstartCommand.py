@@ -154,6 +154,7 @@ class VstartCommand(Command):
         self.parser.add_argument(
             '--nested',
             required=False,
+            action='store_true',
             help='Enables nesting. You can run a nested network scenario in this device.'
         )
 
