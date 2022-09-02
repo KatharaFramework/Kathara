@@ -503,6 +503,7 @@ class DockerManager(IManager):
                     host_port = port_data[0]["HostPort"]
                     device.meta["ports"][(int(host_port), protocol)] = int(guest_port)
 
+            # Reassign sysctls directly
             device.meta["sysctls"] = container.attrs["HostConfig"]["Sysctls"]
 
             if "none" not in container.attrs["NetworkSettings"]["Networks"]:
@@ -510,6 +511,7 @@ class DockerManager(IManager):
                     if network_name == "bridge":
                         device.add_meta("bridged", True)
                         continue
+
                     network = lab_networks[network_name]
                     link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
                     link.api_object = network
@@ -527,34 +529,42 @@ class DockerManager(IManager):
         running_containers = self.get_machines_api_objects(lab_hash=lab.hash)
 
         deployed_networks = dict(
-            map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=lab.hash)))
+            map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=lab.hash))
+        )
+        for network in deployed_networks.values():
+            network.reload()
 
         deployed_networks_by_link_name = dict(
-            map(lambda x: (x.attrs["Labels"]["name"], x), self.get_links_api_objects(lab_hash=lab.hash)))
+            map(lambda x: (x.attrs["Labels"]["name"], x), self.get_links_api_objects(lab_hash=lab.hash))
+        )
 
         for container in running_containers:
             container.reload()
             device = lab.get_or_new_machine(container.labels["name"])
             device.api_object = container
 
+            # Collision domains declared in the network scenario
             static_links = set(device.interfaces.values())
-            current_links = set(map(lambda x: lab.get_or_new_link(
-                deployed_networks[x].attrs["Labels"]["name"]),
-                                    filter(lambda x: x != "bridge", container.attrs["NetworkSettings"]["Networks"])))
-
+            # Collision domains currently attached to the device
+            current_links = set(
+                map(lambda x: lab.get_or_new_link(deployed_networks[x].attrs["Labels"]["name"]),
+                    filter(lambda x: x != "bridge", container.attrs["NetworkSettings"]["Networks"]))
+            )
+            # Collision domains attached at runtime to the device
             dynamic_links = current_links - static_links
+            # Static collision domains detached at runtime from the device
             deleted_links = static_links - current_links
 
             for link in static_links:
                 if link.name in deployed_networks_by_link_name:
                     link.api_object = deployed_networks_by_link_name[link.name]
+
             for link in dynamic_links:
                 link.api_object = deployed_networks_by_link_name[link.name]
                 device.add_interface(link)
+
             for link in deleted_links:
                 device.remove_interface(link)
-            for network in deployed_networks.values():
-                network.reload()
 
     @privileged
     def get_machines_stats(self, lab_hash: str = None, lab_name: str = None, machine_name: str = None,
