@@ -3,6 +3,7 @@ from typing import Optional
 
 from kubernetes import client
 from kubernetes.client.api import core_v1_api
+from kubernetes.client.rest import ApiException
 
 from ...model.Machine import Machine
 from ...utils import human_readable_bytes
@@ -34,7 +35,7 @@ class KubernetesConfigMap(object):
         return self.client.create_namespaced_config_map(body=config_map, namespace=machine.lab.hash)
 
     def delete_for_machine(self, machine_name: str, machine_namespace: str) -> None:
-        """Delete the Kubernetes ConfigMap associated with the device.
+        """Delete the Kubernetes ConfigMap associated with the device, if it exists.
 
         Args:
             machine_name (str): The name of a Kathara device.
@@ -43,9 +44,12 @@ class KubernetesConfigMap(object):
         Returns:
             None
         """
-        self.client.delete_namespaced_config_map(name=self.build_name_for_machine(machine_name, machine_namespace),
-                                                 namespace=machine_namespace
-                                                 )
+        try:
+            self.client.delete_namespaced_config_map(name=self.build_name_for_machine(machine_name, machine_namespace),
+                                                     namespace=machine_namespace
+                                                     )
+        except ApiException:
+            return
 
     @staticmethod
     def build_name_for_machine(machine_name: str, machine_namespace: str) -> str:
