@@ -7,7 +7,7 @@ from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
 from .Link import Link
 from .. import utils
-from ..exceptions import LinkNotFoundError
+from ..exceptions import LinkNotFoundError, MachineNotFoundError, MachineAlreadyExistsError
 
 
 class Lab(object):
@@ -195,6 +195,44 @@ class Lab(object):
 
         self.machines = collections.OrderedDict(sorted(self.machines.items(), key=lambda t: dep_sort(t[0])))
         self.has_dependencies = True
+
+    def get_machine(self, name: str) -> 'MachinePackage.Machine':
+        """Get the specified device.
+
+        Args:
+            name (str): The name of the device
+
+        Returns:
+            Kathara.model.Machine: A Kathara device.
+
+        Raises:
+            MachineNotFoundError: If the device is not in the network scenario.
+        """
+        if name not in self.machines:
+            raise MachineNotFoundError(f"Device {name} not in the network scenario.")
+
+        return self.machines[name]
+
+    def new_machine(self, name: str, **kwargs: Dict[str, Any]) -> 'MachinePackage.Machine':
+        """Create and add the device to the devices list.
+
+        Args:
+            name (str): The name of the device
+            **kwargs (Dict[str, Any]): Contains device meta information.
+                Keys are meta property names, values are meta property values.
+
+        Returns:
+            Kathara.model.Machine: A Kathara device.
+
+        Raises:
+            MachineAlreadyExistsError: If the device is already in the network scenario.
+        """
+        if name in self.machines:
+            raise MachineAlreadyExistsError(f"Device {name} already in the network scenario.")
+
+        self.machines[name] = MachinePackage.Machine(self, name, **kwargs)
+
+        return self.machines[name]
 
     def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> 'MachinePackage.Machine':
         """Get the specified device. If it not exists, create and add it to the devices list.

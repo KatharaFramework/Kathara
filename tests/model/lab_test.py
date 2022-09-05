@@ -9,7 +9,7 @@ sys.path.insert(0, './')
 from src.Kathara.model.Lab import Lab
 from src.Kathara import utils
 from tempfile import mkdtemp
-from src.Kathara.exceptions import MachineOptionError
+from src.Kathara.exceptions import MachineOptionError, MachineAlreadyExistsError, MachineNotFoundError
 
 
 @pytest.fixture()
@@ -93,6 +93,30 @@ def test_directory_scenario_creation_no_shared_files(directory_scenario: Lab, te
     assert directory_scenario.shared_startup_path == os.path.join(temporary_path, 'shared.startup')
     assert directory_scenario.shared_folder is None
     assert directory_scenario.hash == utils.generate_urlsafe_hash(directory_scenario.name)
+
+
+def test_add_machine(default_scenario: Lab):
+    assert len(default_scenario.machines) == 0
+    default_scenario.new_machine("pc1")
+    assert len(default_scenario.machines) == 1
+    assert "pc1" in default_scenario.machines
+
+
+def test_add_machine_already_exists_error(default_scenario: Lab):
+    default_scenario.new_machine("pc1")
+    with pytest.raises(MachineAlreadyExistsError):
+        default_scenario.new_machine("pc1")
+
+
+def test_get_machine(default_scenario: Lab):
+    default_scenario.new_machine("pc1")
+    device = default_scenario.get_machine("pc1")
+    assert device.name == "pc1"
+
+
+def test_get_machine_not_found_error(default_scenario: Lab):
+    with pytest.raises(MachineNotFoundError):
+        default_scenario.get_machine("pc1")
 
 
 def test_get_or_new_machine_not_exist(default_scenario: Lab):
