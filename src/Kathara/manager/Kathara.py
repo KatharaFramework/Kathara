@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 from typing import Set, Dict, Generator, Any, Tuple, List, Optional
 
+from ..exceptions import InstantiationError
 from ..foundation.manager.IManager import IManager
 from ..foundation.manager.ManagerFactory import ManagerFactory
 from ..foundation.manager.stats.ILinkStats import ILinkStats
@@ -25,6 +26,9 @@ class Kathara(IManager):
     
         Returns:
             Kathara: instance of Kathara.
+
+        Raises:
+            InstantiationError: If two instances of the class are created.
         """
         if Kathara.__instance is None:
             Kathara()
@@ -33,7 +37,7 @@ class Kathara(IManager):
 
     def __init__(self) -> None:
         if Kathara.__instance is not None:
-            raise Exception("This class is a singleton!")
+            raise InstantiationError("This class is a singleton!")
         else:
             manager_type = Setting.get_instance().manager_type
 
@@ -51,6 +55,9 @@ class Kathara(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
         """
         self.manager.deploy_machine(machine)
 
@@ -62,6 +69,9 @@ class Kathara(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
         """
         self.manager.deploy_link(link)
 
@@ -86,6 +96,11 @@ class Kathara(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the device specified is not associated to any network scenario.
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
+            MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
         self.manager.connect_machine_to_link(machine, link)
 
@@ -98,6 +113,11 @@ class Kathara(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the device specified is not associated to any network scenario.
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
+            MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
         """
         self.manager.disconnect_machine_from_link(machine, link)
 
@@ -109,6 +129,9 @@ class Kathara(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the device specified is not associated to any network scenario.
         """
         self.manager.undeploy_machine(machine)
 
@@ -120,6 +143,9 @@ class Kathara(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
         """
         self.manager.undeploy_link(link)
 
@@ -138,7 +164,7 @@ class Kathara(IManager):
             None
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         self.manager.undeploy_lab(lab_hash, lab_name, selected_machines)
 
@@ -169,7 +195,7 @@ class Kathara(IManager):
             None
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         self.manager.connect_tty(machine_name, lab_hash, lab_name, shell, logs)
 
@@ -187,7 +213,7 @@ class Kathara(IManager):
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         return self.manager.exec(machine_name, command, lab_hash, lab_name)
 
@@ -218,6 +244,10 @@ class Kathara(IManager):
 
         Returns:
             Any: API object of the device specific for the current manager.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
+            MachineNotFoundError: If the specified device is not found.
         """
         return self.manager.get_machine_api_object(machine_name, lab_hash, lab_name, all_users)
 
@@ -249,6 +279,10 @@ class Kathara(IManager):
 
         Returns:
             Any: API object of the collision domain specific for the current manager.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
+            LinkNotFoundError: If the collision domain is not found.
         """
         return self.manager.get_link_api_object(link_name, lab_hash, lab_name, all_users)
 
@@ -276,7 +310,7 @@ class Kathara(IManager):
             Lab: The built network scenario.
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         return self.manager.get_lab_from_api(lab_hash, lab_name)
 
@@ -320,7 +354,7 @@ class Kathara(IManager):
             IMachineStats: IMachineStats object containing the device info.
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         return self.manager.get_machine_stats(machine_name, lab_hash, lab_name, all_users)
 
@@ -357,7 +391,7 @@ class Kathara(IManager):
              identifier as keys and ILinksStats objects as values.
 
         Raises:
-            Exception: You must specify a running network scenario hash or name.
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         return self.manager.get_link_stats(link_name, lab_hash, lab_name, all_users)
 
@@ -371,8 +405,8 @@ class Kathara(IManager):
             None
 
         Raises:
-            ConnectionError: The image is not locally available and there is no connection to a remote image repository.
-            Exception: The image is not found.
+            ConnectionError: If the image is not locally available and there is no connection to a remote image repository.
+            ImageNotFoundError: If the image is not found.
         """
         self.manager.check_image(image_name)
 

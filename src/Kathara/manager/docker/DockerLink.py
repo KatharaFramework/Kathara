@@ -12,6 +12,7 @@ from .stats.DockerLinkStats import DockerLinkStats
 from ..docker.DockerPlugin import PLUGIN_NAME
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
+from ...exceptions import LinkNotFoundError
 from ...exceptions import PrivilegeError
 from ...model.ExternalLink import ExternalLink
 from ...model.Lab import Lab
@@ -230,13 +231,16 @@ class DockerLink(object):
         Returns:
            Generator[Dict[str, DockerMachineStats], None, None]: A generator containing network names as keys and
            DockerLinkStats as values.
+
+        Raises:
+            LinkNotFoundError: If the collision domains specified are not found.
         """
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name, user=user)
         if not networks:
             if not link_name:
-                raise Exception("No collision domains found.")
+                raise LinkNotFoundError("No collision domains found.")
             else:
-                raise Exception(f"Collision domains with name {link_name} not found.")
+                raise LinkNotFoundError(f"Collision domains with name {link_name} not found.")
 
         networks = sorted(networks, key=lambda x: x.name)
 
@@ -304,6 +308,9 @@ class DockerLink(object):
 
         Args:
             network (docker.models.networks.Network): A Docker network.
+
+        Raises:
+            PrivilegeError: If you are not root while deleting an external VLAN Interface.
         """
         external_label = network.attrs['Labels']["external"]
         external_links = external_label.split(";") if external_label else None

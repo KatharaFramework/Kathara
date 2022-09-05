@@ -7,7 +7,7 @@ from typing import List
 from ..ui.utils import create_table
 from ..ui.utils import format_headers
 from ... import utils
-from ...exceptions import PrivilegeError
+from ...exceptions import PrivilegeError, EmptyLabError
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
@@ -134,7 +134,7 @@ class LstartCommand(Command):
 
         if args['privileged']:
             if not utils.is_admin():
-                raise Exception("You must be root in order to start Kathara devices in privileged mode.")
+                raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
             else:
                 logging.warning("Running devices with privileged capabilities, terminals won't open!")
                 Setting.get_instance().open_terminals = False
@@ -148,7 +148,7 @@ class LstartCommand(Command):
             lab = LabParser.parse(lab_path)
         except IOError as e:
             if not args['force_lab']:
-                raise Exception(str(e))
+                raise e
             else:
                 lab = FolderParser.parse(lab_path)
 
@@ -164,7 +164,7 @@ class LstartCommand(Command):
             logging.info(format_headers())
 
         if len(lab.machines) <= 0:
-            raise Exception("No devices in the current network scenario. Exiting...")
+            raise EmptyLabError("No devices in the current network scenario. Exiting...")
 
         try:
             options = OptionParser.parse(args['options'])

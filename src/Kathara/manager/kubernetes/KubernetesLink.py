@@ -15,6 +15,7 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesLinkStats import KubernetesLinkStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
+from ...exceptions import LinkNotFoundError
 from ...model.Lab import Lab
 from ...model.Link import Link
 from ...setting.Setting import Setting
@@ -224,14 +225,17 @@ class KubernetesLink(object):
         Returns:
            Generator[Dict[str, KubernetesLinkStats], None, None]: A generator containing network names as keys and
                 KubernetesLinkStats as values.
+
+        Raises:
+            LinkNotFoundError: If the collision domains specified are not found.
         """
         while True:
             networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name)
             if not networks:
                 if not link_name:
-                    raise Exception("No collision domains found.")
+                    raise LinkNotFoundError("No collision domains found.")
                 else:
-                    raise Exception(f"Collision domains with name {link_name} not found.")
+                    raise LinkNotFoundError(f"Collision domains with name {link_name} not found.")
 
             networks_stats = {}
 

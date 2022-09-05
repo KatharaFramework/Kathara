@@ -13,6 +13,7 @@ from src.Kathara.model.Link import Link
 from src.Kathara.utils import generate_urlsafe_hash
 from src.Kathara.manager.docker.stats.DockerLinkStats import DockerLinkStats
 from src.Kathara.manager.docker.stats.DockerMachineStats import DockerMachineStats
+from src.Kathara.exceptions import MachineNotFoundError, LabNotFoundError, InvocationError, LinkNotFoundError
 
 
 #
@@ -204,7 +205,7 @@ def test_deploy_lab_selected_machines(mock_deploy_links, mock_deploy_machines, d
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
 def test_deploy_lab_selected_machines_exception(mock_deploy_links, mock_deploy_machines, docker_manager,
                                                 two_device_scenario: Lab):
-    with pytest.raises(Exception):
+    with pytest.raises(MachineNotFoundError):
         docker_manager.deploy_lab(two_device_scenario, selected_machines={"pc3"})
     assert not mock_deploy_machines.called
     assert not mock_deploy_links.called
@@ -226,7 +227,7 @@ def test_deploy_machine(mock_deploy_machines, mock_deploy_links, docker_manager,
 def test_deploy_machine_no_lab(docker_manager, default_device):
     default_device.lab = None
 
-    with pytest.raises(Exception):
+    with pytest.raises(LabNotFoundError):
         docker_manager.deploy_machine(default_device)
 
 
@@ -242,7 +243,7 @@ def test_deploy_link(mock_deploy_links, docker_manager, default_link):
 def test_deploy_link_no_lab(docker_manager, default_link):
     default_link.lab = None
 
-    with pytest.raises(Exception):
+    with pytest.raises(LabNotFoundError):
         docker_manager.deploy_link(default_link)
 
 
@@ -280,14 +281,14 @@ def test_connect_machine_to_link_two_links(mock_connect_to_link_machine, mock_de
 def test_connect_machine_to_link_no_machine_lab(docker_manager, default_device, default_link):
     default_device.lab = None
 
-    with pytest.raises(Exception):
+    with pytest.raises(LabNotFoundError):
         docker_manager.connect_machine_to_link(default_device, default_link)
 
 
 def test_connect_machine_to_link_no_link_lab(docker_manager, default_device, default_link):
     default_link.lab = None
 
-    with pytest.raises(Exception):
+    with pytest.raises(LabNotFoundError):
         docker_manager.connect_machine_to_link(default_device, default_link)
 
 
@@ -332,7 +333,7 @@ def test_disconnect_machine_from_link_no_machine_lab(docker_manager, default_dev
 
     default_device.add_interface(default_link)
 
-    with pytest.raises(Exception):
+    with pytest.raises(LabNotFoundError):
         docker_manager.disconnect_machine_from_link(default_device, default_link)
 
 
@@ -341,7 +342,7 @@ def test_disconnect_machine_from_link_no_link_lab(docker_manager, default_device
 
     default_device.add_interface(default_link)
 
-    with pytest.raises(Exception):
+    with pytest.raises(LabNotFoundError):
         docker_manager.disconnect_machine_from_link(default_device, default_link)
 
 
@@ -374,7 +375,7 @@ def test_undeploy_machine_two_machines(mock_machine_undeploy, mock_link_undeploy
 def test_undeploy_machine_no_lab(docker_manager, default_device):
     default_device.lab = None
 
-    with pytest.raises(Exception):
+    with pytest.raises(LabNotFoundError):
         docker_manager.undeploy_machine(default_device)
 
 
@@ -390,7 +391,7 @@ def test_undeploy_link(mock_link_undeploy, docker_manager, default_link):
 def test_undeploy_link_no_lab(docker_manager, default_link):
     default_link.lab = None
 
-    with pytest.raises(Exception):
+    with pytest.raises(LabNotFoundError):
         docker_manager.undeploy_link(default_link)
 
 
@@ -509,7 +510,7 @@ def test_get_machine_api_object_lab_name_no_user(mock_get_machines_api_objects, 
 
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 def test_get_machine_api_object_no_name_no_hash(mock_get_machines_api_objects, docker_manager, default_device):
-    with pytest.raises(Exception):
+    with pytest.raises(InvocationError):
         docker_manager.get_machine_api_object("test_device", all_users=True)
     assert not mock_get_machines_api_objects.called
 
@@ -517,7 +518,7 @@ def test_get_machine_api_object_no_name_no_hash(mock_get_machines_api_objects, d
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 def test_get_machine_api_object_device_not_found(mock_get_machines_api_objects, docker_manager, default_device):
     mock_get_machines_api_objects.return_value = []
-    with pytest.raises(Exception):
+    with pytest.raises(MachineNotFoundError):
         docker_manager.get_machine_api_object("test_device", lab_name="lab_name", all_users=True)
     mock_get_machines_api_objects.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name"),
                                                           machine_name="test_device", user=None)
@@ -620,7 +621,7 @@ def test_get_link_api_object_lab_name_no_user(mock_get_links_api_objects,
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_api_objects_by_filters")
 def test_get_link_api_object_no_name_no_hash(mock_get_links_api_objects, docker_manager):
-    with pytest.raises(Exception):
+    with pytest.raises(InvocationError):
         docker_manager.get_link_api_object("test_link", all_users=True)
     assert not mock_get_links_api_objects.called
 
@@ -629,7 +630,7 @@ def test_get_link_api_object_no_name_no_hash(mock_get_links_api_objects, docker_
 def test_get_link_api_object_not_found(mock_get_links_api_objects,
                                        docker_manager):
     mock_get_links_api_objects.return_value = []
-    with pytest.raises(Exception):
+    with pytest.raises(LinkNotFoundError):
         docker_manager.get_link_api_object("test_link", lab_name="lab_name_value", all_users=True)
     mock_get_links_api_objects.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name_value"),
                                                        link_name="test_link", user=None)
@@ -764,7 +765,7 @@ def test_get_lab_from_api_lab_name_empty_meta(mock_get_links_api_objects, mock_g
 
 
 def test_get_lab_from_api_exception(docker_manager):
-    with pytest.raises(Exception):
+    with pytest.raises(InvocationError):
         docker_manager.get_lab_from_api()
 
 
@@ -892,7 +893,7 @@ def test_get_machine_stats_lab_hash_user(mock_get_machines_stats, default_device
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
 def test_get_machine_stats_no_name_no_hash(mock_get_machines_stats, docker_manager):
-    with pytest.raises(Exception):
+    with pytest.raises(InvocationError):
         next(docker_manager.get_machine_stats(machine_name="test_device", all_users=True))
     assert not mock_get_machines_stats.called
 
@@ -962,6 +963,6 @@ def test_get_link_stats_lab_hash_user(mock_get_links_stats, docker_network, dock
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_stats")
 def test_get_link_stats_no_lab_hash_and_no_name(mock_get_links_stats, docker_network, docker_manager):
     mock_get_links_stats.return_value = iter([{"test_network": DockerLinkStats(docker_network)}])
-    with pytest.raises(Exception):
+    with pytest.raises(InvocationError):
         next(docker_manager.get_link_stats(link_name="test_network"))
     assert not mock_get_links_stats.called

@@ -11,7 +11,7 @@ import coloredlogs
 from Kathara import utils
 from Kathara.auth.PrivilegeHandler import PrivilegeHandler
 from Kathara.cli.ui.event.register import register_cli_events
-from Kathara.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError, SettingsNotFound
+from Kathara.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError, SettingsNotFoundError
 from Kathara.foundation.cli.command.CommandFactory import CommandFactory
 from Kathara.setting.Setting import Setting
 from Kathara.strings import formatted_strings
@@ -110,7 +110,7 @@ if __name__ == '__main__':
 
     try:
         Setting.get_instance().load_from_disk()
-    except SettingsNotFound:
+    except SettingsNotFoundError:
         Setting.get_instance().save_to_disk()
 
     try:

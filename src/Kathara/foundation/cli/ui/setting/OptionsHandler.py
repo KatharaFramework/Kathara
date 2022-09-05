@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from .....cli.ui.setting import SettingsMenuFactory
+from .....exceptions import InvocationError
 from .....trdparty.consolemenu import ConsoleMenu, MenuFormatBuilder
 
 
@@ -13,7 +14,7 @@ class OptionsHandler(ABC):
 
     def add(self, current_menu: ConsoleMenu, menu_formatter: MenuFormatBuilder) -> None:
         if not self.menu_factory:
-            raise Exception("`add` called without a MenuFactory set.")
+            raise InvocationError("`add` called without a MenuFactory set.")
 
         self.add_items(current_menu, menu_formatter)
 

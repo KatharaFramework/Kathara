@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 from typing import Optional
+from ..exceptions import InterfaceNotFoundError
 
 
 class Networking(object):
@@ -20,6 +21,9 @@ class Networking(object):
 
         Returns:
             int: The link index.
+
+        Raises:
+            InterfaceNotFoundError: If the specified interface is not found on the host machine.
         """
         # disable pyroute2 logging to avoid warning about project structure changes
         logging.getLogger('pyroute2').disabled = True
@@ -33,7 +37,7 @@ class Networking(object):
         interface_indexes = ip.link_lookup(ifname=full_interface_name)
         # If not present, raise an error
         if not interface_indexes:
-            raise Exception("Interface `%s` not found." % full_interface_name)
+            raise InterfaceNotFoundError(f"Interface `{full_interface_name}` not found on the host machine.")
 
         interface_index = interface_indexes[0]
         logging.debug("Interface found with ID = %d" % interface_index)
@@ -148,7 +152,7 @@ class Networking(object):
                 iptables_binary = "/usr/sbin/iptables"
 
         if iptables_binary is None:
-            raise Exception("Cannot find `iptables` in the host.")
+            raise FileNotFoundError("Cannot find `iptables` in the host.")
 
         logging.debug("Found iptables binary in `%s`." % iptables_binary)
 

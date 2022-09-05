@@ -10,6 +10,7 @@ sys.path.insert(0, './')
 from src.Kathara.model.Lab import Lab
 from src.Kathara.manager.docker.DockerLink import DockerLink
 from src.Kathara import utils
+from src.Kathara.exceptions import LinkNotFoundError
 
 
 #
@@ -337,7 +338,7 @@ def test_get_links_stats_lab_hash_link_not_found(mock_get_links_api_objects_by_f
                                                  docker_network):
     docker_network.api_object.name = "test_network"
     mock_get_links_api_objects_by_filters.return_value = []
-    with pytest.raises(Exception):
+    with pytest.raises(LinkNotFoundError):
         next(docker_link.get_links_stats(lab_hash="lab_hash"))
     mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name=None, user=None)
 
@@ -347,7 +348,7 @@ def test_get_links_stats_lab_hash_link_name_not_found(mock_get_links_api_objects
                                                       docker_network):
     docker_network.api_object.name = "test_network"
     mock_get_links_api_objects_by_filters.return_value = []
-    with pytest.raises(Exception):
+    with pytest.raises(LinkNotFoundError):
         next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_network"))
     mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name="test_network",
                                                                   user=None)

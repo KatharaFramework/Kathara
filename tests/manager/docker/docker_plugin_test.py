@@ -10,6 +10,7 @@ from src.Kathara import utils
 sys.path.insert(0, './')
 
 from src.Kathara.manager.docker.DockerPlugin import DockerPlugin
+from src.Kathara.exceptions import DockerPluginError
 
 
 @pytest.fixture()
@@ -103,7 +104,7 @@ def test_check_and_download_remote_plugin_not_installed(mock_setting_get_instanc
     mock_setting_get_instance.return_value = mock_setting
     docker_plugin.client.plugins.get.return_value = None
     docker_plugin.client.plugins.get.side_effect = NotFound('Fail')
-    with pytest.raises(Exception) as e:
+    with pytest.raises(DockerPluginError) as e:
         docker_plugin.check_and_download_plugin()
 
     assert str(e.value) == "Kathara Network Plugin not found on remote Docker connection."
@@ -120,7 +121,7 @@ def test_check_and_download_remote_plugin_not_enabled(mock_setting_get_instance,
     mock_setting.remote_url = "http://remote-url.kt"
     mock_setting_get_instance.return_value = mock_setting
     docker_plugin.client.plugins.get.return_value = mock_plugin
-    with pytest.raises(Exception) as e:
+    with pytest.raises(DockerPluginError) as e:
         docker_plugin.check_and_download_plugin()
 
     assert str(e.value) == "Kathara Network Plugin not enabled on remote Docker connection."

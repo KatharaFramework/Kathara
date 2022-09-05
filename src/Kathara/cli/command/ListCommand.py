@@ -53,7 +53,7 @@ class ListCommand(Command):
         args = self.get_args()
 
         if args['all'] and not utils.is_admin():
-            raise Exception("You must be root in order to show all Kathara devices of all users.")
+            raise PrivilegeError("You must be root in order to show all Kathara devices of all users.")
 
         all_users = bool(args['all'])
 

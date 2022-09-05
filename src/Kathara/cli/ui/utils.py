@@ -80,7 +80,7 @@ def open_machine_terminal(machine) -> None:
     executable_path = utils.get_executable_path(sys.argv[0])
 
     if not executable_path:
-        raise Exception("Unable to find Kathara.")
+        raise FileNotFoundError("Unable to find Kathara.")
 
     is_vmachine = "-v" if machine.lab.path is None else ""
     connect_command = "%s connect %s -l %s" % (executable_path, is_vmachine, machine.name)

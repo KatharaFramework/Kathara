@@ -8,7 +8,8 @@ from kubernetes import client
 
 sys.path.insert(0, './')
 
-from src.Kathara.exceptions import NotSupportedError
+from src.Kathara.exceptions import NotSupportedError, MachineNotFoundError, LabNotFoundError, InvocationError, \
+    LinkNotFoundError
 from src.Kathara.manager.kubernetes.KubernetesMachine import KubernetesMachine
 from src.Kathara.manager.kubernetes.KubernetesManager import KubernetesManager
 from src.Kathara.model.Lab import Lab
@@ -240,7 +241,7 @@ def test_deploy_lab_selected_machines(mock_deploy_links, mock_deploy_machines, m
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.deploy_links")
 def test_deploy_lab_selected_machines_exception(mock_deploy_links, mock_deploy_machines, kubernetes_manager,
                                                 two_device_scenario: Lab):
-    with pytest.raises(Exception):
+    with pytest.raises(MachineNotFoundError):
         kubernetes_manager.deploy_lab(two_device_scenario, selected_machines={"pc3"})
     assert not mock_deploy_machines.called
     assert not mock_deploy_links.called
@@ -264,7 +265,7 @@ def test_deploy_machine(mock_deploy_machines, mock_deploy_links, kubernetes_mana
 def test_deploy_machine_no_lab(kubernetes_manager, default_device):
     default_device.lab = None
 
-    with pytest.raises(Exception):
+    with pytest.raises(LabNotFoundError):
         kubernetes_manager.deploy_machine(default_device)
 
 
@@ -289,7 +290,7 @@ def test_deploy_link(mock_deploy_links, mock_setting_get_instance, kubernetes_ma
 def test_deploy_link_no_lab(kubernetes_manager, default_link):
     default_link.lab = None
 
-    with pytest.raises(Exception):
+    with pytest.raises(LabNotFoundError):
         kubernetes_manager.deploy_link(default_link)
 
 
@@ -370,7 +371,7 @@ def test_undeploy_machine_two_machines(mock_machine_undeploy, mock_link_undeploy
 def test_undeploy_machine_no_lab(kubernetes_manager, default_device):
     default_device.lab = None
 
-    with pytest.raises(Exception):
+    with pytest.raises(LabNotFoundError):
         kubernetes_manager.undeploy_machine(default_device)
 
 
@@ -414,7 +415,8 @@ def test_undeploy_link_machine_running(mock_link_undeploy, mock_get_machines_api
 
 
 def test_undeploy_link_no_lab(kubernetes_manager, default_link):
-    with pytest.raises(Exception):
+    default_link.lab = None
+    with pytest.raises(LabNotFoundError):
         kubernetes_manager.undeploy_link(default_link)
 
 
@@ -428,16 +430,6 @@ def test_undeploy_lab(mock_undeploy_machine, mock_undeploy_link, kubernetes_mana
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines=None)
     mock_undeploy_link.assert_called_once_with('lab_hash', selected_links=None)
     kubernetes_manager.k8s_namespace.undeploy.assert_called_once_with(lab_hash='lab_hash')
-
-
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.deploy_machines")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.deploy_links")
-def test_deploy_lab_selected_machines_exception(mock_deploy_links, mock_deploy_machines, kubernetes_manager,
-                                                two_device_scenario: Lab):
-    with pytest.raises(Exception):
-        kubernetes_manager.deploy_lab(two_device_scenario, selected_machines={"pc3"})
-    assert not mock_deploy_machines.called
-    assert not mock_deploy_links.called
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
@@ -493,7 +485,7 @@ def test_get_machine_api_object_lab_hash_and_name(mock_get_machines_api_objects,
 def test_get_machine_api_object_no_hash_no_name(mock_get_machines_api_objects, kubernetes_manager, default_device):
     default_device.api_object.name = "default_device"
     mock_get_machines_api_objects.return_value = [default_device.api_object]
-    with pytest.raises(Exception):
+    with pytest.raises(InvocationError):
         kubernetes_manager.get_machine_api_object(machine_name="default_device")
     assert not mock_get_machines_api_objects.called
 
@@ -501,7 +493,7 @@ def test_get_machine_api_object_no_hash_no_name(mock_get_machines_api_objects, k
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
 def test_get_machine_api_object_lab_hash_device_not_found(mock_get_machines_api_objects, kubernetes_manager):
     mock_get_machines_api_objects.return_value = []
-    with pytest.raises(Exception):
+    with pytest.raises(MachineNotFoundError):
         kubernetes_manager.get_machine_api_object(lab_hash="lab_hash_value", machine_name="default_device")
     mock_get_machines_api_objects.assert_called_once_with(machine_name="default_device", lab_hash="lab_hash_value")
 
@@ -569,7 +561,7 @@ def test_get_link_api_object_lab_hash_and_name(mock_get_links_api_objects, kuber
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
 def test_get_link_api_object_no_hash_no_name(mock_get_links_api_objects, kubernetes_manager, kubernetes_network):
     mock_get_links_api_objects.return_value = [kubernetes_network]
-    with pytest.raises(Exception):
+    with pytest.raises(InvocationError):
         kubernetes_manager.get_link_api_object(link_name="test_network")
     assert not mock_get_links_api_objects.called
 
@@ -577,7 +569,7 @@ def test_get_link_api_object_no_hash_no_name(mock_get_links_api_objects, kuberne
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
 def test_get_link_api_object_lab_hash_cd_not_found(mock_get_links_api_objects, kubernetes_manager, kubernetes_network):
     mock_get_links_api_objects.return_value = []
-    with pytest.raises(Exception):
+    with pytest.raises(LinkNotFoundError):
         kubernetes_manager.get_link_api_object(link_name="test_network", lab_hash="lab_hash_value")
     mock_get_links_api_objects.assert_called_once_with(link_name="test_network", lab_hash="lab_hash_value")
 
@@ -719,7 +711,7 @@ def test_get_machine_stats_lab_name(mock_get_machines_stats, default_device, kub
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesManager.KubernetesManager.get_machines_stats")
 def test_get_machine_stats_no_hash_no_name(mock_get_machines_stats, kubernetes_manager):
     mock_get_machines_stats.return_value = iter([])
-    with pytest.raises(Exception):
+    with pytest.raises(InvocationError):
         next(kubernetes_manager.get_machine_stats(machine_name="test_device"))
     assert not mock_get_machines_stats.called
 
@@ -765,6 +757,6 @@ def test_get_link_stats_lab_name(mock_get_links_stats, kubernetes_network, kuber
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_stats")
 def test_get_link_stats_no_lab_hash_and_no_name(mock_get_links_stats, kubernetes_manager):
-    with pytest.raises(Exception):
+    with pytest.raises(InvocationError):
         next(kubernetes_manager.get_link_stats(link_name="test_network"))
     assert not mock_get_links_stats.called

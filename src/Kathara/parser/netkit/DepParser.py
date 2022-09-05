@@ -1,10 +1,10 @@
 import logging
+import mmap
 import os
 import re
 from typing import List, Optional
 
-import mmap
-
+from ...exceptions import MachineDependencyError
 from ...trdparty.depgen import depgen
 
 
@@ -22,6 +22,11 @@ class DepParser(object):
         Returns:
             Optional[List[str]]: A List of string containing the names of the device ordered considering the
                 dependencies.
+
+        Raises:
+            IOError: If there is an error while opening lab.dep file.
+            SyntaxError: If there is a syntax error in lab.dep file.
+            MachineDependencyError: If there is a Machines dependency loop in lab.dep file.
         """
         lab_dep_path = os.path.join(path, 'lab.dep')
 
@@ -59,12 +64,12 @@ class DepParser(object):
                     # Dependencies are saved as dependencies[machine3] = [machine1, machine2]
                     dependencies[key] = deps
                 else:
-                    raise Exception("[ERROR] In lab.dep - line %d: Syntax error." % line_number)
+                    raise SyntaxError(f"[ERROR] In lab.dep - line {line_number}: Syntax error.")
 
             line_number += 1
             line = dep_mem_file.readline().decode('utf-8')
 
         if depgen.has_loop(dependencies):
-            raise Exception("ERROR: Loop in lab.dep.\n")
+            raise MachineDependencyError("Machines' dependency loop in lab.dep file.")
 
         return depgen.flatten(dependencies)
