@@ -48,6 +48,10 @@ class LabAlreadyExistsError(Exception):
     pass
 
 
+class LabNotFoundError(Exception):
+    pass
+
+
 class EmptyLabError(Exception):
     pass
 

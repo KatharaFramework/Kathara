@@ -9,6 +9,7 @@ sys.path.insert(0, './')
 
 from src.Kathara.event.EventDispatcher import EventDispatcher
 from src.Kathara.manager.docker.DockerImage import DockerImage
+from src.Kathara.exceptions import InvalidImageArchitectureError
 
 
 class MockPullEvent(object):
@@ -196,11 +197,12 @@ def test_check_and_pull_local_incompatible_arch(mock_get_local, mock_check_for_u
                                                 mock_get_architecture, docker_image):
     image_obj = docker.models.images.Image()
     image_obj.attrs['Architecture'] = 'amd64'
+    image_obj.image_name = "kathara/test"
 
     mock_get_local.return_value = image_obj
     mock_get_architecture.return_value = "arm64"
 
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidImageArchitectureError):
         docker_image._check_and_pull("kathara/test", False)
 
     mock_get_local.assert_called_once_with("kathara/test")
@@ -224,7 +226,7 @@ def test_check_and_pull_remote_incompatible_arch(mock_get_local, mock_check_for_
 
     mock_get_local.side_effect = APIError("Fail")
 
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidImageArchitectureError):
         docker_image._check_and_pull("kathara/remote", False)
     mock_get_local.assert_called_once_with("kathara/remote")
     assert not mock_check_for_updates.called

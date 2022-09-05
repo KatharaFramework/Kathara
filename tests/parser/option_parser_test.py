@@ -20,9 +20,9 @@ def test_two_option():
 
 def test_option_error():
     with pytest.raises(ValueError):
-        parsed_options = OptionParser.parse(["option:fail"])
+        parsed_options = OptionParser.parse(["option:syntax_error"])
 
 
 def test_option_error2():
     with pytest.raises(ValueError):
-        parsed_options = OptionParser.parse(["option=fail=2"])
+        parsed_options = OptionParser.parse(["option=syntax_error=2"])

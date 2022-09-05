@@ -55,6 +55,9 @@ class Kathara(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
         """
         self.manager.deploy_machine(machine)
 
@@ -66,6 +69,9 @@ class Kathara(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
         """
         self.manager.deploy_link(link)
 
@@ -90,6 +96,11 @@ class Kathara(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the device specified is not associated to any network scenario.
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
+            MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
         self.manager.connect_machine_to_link(machine, link)
 
@@ -102,6 +113,11 @@ class Kathara(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the device specified is not associated to any network scenario.
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
+            MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
         """
         self.manager.disconnect_machine_from_link(machine, link)
 
@@ -113,6 +129,9 @@ class Kathara(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the device specified is not associated to any network scenario.
         """
         self.manager.undeploy_machine(machine)
 
@@ -124,6 +143,9 @@ class Kathara(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
         """
         self.manager.undeploy_link(link)
 
@@ -222,6 +244,10 @@ class Kathara(IManager):
 
         Returns:
             Any: API object of the device specific for the current manager.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
+            MachineNotFoundError: If the specified device is not found.
         """
         return self.manager.get_machine_api_object(machine_name, lab_hash, lab_name, all_users)
 
@@ -253,6 +279,10 @@ class Kathara(IManager):
 
         Returns:
             Any: API object of the collision domain specific for the current manager.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
+            LinkNotFoundError: If the collision domain is not found.
         """
         return self.manager.get_link_api_object(link_name, lab_hash, lab_name, all_users)
 

@@ -16,7 +16,7 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError, LinkNotFoundError, MachineCollisionDomainConflictError, \
-    InvocationError
+    InvocationError, LabNotFoundError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
 from ...model.Link import Link
@@ -96,10 +96,10 @@ class DockerManager(IManager):
             None
 
         Raises:
-            MachineNotFoundError: If the specified device is not associated to any network scenario.
+            LabNotFoundError: If the specified device is not associated to any network scenario.
         """
         if not machine.lab:
-            raise MachineNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
+            raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
 
         self.docker_link.deploy_links(machine.lab, selected_links={x.name for x in machine.interfaces.values()})
         self.docker_machine.deploy_machines(machine.lab, selected_machines={machine.name})
@@ -115,10 +115,10 @@ class DockerManager(IManager):
             None
 
         Raises:
-            LinkNotFoundError: If the collision domain is not associated to any network scenario.
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
         """
         if not link.lab:
-            raise LinkNotFoundError("Collision domain `%s` is not associated to a network scenario." % link.name)
+            raise LabNotFoundError("Collision domain `%s` is not associated to a network scenario." % link.name)
 
         self.docker_link.deploy_links(link.lab, selected_links={link.name})
 
@@ -162,11 +162,15 @@ class DockerManager(IManager):
             None
 
         Raises:
-            MachineNotFoundError: If the device specified is not associated to any network scenario.
+            LabNotFoundError: If the device specified is not associated to any network scenario.
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
             MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
         if not machine.lab:
-            raise MachineNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
+            raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
+
+        if not link.lab:
+            raise LabNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
 
         if machine.name in link.machines:
             raise MachineCollisionDomainConflictError(
@@ -190,11 +194,15 @@ class DockerManager(IManager):
             None
 
         Raises:
-            MachineNotFoundError: If the device specified is not associated to any network scenario.
+            LabNotFoundError: If the device specified is not associated to any network scenario.
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
             MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
         """
         if not machine.lab:
-            raise MachineNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
+            raise LabNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
+
+        if not link.lab:
+            raise LabNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
 
         if machine.name not in link.machines:
             raise MachineCollisionDomainConflictError(
@@ -217,10 +225,10 @@ class DockerManager(IManager):
             None
 
         Raises:
-            MachineNotFoundError: If the device specified is not associated to any network scenario.
+            LabNotFoundError: If the device specified is not associated to any network scenario.
         """
         if not machine.lab:
-            raise MachineNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
+            raise LabNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
 
         self.docker_machine.undeploy(machine.lab.hash, selected_machines={machine.name})
         self.docker_link.undeploy(machine.lab.hash, selected_links={x.name for x in machine.interfaces.values()})
@@ -236,10 +244,10 @@ class DockerManager(IManager):
             None
 
         Raises:
-            LinkNotFoundError: If the collision domain is not associated to any network scenario.
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
         """
         if not link.lab:
-            raise LinkNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
+            raise LabNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
 
         self.docker_link.undeploy(link.lab.hash, selected_links={link.name})
 
@@ -389,6 +397,7 @@ class DockerManager(IManager):
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
+            MachineNotFoundError: If the specified device is not found.
         """
         if not lab_hash and not lab_name:
             raise InvocationError("You must specify a running network scenario hash or name.")

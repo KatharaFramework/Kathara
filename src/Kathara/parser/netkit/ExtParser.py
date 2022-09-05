@@ -21,6 +21,11 @@ class ExtParser(object):
         Returns:
             Optional[Dict[str, List[ExternalLink]]]: Keys are name of collision domain and values are List of
                 ExternalLink attached to that interface.
+
+        Raises:
+            IOError: If lab.ext file cannot be opened.
+            ValueError: If the VLAN ID is not allowed.
+            SyntaxError: If lab.ext file is malformed.
         """
         lab_ext_path = os.path.join(path, 'lab.ext')
 

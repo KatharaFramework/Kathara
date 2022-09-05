@@ -14,7 +14,7 @@ from .stats.KubernetesLinkStats import KubernetesLinkStats
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...exceptions import NotSupportedError, MachineNotFoundError, LinkNotFoundError, LabAlreadyExistsError, \
-    InvocationError
+    InvocationError, LabNotFoundError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
 from ...model.Link import Link
@@ -42,9 +42,12 @@ class KubernetesManager(IManager):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
         """
         if not machine.lab:
-            raise MachineNotFoundError("Machine `%s` is not associated to a network scenario." % machine.name)
+            raise LabNotFoundError("Machine `%s` is not associated to a network scenario." % machine.name)
 
         machine.lab.hash = machine.lab.hash.lower()
 
@@ -62,10 +65,10 @@ class KubernetesManager(IManager):
             None
 
         Raises:
-            LinkNotFoundError: If the collision domain specified is not associated to any network scenario.
+            LabNotFoundError: If the collision domain specified is not associated to any network scenario.
         """
         if not link.lab:
-            raise LinkNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
+            raise LabNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
 
         link.lab.hash = link.lab.hash.lower()
 
@@ -150,10 +153,10 @@ class KubernetesManager(IManager):
             None
 
         Raises:
-            MachineNotFoundError: If the specified machine is not associated to a network scenario.
+            LabNotFoundError: If the specified machine is not associated to a network scenario.
         """
         if not machine.lab:
-            raise MachineNotFoundError(f"Machine `{machine.name}` is not associated to a network scenario.")
+            raise LabNotFoundError(f"Machine `{machine.name}` is not associated to a network scenario.")
 
         machine.lab.hash = machine.lab.hash.lower()
 
@@ -189,10 +192,10 @@ class KubernetesManager(IManager):
             None
 
         Raises:
-            LinkNotFoundError: If the collision domain specified is not associated to any network scenario.
+            LabNotFoundError: If the collision domain specified is not associated to any network scenario.
         """
         if not link.lab:
-            raise LinkNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
+            raise LabNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
 
         link.lab.hash = link.lab.hash.lower()
 

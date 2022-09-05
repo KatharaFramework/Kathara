@@ -10,6 +10,7 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
+from src.Kathara.exceptions import MachineNotFoundError
 
 
 #
@@ -532,7 +533,7 @@ def test_get_machines_stats_lab_hash_device_name_user(mock_get_machines_api_obje
 def test_get_machines_stats_lab_hash_device_not_found(mock_get_machines_api_objects_by_filters, docker_machine,
                                                       default_device):
     mock_get_machines_api_objects_by_filters.return_value = []
-    with pytest.raises(Exception):
+    with pytest.raises(MachineNotFoundError):
         next(docker_machine.get_machines_stats(lab_hash="lab_hash"))
 
     mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", machine_name=None,
@@ -544,7 +545,7 @@ def test_get_machines_stats_lab_hash_device_not_found(mock_get_machines_api_obje
 def test_get_machines_stats_lab_hash_and_name_device_not_found(mock_get_machines_api_objects_by_filters, docker_machine,
                                                                default_device):
     mock_get_machines_api_objects_by_filters.return_value = []
-    with pytest.raises(Exception):
+    with pytest.raises(MachineNotFoundError):
         next(docker_machine.get_machines_stats(lab_hash="lab_hash", machine_name="test_device"))
 
     mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", machine_name="test_device",

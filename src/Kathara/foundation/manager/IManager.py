@@ -21,6 +21,9 @@ class IManager(ABC):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
         """
         raise NotImplementedError("You must implement `deploy_machine` method.")
 
@@ -33,6 +36,9 @@ class IManager(ABC):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
         """
         raise NotImplementedError("You must implement `deploy_link` method.")
 
@@ -59,6 +65,11 @@ class IManager(ABC):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the device specified is not associated to any network scenario.
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
+            MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
         raise NotImplementedError("You must implement `connect_machine_to_link` method.")
 
@@ -68,8 +79,14 @@ class IManager(ABC):
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
             link (Kathara.model.Link): The Kathara collision domain from which disconnect the device.
+
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the device specified is not associated to any network scenario.
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
+            MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
         """
         raise NotImplementedError("You must implement `disconnect_machine_from_link` method.")
 
@@ -82,6 +99,9 @@ class IManager(ABC):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the device specified is not associated to any network scenario.
         """
         raise NotImplementedError("You must implement `undeploy_machine` method.")
 
@@ -94,6 +114,9 @@ class IManager(ABC):
 
         Returns:
             None
+
+        Raises:
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
         """
         raise NotImplementedError("You must implement `undeploy_link` method.")
 
@@ -198,6 +221,10 @@ class IManager(ABC):
 
         Returns:
             Any: API object of the device specific for the current manager.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
+            MachineNotFoundError: If the specified device is not found.
         """
         raise NotImplementedError("You must implement `get_machine_api_object` method.")
 
@@ -231,6 +258,10 @@ class IManager(ABC):
 
         Returns:
             Any: API object of the collision domain specific for the current manager.
+
+         Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
+            LinkNotFoundError: If the collision domain is not found.
         """
         raise NotImplementedError("You must implement `get_link_api_object` method.")
 
@@ -305,6 +336,9 @@ class IManager(ABC):
 
         Returns:
             IMachineStats: IMachineStats object containing the device info.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         raise NotImplementedError("You must implement `get_machine_stats` method.")
 
@@ -341,6 +375,9 @@ class IManager(ABC):
         Returns:
              Generator[Dict[str, ILinkStats], None, None]: A generator containing dicts that has API Object
              identifier as keys and ILinksStats objects as values.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         raise NotImplementedError("You must implement `get_link_stats` method.")
 

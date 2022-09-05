@@ -52,7 +52,7 @@ def test_add_interface(default_device: Machine):
 
 def test_add_interface_exception(default_device: Machine):
     default_device.add_interface(Link(default_device.lab, "A"))
-    with pytest.raises(Exception):
+    with pytest.raises(MachineCollisionDomainConflictError):
         default_device.add_interface(Link(default_device.lab, "B"), number=0)
 
 
@@ -100,7 +100,7 @@ def test_remove_interface_one(default_device: Machine):
 
 def test_remove_interface_exception(default_device: Machine):
     link = Link(default_device.lab, "A")
-    with pytest.raises(Exception):
+    with pytest.raises(MachineCollisionDomainConflictError):
         default_device.remove_interface(link)
 
 
