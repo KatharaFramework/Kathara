@@ -161,10 +161,7 @@ class DockerImage(object):
                         "no Internet connection is available to pull it from Docker Hub." % image_name
                     )
                 else:
-                    raise DockerImageNotFoundError(
-                        "Docker Image `%s` is not available neither on Docker Hub "
-                        "nor in local repository!" % image_name
-                    )
+                    raise DockerImageNotFoundError(image_name)
             except InvalidImageArchitectureError as e:
                 raise e
 

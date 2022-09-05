@@ -39,7 +39,7 @@ class BuiltInTest(Test):
                 with open(machine_signature_path, 'r') as machine_signature_file:
                     machine_signature = json.loads(machine_signature_file.read())
             else:
-                raise MachineSignatureNotFoundError("Signature for device `%s` not found! Exiting..." % machine_name)
+                raise MachineSignatureNotFoundError(machine_name)
 
             # Save machine state into result file
             machine_result_path = "%s/%s.builtin" % (self.results_path, machine.name)

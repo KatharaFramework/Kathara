@@ -13,7 +13,7 @@ from . import Lab as LabPackage
 from . import Link as LinkPackage
 from .Link import Link
 from .. import utils
-from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainConflictError
+from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainError
 from ..setting.Setting import Setting
 
 
@@ -105,10 +105,10 @@ class Machine(object):
             number = len(self.interfaces.keys())
 
         if number in self.interfaces:
-            raise MachineCollisionDomainConflictError(f"Interface {number} already set on device `{self.name}`.")
+            raise MachineCollisionDomainError(f"Interface {number} already set on device `{self.name}`.")
 
         if self.name in link.machines:
-            raise MachineCollisionDomainConflictError(
+            raise MachineCollisionDomainError(
                 f"Device `{self.name}` is already connected to collision domain `{link.name}`."
             )
 
@@ -128,7 +128,7 @@ class Machine(object):
             MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
         """
         if self.name not in link.machines:
-            raise MachineCollisionDomainConflictError(
+            raise MachineCollisionDomainError(
                 f"Device `{self.name}` is not connected to collision domain `{link.name}`.")
 
         self.interfaces = collections.OrderedDict(
@@ -225,7 +225,7 @@ class Machine(object):
 
         for i, (num_iface, _) in enumerate(sorted_interfaces):
             if num_iface != i:
-                raise NonSequentialMachineInterfaceError("Interface %d missing on device %s." % (i, self.name))
+                raise NonSequentialMachineInterfaceError(i, self.name)
 
         self.interfaces = collections.OrderedDict(sorted_interfaces)
 

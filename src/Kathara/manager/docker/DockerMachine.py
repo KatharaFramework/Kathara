@@ -175,7 +175,7 @@ class DockerMachine(object):
         containers = self.get_machines_api_objects_by_filters(machine_name=machine.name, lab_hash=machine.lab.hash,
                                                               user=utils.get_current_user_name())
         if containers:
-            raise MachineAlreadyExistsError("Device with name `%s` already exists." % machine.name)
+            raise MachineAlreadyExistsError(machine.name)
 
         image = machine.get_image()
         memory = machine.get_mem()

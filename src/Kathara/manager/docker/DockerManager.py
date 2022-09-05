@@ -15,7 +15,7 @@ from .stats.DockerLinkStats import DockerLinkStats
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...decorators import privileged
-from ...exceptions import DockerDaemonConnectionError, LinkNotFoundError, MachineCollisionDomainConflictError, \
+from ...exceptions import DockerDaemonConnectionError, LinkNotFoundError, MachineCollisionDomainError, \
     InvocationError, LabNotFoundError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
@@ -55,9 +55,9 @@ def check_docker_status(method):
         try:
             client.ping()
         except RequestsConnectionError as e:
-            raise DockerDaemonConnectionError("Can not connect to Docker Daemon. %s" % str(e))
+            raise DockerDaemonConnectionError(str(e))
         except pywintypes.error as e:
-            raise DockerDaemonConnectionError("Can not connect to Docker Daemon. %s" % str(e))
+            raise DockerDaemonConnectionError(str(e))
 
     return check_docker
 
@@ -173,7 +173,7 @@ class DockerManager(IManager):
             raise LabNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
 
         if machine.name in link.machines:
-            raise MachineCollisionDomainConflictError(
+            raise MachineCollisionDomainError(
                 f"Device `{machine.name}` is already connected to collision domain `{link.name}`."
             )
 
@@ -205,7 +205,7 @@ class DockerManager(IManager):
             raise LabNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
 
         if machine.name not in link.machines:
-            raise MachineCollisionDomainConflictError(
+            raise MachineCollisionDomainError(
                 f"Device `{machine.name}` is not connected to collision domain `{link.name}`."
             )
 

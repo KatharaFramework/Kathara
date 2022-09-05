@@ -6,7 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.Kathara.exceptions import MachineCollisionDomainConflictError
+from src.Kathara.exceptions import MachineCollisionDomainError
 
 sys.path.insert(0, './')
 
@@ -52,7 +52,7 @@ def test_add_interface(default_device: Machine):
 
 def test_add_interface_exception(default_device: Machine):
     default_device.add_interface(Link(default_device.lab, "A"))
-    with pytest.raises(MachineCollisionDomainConflictError):
+    with pytest.raises(MachineCollisionDomainError):
         default_device.add_interface(Link(default_device.lab, "B"), number=0)
 
 
@@ -60,7 +60,7 @@ def test_add_two_interfaces_on_same_cd(default_device: Machine):
     link = Link(default_device.lab, "A")
 
     default_device.add_interface(link)
-    with pytest.raises(MachineCollisionDomainConflictError):
+    with pytest.raises(MachineCollisionDomainError):
         default_device.add_interface(link)
 
 
@@ -100,7 +100,7 @@ def test_remove_interface_one(default_device: Machine):
 
 def test_remove_interface_exception(default_device: Machine):
     link = Link(default_device.lab, "A")
-    with pytest.raises(MachineCollisionDomainConflictError):
+    with pytest.raises(MachineCollisionDomainError):
         default_device.remove_interface(link)
 
 

@@ -64,7 +64,7 @@ class DepParser(object):
                     # Dependencies are saved as dependencies[machine3] = [machine1, machine2]
                     dependencies[key] = deps
                 else:
-                    raise SyntaxError(f"[ERROR] In lab.dep - line {line_number}: Syntax error.")
+                    raise SyntaxError(f"In lab.dep - line {line_number}: Syntax error.")
 
             line_number += 1
             line = dep_mem_file.readline().decode('utf-8')

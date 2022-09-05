@@ -229,7 +229,7 @@ class KubernetesMachine(object):
                                                                           )
         except ApiException as e:
             if e.status == 409 and 'Conflict' in e.reason:
-                raise MachineAlreadyExistsError("Device with name `%s` already exists." % machine.name)
+                raise MachineAlreadyExistsError(machine.name)
             else:
                 raise e
 
@@ -503,7 +503,7 @@ class KubernetesMachine(object):
         deployment = pods.pop()
 
         if 'Running' not in deployment.status.phase:
-            raise MachineNotReadyError('Device `%s` is not ready.' % machine_name)
+            raise MachineNotReadyError(machine_name)
 
         if not shell:
             shell_env_value = self.get_env_var_value_from_pod(deployment, "_MEGALOS_SHELL")

@@ -99,7 +99,7 @@ class Setting(object):
         settings_path = os.path.join(path, SETTINGS_FILENAME) if path is not None else DEFAULT_SETTINGS_PATH
 
         if not os.path.exists(settings_path):  # Requested settings file doesn't exist, throw exception
-            raise SettingsNotFoundError("Settings file not found in specified path.")
+            raise SettingsNotFoundError(settings_path)
         else:  # Requested settings file exists, read it and check values
             settings = {}
             with open(settings_path, 'r') as settings_file:

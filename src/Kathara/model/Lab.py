@@ -313,6 +313,6 @@ class Lab(object):
             lab_info += "Email: %s\n" % self.email
 
         if self.web:
-            lab_info += "Website: %s" % self.web
+            lab_info += "Website: %s\n" % self.web
 
-        return lab_info
+        return lab_info[0:-1]  # Remove trailing new line

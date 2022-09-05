@@ -164,7 +164,7 @@ class LstartCommand(Command):
             logging.info(format_headers())
 
         if len(lab.machines) <= 0:
-            raise EmptyLabError("No devices in the current network scenario. Exiting...")
+            raise EmptyLabError()
 
         try:
             options = OptionParser.parse(args['options'])
