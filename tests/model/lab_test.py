@@ -161,9 +161,8 @@ def test_get_link(default_scenario: Lab):
 
 
 def test_get_link_not_found_error(default_scenario: Lab):
-    default_scenario.new_link("A")
     with pytest.raises(LinkNotFoundError):
-        default_scenario.new_link("A")
+        default_scenario.get_link("A")
 
 
 def test_get_or_new_link_not_exists(default_scenario: Lab):
