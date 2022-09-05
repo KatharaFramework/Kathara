@@ -7,7 +7,7 @@ from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
 from .Link import Link
 from .. import utils
-from ..exceptions import LinkNotFoundError, MachineNotFoundError, MachineAlreadyExistsError
+from ..exceptions import LinkNotFoundError, MachineNotFoundError, MachineAlreadyExistsError, LinkAlreadyExistsError
 
 
 class Lab(object):
@@ -249,6 +249,42 @@ class Lab(object):
             self.machines[name] = MachinePackage.Machine(self, name, **kwargs)
 
         return self.machines[name]
+
+    def get_link(self, name: str) -> Link:
+        """Get the specified collision domain.
+
+        Args:
+            name (str): The name of the collision domain.
+
+        Returns:
+            Kathara.model.Link: A Kathara collision domain.
+
+        Raises:
+            LinkNotFoundError: If the specified link is not in the network scenario.
+        """
+        if name not in self.links:
+            raise LinkNotFoundError(f"Collision domain {name} not found in the network scenario.")
+
+        return self.links[name]
+
+    def new_link(self, name: str) -> Link:
+        """Create the collision domain and add it to the collision domains list.
+
+        Args:
+            name (str): The name of the collision domain.
+
+        Returns:
+            Kathara.model.Link: A Kathara collision domain.
+
+        Raises:
+            LinkAlreadyExistsError: If the specified link is already in the network scenario.
+        """
+        if name in self.links:
+            raise LinkAlreadyExistsError(f"Collision domain {name} is already the network scenario.")
+
+        self.links[name] = Link(self, name)
+
+        return self.links[name]
 
     def get_or_new_link(self, name: str) -> Link:
         """Get the specified collision domain. If it not exists, create and add it to the collision domains list.

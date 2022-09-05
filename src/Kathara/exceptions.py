@@ -94,6 +94,10 @@ class LinkNotFoundError(Exception):
     pass
 
 
+class LinkAlreadyExistsError(Exception):
+    pass
+
+
 # Architecture Excpetion
 class ArchitectureError(Exception):
     pass
