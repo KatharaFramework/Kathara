@@ -22,10 +22,10 @@ class LabParser(object):
         lab_conf_path = os.path.join(path, 'lab.conf')
 
         if not os.path.exists(lab_conf_path):
-            raise IOError("No lab.conf in given directory.\n")
+            raise IOError("No lab.conf in given directory.")
 
         if os.stat(lab_conf_path).st_size == 0:
-            raise IOError("lab.conf file is empty.\n")
+            raise IOError("lab.conf file is empty.")
 
         # Reads lab.conf in memory so it is faster.
         try:
@@ -40,8 +40,7 @@ class LabParser(object):
         line = lab_mem_file.readline().decode('utf-8')
         while line:
             matches = re.search(r"^(?P<key>[a-z0-9_]{1,30})\[(?P<arg>\w+)\]=(?P<value>\".+\"|\'.+\'|\w+)$",
-                                line.strip()
-                                )
+                                line.strip())
 
             if matches:
                 key = matches.group("key").strip()
@@ -49,8 +48,8 @@ class LabParser(object):
                 value = matches.group("value").replace('"', '').replace("'", '')
 
                 if key in RESERVED_MACHINE_NAMES:
-                    raise ValueError("In line %d: "
-                                     "`%s` is a reserved name, you can not use it for a device." % (line_number, key))
+                    raise ValueError(f"In lab.conf - Line {line_number}: "
+                                     f"`{key}` is a reserved name, you can not use it for a device.")
 
                 try:
                     # It's an interface, handle it.
@@ -59,8 +58,8 @@ class LabParser(object):
                     if re.search(r"^\w+$", value):
                         lab.connect_machine_to_link(key, value, machine_iface_number=interface_number)
                     else:
-                        raise ValueError("In line %d: Collision domain `%s` contains non-alphanumeric characters." %
-                                         (line_number, value))
+                        raise ValueError(f"In lab.conf - Line {line_number}: "
+                                         f"Collision domain `{value}` contains non-alphanumeric characters.")
                 except ValueError:
                     # Not an interface, add it to the machine metas.
                     lab.assign_meta_to_machine(key, arg, value)
@@ -73,7 +72,7 @@ class LabParser(object):
                             not line.startswith("LAB_AUTHOR=") and \
                             not line.startswith("LAB_EMAIL=") and \
                             not line.startswith("LAB_WEB="):
-                        raise SyntaxError("In line %d: Invalid characters `%s`." % (line_number, line))
+                        raise SyntaxError("In lab.conf - Line %d: Invalid characters `%s`." % (line_number, line))
                     else:
                         (key, value) = line.split("=")
                         key = key.replace("LAB_", "").lower()

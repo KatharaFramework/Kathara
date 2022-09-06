@@ -68,7 +68,7 @@ class ExtParser(object):
 
                 external_links[link].append(ExternalLink(interface, vlan))
             elif not line.startswith('#') and line.strip():
-                raise SyntaxError(f"In file lab.ext, line {line_number} malformed.")
+                raise SyntaxError(f"In file lab.ext - Line {line_number}.")
 
             line_number += 1
             line = ext_mem_file.readline().decode('utf-8')
