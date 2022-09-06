@@ -27,7 +27,7 @@ setup(
         "pyroute2>=0.5.19",
         "progressbar2>=1.14.0",
         "libtmux>=0.8.2; platform_system == 'darwin' or platform_system == 'linux'",
-        "pyuv>=1.4.0",
+        "git+https://github.com/saghul/pyuv@master#egg=pyuv",
         "appscript>=1.1.0; platform_system == 'darwin'",
         "pypiwin32>=223; platform_system == 'win32'",
         "windows-curses>=2.1.0; platform_system == 'win32'"
