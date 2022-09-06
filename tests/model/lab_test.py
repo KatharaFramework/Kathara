@@ -9,7 +9,8 @@ sys.path.insert(0, './')
 from src.Kathara.model.Lab import Lab
 from src.Kathara import utils
 from tempfile import mkdtemp
-from src.Kathara.exceptions import MachineOptionError
+from src.Kathara.exceptions import MachineOptionError, MachineAlreadyExistsError, MachineNotFoundError, \
+    LinkAlreadyExistsError, LinkNotFoundError
 
 
 @pytest.fixture()
@@ -95,6 +96,30 @@ def test_directory_scenario_creation_no_shared_files(directory_scenario: Lab, te
     assert directory_scenario.hash == utils.generate_urlsafe_hash(directory_scenario.name)
 
 
+def test_new_machine(default_scenario: Lab):
+    assert len(default_scenario.machines) == 0
+    default_scenario.new_machine("pc1")
+    assert len(default_scenario.machines) == 1
+    assert "pc1" in default_scenario.machines
+
+
+def test_new_machine_already_exists_error(default_scenario: Lab):
+    default_scenario.new_machine("pc1")
+    with pytest.raises(MachineAlreadyExistsError):
+        default_scenario.new_machine("pc1")
+
+
+def test_get_machine(default_scenario: Lab):
+    default_scenario.new_machine("pc1")
+    device = default_scenario.get_machine("pc1")
+    assert device.name == "pc1"
+
+
+def test_get_machine_not_found_error(default_scenario: Lab):
+    with pytest.raises(MachineNotFoundError):
+        default_scenario.get_machine("pc1")
+
+
 def test_get_or_new_machine_not_exist(default_scenario: Lab):
     default_scenario.get_or_new_machine("pc1")
     assert len(default_scenario.machines) == 1
@@ -114,6 +139,30 @@ def test_get_or_new_machine_two_devices(default_scenario: Lab):
     assert len(default_scenario.machines) == 2
     assert default_scenario.machines['pc1']
     assert default_scenario.machines['pc2']
+
+
+def test_new_link(default_scenario: Lab):
+    assert len(default_scenario.links) == 0
+    link = default_scenario.new_link("A")
+    assert len(default_scenario.links) == 1
+    assert link.name in default_scenario.links
+
+
+def test_new_link_already_exists_error(default_scenario: Lab):
+    default_scenario.new_link("A")
+    with pytest.raises(LinkAlreadyExistsError):
+        default_scenario.new_link("A")
+
+
+def test_get_link(default_scenario: Lab):
+    created_link = default_scenario.new_link("A")
+    link = default_scenario.get_link("A")
+    assert link == created_link
+
+
+def test_get_link_not_found_error(default_scenario: Lab):
+    with pytest.raises(LinkNotFoundError):
+        default_scenario.get_link("A")
 
 
 def test_get_or_new_link_not_exists(default_scenario: Lab):

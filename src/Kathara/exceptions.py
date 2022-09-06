@@ -105,6 +105,10 @@ class LinkNotFoundError(Exception):
     pass
 
 
+class LinkAlreadyExistsError(Exception):
+    pass
+
+
 # Test Exceptions
 class TestError(Exception):
     pass
