@@ -11,11 +11,11 @@ override_dh_auto_clean:
 	find . | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
 
 override_dh_auto_configure:
-	python3.9 -m venv $(CURDIR)/venv
-	$(CURDIR)/venv/bin/pip3.9 install --no-index --find-links $(CURDIR)/debian/pythonLibs_$(ARCHITECTURE)/ $(CURDIR)/debian/pythonLibs_$(ARCHITECTURE)/*
+	python3.10 -m venv $(CURDIR)/venv
+	$(CURDIR)/venv/bin/pip3.10 install --no-index --find-links $(CURDIR)/debian/pythonLibs_$(ARCHITECTURE)/ $(CURDIR)/debian/pythonLibs_$(ARCHITECTURE)/*
 
 override_dh_auto_build:
-	$(CURDIR)/venv/bin/python3.9 -m nuitka --lto=no --show-progress --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
+	$(CURDIR)/venv/bin/python3.10 -m nuitka --lto=no --show-progress --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
 
 override_dh_auto_install:
 	rm -rf $(CURDIR)/debian/kathara/usr/lib/kathara/*
