@@ -11,7 +11,7 @@ kathara-lstart(1) -- Start a Kathara network scenario
 
 ## DESCRIPTION
 
-In order to ease setting up complex network with Kathara it is possible to completely describe it into special configuration files, creating a so-called **lab**. The network scenario can be started with a single command as if it were a virtual network 'laboratory'.
+In order to ease setting up complex network with Kathara it is possible to completely describe it into special configuration files, creating a so-called **network scenario**. The network scenario can be started with a single command as if it were a virtual network 'laboratory'.
 
 Start a set of devices that are part of a Kathara network scenario and configures them according to the parameters contained in the network scenario description.
 By default, all the devices that make up the network scenario are started. If a list of <DEVICE_NAME>s is provided, then only devices with a matching name and that are part of the network scenario are started.
