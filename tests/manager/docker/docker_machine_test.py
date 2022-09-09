@@ -3,6 +3,7 @@ from unittest import mock
 from unittest.mock import Mock
 
 import pytest
+from docker.errors import APIError
 
 sys.path.insert(0, './')
 
@@ -10,7 +11,7 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
-from src.Kathara.exceptions import MachineNotFoundError
+from src.Kathara.exceptions import MachineNotFoundError, DockerPluginError
 
 
 #
@@ -228,6 +229,34 @@ def test_start(docker_machine, default_device, default_link, default_link_b):
     default_link_b.api_object.connect.assert_called_once()
 
 
+def test_start_plugin_error_endpoint_start(default_device, docker_machine):
+    default_device.api_object.start.side_effect = DockerPluginError("endpoint does not exists")
+    with pytest.raises(DockerPluginError):
+        docker_machine.start(default_device)
+
+
+def test_start_plugin_error_network_start(default_device, docker_machine):
+    default_device.api_object.start.side_effect = DockerPluginError("network does not exists")
+    with pytest.raises(DockerPluginError):
+        docker_machine.start(default_device)
+
+
+def test_start_plugin_error_endpoint_connect(default_device, default_link, default_link_b, docker_machine):
+    default_device.add_interface(default_link)
+    default_device.add_interface(default_link_b)
+    default_link_b.api_object.connect.side_effect = DockerPluginError("endpoint does not exists")
+    with pytest.raises(DockerPluginError):
+        docker_machine.start(default_device)
+
+
+def test_start_plugin_error_network_connect(default_device, default_link, default_link_b, docker_machine):
+    default_device.add_interface(default_link)
+    default_device.add_interface(default_link_b)
+    default_link_b.api_object.connect.side_effect = DockerPluginError("network does not exists")
+    with pytest.raises(DockerPluginError):
+        docker_machine.start(default_device)
+
+
 #
 # TEST: _deploy_and_start_machine
 #
@@ -274,6 +303,20 @@ def test_connect_to_link(docker_machine, default_device, default_link, default_l
     default_link_b.api_object.connect.assert_called_once()
 
 
+def test_connect_to_link_plugin_error_network(default_device, default_link, docker_machine):
+    default_device.add_interface(default_link)
+    default_link.api_object.connect.side_effect = DockerPluginError("network does not exists")
+    with pytest.raises(DockerPluginError):
+        docker_machine.connect_to_link(default_device, default_link)
+
+
+def test_connect_to_link_plugin_error_endpoint(default_device, default_link, docker_machine):
+    default_device.add_interface(default_link)
+    default_link.api_object.connect.side_effect = DockerPluginError("endpoint does not exists")
+    with pytest.raises(DockerPluginError):
+        docker_machine.connect_to_link(default_device, default_link)
+
+
 #
 # TEST: disconnect_from_link
 #
@@ -286,7 +329,7 @@ def test_disconnect_from_link(docker_machine, default_device, default_link, defa
     default_device.add_interface(default_link_b)
 
     docker_machine.disconnect_from_link(default_device, default_link_b)
-    
+
     assert not default_link.api_object.disconnect.called
     default_link_b.api_object.disconnect.assert_called_once()
 
