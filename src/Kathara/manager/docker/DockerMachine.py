@@ -12,7 +12,7 @@ from .DockerImage import DockerImage
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError
+from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError, DockerPluginError
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine
@@ -169,6 +169,7 @@ class DockerMachine(object):
 
         Raises:
             MachineAlreadyExistsError: If a device with the name specified already exists.
+            APIError: If the Docker APIs return an error.
         """
         logging.debug("Creating device `%s`..." % machine.name)
 
@@ -300,11 +301,23 @@ class DockerMachine(object):
 
         Returns:
             None
+
+        Raises:
+            DockerPluginError: If Kathara has been left in an inconsistent state.
+            APIError: If the Docker APIs return an error.
         """
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
         if link.api_object.name not in attached_networks:
-            link.api_object.connect(machine.api_object)
+            try:
+                link.api_object.connect(machine.api_object)
+            except APIError as e:
+                if e.response.status_code == 500 and \
+                        ("network does not exist" in e.explanation or "endpoint does not exist" in e.explanation):
+                    raise DockerPluginError(
+                        "Kathara has been left in an inconsistent state! Please run `kathara wipe`.")
+                else:
+                    raise e
 
     @staticmethod
     def disconnect_from_link(machine: Machine, link: Link) -> None:
@@ -318,7 +331,7 @@ class DockerMachine(object):
             None
         """
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
-        
+
         if link.api_object.name in attached_networks:
             link.api_object.disconnect(machine.api_object)
 
@@ -336,6 +349,8 @@ class DockerMachine(object):
 
         Raises:
             MountDeniedError: If the host drive is not shared with Docker.
+            DockerPluginError: If Kathara has been left in an inconsistent state.
+            APIError: If the Docker APIs return an error.
         """
         logging.debug("Starting device `%s`..." % machine.name)
 
@@ -344,6 +359,9 @@ class DockerMachine(object):
         except APIError as e:
             if e.response.status_code == 500 and e.explanation.startswith('Mounts denied'):
                 raise MountDeniedError("Host drive is not shared with Docker.")
+            elif e.response.status_code == 500 and \
+                    ("network does not exist" in e.explanation or "endpoint does not exist" in e.explanation):
+                raise DockerPluginError("Kathara has been left in an inconsistent state! Please run `kathara wipe`.")
             else:
                 raise e
 
@@ -356,8 +374,15 @@ class DockerMachine(object):
                                                                                                   iface_num
                                                                                                   )
                           )
-
-            machine_link.api_object.connect(machine.api_object)
+            try:
+                machine_link.api_object.connect(machine.api_object)
+            except APIError as e:
+                if e.response.status_code == 500 and \
+                        ("network does not exist" in e.explanation or "endpoint does not exist" in e.explanation):
+                    raise DockerPluginError(
+                        "Kathara has been left in an inconsistent state! Please run `kathara wipe`.")
+                else:
+                    raise e
 
         # Bridged connection required but not added in `deploy` method.
         if "bridge_connected" not in machine.meta and machine.meta['bridged']:
