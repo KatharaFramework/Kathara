@@ -404,7 +404,7 @@ class DockerMachine(object):
         )
 
         # Execute the startup commands inside the container (without privileged flag so basic permissions are used)
-        machine.api_object.exec_run(cmd=[Setting.get_instance().device_shell, '-c', startup_commands_string],
+        machine.api_object.exec_run(cmd=[machine.api_object.labels['shell'], '-c', startup_commands_string],
                                     stdout=False,
                                     stderr=False,
                                     privileged=False,
@@ -674,25 +674,25 @@ class DockerMachine(object):
         return "%s_%s_%s_%s" % (Setting.get_instance().device_prefix, utils.get_current_user_name(), name, lab_hash)
 
     @staticmethod
-    def _delete_machine(machine: docker.models.containers.Container) -> None:
+    def _delete_machine(container: docker.models.containers.Container) -> None:
         """Remove a running Docker container.
 
         Args:
-            machine (docker.models.containers.Container): The Docker container to remove.
+            container (docker.models.containers.Container): The Docker container to remove.
 
         Returns:
             None
         """
         # Build the shutdown command string
-        shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine.labels["name"])
+        shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=container.labels["name"])
 
         # Execute the shutdown commands inside the container (only if it's running)
-        if machine.status == "running":
-            machine.exec_run(cmd=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
-                             stdout=False,
-                             stderr=False,
-                             privileged=True,
-                             detach=True
-                             )
+        if container.status == "running":
+            container.exec_run(cmd=[container.labels['shell'], '-c', shutdown_commands_string],
+                               stdout=False,
+                               stderr=False,
+                               privileged=True,
+                               detach=True
+                               )
 
-        machine.remove(force=True)
+        container.remove(force=True)
