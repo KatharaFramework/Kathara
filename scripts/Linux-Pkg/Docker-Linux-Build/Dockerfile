@@ -19,7 +19,6 @@ RUN pacman -S --noconfirm wget \
 						  libffi \
 						  libnsl \
 						  libxcrypt \
-						  openssl \
 						  zlib && \
 	wget https://www.python.org/ftp/python/3.10.7/Python-3.10.7.tgz && \
 	tar xfvz Python-3.10.7.tgz && cd Python-3.10.7 && \
