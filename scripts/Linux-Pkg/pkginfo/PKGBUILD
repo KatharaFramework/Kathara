@@ -7,10 +7,13 @@ url="https://www.kathara.org/"
 license=('GPL3')
 install="kathara.install"
 changelog="kathara.changelog"
-makedepends=('chrpath')
+makedepends=(
+    'chrpath'
+    'patchelf'
+)
 optdepends=(
-  'docker: for running network scenarios in a local environment'
-  'xterm: for opening devices terminals'
+    'docker: for running network scenarios in a local environment'
+    'xterm: for opening devices terminals'
 )
 source=("kathara.tar.gz")
 md5sums=('SKIP')
