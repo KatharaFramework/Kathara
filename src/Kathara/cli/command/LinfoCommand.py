@@ -6,6 +6,7 @@ from ..ui.utils import format_headers
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
+from ...model.Lab import Lab
 from ...model.Link import BRIDGE_LINK_NAME
 from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
@@ -33,7 +34,7 @@ class LinfoCommand(Command):
         self.parser.add_argument(
             '-d', '--directory',
             required=False,
-            help='Specify the folder containing the lab.'
+            help='Specify the folder containing the network scenario.'
         )
 
         group = self.parser.add_mutually_exclusive_group(required=False)
@@ -42,7 +43,7 @@ class LinfoCommand(Command):
             '-l', '--live',
             required=False,
             action='store_true',
-            help='Live mode, can be used only when a lab is launched.'
+            help='Live mode, can be used only when a network scenario is launched.'
         )
 
         group.add_argument(
@@ -65,45 +66,48 @@ class LinfoCommand(Command):
 
         lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
-        lab_hash = utils.generate_urlsafe_hash(lab_path)
+        try:
+            lab = LabParser.parse(lab_path)
+        except (Exception, IOError):
+            lab = Lab(None, path=lab_path)
 
         if args['live']:
             if args['name']:
-                self._get_machine_live_info(lab_hash, args['name'])
+                self._get_machine_live_info(lab, args['name'])
             else:
-                self._get_lab_live_info(lab_hash)
+                self._get_lab_live_info(lab)
 
             return
 
         if args['conf']:
-            self._get_conf_info(lab_path, machine_name=args['name'])
+            self._get_conf_info(lab, machine_name=args['name'])
             return
 
         if args['name']:
             print(format_headers("Device Information"))
-            print(str(next(Kathara.get_instance().get_machine_stats(args['name'], lab_hash))))
+            print(str(next(Kathara.get_instance().get_machine_stats(args['name'], lab.hash))))
             print(format_headers())
         else:
-            machines_stats = Kathara.get_instance().get_machines_stats(lab_hash)
+            machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
             print(next(create_table(machines_stats)))
 
     @staticmethod
-    def _get_machine_live_info(lab_hash: str, machine_name: str) -> None:
+    def _get_machine_live_info(lab: Lab, machine_name: str) -> None:
         Curses.get_instance().init_window()
 
         try:
             while True:
                 Curses.get_instance().print_string(
                     format_headers("Device Information") + "\n" +
-                    str(next(Kathara.get_instance().get_machine_stats(machine_name, lab_hash))) + "\n" +
+                    str(next(Kathara.get_instance().get_machine_stats(machine_name, lab.hash))) + "\n" +
                     format_headers()
                 )
         finally:
             Curses.get_instance().close()
 
     @staticmethod
-    def _get_lab_live_info(lab_hash: str) -> None:
-        machines_stats = Kathara.get_instance().get_machines_stats(lab_hash)
+    def _get_lab_live_info(lab: Lab) -> None:
+        machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
         table = create_table(machines_stats)
 
         Curses.get_instance().init_window()
@@ -117,8 +121,7 @@ class LinfoCommand(Command):
             Curses.get_instance().close()
 
     @staticmethod
-    def _get_conf_info(lab_path: str, machine_name: str = None) -> None:
-        lab = LabParser.parse(lab_path)
+    def _get_conf_info(lab: Lab, machine_name: str = None) -> None:
         if machine_name:
             print(format_headers("Device Information"))
             print(str(lab.machines[machine_name]))

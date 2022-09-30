@@ -18,15 +18,15 @@ new network protocols.
 
 %prep
 %autosetup
-python3.9 -m venv %{_builddir}/venv
-%{_builddir}/venv/bin/pip3.9 install --upgrade pip
-%{_builddir}/venv/bin/pip3.9 install -r src/requirements.txt
-%{_builddir}/venv/bin/pip3.9 install nuitka
-%{_builddir}/venv/bin/pip3.9 install pytest
+python3.10 -m venv %{_builddir}/venv
+%{_builddir}/venv/bin/pip3.10 install --upgrade pip
+%{_builddir}/venv/bin/pip3.10 install -r src/requirements.txt
+%{_builddir}/venv/bin/pip3.10 install nuitka
+%{_builddir}/venv/bin/pip3.10 install pytest
 
 %build
-%{_builddir}/venv/bin/python3.9 -m pytest
-cd src && %{_builddir}/venv/bin/python3.9 -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
+%{_builddir}/venv/bin/python3.10 -m pytest
+cd src && %{_builddir}/venv/bin/python3.10 -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
 
 %install
 mv %{_builddir}/%{buildsubdir}/src/kathara.dist %{_builddir}/%{buildsubdir}/kathara.dist
@@ -68,8 +68,11 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- Fix lab.dep parser
-- Refactor of Managers and add more expressive Python APIs
-- Decouple UI Logic from Business Logic
-- Add Settings option to select the Docker Image Update Policy
-- Add possibility to declare container environment variables from vstart and lab.conf
+- It is now possible to restart only specific devices using 'lrestart'
+- Add possibility to disconnect a device from a collision domain using vconfig and lconfig commands (see man for further information)
+- Add check to ensure that required Docker images are compatible with the host architecture
+- More generic regular expression for device 'env' meta
+- Network scenario hash is now computed from LAB_NAME meta, if present
+- Improve exceptions handling and better error descriptions
+- Add several utility methods to the 'Kathara' facade and model classes
+- Change pyuv dependency with the Python 3.10 compatible version

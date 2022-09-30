@@ -1,7 +1,7 @@
 import logging
 import re
 from multiprocessing.dummy import Pool
-from typing import List, Union, Dict, Generator
+from typing import List, Union, Dict, Generator, Set, Optional
 
 import docker
 import docker.models.networks
@@ -12,6 +12,7 @@ from .stats.DockerLinkStats import DockerLinkStats
 from ..docker.DockerPlugin import PLUGIN_NAME
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
+from ...exceptions import LinkNotFoundError
 from ...exceptions import PrivilegeError
 from ...model.ExternalLink import ExternalLink
 from ...model.Lab import Lab
@@ -27,17 +28,18 @@ class DockerLink(object):
     def __init__(self, client: DockerClient) -> None:
         self.client: DockerClient = client
 
-    def deploy_links(self, lab: Lab, selected_links: Dict[str, Link] = None) -> None:
+    def deploy_links(self, lab: Lab, selected_links: Set[str] = None) -> None:
         """Deploy all the lab collision domains as Docker networks.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
-            selected_links (Dict[str, Link]): Keys are collision domains names, values are Link objects.
+            selected_links (Set[str]): A set containing the name of the collision domains to deploy.
 
         Returns:
             None
         """
-        links = selected_links.items() if selected_links else lab.links.items()
+        links = {k: v for (k, v) in lab.links.items() if k in selected_links}.items() if selected_links \
+            else lab.links.items()
 
         if len(links) > 0:
             pool_size = utils.get_pool_size()
@@ -118,16 +120,20 @@ class DockerLink(object):
             logging.debug("External Interfaces required, connecting them...")
             self._attach_external_interfaces(link.external, link.api_object)
 
-    def undeploy(self, lab_hash: str) -> None:
+    def undeploy(self, lab_hash: str, selected_links: Optional[Set[str]] = None) -> None:
         """Undeploy all the collision domains of the scenario specified by lab_hash.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
+            selected_links (Set[str]): If specified, delete only the collision domains contained in the set.
 
         Returns:
             None
         """
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
+        if selected_links is not None and len(selected_links) > 0:
+            networks = [item for item in networks if item.attrs["Labels"]["name"] in selected_links]
+
         for item in networks:
             item.reload()
         networks = [item for item in networks if len(item.containers) <= 0]
@@ -225,13 +231,16 @@ class DockerLink(object):
         Returns:
            Generator[Dict[str, DockerMachineStats], None, None]: A generator containing network names as keys and
            DockerLinkStats as values.
+
+        Raises:
+            LinkNotFoundError: If the collision domains specified are not found.
         """
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name, user=user)
         if not networks:
             if not link_name:
-                raise Exception("No collision domains found.")
+                raise LinkNotFoundError("No collision domains found.")
             else:
-                raise Exception(f"Collision domains with name {link_name} not found.")
+                raise LinkNotFoundError(f"Collision domains with name {link_name} not found.")
 
         networks = sorted(networks, key=lambda x: x.name)
 
@@ -299,6 +308,9 @@ class DockerLink(object):
 
         Args:
             network (docker.models.networks.Network): A Docker network.
+
+        Raises:
+            PrivilegeError: If you are not root while deleting an external VLAN Interface.
         """
         external_label = network.attrs['Labels']["external"]
         external_links = external_label.split(";") if external_label else None

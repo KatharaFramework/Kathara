@@ -12,9 +12,9 @@ from .DockerImage import DockerImage
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MountDeniedError, MachineAlreadyExistsError
+from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError, DockerPluginError
 from ...model.Lab import Lab
-from ...model.Link import BRIDGE_LINK_NAME
+from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
 
@@ -34,7 +34,10 @@ STARTUP_COMMANDS = [
     "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf -); fi",
 
     # If /etc/hosts is not configured by the user, add the localhost mapping
-    "if [ ! -s \"/etc/hosts\" ]; then echo '127.0.0.1 localhost' > /etc/hosts; fi",
+    "if [ ! -s \"/etc/hosts\" ]; then "
+    "echo '127.0.0.1 localhost' > /etc/hosts",
+    "echo '::1 localhost' >> /etc/hosts",
+    "fi",
 
     # Give proper permissions to /var/www
     "if [ -d \"/var/www\" ]; then "
@@ -104,9 +107,12 @@ class DockerMachine(object):
         Returns:
             None
         """
+        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
+            else lab.machines.items()
+
         # Check and pulling machine images
-        lab_images = set(map(lambda x: x.get_image(), lab.machines.values()))
-        self.docker_image.check_and_pull_from_list(lab_images)
+        lab_images = set(map(lambda x: x[1].get_image(), machines))
+        self.docker_image.check_from_list(lab_images)
 
         shared_mount = lab.general_options['shared_mount'] if 'shared_mount' in lab.general_options \
             else Setting.get_instance().shared_mount
@@ -116,9 +122,6 @@ class DockerMachine(object):
                 logging.warning("Shared folder cannot be mounted with a remote Docker connection.")
             else:
                 lab.create_shared_folder()
-
-        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
-            else lab.machines.items()
 
         EventDispatcher.get_instance().dispatch("machines_deploy_started", items=machines)
 
@@ -163,13 +166,17 @@ class DockerMachine(object):
 
         Returns:
             None
+
+        Raises:
+            MachineAlreadyExistsError: If a device with the name specified already exists.
+            APIError: If the Docker APIs return an error.
         """
         logging.debug("Creating device `%s`..." % machine.name)
 
         containers = self.get_machines_api_objects_by_filters(machine_name=machine.name, lab_hash=machine.lab.hash,
                                                               user=utils.get_current_user_name())
         if containers:
-            raise MachineAlreadyExistsError("Device with name `%s` already exists." % machine.name)
+            raise MachineAlreadyExistsError(machine.name)
 
         image = machine.get_image()
         memory = machine.get_mem()
@@ -284,32 +291,49 @@ class DockerMachine(object):
 
         machine.api_object = machine_container
 
-    def update(self, machine: Machine) -> None:
-        """Update the Docker container representing the machine.
-
-        Create a new Docker network for each collision domain contained in machine.interfaces that is not already
-        attached to the container.
+    @staticmethod
+    def connect_to_link(machine: Machine, link: Link) -> None:
+        """Connect the Docker container representing the machine to a specified collision domain.
 
         Args:
-            machine (Kathara.model.Machine.Machine): A Kathara device.
+            machine (Kathara.model.Machine): A Kathara device.
+            link (Kathara.model.Link): A Kathara collision domain object.
+
+        Returns:
+            None
+
+        Raises:
+            DockerPluginError: If Kathara has been left in an inconsistent state.
+            APIError: If the Docker APIs return an error.
+        """
+        attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
+
+        if link.api_object.name not in attached_networks:
+            try:
+                link.api_object.connect(machine.api_object)
+            except APIError as e:
+                if e.response.status_code == 500 and \
+                        ("network does not exist" in e.explanation or "endpoint does not exist" in e.explanation):
+                    raise DockerPluginError(
+                        "Kathara has been left in an inconsistent state! Please run `kathara wipe`.")
+                else:
+                    raise e
+
+    @staticmethod
+    def disconnect_from_link(machine: Machine, link: Link) -> None:
+        """Disconnect the Docker container representing the machine from a specified collision domain.
+
+        Args:
+            machine (Kathara.model.Machine): A Kathara device.
+            link (Kathara.model.Link): A Kathara collision domain object.
 
         Returns:
             None
         """
-        containers = self.get_machines_api_objects_by_filters(
-            machine_name=machine.name, lab_hash=machine.lab.hash, user=utils.get_current_user_name()
-        )
-
-        if not containers:
-            raise Exception("The specified device `%s` is not running." % machine.name)
-
-        machine.api_object = containers.pop()
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
-        # Connect the container to its new networks
-        for (_, machine_link) in machine.interfaces.items():
-            if machine_link.api_object.name not in attached_networks:
-                machine_link.api_object.connect(machine.api_object)
+        if link.api_object.name in attached_networks:
+            link.api_object.disconnect(machine.api_object)
 
     @staticmethod
     def start(machine: Machine) -> None:
@@ -319,6 +343,14 @@ class DockerMachine(object):
 
         Args:
            machine (Kathara.model.Machine.Machine): A Kathara device.
+
+        Returns:
+            None
+
+        Raises:
+            MountDeniedError: If the host drive is not shared with Docker.
+            DockerPluginError: If Kathara has been left in an inconsistent state.
+            APIError: If the Docker APIs return an error.
         """
         logging.debug("Starting device `%s`..." % machine.name)
 
@@ -327,6 +359,9 @@ class DockerMachine(object):
         except APIError as e:
             if e.response.status_code == 500 and e.explanation.startswith('Mounts denied'):
                 raise MountDeniedError("Host drive is not shared with Docker.")
+            elif e.response.status_code == 500 and \
+                    ("network does not exist" in e.explanation or "endpoint does not exist" in e.explanation):
+                raise DockerPluginError("Kathara has been left in an inconsistent state! Please run `kathara wipe`.")
             else:
                 raise e
 
@@ -339,8 +374,15 @@ class DockerMachine(object):
                                                                                                   iface_num
                                                                                                   )
                           )
-
-            machine_link.api_object.connect(machine.api_object)
+            try:
+                machine_link.api_object.connect(machine.api_object)
+            except APIError as e:
+                if e.response.status_code == 500 and \
+                        ("network does not exist" in e.explanation or "endpoint does not exist" in e.explanation):
+                    raise DockerPluginError(
+                        "Kathara has been left in an inconsistent state! Please run `kathara wipe`.")
+                else:
+                    raise e
 
         # Bridged connection required but not added in `deploy` method.
         if "bridge_connected" not in machine.meta and machine.meta['bridged']:
@@ -362,7 +404,7 @@ class DockerMachine(object):
         )
 
         # Execute the startup commands inside the container (without privileged flag so basic permissions are used)
-        machine.api_object.exec_run(cmd=[Setting.get_instance().device_shell, '-c', startup_commands_string],
+        machine.api_object.exec_run(cmd=[machine.api_object.labels['shell'], '-c', startup_commands_string],
                                     stdout=False,
                                     stderr=False,
                                     privileged=False,
@@ -444,10 +486,13 @@ class DockerMachine(object):
 
         Returns:
             None
+
+        Raises:
+            MachineNotFoundError: If the specified device is not running.
         """
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:
-            raise Exception("The specified device `%s` is not running." % machine_name)
+            raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
         container = containers.pop()
 
         if not shell:
@@ -515,12 +560,15 @@ class DockerMachine(object):
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+
+        Raises:
+            MachineNotFoundError: If the specified device is not running.
         """
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:
-            raise Exception("The specified device `%s` is not running." % machine_name)
+            raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
         container = containers.pop()
 
         exec_result = container.exec_run(cmd=command,
@@ -584,13 +632,16 @@ class DockerMachine(object):
         Returns:
             Generator[Dict[str, DockerMachineStats], None, None]: A generator containing device names as keys and
             DockerMachineStats as values.
+
+        Raises:
+            MachineNotFoundError: If the specified devices are not running.
         """
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:
             if not machine_name:
-                raise Exception("No devices found.")
+                raise MachineNotFoundError("No devices found.")
             else:
-                raise Exception(f"Devices with name {machine_name} not found.")
+                raise MachineNotFoundError(f"Devices with name {machine_name} not found.")
 
         containers = sorted(containers, key=lambda x: x.name)
 
@@ -623,25 +674,25 @@ class DockerMachine(object):
         return "%s_%s_%s_%s" % (Setting.get_instance().device_prefix, utils.get_current_user_name(), name, lab_hash)
 
     @staticmethod
-    def _delete_machine(machine: docker.models.containers.Container) -> None:
+    def _delete_machine(container: docker.models.containers.Container) -> None:
         """Remove a running Docker container.
 
         Args:
-            machine (docker.models.containers.Container): The Docker container to remove.
+            container (docker.models.containers.Container): The Docker container to remove.
 
         Returns:
             None
         """
         # Build the shutdown command string
-        shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine.labels["name"])
+        shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=container.labels["name"])
 
         # Execute the shutdown commands inside the container (only if it's running)
-        if machine.status == "running":
-            machine.exec_run(cmd=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
-                             stdout=False,
-                             stderr=False,
-                             privileged=True,
-                             detach=True
-                             )
+        if container.status == "running":
+            container.exec_run(cmd=[container.labels['shell'], '-c', shutdown_commands_string],
+                               stdout=False,
+                               stderr=False,
+                               privileged=True,
+                               detach=True
+                               )
 
-        machine.remove(force=True)
+        container.remove(force=True)

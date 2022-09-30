@@ -5,6 +5,7 @@ from docker import DockerClient
 from docker.errors import NotFound
 
 from ... import utils
+from ...exceptions import DockerPluginError
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
 
@@ -25,6 +26,10 @@ class DockerPlugin(object):
 
         Returns:
             None
+
+        Raises:
+            DockerPluginError: If the Kathara Network Plugin is not found on remote Docker connection.
+            DockerPluginError: If the Kathara Network Plugin is not enabled on remote Docker connection.
         """
         try:
             logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)
@@ -37,7 +42,7 @@ class DockerPlugin(object):
                 plugin = self.client.plugins.install(PLUGIN_NAME)
                 logging.info("Kathara Network Plugin installed successfully!")
             else:
-                raise Exception("Kathara Network Plugin not found on remote Docker connection.")
+                raise DockerPluginError("Kathara Network Plugin not found on remote Docker connection.")
 
         if Setting.get_instance().remote_url is None:
             xtables_lock_mount = self._get_xtables_lock_mount()
@@ -58,7 +63,7 @@ class DockerPlugin(object):
                     plugin.enable()
         else:
             if not plugin.enabled:
-                raise Exception("Kathara Network Plugin not enabled on remote Docker connection.")
+                raise DockerPluginError("Kathara Network Plugin not enabled on remote Docker connection.")
 
     def _get_xtables_lock_mount(self) -> Callable:
         def _mount_xtables_lock_linux():

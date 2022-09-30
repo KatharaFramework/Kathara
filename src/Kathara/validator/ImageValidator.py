@@ -1,3 +1,4 @@
+from ..exceptions import DockerImageNotFoundError, InvalidImageArchitectureError
 from ..setting.Setting import Setting
 from ..trdparty.consolemenu.validators.base import BaseValidator
 
@@ -10,5 +11,6 @@ class ImageValidator(BaseValidator):
         try:
             Setting.get_instance().check_image(input_string)
             return True
-        except Exception:
+        except (ConnectionError, DockerImageNotFoundError, InvalidImageArchitectureError) as e:
+            print(str(e))
             return False

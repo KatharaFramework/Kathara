@@ -3,7 +3,9 @@ from typing import Optional
 
 from kubernetes import client
 from kubernetes.client.api import core_v1_api
+from kubernetes.client.rest import ApiException
 
+from ...exceptions import KubernetesConfigMapError
 from ...model.Machine import Machine
 from ...utils import human_readable_bytes
 
@@ -34,7 +36,7 @@ class KubernetesConfigMap(object):
         return self.client.create_namespaced_config_map(body=config_map, namespace=machine.lab.hash)
 
     def delete_for_machine(self, machine_name: str, machine_namespace: str) -> None:
-        """Delete the Kubernetes ConfigMap associated with the device.
+        """Delete the Kubernetes ConfigMap associated with the device, if it exists.
 
         Args:
             machine_name (str): The name of a Kathara device.
@@ -43,9 +45,12 @@ class KubernetesConfigMap(object):
         Returns:
             None
         """
-        self.client.delete_namespaced_config_map(name=self.build_name_for_machine(machine_name, machine_namespace),
-                                                 namespace=machine_namespace
-                                                 )
+        try:
+            self.client.delete_namespaced_config_map(name=self.build_name_for_machine(machine_name, machine_namespace),
+                                                     namespace=machine_namespace
+                                                     )
+        except ApiException:
+            return
 
     @staticmethod
     def build_name_for_machine(machine_name: str, machine_namespace: str) -> str:
@@ -68,6 +73,9 @@ class KubernetesConfigMap(object):
 
         Returns:
             Optional[client.V1ConfigMap]: The Kubernetes ConfigMap for the device.
+
+        Raises:
+            KubernetesConfigMapError: If the device folder size exceeds the maximum supported size.
         """
         tar_data = machine.pack_data()
 
@@ -77,7 +85,7 @@ class KubernetesConfigMap(object):
             # Before creating the .tar.gz file, check if it is bigger than the maximum allowed size.
             tar_data_size = len(tar_data)
             if tar_data_size > MAX_FILE_SIZE:
-                raise Exception(
+                raise KubernetesConfigMapError(
                     'Unable to upload device folder. Maximum supported size: %s. Current: %s.' % (
                         human_readable_bytes(MAX_FILE_SIZE),
                         human_readable_bytes(tar_data_size)

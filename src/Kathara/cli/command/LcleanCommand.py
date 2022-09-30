@@ -6,6 +6,8 @@ from ..ui.utils import format_headers
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
+from ...model.Lab import Lab
+from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
 
 
@@ -30,7 +32,7 @@ class LcleanCommand(Command):
         self.parser.add_argument(
             '-d', '--directory',
             required=False,
-            help='Specify the folder containing the lab.'
+            help='Specify the folder containing the network scenario.'
         )
         self.parser.add_argument(
             'machine_names',
@@ -45,9 +47,11 @@ class LcleanCommand(Command):
 
         lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
-
-        lab_hash = utils.generate_urlsafe_hash(lab_path)
+        try:
+            lab = LabParser.parse(lab_path)
+        except (Exception, IOError):
+            lab = Lab(None, path=lab_path)
 
         logging.info(format_headers("Stopping Network Scenario"))
 
-        Kathara.get_instance().undeploy_lab(lab_hash=lab_hash, selected_machines=set(args['machine_names']))
+        Kathara.get_instance().undeploy_lab(lab_hash=lab.hash, selected_machines=set(args['machine_names']))

@@ -13,7 +13,7 @@ from . import Lab as LabPackage
 from . import Link as LinkPackage
 from .Link import Link
 from .. import utils
-from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainConflictError
+from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainError
 from ..setting.Setting import Setting
 
 
@@ -51,7 +51,7 @@ class Machine(object):
         name = name.strip()
         matches = re.search(r"^[a-z0-9_]{1,30}$", name)
         if not matches:
-            raise Exception("Invalid device name `%s`." % name)
+            raise SyntaxError(f"Invalid device name `{name}`.")
 
         self.lab: LabPackage.Lab = lab
         self.name: str = name
@@ -98,20 +98,43 @@ class Machine(object):
             None
 
         Raises:
-            Exception: The interface number specified is already used on the device.
+            MachineCollisionDomainConflictError: If the interface number specified is already used on the device.
+            MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
         if number is None:
             number = len(self.interfaces.keys())
 
         if number in self.interfaces:
-            raise Exception("Interface %d already set on device `%s`." % (number, self.name))
+            raise MachineCollisionDomainError(f"Interface {number} already set on device `{self.name}`.")
 
-        if any(x.name == link.name for x in self.interfaces.values()):
-            raise MachineCollisionDomainConflictError(
-                "Device `%s` is already connected to collision domain `%s`" % (self.name, link.name)
+        if self.name in link.machines:
+            raise MachineCollisionDomainError(
+                f"Device `{self.name}` is already connected to collision domain `{link.name}`."
             )
 
         self.interfaces[number] = link
+        link.machines[self.name] = self
+
+    def remove_interface(self, link: 'LinkPackage.Link') -> None:
+        """Disconnect the device from the specified collision domain.
+
+        Args:
+            link (Kathara.model.Link): The Kathara collision domain to disconnect.
+
+        Returns:
+            None
+
+        Raises:
+            MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
+        """
+        if self.name not in link.machines:
+            raise MachineCollisionDomainError(
+                f"Device `{self.name}` is not connected to collision domain `{link.name}`.")
+
+        self.interfaces = collections.OrderedDict(
+            map(lambda x: x if x[1] is not None and x[1].name != link.name else (x[0], None), self.interfaces.items())
+        )
+        link.machines.pop(self.name)
 
     def add_meta(self, name: str, value: Any) -> None:
         """Add a meta property to the device.
@@ -124,7 +147,7 @@ class Machine(object):
             None
 
         Raises:
-            MachineOptionError: The specified value is not valid for the specified property.
+            MachineOptionError: If the specified value is not valid for the specified property.
         """
         if name == "exec":
             self.startup_commands.append(value)
@@ -152,7 +175,7 @@ class Machine(object):
             return
 
         if name == "env":
-            matches = re.search(r"^(?P<key>\w+)=(?P<value>\w+)$", value)
+            matches = re.search(r"^(?P<key>\w+)=(?P<value>\S+)$", value)
 
             # Check for valid kv-pair
             if matches:
@@ -202,7 +225,7 @@ class Machine(object):
 
         for i, (num_iface, _) in enumerate(sorted_interfaces):
             if num_iface != i:
-                raise NonSequentialMachineInterfaceError("Interface %d missing on device %s." % (i, self.name))
+                raise NonSequentialMachineInterfaceError(i, self.name)
 
         self.interfaces = collections.OrderedDict(sorted_interfaces)
 
@@ -294,6 +317,9 @@ class Machine(object):
 
         Returns:
             str: The memory limit of the device.
+
+        Raises:
+            MachineOptionError: If the memory value specified is not valid.
         """
         memory = self.lab.general_options["mem"] if "mem" in self.lab.general_options else \
             self.meta["mem"] if "mem" in self.meta else None
@@ -317,13 +343,16 @@ class Machine(object):
         """Get the CPU limit, multiplied by a specific multiplier.
 
         User should pass a float value ranging from 0 to max user CPUs.
-        Try to took it from options, or device meta. Otherwise, return None.
+        Try to take it from options, or device meta. Otherwise, return None.
 
         Args:
             multiplier (int): A numeric multiplier for the CPU limit value.
 
         Returns:
             Optional[int]: The CPU limit of the device.
+
+        Raises:
+            MachineOptionError: If the CPU value specified is not valid.
         """
         if "cpus" in self.lab.general_options:
             try:
@@ -354,6 +383,9 @@ class Machine(object):
 
         Returns:
             int: The number of terminal to be opened.
+
+        Raises:
+            MachineOptionError: If the terminals number value specified is not valid.
         """
         num_terms = 1
 
@@ -377,6 +409,9 @@ class Machine(object):
 
         Returns:
             bool: True if it is enabled, else False.
+
+        Raises:
+            MachineOptionError: If the IPv6 value specified is not valid.
         """
         try:
             return bool(strtobool(self.lab.general_options["ipv6"])) if "ipv6" in self.lab.general_options else \
@@ -434,7 +469,8 @@ class Machine(object):
         if self.interfaces:
             formatted_machine += "\nInterfaces: "
             for (iface_num, link) in self.interfaces.items():
-                formatted_machine += f"\n\t- {iface_num}: {link.name}"
+                if link:
+                    formatted_machine += f"\n\t- {iface_num}: {link.name}"
 
         formatted_machine += f"\nBridged Connection: {self.meta['bridged']}"
 

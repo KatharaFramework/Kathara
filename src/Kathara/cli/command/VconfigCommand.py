@@ -1,9 +1,8 @@
 import argparse
 import logging
-import re
-import sys
 from typing import List
 
+from ..ui.utils import alphanumeric
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
@@ -33,35 +32,50 @@ class VconfigCommand(Command):
             required=True,
             help='Name of the device to be connected on desired collision domains.'
         )
-        self.parser.add_argument(
-            '--eth',
-            dest='eths',
+
+        group = self.parser.add_mutually_exclusive_group(required=True)
+
+        group.add_argument(
+            '--add',
+            type=alphanumeric,
+            dest='to_add',
             metavar='CD',
             nargs='+',
-            required=True,
-            help='Specify the collision domain for an interface.'
+            help='Specify the collision domain to add.'
+        )
+        group.add_argument(
+            '--rm',
+            type=alphanumeric,
+            dest='to_remove',
+            metavar='CD',
+            nargs='+',
+            help='Specify the collision domain to remove.'
         )
 
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)
         args = self.get_args()
 
-        for eth in args['eths']:
-            # Only alphanumeric characters are allowed
-            matches = re.search(r"^\w+$", eth)
-
-            if not matches:
-                sys.stderr.write('Syntax error in --eth field.\n')
-                self.parser.print_help()
-                exit(1)
-
         lab = Lab("kathara_vlab")
 
-        device = lab.get_or_new_machine(args['name'])
-        device.api_object = Kathara.get_instance().get_machine_api_object(args['name'], lab_name=lab.name)
+        machine_name = args['name']
+        device = lab.get_or_new_machine(machine_name)
+        device.api_object = Kathara.get_instance().get_machine_api_object(machine_name, lab_name=lab.name)
 
-        for eth in args['eths']:
-            logging.info("Adding interface to device `%s` for collision domain `%s`..." % (args['name'], eth))
-            lab.connect_machine_to_link(args['name'], eth)
+        if args['to_add']:
+            for cd in args['to_add']:
+                logging.info(
+                    "Adding interface to device `%s` on collision domain `%s`..." % (machine_name, cd)
+                )
+                link = lab.get_or_new_link(cd)
+                Kathara.get_instance().connect_machine_to_link(device, link)
 
-        Kathara.get_instance().update_lab(lab)
+        if args['to_remove']:
+            for cd in args['to_remove']:
+                logging.info(
+                    "Removing interface on collision domain `%s` from device `%s`..." % (cd, machine_name)
+                )
+                (_, link) = lab.connect_machine_to_link(machine_name, cd)
+                link.api_object = Kathara.get_instance().get_link_api_object(cd, lab_name=lab.name)
+
+                Kathara.get_instance().disconnect_machine_from_link(device, link)

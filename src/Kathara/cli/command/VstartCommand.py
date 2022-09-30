@@ -3,8 +3,9 @@ import logging
 import sys
 from typing import List
 
-from ..ui.utils import format_headers
+from ..ui.utils import format_headers, colon_separated
 from ... import utils
+from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
@@ -68,6 +69,7 @@ class VstartCommand(Command):
         )
         self.parser.add_argument(
             '--eth',
+            type=colon_separated,
             dest='eths',
             metavar='N:CD',
             nargs='+',
@@ -168,7 +170,7 @@ class VstartCommand(Command):
 
         if args['privileged']:
             if not utils.is_admin():
-                raise Exception("You must be root in order to start this Kathara device in privileged mode.")
+                raise PrivilegeError("You must be root in order to start this Kathara device in privileged mode.")
             else:
                 logging.warning("Running device with privileged capabilities, terminal won't open!")
                 Setting.get_instance().open_terminals = False
@@ -183,12 +185,11 @@ class VstartCommand(Command):
         device = lab.get_or_new_machine(name, **args)
 
         if args['eths']:
-            for eth in args['eths']:
+            for iface_number, cd in args['eths']:
                 try:
-                    (iface_number, link_name) = eth.split(":")
-                    lab.connect_machine_to_link(device.name, link_name, machine_iface_number=int(iface_number))
+                    lab.connect_machine_to_link(device.name, cd, machine_iface_number=int(iface_number))
                 except ValueError:
-                    raise Exception("Interface number in `--eth %s` is not a number." % eth)
+                    raise SyntaxError("Interface number in `--eth %s:%s` is not a number." % (iface_number, cd))
 
         lab.check_integrity()
 

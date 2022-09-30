@@ -4,6 +4,7 @@ import sys
 sys.path.insert(0, './')
 
 from src.Kathara.parser.netkit.DepParser import DepParser
+from src.Kathara.exceptions import MachineDependencyError
 
 
 def test_three_devices_dependencies():
@@ -12,7 +13,7 @@ def test_three_devices_dependencies():
 
 
 def test_devices_loop():
-    with pytest.raises(Exception):
+    with pytest.raises(MachineDependencyError):
         DepParser.parse("tests/parser/labdep/devices_loop")
 
 
@@ -22,5 +23,5 @@ def test_with_comment():
 
 
 def test_syntax_error():
-    with pytest.raises(Exception):
+    with pytest.raises(SyntaxError):
         DepParser.parse("tests/parser/labdep/syntax_error")

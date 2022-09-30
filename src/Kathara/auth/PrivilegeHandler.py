@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 import os
 
+from ..exceptions import InstantiationError
+
 
 class PrivilegeHandler(object):
     __slots__ = ['user_uid', 'user_gid', 'effective_user_uid', 'effective_user_gid']
@@ -18,7 +20,7 @@ class PrivilegeHandler(object):
 
     def __init__(self) -> None:
         if PrivilegeHandler.__instance is not None:
-            raise Exception("This class is a singleton!")
+            raise InstantiationError("This class is a singleton!")
         else:
             try:
                 self.user_uid: int = os.getuid()

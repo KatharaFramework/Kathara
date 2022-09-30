@@ -29,7 +29,7 @@ class KubernetesConfig(object):
             None
 
         Raises:
-            ConnectionError: Cannot read Kubernetes configuration.
+            ConnectionError: If there is an error while reading the Kubernetes configuration.
         """
         try:
             config.load_kube_config()  # Try to load configuration if Megalos is launched on a k8s master.

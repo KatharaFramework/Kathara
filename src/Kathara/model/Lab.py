@@ -1,12 +1,13 @@
 import collections
 import os
 from itertools import chain
-from typing import Dict, Set, Any, List, Union, Optional
+from typing import Dict, Set, Any, List, Union, Optional, Tuple
 
 from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
 from .Link import Link
 from .. import utils
+from ..exceptions import LinkNotFoundError, MachineNotFoundError, MachineAlreadyExistsError, LinkAlreadyExistsError
 
 
 class Lab(object):
@@ -31,11 +32,11 @@ class Lab(object):
         shared_shutdown_path(str) The path of the shared shutdown file, if exists.
         shared_folder(str) The path of the shared folder, if exists.
     """
-    __slots__ = ['name', 'description', 'version', 'author', 'email', 'web',
+    __slots__ = ['_name', 'description', 'version', 'author', 'email', 'web',
                  'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
                  'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
 
-    def __init__(self, name: Optional[str], path: str = None) -> None:
+    def __init__(self, name: Optional[str], path: Optional[str] = None) -> None:
         """Create a new instance of a Kathara network scenario.
 
         Args:
@@ -45,7 +46,7 @@ class Lab(object):
         Returns:
             None
         """
-        self.name: Optional[str] = name
+        self._name: Optional[str] = name
         self.description: Optional[str] = None
         self.version: Optional[str] = None
         self.author: Optional[str] = None
@@ -63,21 +64,28 @@ class Lab(object):
         self.shared_startup_path: Optional[str] = None
         self.shared_shutdown_path: Optional[str] = None
 
-        self.hash: str = ""
+        self.hash: str = utils.generate_urlsafe_hash(self.path if self._name is None else self._name)
 
         if self.path:
-            self.hash = utils.generate_urlsafe_hash(self.path)
             shared_startup_file = os.path.join(self.path, 'shared.startup')
             self.shared_startup_path = shared_startup_file if os.path.exists(shared_startup_file) else None
 
             shared_shutdown_file = os.path.join(self.path, 'shared.shutdown')
             self.shared_shutdown_path = shared_shutdown_file if os.path.exists(shared_shutdown_file) else None
-        else:
-            self.hash = utils.generate_urlsafe_hash(self.name)
 
         self.shared_folder: Optional[str] = None
 
-    def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None) -> None:
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+        self.hash = utils.generate_urlsafe_hash(value)
+
+    def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None) \
+            -> Tuple['MachinePackage.Machine', Link]:
         """Connect the specified device to the specified collision domain.
 
         Args:
@@ -87,7 +95,8 @@ class Lab(object):
                 number is used.
 
         Returns:
-            None
+            Tuple[Kathara.model.Machine, Kathara.model.Link]: A tuple containing the Kathara device and collision domain
+                specified by their names.
 
         Raises:
             Exception: If an already used interface number is specified.
@@ -97,7 +106,9 @@ class Lab(object):
 
         machine.add_interface(link, number=machine_iface_number)
 
-    def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> None:
+        return machine, link
+
+    def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> 'MachinePackage.Machine':
         """Assign meta information to the specified device.
 
         Args:
@@ -106,7 +117,7 @@ class Lab(object):
             meta_value (str): The value of the meta property.
 
         Returns:
-            None
+            Kathara.model.Machine: The Kathara device specified by the name.
 
         Raises:
             MachineOptionError: If invalid values are specified for meta properties.
@@ -114,6 +125,8 @@ class Lab(object):
         machine = self.get_or_new_machine(machine_name)
 
         machine.add_meta(meta_name, meta_value)
+
+        return machine
 
     def attach_external_links(self, external_links: Dict[str, List[ExternalLink]]) -> None:
         """Attach external collision domains to the network scenario.
@@ -124,11 +137,14 @@ class Lab(object):
 
         Returns:
             None
+
+        Raises:
+            LinkNotFoundError: If the external collision domain specified is not associated to the network scenario.
         """
         for (link_name, link_external_links) in external_links.items():
             if link_name not in self.links:
-                raise Exception("Collision domain `%s` (declared in lab.ext) not found in lab "
-                                "collision domains." % link_name)
+                raise LinkNotFoundError("Collision domain `%s` (declared in lab.ext) not found in lab "
+                                        "collision domains." % link_name)
 
             self.links[link_name].external += link_external_links
 
@@ -141,14 +157,14 @@ class Lab(object):
         for machine in self.machines:
             self.machines[machine].check()
 
-    def get_links_from_machines(self, selected_machines: Union[List[str], Set[str]]) -> Dict[str, Link]:
-        """Return the name of the collision domains connected to the selected_machines.
+    def get_links_from_machines(self, selected_machines: Union[List[str], Set[str]]) -> Set[str]:
+        """Return the name of the collision domains connected to the selected devices.
 
         Args:
             selected_machines (Set[str]): A set with selected devices names.
 
         Returns:
-            Dict[str, Link]: Keys are collision domains names, values are Link objects.
+            Set[str]: A set of names of collision domains to deploy.
         """
         # Intersect selected machines names with self.machines keys
         selected_machines = set(self.machines.keys()) & set(selected_machines)
@@ -157,7 +173,7 @@ class Lab(object):
 
         # Get only selected machines Link objects.
         selected_links = set(chain.from_iterable([machine.interfaces.values() for machine in machines]))
-        selected_links = {link.name: link for link in selected_links}
+        selected_links = {link.name for link in selected_links}
 
         return selected_links
 
@@ -170,6 +186,7 @@ class Lab(object):
         Returns:
             None
         """
+
         def dep_sort(item: str) -> int:
             try:
                 return dependencies.index(item) + 1
@@ -178,6 +195,44 @@ class Lab(object):
 
         self.machines = collections.OrderedDict(sorted(self.machines.items(), key=lambda t: dep_sort(t[0])))
         self.has_dependencies = True
+
+    def get_machine(self, name: str) -> 'MachinePackage.Machine':
+        """Get the specified device.
+
+        Args:
+            name (str): The name of the device
+
+        Returns:
+            Kathara.model.Machine: A Kathara device.
+
+        Raises:
+            MachineNotFoundError: If the device is not in the network scenario.
+        """
+        if name not in self.machines:
+            raise MachineNotFoundError(f"Device {name} not in the network scenario.")
+
+        return self.machines[name]
+
+    def new_machine(self, name: str, **kwargs: Dict[str, Any]) -> 'MachinePackage.Machine':
+        """Create and add the device to the devices list.
+
+        Args:
+            name (str): The name of the device
+            **kwargs (Dict[str, Any]): Contains device meta information.
+                Keys are meta property names, values are meta property values.
+
+        Returns:
+            Kathara.model.Machine: A Kathara device.
+
+        Raises:
+            MachineAlreadyExistsError: If the device is already in the network scenario.
+        """
+        if name in self.machines:
+            raise MachineAlreadyExistsError(f"Device {name} already in the network scenario.")
+
+        self.machines[name] = MachinePackage.Machine(self, name, **kwargs)
+
+        return self.machines[name]
 
     def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> 'MachinePackage.Machine':
         """Get the specified device. If it not exists, create and add it to the devices list.
@@ -194,6 +249,42 @@ class Lab(object):
             self.machines[name] = MachinePackage.Machine(self, name, **kwargs)
 
         return self.machines[name]
+
+    def get_link(self, name: str) -> Link:
+        """Get the specified collision domain.
+
+        Args:
+            name (str): The name of the collision domain.
+
+        Returns:
+            Kathara.model.Link: A Kathara collision domain.
+
+        Raises:
+            LinkNotFoundError: If the specified link is not in the network scenario.
+        """
+        if name not in self.links:
+            raise LinkNotFoundError(f"Collision domain {name} not found in the network scenario.")
+
+        return self.links[name]
+
+    def new_link(self, name: str) -> Link:
+        """Create the collision domain and add it to the collision domains list.
+
+        Args:
+            name (str): The name of the collision domain.
+
+        Returns:
+            Kathara.model.Link: A Kathara collision domain.
+
+        Raises:
+            LinkAlreadyExistsError: If the specified link is already in the network scenario.
+        """
+        if name in self.links:
+            raise LinkAlreadyExistsError(f"Collision domain {name} is already the network scenario.")
+
+        self.links[name] = Link(self, name)
+
+        return self.links[name]
 
     def get_or_new_link(self, name: str) -> Link:
         """Get the specified collision domain. If it not exists, create and add it to the collision domains list.
@@ -216,8 +307,8 @@ class Lab(object):
             None
 
         Raises:
-            Exception: The shared folder is a Symlink, delete it.
-            OSError: Permission error.
+            IOError: If the shared folder is a Symlink, delete it.
+            OSError: If there is a permission error.
         """
         if not self.has_path():
             return
@@ -226,7 +317,7 @@ class Lab(object):
             if not os.path.isdir(self.shared_folder):
                 os.mkdir(self.shared_folder)
             elif os.path.islink(self.shared_folder):
-                raise Exception("`shared` folder is a symlink, delete it.")
+                raise IOError("`shared` folder is a symlink, delete it.")
         except OSError:
             # Do not create shared folder if not permitted.
             return
@@ -235,7 +326,7 @@ class Lab(object):
         """Check if the network scenario has a directory.
 
         Returns:
-            bool: True if it self.path is not None, else False.
+            bool: True if self.path is not None, else False.
         """
         return self.path is not None
 
@@ -252,14 +343,36 @@ class Lab(object):
         if value is not None:
             self.general_options[name] = value
 
+    def find_machine(self, machine_name: str) -> bool:
+        """Check if the specified device is in the network scenario.
+
+        Args:
+            machine_name (str): The name of the device to search.
+
+        Returns:
+            bool: True if the device is in the network scenario, else False.
+        """
+        return machine_name in self.machines.keys()
+
+    def find_machines(self, machine_names: Set[str]) -> bool:
+        """Check if the specified devices are in the network scenario.
+
+        Args:
+            machine_names (Set[str]): A set of strings containing the names of the devices to search.
+
+        Returns:
+            bool: True if the devices are all in the network scenario, else False.
+        """
+        return all(map(lambda x: self.find_machine(x), machine_names))
+
     def __repr__(self) -> str:
         return "Lab(%s, %s, %s, %s)" % (self.path, self.hash, self.machines, self.links)
 
     def __str__(self) -> str:
         lab_info = ""
 
-        if self.name:
-            lab_info += "Name: %s\n" % self.name
+        if self._name:
+            lab_info += "Name: %s\n" % self._name
 
         if self.description:
             lab_info += "Description: %s\n" % self.description
@@ -274,6 +387,6 @@ class Lab(object):
             lab_info += "Email: %s\n" % self.email
 
         if self.web:
-            lab_info += "Website: %s" % self.web
+            lab_info += "Website: %s\n" % self.web
 
-        return lab_info
+        return lab_info[0:-1]  # Remove trailing new line

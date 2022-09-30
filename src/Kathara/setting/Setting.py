@@ -8,10 +8,11 @@ from typing import Any, Dict, Optional, List
 
 from .. import utils
 from .. import version
-from ..webhooks.GitHubApi import GitHubApi
-from ..exceptions import HTTPConnectionError, SettingsError, SettingsNotFound
+from ..exceptions import HTTPConnectionError, SettingsError, SettingsNotFoundError
+from ..exceptions import InstantiationError
 from ..foundation.setting.SettingsAddon import SettingsAddon
 from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
+from ..webhooks.GitHubApi import GitHubApi
 
 AVAILABLE_DEBUG_LEVELS: List[str] = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "EXCEPTION"]
 AVAILABLE_MANAGERS: List[str] = ["docker", "kubernetes"]
@@ -48,6 +49,9 @@ class Setting(object):
 
         Returns:
             Kathara.setting.Setting: An instance of Setting.
+
+        Raises:
+            InstantiationError: If two instances of the class are created.
         """
         if Setting.__instance is None:
             Setting()
@@ -56,7 +60,7 @@ class Setting(object):
 
     def __init__(self) -> None:
         if Setting.__instance is not None:
-            raise Exception("This class is a singleton!")
+            raise InstantiationError("This class is a singleton!")
         else:
             # Load default settings to use
             for (name, value) in DEFAULTS.items():
@@ -89,12 +93,13 @@ class Setting(object):
             None
 
         Raises:
-            SettingsNotFound: Settings file not found in specified path.
+            SettingsNotFound: If the Settings file is not found in specified path.
+            SettingsError: If the specified file is not a valid JSON.
         """
         settings_path = os.path.join(path, SETTINGS_FILENAME) if path is not None else DEFAULT_SETTINGS_PATH
 
         if not os.path.exists(settings_path):  # Requested settings file doesn't exist, throw exception
-            raise SettingsNotFound()
+            raise SettingsNotFoundError(settings_path)
         else:  # Requested settings file exists, read it and check values
             settings = {}
             with open(settings_path, 'r') as settings_file:
@@ -173,6 +178,11 @@ class Setting(object):
 
         Returns:
             None
+
+        Raises:
+            SettingsError: If the Networks Prefix does not contain only lowercase letters and underscore.
+            SettingsError: If the Device Prefix does not contain only lowercase letters and underscore.
+            SettingsError: If the Debug Level specified is not allowed.
         """
         self._check_manager()
 
@@ -220,7 +230,7 @@ class Setting(object):
             None
 
         Raises:
-            SettingsError: "Manager Type not allowed."
+            SettingsError: If the Manager Type is not allowed.
         """
         from ..manager.Kathara import Kathara
         managers = Kathara.get_available_managers_name()
@@ -238,8 +248,8 @@ class Setting(object):
             None
 
         Raises:
-            ConnectionError: The image is not locally available and there is no connection to a remote image repository.
-            Exception: The image is not found.
+            ConnectionError: If the image is not locally available and there is no connection to a remote image repository.
+            ImageNotFoundError: If the image is not found.
         """
         image = self.image if not image else image
 
@@ -255,6 +265,9 @@ class Setting(object):
 
         Returns:
             bool: True if the selected terminal is TMUX (that do not require path), else False.
+
+        Raises:
+            SettingError: If the terminal emulator specified is not found.
         """
         terminal = self.terminal if not terminal else terminal
 

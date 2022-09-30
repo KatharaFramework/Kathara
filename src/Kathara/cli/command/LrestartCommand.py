@@ -34,14 +34,14 @@ class LrestartCommand(Command):
             dest="terminals",
             const=False,
             default=True,
-            help='Start the lab without opening terminal windows.'
+            help='Start the network scenario without opening terminal windows.'
         )
         group.add_argument(
             "--terminals",
             action="store_const",
             dest="terminals",
             const=True,
-            help='Start the lab opening terminal windows.'
+            help='Start the network scenario opening terminal windows.'
         )
         group.add_argument(
             "--privileged",
@@ -53,20 +53,20 @@ class LrestartCommand(Command):
         self.parser.add_argument(
             '-d', '--directory',
             required=False,
-            help='Specify the folder containing the lab.'
+            help='Specify the folder containing the network scenario.'
         )
         self.parser.add_argument(
             '-F', '--force-lab',
             dest='force_lab',
             required=False,
             action='store_true',
-            help='Force the lab to start without a lab.conf or lab.dep file.'
+            help='Force the network scenario to start without a lab.conf or lab.dep file.'
         )
         self.parser.add_argument(
             '-l', '--list',
             required=False,
             action='store_true',
-            help='Show information about running devices after the lab has been started.'
+            help='Show information about running devices after the network scenario has been started.'
         )
         self.parser.add_argument(
             '-o', '--pass',
@@ -74,7 +74,7 @@ class LrestartCommand(Command):
             metavar="OPTION",
             nargs='*',
             required=False,
-            help="Apply options to all devices of a lab during startup."
+            help="Apply options to all devices of a network scenario during startup."
         )
         self.parser.add_argument(
             '--xterm',
@@ -96,6 +96,13 @@ class LrestartCommand(Command):
             help='/shared dir will not be mounted inside the devices.'
         )
 
+        self.parser.add_argument(
+            'machine_name',
+            metavar='DEVICE_NAME',
+            nargs='*',
+            help='Restarts only specified devices.'
+        )
+
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)
         args = self.get_args()
@@ -104,6 +111,9 @@ class LrestartCommand(Command):
         lab_path = utils.get_absolute_path(lab_path)
 
         lclean_argv = ['-d', args['directory']] if args['directory'] else []
+
+        if args['machine_name']:
+            lclean_argv.extend(args['machine_name'])
 
         LcleanCommand().run(lab_path, lclean_argv)
         LstartCommand().run(lab_path, argv)

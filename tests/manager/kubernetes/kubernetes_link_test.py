@@ -1,3 +1,4 @@
+import copy
 import sys
 from unittest import mock
 from unittest.mock import Mock
@@ -9,6 +10,7 @@ sys.path.insert(0, './')
 
 from src.Kathara.model.Lab import Lab
 from src.Kathara.manager.kubernetes.KubernetesLink import KubernetesLink
+from src.Kathara.exceptions import LinkNotFoundError
 
 
 class FakeConfig(object):
@@ -400,7 +402,7 @@ def test_get_links_by_filters_only_link_name(kubernetes_link):
 #
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._undeploy_link")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
-def undeploy(mock_get_links_by_filters, mock_undeploy_link, kubernetes_network):
+def test_undeploy(mock_get_links_by_filters, mock_undeploy_link, kubernetes_network, kubernetes_link):
     lab = Lab("Default scenario")
     lab.get_or_new_link("A")
     lab.get_or_new_link("B")
@@ -424,6 +426,27 @@ def test_undeploy_empty_lab(mock_get_links_by_filters, mock_undeploy_link, kuber
 
     mock_get_links_by_filters.called_once_with(lab.hash)
     assert not mock_undeploy_link.called
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._undeploy_link")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_undeploy_selected_links(mock_get_links_by_filters, mock_undeploy_link, kubernetes_network, kubernetes_link):
+    lab = Lab("Default scenario")
+    lab.get_or_new_link("A")
+    lab.get_or_new_link("B")
+    lab.get_or_new_link("C")
+
+    kubernetes_network_1 = copy.deepcopy(kubernetes_network)
+    kubernetes_network_1["metadata"]["name"] = "netprefix-b"
+    kubernetes_network_2 = copy.deepcopy(kubernetes_network)
+    kubernetes_network_2["metadata"]["name"] = "netprefix-c"
+
+    mock_get_links_by_filters.return_value = [kubernetes_network, kubernetes_network_1, kubernetes_network_2]
+
+    kubernetes_link.undeploy("lab_hash", selected_links={"netprefix-b"})
+
+    mock_get_links_by_filters.called_once_with(lab.hash)
+    assert mock_undeploy_link.call_count == 1
 
 
 #
@@ -473,7 +496,7 @@ def test_get_links_stats_lab_hash_link_not_found(mock_get_links_api_objects_by_f
                                                  kubernetes_network):
     kubernetes_network['metadata']['name'] = "test_network"
     mock_get_links_api_objects_by_filters.return_value = []
-    with pytest.raises(Exception):
+    with pytest.raises(LinkNotFoundError):
         next(kubernetes_link.get_links_stats(lab_hash="lab_hash"))
     mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name=None)
 
@@ -483,6 +506,6 @@ def test_get_links_stats_lab_hash_link_name_not_found(mock_get_links_api_objects
                                                       kubernetes_network):
     kubernetes_network['metadata']['name'] = "test_network"
     mock_get_links_api_objects_by_filters.return_value = []
-    with pytest.raises(Exception):
+    with pytest.raises(LinkNotFoundError):
         next(kubernetes_link.get_links_stats(lab_hash="lab_hash", link_name="test_network"))
     mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name="test_network")

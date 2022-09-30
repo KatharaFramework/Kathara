@@ -21,5 +21,10 @@ def test_external_link():
 
 
 def test_malformed_file():
-    with pytest.raises(Exception):
-        ExtParser.parse("tests/parser/labext/fail")
+    with pytest.raises(SyntaxError):
+        ExtParser.parse("tests/parser/labext/syntax_error")
+
+
+def test_io_error():
+    with pytest.raises(ValueError):
+        ExtParser.parse("tests/parser/labext/value_error")

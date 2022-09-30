@@ -1,7 +1,7 @@
 #!/usr/bin/make -s
 
 PRODUCT=Kathara
-VERSION=3.5.0
+VERSION=3.5.1
 TARGET_DIRECTORY=Output
 APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
 ROFF_DIR=../../docs/Roff
@@ -21,9 +21,9 @@ py_env:
 	python3 -m venv $(VENV_DIR)
 
 deps: py_env
-	$(VENV_DIR)/bin/pip3.9 install pyinstaller
-	$(VENV_DIR)/bin/pip3.9 install -r ../../src/requirements.txt
-	$(VENV_DIR)/bin/pip3.9 install pytest
+	$(VENV_DIR)/bin/pip3.10 install pyinstaller
+	$(VENV_DIR)/bin/pip3.10 install -r ../../src/requirements.txt
+	$(VENV_DIR)/bin/pip3.10 install pytest
 	gem install ronn-ng --user-install
 
 manpages:

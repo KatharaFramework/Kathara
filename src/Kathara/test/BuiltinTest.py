@@ -39,7 +39,7 @@ class BuiltInTest(Test):
                 with open(machine_signature_path, 'r') as machine_signature_file:
                     machine_signature = json.loads(machine_signature_file.read())
             else:
-                raise MachineSignatureNotFoundError("Signature for device `%s` not found! Exiting..." % machine_name)
+                raise MachineSignatureNotFoundError(machine_name)
 
             # Save machine state into result file
             machine_result_path = "%s/%s.builtin" % (self.results_path, machine.name)
@@ -101,7 +101,7 @@ class BuiltInTest(Test):
                                                          command="netstat -tuwln"
                                                          )
         # Remove Docker ports and header lines. Sort the array alphabetically.
-        net_stat = sorted([filter(lambda x: "127.0.0.11" not in x, net_stat.splitlines())][2:]) if net_stat else []
+        net_stat = sorted(list(filter(lambda x: "127.0.0.11" not in x, net_stat.splitlines()))[2:]) if net_stat else []
 
         # Machine processes
         (processes, _) = Test._get_machine_command_output(lab_hash=machine.lab.hash,

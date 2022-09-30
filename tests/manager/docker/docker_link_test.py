@@ -10,7 +10,7 @@ sys.path.insert(0, './')
 from src.Kathara.model.Lab import Lab
 from src.Kathara.manager.docker.DockerLink import DockerLink
 from src.Kathara import utils
-from src.Kathara.manager.docker.stats.DockerLinkStats import DockerLinkStats
+from src.Kathara.exceptions import LinkNotFoundError
 
 
 #
@@ -255,6 +255,27 @@ def test_undeploy_empty_lab(mock_get_links_by_filters, mock_undeploy_link, docke
     assert not mock_undeploy_link.called
 
 
+@mock.patch("docker.models.networks.Network")
+@mock.patch("docker.models.networks.Network")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._undeploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_api_objects_by_filters")
+def test_undeploy_selected_links(mock_get_links_by_filters, mock_undeploy_link, mock_net1, mock_net2, docker_link):
+    lab = Lab("Default scenario")
+    lab.get_or_new_link("A")
+    lab.get_or_new_link("B")
+
+    mock_net1.attrs = {"Labels": {"name": "A"}}
+    mock_net2.attrs = {"Labels": {"name": "B"}}
+
+    mock_get_links_by_filters.return_value = [mock_net1, mock_net2]
+
+    docker_link.undeploy("lab_hash", selected_links={"B"})
+    mock_get_links_by_filters.called_once_with(lab.hash)
+    assert mock_net1.reload.call_count == 0
+    assert mock_net2.reload.call_count == 1
+    assert mock_undeploy_link.call_count == 1
+
+
 #
 # TEST: wipe
 #
@@ -317,7 +338,7 @@ def test_get_links_stats_lab_hash_link_not_found(mock_get_links_api_objects_by_f
                                                  docker_network):
     docker_network.api_object.name = "test_network"
     mock_get_links_api_objects_by_filters.return_value = []
-    with pytest.raises(Exception):
+    with pytest.raises(LinkNotFoundError):
         next(docker_link.get_links_stats(lab_hash="lab_hash"))
     mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name=None, user=None)
 
@@ -327,7 +348,7 @@ def test_get_links_stats_lab_hash_link_name_not_found(mock_get_links_api_objects
                                                       docker_network):
     docker_network.api_object.name = "test_network"
     mock_get_links_api_objects_by_filters.return_value = []
-    with pytest.raises(Exception):
+    with pytest.raises(LinkNotFoundError):
         next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_network"))
     mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name="test_network",
                                                                   user=None)

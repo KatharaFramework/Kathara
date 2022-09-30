@@ -59,7 +59,7 @@ class CheckCommand(Command):
         args['no_shared'] = False
         args['no_hosthome'] = False
 
-        lab = Lab("kathara_vlab")
+        lab = Lab("kathara_test")
         lab.get_or_new_machine("hello_world")
 
         try:

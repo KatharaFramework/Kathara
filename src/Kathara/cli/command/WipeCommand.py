@@ -5,6 +5,7 @@ from typing import List
 
 from ..ui.utils import confirmation_prompt
 from ... import utils
+from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...setting.Setting import Setting
@@ -63,7 +64,7 @@ class WipeCommand(Command):
             Setting.wipe_from_disk()
         else:
             if args['all'] and not utils.is_admin():
-                raise Exception("You must be root in order to wipe all Kathara devices of all users.")
+                raise PrivilegeError("You must be root in order to wipe all Kathara devices of all users.")
 
             Kathara.get_instance().wipe(all_users=bool(args['all']))
 

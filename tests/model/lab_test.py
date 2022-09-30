@@ -9,12 +9,18 @@ sys.path.insert(0, './')
 from src.Kathara.model.Lab import Lab
 from src.Kathara import utils
 from tempfile import mkdtemp
-from src.Kathara.exceptions import MachineOptionError
+from src.Kathara.exceptions import MachineOptionError, MachineAlreadyExistsError, MachineNotFoundError, \
+    LinkAlreadyExistsError, LinkNotFoundError
 
 
 @pytest.fixture()
 def default_scenario():
     return Lab("default_scenario")
+
+
+@pytest.fixture()
+def default_scenario_path():
+    return Lab(None, path="/lab/path")
 
 
 @pytest.fixture()
@@ -47,6 +53,31 @@ def test_default_scenario_creation(default_scenario: Lab):
     assert default_scenario.hash == utils.generate_urlsafe_hash(default_scenario.name)
 
 
+def test_default_scenario_creation_with_path(default_scenario_path: Lab):
+    assert default_scenario_path.name is None
+    assert default_scenario_path.description is None
+    assert default_scenario_path.version is None
+    assert default_scenario_path.author is None
+    assert default_scenario_path.email is None
+    assert default_scenario_path.web is None
+    assert default_scenario_path.machines == {}
+    assert default_scenario_path.links == {}
+    assert default_scenario_path.general_options == {}
+    assert not default_scenario_path.has_dependencies
+    assert default_scenario_path.path == "/lab/path"
+    assert default_scenario_path.shared_shutdown_path is None
+    assert default_scenario_path.shared_startup_path is None
+    assert default_scenario_path.shared_folder is None
+    assert default_scenario_path.hash == utils.generate_urlsafe_hash(default_scenario_path.path)
+
+
+def test_default_scenario_creation_with_path_and_name(default_scenario_path: Lab):
+    default_scenario_path.name = "lab_with_path"
+    assert default_scenario_path.name == "lab_with_path"
+    assert default_scenario_path.path == "/lab/path"
+    assert default_scenario_path.hash == utils.generate_urlsafe_hash(default_scenario_path.name)
+
+
 def test_directory_scenario_creation_no_shared_files(directory_scenario: Lab, temporary_path: str):
     assert directory_scenario.name == "directory_scenario"
     assert directory_scenario.description is None
@@ -62,7 +93,31 @@ def test_directory_scenario_creation_no_shared_files(directory_scenario: Lab, te
     assert directory_scenario.shared_shutdown_path == os.path.join(temporary_path, 'shared.shutdown')
     assert directory_scenario.shared_startup_path == os.path.join(temporary_path, 'shared.startup')
     assert directory_scenario.shared_folder is None
-    assert directory_scenario.hash == utils.generate_urlsafe_hash(temporary_path)
+    assert directory_scenario.hash == utils.generate_urlsafe_hash(directory_scenario.name)
+
+
+def test_new_machine(default_scenario: Lab):
+    assert len(default_scenario.machines) == 0
+    default_scenario.new_machine("pc1")
+    assert len(default_scenario.machines) == 1
+    assert "pc1" in default_scenario.machines
+
+
+def test_new_machine_already_exists_error(default_scenario: Lab):
+    default_scenario.new_machine("pc1")
+    with pytest.raises(MachineAlreadyExistsError):
+        default_scenario.new_machine("pc1")
+
+
+def test_get_machine(default_scenario: Lab):
+    default_scenario.new_machine("pc1")
+    device = default_scenario.get_machine("pc1")
+    assert device.name == "pc1"
+
+
+def test_get_machine_not_found_error(default_scenario: Lab):
+    with pytest.raises(MachineNotFoundError):
+        default_scenario.get_machine("pc1")
 
 
 def test_get_or_new_machine_not_exist(default_scenario: Lab):
@@ -84,6 +139,30 @@ def test_get_or_new_machine_two_devices(default_scenario: Lab):
     assert len(default_scenario.machines) == 2
     assert default_scenario.machines['pc1']
     assert default_scenario.machines['pc2']
+
+
+def test_new_link(default_scenario: Lab):
+    assert len(default_scenario.links) == 0
+    link = default_scenario.new_link("A")
+    assert len(default_scenario.links) == 1
+    assert link.name in default_scenario.links
+
+
+def test_new_link_already_exists_error(default_scenario: Lab):
+    default_scenario.new_link("A")
+    with pytest.raises(LinkAlreadyExistsError):
+        default_scenario.new_link("A")
+
+
+def test_get_link(default_scenario: Lab):
+    created_link = default_scenario.new_link("A")
+    link = default_scenario.get_link("A")
+    assert link == created_link
+
+
+def test_get_link_not_found_error(default_scenario: Lab):
+    with pytest.raises(LinkNotFoundError):
+        default_scenario.get_link("A")
 
 
 def test_get_or_new_link_not_exists(default_scenario: Lab):
@@ -108,32 +187,35 @@ def test_get_or_new_link_two_cd(default_scenario: Lab):
 
 
 def test_connect_one_machine_to_link(default_scenario: Lab):
-    default_scenario.connect_machine_to_link("pc1", "A")
+    result_1 = default_scenario.connect_machine_to_link("pc1", "A")
     assert len(default_scenario.machines) == 1
     assert default_scenario.machines['pc1']
     assert len(default_scenario.links) == 1
     assert default_scenario.links['A']
     assert default_scenario.machines['pc1'].interfaces[0].name == 'A'
+    assert result_1 == (default_scenario.machines['pc1'], default_scenario.links['A'])
 
 
 def test_connect_two_machine_to_link(default_scenario: Lab):
-    default_scenario.connect_machine_to_link("pc1", "A")
+    result_1 = default_scenario.connect_machine_to_link("pc1", "A")
     assert len(default_scenario.machines) == 1
     assert default_scenario.machines['pc1']
     assert len(default_scenario.links) == 1
     assert default_scenario.links['A']
-    default_scenario.connect_machine_to_link("pc2", "A")
+    result_2 = default_scenario.connect_machine_to_link("pc2", "A")
     assert len(default_scenario.machines) == 2
     assert default_scenario.machines['pc2']
     assert len(default_scenario.links) == 1
     assert default_scenario.links['A']
     assert default_scenario.machines['pc1'].interfaces[0].name == 'A'
     assert default_scenario.machines['pc2'].interfaces[0].name == 'A'
+    assert result_1 == (default_scenario.machines['pc1'], default_scenario.links['A'])
+    assert result_2 == (default_scenario.machines['pc2'], default_scenario.links['A'])
 
 
 def test_connect_machine_to_two_links(default_scenario: Lab):
-    default_scenario.connect_machine_to_link("pc1", "A")
-    default_scenario.connect_machine_to_link("pc1", "B")
+    result_1 = default_scenario.connect_machine_to_link("pc1", "A")
+    result_2 = default_scenario.connect_machine_to_link("pc1", "B")
     assert len(default_scenario.machines) == 1
     assert default_scenario.machines['pc1']
     assert len(default_scenario.links) == 2
@@ -141,13 +223,16 @@ def test_connect_machine_to_two_links(default_scenario: Lab):
     assert default_scenario.links['B']
     assert default_scenario.machines['pc1'].interfaces[0].name == 'A'
     assert default_scenario.machines['pc1'].interfaces[1].name == 'B'
+    assert result_1 == (default_scenario.machines['pc1'], default_scenario.links['A'])
+    assert result_2 == (default_scenario.machines['pc1'], default_scenario.links['B'])
 
 
 def test_assign_meta_to_machine(default_scenario: Lab):
     default_scenario.get_or_new_machine("pc1")
-    default_scenario.assign_meta_to_machine("pc1", "test_meta", "test_value")
+    result = default_scenario.assign_meta_to_machine("pc1", "test_meta", "test_value")
     assert "test_meta" in default_scenario.machines['pc1'].meta
     assert default_scenario.machines['pc1'].meta["test_meta"] == "test_value"
+    assert result == default_scenario.machines['pc1']
 
 
 def test_assign_meta_to_machine_exception(default_scenario: Lab):
@@ -188,3 +273,30 @@ def test_apply_dependencies(default_scenario: Lab):
     assert default_scenario.machines.popitem()[0] == "pc2"
     assert default_scenario.machines.popitem()[0] == "pc1"
     assert default_scenario.machines.popitem()[0] == "pc3"
+
+
+def test_find_machine_true(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+
+    assert default_scenario.find_machine("pc1")
+
+
+def test_find_machine_false(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+
+    assert not default_scenario.find_machine("pc2")
+
+
+def test_find_machines_true(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+    default_scenario.get_or_new_machine("pc2")
+    default_scenario.get_or_new_machine("pc3")
+
+    assert default_scenario.find_machines({"pc1", "pc2", "pc3"})
+
+
+def test_find_machines_false(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+    default_scenario.get_or_new_machine("pc2")
+
+    assert not default_scenario.find_machines({"pc1", "pc2", "pc3"})

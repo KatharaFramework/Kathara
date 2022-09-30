@@ -1,8 +1,11 @@
 __DATE__ Kathara Team <******@kathara.org>
 
 * Release v__VERSION__
-    * Fix lab.dep parser
-    * Refactor of Managers and add more expressive Python APIs
-    * Decouple UI Logic from Business Logic
-    * Add Settings option to select the Docker Image Update Policy
-    * Add possibility to declare container environment variables from vstart and lab.conf
+    * It is now possible to restart only specific devices using 'lrestart'
+    * Add possibility to disconnect a device from a collision domain using vconfig and lconfig commands (see man for further information)
+    * Add check to ensure that required Docker images are compatible with the host architecture
+    * More generic regular expression for device 'env' meta
+    * Network scenario hash is now computed from LAB_NAME meta, if present
+    * Improve exceptions handling and better error descriptions
+    * Add several utility methods to the 'Kathara' facade and model classes
+    * Change pyuv dependency with the Python 3.10 compatible version

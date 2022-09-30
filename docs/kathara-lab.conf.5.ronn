@@ -1,10 +1,10 @@
 m4_changequote()
-kathara-lab.conf(5) -- Lab configuration file
+kathara-lab.conf(5) -- Network scenario configuration file
 =============================================
 
 ## DESCRIPTION
 
-The main lab configuration file. In this file you can specify the names of devices to be started, any option that should be used when launching them, and the topology of the network that connects them. Optionally, you can also provide some descriptive information for the lab, which will be displayed upon its startup. This file is not explicitly required, but running a lab without a lab.conf file is kind of useless...
+The main network scenario configuration file. In this file you can specify the names of devices to be started, any option that should be used when launching them, and the topology of the network that connects them. Optionally, you can also provide some descriptive information for the network scenario, which will be displayed upon its startup. This file is not explicitly required, but running a network scenario without a lab.conf file is kind of useless...
 
 This file is a list of `device[arg]=value` assignments, where `arg` can be an integer value or the name of an option (described below).
 
@@ -55,16 +55,16 @@ In order to establish a uniform convention, comment lines should always start wi
 * `num_terms` (integer):
     Choose the number of terminals to open for this device.
 
-## LAB META INFORMATION
+## NETWORK SCENARIO META INFORMATION
 
-It is also possible to provide descriptive information about a lab by using one of the following special assignments:
+It is also possible to provide descriptive information about a network scenario by using one of the following special assignments:
 
-+ LAB_NAME=string (a word as identifier for the lab)
-+ LAB_DESCRIPTION=string (a brief description of the purpose of the lab)
-+ LAB_VERSION=string (the version of the lab)
-+ LAB_AUTHOR=string (people who have written the lab)
-+ LAB_EMAIL=string (contacts of lab authors)
-+ LAB_WEB=string (useful web resources related to the lab)
++ LAB_NAME=string (a word as identifier for the network scenario)
++ LAB_DESCRIPTION=string (a brief description of the purpose of the network scenario)
++ LAB_VERSION=string (the version of the network scenario)
++ LAB_AUTHOR=string (people who have written the network scenario)
++ LAB_EMAIL=string (contacts of network scenario authors)
++ LAB_WEB=string (useful web resources related to the network scenario)
 
 ## EXAMPLE
 

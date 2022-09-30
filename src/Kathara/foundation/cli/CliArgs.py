@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from ...exceptions import InstantiationError
+
 
 class CliArgs(object):
     __slots__ = ['args']
@@ -17,7 +19,7 @@ class CliArgs(object):
 
     def __init__(self) -> None:
         if CliArgs.__instance is not None:
-            raise Exception("This class is a singleton!")
+            raise InstantiationError("This class is a singleton!")
         else:
             self.args = {}
 

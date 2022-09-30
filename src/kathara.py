@@ -11,7 +11,7 @@ import coloredlogs
 from Kathara import utils
 from Kathara.auth.PrivilegeHandler import PrivilegeHandler
 from Kathara.cli.ui.event.register import register_cli_events
-from Kathara.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError, SettingsNotFound
+from Kathara.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError, SettingsNotFoundError
 from Kathara.foundation.cli.command.CommandFactory import CommandFactory
 from Kathara.setting.Setting import Setting
 from Kathara.strings import formatted_strings
@@ -69,17 +69,17 @@ class KatharaEntryPoint(object):
             if "settings" not in args.command:
                 Setting.get_instance().check()
         except (SettingsError, DockerDaemonConnectionError) as e:
-            logging.critical(str(e))
+            logging.critical(f"({type(e).__name__}) {str(e)}")
             sys.exit(1)
 
         try:
             command_object = CommandFactory().create_instance(class_args=(args.command.capitalize(),))
         except ClassNotFoundError:
-            logging.error('Unrecognized command `%s`.\n' % args.command)
+            logging.error(f"Unrecognized command `{args.command}`.")
             parser.print_help()
             sys.exit(1)
         except ImportError as e:
-            logging.critical("`%s` is not installed in your system\n" % e.name)
+            logging.critical(f"({type(e).__name__}) `{e.name}` is not installed in your system")
             sys.exit(1)
 
         try:
@@ -88,14 +88,13 @@ class KatharaEntryPoint(object):
         except KeyboardInterrupt:
             if args.command not in ['exec', 'linfo', 'list', 'settings']:
                 logging.warning("You interrupted Kathara during a command. The system may be in an inconsistent "
-                                "state!\n")
-                logging.warning("If you encounter any problem please run `kathara wipe`.")
+                                "state! If you encounter any problem please run `kathara wipe`.")
             sys.exit(0)
         except Exception as e:
             if Setting.get_instance().debug_level == "EXCEPTION":
-                logging.exception(str(e) + '\n')
+                logging.exception(f"({type(e).__name__}) {str(e)}")
             else:
-                logging.critical(str(e) + '\n')
+                logging.critical(f"({type(e).__name__}) {str(e)}")
             sys.exit(1)
 
 
@@ -110,7 +109,7 @@ if __name__ == '__main__':
 
     try:
         Setting.get_instance().load_from_disk()
-    except SettingsNotFound:
+    except SettingsNotFoundError:
         Setting.get_instance().save_to_disk()
 
     try:

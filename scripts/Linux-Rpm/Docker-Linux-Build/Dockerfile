@@ -20,13 +20,13 @@ RUN dnf install -y wget \
     ncurses-devel \
     sqlite-devel \
     libffi-devel && \
- wget https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tgz && \
- tar xfvz Python-3.9.9.tgz && cd Python-3.9.9 && \
+ wget https://www.python.org/ftp/python/3.10.7/Python-3.10.7.tgz && \
+ tar xfvz Python-3.10.7.tgz && cd Python-3.10.7 && \
  ./configure --enable-optimizations && \
  make -j8 && \
  make install && \
  dnf remove -y wget && \
- cd .. && rm -Rf Python3.9.9*
+ cd .. && rm -Rf Python3.10.7*
 
 RUN gem install ronn-ng
 

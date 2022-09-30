@@ -21,6 +21,11 @@ class ExtParser(object):
         Returns:
             Optional[Dict[str, List[ExternalLink]]]: Keys are name of collision domain and values are List of
                 ExternalLink attached to that interface.
+
+        Raises:
+            IOError: If lab.ext file cannot be opened.
+            ValueError: If the VLAN ID is not allowed.
+            SyntaxError: If lab.ext file is malformed.
         """
         lab_ext_path = os.path.join(path, 'lab.ext')
 
@@ -56,15 +61,14 @@ class ExtParser(object):
 
                 if vlan:
                     if 0 <= vlan >= 4095:
-                        raise Exception("[ERROR] In file lab.ext, line %d: "
-                                        "VLAN ID must be in range [1, 4094]." % line_number)
+                        raise ValueError(f"In file lab.ext, line {line_number}: VLAN ID must be in range [1, 4094].")
 
                 if link not in external_links:
                     external_links[link] = []
 
                 external_links[link].append(ExternalLink(interface, vlan))
             elif not line.startswith('#') and line.strip():
-                raise Exception("[ERROR] In file lab.ext, line %d malformed." % line_number)
+                raise SyntaxError(f"In file lab.ext - Line {line_number}.")
 
             line_number += 1
             line = ext_mem_file.readline().decode('utf-8')

@@ -7,7 +7,7 @@ from typing import List
 from ..ui.utils import create_table
 from ..ui.utils import format_headers
 from ... import utils
-from ...exceptions import PrivilegeError
+from ...exceptions import PrivilegeError, EmptyLabError
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
@@ -46,14 +46,14 @@ class LstartCommand(Command):
             dest="terminals",
             const=False,
             default=None,
-            help='Start the lab without opening terminal windows.'
+            help='Start the network scenario without opening terminal windows.'
         )
         group.add_argument(
             "--terminals",
             action="store_const",
             dest="terminals",
             const=True,
-            help='Start the lab opening terminal windows.'
+            help='Start the network scenario opening terminal windows.'
         )
         group.add_argument(
             "--privileged",
@@ -65,20 +65,20 @@ class LstartCommand(Command):
         self.parser.add_argument(
             '-d', '--directory',
             required=False,
-            help='Specify the folder containing the lab.'
+            help='Specify the folder containing the network scenario.'
         )
         self.parser.add_argument(
             '-F', '--force-lab',
             dest='force_lab',
             required=False,
             action='store_true',
-            help='Force the lab to start without a lab.conf or lab.dep file.'
+            help='Force the network scenario to start without a lab.conf or lab.dep file.'
         )
         self.parser.add_argument(
             '-l', '--list',
             required=False,
             action='store_true',
-            help='Show information about running devices after the lab has been started.'
+            help='Show information about running devices after the network scenario has been started.'
         )
         self.parser.add_argument(
             '-o', '--pass',
@@ -86,7 +86,7 @@ class LstartCommand(Command):
             metavar="OPTION",
             nargs='*',
             required=False,
-            help="Apply options to all devices of a lab during startup."
+            help="Apply options to all devices of a network scenario during startup."
         )
         self.parser.add_argument(
             '--xterm',
@@ -134,7 +134,7 @@ class LstartCommand(Command):
 
         if args['privileged']:
             if not utils.is_admin():
-                raise Exception("You must be root in order to start Kathara devices in privileged mode.")
+                raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
             else:
                 logging.warning("Running devices with privileged capabilities, terminals won't open!")
                 Setting.get_instance().open_terminals = False
@@ -148,7 +148,7 @@ class LstartCommand(Command):
             lab = LabParser.parse(lab_path)
         except IOError as e:
             if not args['force_lab']:
-                raise Exception(str(e))
+                raise e
             else:
                 lab = FolderParser.parse(lab_path)
 
@@ -164,7 +164,7 @@ class LstartCommand(Command):
             logging.info(format_headers())
 
         if len(lab.machines) <= 0:
-            raise Exception("No devices in the current lab. Exiting...")
+            raise EmptyLabError()
 
         try:
             options = OptionParser.parse(args['options'])
@@ -204,7 +204,7 @@ class LstartCommand(Command):
         lab.add_option('shared_mount', args['no_shared'])
         lab.add_option('privileged_machines', args['privileged'])
 
-        Kathara.get_instance().deploy_lab(lab, selected_machines=args['machine_name'])
+        Kathara.get_instance().deploy_lab(lab, selected_machines=set(args['machine_name']))
 
         if args['list']:
             machines_stats = Kathara.get_instance().get_machines_stats(lab_hash=lab.hash)

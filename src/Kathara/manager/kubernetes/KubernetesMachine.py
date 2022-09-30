@@ -19,7 +19,7 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MachineAlreadyExistsError
+from ...exceptions import MachineAlreadyExistsError, MachineNotFoundError, MachineNotReadyError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
@@ -54,7 +54,10 @@ STARTUP_COMMANDS = [
     "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf -); fi",
 
     # If /etc/hosts is not configured by the user, add the localhost mapping
-    "if [ ! -s \"/etc/hosts\" ]; then echo '127.0.0.1 localhost' > /etc/hosts; fi",
+    "if [ ! -s \"/etc/hosts\" ]; then "
+    "echo '127.0.0.1 localhost' > /etc/hosts",
+    "echo '::1 localhost' >> /etc/hosts",
+    "fi",
 
     # Give proper permissions to /var/www
     "if [ -d \"/var/www\" ]; then "
@@ -183,6 +186,9 @@ class KubernetesMachine(object):
 
         Returns:
             None
+
+        Raises:
+            MachineAlreadyExistsError: If a device with the name specified already exists.
         """
         logging.debug("Creating device `%s`..." % machine.name)
 
@@ -223,12 +229,11 @@ class KubernetesMachine(object):
                                                                           )
         except ApiException as e:
             if e.status == 409 and 'Conflict' in e.reason:
-                raise MachineAlreadyExistsError("Device with name `%s` already exists." % machine.name)
+                raise MachineAlreadyExistsError(machine.name)
             else:
                 raise e
 
-    @staticmethod
-    def _build_definition(machine: Machine, config_map: client.V1ConfigMap) -> client.V1Deployment:
+    def _build_definition(self, machine: Machine, config_map: client.V1ConfigMap) -> client.V1Deployment:
         """Return a Kubernetes deployment from a Kathara device and a Kubernetes ConfigMap.
 
         Args:
@@ -275,6 +280,8 @@ class KubernetesMachine(object):
 
             resources = client.V1ResourceRequirements(limits=limits)
 
+        shell = machine.meta["shell"] if "shell" in machine.meta else Setting.get_instance().device_shell
+
         # postStart lifecycle hook is launched asynchronously by k8s master when the main container is Ready
         # On Ready state, the pod has volumes and network interfaces up, so this hook is used
         # to execute custom commands coming from .startup file and "exec" option
@@ -288,17 +295,14 @@ class KubernetesMachine(object):
 
         post_start = client.V1LifecycleHandler(
             _exec=client.V1ExecAction(
-                command=[Setting.get_instance().device_shell, "-c", startup_commands_string]
+                command=[shell, "-c", startup_commands_string]
             )
         )
         lifecycle = client.V1Lifecycle(post_start=post_start)
 
         env = [
-            client.V1EnvVar("_MEGALOS_SHELL",
-                            machine.meta["shell"] if "shell" in machine.meta else Setting.get_instance().device_shell
-                            )
+            client.V1EnvVar("_MEGALOS_SHELL", shell)
         ]
-
         for env_var_name, env_var_value in machine.meta['envs'].items():
             env.append(client.V1EnvVar(env_var_name, env_var_value))
 
@@ -456,9 +460,11 @@ class KubernetesMachine(object):
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=machine_name)
 
         try:
+            shell_env_value = self.get_env_var_value_from_pod(pod_api_object, "_MEGALOS_SHELL")
+            shell = shell_env_value if shell_env_value else Setting.get_instance().device_shell
             output = self.exec(machine_namespace,
                                machine_name,
-                               command=[Setting.get_instance().device_shell, '-c', shutdown_commands_string],
+                               command=[shell, '-c', shutdown_commands_string],
                                )
 
             try:
@@ -487,14 +493,17 @@ class KubernetesMachine(object):
 
         Returns:
             None
+
+        Raises:
+            MachineNotReadyError: If the device is not ready.
         """
         pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
         if not pods:
-            raise Exception("The specified device `%s` is not running." % machine_name)
+            raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
         deployment = pods.pop()
 
         if 'Running' not in deployment.status.phase:
-            raise Exception('Device `%s` is not ready.' % machine_name)
+            raise MachineNotReadyError(machine_name)
 
         if not shell:
             shell_env_value = self.get_env_var_value_from_pod(deployment, "_MEGALOS_SHELL")
@@ -590,7 +599,7 @@ class KubernetesMachine(object):
             # Retrieve the pod of current Deployment
             pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
             if not pods:
-                raise Exception("The specified device `%s` is not running." % machine_name)
+                raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
             pod = pods.pop()
 
             response = stream(self.core_client.connect_get_namespaced_pod_exec,
@@ -710,9 +719,9 @@ class KubernetesMachine(object):
             pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
             if not pods:
                 if not machine_name:
-                    raise Exception("No devices found.")
+                    raise MachineNotFoundError("No devices found.")
                 else:
-                    raise Exception(f"Devices with name {machine_name} not found.")
+                    raise MachineNotFoundError(f"Devices with name {machine_name} not found.")
 
             machines_stats = {}
 

@@ -47,9 +47,9 @@ Kathará emulates network scenarios using either Docker or Kubernetes as backend
 ## Installation
 Install Docker and then run the installer specific for your Operating System. For a step by step guide check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki).
 
-For further information on how to use Kathará on Kubernetes please refer to the [Wiki Page](https://github.com/KatharaFramework/Kathara/wiki/Megalos-(Kathara-over-Kubernetes)).
+For further information on how to use Kathará on Kubernetes (**Megalos**) please refer to the [Wiki Page](https://github.com/KatharaFramework/Kathara/wiki/Megalos-(Kathara-over-Kubernetes)).
 
-Kathará provides also a set of Python APIs.
+Kathará also provides a set of Python APIs.
 See the [Python APIs Tutorial](https://github.com/KatharaFramework/Kathara/wiki/Kathara-Python-API) and the [docs](https://github.com/KatharaFramework/Kathara/wiki/Kathara-API-Docs).
 
 ## Quick Example
@@ -63,18 +63,24 @@ See the [Python APIs Tutorial](https://github.com/KatharaFramework/Kathara/wiki/
 * Kathará will read the configuration of the scenario from `lab.conf` and the various `*.startup` files and start the devices, opening terminal windows to interact with them.
 * After you're done experimenting, simply run `kathara lclean` and wait until the network scenario closes.
 
-## Publications 
+## Publications and Presentations
 Kathará is developed by [Roma Tre Computer Networks and Security Research Group](https://compunet.ing.uniroma3.it/). 
-Several publications are related to this tool:
 
+Several publications are related to the tool:
 - <a href="https://ieeexplore.ieee.org/abstract/document/8406267/" target="_blank"> **Kathará: A container-based framework for implementing network function virtualization and software defined networks**</a> (at NOMS 2018)
-    - <a href="https://www.slideshare.net/GaetanoBonofiglio/kathar-noms-2018-106743047" target="_blank">Presentation</a>
+  - <a href="https://www.slideshare.net/GaetanoBonofiglio/kathar-noms-2018-106743047" target="_blank">Presentation</a>
 - <a href="https://ieeexplore.ieee.org/document/9110288" target="_blank"> **Megalos: A Scalable Architecture for the Virtualization of Network Scenarios** </a> (at NOMS 2020)
-    - <a href="https://www.youtube.com/watch?v=XvInh-kujrA&amp;feature=youtu.be" target="_blank">Presentation</a>
-- <a href="https://ieeexplore.ieee.org/document/9110351" target="_blank"> **Kathará: A Lightweight Network Emulation System** </a> (at NOMS 2020) 
-    - <a href="https://www.youtube.com/watch?v=ionEpKjv3Vk&amp;feature=youtu.be" target="_blank">Presentation</a>
-    - <a href="https://noms2020.ieee-noms.org/sites/noms2020.ieee-noms.org/files/NOMS2020_TPC_awards_signed.V2_Page_2_%20Best%20Nemo%20.jpg" target="_blank">Best Demo Paper Award</a>
-- <a href="https://www.mdpi.com/1999-5903/13/9/227" target="_blank"> **Megalos: A Scalable Architecture for the Virtualization of Large Network Scenarios** </a> (at Future Internet 2021)
+  - <a href="https://www.youtube.com/watch?v=XvInh-kujrA" target="_blank">Presentation</a>
+- <a href="https://ieeexplore.ieee.org/document/9110351" target="_blank"> **Kathará: A Lightweight Network Emulation System** </a> (at NOMS 2020)
+  - <a href="https://www.youtube.com/watch?v=ionEpKjv3Vk" target="_blank">Presentation</a>
+  - <a href="https://www.kathara.org/assets/images/awards/NOMS2020_TPC_awards_signed.V2_Page_2_%20Best%20Nemo%20.jpg" target="_blank">Best Demo Paper Award</a>
+- <a href="https://www.mdpi.com/1999-5903/13/9/227" target="_blank"> **Megalos: A Scalable Architecture for the Virtualization of Large Network Scenarios** </a> (in MDPI Future Internet Journal 2021)
+- <a href="https://ieeexplore.ieee.org/document/9789876">**Sibyl: a Framework for Evaluating the Implementation of Routing Protocols in Fat-Trees**</a> (at NOMS 2022)
+  - <a href="https://www.youtube.com/watch?v=FZjHjLZzXCY">Presentation</a>
+
+Kathará has been also presented in meetings and workshops:
+- RIFT Working Group Meeting (IETF 107 - March 2020)
+- <a href="https://www.youtube.com/watch?v=GVBOdNzwhBA" target="_blank">Kathará: A Lightweight Network Emulation System (Italian Audio)</a> (GraphRM - June 2022)
 
 ## External Tools
 

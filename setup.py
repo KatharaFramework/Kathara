@@ -7,13 +7,13 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages('src'),
     py_modules=['kathara'],
-    version='3.5.0',
+    version='3.5.1',
     license='gpl-3.0',
     description='A lightweight container based emulation system.',
     author='Kathara Framework',
     author_email='contact@kathara.org',
     url='https://www.kathara.org',
-    download_url='https://github.com/KatharaFramework/Kathara/archive/refs/tags/3.5.0.tar.gz',
+    download_url='https://github.com/KatharaFramework/Kathara/archive/refs/tags/3.5.1.tar.gz',
     keywords=['NETWORK-EMULATION', 'CONTAINERS', 'NFV'],
     install_requires=[
         "binaryornot>=0.4.4",
@@ -27,7 +27,7 @@ setup(
         "pyroute2>=0.5.19",
         "progressbar2>=1.14.0",
         "libtmux>=0.8.2; platform_system == 'darwin' or platform_system == 'linux'",
-        "pyuv>=1.4.0",
+        "git+https://github.com/saghul/pyuv@master#egg=pyuv",
         "appscript>=1.1.0; platform_system == 'darwin'",
         "pypiwin32>=223; platform_system == 'win32'",
         "windows-curses>=2.1.0; platform_system == 'win32'"
@@ -38,5 +38,6 @@ setup(
         'Topic :: Software Development :: Build Tools',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
 )

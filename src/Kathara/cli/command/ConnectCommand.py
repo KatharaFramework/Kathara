@@ -5,6 +5,8 @@ from typing import List
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
+from ...model.Lab import Lab
+from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
 
 
@@ -30,7 +32,7 @@ class ConnectCommand(Command):
 
         group.add_argument(
             '-d', '--directory',
-            help='Specify the folder containing the lab.',
+            help='Specify the folder containing the network scenario.',
         )
         group.add_argument(
             '-v', '--vmachine',
@@ -59,14 +61,16 @@ class ConnectCommand(Command):
         args = self.get_args()
 
         if args['vmachine']:
-            lab_path = "kathara_vlab"
+            lab = Lab("kathara_vlab")
         else:
             lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
             lab_path = utils.get_absolute_path(lab_path)
+            try:
+                lab = LabParser.parse(lab_path)
+            except (Exception, IOError):
+                lab = Lab(None, path=lab_path)
 
-        logging.debug("Executing `connect` command in path `%s`..." % lab_path)
+        logging.debug("Executing `connect` command with hash `%s`..." % lab.hash)
 
-        lab_hash = utils.generate_urlsafe_hash(lab_path)
-
-        Kathara.get_instance().connect_tty(machine_name=args['machine_name'], lab_hash=lab_hash, shell=args['shell'],
+        Kathara.get_instance().connect_tty(machine_name=args['machine_name'], lab_hash=lab.hash, shell=args['shell'],
                                            logs=args['logs'])
