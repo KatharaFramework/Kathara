@@ -9,6 +9,8 @@ from ...model.Lab import Lab
 from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
 
+pywintypes = utils.import_pywintypes()
+
 
 class ExecCommand(Command):
     def __init__(self) -> None:
@@ -90,5 +92,9 @@ class ExecCommand(Command):
                     sys.stdout.write(stdout)
                 if stderr and not args['no_stderr']:
                     sys.stderr.write(stderr)
+        except pywintypes.error as e:
+            (code, reason, _) = e.args
+            if code == 109 and reason == 'ReadFile':
+                pass
         except StopIteration:
             pass
