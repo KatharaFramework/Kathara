@@ -76,7 +76,8 @@ Several publications are related to the tool:
   - <a href="https://www.kathara.org/assets/images/awards/NOMS2020_TPC_awards_signed.V2_Page_2_%20Best%20Nemo%20.jpg" target="_blank">Best Demo Paper Award</a>
 - <a href="https://www.mdpi.com/1999-5903/13/9/227" target="_blank"> **Megalos: A Scalable Architecture for the Virtualization of Large Network Scenarios** </a> (in MDPI Future Internet Journal 2021)
 - <a href="https://ieeexplore.ieee.org/document/9789876">**Sibyl: a Framework for Evaluating the Implementation of Routing Protocols in Fat-Trees**</a> (at NOMS 2022)
-  - <a href="https://www.youtube.com/watch?v=FZjHjLZzXCY">Presentation</a>
+  - <a href="https://www.youtube.com/watch?v=FZjHjLZzXCY">NOMS2022 Presentation</a>
+  - <a href="https://www.youtube.com/watch?v=FfjdqP8eKW8&t=3376s">RTGWG Session at IETF114</a>
 
 Kathará has been also presented in meetings and workshops:
 - <a href="https://datatracker.ietf.org/meeting/interim-2020-rift-01/materials/slides-interim-2020-rift-01-sessa-tools-for-experimenting-routing-in-dc-00" target="_blank">RIFT Working Group Meeting</a> (IETF 107 - March 2020)
