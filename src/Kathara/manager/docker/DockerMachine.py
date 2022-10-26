@@ -405,13 +405,23 @@ class DockerMachine(object):
             machine_commands="; ".join(machine.startup_commands)
         )
 
-        # Execute the startup commands inside the container (without privileged flag so basic permissions are used)
-        machine.api_object.exec_run(cmd=[machine.api_object.labels['shell'], '-c', startup_commands_string],
-                                    stdout=False,
-                                    stderr=False,
-                                    privileged=False,
-                                    detach=True
-                                    )
+        try:
+            # Execute the startup commands inside the container (without privileged flag so basic permissions are used)
+            machine.api_object.exec_run(cmd=[machine.api_object.labels['shell'], '-c', startup_commands_string],
+                                        stdout=False,
+                                        stderr=False,
+                                        privileged=False,
+                                        detach=True
+                                        )
+        except APIError as e:
+            if machine.api_object.labels['shell'] in e.explanation and \
+                        ('no such file or directory' in e.explanation or 'not found' in e.explanation):
+                logging.warning(f"Shell '{machine.api_object.labels['shell']}' not found for device '{machine.name}' "
+                                f"({machine.api_object.image}). "
+                                f"Startup commands will not be executed and terminal will not open. "
+                                f"Please specify a valid shell.")
+            else:
+                raise e
 
     def undeploy(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
         """Undeploy the devices contained in the network scenario defined by the lab_hash.
@@ -577,7 +587,7 @@ class DockerMachine(object):
             raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
         container = containers.pop()
 
-        exec_result = container.exec_run(cmd=command,
+        exec_result = container.exec_run(cmd=[container.labels['shell'], '-c', command],
                                          stdout=True,
                                          stderr=True,
                                          tty=tty,
@@ -694,11 +704,20 @@ class DockerMachine(object):
 
         # Execute the shutdown commands inside the container (only if it's running)
         if container.status == "running":
-            container.exec_run(cmd=[container.labels['shell'], '-c', shutdown_commands_string],
-                               stdout=False,
-                               stderr=False,
-                               privileged=True,
-                               detach=True
-                               )
-
+            try:
+                container.exec_run(cmd=[container.labels['shell'], '-c', shutdown_commands_string],
+                                   stdout=False,
+                                   stderr=False,
+                                   privileged=True,
+                                   detach=True
+                                   )
+            except APIError as e:
+                if container.labels['shell'] in e.explanation and \
+                        ('no such file or directory' in e.explanation or 'not found' in e.explanation):
+                    logging.warning(
+                        f"Shell '{container.labels['shell']}' not found for device '{container.labels['name']}' "
+                        f"({container.image}). "
+                        f"Shutdown commands will not be executed.")
+                else:
+                    raise e
         container.remove(force=True)
