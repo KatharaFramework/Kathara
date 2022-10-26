@@ -6,6 +6,9 @@ from deepdiff import DeepDiff
 
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
+from ...utils import import_pywintypes
+
+pywintypes = import_pywintypes()
 
 
 class Test(ABC):
@@ -46,5 +49,9 @@ class Test(ABC):
                     result['stdout'] += stdout.decode('utf-8')
                 if stderr:
                     result['stderr'] += stderr.decode('utf-8')
+        except pywintypes.error as e:
+            (code, reason, _) = e.args
+            if code == 109 and reason == 'ReadFile':
+                pass
         except StopIteration:
             return result['stdout'], result['stderr']

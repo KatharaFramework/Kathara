@@ -16,6 +16,7 @@ from multiprocessing import cpu_count
 from platform import node, machine
 from sys import platform as _platform
 from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable
+from types import ModuleType
 
 from binaryornot.check import is_binary
 from slug import slug
@@ -120,6 +121,24 @@ def exec_by_platform(fun_linux: Callable, fun_windows: Callable, fun_mac: Callab
         return fun_windows()
     elif _platform == MAC_OS:
         return fun_mac()
+
+
+def pywintypes_import_stub() -> ModuleType:
+    """Stub module of pywintypes for Unix systems (so it won't raise any `module not found` exception)."""
+    import types
+    from requests.exceptions import ConnectionError as RequestsConnectionError
+    pywintypes = types.ModuleType("pywintypes")
+    pywintypes.error = RequestsConnectionError
+    return pywintypes
+
+
+def pywintypes_import_win() -> ModuleType:
+    import pywintypes
+    return pywintypes
+
+
+def import_pywintypes() -> ModuleType:
+    return exec_by_platform(pywintypes_import_stub, pywintypes_import_win, pywintypes_import_stub)
 
 
 # Architecture Test

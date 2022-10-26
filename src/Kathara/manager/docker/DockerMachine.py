@@ -18,6 +18,8 @@ from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
 
+pywintypes = utils.import_pywintypes()
+
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 
 # Known commands that each container should execute
@@ -515,6 +517,10 @@ class DockerMachine(object):
                 while True:
                     (stdout, _) = next(exec_output)
                     startup_output += stdout.decode('utf-8') if stdout else ""
+            except pywintypes.error as e:
+                (code, reason, _) = e.args
+                if code == 109 and reason == 'ReadFile':
+                    pass
             except StopIteration:
                 pass
 
