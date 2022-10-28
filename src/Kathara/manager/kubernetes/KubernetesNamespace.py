@@ -66,3 +66,12 @@ class KubernetesNamespace(object):
             Iterable[client.V1Namespace]: an Iterable containing all the Kubernetes namespaces relatively to Kathara.
         """
         return self.client.list_namespace(label_selector="app=kathara").items
+
+    def get_namespace(self, lab_hash: str) -> Optional[client.V1Namespace]:
+        """Return an Iterable containing all the Kubernetes namespaces relatively to Kathara.
+
+        Returns:
+            Iterable[client.V1Namespace]: an Iterable containing all the Kubernetes namespaces relatively to Kathara.
+        """
+        namespace = self.client.list_namespace(label_selector=f"kubernetes.io/metadata.name={lab_hash}").items
+        return namespace.pop() if namespace else None
