@@ -136,18 +136,29 @@ class KubernetesManager(IManager):
             if event['object'].status.phase == 'Active':
                 w.stop()
 
-    def _wait_machines_startup(self, lab_hash, selected_machines, timeout_seconds=1, limit=None):
+    def _wait_machines_startup(self, lab_hash, selected_machines):
         w = watch.Watch()
         machines_ready = set()
-        for event in w.stream(self.k8s_namespace.client.list_namespaced_pod,
-                              namespace=lab_hash):
+        for event in w.stream(self.k8s_namespace.client.list_namespaced_pod, namespace=lab_hash):
+            machine_name = event['object'].metadata.labels['name']
+            if machine_name in selected_machines:
+                logging.debug(f"Event: {event['type']} pod {event['object'].metadata.name} for device {machine_name}")
 
-            if event['object'].metadata.labels['name'] in selected_machines:
-                print(f"Event: {event['type']} pod {event['object'].metadata.name} for device "
-                      f"{event['object'].metadata.labels['name']}")
-
-                if event['object'].status.container_statuses and event['object'].status.container_statuses[0].ready:
-                    machines_ready.add(event['object'].metadata.labels['name'])
+                if event['object'].status.container_statuses:
+                    restart_count = event['object'].status.container_statuses[0].restart_count
+                    if event['object'].status.container_statuses[0].ready:
+                        machines_ready.add(machine_name)
+                    elif restart_count > 0:
+                        if restart_count >= 3:
+                            logging.warning(
+                                f"Stopping to wait device `{machine_name}` since it restarted more than 5 times. "
+                                f"For a detailed log use the following command:\n\t"
+                                f"kubectl -n {lab_hash} describe pod {event['object'].metadata.name}"
+                            )
+                            selected_machines.discard(machine_name)
+                        elif event['object'].status.container_statuses[0].state.waiting and \
+                                event['object'].status.container_statuses[0].state.waiting.reason == "CrashLoopBackOff":
+                            logging.warning(f"Device `{machine_name}` has been restarted {restart_count} times.")
 
             if selected_machines - machines_ready == set():
                 w.stop()
@@ -314,7 +325,28 @@ class KubernetesManager(IManager):
 
         # If no machines are selected or there are no running machines, undeploy the namespace
         if not selected_machines or len(running_machines - selected_machines) <= 0:
+            logging.debug(f"Waiting for namespace deleting...")
             self.k8s_namespace.undeploy(lab_hash=lab_hash)
+            namespace = self.k8s_namespace.get_namespace(lab_hash)
+            while namespace:
+                namespace = self.k8s_namespace.get_namespace(lab_hash)
+                time.sleep(0.1)
+
+        else:
+            logging.debug(f"Waiting for machines cleaning...")
+            cleaned = False
+            stat = next(self.k8s_machine.get_machines_stats(lab_hash=lab_hash))
+            machines_to_be_cleaned = len(selected_machines) if selected_machines else len(running_machines)
+            while not cleaned:
+                machines_cleaned = 0
+                for _, machine_stat in stat.items():
+                    if machine_stat.name in selected_machines and machine_stat.name not in stat:
+                        machines_cleaned += 1
+                if machines_cleaned == machines_to_be_cleaned:
+                    cleaned = True
+                logging.debug(f"Cleaned Machines: {machines_cleaned}/{machines_to_be_cleaned}")
+                stat = next(self.k8s_machine.get_machines_stats(lab_hash=lab_hash))
+                time.sleep(0.1)
 
     def wipe(self, all_users: bool = False) -> None:
         """Undeploy all the running network scenarios.
