@@ -125,32 +125,31 @@ class KubernetesManager(IManager):
             except MachineNotFoundError:
                 retry = True
 
-        self._wait_machines_startup(lab.hash, selected_machines if selected_machines else list(lab.machines.keys()))
+        self._wait_machines_startup(lab.hash, selected_machines if selected_machines else set(lab.machines.keys()))
 
     def _wait_namespace_creation(self, lab_hash, timeout_seconds=1, limit=None):
         w = watch.Watch()
         for event in w.stream(self.k8s_namespace.client.list_namespace,
-                              timeout_seconds=timeout_seconds,
-                              label_selector=f"kubernetes.io/metadata.name={lab_hash}",
-                              limit=limit):
-            if event['type'] == "ADDED":
-                print(f"Event: {event['type']} namespace {event['object'].metadata.name} for this network scenario")
+                              label_selector=f"kubernetes.io/metadata.name={lab_hash}"):
+            print(f"Event: {event['type']} namespace {event['object'].metadata.name} for this network scenario")
+
+            if event['object'].status.phase == 'Active':
                 w.stop()
 
     def _wait_machines_startup(self, lab_hash, selected_machines, timeout_seconds=1, limit=None):
         w = watch.Watch()
-        machines_ready = []
+        machines_ready = set()
         for event in w.stream(self.k8s_namespace.client.list_namespaced_pod,
-                              namespace=lab_hash,
-                              timeout_seconds=timeout_seconds,
-                              limit=limit):
+                              namespace=lab_hash):
 
-            if event['object'].metadata.labels['name'] in selected_machines and event['type'] == "ADDED":
-                print(
-                    f"Event: {event['type']} pod {event['object'].metadata.name} for device "
-                    f"{event['object'].metadata.labels['name']}")
-                machines_ready.append(event['object'].metadata.name)
-            if machines_ready == selected_machines:
+            if event['object'].metadata.labels['name'] in selected_machines:
+                print(f"Event: {event['type']} pod {event['object'].metadata.name} for device "
+                      f"{event['object'].metadata.labels['name']}")
+
+                if event['object'].status.container_statuses and event['object'].status.container_statuses[0].ready:
+                    machines_ready.add(event['object'].metadata.labels['name'])
+
+            if selected_machines - machines_ready == set():
                 w.stop()
 
     def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
