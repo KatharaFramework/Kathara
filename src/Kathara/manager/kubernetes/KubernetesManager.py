@@ -1,7 +1,6 @@
 import io
 import json
 import logging
-import time
 from typing import Set, Dict, Generator, Any, List, Tuple, Optional
 
 from kubernetes import client, watch
@@ -113,55 +112,6 @@ class KubernetesManager(IManager):
                 raise LabAlreadyExistsError("Previous lab execution is still terminating. Please wait.")
             else:
                 raise e
-
-        self._wait_namespace_creation(lab.hash)
-
-        stat = None
-        retry = True
-        while retry:
-            try:
-                retry = False
-                stat = next(self.k8s_machine.get_machines_stats(lab_hash=lab.hash))
-            except MachineNotFoundError:
-                retry = True
-
-        self._wait_machines_startup(lab.hash, selected_machines if selected_machines else set(lab.machines.keys()))
-
-    def _wait_namespace_creation(self, lab_hash, timeout_seconds=1, limit=None):
-        w = watch.Watch()
-        for event in w.stream(self.k8s_namespace.client.list_namespace,
-                              label_selector=f"kubernetes.io/metadata.name={lab_hash}"):
-            logging.debug(f"Event: {event['type']} namespace {event['object'].metadata.name} for this network scenario")
-
-            if event['object'].status.phase == 'Active':
-                w.stop()
-
-    def _wait_machines_startup(self, lab_hash, selected_machines):
-        w = watch.Watch()
-        machines_ready = set()
-        for event in w.stream(self.k8s_namespace.client.list_namespaced_pod, namespace=lab_hash):
-            machine_name = event['object'].metadata.labels['name']
-            if machine_name in selected_machines:
-                logging.debug(f"Event: {event['type']} pod {event['object'].metadata.name} for device {machine_name}")
-
-                if event['object'].status.container_statuses:
-                    restart_count = event['object'].status.container_statuses[0].restart_count
-                    if event['object'].status.container_statuses[0].ready:
-                        machines_ready.add(machine_name)
-                    elif restart_count > 0:
-                        if restart_count >= 3:
-                            logging.warning(
-                                f"Stopping to wait device `{machine_name}` since it restarted more than 3 times. "
-                                f"For a detailed log use the following command:\n\t"
-                                f"kubectl -n {lab_hash} describe pod {event['object'].metadata.name}"
-                            )
-                            selected_machines.discard(machine_name)
-                        elif event['object'].status.container_statuses[0].state.waiting and \
-                                event['object'].status.container_statuses[0].state.waiting.reason == "CrashLoopBackOff":
-                            logging.warning(f"Device `{machine_name}` has been restarted {restart_count} times.")
-
-            if selected_machines - machines_ready == set():
-                w.stop()
 
     def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
         """Connect a Kathara device to a collision domain.
@@ -327,26 +277,6 @@ class KubernetesManager(IManager):
         if not selected_machines or len(running_machines - selected_machines) <= 0:
             logging.debug(f"Waiting for namespace deleting...")
             self.k8s_namespace.undeploy(lab_hash=lab_hash)
-            namespace = self.k8s_namespace.get_namespace(lab_hash)
-            while namespace:
-                namespace = self.k8s_namespace.get_namespace(lab_hash)
-                time.sleep(0.1)
-
-        else:
-            logging.debug(f"Waiting for machines cleaning...")
-            cleaned = False
-            stat = next(self.k8s_machine.get_machines_stats(lab_hash=lab_hash))
-            machines_to_be_cleaned = len(selected_machines) if selected_machines else len(running_machines)
-            while not cleaned:
-                machines_cleaned = 0
-                for _, machine_stat in stat.items():
-                    if machine_stat.name in selected_machines and machine_stat.name not in stat:
-                        machines_cleaned += 1
-                if machines_cleaned == machines_to_be_cleaned:
-                    cleaned = True
-                logging.debug(f"Cleaned Machines: {machines_cleaned}/{machines_to_be_cleaned}")
-                stat = next(self.k8s_machine.get_machines_stats(lab_hash=lab_hash))
-                time.sleep(0.1)
 
     def wipe(self, all_users: bool = False) -> None:
         """Undeploy all the running network scenarios.
@@ -766,3 +696,4 @@ class KubernetesManager(IManager):
             str: A formatted string containing the current manager name.
         """
         return "Kubernetes (Megalos)"
+

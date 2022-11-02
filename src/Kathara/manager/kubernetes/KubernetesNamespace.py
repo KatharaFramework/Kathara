@@ -1,6 +1,7 @@
+import logging
 from typing import Optional, Iterable
 
-from kubernetes import client
+from kubernetes import client, watch
 from kubernetes.client.api import core_v1_api
 from kubernetes.client.rest import ApiException
 
@@ -31,8 +32,18 @@ class KubernetesNamespace(object):
 
         try:
             self.client.create_namespace(namespace_definition)
+            self._wait_namespace_creation(lab.hash)
         except ApiException:
             return None
+
+    def _wait_namespace_creation(self, lab_hash):
+        w = watch.Watch()
+        for event in w.stream(self.client.list_namespace,
+                              label_selector=f"kubernetes.io/metadata.name={lab_hash}"):
+            logging.debug(f"Event: {event['type']} namespace {event['object'].metadata.name} for this network scenario")
+
+            if event['object'].status.phase == 'Active':
+                w.stop()
 
     def undeploy(self, lab_hash: str = None) -> None:
         """Delete the Kubernetes namespace corresponding to the lab_hash.
@@ -45,8 +56,18 @@ class KubernetesNamespace(object):
         """
         try:
             self.client.delete_namespace(lab_hash)
+            self._wait_namespace_deletion(lab_hash)
         except ApiException:
             return
+
+    def _wait_namespace_deletion(self, lab_hash):
+        w = watch.Watch()
+        for event in w.stream(self.client.list_namespace,
+                              label_selector=f"kubernetes.io/metadata.name={lab_hash}"):
+            logging.debug(f"Event: {event['type']} namespace {event['object'].metadata.name} for this network scenario")
+
+            if event['type'] == "DELETED":
+                w.stop()
 
     def wipe(self) -> None:
         """Delete all the Kathara Kubernetes namespaces.

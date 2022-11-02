@@ -13,6 +13,7 @@ from kubernetes.client.api import apps_v1_api
 from kubernetes.client.api import core_v1_api
 from kubernetes.client.rest import ApiException
 from kubernetes.stream import stream
+from kubernetes.watch import watch
 
 from .KubernetesConfigMap import KubernetesConfigMap
 from .KubernetesNamespace import KubernetesNamespace
@@ -144,8 +145,6 @@ class KubernetesMachine(object):
         # Do not open terminals on Megalos
         Setting.get_instance().open_terminals = False
 
-        EventDispatcher.get_instance().dispatch("machines_deploy_started", items=machines)
-
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
         # If not, they're started sequentially
@@ -161,7 +160,41 @@ class KubernetesMachine(object):
             for item in machines:
                 self._deploy_machine(item)
 
-        EventDispatcher.get_instance().dispatch("machines_deploy_ended")
+        self._wait_machines_startup(lab.hash, selected_machines if selected_machines else set(lab.machines.keys()))
+
+    def _wait_machines_startup(self, lab_hash, selected_machines):
+        EventDispatcher.get_instance().dispatch("machines_deploy_started", items=selected_machines)
+        w = watch.Watch()
+        machines_ready = 0
+        machines_failed = 0
+        for event in w.stream(self.kubernetes_namespace.client.list_namespaced_pod, namespace=lab_hash):
+            machine_name = event['object'].metadata.labels['name']
+            if not selected_machines or machine_name in selected_machines:
+                logging.debug(f"Event: {event['type']} pod {event['object'].metadata.name} for device {machine_name}")
+
+                if event['object'].status.container_statuses:
+                    restart_count = event['object'].status.container_statuses[0].restart_count
+                    if event['object'].status.container_statuses[0].ready:
+                        machines_ready += 1
+                        logging.debug(f"Device `{machine_name}` ready.")
+                        EventDispatcher.get_instance().dispatch("machine_deployed", item=machine_name)
+                    elif restart_count > 0:
+                        if restart_count >= 3:
+                            logging.warning(
+                                f"Stopping to wait device `{machine_name}` since it restarted more than 3 times. "
+                                f"For a detailed log use the following command:\n\t"
+                                f"kubectl -n {lab_hash} describe pod {event['object'].metadata.name}"
+                            )
+                            machines_failed += 1
+                        elif event['object'].status.container_statuses[0].state.waiting and \
+                                event['object'].status.container_statuses[0].state.waiting.reason == "CrashLoopBackOff":
+                            logging.warning(f"Device `{machine_name}` has been restarted {restart_count} times.")
+
+            if machines_ready == len(selected_machines):
+                EventDispatcher.get_instance().dispatch("machines_deploy_ended")
+
+            if machines_ready + machines_failed == len(selected_machines):
+                w.stop()
 
     def _deploy_machine(self, machine_item: Tuple[str, Machine]) -> None:
         """Deploy a Kubernetes deployment from the Kathara device contained in machine_item.
@@ -175,8 +208,6 @@ class KubernetesMachine(object):
         (_, machine) = machine_item
 
         self.create(machine)
-
-        EventDispatcher.get_instance().dispatch("machine_deployed", item=machine)
 
     def create(self, machine: Machine) -> None:
         """Create a Kubernetes deployment and a Pod representing the device and assign it to machine.api_object.
@@ -400,6 +431,8 @@ class KubernetesMachine(object):
         pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash)
         if selected_machines is not None and len(selected_machines) > 0:
             pods = [item for item in pods if item.metadata.labels["name"] in selected_machines]
+        else:
+            selected_machines = {item.metadata.labels["name"] for item in pods}
 
         if len(pods) > 0:
             pool_size = utils.get_pool_size()
@@ -407,12 +440,28 @@ class KubernetesMachine(object):
 
             items = utils.chunk_list(pods, pool_size)
 
-            EventDispatcher.get_instance().dispatch("machines_undeploy_started", items=pods)
-
             for chunk in items:
                 machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
-            EventDispatcher.get_instance().dispatch("machines_undeploy_ended")
+            self._wait_machines_shutdown(lab_hash, selected_machines)
+
+    def _wait_machines_shutdown(self, lab_hash, selected_machines):
+        EventDispatcher.get_instance().dispatch("machines_undeploy_started", items=selected_machines)
+        w = watch.Watch()
+        machines_cleaned = 0
+        for event in w.stream(self.kubernetes_namespace.client.list_namespaced_pod, namespace=lab_hash):
+            machine_name = event['object'].metadata.labels['name']
+            if machine_name in selected_machines:
+                logging.debug(f"Event: {event['type']} pod {event['object'].metadata.name} for device {machine_name}")
+
+                if event['type'] == "DELETED":
+                    EventDispatcher.get_instance().dispatch("machine_undeployed", item=machine_name)
+                    machines_cleaned += 1
+
+            if machines_cleaned == len(selected_machines):
+                logging.debug(f"All selected devices cleaned.")
+                EventDispatcher.get_instance().dispatch("machines_undeploy_ended")
+                w.stop()
 
     def wipe(self) -> None:
         """Undeploy all the running Kubernetes deployments and Pods.
@@ -441,8 +490,6 @@ class KubernetesMachine(object):
         """
 
         self._delete_machine(pod_api_object)
-
-        EventDispatcher.get_instance().dispatch("machine_undeployed", item=pod_api_object)
 
     def _delete_machine(self, pod_api_object: client.V1Pod) -> None:
         """Delete the Kubernetes deployment and Pod associated to pod_api_object.
