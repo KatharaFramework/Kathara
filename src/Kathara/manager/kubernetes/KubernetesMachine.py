@@ -162,7 +162,29 @@ class KubernetesMachine(object):
 
         self._wait_machines_startup(lab.hash, selected_machines if selected_machines else set(lab.machines.keys()))
 
-    def _wait_machines_startup(self, lab_hash, selected_machines):
+    def _deploy_machine(self, machine_item: Tuple[str, Machine]) -> None:
+        """Deploy a Kubernetes deployment from the Kathara device contained in machine_item.
+
+        Args:
+           machine_item (Tuple[str, Machine]): A tuple composed by the name of the device and a device object
+
+        Returns:
+           None
+        """
+        (_, machine) = machine_item
+
+        self.create(machine)
+
+    def _wait_machines_startup(self, lab_hash: str, selected_machines: Set[str]) -> None:
+        """Wait the startup of the selected machines. Return when the selected machines become `Ready`.
+
+        Args:
+            lab_hash (str): The hash of the network scenario of the devices to wait.
+            selected_machines (Set[str]): A set containing the name of the devices to wait.
+
+        Returns:
+            None
+        """
         EventDispatcher.get_instance().dispatch("machines_deploy_started", items=selected_machines)
         w = watch.Watch()
         machines_ready = 0
@@ -195,19 +217,6 @@ class KubernetesMachine(object):
 
             if machines_ready + machines_failed == len(selected_machines):
                 w.stop()
-
-    def _deploy_machine(self, machine_item: Tuple[str, Machine]) -> None:
-        """Deploy a Kubernetes deployment from the Kathara device contained in machine_item.
-
-        Args:
-           machine_item (Tuple[str, Machine]): A tuple composed by the name of the device and a device object
-
-        Returns:
-           None
-        """
-        (_, machine) = machine_item
-
-        self.create(machine)
 
     def create(self, machine: Machine) -> None:
         """Create a Kubernetes deployment and a Pod representing the device and assign it to machine.api_object.
@@ -445,24 +454,6 @@ class KubernetesMachine(object):
 
             self._wait_machines_shutdown(lab_hash, selected_machines)
 
-    def _wait_machines_shutdown(self, lab_hash, selected_machines):
-        EventDispatcher.get_instance().dispatch("machines_undeploy_started", items=selected_machines)
-        w = watch.Watch()
-        machines_cleaned = 0
-        for event in w.stream(self.kubernetes_namespace.client.list_namespaced_pod, namespace=lab_hash):
-            machine_name = event['object'].metadata.labels['name']
-            if machine_name in selected_machines:
-                logging.debug(f"Event: {event['type']} pod {event['object'].metadata.name} for device {machine_name}")
-
-                if event['type'] == "DELETED":
-                    EventDispatcher.get_instance().dispatch("machine_undeployed", item=machine_name)
-                    machines_cleaned += 1
-
-            if machines_cleaned == len(selected_machines):
-                logging.debug(f"All selected devices cleaned.")
-                EventDispatcher.get_instance().dispatch("machines_undeploy_ended")
-                w.stop()
-
     def wipe(self) -> None:
         """Undeploy all the running Kubernetes deployments and Pods.
 
@@ -527,6 +518,33 @@ class KubernetesMachine(object):
                                                      )
         except ApiException:
             return
+
+    def _wait_machines_shutdown(self, lab_hash: str, selected_machines: Set[str]):
+        """Wait the shutdown of the selected machines. Return when all the selected machines are terminated.
+
+        Args:
+            lab_hash (str): The hash of the network scenario of the devices to wait.
+            selected_machines (Set[str]): A set containing the name of the devices to wait.
+
+        Returns:
+            None
+        """
+        EventDispatcher.get_instance().dispatch("machines_undeploy_started", items=selected_machines)
+        w = watch.Watch()
+        machines_cleaned = 0
+        for event in w.stream(self.kubernetes_namespace.client.list_namespaced_pod, namespace=lab_hash):
+            machine_name = event['object'].metadata.labels['name']
+            if machine_name in selected_machines:
+                logging.debug(f"Event: {event['type']} pod {event['object'].metadata.name} for device {machine_name}")
+
+                if event['type'] == "DELETED":
+                    EventDispatcher.get_instance().dispatch("machine_undeployed", item=machine_name)
+                    machines_cleaned += 1
+
+            if machines_cleaned == len(selected_machines):
+                logging.debug(f"All selected devices cleaned.")
+                EventDispatcher.get_instance().dispatch("machines_undeploy_ended")
+                w.stop()
 
     def connect(self, lab_hash: str, machine_name: str, shell: Union[str, List[str]] = None, logs: bool = False) \
             -> None:

@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Set, Dict, Generator, Any, List, Tuple, Optional
 
-from kubernetes import client, watch
+from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from .KubernetesConfig import KubernetesConfig
@@ -290,9 +290,6 @@ class KubernetesManager(IManager):
         """
         if all_users:
             logging.warning("User-specific options have no effect on Megalos.")
-
-        self.k8s_machine.wipe()
-        self.k8s_link.wipe()
 
         self.k8s_namespace.wipe()
 
@@ -696,4 +693,3 @@ class KubernetesManager(IManager):
             str: A formatted string containing the current manager name.
         """
         return "Kubernetes (Megalos)"
-
