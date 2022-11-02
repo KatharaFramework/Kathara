@@ -131,7 +131,7 @@ class KubernetesManager(IManager):
         w = watch.Watch()
         for event in w.stream(self.k8s_namespace.client.list_namespace,
                               label_selector=f"kubernetes.io/metadata.name={lab_hash}"):
-            print(f"Event: {event['type']} namespace {event['object'].metadata.name} for this network scenario")
+            logging.debug(f"Event: {event['type']} namespace {event['object'].metadata.name} for this network scenario")
 
             if event['object'].status.phase == 'Active':
                 w.stop()
@@ -151,7 +151,7 @@ class KubernetesManager(IManager):
                     elif restart_count > 0:
                         if restart_count >= 3:
                             logging.warning(
-                                f"Stopping to wait device `{machine_name}` since it restarted more than 5 times. "
+                                f"Stopping to wait device `{machine_name}` since it restarted more than 3 times. "
                                 f"For a detailed log use the following command:\n\t"
                                 f"kubectl -n {lab_hash} describe pod {event['object'].metadata.name}"
                             )
