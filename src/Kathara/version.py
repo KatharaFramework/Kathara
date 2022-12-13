@@ -1,6 +1,6 @@
 from typing import Tuple
 
-CURRENT_VERSION = "3.5.1"
+CURRENT_VERSION = "3.5.2"
 
 
 def parse(version: str) -> Tuple:

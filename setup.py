@@ -7,7 +7,7 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages('src'),
     py_modules=['kathara'],
-    version='3.5.1',
+    version='3.5.2',
     license='gpl-3.0',
     description='A lightweight container based emulation system.',
     author='Kathara Framework',
@@ -27,7 +27,7 @@ setup(
         "pyroute2>=0.5.19",
         "progressbar2>=1.14.0",
         "libtmux>=0.8.2; platform_system == 'darwin' or platform_system == 'linux'",
-        "pyuv @ git+https://github.com/saghul/pyuv@master#egg=pyuv",
+        "pyuv-kathara",
         "appscript>=1.1.0; platform_system == 'darwin'",
         "pypiwin32>=223; platform_system == 'win32'",
         "windows-curses>=2.1.0; platform_system == 'win32'"
