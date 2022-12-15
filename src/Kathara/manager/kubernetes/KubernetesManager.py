@@ -180,6 +180,8 @@ class KubernetesManager(IManager):
         self.k8s_link.undeploy(machine.lab.hash, selected_links=networks_to_delete)
 
         if len(running_machines) <= 0:
+            logging.debug("Waiting for namespace deletion...")
+
             self.k8s_namespace.undeploy(lab_hash=machine.lab.hash)
 
     def undeploy_link(self, link: Link) -> None:
@@ -275,7 +277,8 @@ class KubernetesManager(IManager):
 
         # If no machines are selected or there are no running machines, undeploy the namespace
         if not selected_machines or len(running_machines - selected_machines) <= 0:
-            logging.debug(f"Waiting for namespace deleting...")
+            logging.debug("Waiting for namespace deletion...")
+
             self.k8s_namespace.undeploy(lab_hash=lab_hash)
 
     def wipe(self, all_users: bool = False) -> None:
