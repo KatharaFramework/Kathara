@@ -100,6 +100,10 @@ class MachineNotReadyError(Exception):
         super().__init__(f"Device `{machine_name}` is not ready.")
 
 
+class MachineShellError(Exception):
+    pass
+
+
 # Link Exceptions
 class LinkNotFoundError(Exception):
     pass
