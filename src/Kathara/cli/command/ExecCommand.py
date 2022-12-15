@@ -80,7 +80,7 @@ class ExecCommand(Command):
             except (Exception, IOError):
                 lab = Lab(None, path=lab_path)
 
-        exec_output = Kathara.get_instance().exec(args['machine_name'], args['command'].pop(), lab_hash=lab.hash)
+        exec_output = Kathara.get_instance().exec(args['machine_name'], args['command'], lab_hash=lab.hash)
 
         try:
             while True:

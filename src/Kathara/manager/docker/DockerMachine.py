@@ -2,7 +2,7 @@ import logging
 import shlex
 from itertools import islice
 from multiprocessing.dummy import Pool
-from typing import List, Dict, Generator, Optional, Set, Tuple
+from typing import List, Dict, Generator, Optional, Set, Tuple, Union
 
 import docker.models.containers
 from docker import DockerClient
@@ -12,7 +12,8 @@ from .DockerImage import DockerImage
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError, DockerPluginError
+from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError, DockerPluginError, \
+    MachineShellError
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine
@@ -415,11 +416,12 @@ class DockerMachine(object):
                                         )
         except APIError as e:
             if machine.api_object.labels['shell'] in e.explanation and \
-                        ('no such file or directory' in e.explanation or 'not found' in e.explanation):
-                logging.warning(f"Shell '{machine.api_object.labels['shell']}' not found for device '{machine.name}' "
-                                f"({machine.api_object.image}). "
+                    ('no such file or directory' in e.explanation or 'not found' in e.explanation):
+                logging.warning(f"Shell `{machine.api_object.labels['shell']}` not found in "
+                                f"image `{machine.get_image()}` of device `{machine.name}`. "
                                 f"Startup commands will not be executed and terminal will not open. "
-                                f"Please specify a valid shell.")
+                                f"Please specify a valid shell for this device."
+                                )
             else:
                 raise e
 
@@ -514,30 +516,29 @@ class DockerMachine(object):
 
         logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
 
-        if logs and Setting.get_instance().print_startup_log:
-            exec_output = self.exec(lab_hash,
-                                    machine_name,
-                                    user=user,
-                                    command="cat /var/log/shared.log /var/log/startup.log",
-                                    tty=False
-                                    )
-
-            startup_output = ""
-            try:
-                while True:
-                    (stdout, _) = next(exec_output)
-                    startup_output += stdout.decode('utf-8') if stdout else ""
-            except pywintypes.error as e:
-                (code, reason, _) = e.args
-                if code == 109 and reason == 'ReadFile':
-                    pass
-            except StopIteration:
+        # Get the logs, if the command fails it means that the shell is not found.
+        exec_output = self.exec(lab_hash,
+                                machine_name,
+                                user=user,
+                                command="cat /var/log/shared.log /var/log/startup.log",
+                                tty=False
+                                )
+        startup_output = ""
+        try:
+            while True:
+                (stdout, _) = next(exec_output)
+                startup_output += stdout.decode('utf-8') if stdout else ""
+        except pywintypes.error as e:
+            (code, reason, _) = e.args
+            if code == 109 and reason == 'ReadFile':
                 pass
+        except StopIteration:
+            pass
 
-            if startup_output:
-                print("--- Startup Commands Log\n")
-                print(startup_output)
-                print("--- End Startup Commands Log\n")
+        if startup_output and logs and Setting.get_instance().print_startup_log:
+            print("--- Startup Commands Log\n")
+            print(startup_output)
+            print("--- End Startup Commands Log\n")
 
         resp = self.client.api.exec_create(container.id,
                                            shell,
@@ -563,7 +564,7 @@ class DockerMachine(object):
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
-    def exec(self, lab_hash: str, machine_name: str, command: str, user: str = None,
+    def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], user: str = None,
              tty: bool = True) -> Generator[Tuple[bytes, bytes], None, None]:
         """Execute the command on the Docker container specified by the lab_hash and the machine_name.
 
@@ -571,7 +572,7 @@ class DockerMachine(object):
             lab_hash (str): The hash of the network scenario containing the device.
             machine_name (str): The name of the device.
             user (str): The name of a current user on the host.
-            command (str): The command to execute.
+            command (Union[str, List]): The command to execute.
             tty (bool): If True, open a new tty.
 
         Returns:
@@ -587,6 +588,8 @@ class DockerMachine(object):
             raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
         container = containers.pop()
 
+        command = command if type(command) == str else " ".join(command)
+
         exec_result = container.exec_run(cmd=[container.labels['shell'], '-c', command],
                                          stdout=True,
                                          stderr=True,
@@ -597,7 +600,21 @@ class DockerMachine(object):
                                          detach=False
                                          )
 
-        return exec_result.output
+        while True:
+            try:
+                result = next(exec_result.output)
+                (stdout, stderr) = result
+                exec_output = stdout.decode('utf-8') if stdout else ""
+
+                if container.labels['shell'] in exec_output and \
+                        ('no such file or directory' in exec_output or 'not found' in exec_output):
+                    raise MachineShellError(f"Shell `{container.labels['shell']}` not found in "
+                                            f"image `{container.image.tags[0]}` of device `{container.labels['name']}`."
+                                            )
+
+                yield result
+            except StopIteration:
+                return
 
     @staticmethod
     def copy_files(machine_api_object: docker.models.containers.Container, path: str, tar_data: bytes) -> None:
@@ -714,10 +731,10 @@ class DockerMachine(object):
             except APIError as e:
                 if container.labels['shell'] in e.explanation and \
                         ('no such file or directory' in e.explanation or 'not found' in e.explanation):
-                    logging.warning(
-                        f"Shell '{container.labels['shell']}' not found for device '{container.labels['name']}' "
-                        f"({container.image}). "
-                        f"Shutdown commands will not be executed.")
+                    logging.warning(f"Shell `{container.labels['shell']}` not found in "
+                                    f"image `{container.image.tags[0]}` of device `{container.labels['name']}`. "
+                                    f"Shutdown commands will not be executed."
+                                    )
                 else:
                     raise e
         container.remove(force=True)

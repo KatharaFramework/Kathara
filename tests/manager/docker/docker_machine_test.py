@@ -3,7 +3,6 @@ from unittest import mock
 from unittest.mock import Mock
 
 import pytest
-from docker.errors import APIError
 
 sys.path.insert(0, './')
 
@@ -427,7 +426,7 @@ def test_exec(mock_get_machines_api_objects_by_filters, docker_machine, default_
         'output': (None, None),
     })
     default_device.api_object.exec_run.return_value = exec_run_mock
-    docker_machine.exec(default_device.lab, "test_device", "kathara --help", tty=False)
+    docker_machine.exec(default_device.lab.hash, "test_device", "kathara --help", tty=False)
     default_device.api_object.exec_run.assert_called_once_with(
         cmd="kathara --help",
         stdout=True,
