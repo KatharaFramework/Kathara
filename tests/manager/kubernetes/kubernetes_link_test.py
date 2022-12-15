@@ -30,8 +30,8 @@ class FakeManager(object):
     def __enter__(self):
         return self
 
-    def dict(self):
-        return {}
+    def dict(self, init_dict):
+        return init_dict
 
     def __exit__(self, exit_type, value, traceback):
         return True
@@ -281,9 +281,12 @@ def test_deploy_link_collision(mock_create, kubernetes_link, default_link):
 #
 # TEST: deploy_links
 #
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._deploy_link")
 @mock.patch("multiprocessing.managers.SyncManager", new=FakeManager)
-def test_deploy_links(mock_deploy_link, kubernetes_link):
+def test_deploy_links(mock_deploy_link, mock_get_links_by_filters, kubernetes_link):
+    mock_get_links_by_filters.return_value = []
+
     lab = Lab("Default scenario")
     link_a = lab.get_or_new_link("A")
     link_b = lab.get_or_new_link("B")

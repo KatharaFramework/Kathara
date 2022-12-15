@@ -34,6 +34,7 @@ def default_device(mock_docker_container):
     device.add_meta("bridged", False)
     device.api_object = mock_docker_container
     device.api_object.attrs = {"NetworkSettings": {"Networks": []}}
+    device.api_object.labels = {"user": "user", "name": "test_device", "lab_hash": "lab_hash", "shell": "/bin/bash"}
     return device
 
 
@@ -418,17 +419,33 @@ def test_undeploy_machine(mock_delete_machine, docker_machine, default_device):
 #
 # TEST: exec
 #
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
-def test_exec(mock_get_machines_api_objects_by_filters, docker_machine, default_device):
+def test_exec(mock_get_machines_api_objects_by_filters, mock_setting_get_instance, docker_machine, default_device):
     mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cd': False,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
     exec_run_mock = Mock()
     exec_run_mock.configure_mock(**{
-        'output': (None, None),
+        'output': iter([(None, None)]),
     })
     default_device.api_object.exec_run.return_value = exec_run_mock
-    docker_machine.exec(default_device.lab.hash, "test_device", "kathara --help", tty=False)
+    result = docker_machine.exec(default_device.lab.hash, "test_device", "kathara --help", tty=False)
+    next(result)
+
     default_device.api_object.exec_run.assert_called_once_with(
-        cmd="kathara --help",
+        cmd=["/bin/bash", "-c", "kathara --help"],
         stdout=True,
         stderr=True,
         tty=False,
