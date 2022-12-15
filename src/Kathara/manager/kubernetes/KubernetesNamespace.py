@@ -64,24 +64,24 @@ class KubernetesNamespace(object):
         self._wait_namespaces_deletion(label_selector="app=kathara")
 
     def get_all(self) -> Iterable[client.V1Namespace]:
-        """Return an Iterable containing all the Kubernetes namespaces relatively to Kathara.
+        """Return an Iterable containing all the Kubernetes namespaces related to Kathara.
 
         Returns:
-            Iterable[client.V1Namespace]: an Iterable containing all the Kubernetes namespaces relatively to Kathara.
+            Iterable[client.V1Namespace]: an Iterable containing all the Kubernetes namespaces related to Kathara.
         """
         return self.client.list_namespace(label_selector="app=kathara").items
 
     def get_namespace(self, lab_hash: str) -> Optional[client.V1Namespace]:
-        """Return an Iterable containing all the Kubernetes namespaces relatively to Kathara.
+        """Return an Iterable containing all the Kubernetes namespaces related to Kathara.
 
         Returns:
-            Iterable[client.V1Namespace]: an Iterable containing all the Kubernetes namespaces relatively to Kathara.
+            Iterable[client.V1Namespace]: an Iterable containing all the Kubernetes namespaces related to Kathara.
         """
         namespace = self.client.list_namespace(label_selector=f"kubernetes.io/metadata.name={lab_hash}").items
         return namespace.pop() if namespace else None
 
     def _wait_namespace_creation(self, lab_hash: str) -> None:
-        """Wait the creation of the specified Kubernetes Namespace. Return when the namespace becomes `Active`.
+        """Wait the creation of the specified Kubernetes Namespace. Returns when the namespace becomes `Active`.
 
         Args:
             lab_hash (str): The name of the Kubernetes Namespace to wait.
@@ -92,7 +92,7 @@ class KubernetesNamespace(object):
         w = watch.Watch()
         for event in w.stream(self.client.list_namespace,
                               label_selector=f"kubernetes.io/metadata.name={lab_hash}"):
-            logging.debug(f"Event: {event['type']} namespace {event['object'].metadata.name} for this network scenario")
+            logging.debug(f"Event: {event['type']} - Namespace: {event['object'].metadata.name}")
 
             if event['object'].status.phase == 'Active':
                 w.stop()
@@ -111,10 +111,8 @@ class KubernetesNamespace(object):
         if namespaces_to_delete > 0:
             w = watch.Watch()
             deleted_namespaces = 0
-            for event in w.stream(self.client.list_namespace,
-                                  label_selector=label_selector):
-                logging.debug(
-                    f"Event: {event['type']} namespace {event['object'].metadata.name} for this network scenario")
+            for event in w.stream(self.client.list_namespace, label_selector=label_selector):
+                logging.debug(f"Event: {event['type']} - Namespace: {event['object'].metadata.name}")
 
                 if event['type'] == "DELETED":
                     deleted_namespaces += 1
