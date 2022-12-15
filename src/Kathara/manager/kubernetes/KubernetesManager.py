@@ -275,6 +275,7 @@ class KubernetesManager(IManager):
 
         # If no machines are selected or there are no running machines, undeploy the namespace
         if not selected_machines or len(running_machines - selected_machines) <= 0:
+            logging.debug(f"Waiting for namespace deleting...")
             self.k8s_namespace.undeploy(lab_hash=lab_hash)
 
     def wipe(self, all_users: bool = False) -> None:
@@ -289,9 +290,6 @@ class KubernetesManager(IManager):
         """
         if all_users:
             logging.warning("User-specific options have no effect on Megalos.")
-
-        self.k8s_machine.wipe()
-        self.k8s_link.wipe()
 
         self.k8s_namespace.wipe()
 
