@@ -210,7 +210,7 @@ class KubernetesMachine(object):
                                 event['object'].status.container_statuses[0].state.waiting.reason == "CrashLoopBackOff":
                             logging.warning(f"Device `{machine_name}` has been restarted {restart_count} times.")
 
-            if machines_ready + machines_failed == len(selected_machines):
+            if machines_ready + machines_failed == len(machines):
                 w.stop()
 
         if machines_ready == len(machines):
@@ -492,7 +492,6 @@ class KubernetesMachine(object):
                     machines_cleaned += 1
 
             if machines_cleaned == len(selected_machines):
-                
                 EventDispatcher.get_instance().dispatch("machines_undeploy_ended")
                 w.stop()
 

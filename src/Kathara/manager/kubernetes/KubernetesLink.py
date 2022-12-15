@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 import re
 from functools import partial
@@ -60,7 +61,10 @@ class KubernetesLink(object):
             EventDispatcher.get_instance().dispatch("links_deploy_started", items=links)
 
             with Manager() as manager:
-                network_ids = manager.dict()
+                # Read already existing VNIs before creating new networks. This will avoid VNI collisions.
+                network_ids = manager.dict({
+                    network_id: 1 for network_id in self._get_existing_network_ids()
+                })
 
                 for chunk in items:
                     link_pool.map(func=partial(self._deploy_link, network_ids), iterable=chunk)
@@ -123,7 +127,7 @@ class KubernetesLink(object):
             None
         """
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
-        if selected_links is not None and len(selected_links) > 0:
+        if selected_links is not None:
             networks = [item for item in networks if item["metadata"]["name"] in selected_links]
 
         if len(networks) > 0:
@@ -315,6 +319,20 @@ class KubernetesLink(object):
         """
         network_name = self.seed + name
         return (offset + int(hashlib.sha256(network_name.encode('utf-8')).hexdigest(), 16)) % MAX_K8S_LINK_NUMBER
+
+    def _get_existing_network_ids(self) -> List[int]:
+        """Retrieve already deployed Kubernetes network IDs (reading the network definition).
+
+        Returns:
+            List[int]: List with all deployed Kubernetes network IDs.
+        """
+        network_ids = []
+
+        for network in self.get_links_api_objects_by_filters():
+            network_config = json.loads(network['spec']['config'])
+            network_ids.append(int(network_config['vxlanId']))
+
+        return network_ids
 
     @staticmethod
     def get_network_name(name: str) -> str:
