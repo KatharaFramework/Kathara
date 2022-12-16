@@ -100,8 +100,15 @@ class MachineNotReadyError(Exception):
         super().__init__(f"Device `{machine_name}` is not ready.")
 
 
-class MachineShellError(Exception):
-    pass
+class MachineBinaryError(Exception):
+    __slots__ = ['binary', 'machine_name']
+
+    def __init__(self, binary: str, machine_name: str):
+        self.binary: str = binary
+        self.machine_name: str = machine_name
+
+    def __str__(self):
+        return f"Binary `{self.binary}` not found in device `{self.machine_name}`."
 
 
 # Link Exceptions
