@@ -21,7 +21,9 @@ from ...model.Machine import Machine
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
-OCI_RUNTIME_RE = re.compile(r"OCI runtime exec failed:(.*?)stat (.*): no such file or directory")
+OCI_RUNTIME_RE = re.compile(
+    r"OCI runtime exec failed(.*?)(stat (.*): no such file or directory|exec: \"(.*)\": executable file not found)"
+)
 
 # Known commands that each container should execute
 # Run order: shared.startup, machine.startup and machine.startup_commands
@@ -649,7 +651,7 @@ class DockerMachine(object):
         except APIError as e:
             matches = OCI_RUNTIME_RE.search(e.explanation)
             if matches:
-                raise MachineBinaryError(matches.group(2), container.labels['name'])
+                raise MachineBinaryError(matches.group(3) or matches.group(4), container.labels['name'])
 
             raise e
 
@@ -659,7 +661,7 @@ class DockerMachine(object):
             exec_stdout = (stdout_out.decode('utf-8') if type(stdout_out) == bytes else stdout_out) if stdout else ""
             matches = OCI_RUNTIME_RE.search(exec_stdout)
             if matches:
-                raise MachineBinaryError(matches.group(2), container.labels['name'])
+                raise MachineBinaryError(matches.group(3) or matches.group(4), container.labels['name'])
 
         if socket or stream:
             return {'exit_code': None, 'output': exec_output}

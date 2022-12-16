@@ -217,6 +217,28 @@ def test_get_unique_network_id_double_collision(kubernetes_link):
 
 
 #
+# TEST: _get_existing_network_ids
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_existing_network_ids_no_ids(mock_get_links_by_filters, kubernetes_link):
+    mock_get_links_by_filters.return_value = []
+
+    result = kubernetes_link._get_existing_network_ids()
+
+    assert len(result) == 0
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_get_existing_network_ids_one_id(mock_get_links_by_filters, kubernetes_link, kubernetes_network):
+    mock_get_links_by_filters.return_value = [kubernetes_network]
+
+    result = kubernetes_link._get_existing_network_ids()
+
+    assert len(result) == 1
+    assert result[0] == 1
+
+
+#
 # TEST: create
 #
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
@@ -307,6 +329,39 @@ def test_deploy_links_no_link(mock_deploy_link, kubernetes_link):
     kubernetes_link.deploy_links(lab)
 
     assert not mock_deploy_link.called
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._deploy_link")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._get_existing_network_ids")
+@mock.patch("multiprocessing.managers.SyncManager", new=FakeManager)
+def test_deploy_links_with_loaded_ids(mock_get_existing_network_ids, mock_deploy_link, kubernetes_link,
+                                      kubernetes_network):
+    mock_get_existing_network_ids.return_value = [5432]
+
+    lab = Lab("Default scenario")
+    link = lab.get_or_new_link("A")
+
+    kubernetes_link.deploy_links(lab)
+
+    mock_get_existing_network_ids.assert_called_once()
+    mock_deploy_link.assert_called_once_with({5432: 1}, (link.name, link))
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.create")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._get_existing_network_ids")
+@mock.patch("multiprocessing.managers.SyncManager", new=FakeManager)
+def test_deploy_links_with_loaded_ids_and_collision(mock_get_existing_network_ids,
+                                                    mock_create, kubernetes_link,
+                                                    kubernetes_network):
+    mock_get_existing_network_ids.return_value = [1362434]
+
+    lab = Lab("Default scenario")
+    link = lab.get_or_new_link("A")
+
+    kubernetes_link.deploy_links(lab)
+
+    mock_get_existing_network_ids.assert_called_once()
+    mock_create.assert_called_once_with(link, 1362434 + 1)
 
 
 #
