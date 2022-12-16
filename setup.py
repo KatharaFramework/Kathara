@@ -17,7 +17,7 @@ setup(
     keywords=['NETWORK-EMULATION', 'CONTAINERS', 'NFV'],
     install_requires=[
         "binaryornot>=0.4.4",
-        "docker>=4.4.4",
+        "docker>=6.0.1",
         "kubernetes>=23.3.0",
         "requests>=2.22.0",
         "coloredlogs>=10.0",

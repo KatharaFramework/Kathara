@@ -23,9 +23,9 @@ from ...model.Lab import Lab
 from ...model.Link import Link
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
-from ...utils import pack_files_for_tar
+from ...utils import pack_files_for_tar, import_pywintypes
 
-pywintypes = utils.import_pywintypes()
+pywintypes = import_pywintypes()
 
 
 def check_docker_status(method):
