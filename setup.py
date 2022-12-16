@@ -7,7 +7,7 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages('src'),
     py_modules=['kathara'],
-    version='3.5.2',
+    version='3.5.4',
     license='gpl-3.0',
     description='A lightweight container based emulation system.',
     author='Kathara Framework',
@@ -27,11 +27,13 @@ setup(
         "pyroute2>=0.5.19",
         "progressbar2>=1.14.0",
         "libtmux>=0.8.2; platform_system == 'darwin' or platform_system == 'linux'",
-        "pyuv-kathara",
         "appscript>=1.1.0; platform_system == 'darwin'",
         "pypiwin32>=223; platform_system == 'win32'",
         "windows-curses>=2.1.0; platform_system == 'win32'"
     ],
+    extras_require={
+        'pyuv': ["pyuv @ https://api.github.com/repos/saghul/pyuv/tarball/master"],
+    },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
