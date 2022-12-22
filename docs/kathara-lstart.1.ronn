@@ -69,12 +69,22 @@ The configuration of a Kathara network scenario consists of some files described
 * `-H`, `--no-hosthome`:
     `/hosthome` dir will not be mounted inside the devices.
 
-    By default, the home directory of the current user is made available for reading/writing inside the device under the special directory `/hosthome`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
+    Do not mount the home directory of the current user inside devices. This is the default specified in `kathara.conf`(5) file.
+
+* `--hosthome`:
+    Mount the `/hosthome` directory inside devices.
+
+    Mount the home directory of the current user inside devices on the special directory `/hosthome`. This option makes the host filesystem accessible from inside devices, overriding the default setting specified in `kathara.conf`(5) file.
 
 * `-S`, `--no-shared`:
     `/shared` dir will not be mounted inside the devices.
 
-    By default, the "shared" directory inside the network scenario folder is made available for reading/writing inside the device under the special directory `/shared`. This option disables this behaviour, thus not making the host filesystem accessible from inside the device. Override the default setting specified in `kathara.conf`(5) file.
+    By default, the "shared" directory inside the network scenario folder is mounted inside all devices on the special directory `/shared`. This option disables this behaviour, making the shared directory not accessible from inside devices. Override the default setting specified in `kathara.conf`(5) file.
+
+* `--shared`:
+    Mount the `/shared` directory inside devices.
+
+    Mount the "shared" directory inside the network scenario folder inside all devices on the special directory `/shared`. This is the default specified in `kathara.conf`(5) file.
 
 * `DEVICE_NAME`:
     A list of device names. Instead of starting the whole network scenario, only specified devices are started.
