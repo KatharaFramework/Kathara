@@ -98,12 +98,20 @@ class VstartCommand(Command):
             required=False,
             help='Run this device with a specific Docker Image.'
         )
-        self.parser.add_argument(
-            '-H', '--no-hosthome',
-            dest="no_hosthome",
+        hosthome_group = self.parser.add_mutually_exclusive_group(required=False)
+        hosthome_group.add_argument(
+            '--no-hosthome', '-H',
+            dest="hosthome_mount",
             action="store_const",
             const=False,
-            help='/hosthome dir will not be mounted inside the device.'
+            help='Do not mount the "/hosthome" directory inside the device (default).'
+        )
+        hosthome_group.add_argument(
+            '--hosthome',
+            dest="hosthome_mount",
+            action="store_const",
+            const=True,
+            help='Mount the "/hosthome" directory inside the device.'
         )
         self.parser.add_argument(
             '--xterm',
