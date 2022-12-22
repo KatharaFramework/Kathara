@@ -81,21 +81,36 @@ class LrestartCommand(Command):
             required=False,
             help='Set a different terminal emulator application (Unix only).'
         )
-        self.parser.add_argument(
-            '-H', '--no-hosthome',
-            dest="no_hosthome",
+        hosthome_group = self.parser.add_mutually_exclusive_group(required=False)
+        hosthome_group.add_argument(
+            '--no-hosthome', '-H',
+            dest="hosthome_mount",
             action="store_const",
             const=False,
-            help='/hosthome dir will not be mounted inside the devices.'
+            help='Do not mount the "/hosthome" directory inside devices (default).'
         )
-        self.parser.add_argument(
-            '-S', '--no-shared',
-            dest="no_shared",
+        hosthome_group.add_argument(
+            '--hosthome',
+            dest="hosthome_mount",
+            action="store_const",
+            const=True,
+            help='Mount the "/hosthome" directory inside devices.'
+        )
+        shared_group = self.parser.add_mutually_exclusive_group(required=False)
+        shared_group.add_argument(
+            '--no-shared', '-S',
+            dest="shared_mount",
             action="store_const",
             const=False,
-            help='/shared dir will not be mounted inside the devices.'
+            help='Do not mount the "/shared" directory inside devices.'
         )
-
+        shared_group.add_argument(
+            '--shared',
+            dest="shared_mount",
+            action="store_const",
+            const=True,
+            help='Mount the "/shared" directory inside devices (default).'
+        )
         self.parser.add_argument(
             'machine_name',
             metavar='DEVICE_NAME',
