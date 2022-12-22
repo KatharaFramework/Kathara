@@ -184,7 +184,7 @@ class VstartCommand(Command):
                 Setting.get_instance().open_terminals = False
 
         lab = Lab("kathara_vlab")
-        lab.add_option('hosthome_mount', args['no_hosthome'])
+        lab.add_option('hosthome_mount', args['hosthome_mount'])
         lab.add_option('shared_mount', False)
         lab.add_option('privileged_machines', args['privileged'])
 
