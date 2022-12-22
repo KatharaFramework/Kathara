@@ -102,7 +102,7 @@ class LstartCommand(Command):
         )
         hosthome_group = self.parser.add_mutually_exclusive_group(required=False)
         hosthome_group.add_argument(
-            '-H', '--no-hosthome',
+            '--no-hosthome', '-H',
             dest="hosthome_mount",
             action="store_const",
             const=False,
@@ -117,7 +117,7 @@ class LstartCommand(Command):
         )
         shared_group = self.parser.add_mutually_exclusive_group(required=False)
         shared_group.add_argument(
-            '-S', '--no-shared',
+            '--no-shared', '-S',
             dest="shared_mount",
             action="store_const",
             const=False,
