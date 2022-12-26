@@ -106,14 +106,14 @@ class LstartCommand(Command):
             dest="hosthome_mount",
             action="store_const",
             const=False,
-            help='Do not mount the "/hosthome" directory inside devices (default).'
+            help='Do not mount "/hosthome" directory inside devices.'
         )
         hosthome_group.add_argument(
             '--hosthome',
             dest="hosthome_mount",
             action="store_const",
             const=True,
-            help='Mount the "/hosthome" directory inside devices.'
+            help='Mount "/hosthome" directory inside devices.'
         )
         shared_group = self.parser.add_mutually_exclusive_group(required=False)
         shared_group.add_argument(
@@ -121,14 +121,14 @@ class LstartCommand(Command):
             dest="shared_mount",
             action="store_const",
             const=False,
-            help='Do not mount the "/shared" directory inside devices.'
+            help='Do not mount "/shared" directory inside devices.'
         )
         shared_group.add_argument(
             '--shared',
             dest="shared_mount",
             action="store_const",
             const=True,
-            help='Mount the "/shared" directory inside devices (default).'
+            help='Mount "/shared" directory inside devices.'
         )
         self.parser.add_argument(
             'machine_name',

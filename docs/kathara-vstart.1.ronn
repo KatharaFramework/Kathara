@@ -71,14 +71,14 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
     The specified Docker Image could be in the local repository or on the Docker Hub. Overrides the default setting specified in `kathara.conf`(5) file.
 
 * `--no-hosthome`, `-H`:
-    Do not mount `/hosthome` directory inside the device.
+    Do not mount `/hosthome` directory inside devices.
 
-    Do not mount the home directory of the current user inside the device. This is the default setting specified in `kathara.conf`(5) file.
+    Do not mount the home directory of the current user inside devices. This is the default specified in `kathara.conf`(5) file.
 
 * `--hosthome`:
-    Mount the `/hosthome` directory inside devices.
+    Mount `/hosthome` directory inside devices.
 
-    Mount the home directory of the current user inside devices on the special directory `/hosthome`. This option makes the host filesystem accessible from inside devices, overriding the default setting specified in `kathara.conf`(5) file.
+    Mount the home directory of the current user inside devices in the special directory `/hosthome`. This option makes the host filesystem accessible from inside devices, overriding the default setting specified in `kathara.conf`(5) file.
 
 * `--xterm` <XTERM>:
     Set a different terminal emulator application (Unix only).

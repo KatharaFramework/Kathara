@@ -104,14 +104,14 @@ class VstartCommand(Command):
             dest="hosthome_mount",
             action="store_const",
             const=False,
-            help='Do not mount the "/hosthome" directory inside the device (default).'
+            help='Do not mount "/hosthome" directory inside the device.'
         )
         hosthome_group.add_argument(
             '--hosthome',
             dest="hosthome_mount",
             action="store_const",
             const=True,
-            help='Mount the "/hosthome" directory inside the device.'
+            help='Mount "/hosthome" directory inside the device.'
         )
         self.parser.add_argument(
             '--xterm',

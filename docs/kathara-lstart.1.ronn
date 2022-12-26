@@ -72,19 +72,19 @@ The configuration of a Kathara network scenario consists of some files described
     Do not mount the home directory of the current user inside devices. This is the default specified in `kathara.conf`(5) file.
 
 * `--hosthome`:
-    Mount the `/hosthome` directory inside devices.
+    Mount `/hosthome` directory inside devices.
 
-    Mount the home directory of the current user inside devices on the special directory `/hosthome`. This option makes the host filesystem accessible from inside devices, overriding the default setting specified in `kathara.conf`(5) file.
+    Mount the home directory of the current user inside devices in the special directory `/hosthome`. This option makes the host filesystem accessible from inside devices, overriding the default setting specified in `kathara.conf`(5) file.
 
 * `--no-shared`, `-S`:
-    Do not mount the `/shared` directory inside devices.
+    Do not mount `/shared` directory inside devices.
 
-    By default, the "shared" directory inside the network scenario folder is mounted inside all devices on the special directory `/shared`. This option disables this behaviour, making the shared directory not accessible from inside devices. Override the default setting specified in `kathara.conf`(5) file.
+    By default, the `shared` directory inside the network scenario folder is mounted inside all devices in the special directory `/shared`. This option disables this behaviour, making the shared directory not accessible from inside devices. Overrides the default setting specified in `kathara.conf`(5) file.
 
 * `--shared`:
-    Mount the `/shared` directory inside devices.
+    Mount `/shared` directory inside devices.
 
-    Mount the "shared" directory inside the network scenario folder inside all devices on the special directory `/shared`. This is the default specified in `kathara.conf`(5) file.
+    Mount the `shared` directory inside the network scenario folder inside all devices on the special directory `/shared`. This is the default specified in `kathara.conf`(5) file.
 
 * `DEVICE_NAME`:
     A list of device names. Instead of starting the whole network scenario, only specified devices are started.
