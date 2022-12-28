@@ -75,6 +75,7 @@ copyBuildDirectory_%: binary_% manpages
 
 
 createInstaller_%: copyBuildDirectory_%
+	chmod +x darwin/scripts/*
 	pkgbuild --identifier org.kathara.kathara --version $(VERSION) --scripts darwin/scripts \
 	--root $(TARGET_DIRECTORY)/darwinpkg $(TARGET_DIRECTORY)/package/$(PRODUCT).pkg > /dev/null 2>&1
 	
