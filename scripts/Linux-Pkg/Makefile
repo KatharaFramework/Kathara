@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
-VERSION=3.5.1
-PACKAGE_VERSION=2
+VERSION=3.5.5
+PACKAGE_VERSION=1
 AUR_NAME=user
 AUR_MAIL=your@mail.com
 

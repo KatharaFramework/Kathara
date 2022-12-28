@@ -603,8 +603,7 @@ class DockerMachine(object):
                   privileged=False, user='', detach=False, stream=False,
                   socket=False, environment=None, workdir=None,
                   demux=False) -> Dict[str, Optional[Any]]:
-        """Custom implementation of the `exec_run` method that also checks if the executed binary exists,
-            otherwise it throws a custom exception that Kathara can handle.
+        """Custom implementation of the `exec_run` method that also checks if the executed binary exists.
 
         Args:
             container (docker.models.containers.Container): Container object on which the command is executed.

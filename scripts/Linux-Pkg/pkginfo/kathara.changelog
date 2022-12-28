@@ -1,11 +1,8 @@
 __DATE__ Kathara Team <******@kathara.org>
 
 * Release v__VERSION__
-    * It is now possible to restart only specific devices using 'lrestart'
-    * Add possibility to disconnect a device from a collision domain using vconfig and lconfig commands (see man for further information)
-    * Add check to ensure that required Docker images are compatible with the host architecture
-    * More generic regular expression for device 'env' meta
-    * Network scenario hash is now computed from LAB_NAME meta, if present
-    * Improve exceptions handling and better error descriptions
-    * Add several utility methods to the 'Kathara' facade and model classes
-    * Change pyuv dependency with the Python 3.10 compatible version
+    * (Docker) Raise a custom exception when a binary is not found in the container image
+    * (Kubernetes) Return the control to the user only when all devices are started up or cleaned up
+    * (Kubernetes) Fix possible VNI collisions by loading already deployed networks before creating new ones
+    * Add '--shared' option to start commands that allows to mount shared folder, overriding the value defined in 'kathara.conf'
+    * Add '--hosthome' option to start commands that allows to mount home folder, overriding the value defined in 'kathara.conf'
