@@ -35,8 +35,8 @@ prepare-man-pages:
 	cd ../../docs && make cleanall
 
 prepare-bash-completion:
-	python3 -m pip install -r ../autocompletion/requirements.txt
-	python3 ../autocompletion/generate_autocompletion.py ~/rpmbuild/SOURCES/kathara-$(VERSION)/kathara.bash-completion
+	python3.10 -m pip install -r ../autocompletion/requirements.txt
+	python3.10 ../autocompletion/generate_autocompletion.py ~/rpmbuild/SOURCES/kathara-$(VERSION)/kathara.bash-completion
 
 pack-source: prepare-source prepare-man-pages prepare-bash-completion
 	cd ~/rpmbuild/SOURCES/ && tar -zcf kathara-$(VERSION).tar.gz kathara-$(VERSION)
