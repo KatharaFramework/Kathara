@@ -23,7 +23,7 @@ setup(
         "coloredlogs>=10.0",
         "terminaltables>=3.1.0",
         "slug>=2.0",
-        "deepdiff>=4.0.9",
+        "deepdiff==6.2.2",
         "pyroute2>=0.5.19",
         "progressbar2>=1.14.0",
         "libtmux>=0.8.2; platform_system == 'darwin' or platform_system == 'linux'",
