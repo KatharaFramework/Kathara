@@ -1,13 +1,13 @@
 #!/usr/bin/make -f
 
-VERSION=3.5.1
+VERSION=3.5.5
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 NO_BINARY_PACKAGES=pyroute2|pyuv|deepdiff
 
 .PHONY: allSigned docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa clean venv autocompletion
 
-allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_jammy
+allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_jammy docker-signed_kinetic
 
 docker-unsigned_%: clean prepare-deb-source docker-build-image_%
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c "make build-deb-unsigned distro=$*"
@@ -60,11 +60,11 @@ download-pip: copy-debian-folder
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.10-env/bin/pip3.10 download flit_core
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.10-env/bin/pip3.10 download --no-binary=:all: -r ../../requirements-no-binary.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.10-env/bin/pip3.10 download --platform manylinux2014_x86_64 --platform x86_64 --only-binary=:all: -r ../../requirements-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.10-env/bin/pip3.10 download nuitka
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.10-env/bin/pip3.10 download "nuitka==1.3.5"
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.10-env/bin/pip3.10 download flit_core
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.10-env/bin/pip3.10 download --no-binary=:all: -r ../../requirements-no-binary.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.10-env/bin/pip3.10 download --platform manylinux2014_aarch64 --platform arm64 --only-binary=:all: -r ../../requirements-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.10-env/bin/pip3.10 download nuitka
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.10-env/bin/pip3.10 download "nuitka==1.3.5"
 	rm -Rf Output/kathara-$(VERSION)/requirements-binary.txt Output/kathara-$(VERSION)/requirements-no-binary.txt
 	ls Output/kathara-$(VERSION)/debian/pythonLibs_amd64/ | awk '{print "debian/pythonLibs_amd64/"$$0}' > Output/kathara-$(VERSION)/debian/source/include-binaries
 	ls Output/kathara-$(VERSION)/debian/pythonLibs_arm64/ | awk '{print "debian/pythonLibs_arm64/"$$0}' >> Output/kathara-$(VERSION)/debian/source/include-binaries

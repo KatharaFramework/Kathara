@@ -180,6 +180,8 @@ class KubernetesManager(IManager):
         self.k8s_link.undeploy(machine.lab.hash, selected_links=networks_to_delete)
 
         if len(running_machines) <= 0:
+            logging.debug("Waiting for namespace deletion...")
+
             self.k8s_namespace.undeploy(lab_hash=machine.lab.hash)
 
     def undeploy_link(self, link: Link) -> None:
@@ -275,6 +277,8 @@ class KubernetesManager(IManager):
 
         # If no machines are selected or there are no running machines, undeploy the namespace
         if not selected_machines or len(running_machines - selected_machines) <= 0:
+            logging.debug("Waiting for namespace deletion...")
+
             self.k8s_namespace.undeploy(lab_hash=lab_hash)
 
     def wipe(self, all_users: bool = False) -> None:
@@ -289,9 +293,6 @@ class KubernetesManager(IManager):
         """
         if all_users:
             logging.warning("User-specific options have no effect on Megalos.")
-
-        self.k8s_machine.wipe()
-        self.k8s_link.wipe()
 
         self.k8s_namespace.wipe()
 
@@ -326,13 +327,13 @@ class KubernetesManager(IManager):
                                  logs=logs
                                  )
 
-    def exec(self, machine_name: str, command: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None) -> \
-            Generator[Tuple[bytes, bytes], None, None]:
+    def exec(self, machine_name: str, command: List[str], lab_hash: Optional[str] = None,
+             lab_name: Optional[str] = None) -> Generator[Tuple[bytes, bytes], None, None]:
         """Exec a command on a device in a running network scenario.
 
         Args:
             machine_name (str): The name of the device to connect.
-            command (str): The command to exec on the device.
+            command (List[str]): The command to exec on the device.
             lab_hash (Optional[str]): The hash of the network scenario where the device is deployed.
             lab_name (Optional[str]): The name of the network scenario where the device is deployed.
 

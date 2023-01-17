@@ -1,4 +1,4 @@
-FROM fedora:32
+FROM fedora:36
 
 ENV RUBYOPT="-KU -E utf-8:utf-8"
 
@@ -12,21 +12,9 @@ RUN dnf install -y rubygem-rails \
     @c-development \
     fedora-packager \
     rpmdevtools \
-    patchelf
-
-RUN dnf install -y wget \
-    openssl-devel \
-    bzip2-devel \
-    ncurses-devel \
-    sqlite-devel \
-    libffi-devel && \
- wget https://www.python.org/ftp/python/3.10.7/Python-3.10.7.tgz && \
- tar xfvz Python-3.10.7.tgz && cd Python-3.10.7 && \
- ./configure --enable-optimizations && \
- make -j8 && \
- make install && \
- dnf remove -y wget && \
- cd .. && rm -Rf Python3.10.7*
+    patchelf \
+    pip \
+    python3-devel
 
 RUN gem install ronn-ng
 

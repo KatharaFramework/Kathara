@@ -1,7 +1,7 @@
 #!/usr/bin/make -s
 
 PRODUCT=Kathara
-VERSION=3.5.1
+VERSION=3.5.5
 TARGET_DIRECTORY=Output
 APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
 ROFF_DIR=../../docs/Roff
@@ -75,6 +75,7 @@ copyBuildDirectory_%: binary_% manpages
 
 
 createInstaller_%: copyBuildDirectory_%
+	chmod +x darwin/scripts/*
 	pkgbuild --identifier org.kathara.kathara --version $(VERSION) --scripts darwin/scripts \
 	--root $(TARGET_DIRECTORY)/darwinpkg $(TARGET_DIRECTORY)/package/$(PRODUCT).pkg > /dev/null 2>&1
 	

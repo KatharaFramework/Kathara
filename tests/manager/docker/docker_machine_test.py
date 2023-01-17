@@ -3,7 +3,6 @@ from unittest import mock
 from unittest.mock import Mock
 
 import pytest
-from docker.errors import APIError
 
 sys.path.insert(0, './')
 
@@ -11,7 +10,7 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
-from src.Kathara.exceptions import MachineNotFoundError, DockerPluginError
+from src.Kathara.exceptions import MachineNotFoundError, DockerPluginError, MachineBinaryError
 
 
 #
@@ -34,7 +33,9 @@ def default_device(mock_docker_container):
     device.add_meta("image", "kathara/test")
     device.add_meta("bridged", False)
     device.api_object = mock_docker_container
+    device.api_object.id = "device_id"
     device.api_object.attrs = {"NetworkSettings": {"Networks": []}}
+    device.api_object.labels = {"user": "user", "name": "test_device", "lab_hash": "lab_hash", "shell": "/bin/bash"}
     return device
 
 
@@ -221,11 +222,17 @@ def test_start(docker_machine, default_device, default_link, default_link_b):
     default_device.add_interface(default_link)
     default_device.add_interface(default_link_b)
     default_device.add_meta("num_terms", 3)
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = ("cmd_stdout", "cmd_stderr")
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 0}
     default_device.api_object.start.return_value = True
-    default_device.api_object.exec_run.return_value = True
+
     docker_machine.start(default_device)
+
     default_device.api_object.start.assert_called_once()
-    default_device.api_object.exec_run.assert_called_once()
+    docker_machine.client.api.exec_create.assert_called_once()
+    docker_machine.client.api.exec_start.assert_called_once()
+    docker_machine.client.api.exec_inspect.assert_called_once()
     default_link_b.api_object.connect.assert_called_once()
 
 
@@ -419,25 +426,236 @@ def test_undeploy_machine(mock_delete_machine, docker_machine, default_device):
 #
 # TEST: exec
 #
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
-def test_exec(mock_get_machines_api_objects_by_filters, docker_machine, default_device):
+def test_exec(mock_get_machines_api_objects_by_filters, mock_setting_get_instance, docker_machine, default_device):
     mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
-    exec_run_mock = Mock()
-    exec_run_mock.configure_mock(**{
-        'output': (None, None),
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cd': False,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
     })
-    default_device.api_object.exec_run.return_value = exec_run_mock
-    docker_machine.exec(default_device.lab, "test_device", "kathara --help", tty=False)
-    default_device.api_object.exec_run.assert_called_once_with(
-        cmd="kathara --help",
-        stdout=True,
-        stderr=True,
-        tty=False,
-        privileged=False,
-        stream=True,
-        demux=True,
-        detach=False
+    mock_setting_get_instance.return_value = setting_mock
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = iter([("cmd_stdout", "cmd_stderr")])
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 0}
+    result = docker_machine.exec(default_device.lab.hash, "test_device", "kathara --help", tty=False)
+    output = next(result)
+
+    assert output == ('cmd_stdout', 'cmd_stderr')
+
+
+#
+# TEST: _exec_run
+#
+def test_exec_run_demux(docker_machine, default_device):
+    output_iter = ("cmd_stdout", "cmd_stderr")
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = output_iter
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 0}
+    result = docker_machine._exec_run(
+        default_device.api_object,
+        "kathara --help",
+        demux=True
     )
+
+    docker_machine.client.api.exec_create.assert_called_once_with(
+        default_device.api_object.id, "kathara --help", stdout=True, stderr=True, stdin=False, tty=False,
+        privileged=False, user='', environment=None, workdir=None
+    )
+    docker_machine.client.api.exec_start.assert_called_once_with(
+        "1234", detach=False, tty=False, stream=False, socket=False, demux=True
+    )
+    docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
+    assert result == {'exit_code': 0, 'output': output_iter}
+
+
+def test_exec_run_demux_stream(docker_machine, default_device):
+    output_gen = map(lambda x: x, [("cmd_stdout", "cmd_stderr")])
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = output_gen
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": None}
+    result = docker_machine._exec_run(
+        default_device.api_object,
+        "kathara --help",
+        stream=True,
+        demux=True
+    )
+
+    docker_machine.client.api.exec_create.assert_called_once_with(
+        default_device.api_object.id, "kathara --help", stdout=True, stderr=True, stdin=False, tty=False,
+        privileged=False, user='', environment=None, workdir=None
+    )
+    docker_machine.client.api.exec_start.assert_called_once_with(
+        "1234", detach=False, tty=False, stream=True, socket=False, demux=True
+    )
+    docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
+    assert result == {'exit_code': None, 'output': output_gen}
+
+
+def test_exec_run_oci_runtime_error_1_no_demux(docker_machine, default_device):
+    output_str = b"OCI runtime exec failed: exec failed: unable to start container process: exec: \"exe\": " \
+                 b"executable file not found in $PATH: unknown"
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = output_str
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 126}
+
+    with pytest.raises(MachineBinaryError) as e:
+        docker_machine._exec_run(
+            default_device.api_object,
+            "exe",
+        )
+
+        assert e.binary == "exe"
+
+    docker_machine.client.api.exec_create.assert_called_once_with(
+        default_device.api_object.id, "exe", stdout=True, stderr=True, stdin=False, tty=False,
+        privileged=False, user='', environment=None, workdir=None
+    )
+    docker_machine.client.api.exec_start.assert_called_once_with(
+        "1234", detach=False, tty=False, stream=False, socket=False, demux=False
+    )
+    docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
+
+
+def test_exec_run_oci_runtime_error_1_demux(docker_machine, default_device):
+    output_str = (b"OCI runtime exec failed: exec failed: unable to start container process: exec: \"exe\": "
+                  b"executable file not found in $PATH: unknown", b"")
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = output_str
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 126}
+
+    with pytest.raises(MachineBinaryError) as e:
+        docker_machine._exec_run(
+            default_device.api_object,
+            "exe",
+            demux=True
+        )
+
+        assert e.binary == "exe"
+
+    docker_machine.client.api.exec_create.assert_called_once_with(
+        default_device.api_object.id, "exe", stdout=True, stderr=True, stdin=False, tty=False,
+        privileged=False, user='', environment=None, workdir=None
+    )
+    docker_machine.client.api.exec_start.assert_called_once_with(
+        "1234", detach=False, tty=False, stream=False, socket=False, demux=True
+    )
+    docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
+
+
+def test_exec_run_oci_runtime_error_1_stream(docker_machine, default_device):
+    output_gen = map(lambda x: x, [b"OCI runtime exec failed: exec failed: unable to start container process: "
+                                   b"exec: \"exe\": executable file not found in $PATH: unknown"])
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = output_gen
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": None}
+
+    result = docker_machine._exec_run(
+        default_device.api_object,
+        "exe",
+        demux=True
+    )
+
+    docker_machine.client.api.exec_create.assert_called_once_with(
+        default_device.api_object.id, "exe", stdout=True, stderr=True, stdin=False, tty=False,
+        privileged=False, user='', environment=None, workdir=None
+    )
+    docker_machine.client.api.exec_start.assert_called_once_with(
+        "1234", detach=False, tty=False, stream=False, socket=False, demux=True
+    )
+    docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
+    assert result == {'exit_code': None, 'output': output_gen}
+
+
+def test_exec_run_oci_runtime_error_2_no_demux(docker_machine, default_device):
+    output_str = b"OCI runtime exec failed: exec failed: unable to start container process: exec: \"exe1\": " \
+                 b"stat exe1: no such file or directory: unknown"
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = output_str
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 126}
+
+    with pytest.raises(MachineBinaryError) as e:
+        docker_machine._exec_run(
+            default_device.api_object,
+            "exe1",
+        )
+
+        assert e.binary == "exe1"
+
+    docker_machine.client.api.exec_create.assert_called_once_with(
+        default_device.api_object.id, "exe1", stdout=True, stderr=True, stdin=False, tty=False,
+        privileged=False, user='', environment=None, workdir=None
+    )
+    docker_machine.client.api.exec_start.assert_called_once_with(
+        "1234", detach=False, tty=False, stream=False, socket=False, demux=False
+    )
+    docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
+
+
+def test_exec_run_oci_runtime_error_2_demux(docker_machine, default_device):
+    output_str = (b"OCI runtime exec failed: exec failed: unable to start container process: exec: \"exe1\": " \
+                  b"stat exe1: no such file or directory: unknown", b"")
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = output_str
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 126}
+
+    with pytest.raises(MachineBinaryError) as e:
+        docker_machine._exec_run(
+            default_device.api_object,
+            "exe1",
+            demux=True
+        )
+
+        assert e.binary == "exe1"
+
+    docker_machine.client.api.exec_create.assert_called_once_with(
+        default_device.api_object.id, "exe1", stdout=True, stderr=True, stdin=False, tty=False,
+        privileged=False, user='', environment=None, workdir=None
+    )
+    docker_machine.client.api.exec_start.assert_called_once_with(
+        "1234", detach=False, tty=False, stream=False, socket=False, demux=True
+    )
+    docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
+
+
+def test_exec_run_oci_runtime_error_2_stream(docker_machine, default_device):
+    output_gen = map(lambda x: x, [b"OCI runtime exec failed: exec failed: unable to start container process: "
+                                   b"exec: \"exe1\": stat exe1: no such file or directory: unknown"])
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = output_gen
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": None}
+
+    result = docker_machine._exec_run(
+        default_device.api_object,
+        "exe1",
+        demux=True
+    )
+
+    docker_machine.client.api.exec_create.assert_called_once_with(
+        default_device.api_object.id, "exe1", stdout=True, stderr=True, stdin=False, tty=False,
+        privileged=False, user='', environment=None, workdir=None
+    )
+    docker_machine.client.api.exec_start.assert_called_once_with(
+        "1234", detach=False, tty=False, stream=False, socket=False, demux=True
+    )
+    docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
+    assert result == {'exit_code': None, 'output': output_gen}
 
 
 #
@@ -513,12 +731,16 @@ def test_get_container_name_lab_hash_shared_cd(mock_get_current_user_name, mock_
 # TEST: delete_machine
 #
 def test_delete_machine_running(docker_machine, default_device):
-    default_device.api_object.exec_run.return_value = None
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = ("cmd_stdout", "cmd_stderr")
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 0}
     default_device.api_object.remove.return_value = None
     default_device.api_object.status = "running"
 
     docker_machine._delete_machine(default_device.api_object)
-    default_device.api_object.exec_run.assert_called_once()
+    docker_machine.client.api.exec_create.assert_called_once()
+    docker_machine.client.api.exec_start.assert_called_once()
+    docker_machine.client.api.exec_inspect.assert_called_once()
     default_device.api_object.remove.assert_called_once_with(force=True)
 
 

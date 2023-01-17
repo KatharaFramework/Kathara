@@ -1,8 +1,9 @@
 import logging
+import re
 import shlex
 from itertools import islice
 from multiprocessing.dummy import Pool
-from typing import List, Dict, Generator, Optional, Set, Tuple
+from typing import List, Dict, Generator, Optional, Set, Tuple, Union, Any
 
 import docker.models.containers
 from docker import DockerClient
@@ -12,15 +13,17 @@ from .DockerImage import DockerImage
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError, DockerPluginError
+from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError, DockerPluginError, \
+    MachineBinaryError
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
 
-pywintypes = utils.import_pywintypes()
-
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
+OCI_RUNTIME_RE = re.compile(
+    r"OCI runtime exec failed(.*?)(stat (.*): no such file or directory|exec: \"(.*)\": executable file not found)"
+)
 
 # Known commands that each container should execute
 # Run order: shared.startup, machine.startup and machine.startup_commands
@@ -337,8 +340,7 @@ class DockerMachine(object):
         if link.api_object.name in attached_networks:
             link.api_object.disconnect(machine.api_object)
 
-    @staticmethod
-    def start(machine: Machine) -> None:
+    def start(self, machine: Machine) -> None:
         """Start the Docker container representing the device.
 
         Connect the container to the networks, run the startup commands and open a terminal (if requested).
@@ -405,13 +407,25 @@ class DockerMachine(object):
             machine_commands="; ".join(machine.startup_commands)
         )
 
-        # Execute the startup commands inside the container (without privileged flag so basic permissions are used)
-        machine.api_object.exec_run(cmd=[machine.api_object.labels['shell'], '-c', startup_commands_string],
-                                    stdout=False,
-                                    stderr=False,
-                                    privileged=False,
-                                    detach=True
-                                    )
+        logging.debug(f"Executing startup command on `{machine.name}`: {startup_commands_string}")
+
+        try:
+            # Execute the startup commands inside the container (without privileged flag so basic permissions are used)
+            self._exec_run(machine.api_object,
+                           cmd=[machine.api_object.labels['shell'], '-c', startup_commands_string],
+                           stdout=True,
+                           stderr=True,
+                           privileged=False,
+                           detach=True
+                           )
+        except MachineBinaryError as e:
+            machine.add_meta('num_terms', 0)
+
+            logging.warning(f"Shell `{e.binary}` not found in "
+                            f"image `{machine.get_image()}` of device `{machine.name}`. "
+                            f"Startup commands will not be executed and terminal will not open. "
+                            f"Please specify a valid shell for this device."
+                            )
 
     def undeploy(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
         """Undeploy the devices contained in the network scenario defined by the lab_hash.
@@ -500,34 +514,27 @@ class DockerMachine(object):
         if not shell:
             shell = shlex.split(container.labels['shell'])
         else:
-            shell = shlex.split(shell) if type(shell) == str else shell
+            shell = shlex.split(shell)
 
         logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
 
-        if logs and Setting.get_instance().print_startup_log:
-            exec_output = self.exec(lab_hash,
-                                    machine_name,
-                                    user=user,
-                                    command="cat /var/log/shared.log /var/log/startup.log",
-                                    tty=False
-                                    )
+        # Get the logs, if the command fails it means that the shell is not found.
+        cat_logs_cmd = "cat /var/log/shared.log /var/log/startup.log"
+        startup_command = [item for item in shell]
+        startup_command.extend(['-c', cat_logs_cmd])
+        exec_result = self._exec_run(container,
+                                     cmd=startup_command,
+                                     stdout=True,
+                                     stderr=False,
+                                     privileged=False,
+                                     detach=False
+                                     )
+        startup_output = exec_result['output'].decode('utf-8')
 
-            startup_output = ""
-            try:
-                while True:
-                    (stdout, _) = next(exec_output)
-                    startup_output += stdout.decode('utf-8') if stdout else ""
-            except pywintypes.error as e:
-                (code, reason, _) = e.args
-                if code == 109 and reason == 'ReadFile':
-                    pass
-            except StopIteration:
-                pass
-
-            if startup_output:
-                print("--- Startup Commands Log\n")
-                print(startup_output)
-                print("--- End Startup Commands Log\n")
+        if startup_output and logs and Setting.get_instance().print_startup_log:
+            print("--- Startup Commands Log\n")
+            print(startup_output)
+            print("--- End Startup Commands Log\n")
 
         resp = self.client.api.exec_create(container.id,
                                            shell,
@@ -553,7 +560,7 @@ class DockerMachine(object):
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
-    def exec(self, lab_hash: str, machine_name: str, command: str, user: str = None,
+    def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], user: str = None,
              tty: bool = True) -> Generator[Tuple[bytes, bytes], None, None]:
         """Execute the command on the Docker container specified by the lab_hash and the machine_name.
 
@@ -561,7 +568,7 @@ class DockerMachine(object):
             lab_hash (str): The hash of the network scenario containing the device.
             machine_name (str): The name of the device.
             user (str): The name of a current user on the host.
-            command (str): The command to execute.
+            command (Union[str, List]): The command to execute.
             tty (bool): If True, open a new tty.
 
         Returns:
@@ -577,17 +584,88 @@ class DockerMachine(object):
             raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
         container = containers.pop()
 
-        exec_result = container.exec_run(cmd=command,
-                                         stdout=True,
-                                         stderr=True,
-                                         tty=tty,
-                                         privileged=False,
-                                         stream=True,
-                                         demux=True,
-                                         detach=False
-                                         )
+        command = shlex.split(command) if type(command) == str else command
+        exec_result = self._exec_run(container,
+                                     cmd=command,
+                                     stdout=True,
+                                     stderr=True,
+                                     tty=tty,
+                                     privileged=False,
+                                     stream=True,
+                                     demux=True,
+                                     detach=False
+                                     )
 
-        return exec_result.output
+        return exec_result['output']
+
+    def _exec_run(self, container: docker.models.containers.Container,
+                  cmd: Union[str, List], stdout=True, stderr=True, stdin=False, tty=False,
+                  privileged=False, user='', detach=False, stream=False,
+                  socket=False, environment=None, workdir=None,
+                  demux=False) -> Dict[str, Optional[Any]]:
+        """Custom implementation of the `exec_run` method that also checks if the executed binary exists.
+
+        Args:
+            container (docker.models.containers.Container): Container object on which the command is executed.
+            cmd (str or list): Command to be executed
+            stdout (bool): Attach to stdout. Default: ``True``
+            stderr (bool): Attach to stderr. Default: ``True``
+            stdin (bool): Attach to stdin. Default: ``False``
+            tty (bool): Allocate a pseudo-TTY. Default: False
+            privileged (bool): Run as privileged.
+            user (str): User to execute command as. Default: root
+            detach (bool): If true, detach from the exec command. Default: False
+            stream (bool): Stream response data. Default: False
+            socket (bool): Return the connection socket to allow custom read/write operations. Default: False
+            environment (dict or list): A dictionary or a list of strings in the following format ``["PASSWORD=xxx"]`` or
+                ``{"PASSWORD": "xxx"}``.
+            workdir (str): Path to working directory for this exec session
+            demux (bool): Return stdout and stderr separately
+
+        Returns:
+            (Dict): A dict of (exit_code, output)
+                exit_code: (int):
+                    Exit code for the executed command or ``None`` if
+                    either ``stream`` or ``socket`` is ``True``.
+                output: (generator, bytes, or tuple):
+                    If ``stream=True``, a generator yielding response chunks.
+                    If ``socket=True``, a socket object for the connection.
+                    If ``demux=True``, a tuple of two bytes: stdout and stderr.
+                    A bytestring containing response data otherwise.
+
+        Raises:
+            APIError: If the server returns an error.
+            MachineBinaryError: If the binary of the command is not found.
+        """
+        resp = self.client.api.exec_create(
+            container.id, cmd, stdout=stdout, stderr=stderr, stdin=stdin, tty=tty,
+            privileged=privileged, user=user, environment=environment,
+            workdir=workdir,
+        )
+
+        try:
+            exec_output = self.client.api.exec_start(
+                resp['Id'], detach=detach, tty=tty, stream=stream, socket=socket, demux=demux
+            )
+        except APIError as e:
+            matches = OCI_RUNTIME_RE.search(e.explanation)
+            if matches:
+                raise MachineBinaryError(matches.group(3) or matches.group(4), container.labels['name'])
+
+            raise e
+
+        exit_code = self.client.api.exec_inspect(resp['Id'])['ExitCode']
+        if not socket and not stream and (exit_code is not None and exit_code != 0):
+            (stdout_out, _) = exec_output if demux else (exec_output, None)
+            exec_stdout = (stdout_out.decode('utf-8') if type(stdout_out) == bytes else stdout_out) if stdout else ""
+            matches = OCI_RUNTIME_RE.search(exec_stdout)
+            if matches:
+                raise MachineBinaryError(matches.group(3) or matches.group(4), container.labels['name'])
+
+        if socket or stream:
+            return {'exit_code': None, 'output': exec_output}
+
+        return {'exit_code': int(exit_code) if exit_code is not None else None, 'output': exec_output}
 
     @staticmethod
     def copy_files(machine_api_object: docker.models.containers.Container, path: str, tar_data: bytes) -> None:
@@ -679,8 +757,7 @@ class DockerMachine(object):
         lab_hash = lab_hash if "_%s" % lab_hash else ""
         return "%s_%s_%s_%s" % (Setting.get_instance().device_prefix, utils.get_current_user_name(), name, lab_hash)
 
-    @staticmethod
-    def _delete_machine(container: docker.models.containers.Container) -> None:
+    def _delete_machine(self, container: docker.models.containers.Container) -> None:
         """Remove a running Docker container.
 
         Args:
@@ -694,11 +771,18 @@ class DockerMachine(object):
 
         # Execute the shutdown commands inside the container (only if it's running)
         if container.status == "running":
-            container.exec_run(cmd=[container.labels['shell'], '-c', shutdown_commands_string],
+            try:
+                self._exec_run(container,
+                               cmd=[container.labels['shell'], '-c', shutdown_commands_string],
                                stdout=False,
                                stderr=False,
                                privileged=True,
                                detach=True
                                )
+            except MachineBinaryError as e:
+                logging.warning(f"Shell `{e.binary}` not found in "
+                                f"image `{container.image.tags[0]}` of device `{container.labels['name']}`. "
+                                f"Shutdown commands will not be executed."
+                                )
 
         container.remove(force=True)

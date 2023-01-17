@@ -21,7 +21,7 @@ doc: clean verify-doc
 	sed '/Functions/d' ./docs/Kathara-API-Docs.md
 
 verify-doc:
-	python3 -m pip install lazydocs
+	python3 -m pip install lazydocs pydocstyle
 	lazydocs --validate ../../src/Kathara/manager --no-remove-package-prefix
 	lazydocs --validate ../../src/Kathara/model --no-remove-package-prefix
 	lazydocs --validate ../../src/Kathara/setting --no-remove-package-prefix

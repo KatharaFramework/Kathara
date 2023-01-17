@@ -98,12 +98,20 @@ class VstartCommand(Command):
             required=False,
             help='Run this device with a specific Docker Image.'
         )
-        self.parser.add_argument(
-            '-H', '--no-hosthome',
-            dest="no_hosthome",
+        hosthome_group = self.parser.add_mutually_exclusive_group(required=False)
+        hosthome_group.add_argument(
+            '--no-hosthome', '-H',
+            dest="hosthome_mount",
             action="store_const",
             const=False,
-            help='/hosthome dir will not be mounted inside the device.'
+            help='Do not mount "/hosthome" directory inside the device.'
+        )
+        hosthome_group.add_argument(
+            '--hosthome',
+            dest="hosthome_mount",
+            action="store_const",
+            const=True,
+            help='Mount "/hosthome" directory inside the device.'
         )
         self.parser.add_argument(
             '--xterm',
@@ -176,7 +184,7 @@ class VstartCommand(Command):
                 Setting.get_instance().open_terminals = False
 
         lab = Lab("kathara_vlab")
-        lab.add_option('hosthome_mount', args['no_hosthome'])
+        lab.add_option('hosthome_mount', args['hosthome_mount'])
         lab.add_option('shared_mount', False)
         lab.add_option('privileged_machines', args['privileged'])
 
