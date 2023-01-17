@@ -82,6 +82,7 @@ Several publications are related to the tool:
 Kathará has been also presented in meetings and workshops:
 - <a href="https://datatracker.ietf.org/meeting/interim-2020-rift-01/materials/slides-interim-2020-rift-01-sessa-tools-for-experimenting-routing-in-dc-00" target="_blank">RIFT Working Group Meeting</a> (IETF 107 - March 2020)
 - <a href="https://www.youtube.com/watch?v=GVBOdNzwhBA" target="_blank">Kathará: A Lightweight Network Emulation System (Italian Audio)</a> (GraphRM - June 2022)
+- <a href="https://ripe85.ripe.net/archives/video/941/" target="_blank">Kathará: A Lightweight and Scalable Network Emulation System</a> (RIPE 85 - October 2022)
 
 ## External Tools
 
