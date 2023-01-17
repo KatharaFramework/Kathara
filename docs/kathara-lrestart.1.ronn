@@ -7,7 +7,7 @@ kathara-lrestart(1) -- Restart a Kathara network scenario
 `kathara lrestart` [`-h`] [`-F`] [`-l`]  
 [`--noterminals` | `--terminals` | `--privileged`] [`-d` <DIRECTORY>]  
 [`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>]  
-[`--no-hosthome` \| `--hosthome`] [`-no-shared` \| `--shared`] [<DEVICE_NAME> [<DEVICE_NAME> ...]]
+[`--no-hosthome` \| `--hosthome`] [`--no-shared` \| `--shared`] [<DEVICE_NAME> [<DEVICE_NAME> ...]]
 
 
 ## DESCRIPTION

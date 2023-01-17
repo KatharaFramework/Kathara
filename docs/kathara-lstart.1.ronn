@@ -6,7 +6,7 @@ kathara-lstart(1) -- Start a Kathara network scenario
 
 `kathara lstart` [`-h`] [`--noterminals` \| `--terminals` \| `--privileged`]  
 [`-d` <DIRECTORY>] [`-F`] [`-l`] [`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>]  
-[`--print`]  [`--no-hosthome` \| `--hosthome`] [`-no-shared` \| `--shared`] [<DEVICE_NAME> [<DEVICE_NAME> ...]]
+[`--print`]  [`--no-hosthome` \| `--hosthome`] [`--no-shared` \| `--shared`] [<DEVICE_NAME> [<DEVICE_NAME> ...]]
 
 
 ## DESCRIPTION
