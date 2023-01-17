@@ -96,7 +96,7 @@ As far as we know, Kathará is currently being used in many [courses and project
  
 We encourage you to tell us your story! 
 
-We are also collecting network scenarios from the community. If you wanto to be added to the [list](https://github.com/KatharaFramework/Kathara-Labs/wiki/Community-Labs), please contact us!
+We are also collecting network scenarios from the community. If you want to be added to the [list](https://github.com/KatharaFramework/Kathara-Labs/wiki/Community-Labs), please contact us!
 
 ## Join Us
 
