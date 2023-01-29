@@ -5,7 +5,6 @@ import re
 import shutil
 import tarfile
 import tempfile
-from distutils.util import strtobool
 from pathlib import Path
 from typing import Dict, Any, Tuple, Optional, List, OrderedDict
 
@@ -15,6 +14,7 @@ from .Link import Link
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainError
 from ..setting.Setting import Setting
+from ..trdparty.strtobool.strtobool import strtobool
 
 
 class Machine(object):
@@ -154,7 +154,7 @@ class Machine(object):
             return
 
         if name == "bridged":
-            self.meta[name] = bool(strtobool(str(value)))
+            self.meta[name] = strtobool(str(value))
             return
 
         if name == "sysctl":
@@ -414,8 +414,8 @@ class Machine(object):
             MachineOptionError: If the IPv6 value specified is not valid.
         """
         try:
-            return bool(strtobool(self.lab.general_options["ipv6"])) if "ipv6" in self.lab.general_options else \
-                bool(strtobool(self.meta["ipv6"])) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
+            return strtobool(self.lab.general_options["ipv6"]) if "ipv6" in self.lab.general_options else \
+                strtobool(self.meta["ipv6"]) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
 
