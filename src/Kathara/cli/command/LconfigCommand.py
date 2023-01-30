@@ -38,7 +38,7 @@ class LconfigCommand(Command):
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=True,
-            help='Name of the device to be connected on desired collision domains.'
+            help='Name of the device to configure.'
         )
 
         group = self.parser.add_mutually_exclusive_group(required=True)

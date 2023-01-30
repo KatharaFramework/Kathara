@@ -54,4 +54,6 @@ class LcleanCommand(Command):
 
         logging.info(format_headers("Stopping Network Scenario"))
 
-        Kathara.get_instance().undeploy_lab(lab_hash=lab.hash, selected_machines=set(args['machine_names']))
+        Kathara.get_instance().undeploy_lab(lab_hash=lab.hash,
+                                            selected_machines=set(args['machine_names']) if args['machine_names']
+                                                                                         else None)

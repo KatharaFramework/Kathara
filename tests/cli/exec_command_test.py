@@ -14,7 +14,9 @@ from src.Kathara.model.Lab import Lab
 def exec_output():
     def output_generator():
         yield 'stdout'.encode(), 'stderr'.encode()
+
     return output_generator()
+
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.exec")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
@@ -100,7 +102,8 @@ def test_run_no_stderr(mock_stderr_write, mock_stdout_write, mock_lab, mock_pars
 @mock.patch("src.Kathara.model.Lab.Lab")
 @mock.patch('sys.stdout.write')
 @mock.patch('sys.stderr.write')
-def test_run_no_stdout_no_stderr(mock_stderr_write, mock_stdout_write, mock_lab, mock_parse_lab, mock_exec, exec_output):
+def test_run_no_stdout_no_stderr(mock_stderr_write, mock_stdout_write, mock_lab, mock_parse_lab, mock_exec,
+                                 exec_output):
     mock_parse_lab.return_value = mock_lab
     mock_exec.return_value = exec_output
     command = ExecCommand()
