@@ -1,7 +1,10 @@
 import collections
-import os
 from itertools import chain
 from typing import Dict, Set, Any, List, Union, Optional, Tuple
+
+import fs
+from fs.base import FS
+from fs.osfs import OSFS
 
 from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
@@ -20,7 +23,7 @@ class Lab(object):
         author (str): The author of the network scenario.
         email (str): The email of the author of the network scenario.
         web (str): The web address of the author of the network scenario.
-        path (str): The path of the network scenario, if exists.
+        fs (FS): An object referencing the network scenario directory. Can be both a real OS path or a memory path.
         hash (str): The hash identifier of the network scenario.
         machines (Dict[str, Kathara.model.Machine]): The devices of the network scenario. Keys are device names, Values
             are Kathara device objects.
@@ -28,13 +31,13 @@ class Lab(object):
             Keys are collision domains names, Values are Kathara collision domain objects.
         general_options (Dict[str, Any]): Keys are option names, values are option values.
         has_dependencies (bool): True if there are dependencies among the devices boot.
-        shared_startup_path(str) The path of the shared startup file, if exists.
-        shared_shutdown_path(str) The path of the shared shutdown file, if exists.
-        shared_folder(str) The path of the shared folder, if exists.
+        shared_startup_filename (str): The name of the shared startup file, if exists.
+        shared_shutdown_filename (str): The name of the shared shutdown file, if exists.
+        shared_fs (FS): An object to the path of the network scenario, if the network scenario has a real OS path.
     """
     __slots__ = ['_name', 'description', 'version', 'author', 'email', 'web',
-                 'path', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
-                 'shared_startup_path', 'shared_shutdown_path', 'shared_folder']
+                 'fs', 'hash', 'machines', 'links', 'general_options', 'has_dependencies',
+                 'shared_startup_filename', 'shared_shutdown_filename', 'shared_fs']
 
     def __init__(self, name: Optional[str], path: Optional[str] = None) -> None:
         """Create a new instance of a Kathara network scenario.
@@ -60,20 +63,19 @@ class Lab(object):
 
         self.has_dependencies: bool = False
 
-        self.path: str = path
-        self.shared_startup_path: Optional[str] = None
-        self.shared_shutdown_path: Optional[str] = None
+        self.shared_startup_filename: Optional[str] = None
+        self.shared_shutdown_filename: Optional[str] = None
+        self.shared_fs: Optional[FS] = None
 
-        self.hash: str = utils.generate_urlsafe_hash(self.path if self._name is None else self._name)
+        self.hash: str = utils.generate_urlsafe_hash(path if self._name is None else self._name)
 
-        if self.path:
-            shared_startup_file = os.path.join(self.path, 'shared.startup')
-            self.shared_startup_path = shared_startup_file if os.path.exists(shared_startup_file) else None
+        if path:
+            self.fs: FS = fs.open_fs(f"osfs://{path}")
 
-            shared_shutdown_file = os.path.join(self.path, 'shared.shutdown')
-            self.shared_shutdown_path = shared_shutdown_file if os.path.exists(shared_shutdown_file) else None
-
-        self.shared_folder: Optional[str] = None
+            self.shared_startup_filename = 'shared.startup' if self.fs.exists('shared.startup') else None
+            self.shared_shutdown_filename = 'shared.shutdown' if self.fs.exists('shared.shutdown') else None
+        else:
+            self.fs: FS = fs.open_fs("mem://")
 
     @property
     def name(self):
@@ -310,25 +312,24 @@ class Lab(object):
             IOError: If the shared folder is a Symlink, delete it.
             OSError: If there is a permission error.
         """
-        if not self.has_path():
+        if not self.has_host_path():
             return
+
         try:
-            self.shared_folder = os.path.join(self.path, 'shared')
-            if not os.path.isdir(self.shared_folder):
-                os.mkdir(self.shared_folder)
-            elif os.path.islink(self.shared_folder):
-                raise IOError("`shared` folder is a symlink, delete it.")
+            self.shared_fs = self.fs.makedir('shared', recreate=True)
+            if self.fs.islink('shared'):
+                raise ValueError("`shared` folder is a symlink, delete it.")
         except OSError:
             # Do not create shared folder if not permitted.
             return
 
-    def has_path(self) -> bool:
-        """Check if the network scenario has a directory.
+    def has_host_path(self) -> bool:
+        """Check if the network scenario has a directory on the host.
 
         Returns:
-            bool: True if self.path is not None, else False.
+            bool: True if self.fs is a path on the host filesystem, else False.
         """
-        return self.path is not None
+        return self.fs.__class__ is OSFS
 
     def add_option(self, name: str, value: Any) -> None:
         """Add an option to the network scenario.
@@ -366,7 +367,7 @@ class Lab(object):
         return all(map(lambda x: self.find_machine(x), machine_names))
 
     def __repr__(self) -> str:
-        return "Lab(%s, %s, %s, %s)" % (self.path, self.hash, self.machines, self.links)
+        return "Lab(%s, %s, %s, %s)" % (self.fs, self.hash, self.machines, self.links)
 
     def __str__(self) -> str:
         lab_info = ""

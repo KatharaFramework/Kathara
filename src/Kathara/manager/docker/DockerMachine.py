@@ -244,8 +244,8 @@ class DockerMachine(object):
         volumes = {}
 
         shared_mount = options['shared_mount'] if 'shared_mount' in options else Setting.get_instance().shared_mount
-        if shared_mount and machine.lab.shared_folder:
-            volumes[machine.lab.shared_folder] = {'bind': '/shared', 'mode': 'rw'}
+        if shared_mount and machine.lab.shared_fs:
+            volumes[machine.lab.shared_fs.getsyspath("")] = {'bind': '/shared', 'mode': 'rw'}
 
         # Mount the host home only if specified in settings.
         hosthome_mount = options['hosthome_mount'] if 'hosthome_mount' in options else \

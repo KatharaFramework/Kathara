@@ -13,7 +13,7 @@ class Test(ABC):
 
     def __init__(self, lab: Lab) -> None:
         self.lab: Lab = lab
-        self.test_path: str = os.path.join(self.lab.path, '_test')
+        self.test_path: str = os.path.join(self.lab.fs.getsyspath(""), '_test')
 
         self.signature_path: str = os.path.join(self.test_path, 'signature')
         self.results_path: str = os.path.join(self.test_path, 'results')

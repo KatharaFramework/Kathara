@@ -82,10 +82,10 @@ def open_machine_terminal(machine) -> None:
     if not executable_path:
         raise FileNotFoundError("Unable to find Kathara.")
 
-    is_vmachine = "-v" if machine.lab.path is None else ""
+    is_vmachine = "-v" if not machine.lab.has_host_path() else ""
     connect_command = "%s connect %s -l %s" % (executable_path, is_vmachine, machine.name)
 
-    logging.debug("Terminal will open in directory %s." % machine.lab.path)
+    logging.debug("Terminal will open in directory %s." % machine.lab.fs.getsyspath(""))
 
     def unix_connect() -> None:
         if terminal == "TMUX":
@@ -94,14 +94,19 @@ def open_machine_terminal(machine) -> None:
             logging.debug("Attaching `%s` to TMUX session `%s` with command `%s`" % (machine.name, machine.lab.name,
                                                                                      connect_command))
 
-            TMUX.get_instance().add_window(machine.lab.name, machine.name, connect_command, cwd=machine.lab.path)
+            TMUX.get_instance().add_window(
+                machine.lab.name,
+                machine.name,
+                connect_command,
+                cwd=machine.lab.fs.getsyspath("")
+            )
         else:
             logging.debug("Opening Linux terminal with command: %s." % connect_command)
 
             # Command should be passed as an array
             # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
             subprocess.Popen([terminal, "-e", connect_command],
-                             cwd=machine.lab.path,
+                             cwd=machine.lab.fs.getsyspath(""),
                              start_new_session=True
                              )
 
@@ -113,11 +118,11 @@ def open_machine_terminal(machine) -> None:
                           complete_win_command
                           ],
                          creationflags=subprocess.CREATE_NEW_CONSOLE,
-                         cwd=machine.lab.path
+                         cwd=machine.lab.fs.getsyspath("")
                          )
 
     def osx_connect() -> None:
-        cd_to_lab_path = "cd \"%s\" &&" % machine.lab.path if machine.lab.path is not None else ""
+        cd_to_lab_path = "cd \"%s\" &&" % machine.lab.fs.getsyspath("") if machine.lab.has_host_path() else ""
         complete_osx_command = "%s clear && %s && exit" % (cd_to_lab_path, connect_command)
 
         if terminal == "TMUX":
@@ -126,7 +131,12 @@ def open_machine_terminal(machine) -> None:
             logging.debug("Attaching `%s` to TMUX session `%s` with command `%s`" % (machine.name, machine.lab.name,
                                                                                      complete_osx_command))
 
-            TMUX.get_instance().add_window(machine.lab.name, machine.name, complete_osx_command, cwd=machine.lab.path)
+            TMUX.get_instance().add_window(
+                machine.lab.name,
+                machine.name,
+                complete_osx_command,
+                cwd=machine.lab.fs.getsyspath("")
+            )
         else:
             import appscript
             logging.debug("Opening OSX terminal with command: %s." % complete_osx_command)
