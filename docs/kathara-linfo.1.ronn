@@ -4,12 +4,12 @@ kathara-linfo(1) -- Show information about a Kathara network scenario
 
 ## SYNOPSIS
 
-`kathara linfo` [`-h`] [`-d` <DIRECTORY>] [`-l` \| `-c`] [`-n` <DEVICE_NAME>]
+`kathara linfo` [`-h`] [`-d` <DIRECTORY>] [`-w` \| `-c`] [`-n` <DEVICE_NAME>]
 
 
 ## DESCRIPTION
 
-Show exhaustive status of each device of the current network scenario. Can only be used when after the network scenario is started.
+Show exhaustive status of each device of the current network scenario.
 
 The following information are displayed:
 
@@ -31,13 +31,13 @@ The following information are displayed:
 
     If no `-d` option is provided, assume the network scenario is located in the current directory.
 
-* `-l`, `--live`:
-    Live update of network scenario status.
+* `-w`, `-l`, `--watch`, `--live`:
+    Watch updates of network scenario status.
 
-    To quit the live screen, pass the `SIGINT` `signal`(7) to the process (usually CTRL+C).
+    To quit the watch screen, pass the `SIGINT` `signal`(7) to the process (usually CTRL+C).
 
-* `-c`, `--conf`
-    Read information from lab.conf and display the following:
+* `-c`, `--conf`:
+    Read static information from lab.conf and display the following:
 
     * Descriptive information (retrieved from `kathara-lab.conf`(5))
     * Number of devices that make up the network scenario
@@ -47,7 +47,8 @@ The following information are displayed:
     Show only info about a specified device.
 
     Show information about a device `DEVICE_NAME`.
-    Can be used in conjuction with `-l` to retrieve live information.
+    Can be used in conjunction with `-w` to retrieve live information.
+    Can be used in conjunction with `-c` to retrieve static information.
 
 m4_include(footer.txt)
 

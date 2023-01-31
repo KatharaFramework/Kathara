@@ -40,17 +40,17 @@ class LinfoCommand(Command):
         group = self.parser.add_mutually_exclusive_group(required=False)
 
         group.add_argument(
-            '-l', '--live',
+            '-w', '-l', '--watch', '--live',
             required=False,
             action='store_true',
-            help='Live mode, can be used only when a network scenario is launched.'
+            help='Watch mode, can be used only when a network scenario is launched.'
         )
 
         group.add_argument(
             '-c', '--conf',
             required=False,
             action='store_true',
-            help='Read information from lab.conf.'
+            help='Read static information from lab.conf.'
         )
 
         self.parser.add_argument(
@@ -71,7 +71,7 @@ class LinfoCommand(Command):
         except (Exception, IOError):
             lab = Lab(None, path=lab_path)
 
-        if args['live']:
+        if args['watch']:
             if args['name']:
                 self._get_machine_live_info(lab, args['name'])
             else:

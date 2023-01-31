@@ -80,12 +80,26 @@ def test_run_remove_link(mock_parse_lab, mock_update_lab_from_api, mock_disconne
 @mock.patch("src.Kathara.manager.Kathara.Kathara.disconnect_machine_from_link")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.update_lab_from_api")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
-def test_run_remove_link_with_directory(mock_parse_lab, mock_update_lab_from_api, mock_disconnect_machine_from_link,
+def test_run_remove_link_with_directory_absolute_path(mock_parse_lab, mock_update_lab_from_api, mock_disconnect_machine_from_link,
                                         test_lab):
     mock_parse_lab.return_value = test_lab
     command = LconfigCommand()
     command.run('.', ['-d', '/test/path', '-n', 'pc1', '--rm', 'A'])
     mock_parse_lab.assert_called_once_with('/test/path')
+    mock_update_lab_from_api.assert_called_once_with(test_lab)
+    mock_disconnect_machine_from_link.assert_called_once_with(test_lab.get_or_new_machine('pc1'),
+                                                              test_lab.get_or_new_link('A'))
+
+
+@mock.patch("src.Kathara.manager.Kathara.Kathara.disconnect_machine_from_link")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.update_lab_from_api")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+def test_run_remove_link_with_directory_relative_path(mock_parse_lab, mock_update_lab_from_api, mock_disconnect_machine_from_link,
+                                        test_lab):
+    mock_parse_lab.return_value = test_lab
+    command = LconfigCommand()
+    command.run('.', ['-d', 'test/path', '-n', 'pc1', '--rm', 'A'])
+    mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test/path'))
     mock_update_lab_from_api.assert_called_once_with(test_lab)
     mock_disconnect_machine_from_link.assert_called_once_with(test_lab.get_or_new_machine('pc1'),
                                                               test_lab.get_or_new_link('A'))

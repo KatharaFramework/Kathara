@@ -39,12 +39,30 @@ def test_run_no_params(mock_stderr_write, mock_stdout_write, mock_lab, mock_pars
 @mock.patch("src.Kathara.model.Lab.Lab")
 @mock.patch('sys.stdout.write')
 @mock.patch('sys.stderr.write')
-def test_run_with_directory(mock_stderr_write, mock_stdout_write, mock_lab, mock_parse_lab, mock_exec, exec_output):
+def test_run_with_directory_absolute_path(mock_stderr_write, mock_stdout_write, mock_lab, mock_parse_lab, mock_exec,
+                                          exec_output):
     mock_parse_lab.return_value = mock_lab
     mock_exec.return_value = exec_output
     command = ExecCommand()
     command.run('.', ['-d', '/test/path', 'pc1', 'test command'])
     mock_parse_lab.assert_called_once_with('/test/path')
+    mock_exec.assert_called_once_with("pc1", ['test command'], lab_hash=mock_lab.hash)
+    mock_stdout_write.assert_called_once_with('stdout')
+    mock_stderr_write.assert_called_once_with('stderr')
+
+
+@mock.patch("src.Kathara.manager.Kathara.Kathara.exec")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+@mock.patch("src.Kathara.model.Lab.Lab")
+@mock.patch('sys.stdout.write')
+@mock.patch('sys.stderr.write')
+def test_run_with_directory_relative_path(mock_stderr_write, mock_stdout_write, mock_lab, mock_parse_lab, mock_exec,
+                                          exec_output):
+    mock_parse_lab.return_value = mock_lab
+    mock_exec.return_value = exec_output
+    command = ExecCommand()
+    command.run('.', ['-d', 'test/path', 'pc1', 'test command'])
+    mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test/path'))
     mock_exec.assert_called_once_with("pc1", ['test command'], lab_hash=mock_lab.hash)
     mock_stdout_write.assert_called_once_with('stdout')
     mock_stderr_write.assert_called_once_with('stderr')

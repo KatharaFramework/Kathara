@@ -21,11 +21,22 @@ def test_run_no_params(mock_lab, mock_parse_lab, mock_undeploy_lab):
 @mock.patch("src.Kathara.manager.Kathara.Kathara.undeploy_lab")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
 @mock.patch("src.Kathara.model.Lab.Lab")
-def test_run_with_directory(mock_lab, mock_parse_lab, mock_undeploy_lab):
+def test_run_with_directory_absolute_path(mock_lab, mock_parse_lab, mock_undeploy_lab):
     mock_parse_lab.return_value = mock_lab
     command = LcleanCommand()
     command.run('.', ['-d', '/test/path'])
     mock_parse_lab.assert_called_once_with('/test/path')
+    mock_undeploy_lab.assert_called_once_with(lab_hash=mock_lab.hash, selected_machines=None)
+
+
+@mock.patch("src.Kathara.manager.Kathara.Kathara.undeploy_lab")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+@mock.patch("src.Kathara.model.Lab.Lab")
+def test_run_with_directory_relative_path(mock_lab, mock_parse_lab, mock_undeploy_lab):
+    mock_parse_lab.return_value = mock_lab
+    command = LcleanCommand()
+    command.run('.', ['-d', 'test/path'])
+    mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test/path'))
     mock_undeploy_lab.assert_called_once_with(lab_hash=mock_lab.hash, selected_machines=None)
 
 
