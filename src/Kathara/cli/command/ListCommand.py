@@ -3,6 +3,7 @@ from typing import List
 
 from ..ui.utils import create_table
 from ... import utils
+from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...strings import strings, wiki_description
