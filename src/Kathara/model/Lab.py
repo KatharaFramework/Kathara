@@ -143,7 +143,7 @@ class Lab(object):
         """
         for (link_name, link_external_links) in external_links.items():
             if link_name not in self.links:
-                raise LinkNotFoundError("Collision domain `%s` (declared in lab.ext) not found in lab "
+                raise LinkNotFoundError("Collision domain `%s` (declared in lab.ext) not found in network scenario "
                                         "collision domains." % link_name)
 
             self.links[link_name].external += link_external_links

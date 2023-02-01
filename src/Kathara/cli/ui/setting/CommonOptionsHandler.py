@@ -45,7 +45,7 @@ class CommonOptionsHandler(OptionsHandler):
         select_image_menu = SelectionMenu(strings=[],
                                           title=image_string,
                                           subtitle=setting_utils.current_string("image"),
-                                          prologue_text="""Default Docker image when you start a lab or """
+                                          prologue_text="""Default Docker image when you start a network scenario or """
                                                         """a single Kathara device.
                                                         Default is `%s`.""" % DEFAULTS['image'],
                                           formatter=menu_formatter

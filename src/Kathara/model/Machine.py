@@ -129,7 +129,8 @@ class Machine(object):
         """
         if self.name not in link.machines:
             raise MachineCollisionDomainError(
-                f"Device `{self.name}` is not connected to collision domain `{link.name}`.")
+                f"Device `{self.name}` is not connected to collision domain `{link.name}`."
+            )
 
         self.interfaces = collections.OrderedDict(
             map(lambda x: x if x[1] is not None and x[1].name != link.name else (x[0], None), self.interfaces.items())
@@ -211,7 +212,7 @@ class Machine(object):
         self.meta[name] = value
 
     def check(self) -> None:
-        """Sorts interfaces check if there are missing positions.
+        """Sort interfaces and check if there are missing interface numbers.
 
         Returns:
             None
@@ -371,7 +372,7 @@ class Machine(object):
         """Get the port mapping of the device.
 
         Returns:
-            Dict[(int, str), int]: Keys are pairs (host_port, protocol), values specifies the guest_port.
+            Dict[(int, str), int]: Keys are pairs (host port, protocol), values specifies the guest port.
         """
         if self.meta['ports']:
             return self.meta['ports']
@@ -379,10 +380,10 @@ class Machine(object):
         return None
 
     def get_num_terms(self) -> int:
-        """Get the number of terminal to be opened for the device.
+        """Get the number of terminals to be opened for the device.
 
         Returns:
-            int: The number of terminal to be opened.
+            int: The number of terminals to be opened.
 
         Raises:
             MachineOptionError: If the terminals number value specified is not valid.

@@ -29,7 +29,7 @@ class DockerLink(object):
         self.client: DockerClient = client
 
     def deploy_links(self, lab: Lab, selected_links: Set[str] = None) -> None:
-        """Deploy all the lab collision domains as Docker networks.
+        """Deploy all the network scenario collision domains as Docker networks.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.

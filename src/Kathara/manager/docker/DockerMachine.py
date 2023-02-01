@@ -103,7 +103,7 @@ class DockerMachine(object):
         self.docker_image: DockerImage = docker_image
 
     def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None) -> None:
-        """Deploy all the lab devices as Docker containers.
+        """Deploy all the network scenario devices as Docker containers.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
