@@ -16,7 +16,7 @@ For details about the possible settings and possible values please refer to `kat
 ## OPTIONS
 
 * `-h`, `--help`:
-    Show an help message and exit.
+    Show a help message and exit.
 
 m4_include(footer.txt)
 

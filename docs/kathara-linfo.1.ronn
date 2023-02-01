@@ -24,7 +24,7 @@ The following information are displayed:
 ## OPTIONS
 
 * `-h`, `--help`:
-    Show an help message and exit.
+    Show a help message and exit.
 
 * `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
     Specify the folder containing the network scenario.

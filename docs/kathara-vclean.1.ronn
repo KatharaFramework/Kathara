@@ -12,7 +12,7 @@ Gracefully shut down a running device. <DEVICE_NAME> is the name of a device.
 
 ## OPTIONS
 
-* `-h`, `--help`
+* `-h`, `--help`:
     Show a help message and exit.
 
 * `-n` <DEVICE_NAME>, `--name` <DEVICE_NAME>  
