@@ -16,7 +16,7 @@ Gracefully shut down a running device. <DEVICE_NAME> is the name of a device.
     Show a help message and exit.
 
 * `-n` <DEVICE_NAME>, `--name` <DEVICE_NAME>  
-    Name of the device to be cleaned.
+    The name of the device to clean.
 
 ## EXAMPLES
 

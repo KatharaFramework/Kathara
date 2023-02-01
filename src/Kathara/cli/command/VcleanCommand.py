@@ -30,7 +30,7 @@ class VcleanCommand(Command):
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=True,
-            help='Name of the device to be cleaned.'
+            help='The name of the device to clean.'
         )
 
     def run(self, current_path: str, argv: List[str]) -> None:
