@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 from fs.errors import CreateFailed
-from fs.memoryfs import MemoryFS
 
 sys.path.insert(0, './')
 
@@ -43,10 +42,8 @@ def test_default_scenario_creation(default_scenario: Lab):
     assert default_scenario.links == {}
     assert default_scenario.general_options == {}
     assert not default_scenario.has_dependencies
-    assert default_scenario.fs.__class__ is MemoryFS
-    assert default_scenario.shared_shutdown_filename is None
-    assert default_scenario.shared_startup_filename is None
-    assert default_scenario.shared_fs is None
+    assert default_scenario.fs_type() == "memory"
+    assert default_scenario.shared_path is None
     assert default_scenario.hash == utils.generate_urlsafe_hash(default_scenario.name)
 
 
@@ -66,10 +63,8 @@ def test_directory_scenario_creation_with_shared_files(directory_scenario: Lab, 
     assert directory_scenario.links == {}
     assert directory_scenario.general_options == {}
     assert not directory_scenario.has_dependencies
-    assert directory_scenario.fs.getsyspath("") == temporary_path
-    assert directory_scenario.shared_shutdown_filename == 'shared.shutdown'
-    assert directory_scenario.shared_startup_filename == 'shared.startup'
-    assert directory_scenario.shared_fs is None
+    assert directory_scenario.fs_path() == temporary_path
+    assert directory_scenario.shared_path is None
     assert directory_scenario.hash == utils.generate_urlsafe_hash(directory_scenario.name)
 
 

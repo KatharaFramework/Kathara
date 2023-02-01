@@ -4,7 +4,6 @@ import re
 import tempfile
 from typing import Dict, Any, Tuple, Optional, List, OrderedDict
 
-from fs.base import FS
 from fs.copy import copy_fs, copy_file
 from fs.tarfs import WriteTarFS
 from fs.walk import Walker
@@ -14,11 +13,12 @@ from . import Link as LinkPackage
 from .Link import Link
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainError
+from ..foundation.model.FilesystemMixin import FilesystemMixin
 from ..setting.Setting import Setting
 from ..trdparty.strtobool.strtobool import strtobool
 
 
-class Machine(object):
+class Machine(FilesystemMixin):
     """A Kathara device.
 
     Contains information about the device and the API object to interact with the Manager.
@@ -31,12 +31,8 @@ class Machine(object):
         startup_commands (List[str]): A list of commands to execute at the device startup.
         api_object (Any): To interact with the current Kathara Manager.
         capabilities (List[str]): The selected capabilities for the device.
-        startup_filename (str): The name of the device startup file, if exists.
-        shutdown_filename (str): The name of the device shutdown file, if exists.
-        fs (FS): An object referencing the device directory, if exists. Can be both a real OS path or a memory path.
     """
-    __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities',
-                 'startup_filename', 'shutdown_filename', 'fs']
+    __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities']
 
     def __init__(self, lab: 'LabPackage.Lab', name: str, **kwargs) -> None:
         """Create a new instance of a Kathara device.
@@ -49,6 +45,8 @@ class Machine(object):
         Returns:
             None
         """
+        super().__init__()
+
         name = name.strip()
         matches = re.search(r"^[a-z0-9_]{1,30}$", name)
         if not matches:
@@ -72,15 +70,11 @@ class Machine(object):
 
         self.capabilities: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
 
-        self.startup_filename: Optional[str] = None
-        self.shutdown_filename: Optional[str] = None
-        self.fs: Optional[FS] = None
-
-        self.fs = self.lab.fs.opendir(self.name) \
-            if self.lab.fs.exists(self.name) and self.lab.fs.isdir(self.name) else None
-
-        self.startup_filename = f"{self.name}.startup" if self.lab.fs.exists(f"{self.name}.startup") else None
-        self.shutdown_filename = f"{self.name}.shutdown" if self.lab.fs.exists(f"{self.name}.shutdown") else None
+        if self.lab.has_host_path():
+            self.fs = self.lab.fs.opendir(self.name) \
+                if self.lab.fs.exists(self.name) and self.lab.fs.isdir(self.name) else None
+        else:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
 
         self.update_meta(kwargs)
 
@@ -241,7 +235,7 @@ class Machine(object):
             with WriteTarFS(temp_file, compression="gz") as tar:
                 hostlab_tar_dir = tar.makedir('hostlab')
                 machine_tar_dir = hostlab_tar_dir.makedir(self.name)
-                if self.fs:
+                if self.fs and not self.fs.isempty(''):
                     copy_fs(
                         self.fs,
                         machine_tar_dir,
@@ -254,23 +248,23 @@ class Machine(object):
 
                     is_empty = False
 
-                if self.startup_filename:
-                    copy_file(self.lab.fs, self.startup_filename, hostlab_tar_dir, f"{self.name}.startup")
+                if self.lab.fs.exists(f"{self.name}.startup"):
+                    copy_file(self.lab.fs, f"{self.name}.startup", hostlab_tar_dir, f"{self.name}.startup")
                     utils.convert_win_2_linux(hostlab_tar_dir.getsyspath(f"{self.name}.startup"), write=True)
                     is_empty = False
 
-                if self.shutdown_filename:
-                    copy_file(self.lab.fs, self.shutdown_filename, hostlab_tar_dir, f"{self.name}.shutdown")
+                if self.lab.fs.exists(f"{self.name}.shutdown"):
+                    copy_file(self.lab.fs, f"{self.name}.shutdown", hostlab_tar_dir, f"{self.name}.shutdown")
                     utils.convert_win_2_linux(hostlab_tar_dir.getsyspath(f"{self.name}.shutdown"), write=True)
                     is_empty = False
 
-                if self.lab.shared_startup_filename:
-                    copy_file(self.lab.fs, self.lab.shared_startup_filename, hostlab_tar_dir, "shared.startup")
+                if self.lab.fs.exists("shared.startup"):
+                    copy_file(self.lab.fs, "shared.startup", hostlab_tar_dir, "shared.startup")
                     utils.convert_win_2_linux(hostlab_tar_dir.getsyspath("shared.startup"), write=True)
                     is_empty = False
 
-                if self.lab.shared_shutdown_filename:
-                    copy_file(self.lab.fs, self.lab.shared_shutdown_filename, hostlab_tar_dir, "shared.shutdown")
+                if self.lab.fs.exists("shared.shutdown"):
+                    copy_file(self.lab.fs, "shared.shutdown", hostlab_tar_dir, "shared.shutdown")
                     utils.convert_win_2_linux(hostlab_tar_dir.getsyspath("shared.shutdown"), write=True)
                     is_empty = False
 

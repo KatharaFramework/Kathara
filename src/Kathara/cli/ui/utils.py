@@ -85,7 +85,7 @@ def open_machine_terminal(machine) -> None:
     is_vmachine = "-v" if not machine.lab.has_host_path() else ""
     connect_command = "%s connect %s -l %s" % (executable_path, is_vmachine, machine.name)
 
-    logging.debug("Terminal will open in directory %s." % machine.lab.fs.getsyspath(""))
+    logging.debug("Terminal will open in directory %s." % machine.lab.fs_path())
 
     def unix_connect() -> None:
         if terminal == "TMUX":
@@ -98,7 +98,7 @@ def open_machine_terminal(machine) -> None:
                 machine.lab.name,
                 machine.name,
                 connect_command,
-                cwd=machine.lab.fs.getsyspath("")
+                cwd=machine.lab.fs_path()
             )
         else:
             logging.debug("Opening Linux terminal with command: %s." % connect_command)
@@ -106,7 +106,7 @@ def open_machine_terminal(machine) -> None:
             # Command should be passed as an array
             # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
             subprocess.Popen([terminal, "-e", connect_command],
-                             cwd=machine.lab.fs.getsyspath(""),
+                             cwd=machine.lab.fs_path(),
                              start_new_session=True
                              )
 
@@ -118,11 +118,11 @@ def open_machine_terminal(machine) -> None:
                           complete_win_command
                           ],
                          creationflags=subprocess.CREATE_NEW_CONSOLE,
-                         cwd=machine.lab.fs.getsyspath("")
+                         cwd=machine.lab.fs_path()
                          )
 
     def osx_connect() -> None:
-        cd_to_lab_path = "cd \"%s\" &&" % machine.lab.fs.getsyspath("") if machine.lab.has_host_path() else ""
+        cd_to_lab_path = "cd \"%s\" &&" % machine.lab.fs_path() if machine.lab.has_host_path() else ""
         complete_osx_command = "%s clear && %s && exit" % (cd_to_lab_path, connect_command)
 
         if terminal == "TMUX":
@@ -135,7 +135,7 @@ def open_machine_terminal(machine) -> None:
                 machine.lab.name,
                 machine.name,
                 complete_osx_command,
-                cwd=machine.lab.fs.getsyspath("")
+                cwd=machine.lab.fs_path()
             )
         else:
             import appscript
