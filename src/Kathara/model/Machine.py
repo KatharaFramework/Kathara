@@ -2,7 +2,7 @@ import collections
 import logging
 import re
 import tempfile
-from typing import Dict, Any, Tuple, Optional, List, OrderedDict
+from typing import Dict, Any, Tuple, Optional, List, OrderedDict, TextIO, Union, BinaryIO
 
 from fs.copy import copy_fs, copy_file
 from fs.tarfs import WriteTarFS
@@ -70,11 +70,8 @@ class Machine(FilesystemMixin):
 
         self.capabilities: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
 
-        if self.lab.has_host_path():
-            self.fs = self.lab.fs.opendir(self.name) \
-                if self.lab.fs.exists(self.name) and self.lab.fs.isdir(self.name) else None
-        else:
-            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+        self.fs = self.lab.fs.opendir(self.name) \
+            if self.lab.fs.exists(self.name) and self.lab.fs.isdir(self.name) else None
 
         self.update_meta(kwargs)
 
@@ -433,6 +430,32 @@ class Machine(FilesystemMixin):
         if 'envs' in args and args['envs'] is not None:
             for envs in args['envs']:
                 self.add_meta("env", envs)
+
+    # Override FilesystemMixin methods to handle the condition if we want to add a file but self.fs is not set
+    # In this case, we create the machine directory and assign it to self.fs before calling the actual method
+    def create_file_from_string(self, content: str, dst_path: str) -> None:
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().create_file_from_string(content, dst_path)
+
+    def create_file_from_list(self, lines: List[str], dst_path: str) -> None:
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().create_file_from_list(lines, dst_path)
+
+    def create_file_from_path(self, src_path: str, dst_path: str) -> None:
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().create_file_from_path(src_path, dst_path)
+
+    def create_file_from_stream(self, stream: Union[BinaryIO, TextIO], dst_path: str) -> None:
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().create_file_from_stream(stream, dst_path)
 
     def __repr__(self) -> str:
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)
