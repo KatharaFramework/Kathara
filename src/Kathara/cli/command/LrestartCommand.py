@@ -3,7 +3,6 @@ from typing import List
 
 from .LcleanCommand import LcleanCommand
 from .LstartCommand import LstartCommand
-from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...strings import strings, wiki_description
 
@@ -122,13 +121,10 @@ class LrestartCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
-        lab_path = utils.get_absolute_path(lab_path)
-
         lclean_argv = ['-d', args['directory']] if args['directory'] else []
 
         if args['machine_name']:
             lclean_argv.extend(args['machine_name'])
 
-        LcleanCommand().run(lab_path, lclean_argv)
-        LstartCommand().run(lab_path, argv)
+        LcleanCommand().run(current_path, lclean_argv)
+        LstartCommand().run(current_path, argv)
