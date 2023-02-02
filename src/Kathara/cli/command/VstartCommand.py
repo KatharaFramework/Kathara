@@ -114,12 +114,12 @@ class VstartCommand(Command):
             help='Mount "/hosthome" directory inside the device.'
         )
         self.parser.add_argument(
-            '--xterm',
+            '--xterm', '--terminal-emu',
             required=False,
             help='Set a different terminal emulator application (Unix only).'
         )
         self.parser.add_argument(
-            '--print',
+            '--print', '--dry-run',
             dest='dry_mode',
             required=False,
             action='store_true',
