@@ -13,7 +13,7 @@ Checks your system environment. It runs some tests to verify if your environment
 ## OPTIONS
 
 * `-h`, `--help`:
-    Show an help message and exit.
+    Show a help message and exit.
 
 ## EXAMPLES
 

@@ -23,14 +23,14 @@ class VcleanCommand(Command):
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
-            help='Show an help message and exit.'
+            help='Show a help message and exit.'
         )
 
         self.parser.add_argument(
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=True,
-            help='Name of the device to be cleaned.'
+            help='The name of the device to clean.'
         )
 
     def run(self, current_path: str, argv: List[str]) -> None:

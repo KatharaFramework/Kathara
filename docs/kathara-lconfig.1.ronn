@@ -22,7 +22,7 @@ Manage the network interfaces of a running Kathara device in a network scenario.
     If no `-d` option is provided, assume the network scenario is located in the current directory.
 
 * `-n` <DEVICE_NAME>, `--name` <DEVICE_NAME>:
-    Name of the device to manage.
+    Name of the device to configure.
 
 * `--add` <CD> [<CD> ...]:
 	Specify the collision domain to add.

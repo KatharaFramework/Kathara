@@ -31,7 +31,7 @@ class LtestCommand(Command):
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
-            help='Show an help message and exit.'
+            help='Show a help message and exit.'
         )
 
         self.parser.add_argument(

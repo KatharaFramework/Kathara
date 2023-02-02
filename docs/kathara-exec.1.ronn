@@ -15,7 +15,7 @@ Execute a command in the Kathara device DEVICE_NAME.
 ## OPTIONS
 
 * `-h`, `--help`:
-    Show an help message and exit.
+    Show a help message and exit.
 
 * `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
     Specify the folder containing the network scenario.

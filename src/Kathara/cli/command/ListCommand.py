@@ -1,8 +1,9 @@
 import argparse
-from typing import List
+from typing import List, Optional
 
 from ..ui.utils import create_table
 from ... import utils
+from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...strings import strings, wiki_description
@@ -24,7 +25,7 @@ class ListCommand(Command):
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
-            help='Show an help message and exit.'
+            help='Show a help message and exit.'
         )
 
         self.parser.add_argument(
@@ -35,10 +36,10 @@ class ListCommand(Command):
         )
 
         self.parser.add_argument(
-            '-l', '--live',
+            '-w', '-l', '--watch', '--live',
             required=False,
             action='store_true',
-            help='Live mode.'
+            help='Watch mode.'
         )
 
         self.parser.add_argument(
@@ -57,14 +58,14 @@ class ListCommand(Command):
 
         all_users = bool(args['all'])
 
-        if args['live']:
+        if args['watch']:
             self._get_live_info(machine_name=args['name'], all_users=all_users)
         else:
             machines_stats = Kathara.get_instance().get_machines_stats(machine_name=args['name'], all_users=all_users)
             print(next(create_table(machines_stats)))
 
     @staticmethod
-    def _get_live_info(machine_name: str, all_users: bool) -> None:
+    def _get_live_info(machine_name: Optional[str], all_users: bool) -> None:
         machines_stats = Kathara.get_instance().get_machines_stats(machine_name=machine_name, all_users=all_users)
         table = create_table(machines_stats)
 

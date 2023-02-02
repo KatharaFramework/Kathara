@@ -29,7 +29,7 @@ class CheckCommand(Command):
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
-            help='Show an help message and exit.'
+            help='Show a help message and exit.'
         )
 
     def run(self, current_path: str, argv: List[str]) -> None:

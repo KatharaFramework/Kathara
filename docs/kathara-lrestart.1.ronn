@@ -19,7 +19,7 @@ Mainly it has the same options of `lstart` with the lack of some options (e.g. `
 ## OPTIONS
 
 * `-h`, `--help`:
-    Show an help message and exit.
+    Show a help message and exit.
 
 * `--noterminals`:
     Start the network scenario devices without opening terminal windows. Override the default setting specified in `kathara.conf`(5) file.

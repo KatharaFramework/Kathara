@@ -26,7 +26,7 @@ class LconfigCommand(Command):
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
-            help='Show an help message and exit.'
+            help='Show a help message and exit.'
         )
         self.parser.add_argument(
             '-d', '--directory',
@@ -38,7 +38,7 @@ class LconfigCommand(Command):
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=True,
-            help='Name of the device to be connected on desired collision domains.'
+            help='Name of the device to configure.'
         )
 
         group = self.parser.add_mutually_exclusive_group(required=True)

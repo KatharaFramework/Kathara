@@ -58,12 +58,12 @@ The configuration of a Kathara network scenario consists of some files described
     Should be a list of double quoted strings, like `--pass "mem=64m" "image=kathara/frr"`.
     You can specify the same device options described in `kathara-lab.conf`(5).
 
-* `--xterm` <XTERM>:
+* `--xterm` <XTERM>, `--terminal-emu` <XTERM>:
     Set a different terminal emulator application (Unix only).
 
     As an example: `gnome-terminal`(1). Override the default setting specified in `kathara.conf`(5) file. This option is ignored if used in conjunction with `--noterminals` or if `open_terminals` is set to false.
 
-* `--print`:
+* `--print`, `--dry-mode`:
     Open the lab.conf file and check if it is correct (dry run).
 
 * `--no-hosthome`, `-H`:

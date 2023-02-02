@@ -25,7 +25,7 @@ A directory `lab-path/_test` is created inside and the results of the test are s
 ## OPTIONS
 
 * `-h`, `--help`:
-    Show an help message and exit.
+    Show a help message and exit.
 
 * `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
     Specify the folder containing the network scenario.

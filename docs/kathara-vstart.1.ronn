@@ -80,12 +80,12 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
 
     Mount the home directory of the current user inside devices in the special directory `/hosthome`. This option makes the host filesystem accessible from inside devices, overriding the default setting specified in `kathara.conf`(5) file.
 
-* `--xterm` <XTERM>:
+* `--xterm` <XTERM>, `--terminal-emu` <XTERM>:
     Set a different terminal emulator application (Unix only).
 
     As an example: `gnome-terminal`(1). Overrides the default setting specified in `kathara.conf`(5) file. This option is ignored if used in conjunction with `--noterminals` or if `open_terminals` is set to false.
 
-* `--print`:
+* `--print`, `--dry-mode`:
     Check if the device parameters are correct (dry run).
 
 * `--bridged`:
@@ -133,7 +133,7 @@ Start a new device named router. The device will have two network interfaces. In
 
     kathara vstart -n test --eth 0:A 1:B --print
 
-Instead of actually starting a device, checks if the passed device parameters are correct.
+Instead of actually starting a device, check if the passed device parameters are correct.
 
     kathara vstart -n terminal_test --xterm gnome-terminal
 
