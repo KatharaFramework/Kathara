@@ -14,6 +14,8 @@ class FilesystemMixin(object):
         fs (FS): An object referencing a filesystem. Can be both real OS or a memory fs.
     """
 
+    __slots__ = ['fs']
+
     def __init__(self):
         self.fs: Optional[FS] = None
 
@@ -29,9 +31,9 @@ class FilesystemMixin(object):
         """Return the path of the filesystem, if fs is on the host. Else, return None
 
         Returns:
-            Optional[str]: The path of the filesystem.
+            Optional[str]: The path of the filesystem in the fs.
         """
-        return self.fs.getsyspath("") if self.fs.hassyspath("") else self.fs.__repr__() if self.fs else None
+        return (self.fs.getsyspath("") if self.fs.hassyspath("") else self.fs.__repr__()) if self.fs else None
 
     def create_file_from_string(self, content: str, dst_path: str) -> None:
         """Create a file in the fs object from a string.
@@ -45,7 +47,7 @@ class FilesystemMixin(object):
 
         Raises:
             InvocationError: If the fs is None.
-            fs.errors.ResourceNotFound: If the path is not found.
+            fs.errors.ResourceNotFound: If the path is not found in the fs.
         """
         if not self.fs:
             raise InvocationError("Cannot create a file if the filesystem is not set.")
@@ -68,7 +70,7 @@ class FilesystemMixin(object):
 
         Raises:
             InvocationError: If the fs is None.
-            fs.errors.ResourceNotFound: If the path is not found.
+            fs.errors.ResourceNotFound: If the path is not found in the fs.
         """
         if not self.fs:
             raise InvocationError("Cannot create a file if the filesystem is not set.")
@@ -91,7 +93,7 @@ class FilesystemMixin(object):
 
         Raises:
             InvocationError: If the fs is None.
-            fs.errors.ResourceNotFound: If the path is not found.
+            fs.errors.ResourceNotFound: If the path is not found in the fs.
         """
         if not self.fs:
             raise InvocationError("Cannot create a file if the filesystem is not set.")
@@ -115,7 +117,7 @@ class FilesystemMixin(object):
         Raises:
             InvocationError: If the fs is None.
             UnsupportedOperation: If the stream is opened without read permissions.
-            fs.errors.ResourceNotFound: If the path is not found.
+            fs.errors.ResourceNotFound: If the path is not found in the fs.
         """
         if not self.fs:
             raise InvocationError("Cannot create a file if the filesystem is not set.")
