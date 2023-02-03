@@ -4,6 +4,7 @@ import re
 import tempfile
 from typing import Dict, Any, Tuple, Optional, List, OrderedDict, TextIO, Union, BinaryIO
 
+from fs.base import FS
 from fs.copy import copy_fs, copy_file
 from fs.tarfs import WriteTarFS
 from fs.walk import Walker
@@ -31,6 +32,7 @@ class Machine(FilesystemMixin):
         startup_commands (List[str]): A list of commands to execute at the device startup.
         api_object (Any): To interact with the current Kathara Manager.
         capabilities (List[str]): The selected capabilities for the device.
+        fs (fs.FS): The filesystem of the device. Contains files and configurations associated to it.
     """
     __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities']
 
@@ -70,7 +72,7 @@ class Machine(FilesystemMixin):
 
         self.capabilities: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
 
-        self.fs = self.lab.fs.opendir(self.name) \
+        self.fs: FS = self.lab.fs.opendir(self.name) \
             if self.lab.fs.exists(self.name) and self.lab.fs.isdir(self.name) else None
 
         self.update_meta(kwargs)
@@ -434,24 +436,73 @@ class Machine(FilesystemMixin):
     # Override FilesystemMixin methods to handle the condition if we want to add a file but self.fs is not set
     # In this case, we create the machine directory and assign it to self.fs before calling the actual method
     def create_file_from_string(self, content: str, dst_path: str) -> None:
+        """Create a file from a string in the device fs. If fs is None, create it in the network scenario.
+
+        Args:
+            content[str]: The string representing the content of the file to create.
+            dst_path[str]: The path of the fs where create the file.
+
+        Returns:
+            None
+
+        Raises:
+            fs.errors.ResourceNotFound: If the path is not found.
+        """
         if not self.fs:
             self.fs = self.lab.fs.makedir(self.name, recreate=True)
 
         super().create_file_from_string(content, dst_path)
 
     def create_file_from_list(self, lines: List[str], dst_path: str) -> None:
+        """Create a file from a list of strings in the device fs. If fs is None, create it in the network scenario.
+
+        Args:
+            content[str]: The list of strings representing the content of the file to create.
+            dst_path[str]: The path of the fs where create the file.
+
+        Returns:
+            None
+
+        Raises:
+            fs.errors.ResourceNotFound: If the path is not found.
+        """
         if not self.fs:
             self.fs = self.lab.fs.makedir(self.name, recreate=True)
 
         super().create_file_from_list(lines, dst_path)
 
     def create_file_from_path(self, src_path: str, dst_path: str) -> None:
+        """Create a file in the device fs from an existing file on the host filesystem. If the fs is None, create it.
+
+        Args:
+            src_path[str]: The path of the file on the host filesystem to upload in the fs object.
+            dst_path[str]: The path of the fs where create the file.
+
+        Returns:
+            None
+
+        Raises:
+            fs.errors.ResourceNotFound: If the path is not found.
+        """
         if not self.fs:
             self.fs = self.lab.fs.makedir(self.name, recreate=True)
 
         super().create_file_from_path(src_path, dst_path)
 
     def create_file_from_stream(self, stream: Union[BinaryIO, TextIO], dst_path: str) -> None:
+        """Create a file in the device fs from a stream. If fs is None, create it in the network scenario.
+
+        Args:
+            stream[Union[BinaryIO, TextIO]]: The stream representing the content of the file to create.
+            dst_path[str]: The path of the fs where create the file.
+
+        Returns:
+            None
+
+        Raises:
+            UnsupportedOperation: If the stream is opened without read permissions.
+            fs.errors.ResourceNotFound: If the path is not found.
+        """
         if not self.fs:
             self.fs = self.lab.fs.makedir(self.name, recreate=True)
 

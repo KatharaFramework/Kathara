@@ -3,6 +3,7 @@ from itertools import chain
 from typing import Dict, Set, Any, List, Union, Optional, Tuple
 
 import fs
+from fs.base import FS
 
 from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
@@ -30,6 +31,7 @@ class Lab(FilesystemMixin):
         general_options (Dict[str, Any]): Keys are option names, values are option values.
         has_dependencies (bool): True if there are dependencies among the devices boot.
         shared_path (str): Path to shared folder of the network scenario, if the network scenario has a real OS path.
+        fs (fs.FS): The filesystem of the network scenario. Contains files and configurations associated to it.
     """
     __slots__ = ['_name', 'description', 'version', 'author', 'email', 'web', 'hash',
                  'machines', 'links', 'general_options', 'has_dependencies', 'shared_path']
@@ -65,9 +67,9 @@ class Lab(FilesystemMixin):
         self.hash: str = utils.generate_urlsafe_hash(path if self._name is None else self._name)
 
         if path:
-            self.fs = fs.open_fs(f"osfs://{path}")
+            self.fs: FS = fs.open_fs(f"osfs://{path}")
         else:
-            self.fs = fs.open_fs("mem://")
+            self.fs: FS = fs.open_fs("mem://")
 
     @property
     def name(self):
