@@ -111,6 +111,8 @@ class FilesystemMixin(object):
 
         Raises:
             InvocationError: If the fs is None.
+            UnsupportedOperation: If the stream is opened without read permissions.
+            DirectoryExpected: If one of the ancestors in the dst_path is not a directory.
         """
         if not self.fs:
             raise InvocationError("Cannot create a file if the filesystem is not set.")
