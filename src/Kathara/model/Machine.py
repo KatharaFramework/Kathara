@@ -368,16 +368,45 @@ class Machine(object):
 
         return None
 
-    def get_ports(self) -> Optional[Dict[Tuple[int, str], int]]:
+    def get_ports(self) -> Dict[Tuple[int, str], int]:
         """Get the port mapping of the device.
 
         Returns:
             Dict[(int, str), int]: Keys are pairs (host port, protocol), values specifies the guest port.
         """
-        if self.meta['ports']:
-            return self.meta['ports']
+        return self.meta['ports']
 
-        return None
+    def get_sysctls(self) -> Dict[str, Union[int, str]]:
+        """Get the sysctls specified for the device.
+
+        Returns:
+            Dict[str, Union[int, str]]: Keys contain the sysctls to set, values are the values to apply.
+        """
+        return self.meta['sysctls']
+
+    def get_shell(self) -> str:
+        """Get the custom shell specified for the device.
+
+        Returns:
+            str: The path of the custom shell specified for connecting to the device.
+        """
+        return self.meta['shell'] if 'shell' in self.meta else Setting.get_instance().device_shell
+
+    def get_envs(self) -> Dict[str, Union[int, str]]:
+        """Get the environment variables specified for the device.
+
+        Returns:
+            Dict[str, Union[int, str]]: Keys are environment variables to set, values are the values to apply.
+        """
+        return self.meta['envs'] if self.meta['envs'] else {}
+
+    def is_bridged(self) -> bool:
+        """Return True if the device is bridged, else return False.
+
+        Returns:
+            bool: True if the device is bridged, else False.
+        """
+        return self.meta['bridged']
 
     def get_num_terms(self) -> int:
         """Get the number of terminals to be opened for the device.
