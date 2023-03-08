@@ -107,7 +107,7 @@ class LtestCommand(Command):
                 builtin_test.create_signature()
                 user_test.create_signature()
         else:
-            result_test_path = os.path.join(lab.path, "_test", "results")
+            result_test_path = os.path.join(lab.fs_path(), "_test", "results")
 
             shutil.rmtree(result_test_path, ignore_errors=True)
             os.makedirs(result_test_path, exist_ok=True)

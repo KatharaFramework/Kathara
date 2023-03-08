@@ -1,23 +1,25 @@
 import collections
 import logging
-import os
 import re
-import shutil
-import tarfile
 import tempfile
-from pathlib import Path
-from typing import Dict, Any, Tuple, Optional, List, OrderedDict
+from typing import Dict, Any, Tuple, Optional, List, OrderedDict, TextIO, Union, BinaryIO
+
+from fs.base import FS
+from fs.copy import copy_fs, copy_file
+from fs.tarfs import WriteTarFS
+from fs.walk import Walker
 
 from . import Lab as LabPackage
 from . import Link as LinkPackage
 from .Link import Link
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainError
+from ..foundation.model.FilesystemMixin import FilesystemMixin
 from ..setting.Setting import Setting
 from ..trdparty.strtobool.strtobool import strtobool
 
 
-class Machine(object):
+class Machine(FilesystemMixin):
     """A Kathara device.
 
     Contains information about the device and the API object to interact with the Manager.
@@ -30,12 +32,9 @@ class Machine(object):
         startup_commands (List[str]): A list of commands to execute at the device startup.
         api_object (Any): To interact with the current Kathara Manager.
         capabilities (List[str]): The selected capabilities for the device.
-        startup_path (str): The path of the device startup file, if exists.
-        shutdown_path (str): The path of the device shutdown file, if exists.
-        folder (str): The path of the device folder, if exists.
+        fs (fs.FS): The filesystem of the device. Contains files and configurations associated to it.
     """
-    __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities',
-                 'startup_path', 'shutdown_path', 'folder']
+    __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities']
 
     def __init__(self, lab: 'LabPackage.Lab', name: str, **kwargs) -> None:
         """Create a new instance of a Kathara device.
@@ -48,6 +47,8 @@ class Machine(object):
         Returns:
             None
         """
+        super().__init__()
+
         name = name.strip()
         matches = re.search(r"^[a-z0-9_]{1,30}$", name)
         if not matches:
@@ -71,19 +72,8 @@ class Machine(object):
 
         self.capabilities: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
 
-        self.startup_path: Optional[str] = None
-        self.shutdown_path: Optional[str] = None
-        self.folder: Optional[str] = None
-
-        if lab.has_path():
-            startup_file = os.path.join(lab.path, '%s.startup' % self.name)
-            self.startup_path = startup_file if os.path.exists(startup_file) else None
-
-            shutdown_file = os.path.join(lab.path, '%s.shutdown' % self.name)
-            self.shutdown_path = shutdown_file if os.path.exists(shutdown_file) else None
-
-            machine_folder = os.path.join(lab.path, '%s' % self.name)
-            self.folder = machine_folder if os.path.isdir(machine_folder) else None
+        self.fs: FS = self.lab.fs.opendir(self.name) \
+            if self.lab.fs.exists(self.name) and self.lab.fs.isdir(self.name) else None
 
         self.update_meta(kwargs)
 
@@ -238,69 +228,53 @@ class Machine(object):
         Returns:
             bytes: the tar content.
         """
-        # Make a temp folder and create a tar.gz of the lab directory
-        temp_path = tempfile.mkdtemp()
-
         is_empty = True
+        tar_data = None
 
-        with tarfile.open("%s/hostlab.tar.gz" % temp_path, "w:gz") as tar:
-            if self.folder:
-                machine_files = filter(lambda x: x.is_file(), Path(self.folder).rglob("*"))
+        with tempfile.NamedTemporaryFile(mode='wb+', suffix='.tar.gz') as temp_file:
+            with WriteTarFS(temp_file, compression="gz") as tar:
+                hostlab_tar_dir = tar.makedir('hostlab')
+                machine_tar_dir = hostlab_tar_dir.makedir(self.name)
+                if self.fs and not self.fs.isempty(''):
+                    copy_fs(
+                        self.fs,
+                        machine_tar_dir,
+                        on_copy=lambda src_fs, src_path, dst_fs, dst_path: utils.convert_win_2_linux(
+                            dst_fs.getsyspath(dst_path), write=True
+                        ),
+                        walker=Walker(exclude=utils.EXCLUDED_FILES),
+                        workers=utils.get_pool_size()
+                    )
 
-                for file in machine_files:
-                    file = str(file)
+                    is_empty = False
 
-                    if utils.is_excluded_file(file):
-                        continue
+                if self.lab.fs.exists(f"{self.name}.startup"):
+                    copy_file(self.lab.fs, f"{self.name}.startup", hostlab_tar_dir, f"{self.name}.startup")
+                    utils.convert_win_2_linux(hostlab_tar_dir.getsyspath(f"{self.name}.startup"), write=True)
+                    is_empty = False
 
-                    # Removes the last element of the path
-                    # (because it's the machine folder name and it should be included in the tar archive)
-                    lab_path, machine_folder = os.path.split(self.folder)
-                    (tarinfo, content) = utils.pack_file_for_tar(file,
-                                                                 arc_name="hostlab/%s" % os.path.relpath(file, lab_path)
-                                                                 )
-                    tar.addfile(tarinfo, content)
+                if self.lab.fs.exists(f"{self.name}.shutdown"):
+                    copy_file(self.lab.fs, f"{self.name}.shutdown", hostlab_tar_dir, f"{self.name}.shutdown")
+                    utils.convert_win_2_linux(hostlab_tar_dir.getsyspath(f"{self.name}.shutdown"), write=True)
+                    is_empty = False
 
-                is_empty = False
+                if self.lab.fs.exists("shared.startup"):
+                    copy_file(self.lab.fs, "shared.startup", hostlab_tar_dir, "shared.startup")
+                    utils.convert_win_2_linux(hostlab_tar_dir.getsyspath("shared.startup"), write=True)
+                    is_empty = False
 
-            if self.startup_path:
-                (tarinfo, content) = utils.pack_file_for_tar(self.startup_path,
-                                                             arc_name="hostlab/%s.startup" % self.name
-                                                             )
-                tar.addfile(tarinfo, content)
-                is_empty = False
+                if self.lab.fs.exists("shared.shutdown"):
+                    copy_file(self.lab.fs, "shared.shutdown", hostlab_tar_dir, "shared.shutdown")
+                    utils.convert_win_2_linux(hostlab_tar_dir.getsyspath("shared.shutdown"), write=True)
+                    is_empty = False
 
-            if self.shutdown_path:
-                (tarinfo, content) = utils.pack_file_for_tar(self.shutdown_path,
-                                                             arc_name="hostlab/%s.shutdown" % self.name
-                                                             )
-                tar.addfile(tarinfo, content)
-                is_empty = False
-
-            if self.lab.shared_startup_path:
-                (tarinfo, content) = utils.pack_file_for_tar(self.lab.shared_startup_path,
-                                                             arc_name="hostlab/shared.startup"
-                                                             )
-                tar.addfile(tarinfo, content)
-                is_empty = False
-
-            if self.lab.shared_shutdown_path:
-                (tarinfo, content) = utils.pack_file_for_tar(self.lab.shared_shutdown_path,
-                                                             arc_name="hostlab/shared.shutdown"
-                                                             )
-                tar.addfile(tarinfo, content)
-                is_empty = False
+            if not is_empty:
+                temp_file.seek(0)
+                tar_data = temp_file.read()
 
         # If no machine files are found, return None.
         if is_empty:
             return None
-
-        # Read tar.gz content
-        with open("%s/hostlab.tar.gz" % temp_path, "rb") as tar_file:
-            tar_data = tar_file.read()
-
-        # Delete temporary tar.gz
-        shutil.rmtree(temp_path)
 
         return tar_data
 
@@ -488,6 +462,81 @@ class Machine(object):
         if 'envs' in args and args['envs'] is not None:
             for envs in args['envs']:
                 self.add_meta("env", envs)
+
+    # Override FilesystemMixin methods to handle the condition if we want to add a file but self.fs is not set
+    # In this case, we create the machine directory and assign it to self.fs before calling the actual method
+    def create_file_from_string(self, content: str, dst_path: str) -> None:
+        """Create a file from a string in the device fs. If fs is None, create it in the network scenario.
+
+        Args:
+            content[str]: The string representing the content of the file to create.
+            dst_path[str]: The absolute path of the fs where create the file.
+
+        Returns:
+            None
+
+        Raises:
+            fs.errors.ResourceNotFound: If the path is not found.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().create_file_from_string(content, dst_path)
+
+    def create_file_from_list(self, lines: List[str], dst_path: str) -> None:
+        """Create a file from a list of strings in the device fs. If fs is None, create it in the network scenario.
+
+        Args:
+            content[str]: The list of strings representing the content of the file to create.
+            dst_path[str]: The absolute path of the fs where create the file.
+
+        Returns:
+            None
+
+        Raises:
+            fs.errors.ResourceNotFound: If the path is not found.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().create_file_from_list(lines, dst_path)
+
+    def create_file_from_path(self, src_path: str, dst_path: str) -> None:
+        """Create a file in the device fs from an existing file on the host filesystem. If the fs is None, create it.
+
+        Args:
+            src_path[str]: The path of the file on the host filesystem to copy in the fs object.
+            dst_path[str]: The absolute path of the fs where create the file.
+
+        Returns:
+            None
+
+        Raises:
+            fs.errors.ResourceNotFound: If the path is not found.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().create_file_from_path(src_path, dst_path)
+
+    def create_file_from_stream(self, stream: Union[BinaryIO, TextIO], dst_path: str) -> None:
+        """Create a file in the device fs from a stream. If fs is None, create it in the network scenario.
+
+        Args:
+            stream[Union[BinaryIO, TextIO]]: The stream representing the content of the file to create.
+            dst_path[str]: The absolute path of the fs where create the file.
+
+        Returns:
+            None
+
+        Raises:
+            UnsupportedOperation: If the stream is opened without read permissions.
+            fs.errors.ResourceNotFound: If the path is not found.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().create_file_from_stream(stream, dst_path)
 
     def __repr__(self) -> str:
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

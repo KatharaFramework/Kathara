@@ -161,13 +161,18 @@ def get_architecture() -> str:
         raise HostArchitectureError(architecture)
 
 
-def convert_win_2_linux(filename: str) -> bytes:
+def convert_win_2_linux(filename: str, write: bool = False) -> Optional[bytes]:
     if not is_binary(filename):
         file_obj = None
         try:
             file_obj = open(filename, mode='r', encoding='utf-8-sig')
-            file_content = file_obj.read()
-            return file_content.replace("\n\r", "\n").encode('utf-8')
+            file_content = file_obj.read().replace("\n\r", "\n")
+            if not write:
+                return file_content.encode('utf-8')
+            else:
+                with open(filename, mode='w', encoding='utf-8') as file_obj_write:
+                    file_obj_write.write(file_content)
+                return
         except Exception:
             # In any case the binaryornot heuristics fail (so the file is not a text file), close the stream and
             # read the file as a standard binary file.
@@ -175,7 +180,8 @@ def convert_win_2_linux(filename: str) -> bytes:
                 file_obj.close()
             pass
 
-    return open(filename, mode='rb').read()
+    if not write:
+        return open(filename, mode='rb').read()
 
 
 def is_admin() -> bool:
@@ -307,9 +313,3 @@ def pack_files_for_tar(guest_to_host: Dict) -> bytes:
         tar_data = temp_file.read()
 
     return tar_data
-
-
-def is_excluded_file(path: str) -> bool:
-    _, filename = os.path.split(path)
-
-    return filename in EXCLUDED_FILES

@@ -244,8 +244,8 @@ class DockerMachine(object):
         volumes = {}
 
         shared_mount = options['shared_mount'] if 'shared_mount' in options else Setting.get_instance().shared_mount
-        if shared_mount and machine.lab.shared_folder:
-            volumes[machine.lab.shared_folder] = {'bind': '/shared', 'mode': 'rw'}
+        if shared_mount and machine.lab.shared_path:
+            volumes[machine.lab.shared_path] = {'bind': '/shared', 'mode': 'rw'}
 
         # Mount the host home only if specified in settings.
         hosthome_mount = options['hosthome_mount'] if 'hosthome_mount' in options else \
@@ -617,8 +617,8 @@ class DockerMachine(object):
             detach (bool): If true, detach from the exec command. Default: False
             stream (bool): Stream response data. Default: False
             socket (bool): Return the connection socket to allow custom read/write operations. Default: False
-            environment (dict or list): A dictionary or a list of strings in the following format ``["PASSWORD=xxx"]`` or
-                ``{"PASSWORD": "xxx"}``.
+            environment (dict or list): A dictionary or a list of strings in the following format
+                ``["PASSWORD=xxx"]`` or ``{"PASSWORD": "xxx"}``.
             workdir (str): Path to working directory for this exec session
             demux (bool): Return stdout and stderr separately
 
