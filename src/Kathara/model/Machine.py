@@ -440,7 +440,7 @@ class Machine(FilesystemMixin):
 
         Args:
             content[str]: The string representing the content of the file to create.
-            dst_path[str]: The path of the fs where create the file.
+            dst_path[str]: The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -458,7 +458,7 @@ class Machine(FilesystemMixin):
 
         Args:
             content[str]: The list of strings representing the content of the file to create.
-            dst_path[str]: The path of the fs where create the file.
+            dst_path[str]: The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -475,8 +475,8 @@ class Machine(FilesystemMixin):
         """Create a file in the device fs from an existing file on the host filesystem. If the fs is None, create it.
 
         Args:
-            src_path[str]: The path of the file on the host filesystem to upload in the fs object.
-            dst_path[str]: The path of the fs where create the file.
+            src_path[str]: The path of the file on the host filesystem to copy in the fs object.
+            dst_path[str]: The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -494,7 +494,7 @@ class Machine(FilesystemMixin):
 
         Args:
             stream[Union[BinaryIO, TextIO]]: The stream representing the content of the file to create.
-            dst_path[str]: The path of the fs where create the file.
+            dst_path[str]: The absolute path of the fs where create the file.
 
         Returns:
             None

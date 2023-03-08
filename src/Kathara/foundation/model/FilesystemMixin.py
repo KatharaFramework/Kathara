@@ -8,7 +8,7 @@ from ...exceptions import InvocationError
 
 
 class FilesystemMixin(object):
-    """A Kathará filesystem to manage storage of devices and network scenarios.
+    """Abstraction to manage filesystems of devices and network scenarios.
 
     Attributes:
         fs (FS): An object referencing a filesystem. Can be both real OS or a memory fs.
@@ -20,7 +20,7 @@ class FilesystemMixin(object):
         self.fs: Optional[FS] = None
 
     def fs_type(self) -> Optional[str]:
-        """Return the name of the class of the fs object.
+        """Return the name of the class of the fs object, if present. Else, return None.
 
         Returns:
             Optional[str]: The name of the class of the fs object.
@@ -28,7 +28,7 @@ class FilesystemMixin(object):
         return self.fs.__class__.__name__.lower().replace("fs", "") if self.fs else None
 
     def fs_path(self) -> Optional[str]:
-        """Return the path of the filesystem, if fs is on the host. Else, return None
+        """Return the path of the filesystem, if fs has a path on the host. Else, return None
 
         Returns:
             Optional[str]: The path of the filesystem in the fs.
@@ -40,7 +40,7 @@ class FilesystemMixin(object):
 
         Args:
             content[str]: The string representing the content of the file to create.
-            dst_path[str]: The path of the fs where create the file.
+            dst_path[str]: The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -63,7 +63,7 @@ class FilesystemMixin(object):
 
         Args:
             content[str]: The list of strings representing the content of the file to create.
-            dst_path[str]: The path of the fs where create the file.
+            dst_path[str]: The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -85,8 +85,8 @@ class FilesystemMixin(object):
         """Create a file in the fs object from an existing file on the host filesystem.
 
         Args:
-            src_path[str]: The path of the file on the host filesystem to upload in the fs object.
-            dst_path[str]: The path of the fs where create the file.
+            src_path[str]: The path of the file on the host filesystem to copy in the fs object.
+            dst_path[str]: The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -109,7 +109,7 @@ class FilesystemMixin(object):
 
         Args:
             stream[Union[BinaryIO, TextIO]]: The stream representing the content of the file to create.
-            dst_path[str]: The path of the fs where create the file.
+            dst_path[str]: The absolute path of the fs where create the file.
 
         Returns:
             None
