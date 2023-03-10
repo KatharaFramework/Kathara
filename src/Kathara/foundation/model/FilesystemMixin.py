@@ -33,7 +33,7 @@ class FilesystemMixin(object):
         Returns:
             Optional[str]: The path of the filesystem in the fs.
         """
-        return (self.fs.getsyspath("") if self.fs.hassyspath("") else self.fs.__repr__()) if self.fs else None
+        return (self.fs.getsyspath("") if self.fs.hassyspath("") else None) if self.fs else None
 
     def create_file_from_string(self, content: str, dst_path: str) -> None:
         """Create a file in the fs object from a string.
