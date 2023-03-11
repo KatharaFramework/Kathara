@@ -7,6 +7,8 @@ from typing import Dict, Any, Tuple, Optional, List, OrderedDict, TextIO, Union,
 from fs.base import FS
 from fs.copy import copy_fs, copy_file
 from fs.tarfs import WriteTarFS
+# noinspection PyUnresolvedReferences
+from fs.tempfs import TempFS
 from fs.walk import Walker
 
 from . import Lab as LabPackage

@@ -2,7 +2,7 @@ import collections
 from itertools import chain
 from typing import Dict, Set, Any, List, Union, Optional, Tuple
 
-import fs
+from fs import open_fs
 from fs.base import FS
 
 from . import Machine as MachinePackage
@@ -67,9 +67,9 @@ class Lab(FilesystemMixin):
         self.hash: str = utils.generate_urlsafe_hash(path if self._name is None else self._name)
 
         if path:
-            self.fs: FS = fs.open_fs(f"osfs://{path}")
+            self.fs: FS = open_fs(f"osfs://{path}")
         else:
-            self.fs: FS = fs.open_fs("mem://")
+            self.fs: FS = open_fs("mem://")
 
     @property
     def name(self):
