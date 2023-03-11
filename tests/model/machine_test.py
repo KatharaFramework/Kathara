@@ -28,11 +28,10 @@ def test_default_device_parameters(default_device: Machine):
         'sysctls': {},
         'envs': {},
         'bridged': False,
-        'ports': {}
+        'ports': {},
+        'startup_commands': []
     }
-    assert len(default_device.startup_commands) == 0
     assert default_device.api_object is None
-    assert default_device.capabilities == ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
     assert default_device.fs is None
     assert not default_device.lab.has_host_path()
 

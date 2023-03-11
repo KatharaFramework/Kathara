@@ -17,7 +17,7 @@ from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNo
     MachineBinaryError
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
-from ...model.Machine import Machine
+from ...model.Machine import Machine, MACHINE_CAPABILITIES
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
@@ -26,7 +26,7 @@ OCI_RUNTIME_RE = re.compile(
 )
 
 # Known commands that each container should execute
-# Run order: shared.startup, machine.startup and machine.startup_commands
+# Run order: shared.startup, machine.startup and machine.meta['startup_commands']
 STARTUP_COMMANDS = [
     # Unmount the /etc/resolv.conf and /etc/hosts files, automatically mounted by Docker inside the container.
     # In this way, they can be overwritten by custom user files.
@@ -264,7 +264,7 @@ class DockerMachine(object):
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,
                                                               hostname=machine.name,
-                                                              cap_add=machine.capabilities if not privileged else None,
+                                                              cap_add=MACHINE_CAPABILITIES if not privileged else None,
                                                               privileged=privileged,
                                                               network=first_network.name if first_network else None,
                                                               network_mode="bridge" if first_network else "none",
@@ -394,17 +394,17 @@ class DockerMachine(object):
             bridge_link.connect(machine.api_object)
 
         # Append executed machine startup commands inside the /var/log/startup.log file
-        if machine.startup_commands:
+        if machine.meta['startup_commands']:
             new_commands = []
-            for command in machine.startup_commands:
+            for command in machine.meta['startup_commands']:
                 new_commands.append("echo \"++ %s\" &>> /var/log/startup.log" % command)
                 new_commands.append(command)
-            machine.startup_commands = new_commands
+            machine.meta['startup_commands'] = new_commands
 
         # Build the final startup commands string
         startup_commands_string = "; ".join(STARTUP_COMMANDS).format(
             machine_name=machine.name,
-            machine_commands="; ".join(machine.startup_commands)
+            machine_commands="; ".join(machine.meta['startup_commands'])
         )
 
         logging.debug(f"Executing startup command on `{machine.name}`: {startup_commands_string}")
