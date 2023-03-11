@@ -18,6 +18,8 @@ from ..foundation.model.FilesystemMixin import FilesystemMixin
 from ..setting.Setting import Setting
 from ..trdparty.strtobool.strtobool import strtobool
 
+MACHINE_CAPABILITIES: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
+
 
 class Machine(FilesystemMixin):
     """A Kathara device.
@@ -29,12 +31,10 @@ class Machine(FilesystemMixin):
         name (str): The name of the device.
         interfaces (collection.OrderedDict[int, Kathara.model.Link]): A list of the collision domains of the device.
         meta (Dict[str, Any]): Keys are meta properties name, values are meta properties values.
-        startup_commands (List[str]): A list of commands to execute at the device startup.
         api_object (Any): To interact with the current Kathara Manager.
-        capabilities (List[str]): The selected capabilities for the device.
         fs (fs.FS): The filesystem of the device. Contains files and configurations associated to it.
     """
-    __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities']
+    __slots__ = ['lab', 'name', 'interfaces', 'meta', 'api_object']
 
     def __init__(self, lab: 'LabPackage.Lab', name: str, **kwargs) -> None:
         """Create a new instance of a Kathara device.
@@ -63,14 +63,11 @@ class Machine(FilesystemMixin):
             'sysctls': {},
             'envs': {},
             'bridged': False,
-            'ports': {}
+            'ports': {},
+            'startup_commands': []
         }
 
-        self.startup_commands: List[str] = []
-
         self.api_object: Any = None
-
-        self.capabilities: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
 
         self.fs: FS = self.lab.fs.opendir(self.name) \
             if self.lab.fs.exists(self.name) and self.lab.fs.isdir(self.name) else None
@@ -141,7 +138,7 @@ class Machine(FilesystemMixin):
             MachineOptionError: If the specified value is not valid for the specified property.
         """
         if name == "exec":
-            self.startup_commands.append(value)
+            self.meta['startup_commands'].append(value)
             return
 
         if name == "bridged":
@@ -422,6 +419,14 @@ class Machine(FilesystemMixin):
                 strtobool(self.meta["ipv6"]) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
+
+    def get_startup_commands(self) -> List[str]:
+        """Get the additional device startup commands.
+
+        Returns:
+            List[str]: The list containing the additional commands.
+        """
+        return self.meta['startup_commands']
 
     def update_meta(self, args: Dict[str, Any]) -> None:
         """Update the device metas from a dict.
