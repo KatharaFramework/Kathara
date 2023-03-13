@@ -4,6 +4,8 @@ import re
 import tempfile
 from typing import Dict, Any, Tuple, Optional, List, OrderedDict, TextIO, Union, BinaryIO
 
+# noinspection PyUnresolvedReferences
+from fs._bulk import Copier
 from fs.base import FS
 from fs.copy import copy_fs, copy_file
 from fs.tarfs import WriteTarFS
