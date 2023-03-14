@@ -44,7 +44,7 @@ def test_fs_path_os():
 def test_fs_path_mem():
     filesystem = FilesystemMixin()
     filesystem.fs = fs.open_fs(f"mem://")
-    assert filesystem.fs_path() == "MemoryFS()"
+    assert filesystem.fs_path() is None
 
 
 def test_create_file_from_string_invocation_error():

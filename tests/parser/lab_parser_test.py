@@ -60,3 +60,27 @@ def test_two_device_one_cd():
     assert lab.machines['pc2']
     assert len(lab.machines['pc2'].interfaces) == 1
     assert lab.machines['pc2'].interfaces[0].name == 'A'
+
+
+def test_inline_comment():
+    lab = LabParser.parse("tests/parser/labconf/inline_comment")
+    assert len(lab.machines) == 1
+    assert len(lab.links) == 1
+    assert lab.machines['pc1']
+    assert len(lab.machines['pc1'].interfaces) == 1
+    assert lab.machines['pc1'].interfaces[0].name == 'A'
+
+
+def test_inline_comment_error():
+    with pytest.raises(SyntaxError):
+        LabParser.parse("tests/parser/labconf/inline_comment_error")
+
+
+def test_unmatched_quotes():
+    with pytest.raises(SyntaxError):
+        LabParser.parse("tests/parser/labconf/unmatched_quotes")
+
+
+def test_unclosed_quotes():
+    with pytest.raises(SyntaxError):
+        LabParser.parse("tests/parser/labconf/unclosed_quotes")
