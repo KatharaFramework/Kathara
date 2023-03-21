@@ -71,7 +71,7 @@ class TMUX(object):
 
     def _get_session_from_server(self, session_name):
         if self._server.has_session(session_name):
-            return self._server.sessions.get(session_name=session_name})
+            return self._server.sessions.get(session_name=session_name)
 
         return None
 
