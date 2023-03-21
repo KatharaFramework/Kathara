@@ -31,7 +31,7 @@ class TMUX(object):
         initial_window_name = "%008x" % random.getrandbits(32)
         session, added = self.add_session(session_name, initial_window_name)
 
-        machine_window = session.find_where({"window_name": machine_name})
+        machine_window = session.windows.get(window_name=machine_name, default=None)
         if not machine_window:
             logging.debug("Starting TMUX window for `%s`..." % machine_name)
             session.new_window(window_name=machine_name, window_shell=shell, start_directory=cwd)
@@ -54,7 +54,7 @@ class TMUX(object):
 
         logging.debug("Initialized TMUX session %s" % session_name)
 
-        session = self._server.find_where({"session_name": session_name})
+        session = self._server.sessions.get(session_name=session_name)
         self.add_session_by_name(session_name, session)
 
         return session, True
@@ -71,13 +71,13 @@ class TMUX(object):
 
     def _get_session_from_server(self, session_name):
         if self._server.has_session(session_name):
-            return self._server.find_where({"session_name": session_name})
+            return self._server.sessions.get(session_name=session_name})
 
         return None
 
     @staticmethod
     def kill_window(session, window_name):
-        window = session.find_where({"window_name": window_name})
+        window = session.windows.get(window_name=window_name, default=None)
 
         if window:
             window.kill_window()
