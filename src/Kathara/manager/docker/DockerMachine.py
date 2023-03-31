@@ -1,6 +1,5 @@
 import logging
 import re
-import select
 import shlex
 import sys
 import time
@@ -526,6 +525,15 @@ class DockerMachine(object):
 
         logging.debug(f"Connect to device `{machine_name}` with shell: {shell}")
 
+        def wait_user_input_linux():
+            import select
+            to_break, _, _ = select.select([sys.stdin], [], [], 0.1)
+            return to_break
+
+        def wait_user_input_windows():
+            import msvcrt
+            return msvcrt.kbhit()
+
         startup_waited = True
         if wait:
             logging.debug(f"Waiting startup commands execution for device {machine_name}")
@@ -545,8 +553,7 @@ class DockerMachine(object):
                 sys.stdout.write("Waiting startup commands execution. Press enter to take control of the device...")
                 sys.stdout.flush()
 
-                to_break, _, _ = select.select([sys.stdin], [], [], 0.1)
-                if to_break:
+                if utils.exec_by_platform(wait_user_input_linux, wait_user_input_windows, wait_user_input_linux):
                     startup_waited = False
                     break
 
