@@ -1,6 +1,9 @@
 import logging
 import re
+import select
 import shlex
+import sys
+import time
 from itertools import islice
 from multiprocessing.dummy import Pool
 from typing import List, Dict, Generator, Optional, Set, Tuple, Union, Any
@@ -77,7 +80,9 @@ STARTUP_COMMANDS = [
     "/hostlab/{machine_name}.startup &> /var/log/startup.log; fi",
 
     # Placeholder for user commands
-    "{machine_commands}"
+    "{machine_commands}",
+
+    "touch /var/log/EOS"
 ]
 
 SHUTDOWN_COMMANDS = [
@@ -402,7 +407,9 @@ class DockerMachine(object):
             machine.meta['startup_commands'] = new_commands
 
         # Build the final startup commands string
-        startup_commands_string = "; ".join(STARTUP_COMMANDS).format(
+        startup_commands_string = "; ".join(
+            STARTUP_COMMANDS if machine.meta['startup_commands'] else STARTUP_COMMANDS[:-2] + STARTUP_COMMANDS[
+                                                                                              :-1]).format(
             machine_name=machine.name,
             machine_commands="; ".join(machine.meta['startup_commands'])
         )
@@ -490,7 +497,7 @@ class DockerMachine(object):
         EventDispatcher.get_instance().dispatch("machine_undeployed", item=machine_api_object)
 
     def connect(self, lab_hash: str, machine_name: str, user: str = None, shell: str = None,
-                logs: bool = False) -> None:
+                logs: bool = False, wait: bool = True) -> None:
         """Open a stream to the Docker container specified by machine_name using the specified shell.
 
         Args:
@@ -499,6 +506,7 @@ class DockerMachine(object):
             user (str): The name of a current user on the host.
             shell (str): The path to the desired shell.
             logs (bool): If True, print the logs of the startup command.
+            wait (bool): If True, wait the end of the startup commands before giving control to the user.
 
         Returns:
             None
@@ -516,7 +524,37 @@ class DockerMachine(object):
         else:
             shell = shlex.split(shell)
 
-        logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
+        logging.debug(f"Connect to device `{machine_name}` with shell: {shell}")
+
+        startup_waited = True
+        if wait:
+            logging.debug(f"Waiting startup commands execution for device {machine_name}")
+            exit_code = 1
+            while exit_code != 0:
+                exec_result = self._exec_run(container,
+                                             cmd="cat /var/log/EOS",
+                                             stdout=True,
+                                             stderr=False,
+                                             privileged=False,
+                                             detach=False
+                                             )
+                exit_code = exec_result['exit_code']
+
+                sys.stdout.write("\033[2J")
+                sys.stdout.write("\033[0;0H")
+                sys.stdout.write("Waiting startup commands execution. Press enter to take control of the device...")
+                sys.stdout.flush()
+
+                to_break, _, _ = select.select([sys.stdin], [], [], 0.1)
+                if to_break:
+                    startup_waited = False
+                    break
+
+                time.sleep(0.1)
+
+        sys.stdout.write("\033[2J")
+        sys.stdout.write("\033[0;0H")
+        sys.stdout.flush()
 
         # Get the logs, if the command fails it means that the shell is not found.
         cat_logs_cmd = "cat /var/log/shared.log /var/log/startup.log"
@@ -534,7 +572,8 @@ class DockerMachine(object):
         if startup_output and logs and Setting.get_instance().print_startup_log:
             print("--- Startup Commands Log\n")
             print(startup_output)
-            print("--- End Startup Commands Log\n")
+            print("--- End Startup Commands Log\n" if startup_waited
+                  else "--- Executing Other Commands in Background\n")
 
         resp = self.client.api.exec_create(container.id,
                                            shell,
