@@ -407,8 +407,8 @@ class DockerMachine(object):
 
         # Build the final startup commands string
         startup_commands_string = "; ".join(
-            STARTUP_COMMANDS if machine.meta['startup_commands'] else STARTUP_COMMANDS[:-2] + STARTUP_COMMANDS[
-                                                                                              :-1]).format(
+            STARTUP_COMMANDS if machine.meta['startup_commands'] else STARTUP_COMMANDS[:-2] + STARTUP_COMMANDS[-1:]
+        ).format(
             machine_name=machine.name,
             machine_commands="; ".join(machine.meta['startup_commands'])
         )
