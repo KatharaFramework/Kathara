@@ -526,16 +526,19 @@ class DockerMachine(object):
         logging.debug(f"Connect to device `{machine_name}` with shell: {shell}")
 
         def wait_user_input_linux():
+            """Non-blocking input function for Linux and macOS."""
             import select
             to_break, _, _ = select.select([sys.stdin], [], [], 0.1)
             return to_break
 
         def wait_user_input_windows():
+            """Return True if a keypress is waiting to be read. Only for Windows."""
             import msvcrt
             return msvcrt.kbhit()
 
         startup_waited = True
         if wait:
+            # Wait until the startup commands are executed or until the user requests the control over the device.
             logging.debug(f"Waiting startup commands execution for device {machine_name}")
             exit_code = 1
             while exit_code != 0:
@@ -548,17 +551,20 @@ class DockerMachine(object):
                                              )
                 exit_code = exec_result['exit_code']
 
+                # To print the message on the same line at each loop
                 sys.stdout.write("\033[2J")
                 sys.stdout.write("\033[0;0H")
                 sys.stdout.write("Waiting startup commands execution. Press enter to take control of the device...")
                 sys.stdout.flush()
 
+                # If the user requests the control, break the while loop
                 if utils.exec_by_platform(wait_user_input_linux, wait_user_input_windows, wait_user_input_linux):
                     startup_waited = False
                     break
 
                 time.sleep(0.1)
 
+        # Clean the terminal output
         sys.stdout.write("\033[2J")
         sys.stdout.write("\033[0;0H")
         sys.stdout.flush()
