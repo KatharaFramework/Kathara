@@ -570,26 +570,20 @@ class DockerMachine(object):
         sys.stdout.flush()
 
         # Get the logs, if the command fails it means that the shell is not found.
-        cat_logs_cmd = "cat /var/log/shared.log /var/log/startup.log"
-        startup_command = [item for item in shell]
-        startup_command.extend(['-c', cat_logs_cmd])
-        exec_result = self._exec_run(container,
-                                     cmd=startup_command,
-                                     stdout=True,
-                                     stderr=False,
-                                     privileged=False,
-                                     detach=False
-                                     )
-        startup_output = exec_result['output'].decode('utf-8')
+        cat_logs_cmd = "[ -f var/log/shared.log ] && " \
+                       "(echo '-- Shared Commands --'; cat /var/log/shared.log; echo '-- End Shared Commands --\n');" \
+                       "[ -f /var/log/startup.log ] && " \
+                       "(echo '-- Device Commands --'; cat /var/log/startup.log; echo '-- End Device Commands --')"
 
-        if startup_output and logs and Setting.get_instance().print_startup_log:
-            print("--- Startup Commands Log\n")
-            print(startup_output)
-            print("--- End Startup Commands Log\n" if startup_waited
-                  else "--- Executing Other Commands in Background\n")
+        command = f"{shell[0]} -c \"echo '--- Startup Commands Log\n';" \
+                  f"{cat_logs_cmd};"
+        command += "echo '\n--- End Startup Commands Log\n';" if startup_waited else \
+            "echo '\n--- Executing other commands in background\n';"
+
+        command += f"{shell[0]}\""
 
         resp = self.client.api.exec_create(container.id,
-                                           shell,
+                                           command,
                                            stdout=True,
                                            stderr=True,
                                            stdin=True,
