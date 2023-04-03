@@ -569,18 +569,22 @@ class DockerMachine(object):
         sys.stdout.write("\033[0;0H")
         sys.stdout.flush()
 
-        # Get the logs, if the command fails it means that the shell is not found.
-        cat_logs_cmd = "[ -f var/log/shared.log ] && " \
-                       "(echo '-- Shared Commands --'; cat /var/log/shared.log; echo '-- End Shared Commands --\n');" \
-                       "[ -f /var/log/startup.log ] && " \
-                       "(echo '-- Device Commands --'; cat /var/log/startup.log; echo '-- End Device Commands --')"
 
-        command = f"{shell[0]} -c \"echo '--- Startup Commands Log\n';" \
-                  f"{cat_logs_cmd};"
-        command += "echo '\n--- End Startup Commands Log\n';" if startup_waited else \
-            "echo '\n--- Executing other commands in background\n';"
-
-        command += f"{shell[0]}\""
+        command = ""
+        if logs:
+            # Print the startup logs inside the container and open the shell
+            cat_logs_cmd = "[ -f var/log/shared.log ] && " \
+                           "(echo '-- Shared Commands --'; cat /var/log/shared.log; " \
+                           "echo '-- End Shared Commands --\n');" \
+                           "[ -f /var/log/startup.log ] && " \
+                           "(echo '-- Device Commands --'; cat /var/log/startup.log; echo '-- End Device Commands --')"
+            command += f"{shell[0]} -c \"echo '--- Startup Commands Log\n';" \
+                       f"{cat_logs_cmd};"
+            command += "echo '\n--- End Startup Commands Log\n';" if startup_waited else \
+                f"echo '\n--- Executing other commands in background\n';"
+            command += f"{shell[0]}\""
+        else:
+            command += f"{shell[0]}"
 
         resp = self.client.api.exec_create(container.id,
                                            command,
