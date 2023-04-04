@@ -53,6 +53,13 @@ class ExecCommand(Command):
             help='Disable stderr of the executed command.',
         )
         self.parser.add_argument(
+            '--wait',
+            dest="wait",
+            action="store_true",
+            default=False,
+            help='Wait startup commands execution.',
+        )
+        self.parser.add_argument(
             'machine_name',
             metavar='DEVICE_NAME',
             help='Name of the device to execute the command into.'
@@ -81,7 +88,8 @@ class ExecCommand(Command):
         exec_output = Kathara.get_instance().exec(
             args['machine_name'],
             args['command'] if len(args['command']) > 1 else args['command'].pop(),
-            lab_hash=lab.hash
+            lab_hash=lab.hash,
+            wait=args['wait']
         )
 
         try:

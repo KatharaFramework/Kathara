@@ -35,6 +35,9 @@ Execute a command in the Kathara device DEVICE_NAME.
 * `--no-stderr`:
     Disable stderr of the executed command.
 
+* `--wait`:
+    Wait startup commands execution.
+
 * `<DEVICE_NAME>:
     Name of the device to execute the command into.
 

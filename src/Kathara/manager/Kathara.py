@@ -200,7 +200,7 @@ class Kathara(IManager):
         self.manager.connect_tty(machine_name, lab_hash, lab_name, shell, logs)
 
     def exec(self, machine_name: str, command: List[str], lab_hash: Optional[str] = None,
-             lab_name: Optional[str] = None) -> Generator[Tuple[bytes, bytes], None, None]:
+             lab_name: Optional[str] = None, wait: bool = False) -> Generator[Tuple[bytes, bytes], None, None]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -208,6 +208,7 @@ class Kathara(IManager):
             command (List[str]): The command to exec on the device.
             lab_hash (Optional[str]): The hash of the network scenario where the device is deployed.
             lab_name (Optional[str]): The name of the network scenario where the device is deployed.
+            wait (bool): If True, wait the end of the startup before executing the command.
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
@@ -215,7 +216,7 @@ class Kathara(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        return self.manager.exec(machine_name, command, lab_hash, lab_name)
+        return self.manager.exec(machine_name, command, lab_hash, lab_name, wait)
 
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
         """Copy files on a running device in the specified paths.
