@@ -468,6 +468,147 @@ def test_wipe_all_users_and_shared_cd(mock_setting_get_instance, mock_get_curren
 
 
 #
+# TEST: connect_tty
+#
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect")
+def test_connect_tty_lab_hash(mock_connect, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.connect_tty(default_device.name,
+                               lab_hash=default_device.lab.hash)
+
+    mock_connect.assert_called_once_with(lab_hash=default_device.lab.hash,
+                                         machine_name=default_device.name,
+                                         user="kathara_user",
+                                         shell=None,
+                                         logs=False)
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect")
+def test_connect_tty_lab_name(mock_connect, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.connect_tty(default_device.name,
+                               lab_name=default_device.lab.name)
+
+    mock_connect.assert_called_once_with(lab_hash=generate_urlsafe_hash(default_device.lab.name),
+                                         machine_name=default_device.name,
+                                         user="kathara_user",
+                                         shell=None,
+                                         logs=False)
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect")
+def test_connect_tty_with_custom_shell(mock_connect, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.connect_tty(default_device.name,
+                               lab_hash=default_device.lab.hash,
+                               shell="/usr/bin/zsh")
+
+    mock_connect.assert_called_once_with(lab_hash=default_device.lab.hash,
+                                         machine_name=default_device.name,
+                                         user="kathara_user",
+                                         shell="/usr/bin/zsh",
+                                         logs=False)
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect")
+def test_connect_tty_with_logs(mock_connect, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.connect_tty(default_device.name,
+                               lab_hash=default_device.lab.hash,
+                               logs=True)
+
+    mock_connect.assert_called_once_with(lab_hash=default_device.lab.hash,
+                                         machine_name=default_device.name,
+                                         user="kathara_user",
+                                         shell=None,
+                                         logs=True)
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect")
+def test_connect_tty_error(mock_connect, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    with pytest.raises(InvocationError):
+        docker_manager.connect_tty(default_device.name)
+
+    assert not mock_connect.called
+
+
+#
+# TEST: exec
+#
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.exec")
+def test_exec_lab_hash(mock_exec, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.exec(default_device.name, ["test", "command"], lab_hash=default_device.lab.hash)
+
+    mock_exec.assert_called_once_with(
+        default_device.lab.hash,
+        default_device.name,
+        ["test", "command"],
+        user="kathara_user",
+        tty=False,
+        wait=False
+    )
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.exec")
+def test_exec_lab_name(mock_exec, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.exec(default_device.name, ["test", "command"], lab_name=default_device.lab.name)
+
+    mock_exec.assert_called_once_with(
+        generate_urlsafe_hash(default_device.lab.name),
+        default_device.name,
+        ["test", "command"],
+        user="kathara_user",
+        tty=False,
+        wait=False
+    )
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.exec")
+def test_exec_wait(mock_exec, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.exec(default_device.name, ["test", "command"], lab_hash=default_device.lab.hash, wait=True)
+
+    mock_exec.assert_called_once_with(
+        default_device.lab.hash,
+        default_device.name,
+        ["test", "command"],
+        user="kathara_user",
+        tty=False,
+        wait=True
+    )
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.exec")
+def test_exec_invocation_error(mock_exec, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    with pytest.raises(InvocationError):
+        docker_manager.exec(default_device.name, ["test", "command"])
+
+    assert not mock_exec.called
+
+
+#
 # TEST: get_machine_api_object
 #
 @mock.patch("src.Kathara.utils.get_current_user_name")
