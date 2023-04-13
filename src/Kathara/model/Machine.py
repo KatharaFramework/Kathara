@@ -2,6 +2,7 @@ import collections
 import logging
 import re
 import tempfile
+from io import BytesIO
 from typing import Dict, Any, Tuple, Optional, List, OrderedDict, TextIO, Union, BinaryIO
 
 # noinspection PyUnresolvedReferences
@@ -230,54 +231,35 @@ class Machine(FilesystemMixin):
             bytes: the tar content.
         """
         is_empty = True
-        tar_data = None
 
-        with tempfile.NamedTemporaryFile(mode='wb+', suffix='.tar.gz') as temp_file:
-            with WriteTarFS(temp_file, compression="gz") as tar:
-                hostlab_tar_dir = tar.makedir('hostlab')
-                machine_tar_dir = hostlab_tar_dir.makedir(self.name)
-                if self.fs and not self.fs.isempty(''):
-                    copy_fs(
-                        self.fs,
-                        machine_tar_dir,
-                        on_copy=lambda src_fs, src_path, dst_fs, dst_path: utils.convert_win_2_linux(
-                            dst_fs.getsyspath(dst_path), write=True
-                        ),
-                        walker=Walker(exclude=utils.EXCLUDED_FILES),
-                        workers=utils.get_pool_size()
-                    )
+        file = BytesIO()
+        with WriteTarFS(file, compression="gz") as tar:
+            hostlab_tar_dir = tar.makedir('hostlab')
+            machine_tar_dir = hostlab_tar_dir.makedir(self.name)
+            if self.fs and not self.fs.isempty(''):
+                copy_fs(
+                    self.fs,
+                    machine_tar_dir,
+                    on_copy=lambda src_fs, src_path, dst_fs, dst_path: utils.convert_win_2_linux(
+                        dst_fs.getsyspath(dst_path), write=True
+                    ),
+                    walker=Walker(exclude=utils.EXCLUDED_FILES)
+                )
 
+                is_empty = False
+
+            for name in [f"{self.name}.startup", f"{self.name}.shutdown", "shared.startup", "shared.shutdown"]:
+                if self.lab.fs.exists(name):
+                    copy_file(self.lab.fs, name, hostlab_tar_dir, name)
+                    utils.convert_win_2_linux(hostlab_tar_dir.getsyspath(name), write=True)
                     is_empty = False
 
-                if self.lab.fs.exists(f"{self.name}.startup"):
-                    copy_file(self.lab.fs, f"{self.name}.startup", hostlab_tar_dir, f"{self.name}.startup")
-                    utils.convert_win_2_linux(hostlab_tar_dir.getsyspath(f"{self.name}.startup"), write=True)
-                    is_empty = False
-
-                if self.lab.fs.exists(f"{self.name}.shutdown"):
-                    copy_file(self.lab.fs, f"{self.name}.shutdown", hostlab_tar_dir, f"{self.name}.shutdown")
-                    utils.convert_win_2_linux(hostlab_tar_dir.getsyspath(f"{self.name}.shutdown"), write=True)
-                    is_empty = False
-
-                if self.lab.fs.exists("shared.startup"):
-                    copy_file(self.lab.fs, "shared.startup", hostlab_tar_dir, "shared.startup")
-                    utils.convert_win_2_linux(hostlab_tar_dir.getsyspath("shared.startup"), write=True)
-                    is_empty = False
-
-                if self.lab.fs.exists("shared.shutdown"):
-                    copy_file(self.lab.fs, "shared.shutdown", hostlab_tar_dir, "shared.shutdown")
-                    utils.convert_win_2_linux(hostlab_tar_dir.getsyspath("shared.shutdown"), write=True)
-                    is_empty = False
-
-            if not is_empty:
-                temp_file.seek(0)
-                tar_data = temp_file.read()
+        if not is_empty:
+            file.seek(0)
+            return file.read()
 
         # If no machine files are found, return None.
-        if is_empty:
-            return None
-
-        return tar_data
+        return None
 
     def get_image(self) -> str:
         """Get the image of the device, if defined in options or device meta. If not, use default one.
