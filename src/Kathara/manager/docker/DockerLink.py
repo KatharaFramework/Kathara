@@ -246,8 +246,16 @@ class DockerLink(object):
 
         network_streams = {}
 
-        for network in networks:
+        def load_link_stats(network):
             network_streams[network.name] = DockerLinkStats(network)
+
+        pool_size = utils.get_pool_size()
+        links_pool = Pool(pool_size)
+
+        items = utils.chunk_list(networks, pool_size)
+
+        for chunk in items:
+            links_pool.map(func=load_link_stats, iterable=chunk)
 
         while True:
             for network_stats in network_streams.values():

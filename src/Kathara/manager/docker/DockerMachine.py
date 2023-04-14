@@ -731,8 +731,16 @@ class DockerMachine(object):
 
         machine_streams = {}
 
-        for machine in containers:
+        def load_machine_stats(machine):
             machine_streams[machine.name] = DockerMachineStats(machine)
+
+        pool_size = utils.get_pool_size()
+        machines_pool = Pool(pool_size)
+
+        items = utils.chunk_list(containers, pool_size)
+
+        for chunk in items:
+            machines_pool.map(func=load_machine_stats, iterable=chunk)
 
         while True:
             for machine_stats in machine_streams.values():
