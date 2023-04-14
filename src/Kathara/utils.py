@@ -166,7 +166,7 @@ def convert_win_2_linux(filename: str, write: bool = False) -> Optional[bytes]:
         file_obj = None
         try:
             file_obj = open(filename, mode='r', encoding='utf-8-sig')
-            file_content = file_obj.read().replace("\n\r", "\n")
+            file_content = file_obj.read().replace("\n\r", "\n").replace("\r\n", "\n")
             if not write:
                 return file_content.encode('utf-8')
             else:
