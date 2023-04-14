@@ -244,10 +244,10 @@ class DockerLink(object):
 
         networks = sorted(networks, key=lambda x: x.name)
 
-        network_streams = {}
+        networks_stats = {}
 
         def load_link_stats(network):
-            network_streams[network.name] = DockerLinkStats(network)
+            networks_stats[network.name] = DockerLinkStats(network)
 
         pool_size = utils.get_pool_size()
         links_pool = Pool(pool_size)
@@ -258,13 +258,13 @@ class DockerLink(object):
             links_pool.map(func=load_link_stats, iterable=chunk)
 
         while True:
-            for network_stats in network_streams.values():
+            for network_stats in networks_stats.values():
                 try:
                     network_stats.update()
                 except StopIteration:
                     continue
 
-            yield network_streams
+            yield networks_stats
 
     def _attach_external_interfaces(self, external_links: List[ExternalLink],
                                     network: docker.models.networks.Network) -> None:

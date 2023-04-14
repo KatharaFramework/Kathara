@@ -729,10 +729,10 @@ class DockerMachine(object):
 
         containers = sorted(containers, key=lambda x: x.name)
 
-        machine_streams = {}
+        machines_stats = {}
 
         def load_machine_stats(machine):
-            machine_streams[machine.name] = DockerMachineStats(machine)
+            machines_stats[machine.name] = DockerMachineStats(machine)
 
         pool_size = utils.get_pool_size()
         machines_pool = Pool(pool_size)
@@ -743,13 +743,13 @@ class DockerMachine(object):
             machines_pool.map(func=load_machine_stats, iterable=chunk)
 
         while True:
-            for machine_stats in machine_streams.values():
+            for machine_stats in machines_stats.values():
                 try:
                     machine_stats.update()
                 except StopIteration:
                     continue
 
-            yield machine_streams
+            yield machines_stats
 
     @staticmethod
     def get_container_name(name: str, lab_hash: str) -> str:

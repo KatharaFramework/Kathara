@@ -804,8 +804,16 @@ class KubernetesMachine(object):
 
             machines_stats = {}
 
-            for pod in pods:
+            def load_machine_stats(pod):
                 machines_stats[pod.metadata.name] = KubernetesMachineStats(pod)
+
+            pool_size = utils.get_pool_size()
+            machines_pool = Pool(pool_size)
+
+            items = utils.chunk_list(pods, pool_size)
+
+            for chunk in items:
+                machines_pool.map(func=load_machine_stats, iterable=chunk)
 
             for machine_stats in machines_stats.values():
                 try:
