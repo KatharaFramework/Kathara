@@ -587,6 +587,10 @@ class DockerMachine(object):
         logging.debug(f"Waiting startup commands execution for device {machine_name}")
         exit_code = 1
         startup_waited = True
+
+        sys.stdout.write("Waiting startup commands execution. Press enter to take control of the device...")
+        sys.stdout.flush()
+
         while exit_code != 0:
             exec_result = self._exec_run(container,
                                          cmd="cat /var/log/EOS",
@@ -596,12 +600,6 @@ class DockerMachine(object):
                                          detach=False
                                          )
             exit_code = exec_result['exit_code']
-
-            # To print the message on the same line at each loop
-            sys.stdout.write("\033[2J")
-            sys.stdout.write("\033[0;0H")
-            sys.stdout.write("Waiting startup commands execution. Press enter to take control of the device...")
-            sys.stdout.flush()
 
             # If the user requests the control, break the while loop
             if utils.exec_by_platform(utils.wait_user_input_linux, utils.wait_user_input_windows,
