@@ -170,7 +170,7 @@ def convert_win_2_linux(filename: str, write: bool = False) -> Optional[bytes]:
             if not write:
                 return file_content.encode('utf-8')
             else:
-                with open(filename, mode='w', encoding='utf-8') as file_obj_write:
+                with open(filename, mode='w', encoding='utf-8', newline="\n") as file_obj_write:
                     file_obj_write.write(file_content)
                 return
         except Exception:
