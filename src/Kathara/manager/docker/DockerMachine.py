@@ -270,7 +270,7 @@ class DockerMachine(object):
                                                               network_mode="bridge" if first_network else "none",
                                                               network_driver_opt={
                                                                   'kathara.machine': machine.name,
-                                                                  'kathara.iface': 0
+                                                                  'kathara.iface': "0"
                                                               } if first_network else None,
                                                               environment=machine.meta['envs'],
                                                               sysctls=sysctl_parameters,
@@ -321,7 +321,8 @@ class DockerMachine(object):
             try:
                 link.api_object.connect(
                     machine.api_object,
-                    driver_opt={'kathara.machine': machine.name, 'kathara.iface': machine.get_interface_by_link(link)}
+                    driver_opt={'kathara.machine': machine.name,
+                                'kathara.iface': str(machine.get_interface_by_link(link))}
                 )
             except APIError as e:
                 if e.response.status_code == 500 and \
@@ -388,7 +389,7 @@ class DockerMachine(object):
             try:
                 machine_link.api_object.connect(
                     machine.api_object,
-                    driver_opt={'kathara.machine': machine.name, 'kathara.iface': iface_num}
+                    driver_opt={'kathara.machine': machine.name, 'kathara.iface': str(iface_num)}
                 )
             except APIError as e:
                 if e.response.status_code == 500 and \
