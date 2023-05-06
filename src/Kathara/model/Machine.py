@@ -1,7 +1,6 @@
 import collections
 import logging
 import re
-import tempfile
 from io import BytesIO
 from typing import Dict, Any, Tuple, Optional, List, OrderedDict, TextIO, Union, BinaryIO
 
@@ -128,6 +127,27 @@ class Machine(FilesystemMixin):
             map(lambda x: x if x[1] is not None and x[1].name != link.name else (x[0], None), self.interfaces.items())
         )
         link.machines.pop(self.name)
+
+    def get_interface_by_link(self, link: 'LinkPackage.Link') -> int:
+        """Get the interface number associated to the specified collision domain.
+
+        Args:
+            link (Kathara.model.Link): The Kathara collision domain to search.
+
+        Returns:
+            int: The interface number associated to the collision domain.
+
+        Raises:
+            MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
+
+        """
+        for (number, machine_link) in self.interfaces.items():
+            if machine_link == link:
+                return number
+
+        raise MachineCollisionDomainError(
+            f"Device `{self.name}` is not connected to collision domain `{link.name}`."
+        )
 
     def add_meta(self, name: str, value: Any) -> None:
         """Add a meta property to the device.

@@ -268,6 +268,10 @@ class DockerMachine(object):
                                                               privileged=privileged,
                                                               network=first_network.name if first_network else None,
                                                               network_mode="bridge" if first_network else "none",
+                                                              network_driver_opt={
+                                                                  'kathara.machine': machine.name,
+                                                                  'kathara.iface': 0
+                                                              } if first_network else None,
                                                               environment=machine.meta['envs'],
                                                               sysctls=sysctl_parameters,
                                                               mem_limit=memory,
@@ -315,7 +319,10 @@ class DockerMachine(object):
 
         if link.api_object.name not in attached_networks:
             try:
-                link.api_object.connect(machine.api_object)
+                link.api_object.connect(
+                    machine.api_object,
+                    driver_opt={'kathara.machine': machine.name, 'kathara.iface': machine.get_interface_by_link(link)}
+                )
             except APIError as e:
                 if e.response.status_code == 500 and \
                         ("network does not exist" in e.explanation or "endpoint does not exist" in e.explanation):
@@ -379,7 +386,10 @@ class DockerMachine(object):
                                                                                                   )
                           )
             try:
-                machine_link.api_object.connect(machine.api_object)
+                machine_link.api_object.connect(
+                    machine.api_object,
+                    driver_opt={'kathara.machine': machine.name, 'kathara.iface': iface_num}
+                )
             except APIError as e:
                 if e.response.status_code == 500 and \
                         ("network does not exist" in e.explanation or "endpoint does not exist" in e.explanation):
