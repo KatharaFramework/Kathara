@@ -67,7 +67,7 @@ STARTUP_COMMANDS = [
 
     # Give proper permissions to Quagga files (if present)
     "if [ -d \"/etc/quagga\" ]; then "
-    "chown quagga:quagga /etc/quagga/*",
+    "chown --recursive quagga:quagga /etc/quagga/",
     "chmod 640 /etc/quagga/*; fi",
 
     # Give proper permissions to FRR files (if present)
