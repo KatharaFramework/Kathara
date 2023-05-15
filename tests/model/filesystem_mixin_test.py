@@ -13,6 +13,9 @@ from src.Kathara.foundation.model.FilesystemMixin import FilesystemMixin
 from src.Kathara.exceptions import InvocationError
 
 
+#
+# TEST: fs_type
+#
 def test_fs_type_none():
     filesystem = FilesystemMixin()
     assert not filesystem.fs_type()
@@ -30,6 +33,9 @@ def test_fs_type_mem():
     assert filesystem.fs_type() == "memory"
 
 
+#
+# TEST: fs_path
+#
 def test_fs_path_none():
     filesystem = FilesystemMixin()
     assert not filesystem.fs_path()
@@ -47,6 +53,9 @@ def test_fs_path_mem():
     assert filesystem.fs_path() is None
 
 
+#
+# TEST: create_file_from_string
+#
 def test_create_file_from_string_invocation_error():
     filesystem = FilesystemMixin()
     with pytest.raises(InvocationError):
@@ -57,11 +66,32 @@ def test_create_file_from_string():
     filesystem = FilesystemMixin()
     filesystem.fs = fs.open_fs(f"mem://")
     with mock.patch.object(FilesystemMixin, "fs") as mock_fs:
-        filesystem.create_file_from_string("test", "/")
+        filesystem.create_file_from_string("test", "/test.txt")
         mock_fs.makedirs.assert_called_once_with("/", recreate=True)
-        mock_fs.open.assert_called_once_with("/", "w")
+        mock_fs.open.assert_called_once_with("/test.txt", "w")
 
 
+#
+# TEST: update_file_from_string
+#
+def test_update_file_from_string():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("te", "/test.txt")
+    with mock.patch.object(FilesystemMixin, "fs") as mock_fs:
+        filesystem.update_file_from_string("st", "/test.txt")
+        mock_fs.open.assert_called_once_with("/test.txt", "a")
+
+
+def test_update_file_from_string_invocation_error():
+    filesystem = FilesystemMixin()
+    with pytest.raises(InvocationError):
+        filesystem.update_file_from_string("test", "path")
+
+
+#
+# TEST: create_file_from_list
+#
 def test_create_file_from_list_invocation_error():
     filesystem = FilesystemMixin()
     with pytest.raises(InvocationError):
@@ -77,6 +107,27 @@ def test_create_file_from_list():
         mock_fs.open.assert_called_once_with("/", "w")
 
 
+#
+# TEST: update_file_from_list
+#
+def test_update_file_from_list():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("te", "/test.txt")
+    with mock.patch.object(FilesystemMixin, "fs") as mock_fs:
+        filesystem.update_file_from_list(["st"], "/test.txt")
+        mock_fs.open.assert_called_once_with("/test.txt", "a")
+
+
+def test_update_file_from_list_invocation_error():
+    filesystem = FilesystemMixin()
+    with pytest.raises(InvocationError):
+        filesystem.update_file_from_list(["test"], "path")
+
+
+#
+# TEST: create_file_from_path
+#
 def test_create_file_from_path_invocation_error():
     filesystem = FilesystemMixin()
     with pytest.raises(InvocationError):
@@ -93,6 +144,9 @@ def test_create_file_from_path():
             mock_open.assert_called_once_with(os.path.abspath(__file__), "rb")
 
 
+#
+# TEST: create_file_from_stream
+#
 def test_create_file_from_stream_invocation_error():
     filesystem = FilesystemMixin()
     with pytest.raises(InvocationError):
@@ -129,3 +183,21 @@ def test_create_file_from_stream_byte():
             filesystem.create_file_from_stream(stream, "/")
         mock_fs.makedirs.assert_called_once_with("/", recreate=True)
         mock_fs.upload.assert_called_once_with("/", stream)
+
+
+#
+# TEST: remove_file
+#
+def test_remove_file():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("te", "/test.txt")
+    with mock.patch.object(FilesystemMixin, "fs") as mock_fs:
+        filesystem.remove_file("/test.txt")
+        mock_fs.remove.assert_called_once_with("/test.txt")
+
+
+def test_remove_invocation_error():
+    filesystem = FilesystemMixin()
+    with pytest.raises(InvocationError):
+        filesystem.remove_file("path")
