@@ -159,3 +159,9 @@ class DockerPluginError(Exception):
 # Kubernetes Exceptions
 class KubernetesConfigMapError(Exception):
     pass
+
+
+# FilesystemMixin Exceptions
+class LineNotFoundError(Exception):
+    def __init__(self, line: str, file_path) -> None:
+        super().__init__(f"Line `{line}` not found in file `{file_path}`!")

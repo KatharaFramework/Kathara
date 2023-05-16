@@ -4,7 +4,7 @@ from typing import Optional, List, BinaryIO, TextIO, Union
 
 from fs.base import FS
 
-from ...exceptions import InvocationError
+from ...exceptions import InvocationError, LineNotFoundError
 
 
 class FilesystemMixin(object):
@@ -173,3 +173,104 @@ class FilesystemMixin(object):
                     dst_file.writelines(stream.readlines())
         except io.UnsupportedOperation:
             raise io.UnsupportedOperation("To create a file from stream, you must open it with read permissions.")
+
+    def write_line_before(self, file_path: str, line_to_add: str, searched_line: str) -> None:
+        """Write a new line before a specific line in a file.
+
+        Args:
+            file_path(str): The path of the file to add the new line.
+            line_to_add: The new line to add before the searched line.
+            searched_line: The searched line.
+
+        Returns:
+            None
+
+        Raises:
+            InvocationError: If the fs is None.
+            fs.errors.FileExpected: If the path is not a file.
+            fs.errors.ResourceNotFound: If the path does not exist.
+            LineNotFoundError: If the searched line is not found in the file.
+        """
+        if not self.fs:
+            raise InvocationError("There is no filesystem associated to this network scenario.")
+
+        find = False
+        with self.fs.open(file_path, "r+") as file:
+            file_lines = file.readlines()
+            file.seek(0)
+            file.truncate()
+            for line in file_lines:
+                if searched_line.strip() == line.strip():
+                    file.write(line_to_add + '\n')
+                    find = True
+                file.write(line)
+
+        if not find:
+            raise LineNotFoundError(searched_line, file_path)
+
+    def write_line_after(self, file_path, line_to_add, searched_line):
+        """Write a new line after a specific line in a file.
+
+        Args:
+            file_path(str): The path of the file to add the new line.
+            line_to_add: The new line to add after the searched line.
+            searched_line: The searched line.
+
+        Returns:
+            None
+
+        Raises:
+            InvocationError: If the fs is None.
+            fs.errors.FileExpected: If the path is not a file.
+            fs.errors.ResourceNotFound: If the path does not exist.
+            LineNotFoundError: If the searched line is not found in the file.
+        """
+        if not self.fs:
+            raise InvocationError("There is no filesystem associated to this network scenario.")
+
+        find = False
+        with self.fs.open(file_path, "r+") as file:
+            file_lines = file.readlines()
+            file.seek(0)
+            file.truncate()
+            for line in file_lines:
+                file.write(line)
+                if searched_line.strip() == line.strip():
+                    file.write(line_to_add + '\n')
+                    find = True
+
+        if not find:
+            raise LineNotFoundError(searched_line, file_path)
+
+    def delete_line(self, file_path: str, line_to_delete: str) -> None:
+        """Delete a specified line in a file.
+
+        Args:
+            file_path(str): The path of the file to delete the line.
+            line_to_delete(str): The line to delete.
+
+        Returns:
+            None
+
+        Raises:
+            InvocationError: If the fs is None.
+            fs.errors.FileExpected: If the path is not a file.
+            fs.errors.ResourceNotFound: If the path does not exist.
+            LineNotFoundError: If the searched line is not found in the file.
+        """
+        if not self.fs:
+            raise InvocationError("There is no filesystem associated to this network scenario.")
+
+        find = False
+        with self.fs.open(file_path, "r+") as file:
+            file_lines = file.readlines()
+            file.seek(0)
+            file.truncate()
+            for line in file_lines:
+                if line_to_delete.strip() == line.strip():
+                    find = True
+                else:
+                    file.write(line)
+
+        if not find:
+            raise LineNotFoundError(line_to_delete, file_path)

@@ -6,11 +6,12 @@ from unittest import mock
 
 import fs
 import pytest
+from fs.errors import ResourceNotFound, FileExpected
 
 sys.path.insert(0, './')
 
 from src.Kathara.foundation.model.FilesystemMixin import FilesystemMixin
-from src.Kathara.exceptions import InvocationError
+from src.Kathara.exceptions import InvocationError, LineNotFoundError
 
 
 #
@@ -185,3 +186,134 @@ def test_create_file_from_stream_byte():
         mock_fs.upload.assert_called_once_with("/", stream)
 
 
+#
+# TEST: write_line_before
+#
+def test_write_line_before():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd", "test.txt")
+    filesystem.write_line_before('test.txt', 'c', 'd')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 4
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'c'
+    assert lines[3].strip() == 'd'
+
+
+def test_write_line_before_invocation_error():
+    filesystem = FilesystemMixin()
+    with pytest.raises(InvocationError):
+        filesystem.write_line_before('test.txt', 'c', 'b')
+
+
+def test_write_line_before_resource_not_found_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    with pytest.raises(ResourceNotFound):
+        filesystem.write_line_before('test.txt', 'c', 'b')
+
+
+def test_write_line_before_file_expected_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.fs.makedir("test")
+    with pytest.raises(FileExpected):
+        filesystem.write_line_before('test', 'c', 'b')
+
+
+def test_write_line_before_line_not_found_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd", "test.txt")
+    with pytest.raises(LineNotFoundError):
+        filesystem.write_line_before('test.txt', 'c', 'z')
+
+
+#
+# TEST: write_line_after
+#
+def test_write_line_after():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd", "test.txt")
+    filesystem.write_line_after('test.txt', 'c', 'b')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 4
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'c'
+    assert lines[3].strip() == 'd'
+
+
+def test_write_line_after_invocation_error():
+    filesystem = FilesystemMixin()
+    with pytest.raises(InvocationError):
+        filesystem.write_line_after('test.txt', 'c', 'b')
+
+
+def test_write_line_after_resource_not_found_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    with pytest.raises(ResourceNotFound):
+        filesystem.write_line_after('test.txt', 'c', 'b')
+
+
+def test_write_line_after_file_expected_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.fs.makedir("test")
+    with pytest.raises(FileExpected):
+        filesystem.write_line_after('test', 'c', 'b')
+
+
+def test_write_line_after_line_not_found_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd", "test.txt")
+    with pytest.raises(LineNotFoundError):
+        filesystem.write_line_after('test.txt', 'c', 'z')
+
+
+#
+# TEST: delete_line
+#
+def test_delete_line():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd", "test.txt")
+    filesystem.delete_line('test.txt', 'b')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 2
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'd'
+
+
+def test_delete_line_invocation_error():
+    filesystem = FilesystemMixin()
+    with pytest.raises(InvocationError):
+        filesystem.delete_line('test.txt', 'b')
+
+
+def test_delete_line_resource_not_found_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    with pytest.raises(ResourceNotFound):
+        filesystem.delete_line('test.txt', 'b')
+
+
+def test_delete_line_file_expected_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.fs.makedir("test")
+    with pytest.raises(FileExpected):
+        filesystem.delete_line('test', 'b')
+
+
+def test_delete_line_line_not_found_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd", "test.txt")
+    with pytest.raises(LineNotFoundError):
+        filesystem.delete_line('test.txt', 'z')
