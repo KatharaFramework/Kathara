@@ -173,22 +173,3 @@ class FilesystemMixin(object):
                     dst_file.writelines(stream.readlines())
         except io.UnsupportedOperation:
             raise io.UnsupportedOperation("To create a file from stream, you must open it with read permissions.")
-
-    def remove_file(self, file_path: str) -> None:
-        """Delete the specified file in the fs object.
-
-        Args:
-            file_path[str]: The absolute path on the fs of the file to delete.
-
-        Returns:
-            None
-
-        Raises:
-            InvocationError: If the fs is None.
-            fs.errors.FileExpected: If the path is a directory.
-            fs.errors.ResourceNotFound: If the path does not exist.
-        """
-        if not self.fs:
-            raise InvocationError("There is no filesystem associated to this network scenario.")
-
-        self.fs.remove(file_path)

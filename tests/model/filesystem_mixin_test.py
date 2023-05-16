@@ -185,19 +185,3 @@ def test_create_file_from_stream_byte():
         mock_fs.upload.assert_called_once_with("/", stream)
 
 
-#
-# TEST: remove_file
-#
-def test_remove_file():
-    filesystem = FilesystemMixin()
-    filesystem.fs = fs.open_fs(f"mem://")
-    filesystem.create_file_from_string("te", "/test.txt")
-    with mock.patch.object(FilesystemMixin, "fs") as mock_fs:
-        filesystem.remove_file("/test.txt")
-        mock_fs.remove.assert_called_once_with("/test.txt")
-
-
-def test_remove_invocation_error():
-    filesystem = FilesystemMixin()
-    with pytest.raises(InvocationError):
-        filesystem.remove_file("path")
