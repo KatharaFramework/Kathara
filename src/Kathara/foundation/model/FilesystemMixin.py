@@ -4,7 +4,7 @@ from typing import Optional, List, BinaryIO, TextIO, Union
 
 from fs.base import FS
 
-from ...exceptions import InvocationError, LineNotFoundError
+from ...exceptions import InvocationError
 
 
 class FilesystemMixin(object):
@@ -23,7 +23,7 @@ class FilesystemMixin(object):
         """Return the name of the class of the fs object, if present. Else, return None.
 
         Returns:
-            Optional[str]: The name of the class of the fs object.
+            Optional (str): The name of the class of the fs object.
         """
         return self.fs.__class__.__name__.lower().replace("fs", "") if self.fs else None
 
@@ -31,7 +31,7 @@ class FilesystemMixin(object):
         """Return the path of the filesystem, if fs has a path on the host. Else, return None
 
         Returns:
-            Optional[str]: The path of the filesystem in the fs.
+            Optional (str): The path of the filesystem in the fs.
         """
         return (self.fs.getsyspath("") if self.fs.hassyspath("") else None) if self.fs else None
 
@@ -39,8 +39,8 @@ class FilesystemMixin(object):
         """Create a file in the fs object from a string.
 
         Args:
-            content[str]: The string representing the content of the file to create.
-            dst_path[str]: The absolute path of the fs where create the file.
+            content (str): The string representing the content of the file to create.
+            dst_path (str): The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -62,8 +62,8 @@ class FilesystemMixin(object):
         """Update a file in the fs object from a string.
 
         Args:
-            content[str]: The string representing the content for updating the file.
-            dst_path[str]: The absolute path on the fs of the file to update.
+            content (str): The string representing the content for updating the file.
+            dst_path (str): The absolute path on the fs of the file to update.
 
         Returns:
             None
@@ -82,8 +82,8 @@ class FilesystemMixin(object):
         """Create a file in the fs object from a list of strings.
 
         Args:
-            content[str]: The list of strings representing the content of the file to create.
-            dst_path[str]: The absolute path of the fs where create the file.
+            lines (List[str]): The list of strings representing the content of the file to create.
+            dst_path (str): The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -105,8 +105,8 @@ class FilesystemMixin(object):
         """Update a file in the fs object from a list of strings.
 
         Args:
-            content[str]: The list of strings representing the content for updating the file.
-            dst_path[str]: The absolute path on the fs of the file to upload.
+            lines (List[str]): The list of strings representing the content for updating the file.
+            dst_path (str): The absolute path on the fs of the file to upload.
 
         Returns:
             None
@@ -125,8 +125,8 @@ class FilesystemMixin(object):
         """Create a file in the fs object from an existing file on the host filesystem.
 
         Args:
-            src_path[str]: The path of the file on the host filesystem to copy in the fs object.
-            dst_path[str]: The absolute path of the fs where create the file.
+            src_path (str): The path of the file on the host filesystem to copy in the fs object.
+            dst_path (str): The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -148,8 +148,8 @@ class FilesystemMixin(object):
         """Create a file in the fs object from a stream.
 
         Args:
-            stream[Union[BinaryIO, TextIO]]: The stream representing the content of the file to create.
-            dst_path[str]: The absolute path of the fs where create the file.
+            stream (Union[BinaryIO, TextIO]): The stream representing the content of the file to create.
+            dst_path (str): The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -174,16 +174,16 @@ class FilesystemMixin(object):
         except io.UnsupportedOperation:
             raise io.UnsupportedOperation("To create a file from stream, you must open it with read permissions.")
 
-    def write_line_before(self, file_path: str, line_to_add: str, searched_line: str) -> None:
+    def write_line_before(self, file_path: str, line_to_add: str, searched_line: str) -> int:
         """Write a new line before a specific line in a file.
 
         Args:
-            file_path(str): The path of the file to add the new line.
-            line_to_add: The new line to add before the searched line.
-            searched_line: The searched line.
+            file_path (str): The path of the file to add the new line.
+            line_to_add (str): The new line to add before the searched line.
+            searched_line (str): The searched line.
 
         Returns:
-            None
+            int: Number of times the line has been added.
 
         Raises:
             InvocationError: If the fs is None.
@@ -194,30 +194,32 @@ class FilesystemMixin(object):
         if not self.fs:
             raise InvocationError("There is no filesystem associated to this network scenario.")
 
-        find = False
+        n_added = 0
         with self.fs.open(file_path, "r+") as file:
             file_lines = file.readlines()
             file.seek(0)
             file.truncate()
+            new_lines = []
             for line in file_lines:
                 if searched_line.strip() == line.strip():
-                    file.write(line_to_add + '\n')
-                    find = True
-                file.write(line)
+                    new_lines.append(line_to_add)
+                    n_added += 1
+                new_lines.append(line.strip())
 
-        if not find:
-            raise LineNotFoundError(searched_line, file_path)
+            file.writelines(s + '\n' for s in new_lines)
 
-    def write_line_after(self, file_path, line_to_add, searched_line):
+        return n_added
+
+    def write_line_after(self, file_path, line_to_add, searched_line) -> int:
         """Write a new line after a specific line in a file.
 
         Args:
-            file_path(str): The path of the file to add the new line.
-            line_to_add: The new line to add after the searched line.
-            searched_line: The searched line.
+            file_path (str): The path of the file to add the new line.
+            line_to_add (str): The new line to add after the searched line.
+            searched_line (str): The searched line.
 
         Returns:
-            None
+            int: Number of times the line has been added.
 
         Raises:
             InvocationError: If the fs is None.
@@ -228,29 +230,31 @@ class FilesystemMixin(object):
         if not self.fs:
             raise InvocationError("There is no filesystem associated to this network scenario.")
 
-        find = False
+        n_added = 0
         with self.fs.open(file_path, "r+") as file:
             file_lines = file.readlines()
             file.seek(0)
             file.truncate()
+            new_lines = []
             for line in file_lines:
-                file.write(line)
+                new_lines.append(line.strip())
                 if searched_line.strip() == line.strip():
-                    file.write(line_to_add + '\n')
-                    find = True
+                    new_lines.append(line_to_add)
+                    n_added += 1
 
-        if not find:
-            raise LineNotFoundError(searched_line, file_path)
+            file.writelines(s + '\n' for s in new_lines)
 
-    def delete_line(self, file_path: str, line_to_delete: str) -> None:
+        return n_added
+
+    def delete_line(self, file_path: str, line_to_delete: str) -> int:
         """Delete a specified line in a file.
 
         Args:
-            file_path(str): The path of the file to delete the line.
-            line_to_delete(str): The line to delete.
+            file_path (str): The path of the file to delete the line.
+            line_to_delete (str): The line to delete.
 
         Returns:
-            None
+            int: Number of times the line has been deleted.
 
         Raises:
             InvocationError: If the fs is None.
@@ -261,16 +265,18 @@ class FilesystemMixin(object):
         if not self.fs:
             raise InvocationError("There is no filesystem associated to this network scenario.")
 
-        find = False
+        n_deleted = 0
         with self.fs.open(file_path, "r+") as file:
             file_lines = file.readlines()
             file.seek(0)
             file.truncate()
+            new_lines = []
             for line in file_lines:
                 if line_to_delete.strip() == line.strip():
-                    find = True
+                    n_deleted += 1
                 else:
-                    file.write(line)
+                    new_lines.append(line.strip())
 
-        if not find:
-            raise LineNotFoundError(line_to_delete, file_path)
+            file.writelines(s + '\n' for s in new_lines)
+
+        return n_deleted

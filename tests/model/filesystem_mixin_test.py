@@ -11,7 +11,7 @@ from fs.errors import ResourceNotFound, FileExpected
 sys.path.insert(0, './')
 
 from src.Kathara.foundation.model.FilesystemMixin import FilesystemMixin
-from src.Kathara.exceptions import InvocationError, LineNotFoundError
+from src.Kathara.exceptions import InvocationError
 
 
 #
@@ -193,13 +193,46 @@ def test_write_line_before():
     filesystem = FilesystemMixin()
     filesystem.fs = fs.open_fs(f"mem://")
     filesystem.create_file_from_string("a\nb\nd", "test.txt")
-    filesystem.write_line_before('test.txt', 'c', 'd')
+    added_lines = filesystem.write_line_before('test.txt', 'c', 'd')
     lines = filesystem.fs.open("test.txt", "r").readlines()
     assert len(lines) == 4
     assert lines[0].strip() == 'a'
     assert lines[1].strip() == 'b'
     assert lines[2].strip() == 'c'
     assert lines[3].strip() == 'd'
+    assert added_lines == 1
+
+
+def test_write_line_before_multi():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd\nd", "test.txt")
+    added_lines = filesystem.write_line_before('test.txt', 'c', 'd')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 6
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'c'
+    assert lines[3].strip() == 'd'
+    assert lines[4].strip() == 'c'
+    assert lines[5].strip() == 'd'
+    assert added_lines == 2
+
+
+def test_write_line_before_possible_loop():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd\nd", "test.txt")
+    added_lines = filesystem.write_line_before('test.txt', 'd', 'd')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 6
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'd'
+    assert lines[3].strip() == 'd'
+    assert lines[4].strip() == 'd'
+    assert lines[5].strip() == 'd'
+    assert added_lines == 2
 
 
 def test_write_line_before_invocation_error():
@@ -227,8 +260,8 @@ def test_write_line_before_line_not_found_error():
     filesystem = FilesystemMixin()
     filesystem.fs = fs.open_fs(f"mem://")
     filesystem.create_file_from_string("a\nb\nd", "test.txt")
-    with pytest.raises(LineNotFoundError):
-        filesystem.write_line_before('test.txt', 'c', 'z')
+    added_lines = filesystem.write_line_before('test.txt', 'c', 'z')
+    assert added_lines == 0
 
 
 #
@@ -238,13 +271,45 @@ def test_write_line_after():
     filesystem = FilesystemMixin()
     filesystem.fs = fs.open_fs(f"mem://")
     filesystem.create_file_from_string("a\nb\nd", "test.txt")
-    filesystem.write_line_after('test.txt', 'c', 'b')
+    added_lines = filesystem.write_line_after('test.txt', 'c', 'b')
     lines = filesystem.fs.open("test.txt", "r").readlines()
     assert len(lines) == 4
     assert lines[0].strip() == 'a'
     assert lines[1].strip() == 'b'
     assert lines[2].strip() == 'c'
     assert lines[3].strip() == 'd'
+    assert added_lines == 1
+
+
+def test_write_line_after_multi():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd\nd", "test.txt")
+    added_lines = filesystem.write_line_after('test.txt', 'c', 'd')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 6
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'd'
+    assert lines[3].strip() == 'c'
+    assert lines[4].strip() == 'd'
+    assert lines[5].strip() == 'c'
+    assert added_lines == 2
+
+
+def test_write_line_after_possible_loop():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd\nd", "test.txt")
+    added_lines = filesystem.write_line_after('test.txt', 'b', 'b')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 5
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'b'
+    assert lines[3].strip() == 'd'
+    assert lines[4].strip() == 'd'
+    assert added_lines == 1
 
 
 def test_write_line_after_invocation_error():
@@ -272,8 +337,8 @@ def test_write_line_after_line_not_found_error():
     filesystem = FilesystemMixin()
     filesystem.fs = fs.open_fs(f"mem://")
     filesystem.create_file_from_string("a\nb\nd", "test.txt")
-    with pytest.raises(LineNotFoundError):
-        filesystem.write_line_after('test.txt', 'c', 'z')
+    added_lines = filesystem.write_line_after('test.txt', 'c', 'z')
+    assert added_lines == 0
 
 
 #
@@ -283,11 +348,24 @@ def test_delete_line():
     filesystem = FilesystemMixin()
     filesystem.fs = fs.open_fs(f"mem://")
     filesystem.create_file_from_string("a\nb\nd", "test.txt")
-    filesystem.delete_line('test.txt', 'b')
+    deleted_lines = filesystem.delete_line('test.txt', 'b')
     lines = filesystem.fs.open("test.txt", "r").readlines()
     assert len(lines) == 2
     assert lines[0].strip() == 'a'
     assert lines[1].strip() == 'd'
+    assert deleted_lines == 1
+
+
+def test_delete_line_multiple():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nb\nd", "test.txt")
+    deleted_lines = filesystem.delete_line('test.txt', 'b')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 2
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'd'
+    assert deleted_lines == 2
 
 
 def test_delete_line_invocation_error():
@@ -315,5 +393,6 @@ def test_delete_line_line_not_found_error():
     filesystem = FilesystemMixin()
     filesystem.fs = fs.open_fs(f"mem://")
     filesystem.create_file_from_string("a\nb\nd", "test.txt")
-    with pytest.raises(LineNotFoundError):
-        filesystem.delete_line('test.txt', 'z')
+
+    deleted_lines = filesystem.delete_line('test.txt', 'z')
+    assert deleted_lines == 0
