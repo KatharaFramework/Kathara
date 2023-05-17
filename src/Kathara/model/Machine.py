@@ -460,8 +460,8 @@ class Machine(FilesystemMixin):
         """Create a file from a string in the device fs. If fs is None, create it in the network scenario.
 
         Args:
-            content[str]: The string representing the content of the file to create.
-            dst_path[str]: The absolute path of the fs where create the file.
+            content (str): The string representing the content of the file to create.
+            dst_path (str): The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -474,12 +474,31 @@ class Machine(FilesystemMixin):
 
         super().create_file_from_string(content, dst_path)
 
+    def update_file_from_string(self, content: str, dst_path: str) -> None:
+        """Update a file in the fs object from a string.
+
+        Args:
+            content (str): The string representing the content for updating the file.
+            dst_path (str): The absolute path on the fs of the file to update.
+
+        Returns:
+            None
+
+        Raises:
+            InvocationError: If the fs is None.
+            fs.errors.ResourceNotFound: If the path is not found in the fs.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().update_file_from_string(content, dst_path)
+
     def create_file_from_list(self, lines: List[str], dst_path: str) -> None:
         """Create a file from a list of strings in the device fs. If fs is None, create it in the network scenario.
 
         Args:
-            content[str]: The list of strings representing the content of the file to create.
-            dst_path[str]: The absolute path of the fs where create the file.
+            lines (List[str]): The list of strings representing the content of the file to create.
+            dst_path (str): The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -492,12 +511,31 @@ class Machine(FilesystemMixin):
 
         super().create_file_from_list(lines, dst_path)
 
+    def update_file_from_list(self, lines: List[str], dst_path: str) -> None:
+        """Update a file in the fs object from a list of strings.
+
+        Args:
+            lines (List[str]): The list of strings representing the content for updating the file.
+            dst_path (str): The absolute path on the fs of the file to upload.
+
+        Returns:
+            None
+
+        Raises:
+            InvocationError: If the fs is None.
+            fs.errors.ResourceNotFound: If the path is not found in the fs.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().update_file_from_list(lines, dst_path)
+
     def create_file_from_path(self, src_path: str, dst_path: str) -> None:
         """Create a file in the device fs from an existing file on the host filesystem. If the fs is None, create it.
 
         Args:
-            src_path[str]: The path of the file on the host filesystem to copy in the fs object.
-            dst_path[str]: The absolute path of the fs where create the file.
+            src_path (str): The path of the file on the host filesystem to copy in the fs object.
+            dst_path (str): The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -514,8 +552,8 @@ class Machine(FilesystemMixin):
         """Create a file in the device fs from a stream. If fs is None, create it in the network scenario.
 
         Args:
-            stream[Union[BinaryIO, TextIO]]: The stream representing the content of the file to create.
-            dst_path[str]: The absolute path of the fs where create the file.
+            stream (Union[BinaryIO, TextIO]): The stream representing the content of the file to create.
+            dst_path (str): The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -528,6 +566,73 @@ class Machine(FilesystemMixin):
             self.fs = self.lab.fs.makedir(self.name, recreate=True)
 
         super().create_file_from_stream(stream, dst_path)
+
+    def write_line_before(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
+            -> int:
+        """Write a new line before a specific line in a file.
+
+        Args:
+            file_path (str): The path of the file to add the new line.
+            line_to_add (str): The new line to add before the searched line.
+            searched_line (str): The searched line.
+            first_occurrence (bool): Inserts line only before the first occurrence. Default is False.
+
+        Returns:
+            int: Number of times the line has been added.
+
+        Raises:
+            fs.errors.FileExpected: If the path is not a file.
+            fs.errors.ResourceNotFound: If the path does not exist.
+            LineNotFoundError: If the searched line is not found in the file.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        return super().write_line_before(file_path, line_to_add, searched_line, first_occurrence)
+
+    def write_line_after(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
+            -> int:
+        """Write a new line after a specific line in a file.
+
+        Args:
+            file_path (str): The path of the file to add the new line.
+            line_to_add (str): The new line to add after the searched line.
+            searched_line (str): The searched line.
+            first_occurrence (bool): Inserts line only after the first occurrence. Default is False.
+
+        Returns:
+            int: Number of times the line has been added.
+
+        Raises:
+            fs.errors.FileExpected: If the path is not a file.
+            fs.errors.ResourceNotFound: If the path does not exist.
+            LineNotFoundError: If the searched line is not found in the file.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        return super().write_line_after(file_path, line_to_add, searched_line, first_occurrence)
+
+    def delete_line(self, file_path: str, line_to_delete: str, first_occurrence: bool = False) -> int:
+        """Delete a specified line in a file.
+
+        Args:
+            file_path (str): The path of the file to delete the line.
+            line_to_delete (str): The line to delete.
+            first_occurrence (bool): Deletes only first occurrence. Default is False.
+
+        Returns:
+            int: Number of times the line has been deleted.
+
+        Raises:
+            fs.errors.FileExpected: If the path is not a file.
+            fs.errors.ResourceNotFound: If the path does not exist.
+            LineNotFoundError: If the searched line is not found in the file.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        return super().delete_line(file_path, line_to_delete, first_occurrence)
 
     def __repr__(self) -> str:
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)
