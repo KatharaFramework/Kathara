@@ -567,19 +567,20 @@ class Machine(FilesystemMixin):
 
         super().create_file_from_stream(stream, dst_path)
 
-    def write_line_before(self, file_path: str, line_to_add: str, searched_line: str) -> int:
+    def write_line_before(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
+            -> int:
         """Write a new line before a specific line in a file.
 
         Args:
             file_path (str): The path of the file to add the new line.
             line_to_add (str): The new line to add before the searched line.
             searched_line (str): The searched line.
+            first_occurrence (bool): Inserts line only before the first occurrence. Default is False.
 
         Returns:
             int: Number of times the line has been added.
 
         Raises:
-            InvocationError: If the fs is None.
             fs.errors.FileExpected: If the path is not a file.
             fs.errors.ResourceNotFound: If the path does not exist.
             LineNotFoundError: If the searched line is not found in the file.
@@ -587,21 +588,22 @@ class Machine(FilesystemMixin):
         if not self.fs:
             self.fs = self.lab.fs.makedir(self.name, recreate=True)
 
-        return super().write_line_before(file_path, line_to_add, searched_line)
+        return super().write_line_before(file_path, line_to_add, searched_line, first_occurrence)
 
-    def write_line_after(self, file_path, line_to_add, searched_line) -> int:
+    def write_line_after(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
+            -> int:
         """Write a new line after a specific line in a file.
 
         Args:
             file_path (str): The path of the file to add the new line.
             line_to_add (str): The new line to add after the searched line.
             searched_line (str): The searched line.
+            first_occurrence (bool): Inserts line only after the first occurrence. Default is False.
 
         Returns:
             int: Number of times the line has been added.
 
         Raises:
-            InvocationError: If the fs is None.
             fs.errors.FileExpected: If the path is not a file.
             fs.errors.ResourceNotFound: If the path does not exist.
             LineNotFoundError: If the searched line is not found in the file.
@@ -609,20 +611,20 @@ class Machine(FilesystemMixin):
         if not self.fs:
             self.fs = self.lab.fs.makedir(self.name, recreate=True)
 
-        return super().write_line_after(file_path, line_to_add, searched_line)
+        return super().write_line_after(file_path, line_to_add, searched_line, first_occurrence)
 
-    def delete_line(self, file_path: str, line_to_delete: str) -> int:
+    def delete_line(self, file_path: str, line_to_delete: str, first_occurrence: bool = False) -> int:
         """Delete a specified line in a file.
 
         Args:
             file_path (str): The path of the file to delete the line.
             line_to_delete (str): The line to delete.
+            first_occurrence (bool): Deletes only first occurrence. Default is False.
 
         Returns:
             int: Number of times the line has been deleted.
 
         Raises:
-            InvocationError: If the fs is None.
             fs.errors.FileExpected: If the path is not a file.
             fs.errors.ResourceNotFound: If the path does not exist.
             LineNotFoundError: If the searched line is not found in the file.
@@ -630,7 +632,7 @@ class Machine(FilesystemMixin):
         if not self.fs:
             self.fs = self.lab.fs.makedir(self.name, recreate=True)
 
-        return super().delete_line(file_path, line_to_delete)
+        return super().delete_line(file_path, line_to_delete, first_occurrence)
 
     def __repr__(self) -> str:
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

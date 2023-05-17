@@ -174,13 +174,15 @@ class FilesystemMixin(object):
         except io.UnsupportedOperation:
             raise io.UnsupportedOperation("To create a file from stream, you must open it with read permissions.")
 
-    def write_line_before(self, file_path: str, line_to_add: str, searched_line: str) -> int:
+    def write_line_before(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
+            -> int:
         """Write a new line before a specific line in a file.
 
         Args:
             file_path (str): The path of the file to add the new line.
             line_to_add (str): The new line to add before the searched line.
             searched_line (str): The searched line.
+            first_occurrence (bool): Inserts line only before the first occurrence. Default is False.
 
         Returns:
             int: Number of times the line has been added.
@@ -202,21 +204,24 @@ class FilesystemMixin(object):
             new_lines = []
             for line in file_lines:
                 if searched_line.strip() == line.strip():
-                    new_lines.append(line_to_add)
-                    n_added += 1
+                    if not first_occurrence or (first_occurrence and n_added == 0):
+                        new_lines.append(line_to_add)
+                        n_added += 1
                 new_lines.append(line.strip())
 
             file.writelines(s + '\n' for s in new_lines)
 
         return n_added
 
-    def write_line_after(self, file_path, line_to_add, searched_line) -> int:
+    def write_line_after(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
+            -> int:
         """Write a new line after a specific line in a file.
 
         Args:
             file_path (str): The path of the file to add the new line.
             line_to_add (str): The new line to add after the searched line.
             searched_line (str): The searched line.
+            first_occurrence (bool): Inserts line only after the first occurrence. Default is False.
 
         Returns:
             int: Number of times the line has been added.
@@ -239,19 +244,21 @@ class FilesystemMixin(object):
             for line in file_lines:
                 new_lines.append(line.strip())
                 if searched_line.strip() == line.strip():
-                    new_lines.append(line_to_add)
-                    n_added += 1
+                    if not first_occurrence or (first_occurrence and n_added == 0):
+                        new_lines.append(line_to_add)
+                        n_added += 1
 
             file.writelines(s + '\n' for s in new_lines)
 
         return n_added
 
-    def delete_line(self, file_path: str, line_to_delete: str) -> int:
+    def delete_line(self, file_path: str, line_to_delete: str, first_occurrence: bool = False) -> int:
         """Delete a specified line in a file.
 
         Args:
             file_path (str): The path of the file to delete the line.
             line_to_delete (str): The line to delete.
+            first_occurrence (bool): Deletes only first occurrence. Default is False.
 
         Returns:
             int: Number of times the line has been deleted.
@@ -273,9 +280,11 @@ class FilesystemMixin(object):
             new_lines = []
             for line in file_lines:
                 if line_to_delete.strip() == line.strip():
-                    n_deleted += 1
-                else:
-                    new_lines.append(line.strip())
+                    if not first_occurrence or (first_occurrence and n_deleted == 0):
+                        n_deleted += 1
+                        continue
+
+                new_lines.append(line.strip())
 
             file.writelines(s + '\n' for s in new_lines)
 

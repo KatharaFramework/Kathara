@@ -235,6 +235,21 @@ def test_write_line_before_possible_loop():
     assert added_lines == 2
 
 
+def test_write_line_before_first_occurrence():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd\nd", "test.txt")
+    added_lines = filesystem.write_line_before('test.txt', 'z', 'd', first_occurrence=True)
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 5
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'z'
+    assert lines[3].strip() == 'd'
+    assert lines[4].strip() == 'd'
+    assert added_lines == 1
+
+
 def test_write_line_before_invocation_error():
     filesystem = FilesystemMixin()
     with pytest.raises(InvocationError):
@@ -312,6 +327,21 @@ def test_write_line_after_possible_loop():
     assert added_lines == 1
 
 
+def test_write_line_after_first_occurrence():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd\nd", "test.txt")
+    added_lines = filesystem.write_line_after('test.txt', 'z', 'd', first_occurrence=True)
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 5
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'd'
+    assert lines[3].strip() == 'z'
+    assert lines[4].strip() == 'd'
+    assert added_lines == 1
+
+
 def test_write_line_after_invocation_error():
     filesystem = FilesystemMixin()
     with pytest.raises(InvocationError):
@@ -366,6 +396,19 @@ def test_delete_line_multiple():
     assert lines[0].strip() == 'a'
     assert lines[1].strip() == 'd'
     assert deleted_lines == 2
+
+
+def test_delete_line_first_occurrence():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nb\nd", "test.txt")
+    deleted_lines = filesystem.delete_line('test.txt', 'b', first_occurrence=True)
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 3
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'd'
+    assert deleted_lines == 1
 
 
 def test_delete_line_invocation_error():
