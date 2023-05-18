@@ -19,37 +19,47 @@ def test_lab():
     return lab
 
 
-@mock.patch("src.Kathara.manager.Kathara.Kathara.get_machines_stats")
-def test_run_no_params(mock_get_machines_stats, test_lab):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_no_params(mock_docker_manager, mock_manager_get_instance, test_lab):
+    mock_manager_get_instance.return_value = mock_docker_manager
     command = ListCommand()
     command.run('.', [])
-    mock_get_machines_stats.assert_called_once_with(machine_name=None, all_users=False)
+    mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name=None, all_users=False)
 
 
-@mock.patch("src.Kathara.manager.Kathara.Kathara.get_machines_stats")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.utils.is_admin")
-def test_run_all(mock_is_admin, mock_get_machines_stats, test_lab):
+def test_run_all(mock_is_admin, mock_docker_manager, mock_manager_get_instance, test_lab):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_is_admin.return_value = True
     command = ListCommand()
     command.run('.', ['-a'])
-    mock_get_machines_stats.assert_called_once_with(machine_name=None, all_users=True)
+    mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name=None, all_users=True)
 
 
-@mock.patch("src.Kathara.manager.Kathara.Kathara.get_machines_stats")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.utils.is_admin")
-def test_run_all_name(mock_is_admin, mock_get_machines_stats, test_lab):
+def test_run_all_name(mock_is_admin, mock_docker_manager, mock_manager_get_instance, test_lab):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_is_admin.return_value = True
     command = ListCommand()
     command.run('.', ['-a', '-n', 'pc1'])
-    mock_get_machines_stats.assert_called_once_with(machine_name='pc1', all_users=True)
+    mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name='pc1', all_users=True)
 
 
-@mock.patch("src.Kathara.manager.Kathara.Kathara.get_machines_stats")
-def test_run_all_no_root(mock_get_machines_stats, test_lab):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+@mock.patch("src.Kathara.utils.is_admin")
+def test_run_all_no_root(mock_is_admin, mock_docker_manager, mock_manager_get_instance, test_lab):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    mock_is_admin.return_value = False
     command = ListCommand()
     with pytest.raises(PrivilegeError):
         command.run('.', ['-a'])
-    assert not mock_get_machines_stats.called
+    assert not mock_docker_manager.get_machines_stats.called
 
 
 @mock.patch("src.Kathara.cli.command.ListCommand.ListCommand._get_live_info")
@@ -70,24 +80,28 @@ def test_run_all_watch_name(mock_is_admin, mock_get_live_info, test_lab):
     mock_get_live_info.assert_called_once_with(machine_name='pc1', all_users=True)
 
 
-@mock.patch("src.Kathara.manager.Kathara.Kathara.get_machines_stats")
-def test_run_name(mock_get_machines_stats, test_lab):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_name(mock_docker_manager, mock_manager_get_instance, test_lab):
+    mock_manager_get_instance.return_value = mock_docker_manager
     command = ListCommand()
     command.run('.', ['-n', 'pc1'])
-    mock_get_machines_stats.assert_called_once_with(machine_name='pc1', all_users=False)
+    mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name='pc1', all_users=False)
 
 
 @mock.patch("src.Kathara.trdparty.curses.curses.Curses.close")
 @mock.patch("src.Kathara.trdparty.curses.curses.Curses.print_string", side_effect=StopIteration)
 @mock.patch("src.Kathara.trdparty.curses.curses.Curses.init_window")
 @mock.patch("src.Kathara.cli.command.ListCommand.create_table")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.get_machines_stats")
-def test_get_live_info(mock_get_machines_stats, mock_create_table, mock_init_window, mock_print_string, mock_close,
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_get_live_info(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_init_window, mock_print_string, mock_close,
                        test_lab):
+    mock_manager_get_instance.return_value = mock_docker_manager
     stats = map(lambda x: x, [])
-    mock_get_machines_stats.return_value = stats
+    mock_docker_manager.get_machines_stats.return_value = stats
     ListCommand._get_live_info(None, False)
-    mock_get_machines_stats.assert_called_once_with(machine_name=None, all_users=False)
+    mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name=None, all_users=False)
     mock_create_table.assert_called_once_with(stats)
     mock_init_window.assert_called_once()
     mock_print_string.assert_called_once()
@@ -98,14 +112,16 @@ def test_get_live_info(mock_get_machines_stats, mock_create_table, mock_init_win
 @mock.patch("src.Kathara.trdparty.curses.curses.Curses.print_string", side_effect=StopIteration)
 @mock.patch("src.Kathara.trdparty.curses.curses.Curses.init_window")
 @mock.patch("src.Kathara.cli.command.ListCommand.create_table")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.get_machines_stats")
-def test_get_live_info_machine_name(mock_get_machines_stats, mock_create_table, mock_init_window, mock_print_string,
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_get_live_info_machine_name(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_init_window, mock_print_string,
                                     mock_close,
                                     test_lab):
+    mock_manager_get_instance.return_value = mock_docker_manager
     stats = map(lambda x: x, [])
-    mock_get_machines_stats.return_value = stats
+    mock_docker_manager.get_machines_stats.return_value = stats
     ListCommand._get_live_info('pc1', False)
-    mock_get_machines_stats.assert_called_once_with(machine_name='pc1', all_users=False)
+    mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name='pc1', all_users=False)
     mock_create_table.assert_called_once_with(stats)
     mock_init_window.assert_called_once()
     mock_print_string.assert_called_once()
@@ -116,14 +132,15 @@ def test_get_live_info_machine_name(mock_get_machines_stats, mock_create_table, 
 @mock.patch("src.Kathara.trdparty.curses.curses.Curses.print_string", side_effect=StopIteration)
 @mock.patch("src.Kathara.trdparty.curses.curses.Curses.init_window")
 @mock.patch("src.Kathara.cli.command.ListCommand.create_table")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.get_machines_stats")
-def test_get_live_info_all_users(mock_get_machines_stats, mock_create_table, mock_init_window, mock_print_string,
-                                 mock_close,
-                                 test_lab):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_get_live_info_all_users(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_init_window,
+                                 mock_print_string, mock_close, test_lab):
+    mock_manager_get_instance.return_value = mock_docker_manager
     stats = map(lambda x: x, [])
-    mock_get_machines_stats.return_value = stats
+    mock_docker_manager.get_machines_stats.return_value = stats
     ListCommand._get_live_info(None, True)
-    mock_get_machines_stats.assert_called_once_with(machine_name=None, all_users=True)
+    mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name=None, all_users=True)
     mock_create_table.assert_called_once_with(stats)
     mock_init_window.assert_called_once()
     mock_print_string.assert_called_once()
@@ -134,14 +151,15 @@ def test_get_live_info_all_users(mock_get_machines_stats, mock_create_table, moc
 @mock.patch("src.Kathara.trdparty.curses.curses.Curses.print_string", side_effect=StopIteration)
 @mock.patch("src.Kathara.trdparty.curses.curses.Curses.init_window")
 @mock.patch("src.Kathara.cli.command.ListCommand.create_table")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.get_machines_stats")
-def test_get_live_info_machine_name_all_users(mock_get_machines_stats, mock_create_table, mock_init_window,
-                                              mock_print_string, mock_close,
-                                              test_lab):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_get_live_info_machine_name_all_users(mock_docker_manager, mock_manager_get_instance, mock_create_table,
+                                              mock_init_window, mock_print_string, mock_close, test_lab):
+    mock_manager_get_instance.return_value = mock_docker_manager
     stats = map(lambda x: x, [])
-    mock_get_machines_stats.return_value = stats
+    mock_docker_manager.get_machines_stats.return_value = stats
     ListCommand._get_live_info('pc1', True)
-    mock_get_machines_stats.assert_called_once_with(machine_name='pc1', all_users=True)
+    mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name='pc1', all_users=True)
     mock_create_table.assert_called_once_with(stats)
     mock_init_window.assert_called_once()
     mock_print_string.assert_called_once()
