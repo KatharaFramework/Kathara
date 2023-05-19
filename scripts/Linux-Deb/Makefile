@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=3.5.5
+VERSION=3.6.0
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 NO_BINARY_PACKAGES=pyroute2|pyuv|deepdiff
