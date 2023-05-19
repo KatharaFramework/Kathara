@@ -67,11 +67,11 @@ def test_run_with_directory_absolute_path(mock_setting_get_instance, mock_parse_
     mock_setting_get_instance.return_value = mock_setting
     command = LstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-d', '/test/path'])
+        command.run('.', ['-d', os.path.join('/test', 'path')])
         assert mock_setting.open_terminals
         assert mock_setting.terminal == '/usr/bin/xterm'
-        mock_parse_lab.assert_called_once_with('/test/path')
-        mock_parse_dep.assert_called_once_with('/test/path')
+        mock_parse_lab.assert_called_once_with(os.path.abspath(os.path.join('/test', 'path')))
+        mock_parse_dep.assert_called_once_with(os.path.abspath(os.path.join('/test', 'path')))
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
@@ -91,11 +91,11 @@ def test_run_with_directory_relative_path(mock_setting_get_instance, mock_parse_
     mock_setting_get_instance.return_value = mock_setting
     command = LstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-d', 'test/path'])
+        command.run('.', ['-d', os.path.join('test', 'path')])
         assert mock_setting.open_terminals
         assert mock_setting.terminal == '/usr/bin/xterm'
-        mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test/path'))
-        mock_parse_dep.assert_called_once_with(os.path.join(os.getcwd(), 'test/path'))
+        mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test', 'path'))
+        mock_parse_dep.assert_called_once_with(os.path.join(os.getcwd(), 'test', 'path'))
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)

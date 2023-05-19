@@ -30,8 +30,8 @@ def test_run_with_directory(mock_lab, mock_parse_lab, mock_docker_manager, mock_
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_parse_lab.return_value = mock_lab
     command = ConnectCommand()
-    command.run('.', ['-d', '/test/path', 'pc1'])
-    mock_parse_lab.assert_called_once_with('/test/path')
+    command.run('.', ['-d', os.path.join('/test', 'path'), 'pc1'])
+    mock_parse_lab.assert_called_once_with(os.path.abspath(os.path.join('/test', 'path')))
     mock_docker_manager.connect_tty.assert_called_once_with(machine_name="pc1", lab_hash=mock_lab.hash, shell=None,
                                                             logs=False)
 
@@ -86,8 +86,8 @@ def test_run_all_params(mock_lab, mock_parse_lab, mock_docker_manager, mock_mana
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_parse_lab.return_value = mock_lab
     command = ConnectCommand()
-    command.run('.', ['-d', '/test/path', '--logs', '--shell', '/custom/shell', 'pc1'])
-    mock_parse_lab.assert_called_once_with('/test/path')
+    command.run('.', ['-d', os.path.join('/test', 'path'), '--logs', '--shell', '/custom/shell', 'pc1'])
+    mock_parse_lab.assert_called_once_with(os.path.abspath(os.path.join('/test', 'path')))
     mock_docker_manager.connect_tty.assert_called_once_with(machine_name="pc1", lab_hash=mock_lab.hash,
                                                             shell='/custom/shell',
                                                             logs=True)

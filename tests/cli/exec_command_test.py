@@ -51,8 +51,8 @@ def test_run_with_directory_absolute_path(mock_stderr_write, mock_stdout_write, 
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_docker_manager.exec.return_value = exec_output
     command = ExecCommand()
-    command.run('.', ['-d', '/test/path', 'pc1', 'test command'])
-    mock_parse_lab.assert_called_once_with('/test/path')
+    command.run('.', ['-d', os.path.join('/test', 'path'), 'pc1', 'test command'])
+    mock_parse_lab.assert_called_once_with(os.path.abspath(os.path.join('/test', 'path')))
     mock_docker_manager.exec.assert_called_once_with("pc1", ['test command'], lab_hash=mock_lab.hash)
     mock_stdout_write.assert_called_once_with('stdout')
     mock_stderr_write.assert_called_once_with('stderr')
@@ -71,8 +71,8 @@ def test_run_with_directory_relative_path(mock_stderr_write, mock_stdout_write, 
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_docker_manager.exec.return_value = exec_output
     command = ExecCommand()
-    command.run('.', ['-d', 'test/path', 'pc1', 'test command'])
-    mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test/path'))
+    command.run('.', ['-d', os.path.join('test', 'path'), 'pc1', 'test command'])
+    mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test', 'path'))
     mock_docker_manager.exec.assert_called_once_with("pc1", ['test command'], lab_hash=mock_lab.hash)
     mock_stdout_write.assert_called_once_with('stdout')
     mock_stderr_write.assert_called_once_with('stderr')

@@ -39,8 +39,8 @@ def test_run_with_directory_absolute_path(mock_parse_lab, mock_docker_manager, m
     mock_parse_lab.return_value = test_lab
     mock_manager_get_instance.return_value = mock_docker_manager
     command = LinfoCommand()
-    command.run('.', ['-d', '/test/path'])
-    mock_parse_lab.assert_called_once_with('/test/path')
+    command.run('.', ['-d', os.path.join('/test' 'path')])
+    mock_parse_lab.assert_called_once_with(os.path.abspath(os.path.join('/test' 'path')))
     mock_docker_manager.get_machines_stats.assert_called_once_with(test_lab.hash)
 
 
@@ -51,8 +51,8 @@ def test_run_with_directory_relative_path(mock_parse_lab, mock_docker_manager, m
     mock_parse_lab.return_value = test_lab
     mock_manager_get_instance.return_value = mock_docker_manager
     command = LinfoCommand()
-    command.run('.', ['-d', 'test/path'])
-    mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test/path'))
+    command.run('.', ['-d', os.path.join('test', 'path')])
+    mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), os.path.join('test', 'path')))
     mock_docker_manager.get_machines_stats.assert_called_once_with(test_lab.hash)
 
 
@@ -130,7 +130,8 @@ def test_get_machine_live_info(mock_init_window, mock_print_string, mock_docker_
 @mock.patch("src.Kathara.cli.command.LinfoCommand.create_table")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
-def test_get_lab_live_info(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_init_window, mock_print_string, mock_close,
+def test_get_lab_live_info(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_init_window,
+                           mock_print_string, mock_close,
                            test_lab):
     mock_manager_get_instance.return_value = mock_docker_manager
     machine_stats = map(lambda x: x, [{"A": MagicMock()}])

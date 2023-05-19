@@ -28,8 +28,8 @@ def test_run_with_directory_absolute_path(mock_lab, mock_parse_lab, mock_docker_
     mock_parse_lab.return_value = mock_lab
     mock_manager_get_instance.return_value = mock_docker_manager
     command = LcleanCommand()
-    command.run('.', ['-d', '/test/path'])
-    mock_parse_lab.assert_called_once_with('/test/path')
+    command.run('.', ['-d', os.path.join('/test', 'path')])
+    mock_parse_lab.assert_called_once_with(os.path.abspath(os.path.join('/test', 'path')))
     mock_docker_manager.undeploy_lab.assert_called_once_with(lab_hash=mock_lab.hash, selected_machines=None)
 
 
@@ -41,8 +41,8 @@ def test_run_with_directory_relative_path(mock_lab, mock_parse_lab, mock_docker_
     mock_parse_lab.return_value = mock_lab
     mock_manager_get_instance.return_value = mock_docker_manager
     command = LcleanCommand()
-    command.run('.', ['-d', 'test/path'])
-    mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test/path'))
+    command.run('.', ['-d', os.path.join('test', 'path')])
+    mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test', 'path'))
     mock_docker_manager.undeploy_lab.assert_called_once_with(lab_hash=mock_lab.hash, selected_machines=None)
 
 

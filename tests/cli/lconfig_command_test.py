@@ -44,8 +44,8 @@ def test_run_add_link_with_directory(mock_parse_lab, mock_docker_manager, mock_m
     mock_parse_lab.return_value = test_lab
     mock_manager_get_instance.return_value = mock_docker_manager
     command = LconfigCommand()
-    command.run('.', ['-d', '/test/path', '-n', 'pc1', '--add', 'A'])
-    mock_parse_lab.assert_called_once_with('/test/path')
+    command.run('.', ['-d', os.path.join('/test', 'path'), '-n', 'pc1', '--add', 'A'])
+    mock_parse_lab.assert_called_once_with(os.path.abspath(os.path.join('/test', 'path')))
     mock_docker_manager.update_lab_from_api.assert_called_once_with(test_lab)
     mock_docker_manager.connect_machine_to_link.assert_called_once_with(test_lab.get_or_new_machine('pc1'),
                                                                         test_lab.get_or_new_link('A'))
@@ -89,8 +89,8 @@ def test_run_remove_link_with_directory_absolute_path(mock_parse_lab, mock_docke
     mock_parse_lab.return_value = test_lab
     mock_manager_get_instance.return_value = mock_docker_manager
     command = LconfigCommand()
-    command.run('.', ['-d', '/test/path', '-n', 'pc1', '--rm', 'A'])
-    mock_parse_lab.assert_called_once_with('/test/path')
+    command.run('.', ['-d', os.path.join('/test', 'path'), '-n', 'pc1', '--rm', 'A'])
+    mock_parse_lab.assert_called_once_with(os.path.abspath(os.path.join('/test', 'path')))
     mock_docker_manager.update_lab_from_api.assert_called_once_with(test_lab)
     mock_docker_manager.disconnect_machine_from_link.assert_called_once_with(test_lab.get_or_new_machine('pc1'),
                                                                              test_lab.get_or_new_link('A'))
@@ -104,8 +104,8 @@ def test_run_remove_link_with_directory_relative_path(mock_parse_lab, mock_docke
     mock_parse_lab.return_value = test_lab
     mock_manager_get_instance.return_value = mock_docker_manager
     command = LconfigCommand()
-    command.run('.', ['-d', 'test/path', '-n', 'pc1', '--rm', 'A'])
-    mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test/path'))
+    command.run('.', ['-d', os.path.join('test', 'path'), '-n', 'pc1', '--rm', 'A'])
+    mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test', 'path'))
     mock_docker_manager.update_lab_from_api.assert_called_once_with(test_lab)
     mock_docker_manager.disconnect_machine_from_link.assert_called_once_with(test_lab.get_or_new_machine('pc1'),
                                                                              test_lab.get_or_new_link('A'))

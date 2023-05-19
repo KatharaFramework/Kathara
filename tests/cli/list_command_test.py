@@ -95,7 +95,8 @@ def test_run_name(mock_docker_manager, mock_manager_get_instance, test_lab):
 @mock.patch("src.Kathara.cli.command.ListCommand.create_table")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
-def test_get_live_info(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_init_window, mock_print_string, mock_close,
+def test_get_live_info(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_init_window,
+                       mock_print_string, mock_close,
                        test_lab):
     mock_manager_get_instance.return_value = mock_docker_manager
     stats = map(lambda x: x, [])
@@ -114,7 +115,8 @@ def test_get_live_info(mock_docker_manager, mock_manager_get_instance, mock_crea
 @mock.patch("src.Kathara.cli.command.ListCommand.create_table")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
-def test_get_live_info_machine_name(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_init_window, mock_print_string,
+def test_get_live_info_machine_name(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_init_window,
+                                    mock_print_string,
                                     mock_close,
                                     test_lab):
     mock_manager_get_instance.return_value = mock_docker_manager

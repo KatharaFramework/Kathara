@@ -30,7 +30,8 @@ def test_run_no_params(mock_docker_manager, mock_manager_get_instance,
 @mock.patch("src.Kathara.cli.command.WipeCommand.confirmation_prompt")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
-def test_run_with_force(mock_docker_manager, mock_manager_get_instance, mock_confirmation_prompt, mock_get_vlab_temp_path, mock_rm_tree):
+def test_run_with_force(mock_docker_manager, mock_manager_get_instance, mock_confirmation_prompt,
+                        mock_get_vlab_temp_path, mock_rm_tree):
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_get_vlab_temp_path.return_value = '/vlab/path'
     command = WipeCommand()
