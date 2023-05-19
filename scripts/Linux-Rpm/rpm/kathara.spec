@@ -19,14 +19,14 @@ new network protocols.
 %prep
 %autosetup
 python3.10 -m venv %{_builddir}/venv
-%{_builddir}/venv/bin/pip3.10 install --upgrade pip
-%{_builddir}/venv/bin/pip3.10 install -r src/requirements.txt
-%{_builddir}/venv/bin/pip3.10 install nuitka
-%{_builddir}/venv/bin/pip3.10 install pytest
+%{_builddir}/venv/bin/pip install --upgrade pip
+%{_builddir}/venv/bin/pip install -r src/requirements.txt
+%{_builddir}/venv/bin/pip install nuitka
+%{_builddir}/venv/bin/pip install pytest
 
 %build
-%{_builddir}/venv/bin/python3.10 -m pytest
-cd src && %{_builddir}/venv/bin/python3.10 -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
+%{_builddir}/venv/bin/python -m pytest
+cd src && %{_builddir}/venv/bin/python -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara --output-filename=kathara kathara.py
 
 %install
 mv %{_builddir}/%{buildsubdir}/src/kathara.dist %{_builddir}/%{buildsubdir}/kathara.dist

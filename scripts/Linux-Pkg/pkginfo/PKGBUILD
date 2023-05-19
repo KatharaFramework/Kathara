@@ -8,6 +8,7 @@ license=('GPL3')
 install="kathara.install"
 changelog="kathara.changelog"
 makedepends=(
+    'python'
     'chrpath'
     'patchelf'
 )
@@ -20,15 +21,15 @@ md5sums=('SKIP')
 
 prepare() {
   python3 -m venv $srcdir/venv
-  $srcdir/venv/bin/pip3.10 install --upgrade setuptools
-  $srcdir/venv/bin/pip3.10 install -r src/requirements.txt
-  $srcdir/venv/bin/pip3.10 install nuitka
-  $srcdir/venv/bin/pip3.10 install pytest
+  $srcdir/venv/bin/pip install --upgrade setuptools
+  $srcdir/venv/bin/pip install -r src/requirements.txt
+  $srcdir/venv/bin/pip install nuitka
+  $srcdir/venv/bin/pip install pytest
 }
 
 build() {
-  $srcdir/venv/bin/python3.10 -m pytest
-  cd src && $srcdir/venv/bin/python3.10 -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
+  $srcdir/venv/bin/python -m pytest
+  cd src && $srcdir/venv/bin/python -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara --output-filename=kathara kathara.py
 }
 
 package() {

@@ -20,13 +20,13 @@ RUN pacman -S --noconfirm wget \
 						  libnsl \
 						  libxcrypt \
 						  zlib && \
-	wget https://www.python.org/ftp/python/3.10.7/Python-3.10.7.tgz && \
-	tar xfvz Python-3.10.7.tgz && cd Python-3.10.7 && \
+	wget https://www.python.org/ftp/python/3.10.11/Python-3.10.11.tgz && \
+	tar xfvz Python-3.10.11.tgz && cd Python-3.10.11 && \
 	./configure --enable-optimizations && \
 	make -j8 && \
 	make install && \
 	pacman -R --noconfirm wget && \
-    cd .. && rm -Rf Python-3.10.7*
+    cd .. && rm -Rf Python-3.10.11*
                           
 RUN useradd -m -s /bin/bash builduser
 
