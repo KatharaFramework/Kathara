@@ -10,10 +10,12 @@ NO_BINARY_PACKAGES=pyroute2|pyuv|deepdiff
 allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_jammy docker-signed_kinetic
 
 docker-unsigned_%: clean prepare-deb-source docker-build-image_%
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c "make build-deb-unsigned distro=$*"
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c \
+	 	"make build-deb-unsigned distro=$* && chown -R $(shell id -u):$(shell id -g) Output"
 
 docker-signed_%: docker-build-image_%
-	docker run -ti --rm -v $(HOME)/.gnupg:/root/gnupg-host -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c "make unpack-deb-source && make build-deb-signed distro=$* && make ppa && make clean-output-folder distro=$*"
+	docker run -ti --rm -v $(HOME)/.gnupg:/root/gnupg-host -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c \
+	 	"make unpack-deb-source && make build-deb-signed distro=$* && make ppa && make clean-output-folder distro=$*"
 
 docker-build-image_%:
 	cd Docker-Linux-Build && cp Dockerfile_template Dockerfile
