@@ -8,7 +8,7 @@ license=('GPL3')
 install="kathara.install"
 changelog="kathara.changelog"
 makedepends=(
-    'python'
+    __PYTHON_DEP__
     'chrpath'
     'patchelf'
 )

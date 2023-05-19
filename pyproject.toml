@@ -4,7 +4,7 @@ version = "3.6.0"
 description = "A lightweight container-based emulation system."
 readme = "README.md"
 requires-python = ">=3.9"
-license = { file = "LICENSE.txt" }
+license = { file = "LICENSE" }
 keywords = ["NETWORK-EMULATION", "CONTAINERS", "NFV"]
 authors = [
     { name = "Kathara Framework", email = "contact@kathara.org" } # Optional

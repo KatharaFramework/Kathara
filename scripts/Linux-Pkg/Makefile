@@ -12,10 +12,12 @@ all: clean docker-build-image docker-build-local
 allRemote: clean docker-build-image docker-build-remote
 
 docker-build-local: docker-build-image
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c "PATH=$$PATH:/home/builduser/.local/bin:/home/builduser/.gem/ruby/3.0.0/bin:/home/builduser/.local/share/gem/ruby/3.0.0/bin make build-local" builduser
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c \
+		"PATH=$$PATH:/home/builduser/.local/bin:/home/builduser/.gem/ruby/3.0.0/bin:/home/builduser/.local/share/gem/ruby/3.0.0/bin make build-local" builduser
 
 docker-build-remote: docker-build-image
-	docker run -ti --rm -v ~/.ssh:/opt/kathara/.ssh -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c "PATH=$$PATH:/home/builduser/.local/bin:/home/builduser/.gem/ruby/3.0.0/bin:/home/builduser/.local/share/gem/ruby/3.0.0/bin make build-remote" builduser
+	docker run -ti --rm -v ~/.ssh:/opt/kathara/.ssh -v `pwd`/../../:/opt/kathara kathara/linux-build-pkg /usr/bin/su -c \
+		"PATH=$$PATH:/home/builduser/.local/bin:/home/builduser/.gem/ruby/3.0.0/bin:/home/builduser/.local/share/gem/ruby/3.0.0/bin make build-remote" builduser
 
 docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-pkg .
@@ -58,19 +60,21 @@ pack-source: clean prepare-source prepare-man-pages prepare-bash-completion
 	sed -i -e 's/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g' Output/PKGBUILD
 
 build-local: pack-source
+	sed -i -e 's/__PYTHON_DEP__//g' Output/PKGBUILD
 	cd Output && makepkg
 	rm -rf Output/kathara.changelog Output/kathara.install Output/PKGBUILD
 	rm -rf Output/kathara.tar.gz
 	rm -rf Output/pkg
 	rm -rf Output/src
 
-build-remote: pack-source 
+build-remote: pack-source
 	cp -r /opt/kathara/.ssh/ /home/builduser/.ssh/ && chmod 600 /home/builduser/.ssh/id_rsa
 	ssh-keyscan aur.archlinux.org > /home/builduser/.ssh/known_hosts
 	cd Output && git clone ssh://aur@aur.archlinux.org/kathara kathara-aur
 	git config --global user.name "$(AUR_NAME)"
 	git config --global user.email "$(AUR_MAIL)"
 	cd Output && cp -Rf $$(ls | grep -v kathara-aur) kathara-aur/
+	sed -i -e "s/__PYTHON_DEP__/'python'/g" Output/kathara-aur/PKGBUILD
 	cd Output/kathara-aur && makepkg --printsrcinfo > .SRCINFO
 	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git add .
 	git --work-tree=Output/kathara-aur --git-dir=Output/kathara-aur/.git commit -m "Bump to v$(VERSION)-$(PACKAGE_VERSION)"
