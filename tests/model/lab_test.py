@@ -63,7 +63,7 @@ def test_directory_scenario_creation_with_shared_files(directory_scenario: Lab, 
     assert directory_scenario.links == {}
     assert directory_scenario.general_options == {}
     assert not directory_scenario.has_dependencies
-    assert directory_scenario.fs_path() == temporary_path
+    assert os.path.normpath(directory_scenario.fs_path()) == os.path.normpath(temporary_path)
     assert directory_scenario.shared_path is None
     assert directory_scenario.hash == utils.generate_urlsafe_hash(directory_scenario.name)
 
