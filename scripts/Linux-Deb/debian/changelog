@@ -1,10 +1,10 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
- * Add filesystem abstraction that allows Python users to manage network scenarios' files and configurations in memory, without requiring any underlying host filesystem
- * Add '.toml' setup file as requested by Python 3.11 specifications
- * Fix Quagga permissions that prevent from writing configurations inside 'vtysh'
- * Fix deprecation Warnings of 'libtmux' (thanks to Marcel Großmann)
- * Add unit tests for CLI commands
- * Minor fixes
+    * Add filesystem abstraction that allows Python users to manage network scenarios' files and configurations in memory, without requiring any underlying host filesystem
+    * Add '.toml' setup file as requested by Python 3.11 specifications
+    * Fix Quagga permissions that prevent from writing configurations inside 'vtysh'
+    * Fix deprecation Warnings of 'libtmux' (thanks to Marcel Großmann)
+    * Add unit tests for CLI commands
+    * Minor fixes
 
  -- Mariano Scazzariello <******@gmail.com>  __DATE__

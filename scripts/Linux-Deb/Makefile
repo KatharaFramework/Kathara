@@ -59,21 +59,19 @@ download-pip: copy-debian-folder
 	grep -Ev "$(NO_BINARY_PACKAGES)" Output/kathara-$(VERSION)/requirements.txt > Output/kathara-$(VERSION)/requirements-binary.txt
 	grep -E "$(NO_BINARY_PACKAGES)" Output/kathara-$(VERSION)/requirements.txt > Output/kathara-$(VERSION)/requirements-no-binary.txt
 	/root/py-build-env/bin/pip install --upgrade setuptools
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download flit_core
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download wheel
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: flit_core
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: wheel
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --no-binary=:all: -r ../../requirements-no-binary.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --platform x86_64 --only-binary=:all: -r ../../requirements-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download nuitka
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download flit_core
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download wheel
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --no-binary=:all: nuitka
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: flit_core
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: wheel
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --no-binary=:all: -r ../../requirements-no-binary.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --platform arm64 --only-binary=:all: -r ../../requirements-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download nuitka
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --no-binary=:all: nuitka
 	rm -Rf Output/kathara-$(VERSION)/requirements-binary.txt Output/kathara-$(VERSION)/requirements-no-binary.txt
 	ls Output/kathara-$(VERSION)/debian/pythonLibs_amd64/ | awk '{print "debian/pythonLibs_amd64/"$$0}' > Output/kathara-$(VERSION)/debian/source/include-binaries
 	ls Output/kathara-$(VERSION)/debian/pythonLibs_arm64/ | awk '{print "debian/pythonLibs_arm64/"$$0}' >> Output/kathara-$(VERSION)/debian/source/include-binaries
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && rm -rf ordered-set-*.tar.gz
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && rm -rf ordered-set-*.tar.gz
 
 build-man: copy-debian-folder
 	cd ../../docs && make roff-build
