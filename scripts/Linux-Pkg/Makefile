@@ -36,7 +36,7 @@ build-local: prepare-files
 	mv kathara*.pkg.tar.zst /home/builduser/output/
 
 build-remote: prepare-files
-	sed -i -e "s/__PYTHON_DEP__/'python'/g" /home/builduser/build/PKGBUILD
+	sed -i -e "s/__PYTHON_DEP__/'python310'/g" /home/builduser/build/PKGBUILD
 	cp -r /home/builduser/ssh/ /home/builduser/.ssh/ && chmod 600 /home/builduser/.ssh/id_rsa
 	ssh-keyscan aur.archlinux.org > /home/builduser/.ssh/known_hosts
 	cd .. && git clone ssh://aur@aur.archlinux.org/kathara kathara-aur
