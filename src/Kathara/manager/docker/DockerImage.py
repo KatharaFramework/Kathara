@@ -184,7 +184,7 @@ class DockerImage(object):
         if isinstance(image, docker.models.images.Image):
             is_compatible = (image.attrs['Architecture'] == host_arch)
         elif isinstance(image, docker.models.images.RegistryData):
-            is_compatible = len(list(filter(lambda x: x['architecture'] == host_arch, image.attrs['Platforms']))) > 0
+            is_compatible = any(map(lambda x: x['architecture'] == host_arch, image.attrs['Platforms']))
 
         if not is_compatible:
             raise InvalidImageArchitectureError(image, host_arch)

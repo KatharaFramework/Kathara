@@ -14,7 +14,7 @@ By default, stops all the devices of the network scenario. If a list of <DEVICE_
 ## OPTIONS
 
 * `-h`, `--help`:
-    Show an help message and exit.
+    Show a help message and exit.
 
 * `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
 	Specify the folder containing the network scenario.

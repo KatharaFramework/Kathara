@@ -15,7 +15,7 @@ Using optional parameters, it is also possible to delete the current user settin
 ## OPTIONS
 
 * `-h`, `--help`:
-    Show an help message and exit.
+    Show a help message and exit.
 
 * `-f`, `--force`:
     Force the wipe.

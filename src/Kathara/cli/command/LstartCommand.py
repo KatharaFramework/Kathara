@@ -35,7 +35,7 @@ class LstartCommand(Command):
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
-            help='Show an help message and exit.'
+            help='Show a help message and exit.'
         )
 
         group = self.parser.add_mutually_exclusive_group(required=False)
@@ -89,12 +89,12 @@ class LstartCommand(Command):
             help="Apply options to all devices of a network scenario during startup."
         )
         self.parser.add_argument(
-            '--xterm',
+            '--xterm', '--terminal-emu',
             required=False,
             help='Set a different terminal emulator application (Unix only).'
         )
         self.parser.add_argument(
-            '--print',
+            '--print', '--dry-mode',
             dest="dry_mode",
             required=False,
             action='store_true',

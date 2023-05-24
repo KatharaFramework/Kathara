@@ -109,7 +109,7 @@ class KubernetesManager(IManager):
             self.k8s_machine.deploy_machines(lab, selected_machines=selected_machines)
         except ApiException as e:
             if e.status == 403 and 'Forbidden' in e.reason:
-                raise LabAlreadyExistsError("Previous lab execution is still terminating. Please wait.")
+                raise LabAlreadyExistsError("Previous network scenario execution is still terminating. Please wait.")
             else:
                 raise e
 

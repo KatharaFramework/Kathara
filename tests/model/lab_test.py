@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from fs.errors import CreateFailed
 
 sys.path.insert(0, './')
 
@@ -19,13 +20,8 @@ def default_scenario():
 
 
 @pytest.fixture()
-def default_scenario_path():
-    return Lab(None, path="/lab/path")
-
-
-@pytest.fixture()
 def temporary_path():
-    return mkdtemp("kathara_test")
+    return mkdtemp("kathara_test/")
 
 
 @pytest.fixture()
@@ -46,39 +42,17 @@ def test_default_scenario_creation(default_scenario: Lab):
     assert default_scenario.links == {}
     assert default_scenario.general_options == {}
     assert not default_scenario.has_dependencies
-    assert default_scenario.path is None
-    assert default_scenario.shared_shutdown_path is None
-    assert default_scenario.shared_startup_path is None
-    assert default_scenario.shared_folder is None
+    assert default_scenario.fs_type() == "memory"
+    assert default_scenario.shared_path is None
     assert default_scenario.hash == utils.generate_urlsafe_hash(default_scenario.name)
 
 
-def test_default_scenario_creation_with_path(default_scenario_path: Lab):
-    assert default_scenario_path.name is None
-    assert default_scenario_path.description is None
-    assert default_scenario_path.version is None
-    assert default_scenario_path.author is None
-    assert default_scenario_path.email is None
-    assert default_scenario_path.web is None
-    assert default_scenario_path.machines == {}
-    assert default_scenario_path.links == {}
-    assert default_scenario_path.general_options == {}
-    assert not default_scenario_path.has_dependencies
-    assert default_scenario_path.path == "/lab/path"
-    assert default_scenario_path.shared_shutdown_path is None
-    assert default_scenario_path.shared_startup_path is None
-    assert default_scenario_path.shared_folder is None
-    assert default_scenario_path.hash == utils.generate_urlsafe_hash(default_scenario_path.path)
+def test_default_scenario_creation_with_non_existing_path():
+    with pytest.raises(CreateFailed):
+        Lab(None, path="/lab/path")
 
 
-def test_default_scenario_creation_with_path_and_name(default_scenario_path: Lab):
-    default_scenario_path.name = "lab_with_path"
-    assert default_scenario_path.name == "lab_with_path"
-    assert default_scenario_path.path == "/lab/path"
-    assert default_scenario_path.hash == utils.generate_urlsafe_hash(default_scenario_path.name)
-
-
-def test_directory_scenario_creation_no_shared_files(directory_scenario: Lab, temporary_path: str):
+def test_directory_scenario_creation_with_shared_files(directory_scenario: Lab, temporary_path: str):
     assert directory_scenario.name == "directory_scenario"
     assert directory_scenario.description is None
     assert directory_scenario.version is None
@@ -89,10 +63,8 @@ def test_directory_scenario_creation_no_shared_files(directory_scenario: Lab, te
     assert directory_scenario.links == {}
     assert directory_scenario.general_options == {}
     assert not directory_scenario.has_dependencies
-    assert directory_scenario.path == temporary_path
-    assert directory_scenario.shared_shutdown_path == os.path.join(temporary_path, 'shared.shutdown')
-    assert directory_scenario.shared_startup_path == os.path.join(temporary_path, 'shared.startup')
-    assert directory_scenario.shared_folder is None
+    assert os.path.normpath(directory_scenario.fs_path()) == os.path.normpath(temporary_path)
+    assert directory_scenario.shared_path is None
     assert directory_scenario.hash == utils.generate_urlsafe_hash(directory_scenario.name)
 
 
@@ -256,7 +228,7 @@ def test_intersect_machines(default_scenario: Lab):
 
 def test_create_shared_folder(directory_scenario: Lab):
     directory_scenario.create_shared_folder()
-    assert os.path.isdir(os.path.join(directory_scenario.path, 'shared'))
+    assert directory_scenario.fs.isdir('shared')
 
 
 def test_create_shared_folder_no_path(default_scenario: Lab):

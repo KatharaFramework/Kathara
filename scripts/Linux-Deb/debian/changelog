@@ -1,9 +1,10 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-  * (Docker) Raise a custom exception when a binary is not found in the container image
-  * (Kubernetes) Return the control to the user only when all devices are started up or cleaned up
-  * (Kubernetes) Fix possible VNI collisions by loading already deployed networks before creating new ones
-  * Add '--shared' option to start commands that allows to mount shared folder, overriding the value defined in 'kathara.conf'
-  * Add '--hosthome' option to start commands that allows to mount home folder, overriding the value defined in 'kathara.conf'
+    * Add filesystem abstraction that allows Python users to manage network scenarios' files and configurations in memory, without requiring any underlying host filesystem
+    * Add '.toml' setup file as requested by Python 3.11 specifications
+    * Fix Quagga permissions that prevent from writing configurations inside 'vtysh'
+    * Fix deprecation Warnings of 'libtmux' (thanks to Marcel Großmann)
+    * Add unit tests for CLI commands
+    * Minor fixes
 
  -- Mariano Scazzariello <******@gmail.com>  __DATE__

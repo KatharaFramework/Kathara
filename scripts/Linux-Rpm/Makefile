@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=3.5.5
+VERSION=3.6.0
 PACKAGE_VERSION=1
 
 .PHONY: all clean docker-build-image prepare-source prepare-man-pages prepare-bash-completion pack-source build
@@ -8,7 +8,8 @@ PACKAGE_VERSION=1
 all: clean docker-build-image docker-build
 
 docker-build: docker-build-image
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-rpm /bin/bash -c "make build"
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-rpm /bin/bash -c \
+		"make build && chown -R $(shell id -u):$(shell id -g) Output"
 
 docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-rpm .
@@ -35,8 +36,8 @@ prepare-man-pages:
 	cd ../../docs && make cleanall
 
 prepare-bash-completion:
-	python3.10 -m pip install -r ../autocompletion/requirements.txt
-	python3.10 ../autocompletion/generate_autocompletion.py ~/rpmbuild/SOURCES/kathara-$(VERSION)/kathara.bash-completion
+	python3 -m pip install -r ../autocompletion/requirements.txt
+	python3 ../autocompletion/generate_autocompletion.py ~/rpmbuild/SOURCES/kathara-$(VERSION)/kathara.bash-completion
 
 pack-source: prepare-source prepare-man-pages prepare-bash-completion
 	cd ~/rpmbuild/SOURCES/ && tar -zcf kathara-$(VERSION).tar.gz kathara-$(VERSION)

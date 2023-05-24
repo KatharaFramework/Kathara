@@ -1,23 +1,32 @@
 import collections
 import logging
-import os
 import re
-import shutil
-import tarfile
 import tempfile
-from distutils.util import strtobool
-from pathlib import Path
-from typing import Dict, Any, Tuple, Optional, List, OrderedDict
+from io import BytesIO
+from typing import Dict, Any, Tuple, Optional, List, OrderedDict, TextIO, Union, BinaryIO
+
+# noinspection PyUnresolvedReferences
+from fs._bulk import Copier
+from fs.base import FS
+from fs.copy import copy_fs, copy_file
+from fs.tarfs import WriteTarFS
+# noinspection PyUnresolvedReferences
+from fs.tempfs import TempFS
+from fs.walk import Walker
 
 from . import Lab as LabPackage
 from . import Link as LinkPackage
 from .Link import Link
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainError
+from ..foundation.model.FilesystemMixin import FilesystemMixin
 from ..setting.Setting import Setting
+from ..trdparty.strtobool.strtobool import strtobool
+
+MACHINE_CAPABILITIES: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
 
 
-class Machine(object):
+class Machine(FilesystemMixin):
     """A Kathara device.
 
     Contains information about the device and the API object to interact with the Manager.
@@ -27,15 +36,10 @@ class Machine(object):
         name (str): The name of the device.
         interfaces (collection.OrderedDict[int, Kathara.model.Link]): A list of the collision domains of the device.
         meta (Dict[str, Any]): Keys are meta properties name, values are meta properties values.
-        startup_commands (List[str]): A list of commands to execute at the device startup.
         api_object (Any): To interact with the current Kathara Manager.
-        capabilities (List[str]): The selected capabilities for the device.
-        startup_path (str): The path of the device startup file, if exists.
-        shutdown_path (str): The path of the device shutdown file, if exists.
-        folder (str): The path of the device folder, if exists.
+        fs (fs.FS): The filesystem of the device. Contains files and configurations associated to it.
     """
-    __slots__ = ['lab', 'name', 'interfaces', 'meta', 'startup_commands', 'api_object', 'capabilities',
-                 'startup_path', 'shutdown_path', 'folder']
+    __slots__ = ['lab', 'name', 'interfaces', 'meta', 'api_object']
 
     def __init__(self, lab: 'LabPackage.Lab', name: str, **kwargs) -> None:
         """Create a new instance of a Kathara device.
@@ -48,6 +52,8 @@ class Machine(object):
         Returns:
             None
         """
+        super().__init__()
+
         name = name.strip()
         matches = re.search(r"^[a-z0-9_]{1,30}$", name)
         if not matches:
@@ -62,28 +68,14 @@ class Machine(object):
             'sysctls': {},
             'envs': {},
             'bridged': False,
-            'ports': {}
+            'ports': {},
+            'startup_commands': []
         }
-
-        self.startup_commands: List[str] = []
 
         self.api_object: Any = None
 
-        self.capabilities: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
-
-        self.startup_path: Optional[str] = None
-        self.shutdown_path: Optional[str] = None
-        self.folder: Optional[str] = None
-
-        if lab.has_path():
-            startup_file = os.path.join(lab.path, '%s.startup' % self.name)
-            self.startup_path = startup_file if os.path.exists(startup_file) else None
-
-            shutdown_file = os.path.join(lab.path, '%s.shutdown' % self.name)
-            self.shutdown_path = shutdown_file if os.path.exists(shutdown_file) else None
-
-            machine_folder = os.path.join(lab.path, '%s' % self.name)
-            self.folder = machine_folder if os.path.isdir(machine_folder) else None
+        self.fs: FS = self.lab.fs.opendir(self.name) \
+            if self.lab.fs.exists(self.name) and self.lab.fs.isdir(self.name) else None
 
         self.update_meta(kwargs)
 
@@ -129,7 +121,8 @@ class Machine(object):
         """
         if self.name not in link.machines:
             raise MachineCollisionDomainError(
-                f"Device `{self.name}` is not connected to collision domain `{link.name}`.")
+                f"Device `{self.name}` is not connected to collision domain `{link.name}`."
+            )
 
         self.interfaces = collections.OrderedDict(
             map(lambda x: x if x[1] is not None and x[1].name != link.name else (x[0], None), self.interfaces.items())
@@ -150,11 +143,11 @@ class Machine(object):
             MachineOptionError: If the specified value is not valid for the specified property.
         """
         if name == "exec":
-            self.startup_commands.append(value)
+            self.meta['startup_commands'].append(value)
             return
 
         if name == "bridged":
-            self.meta[name] = bool(strtobool(str(value)))
+            self.meta[name] = strtobool(str(value))
             return
 
         if name == "sysctl":
@@ -211,7 +204,7 @@ class Machine(object):
         self.meta[name] = value
 
     def check(self) -> None:
-        """Sorts interfaces check if there are missing positions.
+        """Sort interfaces and check if there are missing interface numbers.
 
         Returns:
             None
@@ -237,71 +230,36 @@ class Machine(object):
         Returns:
             bytes: the tar content.
         """
-        # Make a temp folder and create a tar.gz of the lab directory
-        temp_path = tempfile.mkdtemp()
-
         is_empty = True
 
-        with tarfile.open("%s/hostlab.tar.gz" % temp_path, "w:gz") as tar:
-            if self.folder:
-                machine_files = filter(lambda x: x.is_file(), Path(self.folder).rglob("*"))
-
-                for file in machine_files:
-                    file = str(file)
-
-                    if utils.is_excluded_file(file):
-                        continue
-
-                    # Removes the last element of the path
-                    # (because it's the machine folder name and it should be included in the tar archive)
-                    lab_path, machine_folder = os.path.split(self.folder)
-                    (tarinfo, content) = utils.pack_file_for_tar(file,
-                                                                 arc_name="hostlab/%s" % os.path.relpath(file, lab_path)
-                                                                 )
-                    tar.addfile(tarinfo, content)
+        file = BytesIO()
+        with WriteTarFS(file, compression="gz") as tar:
+            hostlab_tar_dir = tar.makedir('hostlab')
+            machine_tar_dir = hostlab_tar_dir.makedir(self.name)
+            if self.fs and not self.fs.isempty(''):
+                copy_fs(
+                    self.fs,
+                    machine_tar_dir,
+                    on_copy=lambda src_fs, src_path, dst_fs, dst_path: utils.convert_win_2_linux(
+                        dst_fs.getsyspath(dst_path), write=True
+                    ),
+                    walker=Walker(exclude=utils.EXCLUDED_FILES)
+                )
 
                 is_empty = False
 
-            if self.startup_path:
-                (tarinfo, content) = utils.pack_file_for_tar(self.startup_path,
-                                                             arc_name="hostlab/%s.startup" % self.name
-                                                             )
-                tar.addfile(tarinfo, content)
-                is_empty = False
+            for name in [f"{self.name}.startup", f"{self.name}.shutdown", "shared.startup", "shared.shutdown"]:
+                if self.lab.fs.exists(name):
+                    copy_file(self.lab.fs, name, hostlab_tar_dir, name)
+                    utils.convert_win_2_linux(hostlab_tar_dir.getsyspath(name), write=True)
+                    is_empty = False
 
-            if self.shutdown_path:
-                (tarinfo, content) = utils.pack_file_for_tar(self.shutdown_path,
-                                                             arc_name="hostlab/%s.shutdown" % self.name
-                                                             )
-                tar.addfile(tarinfo, content)
-                is_empty = False
-
-            if self.lab.shared_startup_path:
-                (tarinfo, content) = utils.pack_file_for_tar(self.lab.shared_startup_path,
-                                                             arc_name="hostlab/shared.startup"
-                                                             )
-                tar.addfile(tarinfo, content)
-                is_empty = False
-
-            if self.lab.shared_shutdown_path:
-                (tarinfo, content) = utils.pack_file_for_tar(self.lab.shared_shutdown_path,
-                                                             arc_name="hostlab/shared.shutdown"
-                                                             )
-                tar.addfile(tarinfo, content)
-                is_empty = False
+        if not is_empty:
+            file.seek(0)
+            return file.read()
 
         # If no machine files are found, return None.
-        if is_empty:
-            return None
-
-        # Read tar.gz content
-        with open("%s/hostlab.tar.gz" % temp_path, "rb") as tar_file:
-            tar_data = tar_file.read()
-
-        # Delete temporary tar.gz
-        shutil.rmtree(temp_path)
-
-        return tar_data
+        return None
 
     def get_image(self) -> str:
         """Get the image of the device, if defined in options or device meta. If not, use default one.
@@ -367,22 +325,51 @@ class Machine(object):
 
         return None
 
-    def get_ports(self) -> Optional[Dict[Tuple[int, str], int]]:
+    def get_ports(self) -> Dict[Tuple[int, str], int]:
         """Get the port mapping of the device.
 
         Returns:
-            Dict[(int, str), int]: Keys are pairs (host_port, protocol), values specifies the guest_port.
+            Dict[(int, str), int]: Keys are pairs (host port, protocol), values specifies the guest port.
         """
-        if self.meta['ports']:
-            return self.meta['ports']
+        return self.meta['ports']
 
-        return None
-
-    def get_num_terms(self) -> int:
-        """Get the number of terminal to be opened for the device.
+    def get_sysctls(self) -> Dict[str, Union[int, str]]:
+        """Get the sysctls specified for the device.
 
         Returns:
-            int: The number of terminal to be opened.
+            Dict[str, Union[int, str]]: Keys contain the sysctls to set, values are the values to apply.
+        """
+        return self.meta['sysctls']
+
+    def get_shell(self) -> str:
+        """Get the custom shell specified for the device.
+
+        Returns:
+            str: The path of the custom shell specified for connecting to the device.
+        """
+        return self.meta['shell'] if 'shell' in self.meta else Setting.get_instance().device_shell
+
+    def get_envs(self) -> Dict[str, Union[int, str]]:
+        """Get the environment variables specified for the device.
+
+        Returns:
+            Dict[str, Union[int, str]]: Keys are environment variables to set, values are the values to apply.
+        """
+        return self.meta['envs'] if self.meta['envs'] else {}
+
+    def is_bridged(self) -> bool:
+        """Return True if the device is bridged, else return False.
+
+        Returns:
+            bool: True if the device is bridged, else False.
+        """
+        return self.meta['bridged']
+
+    def get_num_terms(self) -> int:
+        """Get the number of terminals to be opened for the device.
+
+        Returns:
+            int: The number of terminals to be opened.
 
         Raises:
             MachineOptionError: If the terminals number value specified is not valid.
@@ -414,10 +401,18 @@ class Machine(object):
             MachineOptionError: If the IPv6 value specified is not valid.
         """
         try:
-            return bool(strtobool(self.lab.general_options["ipv6"])) if "ipv6" in self.lab.general_options else \
-                bool(strtobool(self.meta["ipv6"])) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
+            return strtobool(self.lab.general_options["ipv6"]) if "ipv6" in self.lab.general_options else \
+                strtobool(self.meta["ipv6"]) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
+
+    def get_startup_commands(self) -> List[str]:
+        """Get the additional device startup commands.
+
+        Returns:
+            List[str]: The list containing the additional commands.
+        """
+        return self.meta['startup_commands']
 
     def update_meta(self, args: Dict[str, Any]) -> None:
         """Update the device metas from a dict.
@@ -458,6 +453,186 @@ class Machine(object):
         if 'envs' in args and args['envs'] is not None:
             for envs in args['envs']:
                 self.add_meta("env", envs)
+
+    # Override FilesystemMixin methods to handle the condition if we want to add a file but self.fs is not set
+    # In this case, we create the machine directory and assign it to self.fs before calling the actual method
+    def create_file_from_string(self, content: str, dst_path: str) -> None:
+        """Create a file from a string in the device fs. If fs is None, create it in the network scenario.
+
+        Args:
+            content (str): The string representing the content of the file to create.
+            dst_path (str): The absolute path of the fs where create the file.
+
+        Returns:
+            None
+
+        Raises:
+            fs.errors.ResourceNotFound: If the path is not found.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().create_file_from_string(content, dst_path)
+
+    def update_file_from_string(self, content: str, dst_path: str) -> None:
+        """Update a file in the fs object from a string.
+
+        Args:
+            content (str): The string representing the content for updating the file.
+            dst_path (str): The absolute path on the fs of the file to update.
+
+        Returns:
+            None
+
+        Raises:
+            InvocationError: If the fs is None.
+            fs.errors.ResourceNotFound: If the path is not found in the fs.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().update_file_from_string(content, dst_path)
+
+    def create_file_from_list(self, lines: List[str], dst_path: str) -> None:
+        """Create a file from a list of strings in the device fs. If fs is None, create it in the network scenario.
+
+        Args:
+            lines (List[str]): The list of strings representing the content of the file to create.
+            dst_path (str): The absolute path of the fs where create the file.
+
+        Returns:
+            None
+
+        Raises:
+            fs.errors.ResourceNotFound: If the path is not found.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().create_file_from_list(lines, dst_path)
+
+    def update_file_from_list(self, lines: List[str], dst_path: str) -> None:
+        """Update a file in the fs object from a list of strings.
+
+        Args:
+            lines (List[str]): The list of strings representing the content for updating the file.
+            dst_path (str): The absolute path on the fs of the file to upload.
+
+        Returns:
+            None
+
+        Raises:
+            InvocationError: If the fs is None.
+            fs.errors.ResourceNotFound: If the path is not found in the fs.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().update_file_from_list(lines, dst_path)
+
+    def create_file_from_path(self, src_path: str, dst_path: str) -> None:
+        """Create a file in the device fs from an existing file on the host filesystem. If the fs is None, create it.
+
+        Args:
+            src_path (str): The path of the file on the host filesystem to copy in the fs object.
+            dst_path (str): The absolute path of the fs where create the file.
+
+        Returns:
+            None
+
+        Raises:
+            fs.errors.ResourceNotFound: If the path is not found.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().create_file_from_path(src_path, dst_path)
+
+    def create_file_from_stream(self, stream: Union[BinaryIO, TextIO], dst_path: str) -> None:
+        """Create a file in the device fs from a stream. If fs is None, create it in the network scenario.
+
+        Args:
+            stream (Union[BinaryIO, TextIO]): The stream representing the content of the file to create.
+            dst_path (str): The absolute path of the fs where create the file.
+
+        Returns:
+            None
+
+        Raises:
+            UnsupportedOperation: If the stream is opened without read permissions.
+            fs.errors.ResourceNotFound: If the path is not found.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().create_file_from_stream(stream, dst_path)
+
+    def write_line_before(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
+            -> int:
+        """Write a new line before a specific line in a file.
+
+        Args:
+            file_path (str): The path of the file to add the new line.
+            line_to_add (str): The new line to add before the searched line.
+            searched_line (str): The searched line.
+            first_occurrence (bool): Inserts line only before the first occurrence. Default is False.
+
+        Returns:
+            int: Number of times the line has been added.
+
+        Raises:
+            fs.errors.FileExpected: If the path is not a file.
+            fs.errors.ResourceNotFound: If the path does not exist.
+            LineNotFoundError: If the searched line is not found in the file.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        return super().write_line_before(file_path, line_to_add, searched_line, first_occurrence)
+
+    def write_line_after(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
+            -> int:
+        """Write a new line after a specific line in a file.
+
+        Args:
+            file_path (str): The path of the file to add the new line.
+            line_to_add (str): The new line to add after the searched line.
+            searched_line (str): The searched line.
+            first_occurrence (bool): Inserts line only after the first occurrence. Default is False.
+
+        Returns:
+            int: Number of times the line has been added.
+
+        Raises:
+            fs.errors.FileExpected: If the path is not a file.
+            fs.errors.ResourceNotFound: If the path does not exist.
+            LineNotFoundError: If the searched line is not found in the file.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        return super().write_line_after(file_path, line_to_add, searched_line, first_occurrence)
+
+    def delete_line(self, file_path: str, line_to_delete: str, first_occurrence: bool = False) -> int:
+        """Delete a specified line in a file.
+
+        Args:
+            file_path (str): The path of the file to delete the line.
+            line_to_delete (str): The line to delete.
+            first_occurrence (bool): Deletes only first occurrence. Default is False.
+
+        Returns:
+            int: Number of times the line has been deleted.
+
+        Raises:
+            fs.errors.FileExpected: If the path is not a file.
+            fs.errors.ResourceNotFound: If the path does not exist.
+            LineNotFoundError: If the searched line is not found in the file.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        return super().delete_line(file_path, line_to_delete, first_occurrence)
 
     def __repr__(self) -> str:
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=3.5.5
+VERSION=3.6.0
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 NO_BINARY_PACKAGES=pyroute2|pyuv|deepdiff
@@ -10,10 +10,12 @@ NO_BINARY_PACKAGES=pyroute2|pyuv|deepdiff
 allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_jammy docker-signed_kinetic
 
 docker-unsigned_%: clean prepare-deb-source docker-build-image_%
-	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c "make build-deb-unsigned distro=$*"
+	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c \
+	 	"make build-deb-unsigned distro=$* && chown -R $(shell id -u):$(shell id -g) Output"
 
 docker-signed_%: docker-build-image_%
-	docker run -ti --rm -v $(HOME)/.gnupg:/root/gnupg-host -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c "make unpack-deb-source && make build-deb-signed distro=$* && make ppa && make clean-output-folder distro=$*"
+	docker run -ti --rm -v $(HOME)/.gnupg:/root/gnupg-host -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c \
+	 	"make unpack-deb-source && make build-deb-signed distro=$* && make ppa && make clean-output-folder distro=$*"
 
 docker-build-image_%:
 	cd Docker-Linux-Build && cp Dockerfile_template Dockerfile
@@ -49,22 +51,24 @@ copy-debian-folder:
 	sed -i -e 's/__VERSION__/$(VERSION)/g' Output/kathara-$(VERSION)/debian/changelog
 	
 venv:
-	python3.10 -m venv /root/3.10-env
+	python3.10 -m venv /root/py-build-env
 
 download-pip: copy-debian-folder
 	mkdir Output/kathara-$(VERSION)/debian/pythonLibs_amd64
 	mkdir Output/kathara-$(VERSION)/debian/pythonLibs_arm64
 	grep -Ev "$(NO_BINARY_PACKAGES)" Output/kathara-$(VERSION)/requirements.txt > Output/kathara-$(VERSION)/requirements-binary.txt
 	grep -E "$(NO_BINARY_PACKAGES)" Output/kathara-$(VERSION)/requirements.txt > Output/kathara-$(VERSION)/requirements-no-binary.txt
-	/root/3.10-env/bin/pip3.10 install --upgrade setuptools
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.10-env/bin/pip3.10 download flit_core
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.10-env/bin/pip3.10 download --no-binary=:all: -r ../../requirements-no-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.10-env/bin/pip3.10 download --platform manylinux2014_x86_64 --platform x86_64 --only-binary=:all: -r ../../requirements-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/3.10-env/bin/pip3.10 download "nuitka==1.3.5"
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.10-env/bin/pip3.10 download flit_core
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.10-env/bin/pip3.10 download --no-binary=:all: -r ../../requirements-no-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.10-env/bin/pip3.10 download --platform manylinux2014_aarch64 --platform arm64 --only-binary=:all: -r ../../requirements-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/3.10-env/bin/pip3.10 download "nuitka==1.3.5"
+	/root/py-build-env/bin/pip install --upgrade setuptools
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: flit_core
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: wheel
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --no-binary=:all: -r ../../requirements-no-binary.txt
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --platform x86_64 --only-binary=:all: -r ../../requirements-binary.txt
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --no-binary=:all: nuitka
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: flit_core
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: wheel
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --no-binary=:all: -r ../../requirements-no-binary.txt
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --platform arm64 --only-binary=:all: -r ../../requirements-binary.txt
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --no-binary=:all: nuitka
 	rm -Rf Output/kathara-$(VERSION)/requirements-binary.txt Output/kathara-$(VERSION)/requirements-no-binary.txt
 	ls Output/kathara-$(VERSION)/debian/pythonLibs_amd64/ | awk '{print "debian/pythonLibs_amd64/"$$0}' > Output/kathara-$(VERSION)/debian/source/include-binaries
 	ls Output/kathara-$(VERSION)/debian/pythonLibs_arm64/ | awk '{print "debian/pythonLibs_arm64/"$$0}' >> Output/kathara-$(VERSION)/debian/source/include-binaries
@@ -76,8 +80,8 @@ build-man: copy-debian-folder
 	ls Output/kathara-$(VERSION)/debian/manpages/ | awk '{print "debian/manpages/"$$0}' > Output/kathara-$(VERSION)/debian/kathara.manpages
 
 autocompletion:
-	/root/3.10-env/bin/pip3.10 install -r ../autocompletion/requirements.txt
-	/root/3.10-env/bin/python3.10 ../autocompletion/generate_autocompletion.py Output/kathara-$(VERSION)/debian/kathara.bash-completion
+	/root/py-build-env/bin/pip install -r ../autocompletion/requirements.txt
+	/root/py-build-env/bin/python3 ../autocompletion/generate_autocompletion.py Output/kathara-$(VERSION)/debian/kathara.bash-completion
 
 build-deb-unsigned: venv build-man autocompletion download-pip
 	sed -i -e 's/__UBUNTU_VERSION__/$(distro)/g' Output/kathara-$(VERSION)/debian/changelog

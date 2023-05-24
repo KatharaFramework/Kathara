@@ -1,6 +1,4 @@
-import os
 import sys
-import tarfile
 from unittest import mock
 from unittest.mock import Mock
 
@@ -30,15 +28,12 @@ def test_default_device_parameters(default_device: Machine):
         'sysctls': {},
         'envs': {},
         'bridged': False,
-        'ports': {}
+        'ports': {},
+        'startup_commands': []
     }
-    assert len(default_device.startup_commands) == 0
     assert default_device.api_object is None
-    assert default_device.capabilities == ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
-    assert default_device.startup_path is None
-    assert default_device.shutdown_path is None
-    assert default_device.folder is None
-    assert not default_device.lab.has_path()
+    assert default_device.fs is None
+    assert not default_device.lab.has_host_path()
 
 
 #
@@ -296,100 +291,3 @@ def test_get_num_terms_mix():
     device2 = Machine(lab, "test_machine2")
     assert device1.get_num_terms() == 2
     assert device2.get_num_terms() == 2
-
-
-#
-# TEST: pack_data
-#
-@mock.patch("src.Kathara.utils.pack_file_for_tar")
-def test_pack_data_hidden_files(pack_file_for_tar_mock):
-    lab_path = os.path.join("tests", "model", "hiddenfiles")
-    lab = Lab(None, lab_path)
-    device = lab.get_or_new_machine("test_machine")
-
-    pack_file_for_tar_mock.return_value = (tarfile.TarInfo(""), None)
-
-    device.pack_data()
-
-    pack_file_for_tar_mock.assert_any_call(
-        os.path.join(lab_path, "test_machine", ".hidden"),
-        arc_name="hostlab/" + os.path.join(device.name, ".hidden")
-    )
-
-    pack_file_for_tar_mock.assert_any_call(
-        os.path.join(lab_path, "test_machine", "nothidden"),
-        arc_name="hostlab/" + os.path.join(device.name, "nothidden")
-    )
-
-    assert pack_file_for_tar_mock.call_count == 2
-
-
-@mock.patch("src.Kathara.utils.pack_file_for_tar")
-def test_pack_data_hidden_files_recursive(pack_file_for_tar_mock):
-    lab_path = os.path.join("tests", "model", "hiddenfilesrecursive")
-    lab = Lab(None, lab_path)
-    device = lab.get_or_new_machine("test_machine")
-
-    pack_file_for_tar_mock.return_value = (tarfile.TarInfo(""), None)
-
-    device.pack_data()
-
-    pack_file_for_tar_mock.assert_any_call(
-        os.path.join(lab_path, "test_machine", ".hidden"),
-        arc_name="hostlab/" + os.path.join(device.name, ".hidden")
-    )
-
-    pack_file_for_tar_mock.assert_any_call(
-        os.path.join(lab_path, "test_machine", "nothidden"),
-        arc_name="hostlab/" + os.path.join(device.name, "nothidden")
-    )
-
-    pack_file_for_tar_mock.assert_any_call(
-        os.path.join(lab_path, "test_machine", "etc", ".hidden"),
-        arc_name="hostlab/" + os.path.join(device.name, "etc", ".hidden")
-    )
-
-    pack_file_for_tar_mock.assert_any_call(
-        os.path.join(lab_path, "test_machine", "etc", "nothidden"),
-        arc_name="hostlab/" + os.path.join(device.name, "etc", "nothidden")
-    )
-
-    pack_file_for_tar_mock.assert_any_call(
-        os.path.join(lab_path, "test_machine", "etc", "log", ".hidden"),
-        arc_name="hostlab/" + os.path.join(device.name, "etc", "log", ".hidden")
-    )
-
-    pack_file_for_tar_mock.assert_any_call(
-        os.path.join(lab_path, "test_machine", "etc", "log", "nothidden"),
-        arc_name="hostlab/" + os.path.join(device.name, "etc", "log", "nothidden")
-    )
-
-    assert pack_file_for_tar_mock.call_count == 6
-
-
-@mock.patch("src.Kathara.utils.pack_file_for_tar")
-def test_pack_data_only_hidden_files(pack_file_for_tar_mock):
-    lab_path = os.path.join("tests", "model", "hiddenfilesonly")
-    lab = Lab(None, lab_path)
-    device = lab.get_or_new_machine("test_machine")
-
-    pack_file_for_tar_mock.return_value = (tarfile.TarInfo(""), None)
-
-    device.pack_data()
-
-    pack_file_for_tar_mock.assert_any_call(
-        os.path.join(lab_path, "test_machine", ".hidden"),
-        arc_name="hostlab/" + os.path.join(device.name, ".hidden")
-    )
-
-    pack_file_for_tar_mock.assert_any_call(
-        os.path.join(lab_path, "test_machine", "etc", ".hidden"),
-        arc_name="hostlab/" + os.path.join(device.name, "etc", ".hidden")
-    )
-
-    pack_file_for_tar_mock.assert_any_call(
-        os.path.join(lab_path, "test_machine", "etc", "log", ".hidden"),
-        arc_name="hostlab/" + os.path.join(device.name, "etc", "log", ".hidden")
-    )
-
-    assert pack_file_for_tar_mock.call_count == 3

@@ -39,8 +39,10 @@ class LabParser(object):
         line_number = 1
         line = lab_mem_file.readline().decode('utf-8')
         while line:
-            matches = re.search(r"^(?P<key>[a-z0-9_]{1,30})\[(?P<arg>\w+)\]=(?P<value>\".+\"|\'.+\'|\w+)$",
-                                line.strip())
+            matches = re.search(
+                r"^(?P<key>[a-z0-9_]{1,30})\[(?P<arg>\w+)\]=([\"\']?)(?P<value>[^\"\']+)(\3)(\s+\#.*)?$",
+                line.strip()
+            )
 
             if matches:
                 key = matches.group("key").strip()
@@ -58,8 +60,8 @@ class LabParser(object):
                     if re.search(r"^\w+$", value):
                         lab.connect_machine_to_link(key, value, machine_iface_number=interface_number)
                     else:
-                        raise ValueError(f"In lab.conf - Line {line_number}: "
-                                         f"Collision domain `{value}` contains non-alphanumeric characters.")
+                        raise SyntaxError(f"In lab.conf - Line {line_number}: "
+                                          f"Collision domain `{value}` contains non-alphanumeric characters.")
                 except ValueError:
                     # Not an interface, add it to the machine metas.
                     lab.assign_meta_to_machine(key, arg, value)
@@ -72,7 +74,7 @@ class LabParser(object):
                             not line.startswith("LAB_AUTHOR=") and \
                             not line.startswith("LAB_EMAIL=") and \
                             not line.startswith("LAB_WEB="):
-                        raise SyntaxError("In lab.conf - Line %d: Invalid characters `%s`." % (line_number, line))
+                        raise SyntaxError(f"In lab.conf - Line {line_number}: `{line}`")
                     else:
                         (key, value) = line.split("=")
                         key = key.replace("LAB_", "").lower()

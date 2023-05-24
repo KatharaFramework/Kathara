@@ -26,7 +26,7 @@ class LcleanCommand(Command):
             '-h', '--help',
             action='help',
             default=argparse.SUPPRESS,
-            help='Show an help message and exit.'
+            help='Show a help message and exit.'
         )
 
         self.parser.add_argument(
@@ -54,4 +54,6 @@ class LcleanCommand(Command):
 
         logging.info(format_headers("Stopping Network Scenario"))
 
-        Kathara.get_instance().undeploy_lab(lab_hash=lab.hash, selected_machines=set(args['machine_names']))
+        Kathara.get_instance().undeploy_lab(lab_hash=lab.hash,
+                                            selected_machines=set(args['machine_names']) if args['machine_names']
+                                                                                         else None)

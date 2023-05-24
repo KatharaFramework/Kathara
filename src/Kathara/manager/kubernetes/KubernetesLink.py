@@ -243,8 +243,16 @@ class KubernetesLink(object):
 
             networks_stats = {}
 
-            for network in networks:
+            def load_link_stats(network):
                 networks_stats[network['metadata']['name']] = KubernetesLinkStats(network)
+
+            pool_size = utils.get_pool_size()
+            links_pool = Pool(pool_size)
+
+            items = utils.chunk_list(networks, pool_size)
+
+            for chunk in items:
+                links_pool.map(func=load_link_stats, iterable=chunk)
 
             for network_stats in networks_stats.values():
                 try:

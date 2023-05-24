@@ -19,14 +19,14 @@ new network protocols.
 %prep
 %autosetup
 python3.10 -m venv %{_builddir}/venv
-%{_builddir}/venv/bin/pip3.10 install --upgrade pip
-%{_builddir}/venv/bin/pip3.10 install -r src/requirements.txt
-%{_builddir}/venv/bin/pip3.10 install nuitka
-%{_builddir}/venv/bin/pip3.10 install pytest
+%{_builddir}/venv/bin/pip install --upgrade pip
+%{_builddir}/venv/bin/pip install -r src/requirements.txt
+%{_builddir}/venv/bin/pip install nuitka
+%{_builddir}/venv/bin/pip install pytest
 
 %build
-%{_builddir}/venv/bin/python3.10 -m pytest
-cd src && %{_builddir}/venv/bin/python3.10 -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara kathara.py
+%{_builddir}/venv/bin/python -m pytest
+cd src && %{_builddir}/venv/bin/python -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara --output-filename=kathara kathara.py
 
 %install
 mv %{_builddir}/%{buildsubdir}/src/kathara.dist %{_builddir}/%{buildsubdir}/kathara.dist
@@ -68,8 +68,9 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- (Docker) Raise a custom exception when a binary is not found in the container image
-- (Kubernetes) Return the control to the user only when all devices are started up or cleaned up
-- (Kubernetes) Fix possible VNI collisions by loading already deployed networks before creating new ones
-- Add '--shared' option to start commands that allows to mount shared folder, overriding the value defined in 'kathara.conf'
-- Add '--hosthome' option to start commands that allows to mount home folder, overriding the value defined in 'kathara.conf'
+- Add filesystem abstraction that allows Python users to manage network scenarios' files and configurations in memory, without requiring any underlying host filesystem
+- Add '.toml' setup file as requested by Python 3.11 specifications
+- Fix Quagga permissions that prevent from writing configurations inside 'vtysh'
+- Fix deprecation Warnings of 'libtmux' (thanks to Marcel Großmann)
+- Add unit tests for CLI commands
+- Minor fixes

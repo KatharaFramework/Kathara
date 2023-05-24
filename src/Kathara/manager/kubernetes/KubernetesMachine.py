@@ -29,7 +29,7 @@ RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 MAX_RESTART_COUNT = 3
 
 # Known commands that each container should execute
-# Run order: shared.startup, machine.startup and machine.startup_commands
+# Run order: shared.startup, machine.startup and machine.meta['startup_commands']
 STARTUP_COMMANDS = [
     # If execution flag file is found, abort (this means that postStart has been called again)
     # If not flag the startup execution with a file
@@ -67,7 +67,7 @@ STARTUP_COMMANDS = [
 
     # Give proper permissions to Quagga files (if present)
     "if [ -d \"/etc/quagga\" ]; then "
-    "chown quagga:quagga /etc/quagga/*",
+    "chown --recursive quagga:quagga /etc/quagga/",
     "chmod 640 /etc/quagga/*; fi",
 
     # Give proper permissions to FRR files (if present)
@@ -341,7 +341,7 @@ class KubernetesMachine(object):
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
             .format(machine_name=machine.name,
                     sysctl_commands=sysctl_commands,
-                    machine_commands="; ".join(machine.startup_commands)
+                    machine_commands="; ".join(machine.meta['startup_commands'])
                     )
 
         post_start = client.V1LifecycleHandler(
@@ -804,8 +804,16 @@ class KubernetesMachine(object):
 
             machines_stats = {}
 
-            for pod in pods:
+            def load_machine_stats(pod):
                 machines_stats[pod.metadata.name] = KubernetesMachineStats(pod)
+
+            pool_size = utils.get_pool_size()
+            machines_pool = Pool(pool_size)
+
+            items = utils.chunk_list(pods, pool_size)
+
+            for chunk in items:
+                machines_pool.map(func=load_machine_stats, iterable=chunk)
 
             for machine_stats in machines_stats.values():
                 try:

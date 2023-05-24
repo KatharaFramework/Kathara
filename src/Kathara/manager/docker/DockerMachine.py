@@ -17,7 +17,7 @@ from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNo
     MachineBinaryError
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
-from ...model.Machine import Machine
+from ...model.Machine import Machine, MACHINE_CAPABILITIES
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
@@ -26,7 +26,7 @@ OCI_RUNTIME_RE = re.compile(
 )
 
 # Known commands that each container should execute
-# Run order: shared.startup, machine.startup and machine.startup_commands
+# Run order: shared.startup, machine.startup and machine.meta['startup_commands']
 STARTUP_COMMANDS = [
     # Unmount the /etc/resolv.conf and /etc/hosts files, automatically mounted by Docker inside the container.
     # In this way, they can be overwritten by custom user files.
@@ -50,7 +50,7 @@ STARTUP_COMMANDS = [
 
     # Give proper permissions to Quagga files (if present)
     "if [ -d \"/etc/quagga\" ]; then "
-    "chown quagga:quagga /etc/quagga/*",
+    "chown --recursive quagga:quagga /etc/quagga/",
     "chmod 640 /etc/quagga/*; fi",
 
     # Give proper permissions to FRR files (if present)
@@ -103,7 +103,7 @@ class DockerMachine(object):
         self.docker_image: DockerImage = docker_image
 
     def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None) -> None:
-        """Deploy all the lab devices as Docker containers.
+        """Deploy all the network scenario devices as Docker containers.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
@@ -244,8 +244,8 @@ class DockerMachine(object):
         volumes = {}
 
         shared_mount = options['shared_mount'] if 'shared_mount' in options else Setting.get_instance().shared_mount
-        if shared_mount and machine.lab.shared_folder:
-            volumes[machine.lab.shared_folder] = {'bind': '/shared', 'mode': 'rw'}
+        if shared_mount and machine.lab.shared_path:
+            volumes[machine.lab.shared_path] = {'bind': '/shared', 'mode': 'rw'}
 
         # Mount the host home only if specified in settings.
         hosthome_mount = options['hosthome_mount'] if 'hosthome_mount' in options else \
@@ -264,7 +264,7 @@ class DockerMachine(object):
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,
                                                               hostname=machine.name,
-                                                              cap_add=machine.capabilities if not privileged else None,
+                                                              cap_add=MACHINE_CAPABILITIES if not privileged else None,
                                                               privileged=privileged,
                                                               network=first_network.name if first_network else None,
                                                               network_mode="bridge" if first_network else "none",
@@ -394,17 +394,17 @@ class DockerMachine(object):
             bridge_link.connect(machine.api_object)
 
         # Append executed machine startup commands inside the /var/log/startup.log file
-        if machine.startup_commands:
+        if machine.meta['startup_commands']:
             new_commands = []
-            for command in machine.startup_commands:
+            for command in machine.meta['startup_commands']:
                 new_commands.append("echo \"++ %s\" &>> /var/log/startup.log" % command)
                 new_commands.append(command)
-            machine.startup_commands = new_commands
+            machine.meta['startup_commands'] = new_commands
 
         # Build the final startup commands string
         startup_commands_string = "; ".join(STARTUP_COMMANDS).format(
             machine_name=machine.name,
-            machine_commands="; ".join(machine.startup_commands)
+            machine_commands="; ".join(machine.meta['startup_commands'])
         )
 
         logging.debug(f"Executing startup command on `{machine.name}`: {startup_commands_string}")
@@ -617,8 +617,8 @@ class DockerMachine(object):
             detach (bool): If true, detach from the exec command. Default: False
             stream (bool): Stream response data. Default: False
             socket (bool): Return the connection socket to allow custom read/write operations. Default: False
-            environment (dict or list): A dictionary or a list of strings in the following format ``["PASSWORD=xxx"]`` or
-                ``{"PASSWORD": "xxx"}``.
+            environment (dict or list): A dictionary or a list of strings in the following format
+                ``["PASSWORD=xxx"]`` or ``{"PASSWORD": "xxx"}``.
             workdir (str): Path to working directory for this exec session
             demux (bool): Return stdout and stderr separately
 
@@ -729,19 +729,27 @@ class DockerMachine(object):
 
         containers = sorted(containers, key=lambda x: x.name)
 
-        machine_streams = {}
+        machines_stats = {}
 
-        for machine in containers:
-            machine_streams[machine.name] = DockerMachineStats(machine)
+        def load_machine_stats(machine):
+            machines_stats[machine.name] = DockerMachineStats(machine)
+
+        pool_size = utils.get_pool_size()
+        machines_pool = Pool(pool_size)
+
+        items = utils.chunk_list(containers, pool_size)
+
+        for chunk in items:
+            machines_pool.map(func=load_machine_stats, iterable=chunk)
 
         while True:
-            for machine_stats in machine_streams.values():
+            for machine_stats in machines_stats.values():
                 try:
                     machine_stats.update()
                 except StopIteration:
                     continue
 
-            yield machine_streams
+            yield machines_stats
 
     @staticmethod
     def get_container_name(name: str, lab_hash: str) -> str:

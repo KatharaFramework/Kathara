@@ -43,9 +43,9 @@ class DockerOptionsHandler(OptionsHandler):
         shared_menu = SelectionMenu(strings=[],
                                     title=shared_string,
                                     subtitle=setting_utils.current_bool("shared_mount"),
-                                    prologue_text="""The shared directory inside the lab folder is made available """
-                                                  """for reading/writing inside the device under the special """
-                                                  """directory `/shared`.
+                                    prologue_text="""The shared directory inside the network scenario folder is """
+                                                  """made available for reading/writing inside the device """
+                                                  """under the special directory `/shared`.
                                                   
                                                   Default is %s.""" %
                                                   setting_utils.format_bool(DEFAULTS['shared_mount']),
