@@ -205,11 +205,10 @@ class FilesystemMixin(object):
             for line in file_lines:
                 if searched_line.strip() == line.strip():
                     if not first_occurrence or (first_occurrence and n_added == 0):
-                        new_lines.append(line_to_add)
+                        new_lines.append(line_to_add + '\n')
                         n_added += 1
-                new_lines.append(line.strip())
-
-            file.writelines(s + '\n' for s in new_lines)
+                new_lines.append(line.replace("\n\r", "\n").replace("\r\n", "\n"))
+            file.writelines(new_lines)
 
         return n_added
 
@@ -242,13 +241,13 @@ class FilesystemMixin(object):
             file.truncate()
             new_lines = []
             for line in file_lines:
-                new_lines.append(line.strip())
+                new_lines.append(line.replace("\n\r", "\n").replace("\r\n", "\n"))
                 if searched_line.strip() == line.strip():
                     if not first_occurrence or (first_occurrence and n_added == 0):
-                        new_lines.append(line_to_add)
+                        new_lines.append(("\n" if not line.endswith("\n") else "") + line_to_add + '\n')
                         n_added += 1
 
-            file.writelines(s + '\n' for s in new_lines)
+            file.writelines(new_lines)
 
         return n_added
 
@@ -284,8 +283,8 @@ class FilesystemMixin(object):
                         n_deleted += 1
                         continue
 
-                new_lines.append(line.strip())
+                new_lines.append(line.replace("\n\r", "\n").replace("\r\n", "\n"))
 
-            file.writelines(s + '\n' for s in new_lines)
+            file.writelines(new_lines)
 
         return n_deleted
