@@ -224,7 +224,7 @@ class Lab(FilesystemMixin):
             MachineAlreadyExistsError: If the device is already in the network scenario.
         """
         if name in self.machines:
-            raise MachineAlreadyExistsError(f"Device {name} already in the network scenario.")
+            raise MachineAlreadyExistsError(name)
 
         self.machines[name] = MachinePackage.Machine(self, name, **kwargs)
 
