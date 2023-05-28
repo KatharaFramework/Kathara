@@ -12,6 +12,8 @@ from .. import utils
 from ..exceptions import LinkNotFoundError, MachineNotFoundError, MachineAlreadyExistsError, LinkAlreadyExistsError
 from ..foundation.model.FilesystemMixin import FilesystemMixin
 
+LAB_METADATA: List[str] = ["LAB_NAME", "LAB_DESCRIPTION", "LAB_VERSION", "LAB_AUTHOR", "LAB_EMAIL", "LAB_WEB"]
+
 
 class Lab(FilesystemMixin):
     """A Kathara network scenario, containing information about devices and collision domains.
@@ -104,7 +106,7 @@ class Lab(FilesystemMixin):
 
         return machine, link
 
-    def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> 'MachinePackage.Machine':
+    def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> Optional[Any]:
         """Assign meta information to the specified device.
 
         Args:
@@ -113,16 +115,14 @@ class Lab(FilesystemMixin):
             meta_value (str): The value of the meta property.
 
         Returns:
-            Kathara.model.Machine: The Kathara device specified by the name.
+            Optional[Any]: Previous value if meta was already assigned, None otherwise.
 
         Raises:
             MachineOptionError: If invalid values are specified for meta properties.
         """
         machine = self.get_or_new_machine(machine_name)
 
-        machine.add_meta(meta_name, meta_value)
-
-        return machine
+        return machine.add_meta(meta_name, meta_value)
 
     def attach_external_links(self, external_links: Dict[str, List[ExternalLink]]) -> None:
         """Attach external collision domains to the network scenario.
