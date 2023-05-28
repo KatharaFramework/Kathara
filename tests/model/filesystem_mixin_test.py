@@ -279,6 +279,20 @@ def test_write_line_before_line_not_found_error():
     assert added_lines == 0
 
 
+def test_write_line_before_with_indentation():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("\ta\n\t\tb\n\t\t\td", "test.txt")
+    added_lines = filesystem.write_line_before('test.txt', 'c', 'd')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 4
+    assert lines[0] == '\ta\n'
+    assert lines[1] == '\t\tb\n'
+    assert lines[2] == 'c\n'
+    assert lines[3] == '\t\t\td'
+    assert added_lines == 1
+
+
 #
 # TEST: write_line_after
 #
@@ -371,6 +385,35 @@ def test_write_line_after_line_not_found_error():
     assert added_lines == 0
 
 
+def test_write_line_after_with_indentation():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("\ta\n\t\tb\n\t\t\td", "test.txt")
+    added_lines = filesystem.write_line_after('test.txt', 'c', 'b')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 4
+    assert lines[0] == '\ta\n'
+    assert lines[1] == '\t\tb\n'
+    assert lines[2] == 'c\n'
+    assert lines[3] == '\t\t\td'
+    assert added_lines == 1
+
+
+def test_write_line_after_end_line_with_no_return():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("\ta\n\t\tb\n\t\t\td", "test.txt")
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    added_lines = filesystem.write_line_after('test.txt', 'c', 'd')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 4
+    assert lines[0] == '\ta\n'
+    assert lines[1] == '\t\tb\n'
+    assert lines[2] == '\t\t\td\n'
+    assert lines[3] == 'c\n'
+    assert added_lines == 1
+
+
 #
 # TEST: delete_line
 #
@@ -439,3 +482,15 @@ def test_delete_line_line_not_found_error():
 
     deleted_lines = filesystem.delete_line('test.txt', 'z')
     assert deleted_lines == 0
+
+
+def test_delete_line_with_indentation():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("\ta\n\t\tb\n\t\t\td", "test.txt")
+    deleted_lines = filesystem.delete_line('test.txt', 'b')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 2
+    assert lines[0] == '\ta\n'
+    assert lines[1] == '\t\t\td'
+    assert deleted_lines == 1
