@@ -151,7 +151,7 @@ class Machine(FilesystemMixin):
             return
 
         if name == "sysctl":
-            matches = re.search(r"^(?P<key>net\.(\w+\.)+\w+)=(?P<value>\w+)$", value)
+            matches = re.search(r"^(?P<key>net\.([\w-]+\.)+[\w-]+)=(?P<value>\w+)$", value)
 
             # Check for valid kv-pair
             if matches:
