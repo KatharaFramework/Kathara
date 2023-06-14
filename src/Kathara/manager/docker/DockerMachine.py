@@ -198,10 +198,10 @@ class DockerMachine(object):
         options = machine.lab.general_options
 
         # If bridged is required in command line but not defined in machine meta, add it.
-        if "bridged" in options and not machine.meta['bridged']:
+        if "bridged" in options and not machine.is_bridged():
             machine.add_meta("bridged", True)
 
-        if ports and not machine.meta['bridged']:
+        if ports and not machine.is_bridged():
             logging.warning(
                 "To expose ports of device `%s` on the host, "
                 "you have to specify the `bridged` option on that device." % machine.name
@@ -219,7 +219,7 @@ class DockerMachine(object):
 
         # If no interfaces are declared in machine, but bridged mode is required, get bridge as first link.
         # Flag that bridged is already connected (because there's another check in `start`).
-        if first_network is None and machine.meta['bridged']:
+        if first_network is None and machine.is_bridged():
             first_network = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
             machine.add_meta("bridge_connected", True)
 
@@ -391,7 +391,7 @@ class DockerMachine(object):
                     raise e
 
         # Bridged connection required but not added in `deploy` method.
-        if "bridge_connected" not in machine.meta and machine.meta['bridged']:
+        if "bridge_connected" not in machine.meta and machine.is_bridged():
             bridge_link = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
             bridge_link.connect(machine.api_object)
 
