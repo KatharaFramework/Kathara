@@ -20,7 +20,7 @@ AVAILABLE_MANAGERS: List[str] = ["docker", "kubernetes"]
 ONE_WEEK: int = 604800
 
 DEFAULTS: Dict[str, Any] = {
-    "image": 'kathara/quagga',
+    "image": 'kathara/base',
     "manager_type": 'docker',
     "terminal": utils.exec_by_platform(lambda: '/usr/bin/xterm', lambda: '', lambda: 'Terminal'),
     "open_terminals": True,

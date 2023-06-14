@@ -1,5 +1,4 @@
 from . import utils as setting_utils
-from ....webhooks.DockerHubApi import DockerHubApi
 from ....exceptions import HTTPConnectionError
 from ....foundation.cli.ui.setting.OptionsHandler import OptionsHandler
 from ....manager.Kathara import Kathara
@@ -10,6 +9,7 @@ from ....trdparty.consolemenu.validators.regex import RegexValidator
 from ....utils import exec_by_platform
 from ....validator.ImageValidator import ImageValidator
 from ....validator.TerminalValidator import TerminalValidator
+from ....webhooks.DockerHubApi import DockerHubApi
 
 SHELLS_HINT = ["/bin/bash", "/bin/sh", "/bin/ash", "/bin/ksh", "/bin/zsh", "/bin/fish", "/bin/csh", "/bin/tcsh"]
 TERMINALS_OSX = ["Terminal", "iTerm"]
@@ -52,9 +52,7 @@ class CommonOptionsHandler(OptionsHandler):
                                           )
 
         try:
-            for image in DockerHubApi.get_images():
-                image_name = "%s/%s" % (image['namespace'], image['name'])
-
+            for image_name in DockerHubApi.get_tagged_images():
                 select_image_menu.append_item(FunctionItem(text=image_name,
                                                            function=setting_utils.update_setting_value,
                                                            args=['image', image_name],

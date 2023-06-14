@@ -1,8 +1,11 @@
 import logging
+from functools import partial
+from multiprocessing.dummy import Pool
 
 import requests
 
 from ..exceptions import HTTPConnectionError
+from ..utils import get_pool_size, chunk_list
 
 DOCKER_HUB_KATHARA_URL = "https://hub.docker.com/v2/repositories/kathara/?page_size=-1"
 
@@ -12,17 +15,17 @@ EXCLUDED_IMAGES = ['megalos-bgp-manager']
 class DockerHubApi(object):
     @staticmethod
     def get_images() -> filter:
-        """
-        Get the Kathara Docker Hub account image list, excluding:
-            - Private Images
-            - Plugins or other types of images
-            - Images in the EXCLUDED_IMAGES list
+        """Retrieve the list of available Kathara images on Docker Hub.
+
+        This method retrieves the list of images from the Kathara Docker Hub account, excluding private images,
+        plugins, and images specified in the EXCLUDED_IMAGES list.
 
         Returns:
-            filter: filtered list of currently available images that satisfy the previous conditions.
+            filter: A filtered list of currently available images that satisfy the specified conditions.
 
         Raises:
             HTTPConnectionError: If there is a connection error with the Docker Hub.
+
         """
         try:
             result = requests.get(DOCKER_HUB_KATHARA_URL)
@@ -37,3 +40,37 @@ class DockerHubApi(object):
             lambda x: not x['is_private'] and x['repository_type'] == 'image' and x['name'] not in EXCLUDED_IMAGES,
             result.json()['results']
         )
+
+    @staticmethod
+    def get_tagged_images() -> list[str]:
+        """Returns the tagged names of all the active Kathara Docker on from Docker Hub.
+
+        Returns:
+            list[str]: A list of strings representing the tagged Docker images in the
+                format "kathara/{image_name}:{tag}".
+
+        Raises:
+            HTTPConnectionError: If there is a connection error with the Docker Hub.
+        """
+        images = list(DockerHubApi.get_images())
+
+        tagged_images = []
+
+        def get_image_tag(tags, image):
+            image_name = f"{image['namespace']}/{image['name']}"
+            res = requests.get(f"https://hub.docker.com/v2/repositories/{image_name}/tags/?page_size=-1&ordering")
+            tags.extend(list(dict(map(lambda x:
+                                      (x['digest'],
+                                       f"{image_name}:{x['name']}" if x['name'] != "latest" else image_name),
+                                      filter(lambda x: x['tag_status'] == 'active',
+                                             res.json()['results']))).values()))
+
+        pool_size = get_pool_size()
+        machines_pool = Pool(pool_size)
+
+        items = chunk_list(images, pool_size)
+
+        for chunk in items:
+            machines_pool.map(func=partial(get_image_tag, tagged_images), iterable=chunk)
+
+        return sorted(tagged_images)
