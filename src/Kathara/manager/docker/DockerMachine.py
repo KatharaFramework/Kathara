@@ -311,6 +311,7 @@ class DockerMachine(object):
             DockerPluginError: If Kathara has been left in an inconsistent state.
             APIError: If the Docker APIs return an error.
         """
+        machine.api_object.reload()
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
         if link.api_object.name not in attached_networks:
@@ -335,6 +336,7 @@ class DockerMachine(object):
         Returns:
             None
         """
+        machine.api_object.reload()
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
         if link.api_object.name in attached_networks:
