@@ -25,20 +25,20 @@ class DockerHubApi(object):
 
         Raises:
             HTTPConnectionError: If there is a connection error with the Docker Hub.
-
         """
         try:
-            result = requests.get(DOCKER_HUB_KATHARA_URL)
+            logging.debug("Getting Kathara images from Docker Hub...")
+            response = requests.get(DOCKER_HUB_KATHARA_URL)
         except requests.exceptions.ConnectionError as e:
             raise HTTPConnectionError(str(e))
 
-        if result.status_code != 200:
-            logging.debug("Docker Hub replied with status code %s.", result.status_code)
-            raise HTTPConnectionError("Docker Hub replied with status code %s." % result.status_code)
+        if response.status_code != 200:
+            logging.debug("Docker Hub replied with status code %s.", response.status_code)
+            raise HTTPConnectionError("Docker Hub replied with status code %s." % response.status_code)
 
         return filter(
             lambda x: not x['is_private'] and x['repository_type'] == 'image' and x['name'] not in EXCLUDED_IMAGES,
-            result.json()['results']
+            response.json()['results']
         )
 
     @staticmethod
@@ -53,17 +53,27 @@ class DockerHubApi(object):
             HTTPConnectionError: If there is a connection error with the Docker Hub.
         """
         images = list(DockerHubApi.get_images())
-
         tagged_images = []
 
         def get_image_tag(tags, image):
             image_name = f"{image['namespace']}/{image['name']}"
-            res = requests.get(f"https://hub.docker.com/v2/repositories/{image_name}/tags/?page_size=-1&ordering")
-            tags.extend(list(dict(map(lambda x:
-                                      (x['digest'],
-                                       f"{image_name}:{x['name']}" if x['name'] != "latest" else image_name),
-                                      filter(lambda x: x['tag_status'] == 'active',
-                                             res.json()['results']))).values()))
+            try:
+                logging.debug(f"Getting Kathara tags for image '{image_name}' from Docker Hub...")
+                response = requests.get(
+                    f"https://hub.docker.com/v2/repositories/{image_name}/tags/?page_size=-1&ordering"
+                )
+            except requests.exceptions.ConnectionError as e:
+                raise HTTPConnectionError(str(e))
+
+            if response.status_code != 200:
+                logging.debug(f"Docker Hub replied with status code %s for image '{image_name}'.", response.status_code)
+                raise HTTPConnectionError(
+                    f"Docker Hub replied with status code %s for image '{image_name}'." % response.status_code)
+
+            tags.extend(list(map(
+                lambda x: f"{image_name}:{x['name']}" if x['name'] != "latest" else image_name,
+                filter(lambda x: x['tag_status'] == 'active', response.json()['results'])
+            )))
 
         pool_size = get_pool_size()
         machines_pool = Pool(pool_size)
