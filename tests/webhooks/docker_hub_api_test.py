@@ -6,7 +6,8 @@ import requests.exceptions
 
 sys.path.insert(0, './')
 
-from src.Kathara.webhooks.DockerHubApi import DockerHubApi, EXCLUDED_IMAGES
+from src.Kathara.webhooks.DockerHubApi import DockerHubApi, EXCLUDED_IMAGES, DOCKER_HUB_KATHARA_IMAGES_URL, \
+    DOCKER_HUB_KATHARA_TAGS_URL
 from src.Kathara.exceptions import HTTPConnectionError
 
 EXCLUDED_IMAGES.append("excluded")
@@ -50,6 +51,7 @@ def docker_hub_get_tags_response(mock_response):
 def test_get_images(mock_requests_get, docker_hub_get_images_response):
     mock_requests_get.return_value = docker_hub_get_images_response
     images = list(DockerHubApi.get_images())
+    mock_requests_get.assert_called_once_with(DOCKER_HUB_KATHARA_IMAGES_URL)
     assert len(images) == 2
     assert images[0]['name'] == 'test'
     assert images[1]['name'] == 'test-2'
@@ -74,14 +76,19 @@ def test_get_images_status_code_error(mock_requests_get):
 #
 @mock.patch("requests.get")
 @mock.patch("src.Kathara.webhooks.DockerHubApi.DockerHubApi.get_images")
-def test_get_tagged_images(mock_get_images, mock_request_get, docker_hub_get_tags_response):
+def test_get_tagged_images(mock_get_images, mock_requests_get, docker_hub_get_tags_response):
     mock_get_images.return_value = [
         {'name': 'test-0', 'namespace': 'kathara', 'is_private': False, 'repository_type': 'image'},
         {'name': 'test-1', 'namespace': 'kathara', 'is_private': False, 'repository_type': 'image'}
     ]
-    mock_request_get.return_value = docker_hub_get_tags_response
+    mock_requests_get.return_value = docker_hub_get_tags_response
     tagged_images = DockerHubApi.get_tagged_images()
-    print(tagged_images)
+
+    calls = [
+        mock.call(DOCKER_HUB_KATHARA_TAGS_URL.format(image_name="kathara/test-0")),
+        mock.call(DOCKER_HUB_KATHARA_TAGS_URL.format(image_name="kathara/test-1"))
+    ]
+    mock_requests_get.assert_has_calls(calls, any_order=True)
     assert len(tagged_images) == 8
     assert 'kathara/test-0' in tagged_images
     assert 'kathara/test-0:tag-latest' in tagged_images
