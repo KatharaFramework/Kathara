@@ -68,9 +68,7 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- Add filesystem abstraction that allows Python users to manage network scenarios' files and configurations in memory, without requiring any underlying host filesystem
-- Add '.toml' setup file as requested by Python 3.11 specifications
-- Fix Quagga permissions that prevent from writing configurations inside 'vtysh'
-- Fix deprecation Warnings of 'libtmux' (thanks to Marcel Großmann)
-- Add unit tests for CLI commands
+- Fix FilesystemMixin APIs for file modifications
+- Add a warning if a meta is repeated on the same device
+- Add support for Docker Images tags in "kathara settings"
 - Minor fixes
