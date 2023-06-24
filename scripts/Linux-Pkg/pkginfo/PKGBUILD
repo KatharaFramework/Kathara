@@ -19,7 +19,7 @@ optdepends=(
     'xterm: for opening devices terminals'
     'tmux: for opening many devices terminals'
 )
-source=("https://github.com/KatharaFramework/Kathara/archive/refs/tags/$pkgver.tar.gz")
+source=(__SOURCE__)
 md5sums=('SKIP')
 
 prepare() {
