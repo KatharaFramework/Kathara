@@ -18,7 +18,7 @@
     1. `src/Kathara/version.py`
     2. `Makefile`
 2. Write a proper `changelog` section in `pkginfo/kathara.changelog` file. 
-3. Run `make`. This will:
+3. Run `make all`. This will:
     1. Create a proper Docker image for the build environment
     2. Run a Docker container with the image built above.
     3. Compile Kathara into a binary.

@@ -25,11 +25,10 @@ def test_default_device_parameters(default_device: Machine):
     assert default_device.name == "test_machine"
     assert len(default_device.interfaces) == 0
     assert default_device.meta == {
+        'startup_commands': [],
         'sysctls': {},
         'envs': {},
-        'bridged': False,
         'ports': {},
-        'startup_commands': []
     }
     assert default_device.api_object is None
     assert default_device.fs is None
@@ -184,6 +183,44 @@ def test_add_meta_port_format_exception(default_device: Machine):
 def test_add_meta_port_format_exception2(default_device: Machine):
     with pytest.raises(MachineOptionError):
         default_device.add_meta("port", ":2000")
+
+
+def test_add_meta_overwrite(default_device: Machine):
+    result = default_device.add_meta("test_meta", "test_value")
+    assert "test_meta" in default_device.meta
+    assert default_device.meta["test_meta"] == "test_value"
+    assert result is None
+    result = default_device.add_meta("test_meta", "test_new_value")
+    assert "test_meta" in default_device.meta
+    assert default_device.meta["test_meta"] == "test_new_value"
+    assert result == "test_value"
+
+
+def test_add_meta_overwrite_sysctl(default_device: Machine):
+    result = default_device.add_meta("sysctl", "net.test.a=1")
+    assert default_device.meta["sysctls"]["net.test.a"] == 1
+    assert result is None
+    result = default_device.add_meta("sysctl", "net.test.a=2")
+    assert default_device.meta["sysctls"]["net.test.a"] == 2
+    assert result == 1
+
+
+def test_add_meta_overwrite_env(default_device: Machine):
+    result = default_device.add_meta("env", "TEST_ENV=abc")
+    assert default_device.meta["envs"]["TEST_ENV"] == "abc"
+    assert result is None
+    result = default_device.add_meta("env", "TEST_ENV=def")
+    assert default_device.meta["envs"]["TEST_ENV"] == "def"
+    assert result == "abc"
+
+
+def test_add_meta_overwrite_port(default_device: Machine):
+    result = default_device.add_meta("port", "3000:4000")
+    assert default_device.meta["ports"][(3000, "tcp")] == 4000
+    assert result is None
+    result = default_device.add_meta("port", "3000:5000")
+    assert default_device.meta["ports"][(3000, "tcp")] == 5000
+    assert result == 4000
 
 
 #

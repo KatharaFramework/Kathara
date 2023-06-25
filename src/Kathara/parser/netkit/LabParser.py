@@ -1,8 +1,9 @@
+import logging
 import mmap
 import os
 import re
 
-from ...model.Lab import Lab
+from ...model.Lab import Lab, LAB_METADATA
 from ...utils import RESERVED_MACHINE_NAMES
 
 
@@ -64,17 +65,15 @@ class LabParser(object):
                                           f"Collision domain `{value}` contains non-alphanumeric characters.")
                 except ValueError:
                     # Not an interface, add it to the machine metas.
-                    lab.assign_meta_to_machine(key, arg, value)
+                    if lab.assign_meta_to_machine(key, arg, value) is not None:
+                        logging.warning(f"In lab.conf - Line {line_number}: "
+                                        f"Device `{key}` already has a value assigned to meta `{arg}`. "
+                                        f"Previous value has been overwritten with `{value}`.")
             else:
                 if not line.startswith('#') and \
                         line.strip():
-                    if not line.startswith("LAB_NAME=") and \
-                            not line.startswith("LAB_DESCRIPTION=") and \
-                            not line.startswith("LAB_VERSION=") and \
-                            not line.startswith("LAB_AUTHOR=") and \
-                            not line.startswith("LAB_EMAIL=") and \
-                            not line.startswith("LAB_WEB="):
-                        raise SyntaxError(f"In lab.conf - Line {line_number}: `{line}`")
+                    if not any([line.startswith(f"{x}=") for x in LAB_METADATA]):
+                        raise SyntaxError(f"In lab.conf - Line {line_number}: `{line}`.")
                     else:
                         (key, value) = line.split("=")
                         key = key.replace("LAB_", "").lower()

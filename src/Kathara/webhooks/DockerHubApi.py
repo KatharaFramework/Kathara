@@ -1,10 +1,13 @@
 import logging
+from multiprocessing.dummy import Pool
 
 import requests
 
 from ..exceptions import HTTPConnectionError
+from ..utils import get_pool_size
 
-DOCKER_HUB_KATHARA_URL = "https://hub.docker.com/v2/repositories/kathara/?page_size=-1"
+DOCKER_HUB_KATHARA_IMAGES_URL = "https://hub.docker.com/v2/repositories/kathara/?page_size=-1"
+DOCKER_HUB_KATHARA_TAGS_URL = "https://hub.docker.com/v2/repositories/{image_name}/tags/?page_size=-1&ordering"
 
 EXCLUDED_IMAGES = ['megalos-bgp-manager']
 
@@ -12,28 +15,71 @@ EXCLUDED_IMAGES = ['megalos-bgp-manager']
 class DockerHubApi(object):
     @staticmethod
     def get_images() -> filter:
-        """
-        Get the Kathara Docker Hub account image list, excluding:
-            - Private Images
-            - Plugins or other types of images
-            - Images in the EXCLUDED_IMAGES list
+        """Retrieve the list of available Kathara images on Docker Hub.
+
+        This method retrieves the list of images from the Kathara Docker Hub account, excluding private images,
+        plugins, and images specified in the EXCLUDED_IMAGES list.
 
         Returns:
-            filter: filtered list of currently available images that satisfy the previous conditions.
+            filter: A filtered list of currently available images that satisfy the specified conditions.
 
         Raises:
             HTTPConnectionError: If there is a connection error with the Docker Hub.
         """
         try:
-            result = requests.get(DOCKER_HUB_KATHARA_URL)
+            logging.debug("Getting Kathara images from Docker Hub...")
+            response = requests.get(DOCKER_HUB_KATHARA_IMAGES_URL)
         except requests.exceptions.ConnectionError as e:
             raise HTTPConnectionError(str(e))
 
-        if result.status_code != 200:
-            logging.debug("Docker Hub replied with status code %s.", result.status_code)
-            raise HTTPConnectionError("Docker Hub replied with status code %s." % result.status_code)
+        if response.status_code != 200:
+            logging.debug(f"Docker Hub replied with status code {response.status_code}.")
+            raise HTTPConnectionError(f"Docker Hub replied with status code {response.status_code}.")
 
         return filter(
             lambda x: not x['is_private'] and x['repository_type'] == 'image' and x['name'] not in EXCLUDED_IMAGES,
-            result.json()['results']
+            response.json()['results']
         )
+
+    @staticmethod
+    def get_tagged_images() -> list[str]:
+        """Returns the list of available Kathara images on Docker Hub with all the active tags.
+
+        Returns:
+            list[str]: A list of strings representing the tagged Docker images in the
+                format "kathara/{image_name}:{tag}".
+
+        Raises:
+            HTTPConnectionError: If there is a connection error with the Docker Hub.
+        """
+        images = list(DockerHubApi.get_images())
+        tagged_images = []
+
+        def get_image_tag(image):
+            image_name = f"{image['namespace']}/{image['name']}"
+            try:
+                logging.debug(f"Getting tags for image `{image_name}` from Docker Hub...")
+                response = requests.get(DOCKER_HUB_KATHARA_TAGS_URL.format(image_name=image_name))
+            except requests.exceptions.ConnectionError as e:
+                raise HTTPConnectionError(str(e))
+
+            if response.status_code != 200:
+                logging.debug(
+                    f"Error while retrieving tags for image `{image_name}. "
+                    f"Docker Hub replied with status code {response.status_code}."
+                )
+                raise HTTPConnectionError(
+                    f"Error while retrieving tags for image `{image_name}`. "
+                    f"Docker Hub replied with status code {response.status_code}."
+                )
+
+            tagged_images.extend(list(map(
+                lambda x: f"{image_name}:{x['name']}" if x['name'] != "latest" else image_name,
+                filter(lambda x: x['tag_status'] == 'active', response.json()['results'])
+            )))
+
+        pool_size = get_pool_size()
+        tags_pool = Pool(pool_size)
+        tags_pool.map(func=get_image_tag, iterable=images)
+
+        return sorted(tagged_images)

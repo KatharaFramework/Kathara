@@ -1,13 +1,13 @@
 #!/usr/bin/make -f
 
-VERSION=3.6.0
+VERSION=3.6.2
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 NO_BINARY_PACKAGES=pyroute2|pyuv|deepdiff
 
 .PHONY: allSigned docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa clean venv autocompletion
 
-allSigned: clean prepare-deb-source docker-signed_bionic docker-signed_focal docker-signed_jammy docker-signed_kinetic
+allSigned: clean prepare-deb-source docker-signed_focal docker-signed_jammy docker-signed_kinetic
 
 docker-unsigned_%: clean prepare-deb-source docker-build-image_%
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c \
