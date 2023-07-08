@@ -140,6 +140,21 @@ def test_add_meta_sysctl_not_format_exception(default_device: Machine):
         default_device.add_meta("sysctl", "kernel.shm_rmid_forced")
 
 
+def test_add_meta_sysctl_non_numeric(default_device: Machine):
+    default_device.add_meta("sysctl", "net.test_sysctl.text=test")
+    assert default_device.meta['sysctls']['net.test_sysctl.text'] == "test"
+
+
+def test_add_meta_sysctl_negative_number(default_device: Machine):
+    default_device.add_meta("sysctl", "net.test_sysctl.negative=-1")
+    assert default_device.meta['sysctls']['net.test_sysctl.negative'] == -1
+
+
+def test_add_meta_sysctl_negative_number_not_format(default_device: Machine):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta("sysctl", "net.test_sysctl.negative=-1-")
+
+
 def test_add_meta_env(default_device: Machine):
     default_device.add_meta("env", "MY_ENV_VAR=test")
     assert default_device.meta['envs']['MY_ENV_VAR'] == "test"
