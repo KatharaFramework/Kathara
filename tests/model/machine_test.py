@@ -343,3 +343,36 @@ def test_get_num_terms_mix():
     device2 = Machine(lab, "test_machine2")
     assert device1.get_num_terms() == 2
     assert device2.get_num_terms() == 2
+
+
+#
+# TEST: is_ipv6_enabled
+#
+def test_is_ipv6_enabled_from_lab_options():
+    lab = Lab('mem_test')
+    lab.add_option("ipv6", True)
+    device = Machine(lab, "test_machine")
+    assert device.is_ipv6_enabled()
+
+
+def test_is_ipv6_enabled_from_device_meta_bool():
+    kwargs = {"ipv6": True}
+    device = Machine(Lab("test_lab"), "test_machine", **kwargs)
+    assert device.is_ipv6_enabled()
+
+
+def test_is_ipv6_enabled_from_device_meta_str():
+    kwargs = {"ipv6": "True"}
+    device = Machine(Lab("test_lab"), "test_machine", **kwargs)
+    assert device.is_ipv6_enabled()
+
+
+def test_is_ipv6_enabled_mix():
+    # Lab options have a greater priority than machine options
+    lab = Lab('mem_test')
+    lab.add_option("ipv6", False)
+    kwargs = {"ipv6": True}
+    device1 = Machine(lab, "test_machine1", **kwargs)
+    device2 = Machine(lab, "test_machine2")
+    assert not device1.is_ipv6_enabled()
+    assert not device2.is_ipv6_enabled()
