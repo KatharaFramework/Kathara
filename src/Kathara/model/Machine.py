@@ -252,6 +252,12 @@ class Machine(FilesystemMixin):
             for envs in args['envs']:
                 self.add_meta("env", envs)
 
+        if 'ipv6' in args and args['ipv6'] is not None:
+            self.add_meta("ipv6", args['ipv6'])
+
+        if 'shell' in args and args['shell'] is not None:
+            self.add_meta("shell", args['shell'])
+
     def check(self) -> None:
         """Sort interfaces and check if there are missing interface numbers.
 
@@ -460,9 +466,15 @@ class Machine(FilesystemMixin):
         Raises:
             MachineOptionError: If the IPv6 value specified is not valid.
         """
+        is_v6_enabled = Setting.get_instance().enable_ipv6
+
         try:
-            return strtobool(self.lab.general_options["ipv6"]) if "ipv6" in self.lab.general_options else \
-                strtobool(self.meta["ipv6"]) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
+            if "ipv6" in self.lab.general_options:
+                is_v6_enabled = self.lab.general_options["ipv6"]
+            elif "ipv6" in self.meta:
+                is_v6_enabled = self.meta["ipv6"]
+
+            return is_v6_enabled if type(is_v6_enabled) == bool else strtobool(is_v6_enabled)
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
 
