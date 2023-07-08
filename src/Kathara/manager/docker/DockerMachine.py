@@ -795,4 +795,4 @@ class DockerMachine(object):
                                 f"Shutdown commands will not be executed."
                                 )
 
-        container.remove(force=True)
+        container.remove(v=True, force=True)
