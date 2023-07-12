@@ -59,7 +59,7 @@ See the [Python APIs Tutorial](https://github.com/KatharaFramework/Kathara/wiki/
 
 * Install Kathará by following the Installation section.
 * Download and unpack the network scenario of a "Small Internet" from [here](https://github.com/KatharaFramework/Kathara-Labs/blob/main/main-labs/labs-integrating-several-technologies/small-internet-with-dns-and-web-server/kathara-lab_small-internet-with-dns-and-web-server.zip) 
-* (network topology can be found [here](https://github.com/KatharaFramework/Kathara-Labs/blob/main/main-labs/labs-integrating-several-technologies/small-internet-with-dns-and-web-server/kathara-lab_small-internet-with-dns-and-web-server.pdf)).
+(network topology can be found [here](https://github.com/KatharaFramework/Kathara-Labs/blob/main/main-labs/labs-integrating-several-technologies/small-internet-with-dns-and-web-server/kathara-lab_small-internet-with-dns-and-web-server.pdf)).
 * `cd` inside `small-internet-with-dns-webserver` and run `kathara lstart`.
 * Kathará will read the configuration of the scenario from `lab.conf` and the various `*.startup` files and start the devices, opening terminal windows to interact with them.
 * After you're done experimenting, simply run `kathara lclean` and wait until the network scenario closes.
