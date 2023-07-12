@@ -21,7 +21,7 @@
     <li><a href="#success-stories">Success Stories</a></li>
     <li><a href="#join-us">Join Us</a></li>
     <li><a href="https://github.com/KatharaFramework/Docker-Images">Docker Images and Dockerfiles</a></li>
-    <li><a href="https://github.com/KatharaFramework/Kathara-Labs/wiki">Examples and Tutorials</a></li>
+    <li><a href="https://github.com/KatharaFramework/Kathara-Labs">Examples and Tutorials</a></li>
     <li><a href="https://github.com/KatharaFramework/Kathara/wiki/Kathara-Python-API">Python APIs</a></li>
     <li><a href="https://www.kathara.org/man-pages/kathara.1.html">Man Pages</a></li>
 </ul>
@@ -45,7 +45,7 @@ Kathará extremely simplifies the creation of complex networks using the concept
 Kathará emulates network scenarios using either Docker or Kubernetes as backend virtualization system.
 
 ## Installation
-Install Docker and then run the installer specific for your Operating System. For a step by step guide check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki).
+Install Docker and then run the installer specific for your Operating System. For a step-by-step guide check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki).
 
 For further information on how to use Kathará on Kubernetes (**Megalos**) please refer to the [Wiki Page](https://github.com/KatharaFramework/Kathara/wiki/Megalos-(Kathara-over-Kubernetes)).
 
@@ -58,8 +58,9 @@ See the [Python APIs Tutorial](https://github.com/KatharaFramework/Kathara/wiki/
 </p>
 
 * Install Kathará by following the Installation section.
-* Download and unpack the network scenario of a "Small Internet" from [here](https://github.com/KatharaFramework/Kathara-Labs/raw/master/Labs%20Integrating%20Several%20Technologies/Small%20Internet%20with%20DNS%20and%20Webserver/small-internet-w-dns-webserver.zip) (network topology can be found [here](https://github.com/KatharaFramework/Kathara-Labs/blob/master/Labs%20Integrating%20Several%20Technologies/Small%20Internet%20with%20DNS%20and%20Webserver/Small%20Internet%20with%20DNS%20and%20Webserver.pdf)).
-* `cd` inside `small-internet-w-dns-webserver` and run `kathara lstart`.
+* Download and unpack the network scenario of a "Small Internet" from [here](https://github.com/KatharaFramework/Kathara-Labs/blob/main/main-labs/labs-integrating-several-technologies/small-internet-with-dns-and-web-server/kathara-lab_small-internet-with-dns-and-web-server.zip) 
+* (network topology can be found [here](https://github.com/KatharaFramework/Kathara-Labs/blob/main/main-labs/labs-integrating-several-technologies/small-internet-with-dns-and-web-server/kathara-lab_small-internet-with-dns-and-web-server.pdf)).
+* `cd` inside `small-internet-with-dns-webserver` and run `kathara lstart`.
 * Kathará will read the configuration of the scenario from `lab.conf` and the various `*.startup` files and start the devices, opening terminal windows to interact with them.
 * After you're done experimenting, simply run `kathara lclean` and wait until the network scenario closes.
 
@@ -96,7 +97,7 @@ As far as we know, Kathará is currently being used in many [courses and project
  
 We encourage you to tell us your story! 
 
-We are also collecting network scenarios from the community. If you want to be added to the [list](https://github.com/KatharaFramework/Kathara-Labs/wiki/Community-Labs), please contact us!
+We are also collecting network scenarios from the community. If you want to be added to the [list](https://github.com/KatharaFramework/Kathara-Labs/tree/main/community-labs), please contact us!
 
 ## Join Us
 
