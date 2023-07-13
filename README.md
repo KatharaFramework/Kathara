@@ -22,7 +22,7 @@
     <li><a href="#join-us">Join Us</a></li>
     <li><a href="https://github.com/KatharaFramework/Docker-Images">Docker Images and Dockerfiles</a></li>
     <li><a href="https://github.com/KatharaFramework/Kathara-Labs">Examples and Tutorials</a></li>
-    <li><a href="https://github.com/KatharaFramework/Kathara/wiki/Kathara-Python-API">Python APIs</a></li>
+    <li><a href="https://github.com/KatharaFramework/Kathara-Labs/tree/main/tutorials/python-api">Python APIs</a></li>
     <li><a href="https://www.kathara.org/man-pages/kathara.1.html">Man Pages</a></li>
 </ul>
 
