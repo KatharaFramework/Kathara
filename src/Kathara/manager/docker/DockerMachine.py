@@ -784,9 +784,9 @@ class DockerMachine(object):
 
             if not is_cmd_success:
                 if n_retries is not None:
-                    retries += 1
                     if retries == n_retries:
                         break
+                    retries += 1
 
                 time.sleep(retry_interval)
 
