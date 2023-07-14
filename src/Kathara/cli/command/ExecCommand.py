@@ -98,15 +98,13 @@ class ExecCommand(Command):
             while True:
                 (stdout, stderr) = next(exec_output)
 
-                stdout_char_encoding = chardet.detect(stdout) if stdout else None
-                stderr_char_encoding = chardet.detect(stderr) if stderr else None
-
-                stdout = stdout.decode(stdout_char_encoding['encoding']) if stdout else ""
-                stderr = stderr.decode(stderr_char_encoding['encoding']) if stderr else ""
-
                 if not args['no_stdout']:
+                    stdout_char_encoding = chardet.detect(stdout) if stdout else None
+                    stdout = stdout.decode(stdout_char_encoding['encoding']) if stdout else ""
                     sys.stdout.write(stdout)
                 if stderr and not args['no_stderr']:
+                    stderr_char_encoding = chardet.detect(stderr) if stderr else None
+                    stderr = stderr.decode(stderr_char_encoding['encoding']) if stderr else ""
                     sys.stderr.write(stderr)
         except StopIteration:
             pass

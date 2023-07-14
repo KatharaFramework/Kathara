@@ -553,12 +553,12 @@ class DockerMachine(object):
         startup_output = exec_result['output'].decode(detect) if exec_result['output'] else None
 
         if startup_output and logs and Setting.get_instance().print_startup_log:
-            print("--- Startup Commands Log\n")
-            print(startup_output)
-            print("--- End Startup Commands Log\n")
+            sys.stdout.write("--- Startup Commands Log\n")
+            sys.stdout.write(startup_output)
+            sys.stdout.write("--- End Startup Commands Log\n")
 
             if not startup_waited:
-                print("--- Executing other commands in background\n")
+                sys.stdout.write("--- Executing other commands in background\n")
 
         resp = self.client.api.exec_create(container.id,
                                            shell,

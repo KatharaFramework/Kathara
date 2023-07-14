@@ -98,7 +98,9 @@ STARTUP_COMMANDS = [
     "route del default dev eth0 || true",
 
     # Placeholder for user commands
-    "{machine_commands}"
+    "{machine_commands}",
+
+    "touch /var/log/EOS"
 ]
 
 SHUTDOWN_COMMANDS = [
