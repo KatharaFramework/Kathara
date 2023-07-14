@@ -183,7 +183,7 @@ class IManager(ABC):
             command (List[str]): The command to exec on the device.
             lab_hash (Optional[str]): The hash of the network scenario where the device is deployed.
             lab_name (Optional[str]): The name of the network scenario where the device is deployed.
-            wait (bool): If True, wait the end of the startup before executing the command.
+            wait (bool): If True, wait until end of the startup commands execution before executing the command.
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.

@@ -530,7 +530,7 @@ class DockerMachine(object):
 
         startup_waited = False
         if wait:
-            startup_waited = self._waiting_startup_execution(container, machine_name)
+            startup_waited = self._wait_startup_execution(container)
 
             # Clean the terminal output
             sys.stdout.write("\033[2J")
@@ -577,42 +577,6 @@ class DockerMachine(object):
 
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
-    def _waiting_startup_execution(self, container: docker.models.containers.Container, machine_name: str):
-        """Wait until the startup commands are executed or until the user requests the control over the device.
-
-        Args:
-            container (str): TThe Docker container to wait.
-            machine_name (str): The name of the device to connect.
-
-        Returns:
-            bool: False if the user requests the control before the ending of the startup. Else, True.
-        """
-        logging.debug(f"Waiting startup commands execution for device {machine_name}")
-        exit_code = 1
-        startup_waited = True
-
-        sys.stdout.write("Waiting startup commands execution. Press enter to take control of the device...")
-        sys.stdout.flush()
-
-        while exit_code != 0:
-            exec_result = self._exec_run(container,
-                                         cmd="cat /var/log/EOS",
-                                         stdout=True,
-                                         stderr=False,
-                                         privileged=False,
-                                         detach=False
-                                         )
-            exit_code = exec_result['exit_code']
-
-            # If the user requests the control, break the while loop
-            if utils.exec_by_platform(utils.wait_user_input_linux, utils.wait_user_input_windows,
-                                      utils.wait_user_input_linux):
-                startup_waited = False
-                break
-
-            time.sleep(0.1)
-        return startup_waited
-
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], user: str = None,
              tty: bool = True, wait: bool = False) -> Generator[Tuple[bytes, bytes], None, None]:
         """Execute the command on the Docker container specified by the lab_hash and the machine_name.
@@ -639,12 +603,7 @@ class DockerMachine(object):
         container = containers.pop()
 
         if wait:
-            startup_waited = self._waiting_startup_execution(container, machine_name)
-
-            # Clean the terminal output
-            sys.stdout.write("\033[2J")
-            sys.stdout.write("\033[0;0H")
-            sys.stdout.flush()
+            self._wait_startup_execution(container)
 
         command = shlex.split(command) if type(command) == str else command
         exec_result = self._exec_run(container,
@@ -728,6 +687,44 @@ class DockerMachine(object):
             return {'exit_code': None, 'output': exec_output}
 
         return {'exit_code': int(exit_code) if exit_code is not None else None, 'output': exec_output}
+
+    def _wait_startup_execution(self, container: docker.models.containers.Container):
+        """Wait until the startup commands are executed or until the user requests the control over the device.
+
+        Args:
+            container (docker.models.containers.Container): The Docker container to wait.
+
+        Returns:
+            bool: False if the user requests the control before the ending of the startup. Else, True.
+        """
+        machine_name = container.labels['name']
+
+        sys.stdout.write("Waiting startup commands execution. Press [ENTER] to take control of the device...")
+        sys.stdout.flush()
+
+        logging.debug(f"Waiting startup commands execution for device {machine_name}...")
+        exit_code = 1
+        startup_waited = True
+        while exit_code != 0:
+            exec_result = self._exec_run(container,
+                                         cmd="cat /var/log/EOS",
+                                         stdout=True,
+                                         stderr=False,
+                                         privileged=False,
+                                         detach=False
+                                         )
+            exit_code = exec_result['exit_code']
+
+            # If the user requests the control, break the while loop
+            if utils.exec_by_platform(utils.wait_user_input_linux,
+                                      utils.wait_user_input_windows,
+                                      utils.wait_user_input_linux):
+                startup_waited = False
+                break
+
+            time.sleep(1)
+
+        return startup_waited
 
     @staticmethod
     def copy_files(machine_api_object: docker.models.containers.Container, path: str, tar_data: bytes) -> None:

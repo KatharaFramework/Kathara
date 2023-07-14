@@ -336,7 +336,8 @@ class KubernetesManager(IManager):
             command (List[str]): The command to exec on the device.
             lab_hash (Optional[str]): The hash of the network scenario where the device is deployed.
             lab_name (Optional[str]): The name of the network scenario where the device is deployed.
-            wait (bool): If True, wait the end of the startup before executing the command. No effect on Megalos.
+            wait (bool): If True, wait until end of the startup commands execution before executing the command.
+                No effect on Megalos.
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.

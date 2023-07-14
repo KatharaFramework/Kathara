@@ -315,14 +315,14 @@ def pack_files_for_tar(guest_to_host: Dict) -> bytes:
     return tar_data
 
 
-def wait_user_input_linux():
+def wait_user_input_linux() -> list:
     """Non-blocking input function for Linux and macOS."""
     import select
     to_break, _, _ = select.select([sys.stdin], [], [], 0.1)
     return to_break
 
 
-def wait_user_input_windows():
+def wait_user_input_windows() -> bool:
     """Return True if a keypress is waiting to be read. Only for Windows."""
     import msvcrt
     return msvcrt.kbhit()

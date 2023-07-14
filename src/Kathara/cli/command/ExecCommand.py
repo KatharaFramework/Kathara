@@ -57,7 +57,7 @@ class ExecCommand(Command):
             dest="wait",
             action="store_true",
             default=False,
-            help='Wait startup commands execution.',
+            help='Wait until startup commands execution finishes.',
         )
         self.parser.add_argument(
             'machine_name',
