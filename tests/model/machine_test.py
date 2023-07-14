@@ -25,11 +25,10 @@ def test_default_device_parameters(default_device: Machine):
     assert default_device.name == "test_machine"
     assert len(default_device.interfaces) == 0
     assert default_device.meta == {
+        'startup_commands': [],
         'sysctls': {},
         'envs': {},
-        'bridged': False,
         'ports': {},
-        'startup_commands': []
     }
     assert default_device.api_object is None
     assert default_device.fs is None
@@ -141,6 +140,21 @@ def test_add_meta_sysctl_not_format_exception(default_device: Machine):
         default_device.add_meta("sysctl", "kernel.shm_rmid_forced")
 
 
+def test_add_meta_sysctl_non_numeric(default_device: Machine):
+    default_device.add_meta("sysctl", "net.test_sysctl.text=test")
+    assert default_device.meta['sysctls']['net.test_sysctl.text'] == "test"
+
+
+def test_add_meta_sysctl_negative_number(default_device: Machine):
+    default_device.add_meta("sysctl", "net.test_sysctl.negative=-1")
+    assert default_device.meta['sysctls']['net.test_sysctl.negative'] == -1
+
+
+def test_add_meta_sysctl_negative_number_not_format(default_device: Machine):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta("sysctl", "net.test_sysctl.negative=-1-")
+
+
 def test_add_meta_env(default_device: Machine):
     default_device.add_meta("env", "MY_ENV_VAR=test")
     assert default_device.meta['envs']['MY_ENV_VAR'] == "test"
@@ -184,6 +198,44 @@ def test_add_meta_port_format_exception(default_device: Machine):
 def test_add_meta_port_format_exception2(default_device: Machine):
     with pytest.raises(MachineOptionError):
         default_device.add_meta("port", ":2000")
+
+
+def test_add_meta_overwrite(default_device: Machine):
+    result = default_device.add_meta("test_meta", "test_value")
+    assert "test_meta" in default_device.meta
+    assert default_device.meta["test_meta"] == "test_value"
+    assert result is None
+    result = default_device.add_meta("test_meta", "test_new_value")
+    assert "test_meta" in default_device.meta
+    assert default_device.meta["test_meta"] == "test_new_value"
+    assert result == "test_value"
+
+
+def test_add_meta_overwrite_sysctl(default_device: Machine):
+    result = default_device.add_meta("sysctl", "net.test.a=1")
+    assert default_device.meta["sysctls"]["net.test.a"] == 1
+    assert result is None
+    result = default_device.add_meta("sysctl", "net.test.a=2")
+    assert default_device.meta["sysctls"]["net.test.a"] == 2
+    assert result == 1
+
+
+def test_add_meta_overwrite_env(default_device: Machine):
+    result = default_device.add_meta("env", "TEST_ENV=abc")
+    assert default_device.meta["envs"]["TEST_ENV"] == "abc"
+    assert result is None
+    result = default_device.add_meta("env", "TEST_ENV=def")
+    assert default_device.meta["envs"]["TEST_ENV"] == "def"
+    assert result == "abc"
+
+
+def test_add_meta_overwrite_port(default_device: Machine):
+    result = default_device.add_meta("port", "3000:4000")
+    assert default_device.meta["ports"][(3000, "tcp")] == 4000
+    assert result is None
+    result = default_device.add_meta("port", "3000:5000")
+    assert default_device.meta["ports"][(3000, "tcp")] == 5000
+    assert result == 4000
 
 
 #
@@ -291,3 +343,36 @@ def test_get_num_terms_mix():
     device2 = Machine(lab, "test_machine2")
     assert device1.get_num_terms() == 2
     assert device2.get_num_terms() == 2
+
+
+#
+# TEST: is_ipv6_enabled
+#
+def test_is_ipv6_enabled_from_lab_options():
+    lab = Lab('mem_test')
+    lab.add_option("ipv6", True)
+    device = Machine(lab, "test_machine")
+    assert device.is_ipv6_enabled()
+
+
+def test_is_ipv6_enabled_from_device_meta_bool():
+    kwargs = {"ipv6": True}
+    device = Machine(Lab("test_lab"), "test_machine", **kwargs)
+    assert device.is_ipv6_enabled()
+
+
+def test_is_ipv6_enabled_from_device_meta_str():
+    kwargs = {"ipv6": "True"}
+    device = Machine(Lab("test_lab"), "test_machine", **kwargs)
+    assert device.is_ipv6_enabled()
+
+
+def test_is_ipv6_enabled_mix():
+    # Lab options have a greater priority than machine options
+    lab = Lab('mem_test')
+    lab.add_option("ipv6", False)
+    kwargs = {"ipv6": True}
+    device1 = Machine(lab, "test_machine1", **kwargs)
+    device2 = Machine(lab, "test_machine2")
+    assert not device1.is_ipv6_enabled()
+    assert not device2.is_ipv6_enabled()

@@ -853,7 +853,6 @@ def test_get_lab_from_api_lab_name_all_info(mock_get_links_api_objects, mock_get
     assert reconstructed_device.meta["envs"]["test"] == "path"
     assert reconstructed_device.meta["ports"][(3000, "udp")] == 55
     assert reconstructed_device.meta["sysctls"]["sysctl.test"] == "0"
-    assert reconstructed_device.meta["bridged"]
     assert len(lab.links) == 1
     assert docker_network.attrs["Labels"]["name"] in lab.links
 
@@ -901,7 +900,6 @@ def test_get_lab_from_api_lab_name_empty_meta(mock_get_links_api_objects, mock_g
     assert reconstructed_device.meta["envs"]["test"] == "path"
     assert reconstructed_device.meta["ports"] == {}
     assert reconstructed_device.meta["sysctls"]["sysctl.test"] == "0"
-    assert not reconstructed_device.meta["bridged"]
     assert len(lab.links) == 0
 
 

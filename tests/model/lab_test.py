@@ -63,7 +63,7 @@ def test_directory_scenario_creation_with_shared_files(directory_scenario: Lab, 
     assert directory_scenario.links == {}
     assert directory_scenario.general_options == {}
     assert not directory_scenario.has_dependencies
-    assert directory_scenario.fs_path() == temporary_path
+    assert os.path.normpath(directory_scenario.fs_path()) == os.path.normpath(temporary_path)
     assert directory_scenario.shared_path is None
     assert directory_scenario.hash == utils.generate_urlsafe_hash(directory_scenario.name)
 
@@ -204,7 +204,49 @@ def test_assign_meta_to_machine(default_scenario: Lab):
     result = default_scenario.assign_meta_to_machine("pc1", "test_meta", "test_value")
     assert "test_meta" in default_scenario.machines['pc1'].meta
     assert default_scenario.machines['pc1'].meta["test_meta"] == "test_value"
-    assert result == default_scenario.machines['pc1']
+    assert result is None
+
+
+def test_assign_meta_to_machine_overwrite(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+    result = default_scenario.assign_meta_to_machine("pc1", "test_meta", "test_value")
+    assert "test_meta" in default_scenario.machines['pc1'].meta
+    assert default_scenario.machines['pc1'].meta["test_meta"] == "test_value"
+    assert result is None
+    result = default_scenario.assign_meta_to_machine("pc1", "test_meta", "test_new_value")
+    assert "test_meta" in default_scenario.machines['pc1'].meta
+    assert default_scenario.machines['pc1'].meta["test_meta"] == "test_new_value"
+    assert result == "test_value"
+
+
+def test_assign_meta_to_machine_overwrite_sysctl(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+    result = default_scenario.assign_meta_to_machine("pc1", "sysctl", "net.test.a=1")
+    assert default_scenario.machines['pc1'].meta["sysctls"]["net.test.a"] == 1
+    assert result is None
+    result = default_scenario.assign_meta_to_machine("pc1", "sysctl", "net.test.a=2")
+    assert default_scenario.machines['pc1'].meta["sysctls"]["net.test.a"] == 2
+    assert result == 1
+
+
+def test_assign_meta_to_machine_overwrite_env(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+    result = default_scenario.assign_meta_to_machine("pc1", "env", "TEST_ENV=abc")
+    assert default_scenario.machines['pc1'].meta["envs"]["TEST_ENV"] == "abc"
+    assert result is None
+    result = default_scenario.assign_meta_to_machine("pc1", "env", "TEST_ENV=def")
+    assert default_scenario.machines['pc1'].meta["envs"]["TEST_ENV"] == "def"
+    assert result == "abc"
+
+
+def test_assign_meta_to_machine_overwrite_port(default_scenario: Lab):
+    default_scenario.get_or_new_machine("pc1")
+    result = default_scenario.assign_meta_to_machine("pc1", "port", "3000:4000")
+    assert default_scenario.machines['pc1'].meta["ports"][(3000, "tcp")] == 4000
+    assert result is None
+    result = default_scenario.assign_meta_to_machine("pc1", "port", "3000:5000")
+    assert default_scenario.machines['pc1'].meta["ports"][(3000, "tcp")] == 5000
+    assert result == 4000
 
 
 def test_assign_meta_to_machine_exception(default_scenario: Lab):

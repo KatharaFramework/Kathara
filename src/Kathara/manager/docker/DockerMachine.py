@@ -52,7 +52,7 @@ STARTUP_COMMANDS = [
 
     # Give proper permissions to Quagga files (if present)
     "if [ -d \"/etc/quagga\" ]; then "
-    "chown quagga:quagga /etc/quagga/*",
+    "chown --recursive quagga:quagga /etc/quagga/",
     "chmod 640 /etc/quagga/*; fi",
 
     # Give proper permissions to FRR files (if present)
@@ -202,10 +202,10 @@ class DockerMachine(object):
         options = machine.lab.general_options
 
         # If bridged is required in command line but not defined in machine meta, add it.
-        if "bridged" in options and not machine.meta['bridged']:
+        if "bridged" in options and not machine.is_bridged():
             machine.add_meta("bridged", True)
 
-        if ports and not machine.meta['bridged']:
+        if ports and not machine.is_bridged():
             logging.warning(
                 "To expose ports of device `%s` on the host, "
                 "you have to specify the `bridged` option on that device." % machine.name
@@ -223,7 +223,7 @@ class DockerMachine(object):
 
         # If no interfaces are declared in machine, but bridged mode is required, get bridge as first link.
         # Flag that bridged is already connected (because there's another check in `start`).
-        if first_network is None and machine.meta['bridged']:
+        if first_network is None and machine.is_bridged():
             first_network = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
             machine.add_meta("bridge_connected", True)
 
@@ -238,6 +238,7 @@ class DockerMachine(object):
 
         if machine.is_ipv6_enabled():
             sysctl_parameters["net.ipv6.conf.all.forwarding"] = 1
+            sysctl_parameters["net.ipv6.conf.all.accept_ra"] = 0
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
@@ -315,6 +316,7 @@ class DockerMachine(object):
             DockerPluginError: If Kathara has been left in an inconsistent state.
             APIError: If the Docker APIs return an error.
         """
+        machine.api_object.reload()
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
         if link.api_object.name not in attached_networks:
@@ -339,6 +341,7 @@ class DockerMachine(object):
         Returns:
             None
         """
+        machine.api_object.reload()
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
         if link.api_object.name in attached_networks:
@@ -393,7 +396,7 @@ class DockerMachine(object):
                     raise e
 
         # Bridged connection required but not added in `deploy` method.
-        if "bridge_connected" not in machine.meta and machine.meta['bridged']:
+        if "bridge_connected" not in machine.meta and machine.is_bridged():
             bridge_link = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
             bridge_link.connect(machine.api_object)
 
@@ -788,19 +791,27 @@ class DockerMachine(object):
 
         containers = sorted(containers, key=lambda x: x.name)
 
-        machine_streams = {}
+        machines_stats = {}
 
-        for machine in containers:
-            machine_streams[machine.name] = DockerMachineStats(machine)
+        def load_machine_stats(machine):
+            machines_stats[machine.name] = DockerMachineStats(machine)
+
+        pool_size = utils.get_pool_size()
+        machines_pool = Pool(pool_size)
+
+        items = utils.chunk_list(containers, pool_size)
+
+        for chunk in items:
+            machines_pool.map(func=load_machine_stats, iterable=chunk)
 
         while True:
-            for machine_stats in machine_streams.values():
+            for machine_stats in machines_stats.values():
                 try:
                     machine_stats.update()
                 except StopIteration:
                     continue
 
-            yield machine_streams
+            yield machines_stats
 
     @staticmethod
     def get_container_name(name: str, lab_hash: str) -> str:
@@ -844,4 +855,4 @@ class DockerMachine(object):
                                 f"Shutdown commands will not be executed."
                                 )
 
-        container.remove(force=True)
+        container.remove(v=True, force=True)

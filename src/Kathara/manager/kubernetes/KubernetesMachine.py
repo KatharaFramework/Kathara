@@ -67,7 +67,7 @@ STARTUP_COMMANDS = [
 
     # Give proper permissions to Quagga files (if present)
     "if [ -d \"/etc/quagga\" ]; then "
-    "chown quagga:quagga /etc/quagga/*",
+    "chown --recursive quagga:quagga /etc/quagga/",
     "chmod 640 /etc/quagga/*; fi",
 
     # Give proper permissions to FRR files (if present)
@@ -247,7 +247,7 @@ class KubernetesMachine(object):
         options = machine.lab.general_options
 
         # If bridged is defined for the device, throw a warning.
-        if "bridged" in options or machine.meta['bridged']:
+        if "bridged" in options or machine.is_bridged():
             logging.warning('Bridged option is not supported on Megalos. It will be ignored.')
 
         # If any exec command is passed in command line, add it.
@@ -262,6 +262,7 @@ class KubernetesMachine(object):
 
         if machine.is_ipv6_enabled():
             sysctl_parameters["net.ipv6.conf.all.forwarding"] = 1
+            sysctl_parameters["net.ipv6.conf.all.accept_ra"] = 0
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
@@ -804,8 +805,16 @@ class KubernetesMachine(object):
 
             machines_stats = {}
 
-            for pod in pods:
+            def load_machine_stats(pod):
                 machines_stats[pod.metadata.name] = KubernetesMachineStats(pod)
+
+            pool_size = utils.get_pool_size()
+            machines_pool = Pool(pool_size)
+
+            items = utils.chunk_list(pods, pool_size)
+
+            for chunk in items:
+                machines_pool.map(func=load_machine_stats, iterable=chunk)
 
             for machine_stats in machines_stats.values():
                 try:

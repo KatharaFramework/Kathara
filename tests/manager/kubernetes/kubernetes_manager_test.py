@@ -700,7 +700,6 @@ def test_get_lab_from_api_lab_name_all_info(mock_get_links_api_objects, mock_get
     assert kubernetes_pod_2.metadata.labels["name"] in lab.machines
     reconstructed_device = lab.get_or_new_machine(kubernetes_pod_2.metadata.labels["name"])
     assert "privileged" not in reconstructed_device.meta
-    assert not reconstructed_device.meta["bridged"]
     assert reconstructed_device.meta["image"] == "test_image"
     assert reconstructed_device.meta["shell"] == "/bin/bash"
     assert reconstructed_device.meta["mem"] == "64M"
@@ -728,7 +727,6 @@ def test_get_lab_from_api_lab_hash_all_info(mock_get_links_api_objects, mock_get
     assert kubernetes_pod_2.metadata.labels["name"] in lab.machines
     reconstructed_device = lab.get_or_new_machine(kubernetes_pod_2.metadata.labels["name"])
     assert "privileged" not in reconstructed_device.meta
-    assert not reconstructed_device.meta["bridged"]
     assert reconstructed_device.meta["image"] == "test_image"
     assert reconstructed_device.meta["shell"] == "/bin/bash"
     assert reconstructed_device.meta["mem"] == "64M"
@@ -759,7 +757,6 @@ def test_get_lab_from_api_lab_name_empty_meta(mock_get_links_api_objects, mock_g
     assert reconstructed_device.meta["envs"] == {}
     assert reconstructed_device.meta["ports"] == {}
     assert reconstructed_device.meta["sysctls"] == {}
-    assert not reconstructed_device.meta["bridged"]
     assert len(lab.links) == 0
 
 

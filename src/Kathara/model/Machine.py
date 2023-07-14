@@ -1,7 +1,6 @@
 import collections
 import logging
 import re
-import tempfile
 from io import BytesIO
 from typing import Dict, Any, Tuple, Optional, List, OrderedDict, TextIO, Union, BinaryIO
 
@@ -65,11 +64,10 @@ class Machine(FilesystemMixin):
         self.interfaces: OrderedDict[int, Link] = collections.OrderedDict()
 
         self.meta: Dict[str, Any] = {
+            'startup_commands': [],
             'sysctls': {},
             'envs': {},
-            'bridged': False,
             'ports': {},
-            'startup_commands': []
         }
 
         self.api_object: Any = None
@@ -129,7 +127,7 @@ class Machine(FilesystemMixin):
         )
         link.machines.pop(self.name)
 
-    def add_meta(self, name: str, value: Any) -> None:
+    def add_meta(self, name: str, value: Any) -> Optional[Any]:
         """Add a meta property to the device.
 
         Args:
@@ -137,35 +135,38 @@ class Machine(FilesystemMixin):
             value (Any): The value of the property.
 
         Returns:
-            None
+            Optional[Any]: Previous value if meta was already assigned, None otherwise.
 
         Raises:
             MachineOptionError: If the specified value is not valid for the specified property.
         """
         if name == "exec":
             self.meta['startup_commands'].append(value)
-            return
+            return None
 
         if name == "bridged":
+            old_value = self.meta[name] if name in self.meta else None
             self.meta[name] = strtobool(str(value))
-            return
+            return old_value
 
         if name == "sysctl":
-            matches = re.search(r"^(?P<key>net\.(\w+\.)+\w+)=(?P<value>\w+)$", value)
+            matches = re.search(r"^(?P<key>net\.([\w-]+\.)+[\w-]+)=(?P<value>-?\w+)$", value)
 
             # Check for valid kv-pair
             if matches:
                 key = matches.group("key").strip()
                 val = matches.group("value").strip()
 
+                old_value = self.meta['sysctls'][key] if key in self.meta['sysctls'] else None
+
                 # Convert to int if possible
-                self.meta['sysctls'][key] = int(val) if val.isdigit() else val
+                self.meta['sysctls'][key] = int(val) if val.strip('-').isnumeric() else val
             else:
                 raise MachineOptionError(
                     "Invalid sysctl value (`%s`) on `%s`, missing `=` or value not in `net.` namespace."
                     % (value, self.name)
                 )
-            return
+            return old_value
 
         if name == "env":
             matches = re.search(r"^(?P<key>\w+)=(?P<value>\S+)$", value)
@@ -175,10 +176,12 @@ class Machine(FilesystemMixin):
                 key = matches.group("key").strip()
                 val = matches.group("value").strip()
 
+                old_value = self.meta['envs'][key] if key in self.meta['envs'] else None
+
                 self.meta['envs'][key] = val
             else:
                 raise MachineOptionError("Invalid env value (`%s`) on `%s`." % (value, self.name))
-            return
+            return old_value
 
         if name == "port":
             if '/' in value:
@@ -196,12 +199,64 @@ class Machine(FilesystemMixin):
                 raise MachineOptionError("Port protocol value not valid on `%s`." % self.name)
 
             try:
-                self.meta['ports'][(int(host_port), protocol)] = int(guest_port)
+                key_tuple = (int(host_port), protocol)
+
+                old_value = self.meta['ports'][key_tuple] if key_tuple in self.meta['ports'] else None
+
+                self.meta['ports'][key_tuple] = int(guest_port)
             except ValueError:
                 raise MachineOptionError("Port value not valid on `%s`." % self.name)
-            return
+            return old_value
 
+        old_value = self.meta[name] if name in self.meta else None
         self.meta[name] = value
+        return old_value
+
+    def update_meta(self, args: Dict[str, Any]) -> None:
+        """Update the device metas from a dict.
+
+        Args:
+            args (Dict[str, Any]): Keys are the meta properties names, values are the updated meta properties values.
+
+        Returns:
+            None
+        """
+        if 'exec_commands' in args and args['exec_commands'] is not None:
+            for command in args['exec_commands']:
+                self.add_meta("exec", command)
+
+        if 'mem' in args and args['mem'] is not None:
+            self.add_meta("mem", args['mem'])
+
+        if 'cpus' in args and args['cpus'] is not None:
+            self.add_meta("cpus", args['cpus'])
+
+        if 'image' in args and args['image'] is not None:
+            self.add_meta("image", args['image'])
+
+        if 'bridged' in args and args['bridged'] is not None and args['bridged']:
+            self.add_meta("bridged", True)
+
+        if 'ports' in args and args['ports'] is not None:
+            for port in args['ports']:
+                self.add_meta("port", port)
+
+        if 'num_terms' in args and args['num_terms'] is not None:
+            self.add_meta('num_terms', args['num_terms'])
+
+        if 'sysctls' in args and args['sysctls'] is not None:
+            for sysctl in args['sysctls']:
+                self.add_meta("sysctl", sysctl)
+
+        if 'envs' in args and args['envs'] is not None:
+            for envs in args['envs']:
+                self.add_meta("env", envs)
+
+        if 'ipv6' in args and args['ipv6'] is not None:
+            self.add_meta("ipv6", args['ipv6'])
+
+        if 'shell' in args and args['shell'] is not None:
+            self.add_meta("shell", args['shell'])
 
     def check(self) -> None:
         """Sort interfaces and check if there are missing interface numbers.
@@ -260,6 +315,49 @@ class Machine(FilesystemMixin):
 
         # If no machine files are found, return None.
         return None
+
+    def get_startup_commands(self) -> List[str]:
+        """Get the additional device startup commands.
+
+        Returns:
+            List[str]: The list containing the additional commands.
+        """
+        return self.meta['startup_commands']
+
+    def is_bridged(self) -> bool:
+        """Return True if the device is bridged, else return False.
+
+        Returns:
+            bool: True if the device is bridged, else False.
+        """
+        if "bridged" not in self.meta:
+            return False
+
+        return self.meta['bridged']
+
+    def get_sysctls(self) -> Dict[str, Union[int, str]]:
+        """Get the sysctls specified for the device.
+
+        Returns:
+            Dict[str, Union[int, str]]: Keys contain the sysctls to set, values are the values to apply.
+        """
+        return self.meta['sysctls']
+
+    def get_envs(self) -> Dict[str, Union[int, str]]:
+        """Get the environment variables specified for the device.
+
+        Returns:
+            Dict[str, Union[int, str]]: Keys are environment variables to set, values are the values to apply.
+        """
+        return self.meta['envs'] if self.meta['envs'] else {}
+
+    def get_ports(self) -> Dict[Tuple[int, str], int]:
+        """Get the port mapping of the device.
+
+        Returns:
+            Dict[(int, str), int]: Keys are pairs (host port, protocol), values specifies the guest port.
+        """
+        return self.meta['ports']
 
     def get_image(self) -> str:
         """Get the image of the device, if defined in options or device meta. If not, use default one.
@@ -325,22 +423,6 @@ class Machine(FilesystemMixin):
 
         return None
 
-    def get_ports(self) -> Dict[Tuple[int, str], int]:
-        """Get the port mapping of the device.
-
-        Returns:
-            Dict[(int, str), int]: Keys are pairs (host port, protocol), values specifies the guest port.
-        """
-        return self.meta['ports']
-
-    def get_sysctls(self) -> Dict[str, Union[int, str]]:
-        """Get the sysctls specified for the device.
-
-        Returns:
-            Dict[str, Union[int, str]]: Keys contain the sysctls to set, values are the values to apply.
-        """
-        return self.meta['sysctls']
-
     def get_shell(self) -> str:
         """Get the custom shell specified for the device.
 
@@ -348,22 +430,6 @@ class Machine(FilesystemMixin):
             str: The path of the custom shell specified for connecting to the device.
         """
         return self.meta['shell'] if 'shell' in self.meta else Setting.get_instance().device_shell
-
-    def get_envs(self) -> Dict[str, Union[int, str]]:
-        """Get the environment variables specified for the device.
-
-        Returns:
-            Dict[str, Union[int, str]]: Keys are environment variables to set, values are the values to apply.
-        """
-        return self.meta['envs'] if self.meta['envs'] else {}
-
-    def is_bridged(self) -> bool:
-        """Return True if the device is bridged, else return False.
-
-        Returns:
-            bool: True if the device is bridged, else False.
-        """
-        return self.meta['bridged']
 
     def get_num_terms(self) -> int:
         """Get the number of terminals to be opened for the device.
@@ -400,59 +466,17 @@ class Machine(FilesystemMixin):
         Raises:
             MachineOptionError: If the IPv6 value specified is not valid.
         """
+        is_v6_enabled = Setting.get_instance().enable_ipv6
+
         try:
-            return strtobool(self.lab.general_options["ipv6"]) if "ipv6" in self.lab.general_options else \
-                strtobool(self.meta["ipv6"]) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
+            if "ipv6" in self.lab.general_options:
+                is_v6_enabled = self.lab.general_options["ipv6"]
+            elif "ipv6" in self.meta:
+                is_v6_enabled = self.meta["ipv6"]
+
+            return is_v6_enabled if type(is_v6_enabled) == bool else strtobool(is_v6_enabled)
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
-
-    def get_startup_commands(self) -> List[str]:
-        """Get the additional device startup commands.
-
-        Returns:
-            List[str]: The list containing the additional commands.
-        """
-        return self.meta['startup_commands']
-
-    def update_meta(self, args: Dict[str, Any]) -> None:
-        """Update the device metas from a dict.
-
-        Args:
-            args (Dict[str, Any]): Keys are the meta properties names, values are the updated meta properties values.
-
-        Returns:
-            None
-        """
-        if 'exec_commands' in args and args['exec_commands'] is not None:
-            for command in args['exec_commands']:
-                self.add_meta("exec", command)
-
-        if 'mem' in args and args['mem'] is not None:
-            self.add_meta("mem", args['mem'])
-
-        if 'cpus' in args and args['cpus'] is not None:
-            self.add_meta("cpus", args['cpus'])
-
-        if 'image' in args and args['image'] is not None:
-            self.add_meta("image", args['image'])
-
-        if 'bridged' in args and args['bridged'] is not None and args['bridged']:
-            self.add_meta("bridged", True)
-
-        if 'ports' in args and args['ports'] is not None:
-            for port in args['ports']:
-                self.add_meta("port", port)
-
-        if 'num_terms' in args and args['num_terms'] is not None:
-            self.add_meta('num_terms', args['num_terms'])
-
-        if 'sysctls' in args and args['sysctls'] is not None:
-            for sysctl in args['sysctls']:
-                self.add_meta("sysctl", sysctl)
-
-        if 'envs' in args and args['envs'] is not None:
-            for envs in args['envs']:
-                self.add_meta("env", envs)
 
     # Override FilesystemMixin methods to handle the condition if we want to add a file but self.fs is not set
     # In this case, we create the machine directory and assign it to self.fs before calling the actual method
@@ -460,8 +484,8 @@ class Machine(FilesystemMixin):
         """Create a file from a string in the device fs. If fs is None, create it in the network scenario.
 
         Args:
-            content[str]: The string representing the content of the file to create.
-            dst_path[str]: The absolute path of the fs where create the file.
+            content (str): The string representing the content of the file to create.
+            dst_path (str): The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -474,12 +498,31 @@ class Machine(FilesystemMixin):
 
         super().create_file_from_string(content, dst_path)
 
+    def update_file_from_string(self, content: str, dst_path: str) -> None:
+        """Update a file in the fs object from a string.
+
+        Args:
+            content (str): The string representing the content for updating the file.
+            dst_path (str): The absolute path on the fs of the file to update.
+
+        Returns:
+            None
+
+        Raises:
+            InvocationError: If the fs is None.
+            fs.errors.ResourceNotFound: If the path is not found in the fs.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().update_file_from_string(content, dst_path)
+
     def create_file_from_list(self, lines: List[str], dst_path: str) -> None:
         """Create a file from a list of strings in the device fs. If fs is None, create it in the network scenario.
 
         Args:
-            content[str]: The list of strings representing the content of the file to create.
-            dst_path[str]: The absolute path of the fs where create the file.
+            lines (List[str]): The list of strings representing the content of the file to create.
+            dst_path (str): The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -492,12 +535,31 @@ class Machine(FilesystemMixin):
 
         super().create_file_from_list(lines, dst_path)
 
+    def update_file_from_list(self, lines: List[str], dst_path: str) -> None:
+        """Update a file in the fs object from a list of strings.
+
+        Args:
+            lines (List[str]): The list of strings representing the content for updating the file.
+            dst_path (str): The absolute path on the fs of the file to upload.
+
+        Returns:
+            None
+
+        Raises:
+            InvocationError: If the fs is None.
+            fs.errors.ResourceNotFound: If the path is not found in the fs.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().update_file_from_list(lines, dst_path)
+
     def create_file_from_path(self, src_path: str, dst_path: str) -> None:
         """Create a file in the device fs from an existing file on the host filesystem. If the fs is None, create it.
 
         Args:
-            src_path[str]: The path of the file on the host filesystem to copy in the fs object.
-            dst_path[str]: The absolute path of the fs where create the file.
+            src_path (str): The path of the file on the host filesystem to copy in the fs object.
+            dst_path (str): The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -514,8 +576,8 @@ class Machine(FilesystemMixin):
         """Create a file in the device fs from a stream. If fs is None, create it in the network scenario.
 
         Args:
-            stream[Union[BinaryIO, TextIO]]: The stream representing the content of the file to create.
-            dst_path[str]: The absolute path of the fs where create the file.
+            stream (Union[BinaryIO, TextIO]): The stream representing the content of the file to create.
+            dst_path (str): The absolute path of the fs where create the file.
 
         Returns:
             None
@@ -528,6 +590,73 @@ class Machine(FilesystemMixin):
             self.fs = self.lab.fs.makedir(self.name, recreate=True)
 
         super().create_file_from_stream(stream, dst_path)
+
+    def write_line_before(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
+            -> int:
+        """Write a new line before a specific line in a file.
+
+        Args:
+            file_path (str): The path of the file to add the new line.
+            line_to_add (str): The new line to add before the searched line.
+            searched_line (str): The searched line.
+            first_occurrence (bool): Inserts line only before the first occurrence. Default is False.
+
+        Returns:
+            int: Number of times the line has been added.
+
+        Raises:
+            fs.errors.FileExpected: If the path is not a file.
+            fs.errors.ResourceNotFound: If the path does not exist.
+            LineNotFoundError: If the searched line is not found in the file.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        return super().write_line_before(file_path, line_to_add, searched_line, first_occurrence)
+
+    def write_line_after(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
+            -> int:
+        """Write a new line after a specific line in a file.
+
+        Args:
+            file_path (str): The path of the file to add the new line.
+            line_to_add (str): The new line to add after the searched line.
+            searched_line (str): The searched line.
+            first_occurrence (bool): Inserts line only after the first occurrence. Default is False.
+
+        Returns:
+            int: Number of times the line has been added.
+
+        Raises:
+            fs.errors.FileExpected: If the path is not a file.
+            fs.errors.ResourceNotFound: If the path does not exist.
+            LineNotFoundError: If the searched line is not found in the file.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        return super().write_line_after(file_path, line_to_add, searched_line, first_occurrence)
+
+    def delete_line(self, file_path: str, line_to_delete: str, first_occurrence: bool = False) -> int:
+        """Delete a specified line in a file.
+
+        Args:
+            file_path (str): The path of the file to delete the line.
+            line_to_delete (str): The line to delete.
+            first_occurrence (bool): Deletes only first occurrence. Default is False.
+
+        Returns:
+            int: Number of times the line has been deleted.
+
+        Raises:
+            fs.errors.FileExpected: If the path is not a file.
+            fs.errors.ResourceNotFound: If the path does not exist.
+            LineNotFoundError: If the searched line is not found in the file.
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        return super().delete_line(file_path, line_to_delete, first_occurrence)
 
     def __repr__(self) -> str:
         return "Machine(%s, %s, %s)" % (self.name, self.interfaces, self.meta)

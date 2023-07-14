@@ -8,30 +8,17 @@ RUN pacman-db-upgrade
 RUN pacman -S --noconfirm git \
 			  			  openssh \
 			  			  base-devel \
-			  			  ruby \
 			  			  chrpath \
-                          patchelf
+                          patchelf \
+    					  ruby-ronn-ng
                           
-RUN pacman -S --noconfirm wget \
-						  bzip2 \
-						  expat \
-						  gdbm \
-						  libffi \
-						  libnsl \
-						  libxcrypt \
-						  zlib && \
-	wget https://www.python.org/ftp/python/3.10.7/Python-3.10.7.tgz && \
-	tar xfvz Python-3.10.7.tgz && cd Python-3.10.7 && \
-	./configure --enable-optimizations && \
-	make -j8 && \
-	make install && \
-	pacman -R --noconfirm wget && \
-    cd .. && rm -Rf Python-3.10.7*
+RUN pacman -S --noconfirm wget && \
+    wget https://archive.archlinux.org/packages/p/python/python-3.10.10-1-x86_64.pkg.tar.zst && \
+    pacman -U --noconfirm python-3.10.10-1-x86_64.pkg.tar.zst && \
+    rm -f python-3.10.10-1-x86_64.pkg.tar.zst
                           
 RUN useradd -m -s /bin/bash builduser
 
-RUN su -c "gem install ronn-ng" builduser
+RUN su -c "mkdir -p /home/builduser/build/" builduser
 
-RUN echo "IdentityFile /home/builduser/.ssh/id_rsa" >> /etc/ssh/ssh_config
-
-WORKDIR /opt/kathara/scripts/Linux-Pkg
+WORKDIR /home/builduser/build/
