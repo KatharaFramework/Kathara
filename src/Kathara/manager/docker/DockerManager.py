@@ -1,6 +1,6 @@
 import io
 import logging
-from typing import Set, Dict, Generator, Tuple, List, Optional
+from typing import Set, Dict, Generator, Tuple, List, Optional, Union
 
 import docker
 import docker.models.containers
@@ -291,7 +291,7 @@ class DockerManager(IManager):
 
     @privileged
     def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
-                    shell: str = None, logs: bool = False) -> None:
+                    shell: str = None, logs: bool = False, wait: Union[bool, Tuple[int, float]] = True) -> None:
         """Connect to a device in a running network scenario, using the specified shell.
 
         Args:
@@ -300,6 +300,10 @@ class DockerManager(IManager):
             lab_name (str): The name of the network scenario where the device is deployed.
             shell (str): The name of the shell to use for connecting.
             logs (bool): If True, print startup logs on stdout.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before connecting. If a tuple is provided, the first value indicates the number of retries
+                before stopping waiting and the second value indicates the time interval to wait for each retry.
+                Default is True.
 
         Returns:
             None
@@ -319,12 +323,14 @@ class DockerManager(IManager):
                                     machine_name=machine_name,
                                     user=user_name,
                                     shell=shell,
-                                    logs=logs
+                                    logs=logs,
+                                    wait=wait
                                     )
 
     @privileged
     def exec(self, machine_name: str, command: List[str], lab_hash: Optional[str] = None,
-             lab_name: Optional[str] = None, wait: bool = False) -> Generator[Tuple[bytes, bytes], None, None]:
+             lab_name: Optional[str] = None, wait: Union[bool, Tuple[int, float]] = False) \
+            -> Generator[Tuple[bytes, bytes], None, None]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -332,7 +338,10 @@ class DockerManager(IManager):
             command (List[str]): The command to exec on the device.
             lab_hash (Optional[str]): The hash of the network scenario where the device is deployed.
             lab_name (Optional[str]): The name of the network scenario where the device is deployed.
-            wait (bool): If True, wait until end of the startup commands execution before executing the command.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before executing the command. If a tuple is provided, the first value indicates the
+                number of retries before stopping waiting and the second value indicates the time interval to wait
+                for each retry. Default is False.
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.

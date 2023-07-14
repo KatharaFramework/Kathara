@@ -500,7 +500,7 @@ class DockerMachine(object):
         EventDispatcher.get_instance().dispatch("machine_undeployed", item=machine_api_object)
 
     def connect(self, lab_hash: str, machine_name: str, user: str = None, shell: str = None,
-                logs: bool = False, wait: bool = True) -> None:
+                logs: bool = False, wait: Union[bool, Tuple[int, float]] = True) -> None:
         """Open a stream to the Docker container specified by machine_name using the specified shell.
 
         Args:
@@ -509,13 +509,17 @@ class DockerMachine(object):
             user (str): The name of a current user on the host.
             shell (str): The path to the desired shell.
             logs (bool): If True, print the logs of the startup command.
-            wait (bool): If True, wait the end of the startup commands before giving control to the user.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before giving control to the user. If a tuple is provided, the first value indicates the
+                number of retries before stopping waiting and the second value indicates the time interval to wait
+                for each retry. Default is True.
 
         Returns:
             None
 
         Raises:
             MachineNotFoundError: If the specified device is not running.
+            ValueError: If the wait values is neither a boolean nor a tuple, or an invalid tuple.
         """
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:
@@ -529,36 +533,52 @@ class DockerMachine(object):
 
         logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
 
+        if isinstance(wait, tuple):
+            if len(wait) != 2:
+                raise ValueError("Invalid `wait` value.")
+
+            n_retries, retry_interval = wait
+            should_wait = True
+        elif isinstance(wait, bool):
+            n_retries = None
+            retry_interval = 1
+            should_wait = wait
+        else:
+            raise ValueError("Invalid `wait` value.")
+
         startup_waited = False
-        if wait:
-            startup_waited = self._wait_startup_execution(container)
+        if should_wait:
+            startup_waited = self._wait_startup_execution(container, n_retries=n_retries, retry_interval=retry_interval)
 
             # Clean the terminal output
             sys.stdout.write("\033[2J")
             sys.stdout.write("\033[0;0H")
             sys.stdout.flush()
 
-        # Get the logs, if the command fails it means that the shell is not found.
-        cat_logs_cmd = "cat /var/log/shared.log /var/log/startup.log"
-        startup_command = [item for item in shell]
-        startup_command.extend(['-c', cat_logs_cmd])
-        exec_result = self._exec_run(container,
-                                     cmd=startup_command,
-                                     stdout=True,
-                                     stderr=False,
-                                     privileged=False,
-                                     detach=False
-                                     )
-        detect = chardet.detect(exec_result['output']) if exec_result['output'] else None
-        startup_output = exec_result['output'].decode(detect) if exec_result['output'] else None
+        if logs and Setting.get_instance().print_startup_log:
+            # Get the logs, if the command fails it means that the shell is not found.
+            cat_logs_cmd = "cat /var/log/shared.log /var/log/startup.log"
+            startup_command = [item for item in shell]
+            startup_command.extend(['-c', cat_logs_cmd])
+            exec_result = self._exec_run(container,
+                                         cmd=startup_command,
+                                         stdout=True,
+                                         stderr=False,
+                                         privileged=False,
+                                         detach=False
+                                         )
+            char_encoding = chardet.detect(exec_result['output']) if exec_result['output'] else None
+            startup_output = exec_result['output'].decode(char_encoding['encoding']) if exec_result['output'] else None
 
-        if startup_output and logs and Setting.get_instance().print_startup_log:
-            sys.stdout.write("--- Startup Commands Log\n")
-            sys.stdout.write(startup_output)
-            sys.stdout.write("--- End Startup Commands Log\n")
+            if startup_output:
+                sys.stdout.write("--- Startup Commands Log\n")
+                sys.stdout.write(startup_output)
+                sys.stdout.write("--- End Startup Commands Log\n")
 
-            if not startup_waited:
-                sys.stdout.write("--- Executing other commands in background\n")
+                if not startup_waited:
+                    sys.stdout.write("--- Executing other commands in background\n")
+
+                sys.stdout.flush()
 
         resp = self.client.api.exec_create(container.id,
                                            shell,
@@ -585,7 +605,8 @@ class DockerMachine(object):
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], user: str = None,
-             tty: bool = True, wait: bool = False) -> Generator[Tuple[bytes, bytes], None, None]:
+             tty: bool = True, wait: Union[bool, Tuple[int, float]] = False) \
+            -> Generator[Tuple[bytes, bytes], None, None]:
         """Execute the command on the Docker container specified by the lab_hash and the machine_name.
 
         Args:
@@ -594,13 +615,17 @@ class DockerMachine(object):
             user (str): The name of a current user on the host.
             command (Union[str, List]): The command to execute.
             tty (bool): If True, open a new tty.
-            wait (bool): If True, wait the end of the startup before executing the command.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before executing the command. If a tuple is provided, the first value indicates the
+                number of retries before stopping waiting and the second value indicates the time interval to
+                wait for each retry. Default is False.
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
 
         Raises:
             MachineNotFoundError: If the specified device is not running.
+            ValueError: If the wait values is neither a boolean nor a tuple, or an invalid tuple.
         """
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
@@ -609,8 +634,21 @@ class DockerMachine(object):
             raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
         container = containers.pop()
 
-        if wait:
-            self._wait_startup_execution(container)
+        if isinstance(wait, tuple):
+            if len(wait) != 2:
+                raise ValueError("Invalid `wait` value.")
+
+            n_retries, retry_interval = wait
+            should_wait = True
+        elif isinstance(wait, bool):
+            n_retries = None
+            retry_interval = 1
+            should_wait = wait
+        else:
+            raise ValueError("Invalid `wait` value.")
+
+        if should_wait:
+            self._wait_startup_execution(container, n_retries=n_retries, retry_interval=retry_interval)
 
         command = shlex.split(command) if type(command) == str else command
         exec_result = self._exec_run(container,
@@ -688,8 +726,8 @@ class DockerMachine(object):
             exec_stdout = ""
             if stdout_out:
                 if type(stdout_out) == bytes:
-                    detect = chardet.detect(stdout_out)
-                    exec_stdout = stdout_out.decode(detect['encoding'])
+                    char_encoding = chardet.detect(stdout_out)
+                    exec_stdout = stdout_out.decode(char_encoding['encoding'])
                 else:
                     exec_stdout = stdout_out
             matches = OCI_RUNTIME_RE.search(exec_stdout)
@@ -701,24 +739,28 @@ class DockerMachine(object):
 
         return {'exit_code': int(exit_code) if exit_code is not None else None, 'output': exec_output}
 
-    def _wait_startup_execution(self, container: docker.models.containers.Container):
+    def _wait_startup_execution(self, container: docker.models.containers.Container,
+                                n_retries: Optional[int] = None, retry_interval: float = 1) -> bool:
         """Wait until the startup commands are executed or until the user requests the control over the device.
 
         Args:
             container (docker.models.containers.Container): The Docker container to wait.
+            n_retries (Optional[int]): Number of retries before stopping waiting. Default is None, waits indefinitely.
+            retry_interval (float): The time interval in seconds to wait for each retry. Default is 1.
 
         Returns:
             bool: False if the user requests the control before the ending of the startup. Else, True.
         """
-        machine_name = container.labels['name']
+        logging.debug(f"Waiting startup commands execution for device {container.labels['name']}...")
 
-        sys.stdout.write("Waiting startup commands execution. Press [ENTER] to take control of the device...")
-        sys.stdout.flush()
+        retry_interval = retry_interval if retry_interval >= 0 else 1
+        n_retries = n_retries if n_retries is None or n_retries >= 0 else abs(n_retries)
 
-        logging.debug(f"Waiting startup commands execution for device {machine_name}...")
-        exit_code = 1
+        retries = 0
+        is_cmd_success = False
         startup_waited = True
-        while exit_code != 0:
+        printed = False
+        while not is_cmd_success:
             exec_result = self._exec_run(container,
                                          cmd="cat /var/log/EOS",
                                          stdout=True,
@@ -726,16 +768,27 @@ class DockerMachine(object):
                                          privileged=False,
                                          detach=False
                                          )
-            exit_code = exec_result['exit_code']
+            is_cmd_success = exec_result['exit_code'] == 0
+
+            if not printed and not is_cmd_success:
+                sys.stdout.write("Waiting startup commands execution. Press [ENTER] to override...")
+                sys.stdout.flush()
+                printed = True
 
             # If the user requests the control, break the while loop
             if utils.exec_by_platform(utils.wait_user_input_linux,
                                       utils.wait_user_input_windows,
                                       utils.wait_user_input_linux):
-                startup_waited = False
+                startup_waited = False or is_cmd_success
                 break
 
-            time.sleep(1)
+            if not is_cmd_success:
+                if n_retries is not None:
+                    retries += 1
+                    if retries == n_retries:
+                        break
+
+                time.sleep(retry_interval)
 
         return startup_waited
 

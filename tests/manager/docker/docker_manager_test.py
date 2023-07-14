@@ -482,7 +482,8 @@ def test_connect_tty_lab_hash(mock_connect, mock_get_current_user_name, docker_m
                                          machine_name=default_device.name,
                                          user="kathara_user",
                                          shell=None,
-                                         logs=False)
+                                         logs=False,
+                                         wait=True)
 
 
 @mock.patch("src.Kathara.utils.get_current_user_name")
@@ -497,7 +498,8 @@ def test_connect_tty_lab_name(mock_connect, mock_get_current_user_name, docker_m
                                          machine_name=default_device.name,
                                          user="kathara_user",
                                          shell=None,
-                                         logs=False)
+                                         logs=False,
+                                         wait=True)
 
 
 @mock.patch("src.Kathara.utils.get_current_user_name")
@@ -513,7 +515,8 @@ def test_connect_tty_with_custom_shell(mock_connect, mock_get_current_user_name,
                                          machine_name=default_device.name,
                                          user="kathara_user",
                                          shell="/usr/bin/zsh",
-                                         logs=False)
+                                         logs=False,
+                                         wait=True)
 
 
 @mock.patch("src.Kathara.utils.get_current_user_name")
@@ -529,7 +532,8 @@ def test_connect_tty_with_logs(mock_connect, mock_get_current_user_name, docker_
                                          machine_name=default_device.name,
                                          user="kathara_user",
                                          shell=None,
-                                         logs=True)
+                                         logs=True,
+                                         wait=True)
 
 
 @mock.patch("src.Kathara.utils.get_current_user_name")
