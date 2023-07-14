@@ -40,6 +40,7 @@ dependencies = [
     "pyroute2>=0.5.19",
     "progressbar2>=1.14.0",
     "fs>=2.4.16",
+    "chardet",
     "libtmux>=0.8.2; platform_system == 'darwin' or platform_system == 'linux'",
     "appscript>=1.1.0; platform_system == 'darwin'",
     "pypiwin32>=223; platform_system == 'win32'",

@@ -7,6 +7,7 @@ from itertools import islice
 from multiprocessing.dummy import Pool
 from typing import List, Dict, Generator, Optional, Set, Tuple, Union, Any
 
+import chardet
 import docker.models.containers
 from docker import DockerClient
 from docker.errors import APIError
@@ -526,7 +527,7 @@ class DockerMachine(object):
         else:
             shell = shlex.split(shell)
 
-        logging.debug(f"Connect to device `{machine_name}` with shell: {shell}")
+        logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
 
         startup_waited = False
         if wait:
@@ -537,24 +538,30 @@ class DockerMachine(object):
             sys.stdout.write("\033[0;0H")
             sys.stdout.flush()
 
-        command = ""
-        if logs:
-            # Print the startup logs inside the container and open the shell
-            cat_logs_cmd = "[ -f var/log/shared.log ] && " \
-                           "(echo '-- Shared Commands --'; cat /var/log/shared.log; " \
-                           "echo '-- End Shared Commands --\n');" \
-                           "[ -f /var/log/startup.log ] && " \
-                           "(echo '-- Device Commands --'; cat /var/log/startup.log; echo '-- End Device Commands --')"
-            command += f"{shell[0]} -c \"echo '--- Startup Commands Log\n';" \
-                       f"{cat_logs_cmd};"
-            command += "echo '\n--- End Startup Commands Log\n';" if startup_waited else \
-                f"echo '\n--- Executing other commands in background\n';"
-            command += f"{shell[0]}\""
-        else:
-            command += f"{shell[0]}"
+        # Get the logs, if the command fails it means that the shell is not found.
+        cat_logs_cmd = "cat /var/log/shared.log /var/log/startup.log"
+        startup_command = [item for item in shell]
+        startup_command.extend(['-c', cat_logs_cmd])
+        exec_result = self._exec_run(container,
+                                     cmd=startup_command,
+                                     stdout=True,
+                                     stderr=False,
+                                     privileged=False,
+                                     detach=False
+                                     )
+        detect = chardet.detect(exec_result['output']) if exec_result['output'] else None
+        startup_output = exec_result['output'].decode(detect) if exec_result['output'] else None
+
+        if startup_output and logs and Setting.get_instance().print_startup_log:
+            print("--- Startup Commands Log\n")
+            print(startup_output)
+            print("--- End Startup Commands Log\n")
+
+            if not startup_waited:
+                print("--- Executing other commands in background\n")
 
         resp = self.client.api.exec_create(container.id,
-                                           command,
+                                           shell,
                                            stdout=True,
                                            stderr=True,
                                            stdin=True,
@@ -678,7 +685,13 @@ class DockerMachine(object):
         exit_code = self.client.api.exec_inspect(resp['Id'])['ExitCode']
         if not socket and not stream and (exit_code is not None and exit_code != 0):
             (stdout_out, _) = exec_output if demux else (exec_output, None)
-            exec_stdout = (stdout_out.decode('utf-8') if type(stdout_out) == bytes else stdout_out) if stdout else ""
+            exec_stdout = ""
+            if stdout_out:
+                if type(stdout_out) == bytes:
+                    detect = chardet.detect(stdout_out)
+                    exec_stdout = stdout_out.decode(detect['encoding'])
+                else:
+                    exec_stdout = stdout_out
             matches = OCI_RUNTIME_RE.search(exec_stdout)
             if matches:
                 raise MachineBinaryError(matches.group(3) or matches.group(4), container.labels['name'])

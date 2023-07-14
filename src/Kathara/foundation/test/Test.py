@@ -2,6 +2,7 @@ import os
 from abc import ABC, abstractmethod
 from typing import Dict, Union, List
 
+import chardet
 from deepdiff import DeepDiff
 
 from ...manager.Kathara import Kathara
@@ -42,9 +43,13 @@ class Test(ABC):
         try:
             while True:
                 (stdout, stderr) = next(exec_output)
+
+                stdout_char_encoding = chardet.detect(stdout) if stdout else None
+                stderr_char_encoding = chardet.detect(stderr) if stderr else None
+
                 if stdout:
-                    result['stdout'] += stdout.decode('utf-8')
+                    result['stdout'] += stdout.decode(stdout_char_encoding['encoding']) if stdout else ""
                 if stderr:
-                    result['stderr'] += stderr.decode('utf-8')
+                    result['stderr'] += stderr.decode(stderr_char_encoding['encoding']) if stderr else ""
         except StopIteration:
             return result['stdout'], result['stderr']

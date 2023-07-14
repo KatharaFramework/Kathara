@@ -2,6 +2,8 @@ import argparse
 import sys
 from typing import List
 
+import chardet
+
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -95,8 +97,12 @@ class ExecCommand(Command):
         try:
             while True:
                 (stdout, stderr) = next(exec_output)
-                stdout = stdout.decode('utf-8') if stdout else ""
-                stderr = stderr.decode('utf-8') if stderr else ""
+
+                stdout_char_encoding = chardet.detect(stdout) if stdout else None
+                stderr_char_encoding = chardet.detect(stderr) if stderr else None
+
+                stdout = stdout.decode(stdout_char_encoding['encoding']) if stdout else ""
+                stderr = stderr.decode(stderr_char_encoding['encoding']) if stderr else ""
 
                 if not args['no_stdout']:
                     sys.stdout.write(stdout)
