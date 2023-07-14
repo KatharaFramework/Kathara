@@ -36,7 +36,7 @@ STARTUP_COMMANDS = [
     # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
     # In this way, files are all replaced in the container root folder
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
-    "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf -); fi",
+    "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar --no-same-owner --no-same-permissions xhf -); fi",
 
     # If /etc/hosts is not configured by the user, add the localhost mapping
     "if [ ! -s \"/etc/hosts\" ]; then "
@@ -50,12 +50,12 @@ STARTUP_COMMANDS = [
 
     # Give proper permissions to Quagga files (if present)
     "if [ -d \"/etc/quagga\" ]; then "
-    "chown --recursive quagga:quagga /etc/quagga/",
+    "chown -R quagga:quagga /etc/quagga/",
     "chmod 640 /etc/quagga/*; fi",
 
     # Give proper permissions to FRR files (if present)
     "if [ -d \"/etc/frr\" ]; then "
-    "chown frr:frr /etc/frr/*",
+    "chown -R frr:frr /etc/frr/",
     "chmod 640 /etc/frr/*; fi",
 
     # If shared.startup file is present

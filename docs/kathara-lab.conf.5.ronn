@@ -27,12 +27,13 @@ In order to establish a uniform convention, comment lines should always start wi
 * `cpus` (float):
     Limit the amount of CPU available for this device.
 
-    This option takes a positive float, ranging from 0 to max number of host logical CPUs. For instance, if the host device has two CPUs and you set `device[cpus]=1.5`, the container is guaranteed at most one and a half of the CPUs.
+    This option takes a positive float, ranging from 0 to max number of host logical CPUs. For instance, if the host device has two CPUs and you set `device[cpus]=1.5`, the device is guaranteed at most one and a half of the CPUs.
 
 * `port` (string):
-    Map localhost port HOST to the internal port GUEST of the device for the specified PROTOCOL.
+    Map localhost port HOST to the internal port GUEST of the device for the specified PROTOCOL. The syntax is [HOST:]GUEST[/PROTOCOL].
 
     If HOST port is not specified, default is 3000. If PROTOCOL is not specified, default is `tcp`. Supported PROTOCOL values are: tcp, udp, or sctp.
+    For instance, with this command you can map host's port 8080 to device's port 80 with TCP protocol: `device[port]="8080:80/tcp"`.
 
 * `bridged` (boolean):
     Connect the device to the host network by adding an additional network interface. This interface will be connected to the host network through a NAT connection.
