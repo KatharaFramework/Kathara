@@ -550,10 +550,7 @@ class DockerMachine(object):
         if should_wait:
             startup_waited = self._wait_startup_execution(container, n_retries=n_retries, retry_interval=retry_interval)
 
-            # Clean the terminal output
-            sys.stdout.write("\033[2J")
-            sys.stdout.write("\033[0;0H")
-            sys.stdout.flush()
+            EventDispatcher.get_instance().dispatch("machine_startup_wait_ended")
 
         if logs and Setting.get_instance().print_startup_log:
             # Get the logs, if the command fails it means that the shell is not found.
@@ -576,7 +573,7 @@ class DockerMachine(object):
                 sys.stdout.write("--- End Startup Commands Log\n")
 
                 if not startup_waited:
-                    sys.stdout.write("--- Executing other commands in background\n")
+                    sys.stdout.write("!!! Executing other commands in background !!!\n")
 
                 sys.stdout.flush()
 
@@ -753,42 +750,45 @@ class DockerMachine(object):
         """
         logging.debug(f"Waiting startup commands execution for device {container.labels['name']}...")
 
-        retry_interval = retry_interval if retry_interval >= 0 else 1
         n_retries = n_retries if n_retries is None or n_retries >= 0 else abs(n_retries)
+        retry_interval = retry_interval if retry_interval >= 0 else 1
 
         retries = 0
         is_cmd_success = False
         startup_waited = True
         printed = False
         while not is_cmd_success:
-            exec_result = self._exec_run(container,
-                                         cmd="cat /var/log/EOS",
-                                         stdout=True,
-                                         stderr=False,
-                                         privileged=False,
-                                         detach=False
-                                         )
-            is_cmd_success = exec_result['exit_code'] == 0
+            try:
+                exec_result = self._exec_run(container,
+                                             cmd="cat /var/log/EOS",
+                                             stdout=True,
+                                             stderr=False,
+                                             privileged=False,
+                                             detach=False
+                                             )
+                is_cmd_success = exec_result['exit_code'] == 0
 
-            if not printed and not is_cmd_success:
-                sys.stdout.write("Waiting startup commands execution. Press [ENTER] to override...")
-                sys.stdout.flush()
-                printed = True
+                if not printed and not is_cmd_success:
+                    EventDispatcher.get_instance().dispatch("machine_startup_wait_started")
+                    printed = True
 
-            # If the user requests the control, break the while loop
-            if utils.exec_by_platform(utils.wait_user_input_linux,
-                                      utils.wait_user_input_windows,
-                                      utils.wait_user_input_linux):
-                startup_waited = False or is_cmd_success
-                break
+                # If the user requests the control, break the while loop
+                if utils.exec_by_platform(utils.wait_user_input_linux,
+                                          utils.wait_user_input_windows,
+                                          utils.wait_user_input_linux):
+                    startup_waited = False or is_cmd_success
+                    break
 
-            if not is_cmd_success:
-                if n_retries is not None:
-                    if retries == n_retries:
-                        break
-                    retries += 1
+                if not is_cmd_success:
+                    if n_retries is not None:
+                        if retries == n_retries:
+                            break
+                        retries += 1
 
-                time.sleep(retry_interval)
+                    time.sleep(retry_interval)
+            except KeyboardInterrupt:
+                # Disable the CTRL+C interrupt while waiting for startup, otherwise terminal will close.
+                pass
 
         return startup_waited
 

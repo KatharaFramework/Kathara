@@ -1,6 +1,6 @@
-from .UpdateDockerImage import UpdateDockerImage
-from .OpenMachineTerminal import OpenMachineTerminal
+from .HandleMachineTerminal import HandleMachineTerminal
 from .HandleProgressBar import HandleProgressBar
+from .UpdateDockerImage import UpdateDockerImage
 from ....event.EventDispatcher import EventDispatcher
 
 
@@ -39,4 +39,7 @@ def _register_machine_events() -> None:
     EventDispatcher.get_instance().register("machine_undeployed", machine_undeploy_progress_bar_handler, "update")
     EventDispatcher.get_instance().register("machines_undeploy_ended", machine_undeploy_progress_bar_handler, "finish")
 
-    EventDispatcher.get_instance().register("machine_deployed", OpenMachineTerminal())
+    machine_terminal_handler = HandleMachineTerminal()
+    EventDispatcher.get_instance().register("machine_deployed", machine_terminal_handler, "run")
+    EventDispatcher.get_instance().register("machine_startup_wait_started", machine_terminal_handler, "print_wait_msg")
+    EventDispatcher.get_instance().register("machine_startup_wait_ended", machine_terminal_handler, "flush")
