@@ -90,7 +90,7 @@ class KubernetesManager(IManager):
             LabAlreadyExistsError: If a network scenario is deployed while it is terminating its execution.
             ApiError: If the Kubernetes APIs throw an exception.
         """
-        if selected_machines and not lab.find_machines(selected_machines):
+        if selected_machines and not lab.has_machines(selected_machines):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
             raise MachineNotFoundError(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
 

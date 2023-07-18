@@ -260,7 +260,7 @@ def test_intersect_machines(default_scenario: Lab):
     default_scenario.connect_machine_to_link("pc2", "A")
     default_scenario.connect_machine_to_link("pc2", "B")
     assert len(default_scenario.machines) == 2
-    links = default_scenario.get_links_from_machines(selected_machines=["pc1"])
+    links = default_scenario.get_links_from_machines(machines=["pc1"])
     assert len(default_scenario.machines) == 2
     assert 'pc1' in default_scenario.machines
     assert 'pc2' in default_scenario.machines
@@ -292,13 +292,13 @@ def test_apply_dependencies(default_scenario: Lab):
 def test_find_machine_true(default_scenario: Lab):
     default_scenario.get_or_new_machine("pc1")
 
-    assert default_scenario.find_machine("pc1")
+    assert default_scenario.has_machine("pc1")
 
 
 def test_find_machine_false(default_scenario: Lab):
     default_scenario.get_or_new_machine("pc1")
 
-    assert not default_scenario.find_machine("pc2")
+    assert not default_scenario.has_machine("pc2")
 
 
 def test_find_machines_true(default_scenario: Lab):
@@ -306,11 +306,11 @@ def test_find_machines_true(default_scenario: Lab):
     default_scenario.get_or_new_machine("pc2")
     default_scenario.get_or_new_machine("pc3")
 
-    assert default_scenario.find_machines({"pc1", "pc2", "pc3"})
+    assert default_scenario.has_machines({"pc1", "pc2", "pc3"})
 
 
 def test_find_machines_false(default_scenario: Lab):
     default_scenario.get_or_new_machine("pc1")
     default_scenario.get_or_new_machine("pc2")
 
-    assert not default_scenario.find_machines({"pc1", "pc2", "pc3"})
+    assert not default_scenario.has_machines({"pc1", "pc2", "pc3"})

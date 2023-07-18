@@ -124,7 +124,7 @@ class DockerManager(IManager):
         Raises:
             MachineNotFoundError: If the specified devices are not in the network scenario.
         """
-        if selected_machines and not lab.find_machines(selected_machines):
+        if selected_machines and not lab.has_machines(selected_machines):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
             raise MachineNotFoundError(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
 
