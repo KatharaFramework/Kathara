@@ -29,7 +29,7 @@ OCI_RUNTIME_RE = re.compile(
 )
 
 # Known commands that each container should execute
-# Run order: shared.startup, machine.startup and machine.meta['startup_commands']
+# Run order: shared.startup, machine.startup and machine.meta['exec_commands']
 STARTUP_COMMANDS = [
     # Unmount the /etc/resolv.conf and /etc/hosts files, automatically mounted by Docker inside the container.
     # In this way, they can be overwritten by custom user files.
@@ -82,7 +82,7 @@ STARTUP_COMMANDS = [
     # Placeholder for user commands
     "{machine_commands}",
 
-    "touch /var/log/EOS"
+    "touch /tmp/EOS"
 ]
 
 SHUTDOWN_COMMANDS = [
@@ -402,19 +402,17 @@ class DockerMachine(object):
             bridge_link.connect(machine.api_object)
 
         # Append executed machine startup commands inside the /var/log/startup.log file
-        if machine.meta['startup_commands']:
+        if machine.meta['exec_commands']:
             new_commands = []
-            for command in machine.meta['startup_commands']:
+            for command in machine.meta['exec_commands']:
                 new_commands.append("echo \"++ %s\" &>> /var/log/startup.log" % command)
                 new_commands.append(command)
-            machine.meta['startup_commands'] = new_commands
+            machine.meta['exec_commands'] = new_commands
 
         # Build the final startup commands string
-        startup_commands_string = "; ".join(
-            STARTUP_COMMANDS if machine.meta['startup_commands'] else STARTUP_COMMANDS[:-2] + STARTUP_COMMANDS[-1:]
-        ).format(
+        startup_commands_string = "; ".join(STARTUP_COMMANDS).format(
             machine_name=machine.name,
-            machine_commands="; ".join(machine.meta['startup_commands'])
+            machine_commands="; ".join(machine.meta['exec_commands']) if machine.meta['exec_commands'] else ":"
         )
 
         logging.debug(f"Executing startup command on `{machine.name}`: {startup_commands_string}")
@@ -760,7 +758,7 @@ class DockerMachine(object):
         while not is_cmd_success:
             try:
                 exec_result = self._exec_run(container,
-                                             cmd="cat /var/log/EOS",
+                                             cmd="cat /tmp/EOS",
                                              stdout=True,
                                              stderr=False,
                                              privileged=False,

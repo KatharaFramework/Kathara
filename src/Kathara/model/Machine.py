@@ -64,7 +64,7 @@ class Machine(FilesystemMixin):
         self.interfaces: OrderedDict[int, Link] = collections.OrderedDict()
 
         self.meta: Dict[str, Any] = {
-            'startup_commands': [],
+            'exec_commands': [],
             'sysctls': {},
             'envs': {},
             'ports': {},
@@ -141,7 +141,7 @@ class Machine(FilesystemMixin):
             MachineOptionError: If the specified value is not valid for the specified property.
         """
         if name == "exec":
-            self.meta['startup_commands'].append(value)
+            self.meta['exec_commands'].append(value)
             return None
 
         if name == "bridged":
@@ -316,13 +316,13 @@ class Machine(FilesystemMixin):
         # If no machine files are found, return None.
         return None
 
-    def get_startup_commands(self) -> List[str]:
-        """Get the additional device startup commands.
+    def get_exec_commands(self) -> List[str]:
+        """Get the device exec commands.
 
         Returns:
             List[str]: The list containing the additional commands.
         """
-        return self.meta['startup_commands']
+        return self.meta['exec_commands']
 
     def is_bridged(self) -> bool:
         """Return True if the device is bridged, else return False.
