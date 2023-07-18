@@ -25,7 +25,7 @@ def test_default_device_parameters(default_device: Machine):
     assert default_device.name == "test_machine"
     assert len(default_device.interfaces) == 0
     assert default_device.meta == {
-        'startup_commands': [],
+        'exec_commands': [],
         'sysctls': {},
         'envs': {},
         'ports': {},

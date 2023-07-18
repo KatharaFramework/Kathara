@@ -30,7 +30,7 @@ RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 MAX_RESTART_COUNT = 3
 
 # Known commands that each container should execute
-# Run order: shared.startup, machine.startup and machine.meta['startup_commands']
+# Run order: shared.startup, machine.startup and machine.meta['exec_commands']
 STARTUP_COMMANDS = [
     # If execution flag file is found, abort (this means that postStart has been called again)
     # If not flag the startup execution with a file
@@ -100,7 +100,7 @@ STARTUP_COMMANDS = [
     # Placeholder for user commands
     "{machine_commands}",
 
-    "touch /var/log/EOS"
+    "touch /tmp/EOS"
 ]
 
 SHUTDOWN_COMMANDS = [
@@ -345,7 +345,7 @@ class KubernetesMachine(object):
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
             .format(machine_name=machine.name,
                     sysctl_commands=sysctl_commands,
-                    machine_commands="; ".join(machine.meta['startup_commands'])
+                    machine_commands="; ".join(machine.meta['exec_commands'])
                     )
 
         post_start = client.V1LifecycleHandler(
