@@ -1,7 +1,7 @@
 import io
 import json
 import logging
-from typing import Set, Dict, Generator, Any, List, Tuple, Optional
+from typing import Set, Dict, Generator, Any, List, Tuple, Optional, Union
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -297,7 +297,7 @@ class KubernetesManager(IManager):
         self.k8s_namespace.wipe()
 
     def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
-                    shell: str = None, logs: bool = False) -> None:
+                    shell: str = None, logs: bool = False, wait: Union[bool, Tuple[int, float]] = True) -> None:
         """Connect to a device in a running network scenario, using the specified shell.
 
         Args:
@@ -306,6 +306,10 @@ class KubernetesManager(IManager):
             lab_name (str): The name of the network scenario where the device is deployed.
             shell (str): The name of the shell to use for connecting.
             logs (bool): If True, print startup logs on stdout.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before connecting. If a tuple is provided, the first value indicates the number of retries
+                before stopping waiting and the second value indicates the time interval to wait for each retry.
+                Default is True. No effect on Kubernetes.
 
         Returns:
             None
@@ -328,7 +332,8 @@ class KubernetesManager(IManager):
                                  )
 
     def exec(self, machine_name: str, command: List[str], lab_hash: Optional[str] = None,
-             lab_name: Optional[str] = None) -> Generator[Tuple[bytes, bytes], None, None]:
+             lab_name: Optional[str] = None, wait: Union[bool, Tuple[int, float]] = False) \
+            -> Generator[Tuple[bytes, bytes], None, None]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -336,6 +341,10 @@ class KubernetesManager(IManager):
             command (List[str]): The command to exec on the device.
             lab_hash (Optional[str]): The hash of the network scenario where the device is deployed.
             lab_name (Optional[str]): The name of the network scenario where the device is deployed.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before executing the command. If a tuple is provided, the first value indicates the
+                number of retries before stopping waiting and the second value indicates the time interval to wait
+                for each retry. Default is False. No effect on Kubernetes.
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
@@ -345,6 +354,9 @@ class KubernetesManager(IManager):
         """
         if not lab_hash and not lab_name:
             raise InvocationError("You must specify a running network scenario hash or name.")
+
+        if wait:
+            logging.warning("Wait option has no effect on Megalos.")
 
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)

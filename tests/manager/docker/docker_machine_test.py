@@ -143,6 +143,7 @@ def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock
                  'net.ipv4.ip_forward': 1,
                  'net.ipv4.icmp_ratelimit': 0,
                  'net.ipv6.conf.all.forwarding': 1,
+                 'net.ipv6.conf.all.accept_ra': 0,
                  'net.ipv6.icmp.ratelimit': 0,
                  'net.ipv6.conf.default.disable_ipv6': 0,
                  'net.ipv6.conf.all.disable_ipv6': 0
@@ -177,6 +178,7 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
         'shared_cd': False,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
+        'enable_ipv6': True,
         "hosthome_mount": False,
         "shared_mount": False,
         'remote_url': None
@@ -197,6 +199,7 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
                  'net.ipv4.ip_forward': 1,
                  'net.ipv4.icmp_ratelimit': 0,
                  'net.ipv6.conf.all.forwarding': 1,
+                 'net.ipv6.conf.all.accept_ra': 0,
                  'net.ipv6.icmp.ratelimit': 0,
                  'net.ipv6.conf.default.disable_ipv6': 0,
                  'net.ipv6.conf.all.disable_ipv6': 0},
@@ -281,8 +284,21 @@ def test_deploy_and_start_machine(mock_create, mock_start, docker_machine, defau
 #
 # TEST: deploy_machines
 #
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._deploy_and_start_machine")
-def test_deploy_machines(mock_deploy_and_start, docker_machine):
+def test_deploy_machines(mock_deploy_and_start, mock_setting_get_instance, docker_machine):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cd': False,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        "hosthome_mount": False,
+        "shared_mount": False,
+        'remote_url': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
     lab = Lab("Default scenario")
     lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
     lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
@@ -741,7 +757,7 @@ def test_delete_machine_running(docker_machine, default_device):
     docker_machine.client.api.exec_create.assert_called_once()
     docker_machine.client.api.exec_start.assert_called_once()
     docker_machine.client.api.exec_inspect.assert_called_once()
-    default_device.api_object.remove.assert_called_once_with(force=True)
+    default_device.api_object.remove.assert_called_once_with(v=True, force=True)
 
 
 def test_delete_machine_not_running(docker_machine, default_device):
@@ -751,7 +767,7 @@ def test_delete_machine_not_running(docker_machine, default_device):
 
     docker_machine._delete_machine(default_device.api_object)
     assert not default_device.api_object.exec_run.called
-    default_device.api_object.remove.assert_called_once_with(force=True)
+    default_device.api_object.remove.assert_called_once_with(v=True, force=True)
 
 
 #

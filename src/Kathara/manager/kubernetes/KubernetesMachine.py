@@ -8,6 +8,7 @@ import uuid
 from multiprocessing.dummy import Pool
 from typing import Optional, Set, List, Union, Generator, Tuple, Dict
 
+import chardet
 from kubernetes import client
 from kubernetes.client.api import apps_v1_api
 from kubernetes.client.api import core_v1_api
@@ -97,7 +98,9 @@ STARTUP_COMMANDS = [
     "route del default dev eth0 || true",
 
     # Placeholder for user commands
-    "{machine_commands}"
+    "{machine_commands}",
+
+    "touch /var/log/EOS"
 ]
 
 SHUTDOWN_COMMANDS = [
@@ -602,7 +605,10 @@ class KubernetesMachine(object):
                 print("--- Startup Commands Log\n")
                 while True:
                     (stdout, _) = next(exec_output)
-                    stdout = stdout.decode('utf-8') if stdout else ""
+
+                    char_encoding = chardet.detect(stdout) if stdout else None
+
+                    stdout = stdout.decode(char_encoding['encoding']) if stdout else ""
                     sys.stdout.write(stdout)
             except StopIteration:
                 print("\n--- End Startup Commands Log\n")
