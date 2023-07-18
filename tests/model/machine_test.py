@@ -39,9 +39,17 @@ def test_default_device_parameters(default_device: Machine):
 # TEST: add_interface
 #
 def test_add_interface(default_device: Machine):
-    default_device.add_interface(Link(default_device.lab, "A"))
+    result = default_device.add_interface(Link(default_device.lab, "A"))
     assert len(default_device.interfaces) == 1
     assert default_device.interfaces[0].name == "A"
+    assert result == 0
+
+
+def test_add_interface_with_number(default_device: Machine):
+    result = default_device.add_interface(Link(default_device.lab, "A"), number=2)
+    assert len(default_device.interfaces) == 1
+    assert default_device.interfaces[2].name == "A"
+    assert result is None
 
 
 def test_add_interface_exception(default_device: Machine):

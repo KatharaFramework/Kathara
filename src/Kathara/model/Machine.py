@@ -77,7 +77,7 @@ class Machine(FilesystemMixin):
 
         self.update_meta(kwargs)
 
-    def add_interface(self, link: 'LinkPackage.Link', number: int = None) -> None:
+    def add_interface(self, link: 'LinkPackage.Link', number: int = None) -> Optional[int]:
         """Add an interface to the device attached to the specified collision domain.
 
         Args:
@@ -85,14 +85,16 @@ class Machine(FilesystemMixin):
             number (int): The number of the new interface. If it is None, the first free number is selected.
 
         Returns:
-            None
+            Optional[int]: The number of the assigned interface if not passed, else None.
 
         Raises:
             MachineCollisionDomainConflictError: If the interface number specified is already used on the device.
             MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
+        had_number = True
         if number is None:
             number = len(self.interfaces.keys())
+            had_number = False
 
         if number in self.interfaces:
             raise MachineCollisionDomainError(f"Interface {number} already set on device `{self.name}`.")
@@ -104,6 +106,8 @@ class Machine(FilesystemMixin):
 
         self.interfaces[number] = link
         link.machines[self.name] = self
+
+        return number if not had_number else None
 
     def remove_interface(self, link: 'LinkPackage.Link') -> None:
         """Disconnect the device from the specified collision domain.

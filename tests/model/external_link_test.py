@@ -25,7 +25,7 @@ def test_external_link_creation(external_link_vlan):
 def test_get_name_and_vlan(external_link_vlan):
     interface, vlan = external_link_vlan.get_name_and_vlan()
     assert interface == "eth0"
-    assert vlan is 1
+    assert vlan == 1
 
 
 def test_get_name_and_vlan_no_vlan(external_link_no_vlan):
@@ -40,7 +40,7 @@ def test_get_name_and_vlan_long_name():
     # If the length of interface name + vlan tag is more than 15 chars, we truncate the interface name to
     # 15 - VLAN_NAME_LENGTH in order to fit the whole string in 15 chars
     assert interface == "long-interfac"
-    assert vlan is 1
+    assert vlan == 1
 
 
 def test_full_name(external_link_vlan):
