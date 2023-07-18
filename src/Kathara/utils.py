@@ -323,6 +323,6 @@ def wait_user_input_linux() -> list:
 
 
 def wait_user_input_windows() -> bool:
-    """Return True if a keypress is waiting to be read. Only for Windows."""
+    """Return True if an Enter keypress is waiting to be read. Only for Windows."""
     import msvcrt
     return b'\r' in msvcrt.getch() if msvcrt.kbhit() else False
