@@ -39,7 +39,7 @@ STARTUP_COMMANDS = [
     # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
     # In this way, files are all replaced in the container root folder
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
-    "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar --no-same-owner --no-same-permissions xhf -); fi",
+    "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf - --no-same-owner --no-same-permissions); fi",
 
     # If /etc/hosts is not configured by the user, add the localhost mapping
     "if [ ! -s \"/etc/hosts\" ]; then "
