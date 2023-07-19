@@ -240,15 +240,17 @@ class DockerManager(IManager):
         self.docker_link.undeploy(link.lab.hash, selected_links={link.name})
 
     @privileged
-    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
                      selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
-            lab_hash (Optional[str]): The hash of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_name should be set.
-            lab_name (Optional[str]): The name of the network scenario. Can be used as an alternative to lab_hash.
-                If None, lab_hash should be set.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
 
         Returns:
@@ -257,10 +259,12 @@ class DockerManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name:
-            raise InvocationError("You must specify a running network scenario hash or name.")
+        if not lab_hash and not lab_name and not lab:
+            raise InvocationError("You must specify a running network scenario hash, name or object.")
 
-        if lab_name:
+        if lab:
+            lab_hash = lab.hash
+        elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines)

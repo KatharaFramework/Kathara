@@ -149,15 +149,17 @@ class Kathara(IManager):
         """
         self.manager.undeploy_link(link)
 
-    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
                      selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
-            lab_hash (Optional[str]): The hash of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_name should be set.
-            lab_name (Optional[str]): The name of the network scenario. Can be used as an alternative to lab_hash.
-                If None, lab_hash should be set.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
 
         Returns:
@@ -166,7 +168,7 @@ class Kathara(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        self.manager.undeploy_lab(lab_hash, lab_name, selected_machines)
+        self.manager.undeploy_lab(lab_hash, lab_name, lab, selected_machines)
 
     def wipe(self, all_users: bool = False) -> None:
         """Undeploy all the running network scenarios.

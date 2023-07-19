@@ -401,7 +401,7 @@ def test_undeploy_link_no_lab(docker_manager, default_link):
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
 def test_undeploy_lab(mock_undeploy_machine, mock_undeploy_link, docker_manager):
-    docker_manager.undeploy_lab('lab_hash')
+    docker_manager.undeploy_lab(lab_hash='lab_hash')
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines=None)
     mock_undeploy_link.assert_called_once_with('lab_hash')
 
@@ -409,9 +409,55 @@ def test_undeploy_lab(mock_undeploy_machine, mock_undeploy_link, docker_manager)
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
 def test_undeploy_lab_selected_machines(mock_undeploy_machine, mock_undeploy_link, docker_manager):
-    docker_manager.undeploy_lab('lab_hash', selected_machines={'pc1', 'pc2'})
+    docker_manager.undeploy_lab(lab_hash='lab_hash', selected_machines={'pc1', 'pc2'})
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines={'pc1', 'pc2'})
     mock_undeploy_link.assert_called_once_with('lab_hash')
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
+@mock.patch("src.Kathara.utils.generate_urlsafe_hash")
+def test_undeploy_lab_lab_name(mock_generate_urlsafe_hash, mock_undeploy_machine, mock_undeploy_link, docker_manager):
+    mock_generate_urlsafe_hash.return_value = "lab_hash"
+
+    docker_manager.undeploy_lab(lab_name='lab_name')
+    mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines=None)
+    mock_undeploy_link.assert_called_once_with('lab_hash')
+    mock_generate_urlsafe_hash.assert_called_once_with("lab_name")
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
+@mock.patch("src.Kathara.utils.generate_urlsafe_hash")
+def test_undeploy_lab_lab_name_selected_machines(mock_generate_urlsafe_hash,
+                                                 mock_undeploy_machine, mock_undeploy_link, docker_manager):
+    mock_generate_urlsafe_hash.return_value = "lab_hash"
+
+    docker_manager.undeploy_lab(lab_name='lab_name', selected_machines={'pc1', 'pc2'})
+    mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines={'pc1', 'pc2'})
+    mock_undeploy_link.assert_called_once_with('lab_hash')
+    mock_generate_urlsafe_hash.assert_called_once_with("lab_name")
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
+def test_undeploy_lab_lab_obj(mock_undeploy_machine, mock_undeploy_link, docker_manager, two_device_scenario):
+    expected_hash = two_device_scenario.hash
+
+    docker_manager.undeploy_lab(lab=two_device_scenario)
+    mock_undeploy_machine.assert_called_once_with(expected_hash, selected_machines=None)
+    mock_undeploy_link.assert_called_once_with(expected_hash)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
+def test_undeploy_lab_lab_obj_selected_machines(mock_undeploy_machine, mock_undeploy_link, docker_manager,
+                                                two_device_scenario):
+    expected_hash = two_device_scenario.hash
+
+    docker_manager.undeploy_lab(lab=two_device_scenario, selected_machines={'pc1', 'pc2'})
+    mock_undeploy_machine.assert_called_once_with(expected_hash, selected_machines={'pc1', 'pc2'})
+    mock_undeploy_link.assert_called_once_with(expected_hash)
 
 
 #
