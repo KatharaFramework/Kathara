@@ -331,14 +331,14 @@ class KubernetesManager(IManager):
                                  logs=logs
                                  )
 
-    def exec(self, machine_name: str, command: List[str], lab_hash: Optional[str] = None,
+    def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
              lab_name: Optional[str] = None, wait: Union[bool, Tuple[int, float]] = False) \
             -> Generator[Tuple[bytes, bytes], None, None]:
         """Exec a command on a device in a running network scenario.
 
         Args:
             machine_name (str): The name of the device to connect.
-            command (List[str]): The command to exec on the device.
+            command (Union[List[str], str]): The command to exec on the device.
             lab_hash (Optional[str]): The hash of the network scenario where the device is deployed.
             lab_name (Optional[str]): The name of the network scenario where the device is deployed.
             wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
