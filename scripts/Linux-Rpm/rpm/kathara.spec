@@ -68,7 +68,11 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- Fix FilesystemMixin APIs for file modifications
-- Add a warning if a meta is repeated on the same device
-- Add support for Docker Images tags in "kathara settings"
+- Use "chardet" to parse all byte strings in order to correctly encode non-UTF8 characters
+- Wait for startup commands execution while opening a connection to a device (the wait can be overridden by pressing [ENTER])
+- Keep correct folders/files permissions when copying files inside the device
+- Fix "sysctl" metadata parsing for negative values
+- Fix "machine.is_ipv6_enabled()"" method to correctly follow priority of "ipv6" meta
+- Rename "startup_commands" meta to "exec_commands" to avoid ambiguity with ".startup" files
+- Add new helper methods to "model.Lab"
 - Minor fixes
