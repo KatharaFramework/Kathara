@@ -94,9 +94,10 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
     Connect the device to the host network by adding an additional network interface (will be the last one). This interface will be connected to the host network through a NAT connection and will receive its IP configuration automatically via DHCP.
 
 * `--port` <[HOST\:]GUEST[/PROTOCOL]> [<[HOST\:]GUEST[/PROTOCOL]> ...]:
-    Map localhost port HOST to the internal port GUEST of the device for the specified PROTOCOL.
+    Map localhost port HOST to the internal port GUEST of the device for the specified PROTOCOL. The syntax is [HOST:]GUEST[/PROTOCOL].
 
     If HOST port is not specified, default is 3000. If PROTOCOL is not specified, default is `tcp`. Supported PROTOCOL values are: tcp, udp, or sctp.
+    For instance, with this command you can map host's port 8080 to device's port 80 with TCP protocol: `--port "8080:80/tcp"`.
 
 * `--sysctl` <SYSCTL> [<SYSCTL> ...]:
     Set a sysctl option for the device. Only the `net.` namespace is allowed to be set.
