@@ -401,7 +401,7 @@ def test_undeploy_link_no_lab(docker_manager, default_link):
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
 def test_undeploy_lab(mock_undeploy_machine, mock_undeploy_link, docker_manager):
-    docker_manager.undeploy_lab('lab_hash')
+    docker_manager.undeploy_lab(lab_hash='lab_hash')
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines=None)
     mock_undeploy_link.assert_called_once_with('lab_hash')
 
@@ -409,9 +409,55 @@ def test_undeploy_lab(mock_undeploy_machine, mock_undeploy_link, docker_manager)
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
 def test_undeploy_lab_selected_machines(mock_undeploy_machine, mock_undeploy_link, docker_manager):
-    docker_manager.undeploy_lab('lab_hash', selected_machines={'pc1', 'pc2'})
+    docker_manager.undeploy_lab(lab_hash='lab_hash', selected_machines={'pc1', 'pc2'})
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines={'pc1', 'pc2'})
     mock_undeploy_link.assert_called_once_with('lab_hash')
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
+@mock.patch("src.Kathara.utils.generate_urlsafe_hash")
+def test_undeploy_lab_lab_name(mock_generate_urlsafe_hash, mock_undeploy_machine, mock_undeploy_link, docker_manager):
+    mock_generate_urlsafe_hash.return_value = "lab_hash"
+
+    docker_manager.undeploy_lab(lab_name='lab_name')
+    mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines=None)
+    mock_undeploy_link.assert_called_once_with('lab_hash')
+    mock_generate_urlsafe_hash.assert_called_once_with("lab_name")
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
+@mock.patch("src.Kathara.utils.generate_urlsafe_hash")
+def test_undeploy_lab_lab_name_selected_machines(mock_generate_urlsafe_hash,
+                                                 mock_undeploy_machine, mock_undeploy_link, docker_manager):
+    mock_generate_urlsafe_hash.return_value = "lab_hash"
+
+    docker_manager.undeploy_lab(lab_name='lab_name', selected_machines={'pc1', 'pc2'})
+    mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines={'pc1', 'pc2'})
+    mock_undeploy_link.assert_called_once_with('lab_hash')
+    mock_generate_urlsafe_hash.assert_called_once_with("lab_name")
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
+def test_undeploy_lab_lab_obj(mock_undeploy_machine, mock_undeploy_link, docker_manager, two_device_scenario):
+    expected_hash = two_device_scenario.hash
+
+    docker_manager.undeploy_lab(lab=two_device_scenario)
+    mock_undeploy_machine.assert_called_once_with(expected_hash, selected_machines=None)
+    mock_undeploy_link.assert_called_once_with(expected_hash)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
+def test_undeploy_lab_lab_obj_selected_machines(mock_undeploy_machine, mock_undeploy_link, docker_manager,
+                                                two_device_scenario):
+    expected_hash = two_device_scenario.hash
+
+    docker_manager.undeploy_lab(lab=two_device_scenario, selected_machines={'pc1', 'pc2'})
+    mock_undeploy_machine.assert_called_once_with(expected_hash, selected_machines={'pc1', 'pc2'})
+    mock_undeploy_link.assert_called_once_with(expected_hash)
 
 
 #
@@ -465,6 +511,151 @@ def test_wipe_all_users_and_shared_cd(mock_setting_get_instance, mock_get_curren
     assert not mock_get_current_user_name.called
     mock_wipe_machines.assert_called_once_with(user=None)
     mock_wipe_links.assert_called_once_with(user=None)
+
+
+#
+# TEST: connect_tty
+#
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect")
+def test_connect_tty_lab_hash(mock_connect, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.connect_tty(default_device.name,
+                               lab_hash=default_device.lab.hash)
+
+    mock_connect.assert_called_once_with(lab_hash=default_device.lab.hash,
+                                         machine_name=default_device.name,
+                                         user="kathara_user",
+                                         shell=None,
+                                         logs=False,
+                                         wait=True)
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect")
+def test_connect_tty_lab_name(mock_connect, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.connect_tty(default_device.name,
+                               lab_name=default_device.lab.name)
+
+    mock_connect.assert_called_once_with(lab_hash=generate_urlsafe_hash(default_device.lab.name),
+                                         machine_name=default_device.name,
+                                         user="kathara_user",
+                                         shell=None,
+                                         logs=False,
+                                         wait=True)
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect")
+def test_connect_tty_with_custom_shell(mock_connect, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.connect_tty(default_device.name,
+                               lab_hash=default_device.lab.hash,
+                               shell="/usr/bin/zsh")
+
+    mock_connect.assert_called_once_with(lab_hash=default_device.lab.hash,
+                                         machine_name=default_device.name,
+                                         user="kathara_user",
+                                         shell="/usr/bin/zsh",
+                                         logs=False,
+                                         wait=True)
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect")
+def test_connect_tty_with_logs(mock_connect, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.connect_tty(default_device.name,
+                               lab_hash=default_device.lab.hash,
+                               logs=True)
+
+    mock_connect.assert_called_once_with(lab_hash=default_device.lab.hash,
+                                         machine_name=default_device.name,
+                                         user="kathara_user",
+                                         shell=None,
+                                         logs=True,
+                                         wait=True)
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect")
+def test_connect_tty_error(mock_connect, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    with pytest.raises(InvocationError):
+        docker_manager.connect_tty(default_device.name)
+
+    assert not mock_connect.called
+
+
+#
+# TEST: exec
+#
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.exec")
+def test_exec_lab_hash(mock_exec, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.exec(default_device.name, ["test", "command"], lab_hash=default_device.lab.hash)
+
+    mock_exec.assert_called_once_with(
+        default_device.lab.hash,
+        default_device.name,
+        ["test", "command"],
+        user="kathara_user",
+        tty=False,
+        wait=False
+    )
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.exec")
+def test_exec_lab_name(mock_exec, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.exec(default_device.name, ["test", "command"], lab_name=default_device.lab.name)
+
+    mock_exec.assert_called_once_with(
+        generate_urlsafe_hash(default_device.lab.name),
+        default_device.name,
+        ["test", "command"],
+        user="kathara_user",
+        tty=False,
+        wait=False
+    )
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.exec")
+def test_exec_wait(mock_exec, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.exec(default_device.name, ["test", "command"], lab_hash=default_device.lab.hash, wait=True)
+
+    mock_exec.assert_called_once_with(
+        default_device.lab.hash,
+        default_device.name,
+        ["test", "command"],
+        user="kathara_user",
+        tty=False,
+        wait=True
+    )
+
+
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.exec")
+def test_exec_invocation_error(mock_exec, mock_get_current_user_name, docker_manager, default_device):
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    with pytest.raises(InvocationError):
+        docker_manager.exec(default_device.name, ["test", "command"])
+
+    assert not mock_exec.called
 
 
 #

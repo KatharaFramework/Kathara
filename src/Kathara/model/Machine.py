@@ -64,7 +64,7 @@ class Machine(FilesystemMixin):
         self.interfaces: OrderedDict[int, Link] = collections.OrderedDict()
 
         self.meta: Dict[str, Any] = {
-            'startup_commands': [],
+            'exec_commands': [],
             'sysctls': {},
             'envs': {},
             'ports': {},
@@ -77,7 +77,7 @@ class Machine(FilesystemMixin):
 
         self.update_meta(kwargs)
 
-    def add_interface(self, link: 'LinkPackage.Link', number: int = None) -> None:
+    def add_interface(self, link: 'LinkPackage.Link', number: int = None) -> Optional[int]:
         """Add an interface to the device attached to the specified collision domain.
 
         Args:
@@ -85,14 +85,16 @@ class Machine(FilesystemMixin):
             number (int): The number of the new interface. If it is None, the first free number is selected.
 
         Returns:
-            None
+            Optional[int]: The number of the assigned interface if not passed, else None.
 
         Raises:
             MachineCollisionDomainConflictError: If the interface number specified is already used on the device.
             MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
+        had_number = True
         if number is None:
             number = len(self.interfaces.keys())
+            had_number = False
 
         if number in self.interfaces:
             raise MachineCollisionDomainError(f"Interface {number} already set on device `{self.name}`.")
@@ -104,6 +106,8 @@ class Machine(FilesystemMixin):
 
         self.interfaces[number] = link
         link.machines[self.name] = self
+
+        return number if not had_number else None
 
     def remove_interface(self, link: 'LinkPackage.Link') -> None:
         """Disconnect the device from the specified collision domain.
@@ -141,7 +145,7 @@ class Machine(FilesystemMixin):
             MachineOptionError: If the specified value is not valid for the specified property.
         """
         if name == "exec":
-            self.meta['startup_commands'].append(value)
+            self.meta['exec_commands'].append(value)
             return None
 
         if name == "bridged":
@@ -150,7 +154,7 @@ class Machine(FilesystemMixin):
             return old_value
 
         if name == "sysctl":
-            matches = re.search(r"^(?P<key>net\.([\w-]+\.)+[\w-]+)=(?P<value>\w+)$", value)
+            matches = re.search(r"^(?P<key>net\.([\w-]+\.)+[\w-]+)=(?P<value>-?\w+)$", value)
 
             # Check for valid kv-pair
             if matches:
@@ -160,7 +164,7 @@ class Machine(FilesystemMixin):
                 old_value = self.meta['sysctls'][key] if key in self.meta['sysctls'] else None
 
                 # Convert to int if possible
-                self.meta['sysctls'][key] = int(val) if val.isdigit() else val
+                self.meta['sysctls'][key] = int(val) if val.strip('-').isnumeric() else val
             else:
                 raise MachineOptionError(
                     "Invalid sysctl value (`%s`) on `%s`, missing `=` or value not in `net.` namespace."
@@ -252,6 +256,12 @@ class Machine(FilesystemMixin):
             for envs in args['envs']:
                 self.add_meta("env", envs)
 
+        if 'ipv6' in args and args['ipv6'] is not None:
+            self.add_meta("ipv6", args['ipv6'])
+
+        if 'shell' in args and args['shell'] is not None:
+            self.add_meta("shell", args['shell'])
+
     def check(self) -> None:
         """Sort interfaces and check if there are missing interface numbers.
 
@@ -310,13 +320,13 @@ class Machine(FilesystemMixin):
         # If no machine files are found, return None.
         return None
 
-    def get_startup_commands(self) -> List[str]:
-        """Get the additional device startup commands.
+    def get_exec_commands(self) -> List[str]:
+        """Get the device exec commands.
 
         Returns:
             List[str]: The list containing the additional commands.
         """
-        return self.meta['startup_commands']
+        return self.meta['exec_commands']
 
     def is_bridged(self) -> bool:
         """Return True if the device is bridged, else return False.
@@ -460,9 +470,15 @@ class Machine(FilesystemMixin):
         Raises:
             MachineOptionError: If the IPv6 value specified is not valid.
         """
+        is_v6_enabled = Setting.get_instance().enable_ipv6
+
         try:
-            return strtobool(self.lab.general_options["ipv6"]) if "ipv6" in self.lab.general_options else \
-                strtobool(self.meta["ipv6"]) if "ipv6" in self.meta else Setting.get_instance().enable_ipv6
+            if "ipv6" in self.lab.general_options:
+                is_v6_enabled = self.lab.general_options["ipv6"]
+            elif "ipv6" in self.meta:
+                is_v6_enabled = self.meta["ipv6"]
+
+            return is_v6_enabled if type(is_v6_enabled) == bool else strtobool(is_v6_enabled)
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
 

@@ -1,5 +1,4 @@
 import argparse
-import shutil
 import sys
 from typing import List
 
@@ -67,6 +66,3 @@ class WipeCommand(Command):
                 raise PrivilegeError("You must be root in order to wipe all Kathara devices of all users.")
 
             Kathara.get_instance().wipe(all_users=bool(args['all']))
-
-            vlab_dir = utils.get_vlab_temp_path(force_creation=False)
-            shutil.rmtree(vlab_dir, ignore_errors=True)

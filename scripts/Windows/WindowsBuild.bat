@@ -1,7 +1,11 @@
 set VENV_DIR=%cd%\venv
 
+rmdir /S /Q %VENV_DIR%
+
 python3.10 -m venv %VENV_DIR%
+if %errorlevel% neq 0 exit /b %errorlevel%
 CALL %VENV_DIR%\Scripts\activate
+if %errorlevel% neq 0 exit /b %errorlevel%
 
 pip install win_inet_pton
 pip install pyinstaller

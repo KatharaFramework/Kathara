@@ -1,6 +1,6 @@
 import io
 import logging
-from typing import Set, Dict, Generator, Tuple, List, Optional
+from typing import Set, Dict, Generator, Tuple, List, Optional, Union
 
 import docker
 import docker.models.containers
@@ -124,7 +124,7 @@ class DockerManager(IManager):
         Raises:
             MachineNotFoundError: If the specified devices are not in the network scenario.
         """
-        if selected_machines and not lab.find_machines(selected_machines):
+        if selected_machines and not lab.has_machines(selected_machines):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
             raise MachineNotFoundError(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
 
@@ -240,15 +240,17 @@ class DockerManager(IManager):
         self.docker_link.undeploy(link.lab.hash, selected_links={link.name})
 
     @privileged
-    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
                      selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
-            lab_hash (Optional[str]): The hash of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_name should be set.
-            lab_name (Optional[str]): The name of the network scenario. Can be used as an alternative to lab_hash.
-                If None, lab_hash should be set.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
 
         Returns:
@@ -257,10 +259,12 @@ class DockerManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name:
-            raise InvocationError("You must specify a running network scenario hash or name.")
+        if not lab_hash and not lab_name and not lab:
+            raise InvocationError("You must specify a running network scenario hash, name or object.")
 
-        if lab_name:
+        if lab:
+            lab_hash = lab.hash
+        elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines)
@@ -291,7 +295,7 @@ class DockerManager(IManager):
 
     @privileged
     def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
-                    shell: str = None, logs: bool = False) -> None:
+                    shell: str = None, logs: bool = False, wait: Union[bool, Tuple[int, float]] = True) -> None:
         """Connect to a device in a running network scenario, using the specified shell.
 
         Args:
@@ -300,6 +304,10 @@ class DockerManager(IManager):
             lab_name (str): The name of the network scenario where the device is deployed.
             shell (str): The name of the shell to use for connecting.
             logs (bool): If True, print startup logs on stdout.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before connecting. If a tuple is provided, the first value indicates the number of retries
+                before stopping waiting and the second value indicates the time interval to wait for each retry.
+                Default is True.
 
         Returns:
             None
@@ -319,19 +327,25 @@ class DockerManager(IManager):
                                     machine_name=machine_name,
                                     user=user_name,
                                     shell=shell,
-                                    logs=logs
+                                    logs=logs,
+                                    wait=wait
                                     )
 
     @privileged
-    def exec(self, machine_name: str, command: List[str], lab_hash: Optional[str] = None,
-             lab_name: Optional[str] = None) -> Generator[Tuple[bytes, bytes], None, None]:
+    def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
+             lab_name: Optional[str] = None, wait: Union[bool, Tuple[int, float]] = False) \
+            -> Generator[Tuple[bytes, bytes], None, None]:
         """Exec a command on a device in a running network scenario.
 
         Args:
             machine_name (str): The name of the device to connect.
-            command (List[str]): The command to exec on the device.
+            command (Union[List[str], str]): The command to exec on the device.
             lab_hash (Optional[str]): The hash of the network scenario where the device is deployed.
             lab_name (Optional[str]): The name of the network scenario where the device is deployed.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before executing the command. If a tuple is provided, the first value indicates the
+                number of retries before stopping waiting and the second value indicates the time interval to wait
+                for each retry. Default is False.
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
@@ -346,7 +360,7 @@ class DockerManager(IManager):
         if lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        return self.docker_machine.exec(lab_hash, machine_name, command, user=user_name, tty=False)
+        return self.docker_machine.exec(lab_hash, machine_name, command, user=user_name, tty=False, wait=wait)
 
     @privileged
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
