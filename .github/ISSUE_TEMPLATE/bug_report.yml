@@ -29,32 +29,32 @@ body:
     id: bug-description
     attributes:
       label: Bug description
-      description: What happened?
+      description: "What happened?"
     validations:
       required: true
   - type: markdown
     id: lab
     attributes:
       label: Network Scenario
-      description: Attach here a network scenario to reproduce the error.
+      description: "Attach here a network scenario to reproduce the error."
   - type: markdown
     id: steps
     attributes:
       label: Steps to reproduce
-      description: Which steps do we need to take to reproduce this error?
-    validations:  
+      description: "Which steps do we need to take to reproduce this error?"
+    validations:
       required: true
   - type: markdown
     id: expected
     attributes:
       label: Expected Behavior
-      description: A description of what you expected to happen.
-    validations:  
+      description: "A description of what you expected to happen."
+    validations:
       required: true
   - type: textarea
     id: check
     attributes:
       label: Check Command Output
-      description: Add the output of `kathara check`.
+      description: "Add the output of `kathara check`."
       render: shell
 
