@@ -9,6 +9,36 @@ from ....utils import exec_by_platform
 
 class DockerOptionsHandler(OptionsHandler):
     def add_items(self, current_menu: ConsoleMenu, menu_formatter: MenuFormatBuilder) -> None:
+        # Network Plugin Option
+        network_plugin_string = "Choose Docker Network Plugin"
+        network_plugin_menu = SelectionMenu(strings=[],
+                                            title=network_plugin_string,
+                                            subtitle=setting_utils.current_string("network_plugin"),
+                                            prologue_text="""Choose Docker Network Plugin used to create"""
+                                                          """ collision domains.\n"""
+                                                          """`kathara/katharanp` plugin is based on Linux bridges.\n"""
+                                                          """`kathara/katharanp_vde` plugin is based on VDE switches.
+
+                                                          Default is `%s`.""" %
+                                                          DEFAULTS['network_plugin'],
+                                            formatter=menu_formatter
+                                            )
+
+        network_plugin_menu.append_item(FunctionItem(text="kathara/katharanp",
+                                                     function=setting_utils.update_setting_value,
+                                                     args=["network_plugin", "kathara/katharanp"],
+                                                     should_exit=True
+                                                     )
+                                        )
+        network_plugin_menu.append_item(FunctionItem(text="kathara/katharanp_vde",
+                                                     function=setting_utils.update_setting_value,
+                                                     args=["network_plugin", "kathara/katharanp_vde"],
+                                                     should_exit=True
+                                                     )
+                                        )
+
+        network_plugin_item = SubmenuItem(network_plugin_string, network_plugin_menu, current_menu)
+
         # Hosthome Mount Option
         hosthome_string = "Automatically mount /hosthome on startup"
         hosthome_menu = SelectionMenu(strings=[],
@@ -198,6 +228,7 @@ class DockerOptionsHandler(OptionsHandler):
 
         platform_remote_url_item = exec_by_platform(remote_url_unix, lambda: None, remote_url_unix)
 
+        current_menu.append_item(network_plugin_item)
         current_menu.append_item(hosthome_item)
         current_menu.append_item(shared_item)
         current_menu.append_item(image_update_policy_item)

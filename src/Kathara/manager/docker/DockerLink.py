@@ -9,7 +9,6 @@ from docker import DockerClient
 from docker import types
 
 from .stats.DockerLinkStats import DockerLinkStats
-from ..docker.DockerPlugin import PLUGIN_NAME
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import LinkNotFoundError
@@ -102,7 +101,8 @@ class DockerLink(object):
 
             user_label = "shared_cd" if Setting.get_instance().shared_cd else utils.get_current_user_name()
             link.api_object = self.client.networks.create(name=link_name,
-                                                          driver=PLUGIN_NAME,
+                                                          driver=f"{Setting.get_instance().network_plugin}:"
+                                                                 f"{utils.get_architecture()}",
                                                           check_duplicate=True,
                                                           ipam=network_ipam_config,
                                                           labels={"lab_hash": link.lab.hash,

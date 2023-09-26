@@ -51,7 +51,7 @@ def test_get_network_name(mock_get_current_user_name, mock_setting_get_instance)
     setting_mock.configure_mock(**{
         'shared_cd': False,
         'net_prefix': 'kathara',
-        'remote_url': None
+        'remote_url': None,
     })
     mock_setting_get_instance.return_value = setting_mock
     link_name = DockerLink.get_network_name("A")
@@ -86,13 +86,14 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_li
     setting_mock.configure_mock(**{
         'shared_cd': False,
         'net_prefix': 'kathara',
-        'remote_url': None
+        'remote_url': None,
+        'network_plugin': 'kathara/katharanp'
     })
     mock_setting_get_instance.return_value = setting_mock
     docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
         name="kathara_user_A",
-        driver="kathara/katharanp:" + utils.get_architecture(),
+        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
@@ -115,13 +116,14 @@ def test_create_shared_cd(mock_get_current_user_name, mock_setting_get_instance,
     setting_mock.configure_mock(**{
         'shared_cd': True,
         'net_prefix': 'kathara',
-        'remote_url': None
+        'remote_url': None,
+        'network_plugin': 'kathara/katharanp'
     })
     mock_setting_get_instance.return_value = setting_mock
     docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
         name="kathara_A",
-        driver="kathara/katharanp:" + utils.get_architecture(),
+        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={

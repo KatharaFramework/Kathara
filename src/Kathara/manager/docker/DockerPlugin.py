@@ -9,7 +9,8 @@ from ...exceptions import DockerPluginError
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
 
-PLUGIN_NAME = "kathara/katharanp:" + utils.get_architecture()
+BRIDGE_PLUGIN_NAME = "kathara/katharanp"
+VDE_PLUGIN_NAME = "kathara/katharanp_vde"
 XTABLES_CONFIGURATION_KEY = "xtables_lock"
 XTABLES_LOCK_PATH = "/run/xtables.lock"
 
@@ -31,24 +32,30 @@ class DockerPlugin(object):
             DockerPluginError: If the Kathara Network Plugin is not found on remote Docker connection.
             DockerPluginError: If the Kathara Network Plugin is not enabled on remote Docker connection.
         """
+        settings = Setting.get_instance()
+        network_plugin = f"{settings.network_plugin}:{utils.get_architecture()}"
         try:
-            logging.debug("Checking plugin `%s`..." % PLUGIN_NAME)
-            plugin = self.client.plugins.get(PLUGIN_NAME)
+            logging.debug("Checking plugin `%s`..." % network_plugin)
+            plugin = self.client.plugins.get(network_plugin)
+
             # Check for plugin updates.
             plugin.upgrade()
+
         except NotFound:
-            if Setting.get_instance().remote_url is None:
-                logging.info("Installing Kathara Network Plugin...")
-                plugin = self.client.plugins.install(PLUGIN_NAME)
+            if settings.remote_url is None:
+                logging.info(f"Installing Kathara Network Plugin ({network_plugin})...")
+                plugin = self.client.plugins.install(network_plugin)
                 logging.info("Kathara Network Plugin installed successfully!")
             else:
                 raise DockerPluginError("Kathara Network Plugin not found on remote Docker connection.")
 
-        if Setting.get_instance().remote_url is None:
+        if settings.network_plugin == VDE_PLUGIN_NAME and settings.remote_url is None and not plugin.enabled:
+            plugin.enable()
+        elif settings.network_plugin == BRIDGE_PLUGIN_NAME and settings.remote_url is None:
             xtables_lock_mount = self._get_xtables_lock_mount()
             if not plugin.enabled:
                 self._configure_xtables_mount(plugin, xtables_lock_mount)
-                logging.debug("Enabling plugin `%s`..." % PLUGIN_NAME)
+                logging.debug("Enabling plugin `%s`..." % network_plugin)
                 plugin.enable()
             else:
                 # Get the mount of xtables.lock from the current plugin configuration
@@ -59,7 +66,7 @@ class DockerPlugin(object):
                 if mount_obj["Source"] != xtables_lock_mount:
                     plugin.disable()
                     self._configure_xtables_mount(plugin, xtables_lock_mount)
-                    logging.debug("Enabling plugin `%s`..." % PLUGIN_NAME)
+                    logging.debug("Enabling plugin `%s`..." % network_plugin)
                     plugin.enable()
         else:
             if not plugin.enabled:
