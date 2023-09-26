@@ -9,52 +9,30 @@ body:
         ---
         
         Thank you for taking the time to file a bug report. To address this bug as fast as possible, we need some information.
-  - type: input
-    id: os
-    attributes:
-      label: Operating system
-      description: "Which operating system do you use? Please provide the version as well."
-      placeholder: "Ubuntu 23.04"
-    validations:
-      required: true
-  - type: input
-    id: kathara
-    attributes:
-      label: Kathará Version
-      description: "Please provide the Kathará version you are using."
-      placeholder: "3.6.3"
-    validations:
-      required: true
   - type: textarea
     id: bug-description
     attributes:
-      label: Bug description
-      description: "What happened?"
+      label: bug
+      description: "Is your feature request related to a problem? Please describe."
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Feature description
+      description: "Why is it a good idea add this feature to Kathará?"
     validations:
       required: true
   - type: textarea
-    id: lab
+    id: solution
     attributes:
-      label: Network Scenario
-      description: "Attach here a network scenario to reproduce the error."
+      label: Solution
+      description: "Describe the solution you would like."
   - type: textarea
-    id: steps
+    id: alternatives
     attributes:
-      label: Steps to reproduce
-      description: "Which steps do we need to take to reproduce this error?"
-    validations:
-      required: true
+      label: Alternative Solutions
+      description: "Describe alternative solutions you have considered."
   - type: textarea
-    id: expected
+    id: context
     attributes:
-      label: Expected Behavior
-      description: "A description of what you expected to happen."
-    validations:
-      required: true
-  - type: textarea
-    id: check
-    attributes:
-      label: Check Command Output
-      description: "Add the output of `kathara check`. This will be automatically formatted into code, so no need for backticks."
-      render: shell
-
+      label: Additional Context
+      description: "Add any other context or screenshots about the feature request here."

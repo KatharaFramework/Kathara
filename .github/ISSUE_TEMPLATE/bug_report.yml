@@ -33,15 +33,10 @@ body:
     validations:
       required: true
   - type: textarea
-    id: lab
-    attributes:
-      label: Network Scenario
-      description: "Attach here a network scenario to reproduce the error."
-  - type: textarea
     id: steps
     attributes:
       label: Steps to reproduce
-      description: "Which steps do we need to take to reproduce this error?"
+      description: "Which steps do we need to take to reproduce this error? Attach also a network scenario to reproduce the error."
     validations:
       required: true
   - type: textarea
@@ -57,4 +52,3 @@ body:
       label: Check Command Output
       description: "Add the output of `kathara check`."
       render: shell
-
