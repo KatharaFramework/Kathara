@@ -79,7 +79,7 @@ class DockerLink(object):
     def create(self, link: Link) -> None:
         """Create a Docker network representing the collision domain object and assign it to link.api_object.
 
-        It also connect external collision domains, if present.
+        It also connects external collision domains, if present.
 
         Args:
             link (Kathara.model.Link.Link): A Kathara collision domain.
