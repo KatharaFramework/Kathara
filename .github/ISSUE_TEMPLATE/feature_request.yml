@@ -4,20 +4,18 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before opening a bug report, please search for the behaviour in the existing issues. 
-        
         ---
         
-        Thank you for taking the time to file a bug report. To address this bug as fast as possible, we need some information.
+        Thank you for contributing to Kathará with new ideas!
   - type: textarea
     id: bug-description
     attributes:
-      label: bug
+      label: Related Bug
       description: "Is your feature request related to a problem? Please describe."
   - type: textarea
     id: feature-description
     attributes:
-      label: Feature description
+      label: Feature Description
       description: "Why is it a good idea add this feature to Kathará?"
     validations:
       required: true
