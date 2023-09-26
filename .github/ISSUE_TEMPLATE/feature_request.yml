@@ -1,5 +1,5 @@
-name: Bug Report
-description: Create a bug report to help us improve
+name: Feature Request
+description: Suggest an idea for Kathará
 body:
   - type: markdown
     attributes:
@@ -55,6 +55,6 @@ body:
     id: check
     attributes:
       label: Check Command Output
-      description: "Add the output of `kathara check`."
+      description: "Add the output of `kathara check`. This will be automatically formatted into code, so no need for backticks."
       render: shell
 
