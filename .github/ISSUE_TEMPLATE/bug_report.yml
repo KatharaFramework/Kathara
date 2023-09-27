@@ -12,7 +12,7 @@ body:
   - type: input
     id: os
     attributes:
-      label: Operating system
+      label: Operating System
       description: "Which operating system do you use? Please provide the version as well."
       placeholder: "Ubuntu 23.04"
     validations:
@@ -28,14 +28,14 @@ body:
   - type: textarea
     id: bug-description
     attributes:
-      label: Bug description
+      label: Bug Description
       description: "What happened?"
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce
+      label: Steps To Reproduce
       description: "Which steps do we need to take to reproduce this error? Attach also a network scenario to reproduce the error."
     validations:
       required: true
