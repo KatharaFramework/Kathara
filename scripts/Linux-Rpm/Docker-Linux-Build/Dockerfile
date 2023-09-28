@@ -14,7 +14,8 @@ RUN dnf install -y rubygem-rails \
     rpmdevtools \
     patchelf \
     pip \
-    python3-devel
+    python3.10 \
+    python3.10-devel
 
 RUN gem install ronn-ng
 
