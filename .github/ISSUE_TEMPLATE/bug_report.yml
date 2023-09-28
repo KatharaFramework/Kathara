@@ -22,7 +22,7 @@ body:
     attributes:
       label: Kathará Version
       description: "Please provide the Kathará version you are using."
-      placeholder: "3.6.3"
+      placeholder: "3.7.0"
     validations:
       required: true
   - type: textarea

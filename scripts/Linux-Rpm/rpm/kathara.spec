@@ -68,11 +68,6 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- Use "chardet" to parse all byte strings in order to correctly encode non-UTF8 characters
-- Wait for startup commands execution while opening a connection to a device (the wait can be overridden by pressing [ENTER])
-- Keep correct folders/files permissions when copying files inside the device
-- Fix "sysctl" metadata parsing for negative values
-- Fix "machine.is_ipv6_enabled()"" method to correctly follow priority of "ipv6" meta
-- Rename "startup_commands" meta to "exec_commands" to avoid ambiguity with ".startup" files
-- Add new helper methods to "model.Lab"
-- Minor fixes
+- Add support for the new Kathara Network Plugin based on VDE software switches. It is possible to select the old Network Plugin (based on Linux Bridges) from "kathara settings"
+- Switch the default image to "kathara/base" for new installations
+- Fix Docker images fetching in "kathara settings"
