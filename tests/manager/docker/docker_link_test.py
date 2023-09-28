@@ -23,9 +23,10 @@ def default_link():
 
 
 @pytest.fixture()
+@mock.patch("src.Kathara.manager.docker.DockerPlugin.DockerPlugin")
 @mock.patch("docker.DockerClient")
-def docker_link(mock_obj):
-    return DockerLink(mock_obj)
+def docker_link(mock_obj, mock_docker_plugin):
+    return DockerLink(mock_obj, mock_docker_plugin)
 
 
 @pytest.fixture()
@@ -35,9 +36,10 @@ def docker_network(mock_network):
 
 
 @pytest.fixture()
+@mock.patch("src.Kathara.manager.docker.DockerPlugin.DockerPlugin")
 @mock.patch("docker.DockerClient")
-def docker_link(mock_docker_client):
-    return DockerLink(mock_docker_client)
+def docker_link(mock_docker_client, mock_docker_plugin):
+    return DockerLink(mock_docker_client, mock_docker_plugin)
 
 
 #
@@ -172,13 +174,13 @@ def test_deploy_links_no_link(mock_deploy_link, docker_link):
 # TEST: _delete_link
 #
 @mock.patch("docker.models.networks.Network")
-def test_delete_link(docker_network):
-    DockerLink._delete_link(docker_network)
+def test_delete_link(docker_network, docker_link):
+    docker_link._delete_link(docker_network)
     docker_network.remove.assert_called_once()
 
 
 #
-# TEST: _delete_link
+# TEST: _undeploy_link
 #
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._undeploy_link")
 def test_undeploy_link(mock_undeploy_link, docker_link, docker_network):

@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 from multiprocessing.dummy import Pool
 from typing import List, Union, Dict, Generator, Set, Optional
@@ -8,6 +9,7 @@ import docker.models.networks
 from docker import DockerClient
 from docker import types
 
+from .DockerPlugin import DockerPlugin
 from .stats.DockerLinkStats import DockerLinkStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
@@ -22,10 +24,11 @@ from ...setting.Setting import Setting
 
 class DockerLink(object):
     """The class responsible for deploying Kathara collision domains as Docker networks and interact with them."""
-    __slots__ = ['client']
+    __slots__ = ['client', 'docker_plugin']
 
-    def __init__(self, client: DockerClient) -> None:
+    def __init__(self, client: DockerClient, docker_plugin: DockerPlugin) -> None:
         self.client: DockerClient = client
+        self.docker_plugin: DockerPlugin = docker_plugin
 
     def deploy_links(self, lab: Lab, selected_links: Set[str] = None) -> None:
         """Deploy all the network scenario collision domains as Docker networks.
@@ -100,21 +103,19 @@ class DockerLink(object):
             network_ipam_config = docker.types.IPAMConfig(driver='null')
 
             user_label = "shared_cd" if Setting.get_instance().shared_cd else utils.get_current_user_name()
-            link.api_object = self.client.networks.create(name=link_name,
-                                                          driver=f"{Setting.get_instance().network_plugin}:"
-                                                                 f"{utils.get_architecture()}",
-                                                          check_duplicate=True,
-                                                          ipam=network_ipam_config,
-                                                          labels={"lab_hash": link.lab.hash,
-                                                                  "name": link.name,
-                                                                  "user": user_label,
-                                                                  "app": "kathara",
-                                                                  "external": ";".join([x.get_full_name()
-                                                                                        for x in link.external
-                                                                                        ]
-                                                                                       )
-                                                                  }
-                                                          )
+            link.api_object = self.client.networks.create(
+                name=link_name,
+                driver=f"{Setting.get_instance().network_plugin}:{utils.get_architecture()}",
+                check_duplicate=True,
+                ipam=network_ipam_config,
+                labels={
+                    "lab_hash": link.lab.hash,
+                    "name": link.name,
+                    "user": user_label,
+                    "app": "kathara",
+                    "external": ";".join([x.get_full_name() for x in link.external])
+                }
+            )
 
         if link.external:
             logging.debug("External Interfaces required, connecting them...")
@@ -266,13 +267,30 @@ class DockerLink(object):
 
             yield networks_stats
 
-    def _attach_external_interfaces(self, external_links: List[ExternalLink],
-                                    network: docker.models.networks.Network) -> None:
-        """Attach an external collision domain to a Docker network.
+    def _delete_link(self, network: docker.models.networks.Network) -> None:
+        """Delete a Docker network.
 
         Args:
-            external_links (Kathara.model.ExternalLink): A Kathara external collision domain. It is used to create
-                a collision domain attached to a host interface.
+            network (docker.models.networks.Network): A Docker network.
+
+        Raises:
+            PrivilegeError: If you are not root while deleting an external VLAN Interface.
+        """
+        external_label = network.attrs['Labels']["external"]
+        external_links = external_label.split(";") if external_label else None
+
+        if external_links:
+            self._delete_external_interfaces(external_links, network)
+
+        network.remove()
+
+    def _attach_external_interfaces(self, external_links: List[ExternalLink],
+                                    network: docker.models.networks.Network) -> None:
+        """Attach external collision domains to a Docker network.
+
+        Args:
+            external_links (List[Kathara.model.ExternalLink]): A list of Kathara external collision domains.
+                They are used to create collision domains attached to a host interface.
             network (docker.models.networks.Network): A Docker network.
 
         Returns:
@@ -280,9 +298,47 @@ class DockerLink(object):
         """
         for external_link in external_links:
             (name, vlan) = external_link.get_name_and_vlan()
-
             interface_index = Networking.get_or_new_interface(external_link.interface, name, vlan)
-            Networking.attach_interface_to_bridge(interface_index, self._get_bridge_name(network))
+            bridge_name = self._get_bridge_name(network)
+
+            def vde_attach():
+                plugin_pid = self.docker_plugin.plugin_pid()
+                switch_path = os.path.join(self.docker_plugin.plugin_store_path(), bridge_name)
+                Networking.attach_interface_ns(external_link.get_full_name(), interface_index, switch_path, plugin_pid)
+
+            def bridge_attach():
+                Networking.attach_interface_bridge(interface_index, bridge_name)
+
+            self.docker_plugin.exec_by_version(vde_attach, bridge_attach)
+
+    def _delete_external_interfaces(self, external_links: List[str], network: docker.models.networks.Network) -> None:
+        """Remove external collision domains from a Docker network.
+
+        Args:
+            external_links (List[Kathara.model.ExternalLink]): A list of Kathara external collision domains.
+            network (docker.models.networks.Network): A Docker network.
+
+        Returns:
+            None
+        """
+        for external_link in external_links:
+            if utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2):
+                if utils.is_admin():
+                    def vde_delete():
+                        plugin_pid = self.docker_plugin.plugin_pid()
+                        switch_path = os.path.join(self.docker_plugin.plugin_store_path(),
+                                                   self._get_bridge_name(network))
+                        Networking.remove_interface_ns(external_link, switch_path, plugin_pid)
+
+                    self.docker_plugin.exec_by_version(vde_delete, lambda: None)
+
+                    if re.search(r"^\w+\.\d+$", external_link):
+                        # Only remove VLAN interfaces, physical ones cannot be removed.
+                        Networking.remove_interface(external_link)
+                else:
+                    raise PrivilegeError("You must be root in order to delete an External Interface.")
+            else:
+                raise OSError("External Interfaces are only available on UNIX systems.")
 
     @staticmethod
     def _get_bridge_name(network: docker.models.networks.Network) -> str:
@@ -309,30 +365,3 @@ class DockerLink(object):
         """
         username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().shared_cd else ""
         return "%s%s_%s" % (Setting.get_instance().net_prefix, username_prefix, name)
-
-    @staticmethod
-    def _delete_link(network: docker.models.networks.Network) -> None:
-        """Delete a Docker network.
-
-        Args:
-            network (docker.models.networks.Network): A Docker network.
-
-        Raises:
-            PrivilegeError: If you are not root while deleting an external VLAN Interface.
-        """
-        external_label = network.attrs['Labels']["external"]
-        external_links = external_label.split(";") if external_label else None
-
-        if external_links:
-            for external_link in external_links:
-                if re.search(r"^\w+\.\d+$", external_link):
-                    if utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2):
-                        if utils.is_admin():
-                            # Only remove VLAN interfaces, physical ones cannot be removed.
-                            Networking.remove_interface(external_link)
-                        else:
-                            raise PrivilegeError("You must be root in order to delete a VLAN Interface.")
-                    else:
-                        raise OSError("VLAN Interfaces are only available on UNIX systems.")
-
-        network.remove()
