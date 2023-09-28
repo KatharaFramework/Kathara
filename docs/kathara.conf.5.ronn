@@ -13,7 +13,7 @@ Checks on the correctness of the configuration are performed each time a Kathara
 * `image` (string):
     Default Docker image used when starting a device.
 
-    Default to `kathara/quagga`.
+    Default to `kathara/base`.
 
 * `manager_type` (string):
     Manager used to launch the network scenario.
@@ -133,7 +133,7 @@ Each Manager specifies additional parameters which are used only when the Manage
 ## EXAMPLE
 
         {
-            "image": "kathara/quagga",
+            "image": "kathara/base",
             "manager_type": "docker",
             "terminal": "/usr/bin/xterm",
             "open_terminals": true,
