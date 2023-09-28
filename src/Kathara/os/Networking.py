@@ -2,7 +2,9 @@ import logging
 import os
 import shutil
 from typing import Optional
+
 from ..exceptions import InterfaceNotFoundError
+from ..trdparty.nsenter.nsenter import nsenter
 
 
 class Networking(object):
@@ -25,11 +27,8 @@ class Networking(object):
         Raises:
             InterfaceNotFoundError: If the specified interface is not found on the host machine.
         """
-        # disable pyroute2 logging to avoid warning about project structure changes
-        logging.getLogger('pyroute2').disabled = True
         from pyroute2 import IPRoute
         ip = IPRoute()
-        logging.getLogger('pyroute2').disabled = False
 
         logging.debug("Searching for interface `%s`..." % full_interface_name)
 
@@ -77,8 +76,41 @@ class Networking(object):
         return interface_index
 
     @staticmethod
-    def attach_interface_to_bridge(interface_index: int, bridge_name: str) -> None:
-        """Attach an interface to the bridge.
+    def attach_interface_ns(interface_name: str, interface_index: int, switch_path: str, ns_pid: int) -> None:
+        """Attach an interface using namespaces.
+
+        Args:
+            interface_name (str): The full interface name of the interface to attach.
+            interface_index (int): The interface index of the interface to attach.
+            switch_path (str):  The path of the switch where to attach to the interface.
+            ns_pid (int): The PID of the namespace.
+
+        Returns:
+            None
+        """
+        from pyroute2 import IPRoute
+
+        logging.debug("Attaching interface ID = %d to namespace `%s`..." % (interface_index, switch_path))
+
+        ip = IPRoute()
+        ip.link(
+            "set",
+            index=interface_index,
+            state="up"
+        )
+        ip.close()
+
+        pid_path = os.path.join(switch_path, f"pid_{interface_name}")
+        command = f"/bin/sh -c '/usr/local/bin/vde_ext -s {switch_path}/ctl -p {pid_path} {interface_name} &'"
+
+        logging.debug("Running command `%s` in namespace `%s`..." % (command, switch_path))
+        nsenter(ns_pid, command, ns_types=['ipc', 'net', 'pid', 'uts'])
+
+        logging.debug("Interface ID = %d attached to namespace `%s`." % (interface_index, switch_path))
+
+    @staticmethod
+    def attach_interface_bridge(interface_index: int, bridge_name: str) -> None:
+        """Attach an interface to a Linux bridge.
 
         Args:
             interface_index (int): The interface index of the interface to attach.
@@ -103,6 +135,28 @@ class Networking(object):
         logging.debug("Interface ID = %d attached to bridge %s." % (interface_index, bridge_name))
 
         ip.close()
+
+    @staticmethod
+    def remove_interface_ns(interface_name: str, switch_path: str, ns_pid: int) -> None:
+        """Remove an interface using namespaces.
+
+        Args:
+            interface_name (str): The full interface name of the interface to remove.
+            switch_path (str):  The path of the switch where to remove to the interface.
+            ns_pid (int): The PID of the namespace.
+
+        Returns:
+            None
+        """
+        logging.debug("Killing vde_ext process in namespace `%s`." % switch_path)
+
+        pid_path = os.path.join(switch_path, f"pid_{interface_name}")
+        command = f"/bin/sh -c 'kill -2 $(cat {pid_path})'"
+
+        logging.debug("Running command `%s` in namespace `%s`..." % (command, switch_path))
+        nsenter(ns_pid, command, ns_types=['ipc', 'net', 'pid', 'uts'])
+
+        logging.debug("vde_ext process killed in namespace `%s`." % switch_path)
 
     @staticmethod
     def remove_interface(interface_name: str) -> None:
@@ -134,7 +188,6 @@ class Networking(object):
             "del",
             index=link_index
         )
-
         ip.close()
 
     @staticmethod
