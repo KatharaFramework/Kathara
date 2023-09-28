@@ -10,11 +10,11 @@ from ....utils import exec_by_platform
 class DockerOptionsHandler(OptionsHandler):
     def add_items(self, current_menu: ConsoleMenu, menu_formatter: MenuFormatBuilder) -> None:
         # Network Plugin Option
-        network_plugin_string = "Choose Docker Network Plugin"
+        network_plugin_string = "Choose Docker Network Plugin version"
         network_plugin_menu = SelectionMenu(strings=[],
                                             title=network_plugin_string,
                                             subtitle=setting_utils.current_string("network_plugin"),
-                                            prologue_text="""Choose Docker Network Plugin used to create"""
+                                            prologue_text="""Choose Docker Network Plugin version used to create"""
                                                           """ collision domains.\n"""
                                                           """`kathara/katharanp` plugin is based on Linux bridges.\n"""
                                                           """`kathara/katharanp_vde` plugin is based on VDE switches.
