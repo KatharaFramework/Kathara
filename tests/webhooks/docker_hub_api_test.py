@@ -19,10 +19,10 @@ def docker_hub_get_images_response(mock_response):
     mock_response.status_code = 200
     mock_response.json.return_value = {
         'results': [
-            {'name': 'test', 'namespace': 'kathara', 'is_private': False, 'repository_type': 'image'},
-            {'name': 'test-2', 'namespace': 'kathara', 'is_private': False, 'repository_type': 'image'},
-            {'name': 'test-3', 'namespace': 'kathara', 'is_private': True, 'repository_type': 'image'},
-            {'name': 'excluded', 'namespace': 'kathara', 'is_private': True, 'repository_type': 'image'}
+            {'name': 'test', 'namespace': 'kathara', 'is_private': False, 'content_types': ['image']},
+            {'name': 'test-2', 'namespace': 'kathara', 'is_private': False, 'content_types': ['image']},
+            {'name': 'test-3', 'namespace': 'kathara', 'is_private': True, 'content_types': ['image']},
+            {'name': 'excluded', 'namespace': 'kathara', 'is_private': True, 'content_types': ['image']}
         ]
     }
     return mock_response
@@ -34,11 +34,11 @@ def docker_hub_get_tags_response(mock_response):
     mock_response.status_code = 200
     mock_response.json.return_value = {
         'results': [
-            {'name': 'latest', 'digest': '11111', 'tag_status': 'active', 'repository_type': 'image'},
-            {'name': 'tag-latest', 'digest': '11111', 'tag_status': 'active', 'repository_type': 'image'},
-            {'name': 'tag-1', 'digest': '22222', 'tag_status': 'active', 'repository_type': 'image'},
-            {'name': 'tag-2', 'digest': '22222', 'tag_status': 'active', 'repository_type': 'image'},
-            {'name': 'tag-1', 'digest': '33333', 'tag_status': 'inactive', 'repository_type': 'image'},
+            {'name': 'latest', 'digest': '11111', 'tag_status': 'active', 'content_types': ['image']},
+            {'name': 'tag-latest', 'digest': '11111', 'tag_status': 'active', 'content_types': ['image']},
+            {'name': 'tag-1', 'digest': '22222', 'tag_status': 'active', 'content_types': ['image']},
+            {'name': 'tag-2', 'digest': '22222', 'tag_status': 'active', 'content_types': ['image']},
+            {'name': 'tag-1', 'digest': '33333', 'tag_status': 'inactive', 'content_types': ['image']},
         ]
     }
     return mock_response
@@ -78,8 +78,8 @@ def test_get_images_status_code_error(mock_requests_get):
 @mock.patch("src.Kathara.webhooks.DockerHubApi.DockerHubApi.get_images")
 def test_get_tagged_images(mock_get_images, mock_requests_get, docker_hub_get_tags_response):
     mock_get_images.return_value = [
-        {'name': 'test-0', 'namespace': 'kathara', 'is_private': False, 'repository_type': 'image'},
-        {'name': 'test-1', 'namespace': 'kathara', 'is_private': False, 'repository_type': 'image'}
+        {'name': 'test-0', 'namespace': 'kathara', 'is_private': False, 'content_types': ['image']},
+        {'name': 'test-1', 'namespace': 'kathara', 'is_private': False, 'content_types': ['image']}
     ]
     mock_requests_get.return_value = docker_hub_get_tags_response
     tagged_images = DockerHubApi.get_tagged_images()
@@ -104,8 +104,8 @@ def test_get_tagged_images(mock_get_images, mock_requests_get, docker_hub_get_ta
 @mock.patch("src.Kathara.webhooks.DockerHubApi.DockerHubApi.get_images")
 def test_get_tagged_images_connection_error(mock_get_images, mock_requests_get):
     mock_get_images.return_value = [
-        {'name': 'test-0', 'namespace': 'kathara', 'is_private': False, 'repository_type': 'image'},
-        {'name': 'test-1', 'namespace': 'kathara', 'is_private': False, 'repository_type': 'image'}
+        {'name': 'test-0', 'namespace': 'kathara', 'is_private': False, 'content_types': ['image']},
+        {'name': 'test-1', 'namespace': 'kathara', 'is_private': False, 'content_types': ['image']}
     ]
     mock_requests_get.side_effect = requests.exceptions.ConnectionError
     with pytest.raises(HTTPConnectionError):
@@ -116,8 +116,8 @@ def test_get_tagged_images_connection_error(mock_get_images, mock_requests_get):
 @mock.patch("src.Kathara.webhooks.DockerHubApi.DockerHubApi.get_images")
 def test_get_tagged_images_status_code_error(mock_get_images, mock_requests_get):
     mock_get_images.return_value = [
-        {'name': 'test-0', 'namespace': 'kathara', 'is_private': False, 'repository_type': 'image'},
-        {'name': 'test-1', 'namespace': 'kathara', 'is_private': False, 'repository_type': 'image'}
+        {'name': 'test-0', 'namespace': 'kathara', 'is_private': False, 'content_types': ['image']},
+        {'name': 'test-1', 'namespace': 'kathara', 'is_private': False, 'content_types': ['image']}
     ]
     mock_requests_get.status_code = 404
     with pytest.raises(HTTPConnectionError):
