@@ -4,7 +4,6 @@ import shutil
 from typing import Optional
 
 from ..exceptions import InterfaceNotFoundError
-from ..trdparty.nsenter.nsenter import nsenter
 
 
 class Networking(object):
@@ -89,6 +88,7 @@ class Networking(object):
             None
         """
         from pyroute2 import IPRoute
+        from ..trdparty.nsenter.nsenter import nsenter
 
         logging.debug("Attaching interface ID = %d to namespace `%s`..." % (interface_index, switch_path))
 
@@ -148,6 +148,8 @@ class Networking(object):
         Returns:
             None
         """
+        from ..trdparty.nsenter.nsenter import nsenter
+
         logging.debug("Killing vde_ext process in namespace `%s`." % switch_path)
 
         pid_path = os.path.join(switch_path, f"pid_{interface_name}")
