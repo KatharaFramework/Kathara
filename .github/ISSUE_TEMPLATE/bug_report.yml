@@ -21,7 +21,7 @@ body:
     id: kathara
     attributes:
       label: Kathará Version
-      description: "Please provide the Kathará version you are using."
+      description: "Please provide the Kathará version you are using (`kathara -v`)."
       placeholder: "3.6.3"
     validations:
       required: true
