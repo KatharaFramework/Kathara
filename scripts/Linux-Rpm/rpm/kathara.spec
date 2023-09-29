@@ -21,7 +21,7 @@ new network protocols.
 python3.10 -m venv %{_builddir}/venv
 %{_builddir}/venv/bin/pip install --upgrade pip
 %{_builddir}/venv/bin/pip install -r src/requirements.txt
-%{_builddir}/venv/bin/pip install nuitka
+%{_builddir}/venv/bin/pip install nuitka==1.7.10
 %{_builddir}/venv/bin/pip install pytest
 
 %build
