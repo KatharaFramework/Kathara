@@ -71,7 +71,7 @@ class DockerManager(IManager):
         self.docker_image: DockerImage = DockerImage(self.client)
 
         self.docker_machine: DockerMachine = DockerMachine(self.client, self.docker_image)
-        self.docker_link: DockerLink = DockerLink(self.client)
+        self.docker_link: DockerLink = DockerLink(self.client, docker_plugin)
 
     @privileged
     def deploy_machine(self, machine: Machine) -> None:

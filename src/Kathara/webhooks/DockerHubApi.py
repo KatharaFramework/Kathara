@@ -37,7 +37,7 @@ class DockerHubApi(object):
             raise HTTPConnectionError(f"Docker Hub replied with status code {response.status_code}.")
 
         return filter(
-            lambda x: not x['is_private'] and x['repository_type'] == 'image' and x['name'] not in EXCLUDED_IMAGES,
+            lambda x: not x['is_private'] and 'image' in x['content_types'] and x['name'] not in EXCLUDED_IMAGES,
             response.json()['results']
         )
 
