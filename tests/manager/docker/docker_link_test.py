@@ -194,7 +194,7 @@ def test_undeploy_link(mock_undeploy_link, docker_link, docker_network):
 @mock.patch("docker.models.networks.list")
 def test_get_links_by_filters(mock_network_list, docker_link):
     docker_link.get_links_api_objects_by_filters("lab_hash_value", "link_name_value", "user_name_value")
-    filters = {"label": ["app=kathara", "lab_hash=lab_hash_value", "user=user_name_value"], "name": "link_name_value"}
+    filters = {"label": ["app=kathara", "lab_hash=lab_hash_value", "user=user_name_value", "name=link_name_value"]}
     mock_network_list.called_once_with(filters=filters)
 
 
@@ -215,7 +215,7 @@ def test_get_links_by_filters_only_lab_hash(mock_network_list, docker_link):
 @mock.patch("docker.models.networks.list")
 def test_get_links_by_filters_only_link_name(mock_network_list, docker_link):
     docker_link.get_links_api_objects_by_filters(None, "link_name_value")
-    filters = {"label": ["app=kathara"], "name": "link_name_value"}
+    filters = {"label": ["app=kathara", "name=link_name_value"]}
     mock_network_list.called_once_with(filters=filters)
 
 

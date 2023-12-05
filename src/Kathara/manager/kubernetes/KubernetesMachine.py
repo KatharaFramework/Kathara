@@ -772,7 +772,7 @@ class KubernetesMachine(object):
         """
         filters = ["app=kathara"]
         if machine_name:
-            filters.append("name=%s" % machine_name)
+            filters.append(f"name={machine_name}")
 
         # Get all Kathara namespaces if lab_hash is None
         namespaces = list(map(lambda x: x.metadata.name, self.kubernetes_namespace.get_all())) \

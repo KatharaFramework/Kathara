@@ -95,13 +95,13 @@ class DockerLink(object):
             return
 
         # If a network with the same name exists, return it instead of creating a new one.
-        link_name = self.get_network_name(link.name)
-        networks = self.get_links_api_objects_by_filters(link_name=link_name)
+        networks = self.get_links_api_objects_by_filters(link_name=link.name)
         if networks:
             link.api_object = networks.pop()
         else:
             network_ipam_config = docker.types.IPAMConfig(driver='null')
 
+            link_name = self.get_network_name(link.name)
             user_label = "shared_cd" if Setting.get_instance().shared_cd else utils.get_current_user_name()
             link.api_object = self.client.networks.create(
                 name=link_name,
@@ -211,11 +211,11 @@ class DockerLink(object):
         """
         filters = {"label": ["app=kathara"]}
         if user:
-            filters["label"].append("user=%s" % user)
+            filters["label"].append(f"user={user}")
         if lab_hash:
-            filters["label"].append("lab_hash=%s" % lab_hash)
+            filters["label"].append(f"lab_hash={lab_hash}")
         if link_name:
-            filters["name"] = link_name
+            filters["label"].append(f"name={link_name}")
 
         return self.client.networks.list(filters=filters)
 
