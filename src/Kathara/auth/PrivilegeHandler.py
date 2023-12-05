@@ -38,10 +38,15 @@ class PrivilegeHandler(object):
     def drop_privileges(self) -> None:
         logging.debug("Called `drop_privileges`...")
 
-        self._ref -= 1
-        logging.debug(f"Reference count is now {self._ref}.")
-        if self._ref > 0:
-            logging.debug("Reference count > 0, exiting.")
+        logging.debug(f"Reference count is {self._ref}.")
+        if self._ref > 1:
+            self._ref -= 1
+            logging.debug(f"Reference count is {self._ref}, exiting.")
+            return
+
+        if self._ref <= 0:
+            self._ref = 0
+            logging.debug(f"Reference count is {self._ref}, exiting.")
             return
 
         logging.debug(f"Dropping privileges to UID={self.user_uid} and GID={self.user_gid}...")
@@ -55,6 +60,9 @@ class PrivilegeHandler(object):
             os.setgid(self.user_gid)
         except OSError:
             pass
+
+        self._ref = 0
+        logging.debug(f"Reference count is reset to 0.")
 
     def raise_privileges(self) -> None:
         logging.debug("Called `raise_privileges`...")
