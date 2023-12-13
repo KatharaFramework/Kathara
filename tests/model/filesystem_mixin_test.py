@@ -6,6 +6,7 @@ from unittest import mock
 
 import fs
 import pytest
+from fs.errors import ResourceNotFound, FileExpected
 
 sys.path.insert(0, './')
 
@@ -13,6 +14,9 @@ from src.Kathara.foundation.model.FilesystemMixin import FilesystemMixin
 from src.Kathara.exceptions import InvocationError
 
 
+#
+# TEST: fs_type
+#
 def test_fs_type_none():
     filesystem = FilesystemMixin()
     assert not filesystem.fs_type()
@@ -30,6 +34,9 @@ def test_fs_type_mem():
     assert filesystem.fs_type() == "memory"
 
 
+#
+# TEST: fs_path
+#
 def test_fs_path_none():
     filesystem = FilesystemMixin()
     assert not filesystem.fs_path()
@@ -47,6 +54,9 @@ def test_fs_path_mem():
     assert filesystem.fs_path() is None
 
 
+#
+# TEST: create_file_from_string
+#
 def test_create_file_from_string_invocation_error():
     filesystem = FilesystemMixin()
     with pytest.raises(InvocationError):
@@ -57,11 +67,32 @@ def test_create_file_from_string():
     filesystem = FilesystemMixin()
     filesystem.fs = fs.open_fs(f"mem://")
     with mock.patch.object(FilesystemMixin, "fs") as mock_fs:
-        filesystem.create_file_from_string("test", "/")
+        filesystem.create_file_from_string("test", "/test.txt")
         mock_fs.makedirs.assert_called_once_with("/", recreate=True)
-        mock_fs.open.assert_called_once_with("/", "w")
+        mock_fs.open.assert_called_once_with("/test.txt", "w")
 
 
+#
+# TEST: update_file_from_string
+#
+def test_update_file_from_string():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("te", "/test.txt")
+    with mock.patch.object(FilesystemMixin, "fs") as mock_fs:
+        filesystem.update_file_from_string("st", "/test.txt")
+        mock_fs.open.assert_called_once_with("/test.txt", "a")
+
+
+def test_update_file_from_string_invocation_error():
+    filesystem = FilesystemMixin()
+    with pytest.raises(InvocationError):
+        filesystem.update_file_from_string("test", "path")
+
+
+#
+# TEST: create_file_from_list
+#
 def test_create_file_from_list_invocation_error():
     filesystem = FilesystemMixin()
     with pytest.raises(InvocationError):
@@ -77,6 +108,27 @@ def test_create_file_from_list():
         mock_fs.open.assert_called_once_with("/", "w")
 
 
+#
+# TEST: update_file_from_list
+#
+def test_update_file_from_list():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("te", "/test.txt")
+    with mock.patch.object(FilesystemMixin, "fs") as mock_fs:
+        filesystem.update_file_from_list(["st"], "/test.txt")
+        mock_fs.open.assert_called_once_with("/test.txt", "a")
+
+
+def test_update_file_from_list_invocation_error():
+    filesystem = FilesystemMixin()
+    with pytest.raises(InvocationError):
+        filesystem.update_file_from_list(["test"], "path")
+
+
+#
+# TEST: create_file_from_path
+#
 def test_create_file_from_path_invocation_error():
     filesystem = FilesystemMixin()
     with pytest.raises(InvocationError):
@@ -93,6 +145,9 @@ def test_create_file_from_path():
             mock_open.assert_called_once_with(os.path.abspath(__file__), "rb")
 
 
+#
+# TEST: create_file_from_stream
+#
 def test_create_file_from_stream_invocation_error():
     filesystem = FilesystemMixin()
     with pytest.raises(InvocationError):
@@ -129,3 +184,313 @@ def test_create_file_from_stream_byte():
             filesystem.create_file_from_stream(stream, "/")
         mock_fs.makedirs.assert_called_once_with("/", recreate=True)
         mock_fs.upload.assert_called_once_with("/", stream)
+
+
+#
+# TEST: write_line_before
+#
+def test_write_line_before():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd", "test.txt")
+    added_lines = filesystem.write_line_before('test.txt', 'c', 'd')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 4
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'c'
+    assert lines[3].strip() == 'd'
+    assert added_lines == 1
+
+
+def test_write_line_before_multi():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd\nd", "test.txt")
+    added_lines = filesystem.write_line_before('test.txt', 'c', 'd')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 6
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'c'
+    assert lines[3].strip() == 'd'
+    assert lines[4].strip() == 'c'
+    assert lines[5].strip() == 'd'
+    assert added_lines == 2
+
+
+def test_write_line_before_possible_loop():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd\nd", "test.txt")
+    added_lines = filesystem.write_line_before('test.txt', 'd', 'd')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 6
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'd'
+    assert lines[3].strip() == 'd'
+    assert lines[4].strip() == 'd'
+    assert lines[5].strip() == 'd'
+    assert added_lines == 2
+
+
+def test_write_line_before_first_occurrence():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd\nd", "test.txt")
+    added_lines = filesystem.write_line_before('test.txt', 'z', 'd', first_occurrence=True)
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 5
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'z'
+    assert lines[3].strip() == 'd'
+    assert lines[4].strip() == 'd'
+    assert added_lines == 1
+
+
+def test_write_line_before_invocation_error():
+    filesystem = FilesystemMixin()
+    with pytest.raises(InvocationError):
+        filesystem.write_line_before('test.txt', 'c', 'b')
+
+
+def test_write_line_before_resource_not_found_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    with pytest.raises(ResourceNotFound):
+        filesystem.write_line_before('test.txt', 'c', 'b')
+
+
+def test_write_line_before_file_expected_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.fs.makedir("test")
+    with pytest.raises(FileExpected):
+        filesystem.write_line_before('test', 'c', 'b')
+
+
+def test_write_line_before_line_not_found_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd", "test.txt")
+    added_lines = filesystem.write_line_before('test.txt', 'c', 'z')
+    assert added_lines == 0
+
+
+def test_write_line_before_with_indentation():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("\ta\n\t\tb\n\t\t\td", "test.txt")
+    added_lines = filesystem.write_line_before('test.txt', 'c', 'd')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 4
+    assert lines[0] == '\ta\n'
+    assert lines[1] == '\t\tb\n'
+    assert lines[2] == 'c\n'
+    assert lines[3] == '\t\t\td'
+    assert added_lines == 1
+
+
+#
+# TEST: write_line_after
+#
+def test_write_line_after():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd", "test.txt")
+    added_lines = filesystem.write_line_after('test.txt', 'c', 'b')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 4
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'c'
+    assert lines[3].strip() == 'd'
+    assert added_lines == 1
+
+
+def test_write_line_after_multi():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd\nd", "test.txt")
+    added_lines = filesystem.write_line_after('test.txt', 'c', 'd')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 6
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'd'
+    assert lines[3].strip() == 'c'
+    assert lines[4].strip() == 'd'
+    assert lines[5].strip() == 'c'
+    assert added_lines == 2
+
+
+def test_write_line_after_possible_loop():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd\nd", "test.txt")
+    added_lines = filesystem.write_line_after('test.txt', 'b', 'b')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 5
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'b'
+    assert lines[3].strip() == 'd'
+    assert lines[4].strip() == 'd'
+    assert added_lines == 1
+
+
+def test_write_line_after_first_occurrence():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd\nd", "test.txt")
+    added_lines = filesystem.write_line_after('test.txt', 'z', 'd', first_occurrence=True)
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 5
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'd'
+    assert lines[3].strip() == 'z'
+    assert lines[4].strip() == 'd'
+    assert added_lines == 1
+
+
+def test_write_line_after_invocation_error():
+    filesystem = FilesystemMixin()
+    with pytest.raises(InvocationError):
+        filesystem.write_line_after('test.txt', 'c', 'b')
+
+
+def test_write_line_after_resource_not_found_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    with pytest.raises(ResourceNotFound):
+        filesystem.write_line_after('test.txt', 'c', 'b')
+
+
+def test_write_line_after_file_expected_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.fs.makedir("test")
+    with pytest.raises(FileExpected):
+        filesystem.write_line_after('test', 'c', 'b')
+
+
+def test_write_line_after_line_not_found_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd", "test.txt")
+    added_lines = filesystem.write_line_after('test.txt', 'c', 'z')
+    assert added_lines == 0
+
+
+def test_write_line_after_with_indentation():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("\ta\n\t\tb\n\t\t\td", "test.txt")
+    added_lines = filesystem.write_line_after('test.txt', 'c', 'b')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 4
+    assert lines[0] == '\ta\n'
+    assert lines[1] == '\t\tb\n'
+    assert lines[2] == 'c\n'
+    assert lines[3] == '\t\t\td'
+    assert added_lines == 1
+
+
+def test_write_line_after_end_line_with_no_return():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("\ta\n\t\tb\n\t\t\td", "test.txt")
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    added_lines = filesystem.write_line_after('test.txt', 'c', 'd')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 4
+    assert lines[0] == '\ta\n'
+    assert lines[1] == '\t\tb\n'
+    assert lines[2] == '\t\t\td\n'
+    assert lines[3] == 'c\n'
+    assert added_lines == 1
+
+
+#
+# TEST: delete_line
+#
+def test_delete_line():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd", "test.txt")
+    deleted_lines = filesystem.delete_line('test.txt', 'b')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 2
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'd'
+    assert deleted_lines == 1
+
+
+def test_delete_line_multiple():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nb\nd", "test.txt")
+    deleted_lines = filesystem.delete_line('test.txt', 'b')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 2
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'd'
+    assert deleted_lines == 2
+
+
+def test_delete_line_first_occurrence():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nb\nd", "test.txt")
+    deleted_lines = filesystem.delete_line('test.txt', 'b', first_occurrence=True)
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 3
+    assert lines[0].strip() == 'a'
+    assert lines[1].strip() == 'b'
+    assert lines[2].strip() == 'd'
+    assert deleted_lines == 1
+
+
+def test_delete_line_invocation_error():
+    filesystem = FilesystemMixin()
+    with pytest.raises(InvocationError):
+        filesystem.delete_line('test.txt', 'b')
+
+
+def test_delete_line_resource_not_found_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    with pytest.raises(ResourceNotFound):
+        filesystem.delete_line('test.txt', 'b')
+
+
+def test_delete_line_file_expected_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.fs.makedir("test")
+    with pytest.raises(FileExpected):
+        filesystem.delete_line('test', 'b')
+
+
+def test_delete_line_line_not_found_error():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("a\nb\nd", "test.txt")
+
+    deleted_lines = filesystem.delete_line('test.txt', 'z')
+    assert deleted_lines == 0
+
+
+def test_delete_line_with_indentation():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    filesystem.create_file_from_string("\ta\n\t\tb\n\t\t\td", "test.txt")
+    deleted_lines = filesystem.delete_line('test.txt', 'b')
+    lines = filesystem.fs.open("test.txt", "r").readlines()
+    assert len(lines) == 2
+    assert lines[0] == '\ta\n'
+    assert lines[1] == '\t\t\td'
+    assert deleted_lines == 1

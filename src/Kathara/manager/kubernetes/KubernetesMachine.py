@@ -8,6 +8,7 @@ import uuid
 from multiprocessing.dummy import Pool
 from typing import Optional, Set, List, Union, Generator, Tuple, Dict
 
+import chardet
 from kubernetes import client
 from kubernetes.client.api import apps_v1_api
 from kubernetes.client.api import core_v1_api
@@ -29,7 +30,7 @@ RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 MAX_RESTART_COUNT = 3
 
 # Known commands that each container should execute
-# Run order: shared.startup, machine.startup and machine.meta['startup_commands']
+# Run order: shared.startup, machine.startup and machine.meta['exec_commands']
 STARTUP_COMMANDS = [
     # If execution flag file is found, abort (this means that postStart has been called again)
     # If not flag the startup execution with a file
@@ -53,7 +54,7 @@ STARTUP_COMMANDS = [
     # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
     # In this way, files are all replaced in the container root folder
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
-    "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf -); fi",
+    "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf - --no-same-owner --no-same-permissions); fi",
 
     # If /etc/hosts is not configured by the user, add the localhost mapping
     "if [ ! -s \"/etc/hosts\" ]; then "
@@ -67,12 +68,12 @@ STARTUP_COMMANDS = [
 
     # Give proper permissions to Quagga files (if present)
     "if [ -d \"/etc/quagga\" ]; then "
-    "chown quagga:quagga /etc/quagga/*",
+    "chown -R quagga:quagga /etc/quagga/",
     "chmod 640 /etc/quagga/*; fi",
 
     # Give proper permissions to FRR files (if present)
     "if [ -d \"/etc/frr\" ]; then "
-    "chown frr:frr /etc/frr/*",
+    "chown -R frr:frr /etc/frr/",
     "chmod 640 /etc/frr/*; fi",
 
     # If shared.startup file is present
@@ -97,7 +98,9 @@ STARTUP_COMMANDS = [
     "route del default dev eth0 || true",
 
     # Placeholder for user commands
-    "{machine_commands}"
+    "{machine_commands}",
+
+    "touch /tmp/EOS"
 ]
 
 SHUTDOWN_COMMANDS = [
@@ -247,7 +250,7 @@ class KubernetesMachine(object):
         options = machine.lab.general_options
 
         # If bridged is defined for the device, throw a warning.
-        if "bridged" in options or machine.meta['bridged']:
+        if "bridged" in options or machine.is_bridged():
             logging.warning('Bridged option is not supported on Megalos. It will be ignored.')
 
         # If any exec command is passed in command line, add it.
@@ -262,6 +265,7 @@ class KubernetesMachine(object):
 
         if machine.is_ipv6_enabled():
             sysctl_parameters["net.ipv6.conf.all.forwarding"] = 1
+            sysctl_parameters["net.ipv6.conf.all.accept_ra"] = 0
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
@@ -341,7 +345,7 @@ class KubernetesMachine(object):
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
             .format(machine_name=machine.name,
                     sysctl_commands=sysctl_commands,
-                    machine_commands="; ".join(machine.meta['startup_commands'])
+                    machine_commands="; ".join(machine.meta['exec_commands'])
                     )
 
         post_start = client.V1LifecycleHandler(
@@ -601,7 +605,10 @@ class KubernetesMachine(object):
                 print("--- Startup Commands Log\n")
                 while True:
                     (stdout, _) = next(exec_output)
-                    stdout = stdout.decode('utf-8') if stdout else ""
+
+                    char_encoding = chardet.detect(stdout) if stdout else None
+
+                    stdout = stdout.decode(char_encoding['encoding']) if stdout else ""
                     sys.stdout.write(stdout)
             except StopIteration:
                 print("\n--- End Startup Commands Log\n")

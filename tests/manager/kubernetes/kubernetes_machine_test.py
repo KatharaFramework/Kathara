@@ -351,6 +351,7 @@ def test_create_ipv6(mock_setting_get_instance, kubernetes_machine, default_devi
                                                                           'net.ipv4.ip_forward': 1,
                                                                           'net.ipv4.icmp_ratelimit': 0,
                                                                           'net.ipv6.conf.all.forwarding': 1,
+                                                                          'net.ipv6.conf.all.accept_ra': 0,
                                                                           'net.ipv6.icmp.ratelimit': 0,
                                                                           'net.ipv6.conf.default.disable_ipv6': 0,
                                                                           'net.ipv6.conf.all.disable_ipv6': 0

@@ -12,6 +12,8 @@ from .. import utils
 from ..exceptions import LinkNotFoundError, MachineNotFoundError, MachineAlreadyExistsError, LinkAlreadyExistsError
 from ..foundation.model.FilesystemMixin import FilesystemMixin
 
+LAB_METADATA: List[str] = ["LAB_NAME", "LAB_DESCRIPTION", "LAB_VERSION", "LAB_AUTHOR", "LAB_EMAIL", "LAB_WEB"]
+
 
 class Lab(FilesystemMixin):
     """A Kathara network scenario, containing information about devices and collision domains.
@@ -104,7 +106,30 @@ class Lab(FilesystemMixin):
 
         return machine, link
 
-    def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> 'MachinePackage.Machine':
+    def connect_machine_obj_to_link(self, machine: 'MachinePackage.Machine',
+                                    link_name: str, machine_iface_number: int = None) -> Tuple[Link, Optional[int]]:
+        """Connect the specified device object to the specified collision domain.
+
+        Args:
+            machine (Kathara.model.Machine): The device object.
+            link_name (str): The collision domain name.
+            machine_iface_number (int): The number of the device interface to connect. If it is None, the first free
+                number is used.
+
+        Returns:
+            Tuple[Kathara.model.Link, Optional[int]]: A tuple containing the collision domain and
+                the assigned interface number (if machine_iface_number is None).
+
+        Raises:
+            Exception: If an already used interface number is specified.
+        """
+        link = self.get_or_new_link(link_name)
+
+        machine_iface_number = machine.add_interface(link, number=machine_iface_number)
+
+        return link, machine_iface_number
+
+    def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> Optional[Any]:
         """Assign meta information to the specified device.
 
         Args:
@@ -113,16 +138,14 @@ class Lab(FilesystemMixin):
             meta_value (str): The value of the meta property.
 
         Returns:
-            Kathara.model.Machine: The Kathara device specified by the name.
+            Optional[Any]: Previous value if meta was already assigned, None otherwise.
 
         Raises:
             MachineOptionError: If invalid values are specified for meta properties.
         """
         machine = self.get_or_new_machine(machine_name)
 
-        machine.add_meta(meta_name, meta_value)
-
-        return machine
+        return machine.add_meta(meta_name, meta_value)
 
     def attach_external_links(self, external_links: Dict[str, List[ExternalLink]]) -> None:
         """Attach external collision domains to the network scenario.
@@ -153,19 +176,41 @@ class Lab(FilesystemMixin):
         for machine in self.machines:
             self.machines[machine].check()
 
-    def get_links_from_machines(self, selected_machines: Union[List[str], Set[str]]) -> Set[str]:
-        """Return the name of the collision domains connected to the selected devices.
+    def get_links_from_machines(self, machines: Union[List[str], Set[str]]) -> Set[str]:
+        """Return the name of the collision domains connected to the devices.
 
         Args:
-            selected_machines (Set[str]): A set with selected devices names.
+            machines (Union[List[str], Set[str]]): A set or a list with selected devices names.
 
         Returns:
-            Set[str]: A set of names of collision domains to deploy.
+            Set[str]: A set of names of collision domains.
         """
         # Intersect selected machines names with self.machines keys
-        selected_machines = set(self.machines.keys()) & set(selected_machines)
+        machines = set(self.machines.keys()) & set(machines)
         # Apply filtering
-        machines = [v for (k, v) in self.machines.items() if k in selected_machines]
+        machines = [v for (k, v) in self.machines.items() if k in machines]
+
+        # Get only selected machines Link objects.
+        selected_links = set(chain.from_iterable([machine.interfaces.values() for machine in machines]))
+        selected_links = {link.name for link in selected_links}
+
+        return selected_links
+
+    def get_links_from_machine_objs(self,
+                                    machines: Union[List['MachinePackage.Machine'], Set['MachinePackage.Machine']]) -> \
+            Set[str]:
+        """Return the name of the collision domains connected to the devices.
+
+        Args:
+            machines (Union[List[str], Set[str]]): A set or a list with selected devices names.
+
+        Returns:
+            Set[str]: A set of names of collision domains.
+        """
+        # Intersect selected machines names with self.machines keys
+        machines = set(self.machines.keys()) & set(map(lambda x: x.name, machines))
+        # Apply filtering
+        machines = [v for (k, v) in self.machines.items() if k in machines]
 
         # Get only selected machines Link objects.
         selected_links = set(chain.from_iterable([machine.interfaces.values() for machine in machines]))
@@ -224,7 +269,7 @@ class Lab(FilesystemMixin):
             MachineAlreadyExistsError: If the device is already in the network scenario.
         """
         if name in self.machines:
-            raise MachineAlreadyExistsError(f"Device {name} already in the network scenario.")
+            raise MachineAlreadyExistsError(name)
 
         self.machines[name] = MachinePackage.Machine(self, name, **kwargs)
 
@@ -338,7 +383,7 @@ class Lab(FilesystemMixin):
         if value is not None:
             self.general_options[name] = value
 
-    def find_machine(self, machine_name: str) -> bool:
+    def has_machine(self, machine_name: str) -> bool:
         """Check if the specified device is in the network scenario.
 
         Args:
@@ -349,7 +394,7 @@ class Lab(FilesystemMixin):
         """
         return machine_name in self.machines.keys()
 
-    def find_machines(self, machine_names: Set[str]) -> bool:
+    def has_machines(self, machine_names: Set[str]) -> bool:
         """Check if the specified devices are in the network scenario.
 
         Args:
@@ -358,7 +403,29 @@ class Lab(FilesystemMixin):
         Returns:
             bool: True if the devices are all in the network scenario, else False.
         """
-        return all(map(lambda x: self.find_machine(x), machine_names))
+        return all(map(lambda x: self.has_machine(x), machine_names))
+
+    def has_link(self, link_name: str) -> bool:
+        """Check if the specified collision domain is in the network scenario.
+
+        Args:
+            link_name (str): The name of the collision domain to search.
+
+        Returns:
+            bool: True if the collision domain is in the network scenario, else False.
+        """
+        return link_name in self.links.keys()
+
+    def has_links(self, link_names: Set[str]) -> bool:
+        """Check if the specified collision domains are in the network scenario.
+
+        Args:
+            link_names (Set[str]): A set of strings containing the names of the collision domains to search.
+
+        Returns:
+            bool: True if the collision domains are all in the network scenario, else False.
+        """
+        return all(map(lambda x: self.has_link(x), link_names))
 
     def __repr__(self) -> str:
         return "Lab(%s, %s, %s, %s)" % (self.fs, self.hash, self.machines, self.links)

@@ -1,4 +1,4 @@
-FROM fedora:36
+FROM fedora:38
 
 ENV RUBYOPT="-KU -E utf-8:utf-8"
 
@@ -14,7 +14,8 @@ RUN dnf install -y rubygem-rails \
     rpmdevtools \
     patchelf \
     pip \
-    python3-devel
+    python3.10 \
+    python3.10-devel
 
 RUN gem install ronn-ng
 

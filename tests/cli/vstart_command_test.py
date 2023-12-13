@@ -42,10 +42,13 @@ def default_device_args():
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_no_params(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                       mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_no_params(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                       mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                       default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
@@ -58,16 +61,19 @@ def test_run_no_params(mock_setting_get_instance, mock_deploy_lab, mock_get_or_n
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_no_terminals(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                               mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_no_terminals(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                               mock_get_or_new_machine, mock_connect_machine_to_link, test_lab,
+                               mock_setting, default_device_args):
     mock_setting_get_instance.return_value = mock_setting
+    mock_manager_get_instance.return_value = mock_docker_manager
     default_device_args['terminals'] = False
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
@@ -80,15 +86,18 @@ def test_run_with_no_terminals(mock_setting_get_instance, mock_deploy_lab, mock_
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_terminals(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                            mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_terminals(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                            mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                            default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting.open_terminals = False
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['terminals'] = True
@@ -103,16 +112,19 @@ def test_run_with_terminals(mock_setting_get_instance, mock_deploy_lab, mock_get
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.utils.is_admin")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_privileged(mock_setting_get_instance, mock_is_admin, mock_deploy_lab, mock_get_or_new_machine,
-                             mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_privileged(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance, mock_is_admin,
+                             mock_get_or_new_machine, mock_connect_machine_to_link, test_lab,
+                             mock_setting, default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     mock_is_admin.return_value = True
     default_device_args['privileged'] = True
@@ -127,16 +139,13 @@ def test_run_with_privileged(mock_setting_get_instance, mock_is_admin, mock_depl
         mock_add_option.assert_any_call('privileged_machines', True)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
-@mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
-@mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.utils.is_admin")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_privileged_no_root(mock_setting_get_instance, mock_is_admin, mock_deploy_lab, mock_get_or_new_machine,
-                                     mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+def test_run_with_privileged_no_root(mock_setting_get_instance, mock_is_admin,
+                                     test_lab, mock_setting, default_device_args):
     mock_setting_get_instance.return_value = mock_setting
     mock_is_admin.return_value = False
     default_device_args['privileged'] = True
@@ -152,8 +161,12 @@ def test_run_with_privileged_no_root(mock_setting_get_instance, mock_is_admin, m
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_two_terminals(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                                mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_two_terminals(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                                mock_deploy_lab, mock_get_or_new_machine, mock_connect_machine_to_link, test_lab,
+                                mock_setting, default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['num_terms'] = '2'
     command = VstartCommand()
@@ -167,15 +180,18 @@ def test_run_with_two_terminals(mock_setting_get_instance, mock_deploy_lab, mock
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_one_interface(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                                mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_one_interface(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                                mock_get_or_new_machine, mock_connect_machine_to_link, test_lab,
+                                mock_setting, default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
     default_device_args['eths'] = [('0', 'A')]
@@ -190,15 +206,18 @@ def test_run_with_one_interface(mock_setting_get_instance, mock_deploy_lab, mock
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         mock_connect_machine_to_link.assert_called_once_with('pc1', 'A', machine_iface_number=0)
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_two_interfaces(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                                 mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_two_interfaces(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                                 mock_get_or_new_machine, mock_connect_machine_to_link, test_lab,
+                                 mock_setting, default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
     default_device_args['eths'] = [('0', 'A'), ('1', 'B')]
@@ -214,7 +233,7 @@ def test_run_with_two_interfaces(mock_setting_get_instance, mock_deploy_lab, moc
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         mock_connect_machine_to_link.assert_any_call('pc1', 'A', machine_iface_number=0)
         mock_connect_machine_to_link.assert_any_call('pc1', 'B', machine_iface_number=1)
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -244,10 +263,13 @@ def test_run_with_two_interfaces_value_error(mock_setting_get_instance, mock_dep
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_exec(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                       mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_exec(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                       mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                       default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['exec_commands'] = ['echo', 'test']
     command = VstartCommand()
@@ -261,15 +283,18 @@ def test_run_with_exec(mock_setting_get_instance, mock_deploy_lab, mock_get_or_n
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_mem(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                      mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_mem(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                      mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                      default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['mem'] = "64M"
     command = VstartCommand()
@@ -283,15 +308,18 @@ def test_run_with_mem(mock_setting_get_instance, mock_deploy_lab, mock_get_or_ne
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_cpus(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                       mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_cpus(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                       mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                       default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['cpus'] = "50"
     command = VstartCommand()
@@ -305,15 +333,18 @@ def test_run_with_cpus(mock_setting_get_instance, mock_deploy_lab, mock_get_or_n
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_image(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                        mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_image(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                        mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                        default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['image'] = 'kathara/test'
     command = VstartCommand()
@@ -327,15 +358,18 @@ def test_run_with_image(mock_setting_get_instance, mock_deploy_lab, mock_get_or_
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_no_hosthome(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                              mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_no_hosthome(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                              mock_get_or_new_machine, mock_connect_machine_to_link, test_lab,
+                              mock_setting, default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['hosthome_mount'] = False
     command = VstartCommand()
@@ -349,15 +383,18 @@ def test_run_with_no_hosthome(mock_setting_get_instance, mock_deploy_lab, mock_g
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_hosthome(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                           mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_hosthome(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                           mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                           default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['hosthome_mount'] = True
     command = VstartCommand()
@@ -371,16 +408,19 @@ def test_run_with_hosthome(mock_setting_get_instance, mock_deploy_lab, mock_get_
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_terminal_emu(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                               mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_terminal_emu(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                               mock_get_or_new_machine, mock_connect_machine_to_link, test_lab,
+                               mock_setting, default_device_args):
     mock_setting_get_instance.return_value = mock_setting
+    mock_manager_get_instance.return_value = mock_docker_manager
     default_device_args['xterm'] = 'terminal'
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
@@ -393,15 +433,18 @@ def test_run_with_terminal_emu(mock_setting_get_instance, mock_deploy_lab, mock_
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_dry_run(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                          mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_dry_run(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                          mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                          default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['dry_mode'] = True
     command = VstartCommand()
@@ -414,15 +457,19 @@ def test_run_with_dry_run(mock_setting_get_instance, mock_deploy_lab, mock_get_o
         assert not mock_add_option.called
         assert not mock_get_or_new_machine.called
         assert not mock_connect_machine_to_link.called
-        assert not mock_deploy_lab.called
+        assert not mock_docker_manager.deploy_lab.called
 
 
-@mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
+@mock.patch(
+    "src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_bridged(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                          mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_bridged(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                          mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                          default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['bridged'] = True
     command = VstartCommand()
@@ -436,15 +483,18 @@ def test_run_with_bridged(mock_setting_get_instance, mock_deploy_lab, mock_get_o
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_ports(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                        mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_ports(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                        mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                        default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['ports'] = ['80:80/tcp']
     command = VstartCommand()
@@ -458,15 +508,18 @@ def test_run_with_ports(mock_setting_get_instance, mock_deploy_lab, mock_get_or_
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_sysctl(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                         mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_sysctl(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                         mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                         default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['sysctls'] = ['net.ip.test=True']
     command = VstartCommand()
@@ -480,15 +533,18 @@ def test_run_with_sysctl(mock_setting_get_instance, mock_deploy_lab, mock_get_or
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_env(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                      mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_env(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                      mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                      default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['envs'] = ['VARIABLE=VALUE']
     command = VstartCommand()
@@ -502,15 +558,18 @@ def test_run_with_env(mock_setting_get_instance, mock_deploy_lab, mock_get_or_ne
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.deploy_lab")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_shell(mock_setting_get_instance, mock_deploy_lab, mock_get_or_new_machine,
-                        mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_shell(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                        mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                        default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['shell'] = '/test/shell'
     command = VstartCommand()
@@ -524,4 +583,4 @@ def test_run_with_shell(mock_setting_get_instance, mock_deploy_lab, mock_get_or_
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
         assert not mock_connect_machine_to_link.called
-        mock_deploy_lab.assert_called_once()
+        mock_docker_manager.deploy_lab.assert_called_once()

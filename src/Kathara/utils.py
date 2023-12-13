@@ -15,8 +15,8 @@ from itertools import islice
 from multiprocessing import cpu_count
 from platform import node, machine
 from sys import platform as _platform
-from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable
 from types import ModuleType
+from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable
 
 from binaryornot.check import is_binary
 from slug import slug
@@ -141,6 +141,19 @@ def import_pywintypes() -> ModuleType:
     return exec_by_platform(pywintypes_import_stub, pywintypes_import_win, pywintypes_import_stub)
 
 
+def wait_user_input_linux() -> list:
+    """Non-blocking input function for Linux and macOS."""
+    import select
+    to_break, _, _ = select.select([sys.stdin], [], [], 0.1)
+    return to_break
+
+
+def wait_user_input_windows() -> bool:
+    """Return True if an Enter keypress is waiting to be read. Only for Windows."""
+    import msvcrt
+    return b'\r' in msvcrt.getch() if msvcrt.kbhit() else False
+
+
 # Architecture Test
 def get_architecture() -> str:
     architecture = machine().lower()
@@ -261,26 +274,6 @@ def human_readable_bytes(size_bytes: int) -> str:
 
 
 # Lab Functions
-def get_lab_temp_path(lab_name: str, force_creation: bool = True) -> str:
-    def windows_path():
-        import win32file
-        return win32file.GetLongPathName(tempfile.gettempdir())
-
-    tempdir = exec_by_platform(tempfile.gettempdir,
-                               windows_path,
-                               lambda: re.sub(r"/+", "/", "/%s" % get_absolute_path("/tmp"))
-                               )
-    lab_temp_directory = os.path.join(tempdir, lab_name)
-    if not os.path.isdir(lab_temp_directory) and force_creation:
-        os.mkdir(lab_temp_directory)
-
-    return lab_temp_directory
-
-
-def get_vlab_temp_path(force_creation: bool = True) -> str:
-    return get_lab_temp_path("kathara_vlab", force_creation=force_creation)
-
-
 def pack_file_for_tar(file_obj: Union[str, io.IOBase], arc_name: str) -> (tarfile.TarInfo, bytes):
     if isinstance(file_obj, str):
         file_content_patched = convert_win_2_linux(file_obj)

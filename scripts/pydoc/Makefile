@@ -2,23 +2,18 @@
 
 .PHONY: all doc verify-doc clean
 
-all: clean doc verify-doc
+all: doc
 
 doc: clean verify-doc
 	python3 generate_doc.py
-	cd docs && rm Kathara.model.md Kathara.setting.md Kathara.manager.md
-	sed '/manager.md/d' ./docs/Kathara-API-Docs.md
-	sed '/setting.md/d' ./docs/Kathara-API-Docs.md
-	sed '/docker.md/d' ./docs/Kathara-API-Docs.md
-	sed '/kubernetes.md/d' ./docs/Kathara-API-Docs.md
-	sed '/KubernetesSettingsAddon.md/d' ./docs/Kathara-API-Docs.md
-	sed '/DockerSettingsAddon.md/d' ./docs/Kathara-API-Docs.md
-	sed '/model.md/d' ./docs/Kathara-API-Docs.md
-	sed 's/\.\///g' ./docs/Kathara-API-Docs.md
-	sed 's/\.md//g' ./docs/Kathara-API-Docs.md
-	sed '/Modules/,/Classes/d' ./docs/Kathara-API-Docs.md
-	sed '/Functions/q' ./docs/Kathara-API-Docs.md
-	sed '/Functions/d' ./docs/Kathara-API-Docs.md
+	cd docs && rm Kathara.model.md Kathara.setting.md Kathara.manager.md Kathara.decorators.md Kathara.event.* \
+ 		Kathara.foundation.*  Kathara.manager.docker.terminal.md Kathara.manager.kubernetes.terminal.md Kathara.os.* \
+ 		Kathara.parser.netkit.md Kathara.strings.md Kathara.utils.md
+
+	sed -i 's/\.\///' docs/Kathara-API-Docs.md
+	sed -i 's/\.md//' docs/Kathara-API-Docs.md
+	sed -i '/Modules/,/Classes/{/Classes/!d;}' docs/Kathara-API-Docs.md
+	rm docs/.pages
 
 verify-doc:
 	python3 -m pip install lazydocs pydocstyle

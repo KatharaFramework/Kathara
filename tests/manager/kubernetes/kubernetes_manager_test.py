@@ -453,6 +453,116 @@ def test_undeploy_lab_selected_machines(mock_undeploy_machine, mock_undeploy_lin
 
 
 #
+# TEST: connect_tty
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.connect")
+def test_connect_tty_lab_hash(mock_connect, kubernetes_manager, default_device):
+    kubernetes_manager.connect_tty(default_device.name,
+                                   lab_hash=default_device.lab.hash)
+
+    mock_connect.assert_called_once_with(lab_hash=default_device.lab.hash.lower(),
+                                         machine_name=default_device.name,
+                                         shell=None,
+                                         logs=False)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.connect")
+def test_connect_tty_lab_name(mock_connect, kubernetes_manager, default_device):
+    kubernetes_manager.connect_tty(default_device.name,
+                                   lab_name=default_device.lab.name)
+
+    mock_connect.assert_called_once_with(lab_hash=generate_urlsafe_hash(default_device.lab.name).lower(),
+                                         machine_name=default_device.name,
+                                         shell=None,
+                                         logs=False)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.connect")
+def test_connect_tty_custom_shell(mock_connect, kubernetes_manager, default_device):
+    kubernetes_manager.connect_tty(default_device.name,
+                                   lab_hash=default_device.lab.hash,
+                                   shell='/usr/bin/zsh')
+
+    mock_connect.assert_called_once_with(lab_hash=default_device.lab.hash.lower(),
+                                         machine_name=default_device.name,
+                                         shell='/usr/bin/zsh',
+                                         logs=False)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.connect")
+def test_connect_tty_with_logs(mock_connect, kubernetes_manager, default_device):
+    kubernetes_manager.connect_tty(default_device.name,
+                                   lab_hash=default_device.lab.hash,
+                                   logs=True)
+
+    mock_connect.assert_called_once_with(lab_hash=default_device.lab.hash.lower(),
+                                         machine_name=default_device.name,
+                                         shell=None,
+                                         logs=True)
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.connect")
+def test_connect_tty_invocation_error(mock_connect, kubernetes_manager, default_device):
+    with pytest.raises(InvocationError):
+        kubernetes_manager.connect_tty(default_device.name)
+
+    assert not mock_connect.called
+
+
+#
+# TEST: exec
+#
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.exec")
+def test_exec_lab_hash(mock_exec, kubernetes_manager, default_device):
+    kubernetes_manager.exec(default_device.name, ["test", "command"], lab_hash=default_device.lab.hash)
+
+    mock_exec.assert_called_once_with(
+        default_device.lab.hash.lower(),
+        default_device.name,
+        ["test", "command"],
+        stderr=True,
+        tty=False,
+        is_stream=True
+    )
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.exec")
+def test_exec_lab_name(mock_exec, kubernetes_manager, default_device):
+    kubernetes_manager.exec(default_device.name, ["test", "command"], lab_name=default_device.lab.name)
+
+    mock_exec.assert_called_once_with(
+        generate_urlsafe_hash(default_device.lab.name).lower(),
+        default_device.name,
+        ["test", "command"],
+        stderr=True,
+        tty=False,
+        is_stream=True
+    )
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.exec")
+def test_exec_wait(mock_exec, kubernetes_manager, default_device):
+    kubernetes_manager.exec(default_device.name, ["test", "command"], lab_hash=default_device.lab.hash, wait=True)
+
+    mock_exec.assert_called_once_with(
+        default_device.lab.hash.lower(),
+        default_device.name,
+        ["test", "command"],
+        stderr=True,
+        tty=False,
+        is_stream=True
+    )
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.exec")
+def test_exec_invocation_error(mock_exec, kubernetes_manager, default_device):
+    with pytest.raises(InvocationError):
+        kubernetes_manager.exec(default_device.name, ["test", "command"])
+
+    assert not mock_exec.called
+
+
+#
 # TEST: get_machine_api_objects
 #
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
@@ -590,7 +700,6 @@ def test_get_lab_from_api_lab_name_all_info(mock_get_links_api_objects, mock_get
     assert kubernetes_pod_2.metadata.labels["name"] in lab.machines
     reconstructed_device = lab.get_or_new_machine(kubernetes_pod_2.metadata.labels["name"])
     assert "privileged" not in reconstructed_device.meta
-    assert not reconstructed_device.meta["bridged"]
     assert reconstructed_device.meta["image"] == "test_image"
     assert reconstructed_device.meta["shell"] == "/bin/bash"
     assert reconstructed_device.meta["mem"] == "64M"
@@ -618,7 +727,6 @@ def test_get_lab_from_api_lab_hash_all_info(mock_get_links_api_objects, mock_get
     assert kubernetes_pod_2.metadata.labels["name"] in lab.machines
     reconstructed_device = lab.get_or_new_machine(kubernetes_pod_2.metadata.labels["name"])
     assert "privileged" not in reconstructed_device.meta
-    assert not reconstructed_device.meta["bridged"]
     assert reconstructed_device.meta["image"] == "test_image"
     assert reconstructed_device.meta["shell"] == "/bin/bash"
     assert reconstructed_device.meta["mem"] == "64M"
@@ -649,7 +757,6 @@ def test_get_lab_from_api_lab_name_empty_meta(mock_get_links_api_objects, mock_g
     assert reconstructed_device.meta["envs"] == {}
     assert reconstructed_device.meta["ports"] == {}
     assert reconstructed_device.meta["sysctls"] == {}
-    assert not reconstructed_device.meta["bridged"]
     assert len(lab.links) == 0
 
 

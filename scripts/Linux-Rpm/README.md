@@ -9,5 +9,5 @@
     2. Run a Docker container with the image built above.
     3. Compile Kathara into a binary.
     4. Create a `.rpm` package.
-    6. Automatically remove the Docker container.
+    5. Automatically remove the Docker container.
 4. Output file is located in the `Output` directory

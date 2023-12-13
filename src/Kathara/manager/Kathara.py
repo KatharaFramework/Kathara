@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from typing import Set, Dict, Generator, Any, Tuple, List, Optional
+from typing import Set, Dict, Generator, Any, Tuple, List, Optional, Union
 
 from ..exceptions import InstantiationError
 from ..foundation.manager.IManager import IManager
@@ -149,15 +149,17 @@ class Kathara(IManager):
         """
         self.manager.undeploy_link(link)
 
-    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+    def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
                      selected_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
-            lab_hash (Optional[str]): The hash of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_name should be set.
-            lab_name (Optional[str]): The name of the network scenario. Can be used as an alternative to lab_hash.
-                If None, lab_hash should be set.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
 
         Returns:
@@ -166,7 +168,7 @@ class Kathara(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        self.manager.undeploy_lab(lab_hash, lab_name, selected_machines)
+        self.manager.undeploy_lab(lab_hash, lab_name, lab, selected_machines)
 
     def wipe(self, all_users: bool = False) -> None:
         """Undeploy all the running network scenarios.
@@ -181,7 +183,7 @@ class Kathara(IManager):
         self.manager.wipe(all_users)
 
     def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
-                    shell: str = None, logs: bool = False) -> None:
+                    shell: str = None, logs: bool = False, wait: Union[bool, Tuple[int, float]] = True) -> None:
         """Connect to a device in a running network scenario, using the specified shell.
 
         Args:
@@ -190,6 +192,10 @@ class Kathara(IManager):
             lab_name (str): The name of the network scenario where the device is deployed.
             shell (str): The name of the shell to use for connecting.
             logs (bool): If True, print startup logs on stdout.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before connecting. If a tuple is provided, the first value indicates the number of retries
+                before stopping waiting and the second value indicates the time interval to wait for each retry.
+                Default is True.
 
         Returns:
             None
@@ -197,17 +203,22 @@ class Kathara(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        self.manager.connect_tty(machine_name, lab_hash, lab_name, shell, logs)
+        self.manager.connect_tty(machine_name, lab_hash, lab_name, shell, logs, wait)
 
-    def exec(self, machine_name: str, command: List[str], lab_hash: Optional[str] = None,
-             lab_name: Optional[str] = None) -> Generator[Tuple[bytes, bytes], None, None]:
+    def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
+             lab_name: Optional[str] = None, wait: Union[bool, Tuple[int, float]] = False) \
+            -> Generator[Tuple[bytes, bytes], None, None]:
         """Exec a command on a device in a running network scenario.
 
         Args:
             machine_name (str): The name of the device to connect.
-            command (List[str]): The command to exec on the device.
+            command (Union[List[str], str]): The command to exec on the device.
             lab_hash (Optional[str]): The hash of the network scenario where the device is deployed.
             lab_name (Optional[str]): The name of the network scenario where the device is deployed.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before executing the command. If a tuple is provided, the first value indicates the
+                number of retries before stopping waiting and the second value indicates the time interval to wait
+                for each retry. Default is False.
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
@@ -215,7 +226,7 @@ class Kathara(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        return self.manager.exec(machine_name, command, lab_hash, lab_name)
+        return self.manager.exec(machine_name, command, lab_hash, lab_name, wait)
 
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
         """Copy files on a running device in the specified paths.
