@@ -10,6 +10,7 @@ from src.Kathara.cli.command.LconfigCommand import LconfigCommand
 from src.Kathara.model.Machine import Machine
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Lab import Lab
+from src.Kathara.exceptions import MachineNotFoundError
 
 
 @pytest.fixture()
@@ -125,6 +126,19 @@ def test_run_remove_two_links(mock_parse_lab, mock_docker_manager, mock_manager_
                                                                      test_lab.get_or_new_link('A'))
     mock_docker_manager.disconnect_machine_from_link.assert_any_call(test_lab.get_or_new_machine('pc1'),
                                                                      test_lab.get_or_new_link('B'))
+
+
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+def test_run_machine_not_found_error(mock_parse_lab, mock_docker_manager, mock_manager_get_instance, test_lab):
+    mock_parse_lab.return_value = test_lab
+    mock_manager_get_instance.return_value = mock_docker_manager
+    command = LconfigCommand()
+    with pytest.raises(MachineNotFoundError):
+        command.run('.', ['-n', 'pc10', '--add', 'A'])
+    mock_parse_lab.assert_called_once_with(os.getcwd())
+    mock_docker_manager.update_lab_from_api.assert_called_once_with(test_lab)
 
 
 def test_run_system_exit_error():

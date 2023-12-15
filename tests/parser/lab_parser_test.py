@@ -2,11 +2,10 @@ import sys
 
 import pytest
 
-from src.Kathara.exceptions import MachineCollisionDomainError
-from src.Kathara.parser.netkit.LabParser import LabParser
-
 sys.path.insert(0, './')
 
+from src.Kathara.exceptions import MachineCollisionDomainError
+from src.Kathara.parser.netkit.LabParser import LabParser
 
 def test_one_device():
     lab = LabParser.parse("tests/parser/labconf/one_device")

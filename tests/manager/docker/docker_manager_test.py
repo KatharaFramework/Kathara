@@ -13,7 +13,8 @@ from src.Kathara.model.Link import Link
 from src.Kathara.utils import generate_urlsafe_hash
 from src.Kathara.manager.docker.stats.DockerLinkStats import DockerLinkStats
 from src.Kathara.manager.docker.stats.DockerMachineStats import DockerMachineStats
-from src.Kathara.exceptions import MachineNotFoundError, LabNotFoundError, InvocationError, LinkNotFoundError
+from src.Kathara.exceptions import MachineNotFoundError, LabNotFoundError, InvocationError, LinkNotFoundError, \
+    MachineNotRunningError
 
 
 #
@@ -289,6 +290,13 @@ def test_connect_machine_to_link_no_link_lab(docker_manager, default_device, def
     default_link.lab = None
 
     with pytest.raises(LabNotFoundError):
+        docker_manager.connect_machine_to_link(default_device, default_link)
+
+
+def test_connect_machine_to_link_machine_not_running_error(docker_manager, default_device, default_link):
+    default_device.api_object = None
+
+    with pytest.raises(MachineNotRunningError):
         docker_manager.connect_machine_to_link(default_device, default_link)
 
 
