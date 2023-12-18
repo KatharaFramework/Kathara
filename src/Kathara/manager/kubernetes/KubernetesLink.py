@@ -197,7 +197,7 @@ class KubernetesLink(object):
         """
         filters = ["app=kathara"]
         if link_name:
-            filters.append("name=%s" % link_name)
+            filters.append(f"name={link_name}")
 
         # Get all Kathara namespaces if lab_hash is None
         namespaces = list(map(lambda x: x.metadata.name, self.kubernetes_namespace.get_all())) \

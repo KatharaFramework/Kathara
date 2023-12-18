@@ -818,11 +818,11 @@ class DockerMachine(object):
         """
         filters = {"label": ["app=kathara"]}
         if user:
-            filters["label"].append("user=%s" % user)
+            filters["label"].append(f"user={user}")
         if lab_hash:
-            filters["label"].append("lab_hash=%s" % lab_hash)
+            filters["label"].append(f"lab_hash={lab_hash}")
         if machine_name:
-            filters["label"].append("name=%s" % machine_name)
+            filters["label"].append(f"name={machine_name}")
 
         return self.client.containers.list(all=True, filters=filters)
 

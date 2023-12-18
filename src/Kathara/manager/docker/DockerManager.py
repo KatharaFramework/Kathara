@@ -416,6 +416,7 @@ class DockerManager(IManager):
 
         raise MachineNotFoundError(f"Device `{machine_name}` not found.")
 
+    @privileged
     def get_machines_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
             List[docker.models.containers.Container]:
         """Return API objects of running devices.
@@ -434,6 +435,7 @@ class DockerManager(IManager):
 
         return self.docker_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash, user=user_name)
 
+    @privileged
     def get_link_api_object(self, link_name: str, lab_hash: str = None, lab_name: str = None,
                             all_users: bool = False) -> docker.models.networks.Network:
         """Return the corresponding API object of a collision domain in a network scenario.
@@ -468,6 +470,7 @@ class DockerManager(IManager):
 
         raise LinkNotFoundError(f"Collision Domain `{link_name}` not found.")
 
+    @privileged
     def get_links_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
             List[docker.models.networks.Network]:
         """Return API objects of collision domains in a network scenario.
@@ -659,6 +662,7 @@ class DockerManager(IManager):
 
         yield machine_stats
 
+    @privileged
     def get_links_stats(self, lab_hash: str = None, lab_name: str = None, link_name: str = None,
                         all_users: bool = False) -> Generator[Dict[str, DockerLinkStats], None, None]:
         """Return information about deployed Docker networks.
@@ -679,6 +683,7 @@ class DockerManager(IManager):
 
         return self.docker_link.get_links_stats(lab_hash=lab_hash, link_name=link_name, user=user_name)
 
+    @privileged
     def get_link_stats(self, link_name: str, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
             Generator[DockerLinkStats, None, None]:
         """Return information of the specified deployed network in a specified network scenario.
