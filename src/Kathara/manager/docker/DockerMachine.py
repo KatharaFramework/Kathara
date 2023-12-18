@@ -900,15 +900,16 @@ class DockerMachine(object):
         # Build the shutdown command string
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=container.labels["name"])
 
+        logging.debug(f"Executing shutdown commands on `{container.labels['name']}`: {shutdown_commands_string}")
         # Execute the shutdown commands inside the container (only if it's running)
         if container.status == "running":
             try:
                 self._exec_run(container,
                                cmd=[container.labels['shell'], '-c', shutdown_commands_string],
-                               stdout=False,
+                               stdout=True,
                                stderr=False,
                                privileged=True,
-                               detach=True
+                               detach=False
                                )
             except MachineBinaryError as e:
                 logging.warning(f"Shell `{e.binary}` not found in "
