@@ -111,6 +111,14 @@ class MachineBinaryError(Exception):
         return f"Binary `{self.binary}` not found in device `{self.machine_name}`."
 
 
+# Interface Exceptions
+class InterfaceMacAddressError(Exception):
+    def __init__(self, mac_address: str, interface_num: int, machine_name: str) -> None:
+        super().__init__(
+            f"MAC address {mac_address} on interface `{interface_num}` of device `{machine_name}` is invalid."
+        )
+
+
 # Link Exceptions
 class LinkNotFoundError(Exception):
     pass

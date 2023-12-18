@@ -87,6 +87,7 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, mock_copy
         privileged=False,
         network=None,
         network_mode='none',
+        networking_config=None,
         sysctls={'net.ipv4.conf.all.rp_filter': 0,
                  'net.ipv4.conf.default.rp_filter': 0,
                  'net.ipv4.conf.lo.rp_filter': 0,
@@ -137,6 +138,7 @@ def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock
         privileged=False,
         network=None,
         network_mode='none',
+        networking_config=None,
         sysctls={'net.ipv4.conf.all.rp_filter': 0,
                  'net.ipv4.conf.default.rp_filter': 0,
                  'net.ipv4.conf.lo.rp_filter': 0,
@@ -193,6 +195,7 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
         privileged=True,
         network=None,
         network_mode='none',
+        networking_config=None,
         sysctls={'net.ipv4.conf.all.rp_filter': 0,
                  'net.ipv4.conf.default.rp_filter': 0,
                  'net.ipv4.conf.lo.rp_filter': 0,
@@ -318,26 +321,26 @@ def test_connect_to_link(docker_machine, default_device, default_link, default_l
     default_link.api_object.name = "A"
 
     default_device.add_interface(default_link)
-    default_device.add_interface(default_link_b)
+    interface = default_device.add_interface(default_link_b)
 
-    docker_machine.connect_to_link(default_device, default_link_b)
+    docker_machine.connect_interface(default_device, interface)
 
     assert not default_link.api_object.connect.called
     default_link_b.api_object.connect.assert_called_once()
 
 
 def test_connect_to_link_plugin_error_network(default_device, default_link, docker_machine):
-    default_device.add_interface(default_link)
+    interface = default_device.add_interface(default_link)
     default_link.api_object.connect.side_effect = DockerPluginError("network does not exists")
     with pytest.raises(DockerPluginError):
-        docker_machine.connect_to_link(default_device, default_link)
+        docker_machine.connect_interface(default_device, interface)
 
 
 def test_connect_to_link_plugin_error_endpoint(default_device, default_link, docker_machine):
-    default_device.add_interface(default_link)
+    interface = default_device.add_interface(default_link)
     default_link.api_object.connect.side_effect = DockerPluginError("endpoint does not exists")
     with pytest.raises(DockerPluginError):
-        docker_machine.connect_to_link(default_device, default_link)
+        docker_machine.connect_interface(default_device, interface)
 
 
 #

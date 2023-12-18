@@ -39,17 +39,17 @@ def test_default_device_parameters(default_device: Machine):
 # TEST: add_interface
 #
 def test_add_interface(default_device: Machine):
-    result = default_device.add_interface(Link(default_device.lab, "A"))
+    interface = default_device.add_interface(Link(default_device.lab, "A"))
     assert len(default_device.interfaces) == 1
-    assert default_device.interfaces[0].name == "A"
-    assert result == 0
+    assert default_device.interfaces[0].link.name == "A"
+    assert interface == default_device.interfaces[0]
 
 
 def test_add_interface_with_number(default_device: Machine):
-    result = default_device.add_interface(Link(default_device.lab, "A"), number=2)
+    interface = default_device.add_interface(Link(default_device.lab, "A"), number=2)
     assert len(default_device.interfaces) == 1
-    assert default_device.interfaces[2].name == "A"
-    assert result is None
+    assert default_device.interfaces[2].link.name == "A"
+    assert interface == default_device.interfaces[2]
 
 
 def test_add_interface_exception(default_device: Machine):
@@ -73,7 +73,7 @@ def test_remove_interface(default_device: Machine):
     link = Link(default_device.lab, "A")
     default_device.add_interface(link)
     assert len(default_device.interfaces) == 1
-    assert default_device.interfaces[0].name == "A"
+    assert default_device.interfaces[0].link.name == "A"
     assert default_device.name in link.machines
     default_device.remove_interface(link)
     assert len(default_device.interfaces) == 1
@@ -89,14 +89,14 @@ def test_remove_interface_one(default_device: Machine):
     default_device.add_interface(link_b)
     default_device.add_interface(link_c)
     assert len(default_device.interfaces) == 3
-    assert default_device.interfaces[0].name == "A"
-    assert default_device.interfaces[1].name == "B"
-    assert default_device.interfaces[2].name == "C"
+    assert default_device.interfaces[0].link.name == "A"
+    assert default_device.interfaces[1].link.name == "B"
+    assert default_device.interfaces[2].link.name == "C"
     default_device.remove_interface(link_a)
     assert len(default_device.interfaces) == 3
     assert default_device.interfaces[0] is None
-    assert default_device.interfaces[1].name == "B"
-    assert default_device.interfaces[2].name == "C"
+    assert default_device.interfaces[1].link.name == "B"
+    assert default_device.interfaces[2].link.name == "C"
     assert default_device.name not in link_a.machines
 
 
@@ -110,8 +110,8 @@ def test_add_remove_add_interface(default_device: Machine):
     link = Link(default_device.lab, "A")
     default_device.add_interface(link)
     default_device.remove_interface(link)
-    default_device.add_interface(link)
-    assert default_device.interfaces[1] == link
+    interface = default_device.add_interface(link)
+    assert default_device.interfaces[1] == interface
 
 
 def test_add_remove_three_interfaces(default_device: Machine):
@@ -126,8 +126,8 @@ def test_add_remove_three_interfaces(default_device: Machine):
 
     default_device.remove_interface(link_c)
 
-    default_device.add_interface(link_d)
-    assert default_device.interfaces[3] == link_d
+    interface = default_device.add_interface(link_d)
+    assert default_device.interfaces[3] == interface
 
 
 #

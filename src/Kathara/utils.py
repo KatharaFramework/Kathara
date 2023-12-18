@@ -16,7 +16,7 @@ from multiprocessing import cpu_count
 from platform import node, machine
 from sys import platform as _platform
 from types import ModuleType
-from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable
+from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable, Tuple
 
 from binaryornot.check import is_binary
 from slug import slug
@@ -306,3 +306,18 @@ def pack_files_for_tar(guest_to_host: Dict) -> bytes:
         tar_data = temp_file.read()
 
     return tar_data
+
+
+def parse_cd_mac_address(value) -> Tuple[str, str]:
+    if '/' in value:
+        parts = [x for x in value.split('/') if x]
+
+        if len(parts) != 2:
+            raise SyntaxError(f"Invalid interface definition: `{value}`.")
+
+        cd_name = parts[0]
+        mac_address = parts[1]
+    else:
+        (cd_name, mac_address) = value, None
+
+    return cd_name, mac_address

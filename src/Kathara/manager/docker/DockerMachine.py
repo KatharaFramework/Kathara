@@ -18,6 +18,7 @@ from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError, DockerPluginError, \
     MachineBinaryError
+from ...model.Interface import Interface
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine, MACHINE_CAPABILITIES
@@ -219,19 +220,21 @@ class DockerMachine(object):
         # Get the first network object, if defined.
         # This should be used in container create function
         first_network = None
+        first_machine_iface = None
         if machine.interfaces:
-            first_network = machine.interfaces[0].api_object
+            first_machine_iface = machine.interfaces[0]
+            first_network = first_machine_iface.link.api_object
 
         # If no interfaces are declared in machine, but bridged mode is required, get bridge as first link.
         # Flag that bridged is already connected (because there's another check in `start`).
-        if first_network is None and machine.is_bridged():
+        if first_machine_iface is None and machine.is_bridged():
             first_network = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
             machine.add_meta("bridge_connected", True)
 
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
 
-        if first_network:
+        if first_machine_iface:
             sysctl_parameters[RP_FILTER_NAMESPACE % "eth0"] = 0
 
         sysctl_parameters["net.ipv4.ip_forward"] = 1
@@ -264,6 +267,17 @@ class DockerMachine(object):
             privileged = False
             logging.warning("Privileged flag is ignored with a remote Docker connection.")
 
+        networking_config = None
+        if first_machine_iface:
+            driver_opt = {'kathara.mac_addr': first_machine_iface.mac_address} \
+                if first_machine_iface.mac_address else None
+
+            networking_config = {
+                first_network.name: self.client.api.create_endpoint_config(
+                    driver_opt=driver_opt
+                )
+            }
+
         container_name = self.get_container_name(machine.name, machine.lab.hash)
 
         try:
@@ -274,10 +288,7 @@ class DockerMachine(object):
                                                               privileged=privileged,
                                                               network=first_network.name if first_network else None,
                                                               network_mode="bridge" if first_network else "none",
-                                                              network_driver_opt={
-                                                                  'kathara.machine': machine.name,
-                                                                  'kathara.iface': "0"
-                                                              } if first_network else None,
+                                                              networking_config=networking_config,
                                                               environment=machine.meta['envs'],
                                                               sysctls=sysctl_parameters,
                                                               mem_limit=memory,
@@ -307,12 +318,12 @@ class DockerMachine(object):
         machine.api_object = machine_container
 
     @staticmethod
-    def connect_to_link(machine: Machine, link: Link) -> None:
+    def connect_interface(machine: Machine, interface: Interface) -> None:
         """Connect the Docker container representing the machine to a specified collision domain.
 
         Args:
-            machine (Kathara.model.Machine): A Kathara device.
-            link (Kathara.model.Link): A Kathara collision domain object.
+            machine (Kathara.model.Machine.Machine): A Kathara device.
+            interface (Kathara.model.Interface.Interface): A Kathara interface object.
 
         Returns:
             None
@@ -324,12 +335,13 @@ class DockerMachine(object):
         machine.api_object.reload()
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
-        if link.api_object.name not in attached_networks:
+        if interface.link.api_object.name not in attached_networks:
             try:
-                link.api_object.connect(
+                driver_opt = {'kathara.mac_addr': interface.mac_address} if interface.mac_address else None
+
+                interface.link.api_object.connect(
                     machine.api_object,
-                    driver_opt={'kathara.machine': machine.name,
-                                'kathara.iface': str(machine.get_interface_by_link(link))}
+                    driver_opt=driver_opt
                 )
             except APIError as e:
                 if e.response.status_code == 500 and \
@@ -388,16 +400,17 @@ class DockerMachine(object):
         # Connect the container to its networks (starting from the second, the first is already connected in `create`)
         # This should be done after the container start because Docker causes a non-deterministic order when attaching
         # networks before container startup.
-        for (iface_num, machine_link) in islice(machine.interfaces.items(), 1, None):
-            logging.debug("Connecting device `%s` to collision domain `%s` on interface %d..." % (machine.name,
-                                                                                                  machine_link.name,
-                                                                                                  iface_num
-                                                                                                  )
-                          )
+        for (iface_num, machine_iface) in islice(machine.interfaces.items(), 1, None):
+            logging.debug(
+                f"Connecting device `{machine.name}` to collision domain `{machine_iface.link.name}` "
+                f"on interface {iface_num}..."
+            )
             try:
-                machine_link.api_object.connect(
+                driver_opt = {'kathara.mac_addr': machine_iface.mac_address} if machine_iface.mac_address else None
+
+                machine_iface.link.api_object.connect(
                     machine.api_object,
-                    driver_opt={'kathara.machine': machine.name, 'kathara.iface': str(iface_num)}
+                    driver_opt=driver_opt
                 )
             except APIError as e:
                 if e.response.status_code == 500 and \

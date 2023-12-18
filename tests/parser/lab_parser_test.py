@@ -2,6 +2,7 @@ import sys
 
 import pytest
 
+from src.Kathara.exceptions import InterfaceMacAddressError
 from src.Kathara.exceptions import MachineCollisionDomainError
 from src.Kathara.parser.netkit.LabParser import LabParser
 
@@ -14,8 +15,8 @@ def test_one_device():
     assert len(lab.links) == 2
     assert lab.machines['pc1']
     assert len(lab.machines['pc1'].interfaces) == 2
-    assert lab.machines['pc1'].interfaces[0].name == 'A'
-    assert lab.machines['pc1'].interfaces[1].name == 'B'
+    assert lab.machines['pc1'].interfaces[0].link.name == 'A'
+    assert lab.machines['pc1'].interfaces[1].link.name == 'B'
     assert lab.machines['pc1'].meta['privileged']
     assert (1000, 'udp') in lab.machines['pc1'].meta['ports']
     assert lab.machines['pc1'].meta['ports'][(1000, 'udp')] == 2000
@@ -56,10 +57,10 @@ def test_two_device_one_cd():
     assert len(lab.links) == 1
     assert lab.machines['pc1']
     assert len(lab.machines['pc1'].interfaces) == 1
-    assert lab.machines['pc1'].interfaces[0].name == 'A'
+    assert lab.machines['pc1'].interfaces[0].link.name == 'A'
     assert lab.machines['pc2']
     assert len(lab.machines['pc2'].interfaces) == 1
-    assert lab.machines['pc2'].interfaces[0].name == 'A'
+    assert lab.machines['pc2'].interfaces[0].link.name == 'A'
 
 
 def test_inline_comment():
@@ -68,7 +69,7 @@ def test_inline_comment():
     assert len(lab.links) == 1
     assert lab.machines['pc1']
     assert len(lab.machines['pc1'].interfaces) == 1
-    assert lab.machines['pc1'].interfaces[0].name == 'A'
+    assert lab.machines['pc1'].interfaces[0].link.name == 'A'
 
 
 def test_inline_comment_error():
@@ -84,3 +85,23 @@ def test_unmatched_quotes():
 def test_unclosed_quotes():
     with pytest.raises(SyntaxError):
         LabParser.parse("tests/parser/labconf/unclosed_quotes")
+
+
+def test_mac_address():
+    lab = LabParser.parse("tests/parser/labconf/mac_address")
+
+    assert lab.machines["pc1"].interfaces[0].mac_address == "00:00:00:00:00:01"
+    assert lab.machines["pc1"].interfaces[0].link.name == "A"
+
+    assert lab.machines["pc2"].interfaces[0].mac_address is None
+    assert lab.machines["pc2"].interfaces[0].link.name == "A"
+
+
+def test_mac_address_error():
+    with pytest.raises(InterfaceMacAddressError):
+        LabParser.parse("tests/parser/labconf/mac_address_error")
+
+
+def test_mac_address_parse_error():
+    with pytest.raises(SyntaxError):
+        LabParser.parse("tests/parser/labconf/mac_address_parse_error")

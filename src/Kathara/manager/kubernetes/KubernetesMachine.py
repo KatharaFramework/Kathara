@@ -377,9 +377,9 @@ class KubernetesMachine(object):
 
         pod_annotations = {}
         network_interfaces = []
-        for (idx, machine_link) in machine.interfaces.items():
+        for (idx, interface) in machine.interfaces.items():
             network_interfaces.append({
-                "name": machine_link.api_object["metadata"]["name"],
+                "name": interface.link.api_object["metadata"]["name"],
                 "namespace": machine.lab.hash,
                 "interface": "net%d" % idx
             })

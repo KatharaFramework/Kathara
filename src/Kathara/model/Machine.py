@@ -13,9 +13,9 @@ from fs.tarfs import WriteTarFS
 from fs.tempfs import TempFS
 from fs.walk import Walker
 
+from . import Interface as InterfacePackage
 from . import Lab as LabPackage
 from . import Link as LinkPackage
-from .Link import Link
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainError
 from ..foundation.model.FilesystemMixin import FilesystemMixin
@@ -61,7 +61,7 @@ class Machine(FilesystemMixin):
         self.lab: LabPackage.Lab = lab
         self.name: str = name
 
-        self.interfaces: OrderedDict[int, Link] = collections.OrderedDict()
+        self.interfaces: OrderedDict[int, 'InterfacePackage.Interface'] = collections.OrderedDict()
 
         self.meta: Dict[str, Any] = {
             'exec_commands': [],
@@ -77,24 +77,25 @@ class Machine(FilesystemMixin):
 
         self.update_meta(kwargs)
 
-    def add_interface(self, link: 'LinkPackage.Link', number: int = None) -> Optional[int]:
+    def add_interface(self, link: 'LinkPackage.Link', number: int = None, mac_address: str = None) \
+            -> 'InterfacePackage.Interface':
         """Add an interface to the device attached to the specified collision domain.
 
         Args:
             link (Kathara.model.Link): The Kathara collision domain to attach.
             number (int): The number of the new interface. If it is None, the first free number is selected.
+            mac_address (str): The MAC address of the interface. If None, a generated MAC address
+                is associated when the Machine is started.
 
         Returns:
-            Optional[int]: The number of the assigned interface if not passed, else None.
+            Interface: The object associated to this interface.
 
         Raises:
             MachineCollisionDomainConflictError: If the interface number specified is already used on the device.
             MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
-        had_number = True
         if number is None:
             number = len(self.interfaces.keys())
-            had_number = False
 
         if number in self.interfaces:
             raise MachineCollisionDomainError(f"Interface {number} already set on device `{self.name}`.")
@@ -104,10 +105,11 @@ class Machine(FilesystemMixin):
                 f"Device `{self.name}` is already connected to collision domain `{link.name}`."
             )
 
-        self.interfaces[number] = link
+        interface = InterfacePackage.Interface(self, link, number, mac_address)
+        self.interfaces[number] = interface
         link.machines[self.name] = self
 
-        return number if not had_number else None
+        return interface
 
     def remove_interface(self, link: 'LinkPackage.Link') -> None:
         """Disconnect the device from the specified collision domain.
@@ -127,30 +129,12 @@ class Machine(FilesystemMixin):
             )
 
         self.interfaces = collections.OrderedDict(
-            map(lambda x: x if x[1] is not None and x[1].name != link.name else (x[0], None), self.interfaces.items())
+            map(
+                lambda x: x if x[1] is not None and x[1].link.name != link.name else (x[0], None),
+                self.interfaces.items()
+            )
         )
         link.machines.pop(self.name)
-
-    def get_interface_by_link(self, link: 'LinkPackage.Link') -> int:
-        """Get the interface number associated to the specified collision domain.
-
-        Args:
-            link (Kathara.model.Link): The Kathara collision domain to search.
-
-        Returns:
-            int: The interface number associated to the collision domain.
-
-        Raises:
-            MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
-
-        """
-        for (number, machine_link) in self.interfaces.items():
-            if machine_link == link:
-                return number
-
-        raise MachineCollisionDomainError(
-            f"Device `{self.name}` is not connected to collision domain `{link.name}`."
-        )
 
     def add_meta(self, name: str, value: Any) -> None:
         """Add a meta property to the device.
@@ -692,9 +676,11 @@ class Machine(FilesystemMixin):
 
         if self.interfaces:
             formatted_machine += "\nInterfaces: "
-            for (iface_num, link) in self.interfaces.items():
-                if link:
-                    formatted_machine += f"\n\t- {iface_num}: {link.name}"
+            for (iface_num, interface) in self.interfaces.items():
+                if interface:
+                    formatted_machine += f"\n\t- {iface_num}: {interface.link.name}"
+                    if interface.mac_address:
+                        formatted_machine += f" ({interface.mac_address})"
 
         formatted_machine += f"\nBridged Connection: {self.meta['bridged']}"
 

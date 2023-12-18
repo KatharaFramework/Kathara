@@ -10,6 +10,7 @@ from src.Kathara.manager.docker.DockerManager import DockerManager
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Machine import Machine
 from src.Kathara.model.Link import Link
+from src.Kathara.model.Interface import Interface
 from src.Kathara.utils import generate_urlsafe_hash
 from src.Kathara.manager.docker.stats.DockerLinkStats import DockerLinkStats
 from src.Kathara.manager.docker.stats.DockerMachineStats import DockerMachineStats
@@ -251,31 +252,35 @@ def test_deploy_link_no_lab(docker_manager, default_link):
 # TEST: connect_machine_to_link
 #
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_to_link")
-def test_connect_machine_to_link_one_link(mock_connect_to_link_machine, mock_deploy_link, docker_manager,
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_interface")
+def test_connect_machine_to_link_one_link(mock_connect_interface_machine, mock_deploy_link, docker_manager,
                                           default_device, default_link):
     docker_manager.connect_machine_to_link(default_device, default_link)
 
+    interface = default_device.interfaces[0]
+
     mock_deploy_link.assert_called_once_with(default_link)
-    mock_connect_to_link_machine.assert_called_once_with(default_device, default_link)
+    mock_connect_interface_machine.assert_called_once_with(default_device, interface)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_to_link")
-def test_connect_machine_to_link_two_links(mock_connect_to_link_machine, mock_deploy_link, docker_manager,
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_interface")
+def test_connect_machine_to_link_two_links(mock_connect_interface_machine, mock_deploy_link, docker_manager,
                                            default_device, default_link, default_link_b):
     docker_manager.connect_machine_to_link(default_device, default_link)
+    interface_a = default_device.interfaces[0]
 
     mock_deploy_link.assert_called_with(default_link)
-    mock_connect_to_link_machine.assert_called_with(default_device, default_link)
+    mock_connect_interface_machine.assert_called_with(default_device, interface_a)
 
     docker_manager.connect_machine_to_link(default_device, default_link_b)
+    interface_b = default_device.interfaces[1]
 
     mock_deploy_link.assert_called_with(default_link_b)
-    mock_connect_to_link_machine.assert_called_with(default_device, default_link_b)
+    mock_connect_interface_machine.assert_called_with(default_device, interface_b)
 
     assert mock_deploy_link.call_count == 2
-    assert mock_connect_to_link_machine.call_count == 2
+    assert mock_connect_interface_machine.call_count == 2
 
 
 def test_connect_machine_to_link_no_machine_lab(docker_manager, default_device, default_link):
@@ -364,7 +369,7 @@ def test_undeploy_machine(mock_machine_undeploy, mock_link_undeploy, docker_mana
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
 def test_undeploy_machine_two_machines(mock_machine_undeploy, mock_link_undeploy, docker_manager, two_device_scenario):
     device_1 = two_device_scenario.get_or_new_machine('pc1')
-    device_1_links = {x.name for x in device_1.interfaces.values()}
+    device_1_links = {x.link.name for x in device_1.interfaces.values()}
 
     docker_manager.undeploy_machine(device_1)
 
@@ -968,7 +973,7 @@ def test_update_lab_from_api_add_link(mock_get_links_api_objects, mock_get_machi
     lab = Lab("test")
     device = lab.get_or_new_machine(docker_container.labels["name"])
     link = Link(lab, docker_network.attrs["Labels"]["name"])
-    device.add_interface(link)
+    interface = device.add_interface(link)
     mock_get_machines_api_objects.return_value = [docker_container]
     mock_get_links_api_objects.return_value = [docker_network, docker_network_b]
     docker_container.attrs["NetworkSettings"]["Networks"] = ["kathara_user_hash_test_network",
