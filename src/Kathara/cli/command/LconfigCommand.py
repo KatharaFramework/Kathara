@@ -2,8 +2,8 @@ import argparse
 import logging
 from typing import List
 
-from ... import utils
 from ..ui.utils import alphanumeric
+from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
@@ -77,15 +77,19 @@ class LconfigCommand(Command):
         device = lab.get_machine(machine_name)
 
         if args['to_add']:
-            for cd in args['to_add']:
+            for cd_to_add in args['to_add']:
+                cd_name, mac_address = utils.parse_cd_mac_address(cd_to_add)
                 logging.info(
-                    "Adding interface to device `%s` on collision domain `%s`..." % (machine_name, cd)
+                    f"Adding interface to device `{machine_name}` on collision domain `{cd_name}`" +
+                    (f" with MAC Address {mac_address}" if mac_address else "") +
+                    f"..."
                 )
-                Kathara.get_instance().connect_machine_to_link(device, lab.get_or_new_link(cd))
+                link = lab.get_or_new_link(cd_name)
+                Kathara.get_instance().connect_machine_to_link(device, link, mac_address=mac_address)
 
         if args['to_remove']:
-            for cd in args['to_remove']:
+            for cd_to_remove in args['to_remove']:
                 logging.info(
-                    "Removing interface on collision domain `%s` from device `%s`..." % (cd, machine_name)
+                    "Removing interface on collision domain `%s` from device `%s`..." % (cd_to_remove, machine_name)
                 )
-                Kathara.get_instance().disconnect_machine_from_link(device, lab.get_or_new_link(cd))
+                Kathara.get_instance().disconnect_machine_from_link(device, lab.get_link(cd_to_remove))

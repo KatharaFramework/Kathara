@@ -28,44 +28,63 @@ def test_lab():
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
 def test_run_add_link(mock_parse_lab, mock_docker_manager, mock_manager_get_instance, test_lab):
+    test_lab.connect_machine_to_link("pc1", "A")
+
     mock_parse_lab.return_value = test_lab
     mock_manager_get_instance.return_value = mock_docker_manager
     command = LconfigCommand()
     command.run('.', ['-n', 'pc1', '--add', 'A'])
     mock_parse_lab.assert_called_once_with(os.getcwd())
     mock_docker_manager.update_lab_from_api.assert_called_once_with(test_lab)
-    mock_docker_manager.connect_machine_to_link.assert_called_once_with(test_lab.get_or_new_machine('pc1'),
-                                                                        test_lab.get_or_new_link('A'))
+    mock_docker_manager.connect_machine_to_link.assert_called_once_with(
+        test_lab.get_machine('pc1'),
+        test_lab.get_machine("pc1").interfaces[0].link,
+        mac_address=None
+    )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
 def test_run_add_link_with_directory(mock_parse_lab, mock_docker_manager, mock_manager_get_instance, test_lab):
+    test_lab.connect_machine_to_link("pc1", "A")
+
     mock_parse_lab.return_value = test_lab
     mock_manager_get_instance.return_value = mock_docker_manager
     command = LconfigCommand()
     command.run('.', ['-d', os.path.join('/test', 'path'), '-n', 'pc1', '--add', 'A'])
     mock_parse_lab.assert_called_once_with(os.path.abspath(os.path.join('/test', 'path')))
     mock_docker_manager.update_lab_from_api.assert_called_once_with(test_lab)
-    mock_docker_manager.connect_machine_to_link.assert_called_once_with(test_lab.get_or_new_machine('pc1'),
-                                                                        test_lab.get_or_new_link('A'))
+    mock_docker_manager.connect_machine_to_link.assert_called_once_with(
+        test_lab.get_machine('pc1'),
+        test_lab.get_machine("pc1").interfaces[0].link,
+        mac_address=None
+    )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
 def test_run_add_two_links(mock_parse_lab, mock_docker_manager, mock_manager_get_instance, test_lab):
+    test_lab.connect_machine_to_link("pc1", "A")
+    test_lab.connect_machine_to_link("pc1", "B")
+
     mock_parse_lab.return_value = test_lab
     mock_manager_get_instance.return_value = mock_docker_manager
     command = LconfigCommand()
     command.run('.', ['-n', 'pc1', '--add', 'A', 'B'])
     mock_parse_lab.assert_called_once_with(os.getcwd())
     mock_docker_manager.update_lab_from_api.assert_called_once_with(test_lab)
-    mock_docker_manager.connect_machine_to_link.assert_any_call(test_lab.get_or_new_machine('pc1'),
-                                                                test_lab.get_or_new_link('A'))
-    mock_docker_manager.connect_machine_to_link.assert_any_call(test_lab.get_or_new_machine('pc1'),
-                                                                test_lab.get_or_new_link('B'))
+    mock_docker_manager.connect_machine_to_link.assert_any_call(
+        test_lab.get_machine('pc1'),
+        test_lab.get_machine("pc1").interfaces[0].link,
+        mac_address=None
+    )
+    mock_docker_manager.connect_machine_to_link.assert_any_call(
+        test_lab.get_machine('pc1'),
+        test_lab.get_machine("pc1").interfaces[1].link,
+        mac_address=None
+    )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")

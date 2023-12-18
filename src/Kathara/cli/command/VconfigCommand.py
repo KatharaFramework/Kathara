@@ -60,7 +60,7 @@ class VconfigCommand(Command):
         lab = Lab("kathara_vlab")
 
         machine_name = args['name']
-        device = lab.get_or_new_machine(machine_name)
+        device = lab.get_machine(machine_name)
         device.api_object = Kathara.get_instance().get_machine_api_object(machine_name, lab_name=lab.name)
 
         if args['to_add']:
