@@ -95,6 +95,11 @@ class MachineNotFoundError(Exception):
     pass
 
 
+class MachineNotRunningError(Exception):
+    def __init__(self, machine_name: str) -> None:
+        super().__init__(f"Device `{machine_name}` is not running.")
+
+
 class MachineNotReadyError(Exception):
     def __init__(self, machine_name: str) -> None:
         super().__init__(f"Device `{machine_name}` is not ready.")

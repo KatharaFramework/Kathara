@@ -16,7 +16,7 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError, LinkNotFoundError, MachineCollisionDomainError, \
-    InvocationError, LabNotFoundError
+    InvocationError, LabNotFoundError, MachineNotRunningError
 from ...exceptions import MachineNotFoundError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
@@ -152,11 +152,15 @@ class DockerManager(IManager):
 
         Raises:
             LabNotFoundError: If the device specified is not associated to any network scenario.
+            MachineNotRunningError: If the specified device is not running.
             LabNotFoundError: If the collision domain is not associated to any network scenario.
             MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
         if not machine.lab:
             raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
+
+        if not machine.api_object or machine.api_object.status != "running":
+            raise MachineNotRunningError(machine.name)
 
         if not link.lab:
             raise LabNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")

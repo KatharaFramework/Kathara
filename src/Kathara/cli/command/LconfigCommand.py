@@ -74,7 +74,7 @@ class LconfigCommand(Command):
         Kathara.get_instance().update_lab_from_api(lab)
 
         machine_name = args['name']
-        device = lab.get_or_new_machine(machine_name)
+        device = lab.get_machine(machine_name)
 
         if args['to_add']:
             for cd in args['to_add']:
