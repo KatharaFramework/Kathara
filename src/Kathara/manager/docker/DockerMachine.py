@@ -17,7 +17,7 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError, DockerPluginError, \
-    MachineBinaryError, MachineNotRunningError
+    MachineBinaryError
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine, MACHINE_CAPABILITIES
@@ -317,9 +317,6 @@ class DockerMachine(object):
             DockerPluginError: If Kathara has been left in an inconsistent state.
             APIError: If the Docker APIs return an error.
         """
-        if not machine.api_object:
-            raise MachineNotRunningError(machine.name)
-
         machine.api_object.reload()
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
