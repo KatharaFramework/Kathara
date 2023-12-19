@@ -153,15 +153,19 @@ def open_machine_terminal(machine) -> None:
 # Types for argparse
 def alphanumeric(value, pat=re.compile(r"^\w+$")):
     if not pat.match(value):
-        raise argparse.ArgumentTypeError("invalid alphanumeric value")
+        raise argparse.ArgumentTypeError("Invalid alphanumeric value")
 
     return value
 
 
-def colon_separated(value):
+def interface_cd_mac(value):
+    n, cd, mac = None, None, None
     try:
-        (v1, v2) = value.split(':')
+        parts = value.split('/')
+        (n, cd) = parts[0].split(':')
+        if len(parts) == 2:
+            mac = parts[1]
     except ValueError:
-        raise argparse.ArgumentTypeError("invalid colon-separated value: %s" % value)
+        raise argparse.ArgumentTypeError("Invalid interface definition: %s" % value)
 
-    return v1, v2
+    return n, cd, mac
