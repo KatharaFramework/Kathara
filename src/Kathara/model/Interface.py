@@ -5,7 +5,7 @@ from . import Link as LinkPackage
 from . import Machine as MachinePackage
 from ..exceptions import InterfaceMacAddressError
 
-MAC_ADDRESS_REGEX = re.compile(r"^[0-9a-f]{2}([:]?)[0-9a-f]{2}(\1[0-9a-f]{2}){4}$")
+MAC_ADDRESS_REGEX = re.compile(r"^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$")
 
 
 class Interface(object):
