@@ -45,7 +45,7 @@ class LconfigCommand(Command):
 
         group.add_argument(
             '--add',
-            type=alphanumeric,
+            type=str,
             dest='to_add',
             metavar='CD',
             nargs='+',
