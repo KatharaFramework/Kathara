@@ -9,29 +9,30 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 ARG DEBIAN_FRONTEND="noninteractive"
 RUN apt update && \
-    apt upgrade -y && \
+	apt upgrade -y && \
 	apt install -y \
-		apt-utils \
-		debhelper \
-		libxml2-dev \
-		zlib1g-dev \
-		build-essential \
-		lintian \
-		devscripts \
-		git \
-		ruby-full \
-		bash-completion \
-		software-properties-common \
-        patchelf
+	apt-utils \
+	bash-completion \
+	build-essential \
+	debhelper \
+	devscripts \
+	git \
+	libxml2-dev \
+	libffi-dev \
+	lintian \
+	patchelf \
+	ruby-full \
+	software-properties-common \
+	zlib1g-dev
 
-		
+
 RUN add-apt-repository ppa:deadsnakes/ppa \
 	&& DEBIAN_FRONTEND=noninteractive apt install -y \
-		python3.10 \
-		python3.10-dev \
-		python3.10-venv \
-		python3-pip \
-		python3.10-distutils
+	python3.11 \
+	python3.11-dev \
+	python3.11-venv \
+	python3-pip \
+	python3.11-distutils
 
 __NOKOGIRI__
 RUN gem install ronn-ng
