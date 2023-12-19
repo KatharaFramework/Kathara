@@ -8,41 +8,59 @@ The main network scenario configuration file. In this file you can specify the n
 
 This file is a list of `device[arg]=value` assignments, where `arg` can be an integer value or the name of an option (described below).
 
-If `arg` is an integer value, then `value` is the name of the collision domain to which interface eth`arg` of device `device` must be connected (note that the name of the collision domain must not contain spaces (" "), commas (",") and dots ("."). For example, `pc1[0]=CD1` means that interface eth0 of device pc1 will be connected to collision domain CD1.
-
-If `arg` is an option name, then `device` will be launched with option `arg` set to value `value`.
-
 In order to establish a uniform convention, comment lines should always start with a hash character (`#`).
+
+## DEVICE INTERFACES
+
+If `arg` is an integer value, then `value` is the name of the collision domain to which interface eth`arg` of device `device` must be connected. The syntax is as follows:
+
+- `arg`: An integer value representing the interface number (e.g., 0).
+- `CD1`: The name of the collision domain to which the specified interface must be connected. Note that the name of the collision domain must not contain spaces (" "), commas (",") and dots (".").
+- `/MAC_ADDR`: An optional parameter to specify the MAC address of the interface of `device` (MAC address must be in the format `XX:XX:XX:XX:XX:XX`). If `MAC_ADDR` is not provided, Kathará will assign a random one.
+
+### EXAMPLES
+
+1. Connect eth0 of `pc1` to collision domain `CD1` with a random MAC address:
+	```
+	pc1[0]="CD1"
+	```
+
+2. Connect eth1 of `pc1` to collision domain `CD2` with the specified MAC address:
+	```
+	pc1[1]="CD2/02:42:ac:11:00:02"
+	```
 
 ## DEVICE OPTIONS
 
+If `arg` is an option name, then `device` will be launched with option `arg` set to value `value`.
+
 * `image` (string):
-    Docker image used for this device.
+	Docker image used for this device.
 
 * `mem` (string):
-    Set the amount of available RAM inside the device. If you set this option, the minimum allowed value is 4m (4 megabyte).
+	Set the amount of available RAM inside the device. If you set this option, the minimum allowed value is 4m (4 megabyte).
 
-    This option takes a positive integer, followed by a suffix of "b", "k", "m", "g", to indicate bytes, kilobytes, megabytes, or gigabytes.
+	This option takes a positive integer, followed by a suffix of "b", "k", "m", "g", to indicate bytes, kilobytes, megabytes, or gigabytes.
 
 * `cpus` (float):
-    Limit the amount of CPU available for this device.
+	Limit the amount of CPU available for this device.
 
-    This option takes a positive float, ranging from 0 to max number of host logical CPUs. For instance, if the host device has two CPUs and you set `device[cpus]=1.5`, the device is guaranteed at most one and a half of the CPUs.
+	This option takes a positive float, ranging from 0 to max number of host logical CPUs. For instance, if the host device has two CPUs and you set `device[cpus]=1.5`, the device is guaranteed at most one and a half of the CPUs.
 
 * `port` (string):
-    Map localhost port HOST to the internal port GUEST of the device for the specified PROTOCOL. The syntax is [HOST:]GUEST[/PROTOCOL].
+	Map localhost port HOST to the internal port GUEST of the device for the specified PROTOCOL. The syntax is [HOST:]GUEST[/PROTOCOL].
 
-    If HOST port is not specified, default is 3000. If PROTOCOL is not specified, default is `tcp`. Supported PROTOCOL values are: tcp, udp, or sctp.
-    For instance, with this command you can map host's port 8080 to device's port 80 with TCP protocol: `device[port]="8080:80/tcp"`.
+	If HOST port is not specified, default is 3000. If PROTOCOL is not specified, default is `tcp`. Supported PROTOCOL values are: tcp, udp, or sctp.
+	For instance, with this command you can map host's port 8080 to device's port 80 with TCP protocol: `device[port]="8080:80/tcp"`.
 
 * `bridged` (boolean):
-    Connect the device to the host network by adding an additional network interface. This interface will be connected to the host network through a NAT connection.
+	Connect the device to the host network by adding an additional network interface. This interface will be connected to the host network through a NAT connection.
 
 * `ipv6` (boolean):
-    Enable or disable IPv6 on this device.
+	Enable or disable IPv6 on this device.
 
 * `exec` (string):
-    Run a specific shell command inside the device during the startup phase.
+	Run a specific shell command inside the device during the startup phase.
 
 * `sysctl` (string):
 	Set a sysctl option for this device. Only the `net.` namespace is allowed to be set. Can be set multiple times per device, each will add a new entry (unless the same config item is used again).
@@ -51,10 +69,10 @@ In order to establish a uniform convention, comment lines should always start wi
 	Set an environment variable for the device. Can be set multiple times per device, each will add a new entry (unless the same variable is used again). The format is: ENV_NAME=ENV_VALUE.
 
 * `shell` (string):
-    Use the specified shell to connect to the device, e.g., when `kathara connect` is called.
+	Use the specified shell to connect to the device, e.g., when `kathara connect` is called.
 
 * `num_terms` (integer):
-    Choose the number of terminals to open for this device.
+	Choose the number of terminals to open for this device.
 
 ## NETWORK SCENARIO META INFORMATION
 
@@ -69,32 +87,33 @@ It is also possible to provide descriptive information about a network scenario 
 
 ## EXAMPLE
 
-        LAB_NAME="Example"
-		LAB_DESCRIPTION="A simple example of lab.conf"
-		LAB_VERSION=1.0
-		LAB_AUTHOR="Kathara Authors"
-		LAB_EMAIL=contact@kathara.org
-		LAB_WEB=http://www.kathara.org/
-
-		r1[0]="A"
-		r1[1]="B"
-		r1[port]="32000"
-		r1[image]="namespace/image_name"
-		r1[sysctl]="net.ipv6.conf.all.forwarding=1"
-
-		r2[0]="C"
-		r2[1]="B"
-		r2[port]="2000:500/udp"
-		r2[exec]="echo Hi"
-
-		pc1[0]="A"
-		pc1[bridged]="true"
-
-		pc2[0]="C"
-		pc2[mem]="128m"
-        pc2[shell]="/bin/sh"
-
 Example of a `lab.conf`(5) file.
+
+	LAB_NAME="Example" 
+	LAB_DESCRIPTION="A simple example of lab.conf"
+	LAB_VERSION=1.0
+	LAB_AUTHOR="Kathara Authors"
+	LAB_EMAIL=contact@kathara.org
+	LAB_WEB=http://www.kathara.org/
+
+	r1[0]="A"
+	r1[1]="B/02:42:ac:11:00:02" # Specify the MAC address assigned to interface eth1 of r1
+	r1[port]="32000"
+	r1[image]="namespace/image_name"
+	r1[sysctl]="net.ipv6.conf.all.forwarding=1"
+
+	r2[0]="C"
+	r2[1]="B"
+	r2[port]="2000:500/udp"
+	r2[exec]="echo Hi"
+
+	pc1[0]="A"
+	pc1[bridged]="true"
+
+	pc2[0]="C"
+	pc2[mem]="128m"
+	pc2[shell]="/bin/sh" 
+
 
 m4_include(footer.txt)
 
