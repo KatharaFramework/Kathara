@@ -20,6 +20,7 @@ def test_run_add_link(mock_docker_manager, mock_manager_get_instance, mock_get_m
     mock_docker_manager.get_machine_api_object.assert_called_once_with('pc1', lab_name='kathara_vlab')
     mock_docker_manager.connect_machine_to_link.assert_called_once()
 
+
 @mock.patch("src.Kathara.model.Lab.Lab.get_machine")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")

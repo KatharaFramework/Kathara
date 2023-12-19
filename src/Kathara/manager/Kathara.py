@@ -103,7 +103,7 @@ class Kathara(IManager):
             LabNotFoundError: If the collision domain is not associated to any network scenario.
             MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
-        self.manager.connect_machine_to_link(machine, link, mac_address=mac_address)
+        self.manager.connect_machine_to_link(machine, link, mac_address)
 
     def disconnect_machine_from_link(self, machine: Machine, link: Link) -> None:
         """Disconnect a Kathara device from a collision domain.

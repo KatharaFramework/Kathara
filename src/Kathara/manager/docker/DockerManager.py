@@ -552,7 +552,7 @@ class DockerManager(IManager):
             device.meta["sysctls"] = container.attrs["HostConfig"]["Sysctls"]
 
             if "none" not in container.attrs["NetworkSettings"]["Networks"]:
-                for network_name in container.attrs["NetworkSettings"]["Networks"]:
+                for network_name, network_options in container.attrs["NetworkSettings"]["Networks"].items():
                     if network_name == "bridge":
                         device.add_meta("bridged", True)
                         continue
@@ -560,7 +560,13 @@ class DockerManager(IManager):
                     network = lab_networks[network_name]
                     link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
                     link.api_object = network
-                    device.add_interface(link)
+
+                    iface_mac_addr = None
+                    if network_options["DriverOpts"] is not None:
+                        if "kathara.mac_addr" in network_options["DriverOpts"]:
+                            iface_mac_addr = network_options["DriverOpts"]["kathara.mac_addr"]
+
+                    device.add_interface(link, mac_address=iface_mac_addr)
 
         return reconstructed_lab
 
@@ -590,11 +596,15 @@ class DockerManager(IManager):
 
             # Collision domains declared in the network scenario
             static_links = set([x.link for x in device.interfaces.values()])
+            # Interfaces currently attached to the device
+            current_ifaces = [
+                (lab.get_or_new_link(deployed_networks[name].attrs["Labels"]["name"]), options)
+                for name, options in container.attrs["NetworkSettings"]["Networks"].items()
+                if name != "bridge"
+            ]
+
             # Collision domains currently attached to the device
-            current_links = set(
-                map(lambda x: lab.get_or_new_link(deployed_networks[x].attrs["Labels"]["name"]),
-                    filter(lambda x: x != "bridge", container.attrs["NetworkSettings"]["Networks"]))
-            )
+            current_links = set(map(lambda x: x[0], current_ifaces))
             # Collision domains attached at runtime to the device
             dynamic_links = current_links - static_links
             # Static collision domains detached at runtime from the device
@@ -604,9 +614,16 @@ class DockerManager(IManager):
                 if link.name in deployed_networks_by_link_name:
                     link.api_object = deployed_networks_by_link_name[link.name]
 
+            current_ifaces = dict([(x[0].name, x[1]) for x in current_ifaces])
             for link in dynamic_links:
                 link.api_object = deployed_networks_by_link_name[link.name]
-                device.add_interface(link)
+                iface_options = current_ifaces[link.name]
+                iface_mac_addr = None
+                if iface_options["DriverOpts"] is not None:
+                    if "kathara.mac_addr" in iface_options["DriverOpts"]:
+                        iface_mac_addr = iface_options["DriverOpts"]["kathara.mac_addr"]
+
+                device.add_interface(link, mac_address=iface_mac_addr)
 
             for link in deleted_links:
                 device.remove_interface(link)

@@ -10,7 +10,6 @@ from src.Kathara.manager.docker.DockerManager import DockerManager
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Machine import Machine
 from src.Kathara.model.Link import Link
-from src.Kathara.model.Interface import Interface
 from src.Kathara.utils import generate_urlsafe_hash
 from src.Kathara.manager.docker.stats.DockerLinkStats import DockerLinkStats
 from src.Kathara.manager.docker.stats.DockerMachineStats import DockerMachineStats
@@ -139,8 +138,11 @@ def docker_container(mock_container):
         "Networks": {
             "kathara_user_hash_test_network": {
                 "Links": None,
+                "DriverOpts": {
+                    "kathara.mac_addr": "00:00:00:00:00:01"
+                }
             },
-            "bridge": {}
+            "bridge": {},
         }
     }}
 
@@ -283,6 +285,20 @@ def test_connect_machine_to_link_two_links(mock_connect_interface_machine, mock_
 
     assert mock_deploy_link.call_count == 2
     assert mock_connect_interface_machine.call_count == 2
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_interface")
+def test_connect_machine_to_link_mac_address(mock_connect_interface_machine, mock_deploy_link, docker_manager,
+                                             default_device, default_link):
+    expected_mac_address = "00:00:00:00:ff:ff"
+    docker_manager.connect_machine_to_link(default_device, default_link, mac_address=expected_mac_address)
+
+    interface = default_device.interfaces[0]
+
+    assert interface.mac_address == expected_mac_address
+    mock_deploy_link.assert_called_once_with(default_link)
+    mock_connect_interface_machine.assert_called_once_with(default_device, interface)
 
 
 def test_connect_machine_to_link_no_machine_lab(docker_manager, default_device, default_link):
@@ -924,6 +940,8 @@ def test_get_lab_from_api_lab_name_all_info(mock_get_links_api_objects, mock_get
     assert reconstructed_device.meta["envs"]["test"] == "path"
     assert reconstructed_device.meta["ports"][(3000, "udp")] == 55
     assert reconstructed_device.meta["sysctls"]["sysctl.test"] == "0"
+    assert reconstructed_device.meta["bridged"]
+    assert reconstructed_device.interfaces[0].mac_address == "00:00:00:00:00:01"
     assert len(lab.links) == 1
     assert docker_network.attrs["Labels"]["name"] in lab.links
 
@@ -949,6 +967,7 @@ def test_get_lab_from_api_lab_hash_all_info(mock_get_links_api_objects, mock_get
     assert reconstructed_device.meta["ports"][(3000, "udp")] == 55
     assert reconstructed_device.meta["sysctls"]["sysctl.test"] == "0"
     assert reconstructed_device.meta["bridged"]
+    assert reconstructed_device.interfaces[0].mac_address == "00:00:00:00:00:01"
     assert len(lab.links) == 1
     assert docker_network.attrs["Labels"]["name"] in lab.links
 
@@ -988,18 +1007,31 @@ def test_update_lab_from_api_add_link(mock_get_links_api_objects, mock_get_machi
                                       docker_network, docker_network_b, docker_manager):
     lab = Lab("test")
     device = lab.get_or_new_machine(docker_container.labels["name"])
-    link = Link(lab, docker_network.attrs["Labels"]["name"])
-    interface = device.add_interface(link)
+    link = lab.new_link(docker_network.attrs["Labels"]["name"])
+    device.add_interface(link)
     mock_get_machines_api_objects.return_value = [docker_container]
     mock_get_links_api_objects.return_value = [docker_network, docker_network_b]
-    docker_container.attrs["NetworkSettings"]["Networks"] = ["kathara_user_hash_test_network",
-                                                             "kathara_user_hash_test_network_b"]
+    docker_container.attrs["NetworkSettings"]["Networks"] = {
+        "kathara_user_hash_test_network": {
+            "Links": None,
+            "DriverOpts": None
+        },
+        "kathara_user_hash_test_network_b": {
+            "Links": None,
+            "DriverOpts": {
+                "kathara.mac_addr": "00:00:00:00:00:02"
+            }
+        }
+    }
+
     docker_manager.update_lab_from_api(lab)
     assert len(lab.machines) == 1
     assert docker_container.labels["name"] in lab.machines
     assert len(lab.links) == 2
     assert docker_network.attrs["Labels"]["name"] in lab.links
     assert docker_network_b.attrs["Labels"]["name"] in lab.links
+    assert lab.machines[docker_container.labels["name"]].interfaces[0].mac_address is None
+    assert lab.machines[docker_container.labels["name"]].interfaces[1].mac_address == "00:00:00:00:00:02"
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_api_objects")
@@ -1008,16 +1040,18 @@ def test_update_lab_from_api_remove_link(mock_get_links_api_objects, mock_get_ma
                                          docker_network, docker_manager):
     lab = Lab("test")
     device = lab.get_or_new_machine(docker_container.labels["name"])
-    link = Link(lab, docker_network.attrs["Labels"]["name"])
+    link = lab.new_link(docker_network.attrs["Labels"]["name"])
     device.add_interface(link)
     mock_get_machines_api_objects.return_value = [docker_container]
     mock_get_links_api_objects.return_value = []
-    docker_container.attrs["NetworkSettings"]["Networks"] = []
+    docker_container.attrs["NetworkSettings"]["Networks"] = {}
 
     docker_manager.update_lab_from_api(lab)
     assert len(lab.machines) == 1
     assert docker_container.labels["name"] in lab.machines
-    assert len(lab.links) == 0
+    assert len(device.interfaces) == 1
+    assert device.interfaces[0] is None
+    assert docker_container.labels["name"] not in link.machines
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_api_objects")
@@ -1032,11 +1066,19 @@ def test_update_lab_from_api_add_remove_link(mock_get_links_api_objects, mock_ge
 
     mock_get_machines_api_objects.return_value = [docker_container]
     mock_get_links_api_objects.return_value = [docker_network_b]
-    docker_container.attrs["NetworkSettings"]["Networks"] = ["kathara_user_hash_test_network_b"]
+    docker_container.attrs["NetworkSettings"]["Networks"] = {
+        "kathara_user_hash_test_network_b": {
+            "Links": None,
+            "DriverOpts": {
+                "kathara.mac_addr": "00:00:00:00:00:02"
+            }
+        }
+    }
 
     docker_manager.update_lab_from_api(lab)
     assert len(lab.machines) == 1
     assert docker_container.labels["name"] in lab.machines
+    assert lab.machines[docker_container.labels["name"]].interfaces[1].mac_address == "00:00:00:00:00:02"
     assert len(lab.links) == 1
     assert docker_network_b.attrs["Labels"]["name"] in lab.links
 

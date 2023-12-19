@@ -680,7 +680,7 @@ class Machine(FilesystemMixin):
                 if interface:
                     formatted_machine += f"\n\t- {iface_num}: {interface.link.name}"
                     if interface.mac_address:
-                        formatted_machine += f" ({interface.mac_address})"
+                        formatted_machine += f" (MAC Address: {interface.mac_address})"
 
         formatted_machine += f"\nBridged Connection: {self.meta['bridged']}"
 

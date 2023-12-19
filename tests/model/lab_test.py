@@ -215,6 +215,32 @@ def test_connect_machine_to_link_iface_numbers(default_scenario: Lab):
     assert interface_a == default_scenario.machines['pc1'].interfaces[2]
 
 
+def test_connect_machine_to_link_mac_address(default_scenario: Lab):
+    (machine_a, interface_a) = default_scenario.connect_machine_to_link(
+        "pc1", "A", mac_address="00:00:00:00:00:01"
+    )
+    assert len(default_scenario.machines) == 1
+    assert default_scenario.machines['pc1']
+    assert len(default_scenario.links) == 1
+    assert default_scenario.links['A']
+    assert machine_a == default_scenario.machines['pc1']
+    assert interface_a == default_scenario.machines['pc1'].interfaces[0]
+    assert interface_a.mac_address == "00:00:00:00:00:01"
+
+
+def test_connect_machine_to_link_iface_num_mac_address(default_scenario: Lab):
+    (machine_a, interface_a) = default_scenario.connect_machine_to_link(
+        "pc1", "A", machine_iface_number=2, mac_address="00:00:00:00:00:01"
+    )
+    assert len(default_scenario.machines) == 1
+    assert default_scenario.machines['pc1']
+    assert len(default_scenario.links) == 1
+    assert default_scenario.links['A']
+    assert machine_a == default_scenario.machines['pc1']
+    assert interface_a == default_scenario.machines['pc1'].interfaces[2]
+    assert interface_a.mac_address == "00:00:00:00:00:01"
+
+
 def test_connect_one_machine_obj_to_link(default_scenario: Lab):
     pc1 = default_scenario.new_machine("pc1")
     interface = default_scenario.connect_machine_obj_to_link(pc1, "A")
@@ -269,6 +295,34 @@ def test_connect_machine_obj_to_link_iface_numbers(default_scenario: Lab):
     assert default_scenario.links['A']
     assert default_scenario.machines['pc1'].interfaces[2].link.name == 'A'
     assert interface == default_scenario.machines['pc1'].interfaces[2]
+
+
+def test_connect_machine_obj_to_link_mac_address(default_scenario: Lab):
+    pc1 = default_scenario.new_machine("pc1")
+    interface_a = default_scenario.connect_machine_obj_to_link(
+        pc1, "A", mac_address="00:00:00:00:00:01"
+    )
+    assert len(default_scenario.machines) == 1
+    assert default_scenario.machines['pc1']
+    assert len(default_scenario.links) == 1
+    assert default_scenario.links['A']
+    assert pc1 == default_scenario.machines['pc1']
+    assert interface_a == default_scenario.machines['pc1'].interfaces[0]
+    assert interface_a.mac_address == "00:00:00:00:00:01"
+
+
+def test_connect_machine_obj_to_link_iface_num_mac_address(default_scenario: Lab):
+    pc1 = default_scenario.new_machine("pc1")
+    interface_a = default_scenario.connect_machine_obj_to_link(
+        pc1, "A", machine_iface_number=2, mac_address="00:00:00:00:00:01"
+    )
+    assert len(default_scenario.machines) == 1
+    assert default_scenario.machines['pc1']
+    assert len(default_scenario.links) == 1
+    assert default_scenario.links['A']
+    assert pc1 == default_scenario.machines['pc1']
+    assert interface_a == default_scenario.machines['pc1'].interfaces[2]
+    assert interface_a.mac_address == "00:00:00:00:00:01"
 
 
 def test_assign_meta_to_machine(default_scenario: Lab):

@@ -52,6 +52,23 @@ def test_add_interface_with_number(default_device: Machine):
     assert interface == default_device.interfaces[2]
 
 
+def test_add_interface_with_mac_address(default_device: Machine):
+    interface = default_device.add_interface(Link(default_device.lab, "A"), mac_address="00:00:00:00:00:01")
+    assert len(default_device.interfaces) == 1
+    assert default_device.interfaces[0].link.name == "A"
+    assert interface == default_device.interfaces[0]
+    assert interface.mac_address == "00:00:00:00:00:01"
+
+
+def test_add_interface_with_number_and_mac_address(default_device: Machine):
+    interface = default_device.add_interface(Link(default_device.lab, "A"),
+                                             number=2, mac_address="00:00:00:00:00:01")
+    assert len(default_device.interfaces) == 1
+    assert default_device.interfaces[2].link.name == "A"
+    assert interface == default_device.interfaces[2]
+    assert interface.mac_address == "00:00:00:00:00:01"
+
+
 def test_add_interface_exception(default_device: Machine):
     default_device.add_interface(Link(default_device.lab, "A"))
     with pytest.raises(MachineCollisionDomainError):
