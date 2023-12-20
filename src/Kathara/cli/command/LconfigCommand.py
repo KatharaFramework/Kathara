@@ -2,11 +2,10 @@ import argparse
 import logging
 from typing import List
 
-from ..ui.utils import alphanumeric
+from ..ui.utils import alphanumeric, cd_mac_address
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
-from ...model.Lab import Lab
 from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
 
@@ -45,9 +44,9 @@ class LconfigCommand(Command):
 
         group.add_argument(
             '--add',
-            type=str,
+            type=cd_mac_address,
             dest='to_add',
-            metavar='CD',
+            metavar='CD/MAC',
             nargs='+',
             help='Specify the collision domain to add.'
         )
@@ -66,10 +65,8 @@ class LconfigCommand(Command):
 
         lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
-        try:
-            lab = LabParser.parse(lab_path)
-        except (Exception, IOError):
-            lab = Lab(None, path=lab_path)
+
+        lab = LabParser.parse(lab_path)
 
         Kathara.get_instance().update_lab_from_api(lab)
 
@@ -77,8 +74,7 @@ class LconfigCommand(Command):
         device = lab.get_machine(machine_name)
 
         if args['to_add']:
-            for cd_to_add in args['to_add']:
-                cd_name, mac_address = utils.parse_cd_mac_address(cd_to_add)
+            for cd_name, mac_address in args['to_add']:
                 logging.info(
                     f"Adding interface to device `{machine_name}` on collision domain `{cd_name}`" +
                     (f" with MAC Address {mac_address}" if mac_address else "") +

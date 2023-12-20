@@ -13,6 +13,7 @@ from ... import utils
 from ...foundation.manager.stats.IMachineStats import IMachineStats
 from ...setting.Setting import Setting
 from ...trdparty.consolemenu import PromptUtils, Screen
+from ...utils import parse_cd_mac_address
 
 FORBIDDEN_TABLE_COLUMNS = ["container_name"]
 
@@ -169,3 +170,7 @@ def interface_cd_mac(value):
         raise argparse.ArgumentTypeError("Invalid interface definition: %s" % value)
 
     return n, cd, mac
+
+
+def cd_mac_address(value):
+    return parse_cd_mac_address(value)

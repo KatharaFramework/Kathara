@@ -2,12 +2,11 @@ import argparse
 import logging
 from typing import List
 
-from ..ui.utils import alphanumeric
+from ..ui.utils import alphanumeric, cd_mac_address
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
 from ...strings import strings, wiki_description
-from ...utils import parse_cd_mac_address
 
 
 class VconfigCommand(Command):
@@ -38,9 +37,9 @@ class VconfigCommand(Command):
 
         group.add_argument(
             '--add',
-            type=str,
+            type=cd_mac_address,
             dest='to_add',
-            metavar='CD',
+            metavar='CD/MAC',
             nargs='+',
             help='Specify the collision domain to add.'
         )
@@ -58,14 +57,14 @@ class VconfigCommand(Command):
         args = self.get_args()
 
         lab = Lab("kathara_vlab")
+        Kathara.get_instance().update_lab_from_api(lab)
 
         machine_name = args['name']
-        device = lab.new_machine(machine_name)
+        device = lab.get_machine(machine_name)
         device.api_object = Kathara.get_instance().get_machine_api_object(machine_name, lab_name=lab.name)
 
         if args['to_add']:
-            for cd_to_add in args['to_add']:
-                cd_name, mac_address = parse_cd_mac_address(cd_to_add)
+            for cd_name, mac_address in args['to_add']:
                 logging.info(
                     f"Adding interface to device `{machine_name}` on collision domain `{cd_name}`" +
                     (f" with MAC Address {mac_address}" if mac_address else "") +
