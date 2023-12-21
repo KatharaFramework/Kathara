@@ -23,6 +23,7 @@ from ...model.Lab import Lab
 from ...model.Link import Link
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
+from ...types import SharedCollisionDomainsOption
 from ...utils import pack_files_for_tar, import_pywintypes
 
 pywintypes = import_pywintypes()
@@ -516,7 +517,11 @@ class DockerManager(IManager):
 
         lab_containers = self.get_machines_api_objects(lab_hash=reconstructed_lab.hash)
         lab_networks = dict(
-            map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=reconstructed_lab.hash))
+            map(lambda x: (x.name, x), self.get_links_api_objects(
+                lab_hash=reconstructed_lab.hash \
+                    if Setting.get_instance().shared_cd == SharedCollisionDomainsOption.NOT_SHARED else None,
+                all_users=Setting.get_instance().shared_cd == SharedCollisionDomainsOption.USERS
+            ))
         )
 
         for container in lab_containers:
@@ -580,13 +585,17 @@ class DockerManager(IManager):
         running_containers = self.get_machines_api_objects(lab_hash=lab.hash)
 
         deployed_networks = dict(
-            map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=lab.hash))
+            map(lambda x: (x.name, x), self.get_links_api_objects(
+                lab_hash=lab.hash \
+                    if Setting.get_instance().shared_cd == SharedCollisionDomainsOption.NOT_SHARED else None,
+                all_users=Setting.get_instance().shared_cd == SharedCollisionDomainsOption.USERS
+            ))
         )
         for network in deployed_networks.values():
             network.reload()
 
         deployed_networks_by_link_name = dict(
-            map(lambda x: (x.attrs["Labels"]["name"], x), self.get_links_api_objects(lab_hash=lab.hash))
+            map(lambda x: (x.attrs["Labels"]["name"], x), deployed_networks.values())
         )
 
         for container in running_containers:

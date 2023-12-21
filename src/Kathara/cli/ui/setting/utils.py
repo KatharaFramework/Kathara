@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Optional, Callable, Any, Tuple, List
 
 from ....exceptions import SettingsError
@@ -31,6 +32,12 @@ def current_bool(attribute_name: str, text: Optional[str] = None) -> Callable[[]
 def current_string(attribute_name: str, text: Optional[str] = None) -> Callable[[], str]:
     return lambda: "%sCurrent: %s%s" % (text + " (" if text else "",
                                         getattr(Setting.get_instance(), attribute_name),
+                                        ")" if text else ""
+                                        )
+
+def current_enum(attribute_name: str, to_string: Callable[[int], str], text: Optional[str] = None) -> Callable[[], str]:
+    return lambda: "%sCurrent: %s%s" % (text + " (" if text else "",
+                                        to_string(getattr(Setting.get_instance(), attribute_name)),
                                         ")" if text else ""
                                         )
 

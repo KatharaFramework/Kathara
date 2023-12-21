@@ -4,6 +4,7 @@ from ....setting.addon.DockerSettingsAddon import DEFAULTS
 from ....trdparty.consolemenu import *
 from ....trdparty.consolemenu.items import *
 from ....trdparty.consolemenu.validators.regex import RegexValidator
+from ....types import SharedCollisionDomainsOption
 from ....utils import exec_by_platform
 
 
@@ -130,28 +131,36 @@ class DockerOptionsHandler(OptionsHandler):
 
         image_update_policy_item = SubmenuItem(image_update_policy_string, image_update_policy_menu, current_menu)
 
-        # Shared Links Option
-        shared_cd_string = "Enable Shared Collision Domains between users"
+        # Shared Collision Domains Option
+        shared_cd_string = "Enable Shared Collision Domains"
         shared_cd_menu = SelectionMenu(strings=[],
                                        title=shared_cd_string,
-                                       subtitle=setting_utils.current_bool("shared_cd"),
-                                       prologue_text="""This option allows to connect devices of different users to """
-                                                     """the same collision domains.
+                                       subtitle=setting_utils.current_enum("shared_cd",
+                                                                           SharedCollisionDomainsOption.to_string
+                                                                           ),
+                                       prologue_text="""This option allows sharing collision domains between """
+                                                     """network scenarios and users.
                                                      
-                                                     Default is %s.""" %
-                                                     setting_utils.format_bool(DEFAULTS['shared_cd']),
+                                                     Default is: %s.""" % DEFAULTS['shared_cd'],
                                        formatter=menu_formatter
                                        )
 
-        shared_cd_menu.append_item(FunctionItem(text="Yes",
+        shared_cd_menu.append_item(FunctionItem(text="Share collision domains between network scenarios",
                                                 function=setting_utils.update_setting_value,
-                                                args=["shared_cd", True],
+                                                args=["shared_cd", SharedCollisionDomainsOption.LABS],
                                                 should_exit=True
                                                 )
                                    )
-        shared_cd_menu.append_item(FunctionItem(text="No",
+        shared_cd_menu.append_item(FunctionItem(text="Share collision domains between users",
                                                 function=setting_utils.update_setting_value,
-                                                args=["shared_cd", False],
+                                                args=["shared_cd", SharedCollisionDomainsOption.USERS],
+                                                should_exit=True
+                                                )
+                                   )
+
+        shared_cd_menu.append_item(FunctionItem(text="Do not share collision domains",
+                                                function=setting_utils.update_setting_value,
+                                                args=["shared_cd", SharedCollisionDomainsOption.NOT_SHARED],
                                                 should_exit=True
                                                 )
                                    )
