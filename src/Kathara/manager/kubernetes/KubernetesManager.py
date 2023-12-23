@@ -583,7 +583,12 @@ class KubernetesManager(IManager):
                 network = lab_networks[network_conf['name']]
                 link = reconstructed_lab.get_or_new_link(network['metadata']['labels']['name'])
                 link.api_object = network
-                device.add_interface(link)
+
+                iface_mac_addr = None
+                if "mac" in network_conf:
+                    iface_mac_addr = network_conf['mac']
+
+                device.add_interface(link, mac_address=iface_mac_addr)
 
         return reconstructed_lab
 

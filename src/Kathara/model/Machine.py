@@ -682,7 +682,8 @@ class Machine(FilesystemMixin):
                     if interface.mac_address:
                         formatted_machine += f" (MAC Address: {interface.mac_address})"
 
-        formatted_machine += f"\nBridged Connection: {self.meta['bridged']}"
+        if 'bridged' in self.meta:
+            formatted_machine += f"\nBridged Connection: {self.meta['bridged']}"
 
         if self.meta["sysctls"]:
             formatted_machine += "\nSysctls:"
