@@ -104,20 +104,22 @@ class DockerLink(object):
         else:
             network_ipam_config = docker.types.IPAMConfig(driver='null')
 
-            user_label = "shared_cd" if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.USERS \
-                else utils.get_current_user_name()
+            additional_labels = {}
+            if Setting.get_instance().shared_cds != SharedCollisionDomainsOption.USERS:
+                additional_labels["user"] = utils.get_current_user_name()
+            if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
+                additional_labels["lab_hash"] = link.lab.hash
+
             link.api_object = self.client.networks.create(
                 name=link_name,
                 driver=f"{Setting.get_instance().network_plugin}:{utils.get_architecture()}",
                 check_duplicate=True,
                 ipam=network_ipam_config,
                 labels={
-                    "lab_hash": link.lab.hash if
-                        Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED else None,
                     "name": link.name,
-                    "user": user_label,
                     "app": "kathara",
-                    "external": ";".join([x.get_full_name() for x in link.external])
+                    "external": ";".join([x.get_full_name() for x in link.external]),
+                    **additional_labels
                 }
             )
 
@@ -165,7 +167,7 @@ class DockerLink(object):
         Returns:
             None
         """
-        user_label = "shared_cd" if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.USERS else user
+        user_label = user if Setting.get_instance().shared_cds != SharedCollisionDomainsOption.USERS else None
         networks = self.get_links_api_objects_by_filters(user=user_label)
         for item in networks:
             item.reload()
@@ -372,4 +374,4 @@ class DockerLink(object):
         elif Setting.get_instance().shared_cds == SharedCollisionDomainsOption.USERS:
             return f"{Setting.get_instance().net_prefix}_{link.name}"
         elif Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
-            return f"{Setting.get_instance().net_prefix}_{utils.get_current_user_name()}_{link.lab.hash}_{link.name}"
+            return f"{Setting.get_instance().net_prefix}_{utils.get_current_user_name()}_{link.name}_{link.lab.hash}"

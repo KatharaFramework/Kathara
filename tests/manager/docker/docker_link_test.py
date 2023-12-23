@@ -69,7 +69,7 @@ def test_get_network_name(mock_get_current_user_name, mock_setting_get_instance,
     })
     mock_setting_get_instance.return_value = setting_mock
     link_name = DockerLink.get_network_name(default_link)
-    assert link_name == "kathara_user_lab-hash_A"
+    assert link_name == "kathara_user_A_lab-hash"
 
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
@@ -121,16 +121,16 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_li
     mock_setting_get_instance.return_value = setting_mock
     docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
-        name="kathara_user_lab-hash_A",
+        name="kathara_user_A_lab-hash",
         driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
-            "lab_hash": default_link.lab.hash,
             "name": "A",
-            "user": "user",
             "app": "kathara",
-            "external": ""
+            "external": "",
+            "user": "user",
+            "lab_hash": default_link.lab.hash,
         }
     )
 
@@ -142,7 +142,7 @@ def test_create_bridge_link(docker_link, bridged_link):
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
 def test_create_shared_cds_between_users(mock_get_current_user_name, mock_setting_get_instance, docker_link,
-                                        default_link):
+                                         default_link):
     docker_link.client.networks.list.return_value = []
 
     mock_get_current_user_name.return_value = 'user'
@@ -161,9 +161,7 @@ def test_create_shared_cds_between_users(mock_get_current_user_name, mock_settin
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
-            "lab_hash": None,
             "name": "A",
-            "user": "shared_cd",
             "app": "kathara",
             "external": ""
         }
@@ -173,7 +171,7 @@ def test_create_shared_cds_between_users(mock_get_current_user_name, mock_settin
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
 def test_create_shared_cds_between_labs(mock_get_current_user_name, mock_setting_get_instance, docker_link,
-                                       default_link):
+                                        default_link):
     docker_link.client.networks.list.return_value = []
 
     mock_get_current_user_name.return_value = 'user'
@@ -192,7 +190,6 @@ def test_create_shared_cds_between_labs(mock_get_current_user_name, mock_setting
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
-            "lab_hash": None,
             "name": "A",
             "user": "user",
             "app": "kathara",

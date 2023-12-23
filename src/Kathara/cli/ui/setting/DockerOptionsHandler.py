@@ -184,7 +184,7 @@ class DockerOptionsHandler(OptionsHandler):
             FunctionItem(
                 text="Do not share collision domains",
                 function=setting_utils.update_setting_value,
-                args=["shareds_cd", SharedCollisionDomainsOption.NOT_SHARED],
+                args=["shared_cds", SharedCollisionDomainsOption.NOT_SHARED],
                 should_exit=True
             )
         )
