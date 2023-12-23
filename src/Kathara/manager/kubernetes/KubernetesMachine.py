@@ -46,10 +46,12 @@ STARTUP_COMMANDS = [
     "umount /etc/resolv.conf",
     "umount /etc/hosts",
 
-    # Parse hostlab.b64
+    # Parse hostlab.b64 (if present)
+    "if [ -f \"/tmp/kathara/hostlab.b64\" ]; then "
     "base64 -d /tmp/kathara/hostlab.b64 > /hostlab.tar.gz",
     # Extract hostlab.tar.gz data into /
     "tar xmfz /hostlab.tar.gz -C /; rm -f hostlab.tar.gz",
+    "fi",
 
     # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
     # In this way, files are all replaced in the container root folder
@@ -95,7 +97,7 @@ STARTUP_COMMANDS = [
     "/hostlab/{machine_name}.startup &> /var/log/startup.log; fi",
 
     # Remove the Kubernetes' default gateway which points to the eth0 interface and causes problems sometimes.
-    "route del default dev eth0 || true",
+    "ip route del default dev eth0 || true",
 
     # Placeholder for user commands
     "{machine_commands}",
@@ -342,11 +344,10 @@ class KubernetesMachine(object):
         # to execute custom commands coming from .startup file and "exec" option
         # Build the final startup commands string
         sysctl_commands = "; ".join(["sysctl -w -q %s=%d" % item for item in machine.meta["sysctls"].items()])
+        machine_commands = "; ".join(machine.meta['exec_commands']) if machine.meta['exec_commands'] else ":"
+
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
-            .format(machine_name=machine.name,
-                    sysctl_commands=sysctl_commands,
-                    machine_commands="; ".join(machine.meta['exec_commands'])
-                    )
+            .format(machine_name=machine.name, sysctl_commands=sysctl_commands, machine_commands=machine_commands)
 
         post_start = client.V1LifecycleHandler(
             _exec=client.V1ExecAction(
@@ -378,10 +379,15 @@ class KubernetesMachine(object):
         pod_annotations = {}
         network_interfaces = []
         for (idx, interface) in machine.interfaces.items():
+            additional_data = {}
+            if interface.mac_address:
+                additional_data["mac"] = interface.mac_address
+
             network_interfaces.append({
                 "name": interface.link.api_object["metadata"]["name"],
                 "namespace": machine.lab.hash,
-                "interface": "net%d" % idx
+                "interface": "net%d" % idx,
+                **additional_data
             })
         pod_annotations["k8s.v1.cni.cncf.io/networks"] = json.dumps(network_interfaces)
 
