@@ -96,7 +96,16 @@ class DockerLink(object):
             return
 
         # If a network with the same name exists, return it instead of creating a new one.
-        networks = self.get_links_api_objects_by_filters(link_name=link.name)
+        filter_lab_hash = None
+        filter_user = None
+        if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
+            filter_lab_hash = link.lab.hash
+        if Setting.get_instance().shared_cds != SharedCollisionDomainsOption.USERS:
+            filter_user = utils.get_current_user_name()
+
+        networks = self.get_links_api_objects_by_filters(
+            link_name=link.name, lab_hash=filter_lab_hash, user=filter_user
+        )
         if networks:
             link.api_object = networks.pop()
         else:
