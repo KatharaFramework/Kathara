@@ -2,7 +2,7 @@ import argparse
 import logging
 from typing import List
 
-from ..ui.utils import alphanumeric, cd_mac_address
+from ..ui.utils import alphanumeric, cd_mac
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
@@ -37,7 +37,7 @@ class VconfigCommand(Command):
 
         group.add_argument(
             '--add',
-            type=cd_mac_address,
+            type=cd_mac,
             dest='to_add',
             metavar='CD/MAC',
             nargs='+',

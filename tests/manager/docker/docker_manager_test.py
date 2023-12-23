@@ -15,6 +15,7 @@ from src.Kathara.manager.docker.stats.DockerLinkStats import DockerLinkStats
 from src.Kathara.manager.docker.stats.DockerMachineStats import DockerMachineStats
 from src.Kathara.exceptions import MachineNotFoundError, LabNotFoundError, InvocationError, LinkNotFoundError, \
     MachineNotRunningError
+from src.Kathara.types import SharedCollisionDomainsOption
 
 
 #
@@ -519,7 +520,7 @@ def test_wipe_all_users(mock_setting_get_instance, mock_get_current_user_name, m
                         docker_manager):
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock
@@ -534,11 +535,31 @@ def test_wipe_all_users(mock_setting_get_instance, mock_get_current_user_name, m
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.wipe")
 @mock.patch("src.Kathara.utils.get_current_user_name")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_wipe_all_users_and_shared_cd(mock_setting_get_instance, mock_get_current_user_name, mock_wipe_machines,
-                                      mock_wipe_links, docker_manager):
+def test_wipe_all_users_and_shared_cd_lab(mock_setting_get_instance, mock_get_current_user_name, mock_wipe_machines,
+                                          mock_wipe_links, docker_manager):
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': True,
+        'shared_cd': SharedCollisionDomainsOption.LABS,
+        'remote_url': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    mock_get_current_user_name.return_value = "kathara_user"
+
+    docker_manager.wipe(all_users=True)
+    assert not mock_get_current_user_name.called
+    mock_wipe_machines.assert_called_once_with(user=None)
+    mock_wipe_links.assert_called_once_with(user=None)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.wipe")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.wipe")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_wipe_all_users_and_shared_cd_user(mock_setting_get_instance, mock_get_current_user_name, mock_wipe_machines,
+                                           mock_wipe_links, docker_manager):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cd': SharedCollisionDomainsOption.USERS,
         'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock

@@ -154,7 +154,7 @@ def open_machine_terminal(machine) -> None:
 # Types for argparse
 def alphanumeric(value, pat=re.compile(r"^\w+$")):
     if not pat.match(value):
-        raise argparse.ArgumentTypeError("Invalid alphanumeric value")
+        raise argparse.ArgumentTypeError("invalid alphanumeric value")
 
     return value
 
@@ -165,12 +165,19 @@ def interface_cd_mac(value):
         parts = value.split('/')
         (n, cd) = parts[0].split(':')
         if len(parts) == 2:
-            mac = parts[1]
+            if parts[1]:
+                mac = parts[1]
+            else:
+                raise ValueError
     except ValueError:
-        raise argparse.ArgumentTypeError("Invalid interface definition: %s" % value)
+        raise argparse.ArgumentTypeError("invalid interface definition: %s" % value)
+
+    if not re.search(r"^\w+$", cd):
+        raise argparse.ArgumentTypeError(f"invalid interface definition, "
+                                         f"collision domain `{cd}` contains non-alphanumeric characters")
 
     return n, cd, mac
 
 
-def cd_mac_address(value):
+def cd_mac(value):
     return parse_cd_mac_address(value)

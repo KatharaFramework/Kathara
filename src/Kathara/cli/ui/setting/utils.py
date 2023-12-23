@@ -35,6 +35,7 @@ def current_string(attribute_name: str, text: Optional[str] = None) -> Callable[
                                         ")" if text else ""
                                         )
 
+
 def current_enum(attribute_name: str, to_string: Callable[[int], str], text: Optional[str] = None) -> Callable[[], str]:
     return lambda: "%sCurrent: %s%s" % (text + " (" if text else "",
                                         to_string(getattr(Setting.get_instance(), attribute_name)),

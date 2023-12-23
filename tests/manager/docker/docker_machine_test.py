@@ -11,6 +11,7 @@ from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
 from src.Kathara.exceptions import MachineNotFoundError, DockerPluginError, MachineBinaryError
+from src.Kathara.types import SharedCollisionDomainsOption
 
 
 #
@@ -77,7 +78,7 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, mock_copy
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': False,
@@ -128,7 +129,7 @@ def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': True,
@@ -185,7 +186,7 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
     mock_get_current_user_name.return_value = "test-user"
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': True,
@@ -249,7 +250,7 @@ def test_create_interface(mock_get_current_user_name, mock_setting_get_instance,
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': False,
@@ -314,7 +315,7 @@ def test_create_interface_mac_addr(mock_get_current_user_name, mock_setting_get_
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': False,
@@ -483,7 +484,7 @@ def test_deploy_and_start_machine(mock_create, mock_start, docker_machine, defau
 def test_deploy_machines(mock_deploy_and_start, mock_setting_get_instance, docker_machine):
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': False,
@@ -661,7 +662,7 @@ def test_exec(mock_get_machines_api_objects_by_filters, mock_setting_get_instanc
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': False,
@@ -934,7 +935,7 @@ def test_get_container_name_lab_hash(mock_get_current_user_name, mock_setting_ge
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix'
     })
     mock_setting_get_instance.return_value = setting_mock
@@ -944,12 +945,25 @@ def test_get_container_name_lab_hash(mock_get_current_user_name, mock_setting_ge
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_get_container_name_lab_hash_shared_cd(mock_get_current_user_name, mock_setting_get_instance):
+def test_get_container_name_lab_hash_shared_cd_lab(mock_get_current_user_name, mock_setting_get_instance):
     mock_get_current_user_name.return_value = "kathara-user"
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': True,
+        'shared_cd': SharedCollisionDomainsOption.LABS,
+        'device_prefix': 'dev_prefix'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_get_container_name_lab_hash_shared_cd_user(mock_get_current_user_name, mock_setting_get_instance):
+    mock_get_current_user_name.return_value = "kathara-user"
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cd': SharedCollisionDomainsOption.USERS,
         'device_prefix': 'dev_prefix'
     })
     mock_setting_get_instance.return_value = setting_mock

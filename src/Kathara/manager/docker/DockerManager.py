@@ -519,8 +519,8 @@ class DockerManager(IManager):
         lab_networks = dict(
             map(lambda x: (x.name, x), self.get_links_api_objects(
                 lab_hash=reconstructed_lab.hash \
-                    if Setting.get_instance().shared_cd == SharedCollisionDomainsOption.NOT_SHARED else None,
-                all_users=Setting.get_instance().shared_cd == SharedCollisionDomainsOption.USERS
+                    if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED else None,
+                all_users=Setting.get_instance().shared_cds == SharedCollisionDomainsOption.USERS
             ))
         )
 
@@ -587,8 +587,8 @@ class DockerManager(IManager):
         deployed_networks = dict(
             map(lambda x: (x.name, x), self.get_links_api_objects(
                 lab_hash=lab.hash \
-                    if Setting.get_instance().shared_cd == SharedCollisionDomainsOption.NOT_SHARED else None,
-                all_users=Setting.get_instance().shared_cd == SharedCollisionDomainsOption.USERS
+                    if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED else None,
+                all_users=Setting.get_instance().shared_cds == SharedCollisionDomainsOption.USERS
             ))
         )
         for network in deployed_networks.values():

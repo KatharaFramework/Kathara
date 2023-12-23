@@ -63,7 +63,7 @@ def test_get_network_name(mock_get_current_user_name, mock_setting_get_instance,
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': SharedCollisionDomainsOption.NOT_SHARED,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'net_prefix': 'kathara',
         'remote_url': None,
     })
@@ -74,11 +74,11 @@ def test_get_network_name(mock_get_current_user_name, mock_setting_get_instance,
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_get_network_name_shared_cd_between_labs(mock_get_current_user_name, mock_setting_get_instance, default_link):
+def test_get_network_name_shared_cds_between_labs(mock_get_current_user_name, mock_setting_get_instance, default_link):
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': SharedCollisionDomainsOption.LABS,
+        'shared_cds': SharedCollisionDomainsOption.LABS,
         'net_prefix': 'kathara',
         'remote_url': None
     })
@@ -89,11 +89,11 @@ def test_get_network_name_shared_cd_between_labs(mock_get_current_user_name, moc
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_get_network_name_shared_cd_between_users(mock_get_current_user_name, mock_setting_get_instance, default_link):
+def test_get_network_name_shared_cds_between_users(mock_get_current_user_name, mock_setting_get_instance, default_link):
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': SharedCollisionDomainsOption.USERS,
+        'shared_cds': SharedCollisionDomainsOption.USERS,
         'net_prefix': 'kathara',
         'remote_url': None
     })
@@ -113,7 +113,7 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_li
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': SharedCollisionDomainsOption.NOT_SHARED,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'net_prefix': 'kathara',
         'remote_url': None,
         'network_plugin': 'kathara/katharanp'
@@ -141,14 +141,14 @@ def test_create_bridge_link(docker_link, bridged_link):
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_shared_cd_between_users(mock_get_current_user_name, mock_setting_get_instance, docker_link,
+def test_create_shared_cds_between_users(mock_get_current_user_name, mock_setting_get_instance, docker_link,
                                         default_link):
     docker_link.client.networks.list.return_value = []
 
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': SharedCollisionDomainsOption.USERS,
+        'shared_cds': SharedCollisionDomainsOption.USERS,
         'net_prefix': 'kathara',
         'remote_url': None,
         'network_plugin': 'kathara/katharanp'
@@ -172,14 +172,14 @@ def test_create_shared_cd_between_users(mock_get_current_user_name, mock_setting
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_shared_cd_between_labs(mock_get_current_user_name, mock_setting_get_instance, docker_link,
+def test_create_shared_cds_between_labs(mock_get_current_user_name, mock_setting_get_instance, docker_link,
                                        default_link):
     docker_link.client.networks.list.return_value = []
 
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': SharedCollisionDomainsOption.LABS,
+        'shared_cds': SharedCollisionDomainsOption.LABS,
         'net_prefix': 'kathara',
         'remote_url': None,
         'network_plugin': 'kathara/katharanp'
