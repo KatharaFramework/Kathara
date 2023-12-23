@@ -16,13 +16,14 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError, LinkNotFoundError, MachineCollisionDomainError, \
-    InvocationError, LabNotFoundError
+    InvocationError, LabNotFoundError, MachineNotRunningError
 from ...exceptions import MachineNotFoundError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
 from ...model.Link import Link
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
+from ...types import SharedCollisionDomainsOption
 from ...utils import pack_files_for_tar, import_pywintypes
 
 pywintypes = import_pywintypes()
@@ -89,7 +90,7 @@ class DockerManager(IManager):
         if not machine.lab:
             raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
 
-        self.docker_link.deploy_links(machine.lab, selected_links={x.name for x in machine.interfaces.values()})
+        self.docker_link.deploy_links(machine.lab, selected_links={x.link.name for x in machine.interfaces.values()})
         self.docker_machine.deploy_machines(machine.lab, selected_machines={machine.name})
 
     @privileged
@@ -139,23 +140,28 @@ class DockerManager(IManager):
         self.docker_machine.deploy_machines(lab, selected_machines=selected_machines)
 
     @privileged
-    def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
-        """Connect a Kathara device to a collision domain.
+    def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None) -> None:
+        """Create a new interface and connect a Kathara device to a collision domain.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
             link (Kathara.model.Link): A Kathara collision domain object.
+            mac_address (Optional[str]): The MAC address to assign to the interface.
 
         Returns:
             None
 
         Raises:
             LabNotFoundError: If the device specified is not associated to any network scenario.
+            MachineNotRunningError: If the specified device is not running.
             LabNotFoundError: If the collision domain is not associated to any network scenario.
             MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
         if not machine.lab:
             raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
+
+        if not machine.api_object or machine.api_object.status != "running":
+            raise MachineNotRunningError(machine.name)
 
         if not link.lab:
             raise LabNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")
@@ -165,10 +171,10 @@ class DockerManager(IManager):
                 f"Device `{machine.name}` is already connected to collision domain `{link.name}`."
             )
 
-        machine.add_interface(link)
+        interface = machine.add_interface(link, mac_address=mac_address)
 
         self.deploy_link(link)
-        self.docker_machine.connect_to_link(machine, link)
+        self.docker_machine.connect_interface(machine, interface)
 
     @privileged
     def disconnect_machine_from_link(self, machine: Machine, link: Link) -> None:
@@ -219,7 +225,7 @@ class DockerManager(IManager):
             raise LabNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
 
         self.docker_machine.undeploy(machine.lab.hash, selected_machines={machine.name})
-        self.docker_link.undeploy(machine.lab.hash, selected_links={x.name for x in machine.interfaces.values()})
+        self.docker_link.undeploy(machine.lab.hash, selected_links={x.link.name for x in machine.interfaces.values()})
 
     @privileged
     def undeploy_link(self, link: Link) -> None:
@@ -514,7 +520,11 @@ class DockerManager(IManager):
 
         lab_containers = self.get_machines_api_objects(lab_hash=reconstructed_lab.hash)
         lab_networks = dict(
-            map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=reconstructed_lab.hash))
+            map(lambda x: (x.name, x), self.get_links_api_objects(
+                lab_hash=reconstructed_lab.hash \
+                    if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED else None,
+                all_users=Setting.get_instance().shared_cds == SharedCollisionDomainsOption.USERS
+            ))
         )
 
         for container in lab_containers:
@@ -550,7 +560,7 @@ class DockerManager(IManager):
             device.meta["sysctls"] = container.attrs["HostConfig"]["Sysctls"]
 
             if "none" not in container.attrs["NetworkSettings"]["Networks"]:
-                for network_name in container.attrs["NetworkSettings"]["Networks"]:
+                for network_name, network_options in container.attrs["NetworkSettings"]["Networks"].items():
                     if network_name == "bridge":
                         device.add_meta("bridged", True)
                         continue
@@ -558,7 +568,13 @@ class DockerManager(IManager):
                     network = lab_networks[network_name]
                     link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
                     link.api_object = network
-                    device.add_interface(link)
+
+                    iface_mac_addr = None
+                    if network_options["DriverOpts"] is not None:
+                        if "kathara.mac_addr" in network_options["DriverOpts"]:
+                            iface_mac_addr = network_options["DriverOpts"]["kathara.mac_addr"]
+
+                    device.add_interface(link, mac_address=iface_mac_addr)
 
         return reconstructed_lab
 
@@ -572,13 +588,17 @@ class DockerManager(IManager):
         running_containers = self.get_machines_api_objects(lab_hash=lab.hash)
 
         deployed_networks = dict(
-            map(lambda x: (x.name, x), self.get_links_api_objects(lab_hash=lab.hash))
+            map(lambda x: (x.name, x), self.get_links_api_objects(
+                lab_hash=lab.hash \
+                    if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED else None,
+                all_users=Setting.get_instance().shared_cds == SharedCollisionDomainsOption.USERS
+            ))
         )
         for network in deployed_networks.values():
             network.reload()
 
         deployed_networks_by_link_name = dict(
-            map(lambda x: (x.attrs["Labels"]["name"], x), self.get_links_api_objects(lab_hash=lab.hash))
+            map(lambda x: (x.attrs["Labels"]["name"], x), deployed_networks.values())
         )
 
         for container in running_containers:
@@ -587,12 +607,16 @@ class DockerManager(IManager):
             device.api_object = container
 
             # Collision domains declared in the network scenario
-            static_links = set(device.interfaces.values())
+            static_links = set([x.link for x in device.interfaces.values()])
+            # Interfaces currently attached to the device
+            current_ifaces = [
+                (lab.get_or_new_link(deployed_networks[name].attrs["Labels"]["name"]), options)
+                for name, options in container.attrs["NetworkSettings"]["Networks"].items()
+                if name != "bridge"
+            ]
+
             # Collision domains currently attached to the device
-            current_links = set(
-                map(lambda x: lab.get_or_new_link(deployed_networks[x].attrs["Labels"]["name"]),
-                    filter(lambda x: x != "bridge", container.attrs["NetworkSettings"]["Networks"]))
-            )
+            current_links = set(map(lambda x: x[0], current_ifaces))
             # Collision domains attached at runtime to the device
             dynamic_links = current_links - static_links
             # Static collision domains detached at runtime from the device
@@ -602,9 +626,16 @@ class DockerManager(IManager):
                 if link.name in deployed_networks_by_link_name:
                     link.api_object = deployed_networks_by_link_name[link.name]
 
+            current_ifaces = dict([(x[0].name, x[1]) for x in current_ifaces])
             for link in dynamic_links:
                 link.api_object = deployed_networks_by_link_name[link.name]
-                device.add_interface(link)
+                iface_options = current_ifaces[link.name]
+                iface_mac_addr = None
+                if iface_options["DriverOpts"] is not None:
+                    if "kathara.mac_addr" in iface_options["DriverOpts"]:
+                        iface_mac_addr = iface_options["DriverOpts"]["kathara.mac_addr"]
+
+                device.add_interface(link, mac_address=iface_mac_addr)
 
             for link in deleted_links:
                 device.remove_interface(link)

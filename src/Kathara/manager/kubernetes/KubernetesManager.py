@@ -52,7 +52,7 @@ class KubernetesManager(IManager):
         machine.lab.hash = machine.lab.hash.lower()
 
         self.k8s_namespace.create(machine.lab)
-        self.k8s_link.deploy_links(machine.lab, selected_links={x.name for x in machine.interfaces.values()})
+        self.k8s_link.deploy_links(machine.lab, selected_links={x.link.name for x in machine.interfaces.values()})
         self.k8s_machine.deploy_machines(machine.lab, selected_machines={machine.name})
 
     def deploy_link(self, link: Link) -> None:
@@ -113,12 +113,13 @@ class KubernetesManager(IManager):
             else:
                 raise e
 
-    def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
+    def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None) -> None:
         """Connect a Kathara device to a collision domain.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
             link (Kathara.model.Link): A Kathara collision domain object.
+            mac_address (Optional[str]): The MAC address to assign to the interface.
 
         Returns:
             None
@@ -173,7 +174,7 @@ class KubernetesManager(IManager):
             running_networks.update([net['name'] for net in network_annotation])
 
         # Difference between all networks of the machine to undeploy, and attached networks are the ones to delete
-        machine_networks = {self.k8s_link.get_network_name(x.name) for x in machine.interfaces.values()}
+        machine_networks = {self.k8s_link.get_network_name(x.link.name) for x in machine.interfaces.values()}
         networks_to_delete = machine_networks - running_networks
 
         self.k8s_machine.undeploy(machine.lab.hash, selected_machines={machine.name})
@@ -582,7 +583,12 @@ class KubernetesManager(IManager):
                 network = lab_networks[network_conf['name']]
                 link = reconstructed_lab.get_or_new_link(network['metadata']['labels']['name'])
                 link.api_object = network
-                device.add_interface(link)
+
+                iface_mac_addr = None
+                if "mac" in network_conf:
+                    iface_mac_addr = network_conf['mac']
+
+                device.add_interface(link, mac_address=iface_mac_addr)
 
         return reconstructed_lab
 

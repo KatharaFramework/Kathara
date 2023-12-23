@@ -97,10 +97,10 @@ Each Manager specifies additional parameters which are used only when the Manage
 
     Default to `Prompt`.
 
-* `shared_cd` (boolean):
-    This parameter allows to connect devices of different users to the same collision domains.
+* `shared_cds` (integer):
+    This parameter allows to connect devices of different network scenarios and users to the same collision domains.
 
-    Default to `false`.
+    Default to `1` (enum value for `Not Shared`).
 
 * `remote_url` (string):
     This parameter specifies a Remote Docker daemon URL to connect to, instead of a local one.
@@ -154,7 +154,7 @@ Each Manager specifies additional parameters which are used only when the Manage
             "hosthome_mount": false,
             "shared_mount": true,
             "image_update_policy": "Prompt",
-            "shared_cd": false,
+            "shared_cds": 1,
             "remote_url": null,
             "cert_path": null,
             "network_plugin": "kathara/katharanp_vde"

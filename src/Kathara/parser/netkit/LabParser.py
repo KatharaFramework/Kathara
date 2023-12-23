@@ -4,7 +4,7 @@ import os
 import re
 
 from ...model.Lab import Lab, LAB_METADATA
-from ...utils import RESERVED_MACHINE_NAMES
+from ...utils import parse_cd_mac_address, RESERVED_MACHINE_NAMES
 
 
 class LabParser(object):
@@ -58,8 +58,14 @@ class LabParser(object):
                     # It's an interface, handle it.
                     interface_number = int(arg)
 
-                    if re.search(r"^\w+$", value):
-                        lab.connect_machine_to_link(key, value, machine_iface_number=interface_number)
+                    try:
+                        cd_name, mac_address = parse_cd_mac_address(value)
+                    except SyntaxError as e:
+                        raise SyntaxError(f"In lab.conf - Line {line_number}: {str(e)}")
+
+                    if re.search(r"^\w+$", cd_name):
+                        lab.connect_machine_to_link(key, cd_name,
+                                                    machine_iface_number=interface_number, mac_address=mac_address)
                     else:
                         raise SyntaxError(f"In lab.conf - Line {line_number}: "
                                           f"Collision domain `{value}` contains non-alphanumeric characters.")

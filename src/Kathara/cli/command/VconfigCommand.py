@@ -2,7 +2,7 @@ import argparse
 import logging
 from typing import List
 
-from ..ui.utils import alphanumeric
+from ..ui.utils import alphanumeric, cd_mac
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
@@ -37,9 +37,9 @@ class VconfigCommand(Command):
 
         group.add_argument(
             '--add',
-            type=alphanumeric,
+            type=cd_mac,
             dest='to_add',
-            metavar='CD',
+            metavar='CD/MAC',
             nargs='+',
             help='Specify the collision domain to add.'
         )
@@ -57,25 +57,28 @@ class VconfigCommand(Command):
         args = self.get_args()
 
         lab = Lab("kathara_vlab")
+        Kathara.get_instance().update_lab_from_api(lab)
 
         machine_name = args['name']
-        device = lab.get_or_new_machine(machine_name)
+        device = lab.get_machine(machine_name)
         device.api_object = Kathara.get_instance().get_machine_api_object(machine_name, lab_name=lab.name)
 
         if args['to_add']:
-            for cd in args['to_add']:
+            for cd_name, mac_address in args['to_add']:
                 logging.info(
-                    "Adding interface to device `%s` on collision domain `%s`..." % (machine_name, cd)
+                    f"Adding interface to device `{machine_name}` on collision domain `{cd_name}`" +
+                    (f" with MAC Address {mac_address}" if mac_address else "") +
+                    f"..."
                 )
-                link = lab.get_or_new_link(cd)
-                Kathara.get_instance().connect_machine_to_link(device, link)
+                link = lab.get_or_new_link(cd_name)
+                Kathara.get_instance().connect_machine_to_link(device, link, mac_address=mac_address)
 
         if args['to_remove']:
-            for cd in args['to_remove']:
+            for cd_to_remove in args['to_remove']:
                 logging.info(
-                    "Removing interface on collision domain `%s` from device `%s`..." % (cd, machine_name)
+                    "Removing interface on collision domain `%s` from device `%s`..." % (cd_to_remove, machine_name)
                 )
-                (_, link) = lab.connect_machine_to_link(machine_name, cd)
-                link.api_object = Kathara.get_instance().get_link_api_object(cd, lab_name=lab.name)
+                (_, interface) = lab.connect_machine_to_link(machine_name, cd_to_remove)
+                interface.link.api_object = Kathara.get_instance().get_link_api_object(cd_to_remove, lab_name=lab.name)
 
-                Kathara.get_instance().disconnect_machine_from_link(device, link)
+                Kathara.get_instance().disconnect_machine_from_link(device, interface.link)

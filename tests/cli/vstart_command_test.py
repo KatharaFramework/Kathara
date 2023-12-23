@@ -194,7 +194,7 @@ def test_run_with_one_interface(mock_docker_manager, mock_manager_get_instance, 
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
-    default_device_args['eths'] = [('0', 'A')]
+    default_device_args['eths'] = [('0', 'A', None)]
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
         command.run('.', ['-n', 'pc1', '--eth', '0:A'])
@@ -205,7 +205,35 @@ def test_run_with_one_interface(mock_docker_manager, mock_manager_get_instance, 
         mock_add_option.assert_any_call('shared_mount', False)
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        mock_connect_machine_to_link.assert_called_once_with('pc1', 'A', machine_iface_number=0)
+        mock_connect_machine_to_link.assert_called_once_with('pc1', 'A', machine_iface_number=0, mac_address=None)
+        mock_docker_manager.deploy_lab.assert_called_once()
+
+
+@mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
+@mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_one_interface_and_mac_address(mock_docker_manager, mock_manager_get_instance,
+                                                mock_setting_get_instance,
+                                                mock_get_or_new_machine, mock_connect_machine_to_link, test_lab,
+                                                mock_setting, default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    mock_setting_get_instance.return_value = mock_setting
+    mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
+    default_device_args['eths'] = [('0', 'A', '00:00:00:00:00:01')]
+    command = VstartCommand()
+    with mock.patch.object(Lab, "add_option") as mock_add_option:
+        command.run('.', ['-n', 'pc1', '--eth', '0:A/00:00:00:00:00:01'])
+        assert mock_setting.open_terminals
+        assert mock_setting.terminal == '/usr/bin/xterm'
+        assert mock_setting.device_shell == '/usr/bin/bash'
+        mock_add_option.assert_any_call('hosthome_mount', None)
+        mock_add_option.assert_any_call('shared_mount', False)
+        mock_add_option.assert_any_call('privileged_machines', None)
+        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+        mock_connect_machine_to_link.assert_called_once_with('pc1', 'A', machine_iface_number=0,
+                                                             mac_address='00:00:00:00:00:01')
         mock_docker_manager.deploy_lab.assert_called_once()
 
 
@@ -220,7 +248,7 @@ def test_run_with_two_interfaces(mock_docker_manager, mock_manager_get_instance,
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
-    default_device_args['eths'] = [('0', 'A'), ('1', 'B')]
+    default_device_args['eths'] = [('0', 'A', None), ('1', 'B', None)]
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
         command.run('.', ['-n', 'pc1', '--eth', '0:A', '1:B'])
@@ -231,8 +259,8 @@ def test_run_with_two_interfaces(mock_docker_manager, mock_manager_get_instance,
         mock_add_option.assert_any_call('shared_mount', False)
         mock_add_option.assert_any_call('privileged_machines', None)
         mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        mock_connect_machine_to_link.assert_any_call('pc1', 'A', machine_iface_number=0)
-        mock_connect_machine_to_link.assert_any_call('pc1', 'B', machine_iface_number=1)
+        mock_connect_machine_to_link.assert_any_call('pc1', 'A', machine_iface_number=0, mac_address=None)
+        mock_connect_machine_to_link.assert_any_call('pc1', 'B', machine_iface_number=1, mac_address=None)
         mock_docker_manager.deploy_lab.assert_called_once()
 
 

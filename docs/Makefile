@@ -11,7 +11,8 @@ build-%: docker-build-image
 
 docker-build-image:
 	cp ../scripts/Linux-Deb/Docker-Linux-Build/Dockerfile_template ../scripts/Linux-Deb/Docker-Linux-Build/Dockerfile
-	sed -i -e "s|__DISTRO__|focal|g" ../scripts/Linux-Deb/Docker-Linux-Build/Dockerfile
+	sed -i -e "s|__DISTRO__|jammy|g" ../scripts/Linux-Deb/Docker-Linux-Build/Dockerfile
+	sed -i -e "s|__NOKOGIRI__||g"  ../scripts/Linux-Deb/Docker-Linux-Build/Dockerfile
 	cd ../scripts/Linux-Deb/Docker-Linux-Build/ && docker build -t kathara/linux-build-deb .
 	rm -f ../scripts/Linux-Deb/Docker-Linux-Build/Dockerfile
 

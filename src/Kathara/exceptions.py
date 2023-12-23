@@ -95,6 +95,11 @@ class MachineNotFoundError(Exception):
     pass
 
 
+class MachineNotRunningError(Exception):
+    def __init__(self, machine_name: str) -> None:
+        super().__init__(f"Device `{machine_name}` is not running.")
+
+
 class MachineNotReadyError(Exception):
     def __init__(self, machine_name: str) -> None:
         super().__init__(f"Device `{machine_name}` is not ready.")
@@ -109,6 +114,14 @@ class MachineBinaryError(Exception):
 
     def __str__(self):
         return f"Binary `{self.binary}` not found in device `{self.machine_name}`."
+
+
+# Interface Exceptions
+class InterfaceMacAddressError(Exception):
+    def __init__(self, mac_address: str, interface_num: int, machine_name: str) -> None:
+        super().__init__(
+            f"MAC address {mac_address} on interface `{interface_num}` of device `{machine_name}` is invalid."
+        )
 
 
 # Link Exceptions

@@ -56,12 +56,13 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `deploy_lab` method.")
 
     @abstractmethod
-    def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
+    def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None) -> None:
         """Connect a Kathara device to a collision domain.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
             link (Kathara.model.Link): A Kathara collision domain object.
+            mac_address (Optional[str]): The MAC address to assign to the interface.
 
         Returns:
             None

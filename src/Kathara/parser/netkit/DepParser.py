@@ -39,7 +39,7 @@ class DepParser(object):
 
         dependencies = {}
 
-        # Reads lab.dep in memory so it is faster.
+        # Reads lab.dep in memory, so it is faster.
         try:
             with open(lab_dep_path, 'r') as dep_file:
                 dep_mem_file = mmap.mmap(dep_file.fileno(), 0, access=mmap.ACCESS_READ)

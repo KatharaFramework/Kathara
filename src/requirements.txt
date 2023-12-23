@@ -1,5 +1,5 @@
 binaryornot>=0.4.4;
-docker>=6.0.1;
+docker>=7.0.0;
 kubernetes>=23.3.0;
 requests>=2.22.0;
 coloredlogs>=10.0;

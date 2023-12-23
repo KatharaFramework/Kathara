@@ -3,7 +3,7 @@ import logging
 import sys
 from typing import List
 
-from ..ui.utils import format_headers, colon_separated
+from ..ui.utils import format_headers, interface_cd_mac
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
@@ -69,9 +69,9 @@ class VstartCommand(Command):
         )
         self.parser.add_argument(
             '--eth',
-            type=colon_separated,
+            type=interface_cd_mac,
             dest='eths',
-            metavar='N:CD',
+            metavar='N:CD/MAC',
             nargs='+',
             required=False,
             help='Set a specific interface on a collision domain.'
@@ -193,11 +193,14 @@ class VstartCommand(Command):
         device = lab.get_or_new_machine(name, **args)
 
         if args['eths']:
-            for iface_number, cd in args['eths']:
+            for iface_number, cd, mac_address in args['eths']:
                 try:
-                    lab.connect_machine_to_link(device.name, cd, machine_iface_number=int(iface_number))
+                    lab.connect_machine_to_link(device.name, cd,
+                                                machine_iface_number=int(iface_number),
+                                                mac_address=mac_address)
                 except ValueError:
-                    raise SyntaxError("Interface number in `--eth %s:%s` is not a number." % (iface_number, cd))
+                    s = f"{cd}/{mac_address}" if mac_address else f"{cd}"
+                    raise SyntaxError(f"Interface number in `--eth {iface_number}:{s}` is not a number.")
 
         lab.check_integrity()
 

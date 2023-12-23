@@ -87,12 +87,13 @@ class Kathara(IManager):
         """
         self.manager.deploy_lab(lab, selected_machines)
 
-    def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
+    def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None) -> None:
         """Connect a Kathara device to a collision domain.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
             link (Kathara.model.Link): A Kathara collision domain object.
+            mac_address (Optional[str]): The MAC address to assign to the interface.
 
         Returns:
             None
@@ -102,7 +103,7 @@ class Kathara(IManager):
             LabNotFoundError: If the collision domain is not associated to any network scenario.
             MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
-        self.manager.connect_machine_to_link(machine, link)
+        self.manager.connect_machine_to_link(machine, link, mac_address)
 
     def disconnect_machine_from_link(self, machine: Machine, link: Link) -> None:
         """Disconnect a Kathara device from a collision domain.
