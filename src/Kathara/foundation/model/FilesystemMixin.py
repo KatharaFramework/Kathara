@@ -2,7 +2,9 @@ import io
 import os.path
 from typing import Optional, List, BinaryIO, TextIO, Union
 
+from fs import open_fs
 from fs.base import FS
+from fs.copy import copy_dir
 
 from ...exceptions import InvocationError
 
@@ -73,7 +75,7 @@ class FilesystemMixin(object):
             fs.errors.ResourceNotFound: If the path is not found in the fs.
         """
         if not self.fs:
-            raise InvocationError("There is no filesystem associated to this network scenario.")
+            raise InvocationError("There is no filesystem associated to this object.")
 
         with self.fs.open(dst_path, "a") as dst_file:
             dst_file.write(content)
@@ -93,7 +95,7 @@ class FilesystemMixin(object):
             fs.errors.ResourceNotFound: If the path is not found in the fs.
         """
         if not self.fs:
-            raise InvocationError("There is no filesystem associated to this network scenario.")
+            raise InvocationError("There is no filesystem associated to this object.")
 
         directory = os.path.dirname(dst_path)
         self.fs.makedirs(directory, recreate=True)
@@ -116,7 +118,7 @@ class FilesystemMixin(object):
             fs.errors.ResourceNotFound: If the path is not found in the fs.
         """
         if not self.fs:
-            raise InvocationError("There is no filesystem associated to this network scenario.")
+            raise InvocationError("There is no filesystem associated to this object.")
 
         with self.fs.open(dst_path, "a") as dst_file:
             dst_file.writelines(line + '\n' for line in lines)
@@ -136,7 +138,7 @@ class FilesystemMixin(object):
             fs.errors.ResourceNotFound: If the path is not found in the fs.
         """
         if not self.fs:
-            raise InvocationError("There is no filesystem associated to this network scenario.")
+            raise InvocationError("There is no filesystem associated to this object.")
 
         directory = os.path.dirname(dst_path)
         self.fs.makedirs(directory, recreate=True)
@@ -160,7 +162,7 @@ class FilesystemMixin(object):
             fs.errors.ResourceNotFound: If the path is not found in the fs.
         """
         if not self.fs:
-            raise InvocationError("There is no filesystem associated to this network scenario.")
+            raise InvocationError("There is no filesystem associated to this object.")
 
         directory = os.path.dirname(dst_path)
         self.fs.makedirs(directory, recreate=True)
@@ -173,6 +175,25 @@ class FilesystemMixin(object):
                     dst_file.writelines(stream.readlines())
         except io.UnsupportedOperation:
             raise io.UnsupportedOperation("To create a file from stream, you must open it with read permissions.")
+
+    def copy_directory_from_path(self, src_path: str, dst_path: str) -> None:
+        """Copy a directory from a src_path in the host filesystem into a dst_path in this fs.
+
+        Args:
+             src_path (str): The source path of the directory to copy.
+             dst_path (str): The destination path where to copy the directory.
+
+        Returns:
+            None
+
+        Raises:
+            InvocationError: If the fs is None.
+        """
+        if not self.fs:
+            raise InvocationError("There is no filesystem associated to this object.")
+
+        directory_fs = open_fs(f"osfs://{os.path.abspath(src_path)}")
+        copy_dir(directory_fs, ".", self.fs, dst_path)
 
     def write_line_before(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
             -> int:
@@ -194,7 +215,7 @@ class FilesystemMixin(object):
             LineNotFoundError: If the searched line is not found in the file.
         """
         if not self.fs:
-            raise InvocationError("There is no filesystem associated to this network scenario.")
+            raise InvocationError("There is no filesystem associated to this object.")
 
         n_added = 0
         with self.fs.open(file_path, "r+") as file:
@@ -232,7 +253,7 @@ class FilesystemMixin(object):
             LineNotFoundError: If the searched line is not found in the file.
         """
         if not self.fs:
-            raise InvocationError("There is no filesystem associated to this network scenario.")
+            raise InvocationError("There is no filesystem associated to this object.")
 
         n_added = 0
         with self.fs.open(file_path, "r+") as file:
@@ -269,7 +290,7 @@ class FilesystemMixin(object):
             LineNotFoundError: If the searched line is not found in the file.
         """
         if not self.fs:
-            raise InvocationError("There is no filesystem associated to this network scenario.")
+            raise InvocationError("There is no filesystem associated to this object.")
 
         n_deleted = 0
         with self.fs.open(file_path, "r+") as file:

@@ -600,6 +600,21 @@ class Machine(FilesystemMixin):
 
         super().create_file_from_stream(stream, dst_path)
 
+    def copy_directory_from_path(self, src_path: str, dst_path: str) -> None:
+        """Copy a directory from a src_path in the host filesystem into a dst_path in the fs of the device.
+
+        Args:
+             src_path (str): The source path of the directory to copy.
+             dst_path (str): The destination path on the device where to copy the directory.
+
+        Returns:
+            None
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().copy_directory_from_path(src_path, dst_path)
+
     def write_line_before(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
             -> int:
         """Write a new line before a specific line in a file.
