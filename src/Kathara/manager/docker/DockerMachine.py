@@ -17,7 +17,7 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError, DockerPluginError, \
-    MachineBinaryError
+    MachineBinaryError, MachineNotRunningError
 from ...model.Interface import Interface
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
@@ -540,12 +540,12 @@ class DockerMachine(object):
             None
 
         Raises:
-            MachineNotFoundError: If the specified device is not running.
+            MachineNotRunningError: If the specified device is not running.
             ValueError: If the wait values is neither a boolean nor a tuple, or an invalid tuple.
         """
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:
-            raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
+            raise MachineNotRunningError(machine_name)
         container = containers.pop()
 
         if not shell:
@@ -643,14 +643,14 @@ class DockerMachine(object):
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
 
         Raises:
-            MachineNotFoundError: If the specified device is not running.
+            MachineNotRunningError: If the specified device is not running.
             ValueError: If the wait values is neither a boolean nor a tuple, or an invalid tuple.
         """
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:
-            raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
+            raise MachineNotRunningError(machine_name)
         container = containers.pop()
 
         if isinstance(wait, tuple):

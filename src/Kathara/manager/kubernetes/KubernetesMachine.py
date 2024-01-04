@@ -21,7 +21,7 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MachineAlreadyExistsError, MachineNotFoundError, MachineNotReadyError
+from ...exceptions import MachineAlreadyExistsError, MachineNotFoundError, MachineNotReadyError, MachineNotRunningError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
@@ -584,11 +584,12 @@ class KubernetesMachine(object):
             None
 
         Raises:
+            MachineNotRunningError: If the specified device is not running.
             MachineNotReadyError: If the device is not ready.
         """
         pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
         if not pods:
-            raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
+            raise MachineNotRunningError(machine_name)
         deployment = pods.pop()
 
         if 'Running' not in deployment.status.phase:
@@ -682,8 +683,11 @@ class KubernetesMachine(object):
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+
+        Raises:
+            MachineNotRunningError: If the specified device is not running.
         """
-        command = shlex.split(command) if type(command) == str else command
+        command = shlex.split(command) if command is str else command
 
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
@@ -691,7 +695,7 @@ class KubernetesMachine(object):
             # Retrieve the pod of current Deployment
             pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
             if not pods:
-                raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
+                raise MachineNotRunningError(machine_name)
             pod = pods.pop()
 
             response = stream(self.core_client.connect_get_namespaced_pod_exec,
