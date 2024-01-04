@@ -34,7 +34,6 @@ class CheckCommand(Command):
 
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)
-        args = self.get_args()
 
         print(f"*\tCurrent Manager is: {Kathara.get_instance().get_formatted_manager_name()}")
         print(f"*\tManager version is: {Kathara.get_instance().get_release_version()}")

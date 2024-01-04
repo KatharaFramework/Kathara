@@ -1,9 +1,12 @@
 import hashlib
 import json
 import logging
+import os
 import re
 import shlex
+import signal
 import sys
+import threading
 import uuid
 from multiprocessing.dummy import Pool
 from typing import Optional, Set, List, Union, Generator, Tuple, Dict
@@ -28,6 +31,7 @@ from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 MAX_RESTART_COUNT = 3
+MAX_TIME_ERROR = 180
 
 # Known commands that each container should execute
 # Run order: shared.startup, machine.startup and machine.meta['exec_commands']
@@ -41,7 +45,7 @@ STARTUP_COMMANDS = [
     # Removes /etc/bind already existing configuration from k8s internal DNS
     "rm -Rf /etc/bind/*",
 
-    # Unmount the /etc/resolv.conf and /etc/hosts files, automatically mounted by Docker inside the container.
+    # Unmount the /etc/resolv.conf and /etc/hosts files, automatically mounted by Kubernetes inside the container.
     # In this way, they can be overwritten by custom user files.
     "umount /etc/resolv.conf",
     "umount /etc/hosts",
@@ -186,8 +190,27 @@ class KubernetesMachine(object):
         machines_ready = 0
         machines_failed = 0
 
+        # Create a timer to raise an exception if the execution gets stuck
+        def raise_timeout_error():
+            logging.error(
+                f"Network scenario startup is not responding for over {MAX_TIME_ERROR} seconds, exiting. "
+                f"To check devices status, use the following command:\n\t"
+                f"kubectl -n {lab.hash} get pods"
+            )
+
+            # We should send a SIGINT to the main thread to exit the w.stream
+            os.kill(os.getpid(), signal.SIGINT)
+
+        timer = threading.Timer(MAX_TIME_ERROR, raise_timeout_error)
+        timer.start()
+
         w = watch.Watch()
         for event in w.stream(self.kubernetes_namespace.client.list_namespaced_pod, namespace=lab.hash):
+            # Every new event, cancel and create the timer
+            timer.cancel()
+            timer = threading.Timer(MAX_TIME_ERROR, raise_timeout_error)
+            timer.start()
+
             machine_name = event['object'].metadata.labels['name']
 
             if not selected_machines or machine_name in selected_machines:
@@ -216,6 +239,9 @@ class KubernetesMachine(object):
                             logging.warning(f"Device `{machine_name}` has been restarted {restart_count} times.")
 
             if machines_ready + machines_failed == len(machines):
+                # Finished watching, cancel the last timer
+                timer.cancel()
+
                 w.stop()
 
         if machines_ready == len(machines):
