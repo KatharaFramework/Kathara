@@ -63,4 +63,4 @@ class CheckCommand(Command):
             print("*\tContainer run successfully.")
             Kathara.get_instance().undeploy_machine(machine)
         except Exception as e:
-            logging.exception(f"\t! Running `Hello World` failed: {str(e)}")
+            logging.exception(f"\t! Running container failed: {str(e)}")
