@@ -184,13 +184,18 @@ class Kathara(IManager):
         self.manager.wipe(all_users)
 
     def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
-                    shell: str = None, logs: bool = False, wait: Union[bool, Tuple[int, float]] = True) -> None:
+                    lab: Optional[Lab] = None, shell: str = None, logs: bool = False,
+                    wait: Union[bool, Tuple[int, float]] = True) -> None:
         """Connect to a device in a running network scenario, using the specified shell.
 
         Args:
             machine_name (str): The name of the device to connect.
-            lab_hash (str): The hash of the network scenario where the device is deployed.
-            lab_name (str): The name of the network scenario where the device is deployed.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             shell (str): The name of the shell to use for connecting.
             logs (bool): If True, print startup logs on stdout.
             wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
@@ -204,18 +209,22 @@ class Kathara(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        self.manager.connect_tty(machine_name, lab_hash, lab_name, shell, logs, wait)
+        self.manager.connect_tty(machine_name, lab_hash, lab_name, lab, shell, logs, wait)
 
     def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
-             lab_name: Optional[str] = None, wait: Union[bool, Tuple[int, float]] = False) \
+             lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False) \
             -> Generator[Tuple[bytes, bytes], None, None]:
         """Exec a command on a device in a running network scenario.
 
         Args:
             machine_name (str): The name of the device to connect.
             command (Union[List[str], str]): The command to exec on the device.
-            lab_hash (Optional[str]): The hash of the network scenario where the device is deployed.
-            lab_name (Optional[str]): The name of the network scenario where the device is deployed.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to wait
@@ -227,7 +236,7 @@ class Kathara(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        return self.manager.exec(machine_name, command, lab_hash, lab_name, wait)
+        return self.manager.exec(machine_name, command, lab_hash, lab_name, lab, wait)
 
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
         """Copy files on a running device in the specified paths.
@@ -242,16 +251,18 @@ class Kathara(IManager):
         """
         self.manager.copy_files(machine, guest_to_host)
 
-    def get_machine_api_object(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
-                               all_users: bool = False) -> Any:
+    def get_machine_api_object(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                               lab: Optional[Lab] = None, all_users: bool = False) -> Any:
         """Return the corresponding API object of a running device in a network scenario.
 
         Args:
             machine_name (str): The name of the device.
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_hash should be set.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             all_users (bool): If True, return information about devices of all users.
 
         Returns:
@@ -261,32 +272,38 @@ class Kathara(IManager):
             InvocationError: If a running network scenario hash or name is not specified.
             MachineNotFoundError: If the specified device is not found.
         """
-        return self.manager.get_machine_api_object(machine_name, lab_hash, lab_name, all_users)
+        return self.manager.get_machine_api_object(machine_name, lab_hash, lab_name, lab, all_users)
 
-    def get_machines_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) \
-            -> List[Any]:
+    def get_machines_api_objects(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                                 lab: Optional[Lab] = None, all_users: bool = False) -> List[Any]:
         """Return API objects of running devices.
 
         Args:
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name.
             all_users (bool): If True, return information about devices of all users.
 
         Returns:
             List[Any]: API objects of devices, specific for the current manager.
         """
-        return self.manager.get_machines_api_objects(lab_hash, lab_name, all_users)
+        return self.manager.get_machines_api_objects(lab_hash, lab_name, lab, all_users)
 
-    def get_link_api_object(self, link_name: str, lab_hash: str = None, lab_name: str = None,
-                            all_users: bool = False) -> Any:
+    def get_link_api_object(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                            lab: Optional[Lab] = None, all_users: bool = False) -> Any:
         """Return the corresponding API object of a collision domain in a network scenario.
 
         Args:
             link_name (str): The name of the collision domain.
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_hash should be set.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             all_users (bool): If True, return information about collision domains of all users.
 
         Returns:
@@ -296,27 +313,34 @@ class Kathara(IManager):
             InvocationError: If a running network scenario hash or name is not specified.
             LinkNotFoundError: If the collision domain is not found.
         """
-        return self.manager.get_link_api_object(link_name, lab_hash, lab_name, all_users)
+        return self.manager.get_link_api_object(link_name, lab_hash, lab_name, lab, all_users)
 
-    def get_links_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> List[Any]:
+    def get_links_api_objects(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                              lab: Optional[Lab] = None, all_users: bool = False) -> List[Any]:
         """Return API objects of collision domains in a network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name.
             all_users (bool): If True, return information about collision domains of all users.
 
         Returns:
             List[Any]: API objects of collision domains, specific for the current manager.
         """
-        return self.manager.get_links_api_objects(lab_hash, lab_name, all_users)
+        return self.manager.get_links_api_objects(lab_hash, lab_name, lab, all_users)
 
-    def get_lab_from_api(self, lab_hash: str = None, lab_name: str = None) -> Lab:
+    def get_lab_from_api(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None) -> Lab:
         """Return the network scenario (specified by the hash or name), building it from API objects.
 
         Args:
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name. If None, lab_name should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash. If None, lab_hash should be set.
 
         Returns:
             Lab: The built network scenario.
@@ -334,13 +358,18 @@ class Kathara(IManager):
         """
         self.manager.update_lab_from_api(lab)
 
-    def get_machines_stats(self, lab_hash: str = None, lab_name: str = None, machine_name: str = None,
-                           all_users: bool = False) -> Generator[Dict[str, IMachineStats], None, None]:
+    def get_machines_stats(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                           lab: Optional[Lab] = None, machine_name: str = None, all_users: bool = False) \
+            -> Generator[Dict[str, IMachineStats], None, None]:
         """Return information about the running devices.
 
         Args:
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name.
             machine_name (str): If specified return all the devices with machine_name.
             all_users (bool): If True, return information about the device of all users.
 
@@ -348,18 +377,20 @@ class Kathara(IManager):
               Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
               identifier as keys and IMachineStats objects as values.
         """
-        return self.manager.get_machines_stats(lab_hash, lab_name, machine_name, all_users)
+        return self.manager.get_machines_stats(lab_hash, lab_name, lab, machine_name, all_users)
 
-    def get_machine_stats(self, machine_name: str, lab_hash: str = None,
-                          lab_name: str = None, all_users: bool = False) -> Generator[IMachineStats, None, None]:
+    def get_machine_stats(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                          lab: Optional[Lab] = None, all_users: bool = False) -> Generator[IMachineStats, None, None]:
         """Return information of the specified device in a specified network scenario.
 
         Args:
             machine_name (str): The device name.
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
-                If None, lab_hash should be set.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
@@ -368,15 +399,19 @@ class Kathara(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        return self.manager.get_machine_stats(machine_name, lab_hash, lab_name, all_users)
+        return self.manager.get_machine_stats(machine_name, lab_hash, lab_name, lab, all_users)
 
-    def get_links_stats(self, lab_hash: str = None, lab_name: str = None, link_name: str = None,
-                        all_users: bool = False) -> Generator[Dict[str, ILinkStats], None, None]:
+    def get_links_stats(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
+                        link_name: str = None, all_users: bool = False) -> Generator[Dict[str, ILinkStats], None, None]:
         """Return information about deployed networks.
 
         Args:
-           lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-           lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name.
            link_name (str): If specified return all the networks with link_name.
            all_users (bool): If True, return information about the networks of all users.
 
@@ -384,19 +419,21 @@ class Kathara(IManager):
              Generator[Dict[str, ILinkStats], None, None]: A generator containing dicts that has API Object
              identifier as keys and ILinksStats objects as values.
         """
-        return self.manager.get_links_stats(lab_hash, lab_name, link_name, all_users)
+        return self.manager.get_links_stats(lab_hash, lab_name, lab, link_name, all_users)
 
-    def get_link_stats(self, link_name: str, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
-            Generator[ILinkStats, None, None]:
+    def get_link_stats(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                       lab: Optional[Lab] = None, all_users: bool = False) -> Generator[ILinkStats, None, None]:
         """Return information of the specified deployed network in a specified network scenario.
 
         Args:
-           link_name (str): If specified return all the networks with link_name.
-           lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_name should be set.
-           lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
-                If None, lab_hash should be set.
-           all_users (bool): If True, return information about the networks of all users.
+            link_name (str): If specified return all the networks with link_name.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
+            all_users (bool): If True, return information about the networks of all users.
 
         Returns:
              Generator[Dict[str, ILinkStats], None, None]: A generator containing dicts that has API Object
@@ -405,7 +442,7 @@ class Kathara(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        return self.manager.get_link_stats(link_name, lab_hash, lab_name, all_users)
+        return self.manager.get_link_stats(link_name, lab_hash, lab_name, lab, all_users)
 
     def check_image(self, image_name: str) -> None:
         """Check if the specified image is valid.
@@ -417,7 +454,8 @@ class Kathara(IManager):
             None
 
         Raises:
-            ConnectionError: If the image is not locally available and there is no connection to a remote image repository.
+            ConnectionError: If the image is not locally available and there is no connection to a
+                remote image repository.
             ImageNotFoundError: If the image is not found.
         """
         self.manager.check_image(image_name)
