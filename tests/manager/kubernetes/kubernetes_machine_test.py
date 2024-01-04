@@ -427,8 +427,9 @@ def test_deploy_machine(mock_create, kubernetes_machine, default_device):
 #
 # TEST: deploy_machines
 #
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._wait_machines_startup")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._deploy_machine")
-def test_deploy_machines(mock_deploy, kubernetes_machine):
+def test_deploy_machines(mock_deploy, mock_wait_machines_startup, kubernetes_machine):
     lab = Lab("Default scenario")
 
     lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
@@ -439,15 +440,17 @@ def test_deploy_machines(mock_deploy, kubernetes_machine):
     kubernetes_machine.deploy_machines(lab)
 
     assert mock_deploy.call_count == 2
+    mock_wait_machines_startup.assert_called_once_with(lab, None)
 
 
 #
 # TEST: undeploy
 #
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._wait_machines_shutdown")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._undeploy_machine")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
-def test_undeploy_one_device(mock_get_machines_api_objects_by_filters, mock_undeploy_machine, kubernetes_machine,
-                             default_device):
+def test_undeploy_one_device(mock_get_machines_api_objects_by_filters, mock_undeploy_machine,
+                             mock_wait_machines_shutdown, kubernetes_machine, default_device):
     default_device.api_object.metadata.labels = {'name': "test_device"}
     mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
     mock_undeploy_machine.return_value = None
@@ -456,12 +459,14 @@ def test_undeploy_one_device(mock_get_machines_api_objects_by_filters, mock_unde
 
     mock_get_machines_api_objects_by_filters.assert_called_once()
     mock_undeploy_machine.assert_called_once_with(default_device.api_object)
+    mock_wait_machines_shutdown.assert_called_once_with("lab_hash", {default_device.name})
 
 
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._wait_machines_shutdown")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._undeploy_machine")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
-def test_undeploy_three_devices(mock_get_machines_api_objects_by_filters, mock_undeploy_machine, kubernetes_machine,
-                                default_device):
+def test_undeploy_three_devices(mock_get_machines_api_objects_by_filters, mock_undeploy_machine,
+                                mock_wait_machines_shutdown, kubernetes_machine, default_device):
     default_device.api_object.metadata.labels = {'name': "test_device"}
     # fill the list with more devices
     mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object,
@@ -472,11 +477,14 @@ def test_undeploy_three_devices(mock_get_machines_api_objects_by_filters, mock_u
 
     mock_get_machines_api_objects_by_filters.assert_called_once()
     assert mock_undeploy_machine.call_count == 3
+    mock_wait_machines_shutdown.assert_called_once_with("lab_hash", {"test_device"})
 
 
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._wait_machines_shutdown")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._undeploy_machine")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
-def test_undeploy_no_devices(mock_get_machines_api_objects_by_filters, mock_undeploy_machine, kubernetes_machine):
+def test_undeploy_no_devices(mock_get_machines_api_objects_by_filters, mock_undeploy_machine,
+                             mock_wait_machines_shutdown, kubernetes_machine):
     mock_get_machines_api_objects_by_filters.return_value = []
     mock_undeploy_machine.return_value = None
 
@@ -484,6 +492,7 @@ def test_undeploy_no_devices(mock_get_machines_api_objects_by_filters, mock_unde
 
     mock_get_machines_api_objects_by_filters.assert_called_once()
     assert not mock_undeploy_machine.called
+    assert not mock_wait_machines_shutdown.called
 
 
 #
