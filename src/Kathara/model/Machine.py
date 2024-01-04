@@ -159,7 +159,7 @@ class Machine(FilesystemMixin):
             return old_value
 
         if name == "sysctl":
-            matches = re.search(r"^(?P<key>net\.([\w-]+\.)+[\w-]+)=(?P<value>-?\w+)$", value)
+            matches = re.search(r"^(?P<key>net\.([\w-]+\.)+[\w-]+)=(?P<value>[^=]*)$", value)
 
             # Check for valid kv-pair
             if matches:
@@ -169,7 +169,7 @@ class Machine(FilesystemMixin):
                 old_value = self.meta['sysctls'][key] if key in self.meta['sysctls'] else None
 
                 # Convert to int if possible
-                self.meta['sysctls'][key] = int(val) if val.strip('-').isnumeric() else val
+                self.meta['sysctls'][key] = int(val) if val.lstrip('-').isnumeric() else val
             else:
                 raise MachineOptionError(
                     "Invalid sysctl value (`%s`) on `%s`, missing `=` or value not in `net.` namespace."
@@ -178,7 +178,7 @@ class Machine(FilesystemMixin):
             return old_value
 
         if name == "env":
-            matches = re.search(r"^(?P<key>\w+)=(?P<value>\S+)$", value)
+            matches = re.search(r"^(?P<key>\w+)=(?P<value>[^=]*)$", value)
 
             # Check for valid kv-pair
             if matches:

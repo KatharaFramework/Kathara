@@ -176,8 +176,18 @@ def test_add_meta_sysctl_negative_number(default_device: Machine):
 
 
 def test_add_meta_sysctl_negative_number_not_format(default_device: Machine):
+    default_device.add_meta("sysctl", "net.test_sysctl.negative=-1-")
+    assert default_device.meta['sysctls']['net.test_sysctl.negative'] == "-1-"
+
+
+def test_add_meta_sysctl_with_spaces(default_device: Machine):
+    default_device.add_meta("sysctl", "net.ipv4.tcp_rmem=4096 87380 33554432")
+    assert default_device.meta['sysctls']['net.ipv4.tcp_rmem'] == "4096 87380 33554432"
+
+
+def test_add_meta_sysctl_double_equal(default_device: Machine):
     with pytest.raises(MachineOptionError):
-        default_device.add_meta("sysctl", "net.test_sysctl.negative=-1-")
+        default_device.add_meta("sysctl", "net.test_sysctl.text=test=again")
 
 
 def test_add_meta_env(default_device: Machine):
@@ -188,6 +198,16 @@ def test_add_meta_env(default_device: Machine):
 def test_add_meta_env_number(default_device: Machine):
     default_device.add_meta("env", "MY_ENV_VAR=1")
     assert default_device.meta['envs']['MY_ENV_VAR'] == "1"
+
+
+def test_add_meta_env_with_spaces(default_device: Machine):
+    default_device.add_meta("env", "MY_ENV_VAR=spaced value")
+    assert default_device.meta['envs']['MY_ENV_VAR'] == "spaced value"
+
+
+def test_add_meta_env_double_equal(default_device: Machine):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta("env", "MY_ENV_VAR=test=not valid")
 
 
 def test_add_meta_env_not_format_exception(default_device: Machine):
