@@ -23,7 +23,8 @@ from ...model.Lab import Lab
 from ...model.Link import Link
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
-from ...utils import pack_files_for_tar, import_pywintypes
+from ...utils import pack_files_for_tar, import_pywintypes, \
+    check_required_single_not_none_var, check_single_not_none_var
 
 pywintypes = import_pywintypes()
 
@@ -259,9 +260,7 @@ class DockerManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -320,9 +319,7 @@ class DockerManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -364,9 +361,7 @@ class DockerManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -417,9 +412,7 @@ class DockerManager(IManager):
             InvocationError: If a running network scenario hash or name is not specified.
             MachineNotFoundError: If the specified device is not found.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -452,6 +445,7 @@ class DockerManager(IManager):
         Returns:
             List[docker.models.containers.Container]: Docker API objects of devices.
         """
+        check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -482,9 +476,7 @@ class DockerManager(IManager):
             InvocationError: If a running network scenario hash or name is not specified.
             LinkNotFoundError: If the collision domain is not found.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -517,6 +509,7 @@ class DockerManager(IManager):
         Returns:
             List[docker.models.networks.Network]: Docker API objects of networks.
         """
+        check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -667,6 +660,7 @@ class DockerManager(IManager):
               Generator[Dict[str, DockerMachineStats], None, None]: A generator containing dicts that has API Object
               identifier as keys and DockerMachineStats objects as values.
         """
+        check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -699,9 +693,7 @@ class DockerManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -732,6 +724,7 @@ class DockerManager(IManager):
              Generator[Dict[str, DockerLinkStats], None, None]: A generator containing dicts that has API Object
                 identifier as keys and DockerLinksStats objects as values.
         """
+        check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -762,9 +755,7 @@ class DockerManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:

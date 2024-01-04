@@ -618,24 +618,16 @@ def test_get_machine_api_object_lab_obj(mock_get_machines_api_objects, kubernete
                                                           lab_hash=two_device_scenario.hash.lower())
 
 
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
-def test_get_machine_api_object_lab_hash_and_name(mock_get_machines_api_objects, kubernetes_manager, default_device):
-    default_device.api_object.name = "default_device"
-    mock_get_machines_api_objects.return_value = [default_device.api_object]
-    kubernetes_manager.get_machine_api_object(machine_name="default_device", lab_name="lab_name", lab_hash="lab_hash")
-    mock_get_machines_api_objects.assert_called_once_with(machine_name="default_device",
-                                                          lab_hash=generate_urlsafe_hash("lab_name").lower())
+def test_get_machine_api_object_lab_hash_and_name(kubernetes_manager, default_device):
+    with pytest.raises(InvocationError):
+        kubernetes_manager.get_machine_api_object(machine_name="default_device", lab_name="lab_name",
+                                                  lab_hash="lab_hash")
 
 
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
-def test_get_machine_api_object_lab_hash_and_name_and_obj(mock_get_machines_api_objects, kubernetes_manager,
-                                                          default_device, two_device_scenario):
-    default_device.api_object.name = "default_device"
-    mock_get_machines_api_objects.return_value = [default_device.api_object]
-    kubernetes_manager.get_machine_api_object(machine_name="default_device", lab_name="lab_name",
-                                              lab_hash="lab_hash", lab=two_device_scenario)
-    mock_get_machines_api_objects.assert_called_once_with(machine_name="default_device",
-                                                          lab_hash=two_device_scenario.hash.lower())
+def test_get_machine_api_object_lab_hash_and_name_and_obj(kubernetes_manager, default_device, two_device_scenario):
+    with pytest.raises(InvocationError):
+        kubernetes_manager.get_machine_api_object(machine_name="default_device", lab_name="lab_name",
+                                                  lab_hash="lab_hash", lab=two_device_scenario)
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
@@ -732,14 +724,10 @@ def test_get_link_api_object_lab_obj(mock_get_links_api_objects, kubernetes_mana
                                                        lab_hash=two_device_scenario.hash.lower())
 
 
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
-def test_get_link_api_object_lab_hash_and_name_and_obj(mock_get_links_api_objects, kubernetes_manager,
-                                                       kubernetes_network, two_device_scenario):
-    mock_get_links_api_objects.return_value = [kubernetes_network]
-    kubernetes_manager.get_link_api_object(link_name="test_network", lab_name="lab_name", lab_hash="lab_hash",
-                                           lab=two_device_scenario)
-    mock_get_links_api_objects.assert_called_once_with(link_name="test_network",
-                                                       lab_hash=two_device_scenario.hash.lower())
+def test_get_link_api_object_lab_hash_and_name_and_obj(kubernetes_manager, kubernetes_network, two_device_scenario):
+    with pytest.raises(InvocationError):
+        kubernetes_manager.get_link_api_object(link_name="test_network", lab_name="lab_name", lab_hash="lab_hash",
+                                               lab=two_device_scenario)
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")

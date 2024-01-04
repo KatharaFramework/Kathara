@@ -21,7 +21,7 @@ from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict,
 from binaryornot.check import is_binary
 from slug import slug
 
-from .exceptions import HostArchitectureError
+from .exceptions import HostArchitectureError, InvocationError
 
 # Platforms constants definition.
 MAC_OS: str = "darwin"
@@ -109,6 +109,22 @@ def get_pool_size() -> int:
     return cpu_count()
 
 
+def check_single_not_none_var(**kwargs) -> None:
+    not_none = [x for x in kwargs.values() if x is not None]
+
+    if len(not_none) > 1:
+        raise InvocationError(f"You must specify only a parameter among {', '.join(kwargs.keys())}")
+
+
+def check_required_single_not_none_var(**kwargs) -> None:
+    not_none = [x for x in kwargs.values() if x is not None]
+
+    if len(not_none) == 0:
+        raise InvocationError(f"You must specify a parameter among {', '.join(kwargs.keys())}")
+    elif len(not_none) > 1:
+        raise InvocationError(f"You must specify only a parameter among {', '.join(kwargs.keys())}")
+
+
 # Platform Specific Functions
 def is_platform(desired_platform: str) -> bool:
     return _platform == desired_platform
@@ -152,26 +168,6 @@ def wait_user_input_windows() -> bool:
     """Return True if an Enter keypress is waiting to be read. Only for Windows."""
     import msvcrt
     return b'\r' in msvcrt.getch() if msvcrt.kbhit() else False
-
-
-# Architecture Test
-def get_architecture() -> str:
-    architecture = machine().lower()
-
-    logging.debug("Machine architecture is `%s`." % architecture)
-
-    if architecture in ["x86_64", "amd64"]:
-        return "amd64"
-    elif architecture == "i686":
-        return "386"
-    elif architecture in ["arm64", "aarch64"]:
-        return "arm64"
-    elif architecture == "armv7l":
-        return "armv7"
-    elif architecture == "armv6l":
-        return "armv6"
-    else:
-        raise HostArchitectureError(architecture)
 
 
 def convert_win_2_linux(filename: str, write: bool = False) -> Optional[bytes]:
@@ -258,6 +254,26 @@ def get_current_user_info() -> Any:
         return pwd.getpwuid(user_id)
 
     return exec_by_platform(passwd_info, lambda: None, passwd_info)
+
+
+# Architecture Test
+def get_architecture() -> str:
+    architecture = machine().lower()
+
+    logging.debug("Machine architecture is `%s`." % architecture)
+
+    if architecture in ["x86_64", "amd64"]:
+        return "amd64"
+    elif architecture == "i686":
+        return "386"
+    elif architecture in ["arm64", "aarch64"]:
+        return "arm64"
+    elif architecture == "armv7l":
+        return "armv7"
+    elif architecture == "armv6l":
+        return "armv6"
+    else:
+        raise HostArchitectureError(architecture)
 
 
 # Formatting Functions

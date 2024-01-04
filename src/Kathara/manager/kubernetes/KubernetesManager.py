@@ -19,7 +19,7 @@ from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
 from ...model.Link import Link
 from ...model.Machine import Machine
-from ...utils import pack_files_for_tar
+from ...utils import pack_files_for_tar, check_required_single_not_none_var, check_single_not_none_var
 
 
 class KubernetesManager(IManager):
@@ -236,9 +236,7 @@ class KubernetesManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -326,9 +324,7 @@ class KubernetesManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -367,18 +363,16 @@ class KubernetesManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
+        lab_hash = lab_hash.lower()
+
         if wait:
             logging.warning("Wait option has no effect on Megalos.")
-
-        lab_hash = lab_hash.lower()
 
         return self.k8s_machine.exec(lab_hash, machine_name, command, stderr=True, tty=False, is_stream=True)
 
@@ -418,18 +412,16 @@ class KubernetesManager(IManager):
             InvocationError: If a running network scenario hash or name is not specified.
             MachineNotFoundError: If the device is not found.
         """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower()
+
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
 
         pods = self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
         if pods:
@@ -453,15 +445,16 @@ class KubernetesManager(IManager):
         Returns:
             List[client.V1Pod]: Kubernetes Pod objects of devices.
         """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
+        check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower() if lab_hash else None
+
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
 
         return self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash)
 
@@ -486,18 +479,16 @@ class KubernetesManager(IManager):
             InvocationError: If a running network scenario hash or name is not specified.
             LinkNotFoundError: If the collision domain is not found.
         """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower()
+
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
 
         networks = self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name)
         if networks:
@@ -521,15 +512,16 @@ class KubernetesManager(IManager):
         Returns:
             List[Any]: Kubernetes API objects of networks.
         """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
+        check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower() if lab_hash else None
+
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
 
         return self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash)
 
@@ -625,15 +617,16 @@ class KubernetesManager(IManager):
               Generator[Dict[str, KubernetesMachineStats], None, None]: A generator containing dicts that has API Object
                 identifier as keys and KubernetesMachineStats objects as values.
         """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
+        check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower() if lab_hash else None
+
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
 
         return self.k8s_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name)
 
@@ -658,9 +651,7 @@ class KubernetesManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -692,15 +683,16 @@ class KubernetesManager(IManager):
              Generator[Dict[str, KubernetesLinkStats], None, None]: A generator containing dicts that has API Object
                 identifier as keys and KubernetesLinkStats objects as values.
         """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
+        check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower() if lab_hash else None
+
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
 
         return self.k8s_link.get_links_stats(lab_hash=lab_hash, link_name=link_name)
 
@@ -726,9 +718,7 @@ class KubernetesManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:

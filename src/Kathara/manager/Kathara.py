@@ -453,7 +453,8 @@ class Kathara(IManager):
             None
 
         Raises:
-            ConnectionError: If the image is not locally available and there is no connection to a remote image repository.
+            ConnectionError: If the image is not locally available and there is no connection to a
+                remote image repository.
             ImageNotFoundError: If the image is not found.
         """
         self.manager.check_image(image_name)
