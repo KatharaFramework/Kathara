@@ -52,12 +52,11 @@ class CheckCommand(Command):
 
         print(f"*\tTrying to run container with `{Setting.get_instance().image}` image...")
         Setting.get_instance().open_terminals = False
-        args['no_shared'] = False
-        args['no_hosthome'] = False
 
         lab = Lab("kathara_test")
-        machine = lab.get_or_new_machine("hello_world")
+        lab.add_option('hosthome_mount', False)
 
+        machine = lab.get_or_new_machine("hello_world")
         try:
             Kathara.get_instance().deploy_machine(machine)
             print("*\tContainer run successfully.")
