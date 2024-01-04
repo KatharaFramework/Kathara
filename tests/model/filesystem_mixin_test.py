@@ -187,6 +187,26 @@ def test_create_file_from_stream_byte():
 
 
 #
+# TEST: copy_directory_from_path
+#
+def test_copy_directory_from_path():
+    filesystem = FilesystemMixin()
+    filesystem.fs = fs.open_fs(f"mem://")
+    with mock.patch("src.Kathara.foundation.model.FilesystemMixin.open_fs") as mock_open_fs:
+        with mock.patch("src.Kathara.foundation.model.FilesystemMixin.copy_dir") as mock_copy_dir:
+            mock_open_fs.return_value = "directory"
+            filesystem.copy_directory_from_path("src_path", "dst_path")
+            mock_open_fs.assert_called_once()
+            mock_copy_dir.assert_called_once_with("directory", ".", filesystem.fs, "dst_path")
+
+
+def test_copy_directory_from_path_invocation_error():
+    filesystem = FilesystemMixin()
+    with pytest.raises(InvocationError):
+        filesystem.copy_directory_from_path("src_path", "dst_path")
+
+
+#
 # TEST: write_line_before
 #
 def test_write_line_before():
