@@ -20,7 +20,7 @@ Package: kathara
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Suggests: docker.io (>= 17.03.2) | docker-ce (>= 17.03.2), xterm
-Description: Lightweight network emulation tool.
+Description: A lightweight container-based network emulation tool.
 	It can be really helpful in showing interactive demos/lessons,
 	testing production networks in a sandbox environment, or developing new network protocols.
 

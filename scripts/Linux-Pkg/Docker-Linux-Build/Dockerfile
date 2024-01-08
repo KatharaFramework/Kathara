@@ -10,12 +10,8 @@ RUN pacman -S --noconfirm git \
 			  			  base-devel \
 			  			  chrpath \
                           patchelf \
-    					  ruby-ronn-ng
-                          
-RUN pacman -S --noconfirm wget && \
-    wget https://archive.archlinux.org/packages/p/python/python-3.10.10-1-x86_64.pkg.tar.zst && \
-    pacman -U --noconfirm python-3.10.10-1-x86_64.pkg.tar.zst && \
-    rm -f python-3.10.10-1-x86_64.pkg.tar.zst
+    					  ruby-ronn-ng \
+                          python
                           
 RUN useradd -m -s /bin/bash builduser
 

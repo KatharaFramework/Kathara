@@ -1,7 +1,9 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-    * Add support for the new Kathara Network Plugin based on VDE software switches. It is possible to select the old Network Plugin (based on Linux Bridges) from "kathara settings"
-    * Switch the default image to "kathara/base" for new installations
-    * Fix Docker images fetching in "kathara settings"
+    * It is now possible to specify a MAC Address for a network interface
+    * (Docker) Collision domains are now created per-network-scenario by default
+    * (Docker) If a ".shutdown" file is present in the network scenario, Kathara now correctly waits for the script termination before removing the container
+    * Several fixes of "lconfig" and "vconfig" commands
+    * Minor fixes and improvements
 
  -- Kathara Team <contact@kathara.org>  __DATE__

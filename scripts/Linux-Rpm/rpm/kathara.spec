@@ -8,7 +8,7 @@ URL:		    https://www.kathara.org/
 Source:		    %{name}-%{version}.tar.gz
 
 %description
-Lightweight network emulation system based on Docker containers.
+A lightweight container-based network emulation tool.
 
 It can be really helpful in showing interactive demos/lessons,
 testing production networks in a sandbox environment, or developing
@@ -18,15 +18,15 @@ new network protocols.
 
 %prep
 %autosetup
-python3.10 -m venv %{_builddir}/venv
+python3.11 -m venv %{_builddir}/venv
 %{_builddir}/venv/bin/pip install --upgrade pip
 %{_builddir}/venv/bin/pip install -r src/requirements.txt
-%{_builddir}/venv/bin/pip install nuitka==1.7.10
+%{_builddir}/venv/bin/pip install nuitka
 %{_builddir}/venv/bin/pip install pytest
 
 %build
 %{_builddir}/venv/bin/python -m pytest
-cd src && %{_builddir}/venv/bin/python -m nuitka --lto=no --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara --output-filename=kathara kathara.py
+cd src && %{_builddir}/venv/bin/python -m nuitka --lto=yes --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara --output-filename=kathara kathara.py
 
 %install
 mv %{_builddir}/%{buildsubdir}/src/kathara.dist %{_builddir}/%{buildsubdir}/kathara.dist
@@ -68,6 +68,8 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- Add support for the new Kathara Network Plugin based on VDE software switches. It is possible to select the old Network Plugin (based on Linux Bridges) from "kathara settings"
-- Switch the default image to "kathara/base" for new installations
-- Fix Docker images fetching in "kathara settings"
+- It is now possible to specify a MAC Address for a network interface
+- (Docker) Collision domains are now created per-network-scenario by default
+- (Docker) If a ".shutdown" file is present in the network scenario, Kathara now correctly waits for the script termination before removing the container
+- Several fixes of "lconfig" and "vconfig" commands
+- Minor fixes and improvements
