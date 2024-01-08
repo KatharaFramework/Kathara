@@ -16,7 +16,7 @@ If `arg` is an integer value, then `value` is the name of the collision domain t
 
 - `arg`: An integer value representing the interface number (e.g., 0).
 - `CD1`: The name of the collision domain to which the specified interface must be connected. Note that the name of the collision domain must not contain spaces (" "), commas (",") and dots (".").
-- `/MAC_ADDR`: An optional parameter to specify the MAC address of the interface of `device` (MAC address must be in the format `XX:XX:XX:XX:XX:XX`). If `MAC_ADDR` is not provided, Kathará will assign a random one.
+- `/MAC_ADDR`: An optional parameter to specify the MAC address of the interface of `device` (MAC address must be in the format `XX:XX:XX:XX:XX:XX`). If `MAC_ADDR` is not provided, Kathara will assign a random one.
 
 ### EXAMPLES
 

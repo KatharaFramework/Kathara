@@ -4,7 +4,7 @@ kathara-vconfig(1) -- Attach network interfaces to a running Kathara device
 
 ## SYNOPSIS
 
-`kathara vconfig` [`-h`] `-n` <DEVICE_NAME> (`--add` <CD> [<CD> ...] \| `--rm` <CD> [<CD> ...])  
+`kathara vconfig` [`-h`] `-n` <DEVICE_NAME> (`--add` <CD[/MAC_ADDR]> [<CD[/MAC_ADDR]> ...] \| `--rm` <CD> [<CD> ...])  
 
 ## DESCRIPTION
 
@@ -20,8 +20,10 @@ Manage the network interfaces of a running Kathara device. The affected device i
 
 * `--add` <CD[/MAC_ADDR]> [<CD[/MAC_ADDR]> ...]:
 	Specify the collision domain to be connected to the device:
-    + `CD`: The name of the collision domain to which the specified interface must be connected. Note that the name of the collision domain must not contain spaces (" "), commas (",") and dots (".").
-    + `/MAC_ADDR`: An optional parameter to specify the MAC address of the interface of `pc1` (MAC address must be in the format `XX:XX:XX:XX:XX:XX`). If `MAC_ADDR` is not provided, Kathará will assign a random one. 
+    
+    `CD`: The name of the collision domain to which the specified interface must be connected. Note that the name of the collision domain must not contain spaces (" "), commas (",") and dots (".").
+    
+    `/MAC_ADDR`: An optional parameter to specify the MAC address of the interface (MAC address must be in the format `XX:XX:XX:XX:XX:XX`). If `MAC_ADDR` is not provided, Kathara will assign a random one. 
     
     Equip the device with an additional network interface attached to a (virtual) collision domain whose name is <CD>. 
     The number of the resulting network interface is generated incrementing the number of the last network interface used by the device.

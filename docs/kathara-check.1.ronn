@@ -23,10 +23,11 @@ Should give an output like this:
 
 	*	Current Manager is: `<your_manager_name>`
 	*	Manager version is: `<your_manager_version>`
-	*	Trying to run `Hello World` container...
-	*	Container run successfully.
 	*	Python version is: `<python_version_used>`
 	*	Kathara version is: `<kathara_version>`
+	*	Operating System version is: `<your_os>`
+	*	Trying to run container with `<your_default_image>` image...
+	*	Container run successfully.
 
 **NOTE:** If you are using the released version, the Python version could be different from the one installed in your system because it is packed into the Kathara binary.
 
