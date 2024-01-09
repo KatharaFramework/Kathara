@@ -1,9 +1,12 @@
 import hashlib
 import json
 import logging
+import os
 import re
 import shlex
+import signal
 import sys
+import threading
 import uuid
 from multiprocessing.dummy import Pool
 from typing import Optional, Set, List, Union, Generator, Tuple, Dict
@@ -21,13 +24,14 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MachineAlreadyExistsError, MachineNotFoundError, MachineNotReadyError
+from ...exceptions import MachineAlreadyExistsError, MachineNotFoundError, MachineNotReadyError, MachineNotRunningError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 MAX_RESTART_COUNT = 3
+MAX_TIME_ERROR = 180
 
 # Known commands that each container should execute
 # Run order: shared.startup, machine.startup and machine.meta['exec_commands']
@@ -41,15 +45,17 @@ STARTUP_COMMANDS = [
     # Removes /etc/bind already existing configuration from k8s internal DNS
     "rm -Rf /etc/bind/*",
 
-    # Unmount the /etc/resolv.conf and /etc/hosts files, automatically mounted by Docker inside the container.
+    # Unmount the /etc/resolv.conf and /etc/hosts files, automatically mounted by Kubernetes inside the container.
     # In this way, they can be overwritten by custom user files.
     "umount /etc/resolv.conf",
     "umount /etc/hosts",
 
-    # Parse hostlab.b64
+    # Parse hostlab.b64 (if present)
+    "if [ -f \"/tmp/kathara/hostlab.b64\" ]; then "
     "base64 -d /tmp/kathara/hostlab.b64 > /hostlab.tar.gz",
     # Extract hostlab.tar.gz data into /
     "tar xmfz /hostlab.tar.gz -C /; rm -f hostlab.tar.gz",
+    "fi",
 
     # Copy the machine folder (if present) from the hostlab directory into the root folder of the container
     # In this way, files are all replaced in the container root folder
@@ -95,7 +101,7 @@ STARTUP_COMMANDS = [
     "/hostlab/{machine_name}.startup &> /var/log/startup.log; fi",
 
     # Remove the Kubernetes' default gateway which points to the eth0 interface and causes problems sometimes.
-    "route del default dev eth0 || true",
+    "ip route del default dev eth0 || true",
 
     # Placeholder for user commands
     "{machine_commands}",
@@ -184,8 +190,27 @@ class KubernetesMachine(object):
         machines_ready = 0
         machines_failed = 0
 
+        # Create a timer to raise an exception if the execution gets stuck
+        def raise_timeout_error():
+            logging.error(
+                f"Network scenario startup is not responding for over {MAX_TIME_ERROR} seconds, exiting. "
+                f"To check devices status, use the following command:\n\t"
+                f"kubectl -n {lab.hash} get pods"
+            )
+
+            # We should send a SIGINT to the main thread to exit the w.stream
+            os.kill(os.getpid(), signal.SIGINT)
+
+        timer = threading.Timer(MAX_TIME_ERROR, raise_timeout_error)
+        timer.start()
+
         w = watch.Watch()
         for event in w.stream(self.kubernetes_namespace.client.list_namespaced_pod, namespace=lab.hash):
+            # Every new event, cancel and create the timer
+            timer.cancel()
+            timer = threading.Timer(MAX_TIME_ERROR, raise_timeout_error)
+            timer.start()
+
             machine_name = event['object'].metadata.labels['name']
 
             if not selected_machines or machine_name in selected_machines:
@@ -214,6 +239,9 @@ class KubernetesMachine(object):
                             logging.warning(f"Device `{machine_name}` has been restarted {restart_count} times.")
 
             if machines_ready + machines_failed == len(machines):
+                # Finished watching, cancel the last timer
+                timer.cancel()
+
                 w.stop()
 
         if machines_ready == len(machines):
@@ -342,11 +370,10 @@ class KubernetesMachine(object):
         # to execute custom commands coming from .startup file and "exec" option
         # Build the final startup commands string
         sysctl_commands = "; ".join(["sysctl -w -q %s=%d" % item for item in machine.meta["sysctls"].items()])
+        machine_commands = "; ".join(machine.meta['exec_commands']) if machine.meta['exec_commands'] else ":"
+
         startup_commands_string = "; ".join(STARTUP_COMMANDS) \
-            .format(machine_name=machine.name,
-                    sysctl_commands=sysctl_commands,
-                    machine_commands="; ".join(machine.meta['exec_commands'])
-                    )
+            .format(machine_name=machine.name, sysctl_commands=sysctl_commands, machine_commands=machine_commands)
 
         post_start = client.V1LifecycleHandler(
             _exec=client.V1ExecAction(
@@ -377,11 +404,16 @@ class KubernetesMachine(object):
 
         pod_annotations = {}
         network_interfaces = []
-        for (idx, machine_link) in machine.interfaces.items():
+        for (idx, interface) in machine.interfaces.items():
+            additional_data = {}
+            if interface.mac_address:
+                additional_data["mac"] = interface.mac_address
+
             network_interfaces.append({
-                "name": machine_link.api_object["metadata"]["name"],
+                "name": interface.link.api_object["metadata"]["name"],
                 "namespace": machine.lab.hash,
-                "interface": "net%d" % idx
+                "interface": "net%d" % idx,
+                **additional_data
             })
         pod_annotations["k8s.v1.cni.cncf.io/networks"] = json.dumps(network_interfaces)
 
@@ -578,11 +610,12 @@ class KubernetesMachine(object):
             None
 
         Raises:
+            MachineNotRunningError: If the specified device is not running.
             MachineNotReadyError: If the device is not ready.
         """
         pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
         if not pods:
-            raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
+            raise MachineNotRunningError(machine_name)
         deployment = pods.pop()
 
         if 'Running' not in deployment.status.phase:
@@ -676,8 +709,11 @@ class KubernetesMachine(object):
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+
+        Raises:
+            MachineNotRunningError: If the specified device is not running.
         """
-        command = shlex.split(command) if type(command) == str else command
+        command = shlex.split(command) if command is str else command
 
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
@@ -685,7 +721,7 @@ class KubernetesMachine(object):
             # Retrieve the pod of current Deployment
             pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
             if not pods:
-                raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
+                raise MachineNotRunningError(machine_name)
             pod = pods.pop()
 
             response = stream(self.core_client.connect_get_namespaced_pod_exec,
@@ -772,7 +808,7 @@ class KubernetesMachine(object):
         """
         filters = ["app=kathara"]
         if machine_name:
-            filters.append("name=%s" % machine_name)
+            filters.append(f"name={machine_name}")
 
         # Get all Kathara namespaces if lab_hash is None
         namespaces = list(map(lambda x: x.metadata.name, self.kubernetes_namespace.get_all())) \

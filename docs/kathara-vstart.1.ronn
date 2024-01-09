@@ -6,7 +6,7 @@ kathara-vstart(1) -- Start a new Kathara device
 
 `kathara vstart` `-n` <DEVICE_NAME>  
 [`-h`] [`--noterminals` | `--terminals` | `--privileged` | `--num_terms` <NUM_TERMS>]  
-[`--eth` <N\:CD> [<N\:CD> ...]]  
+[`--eth` <N:CD[/MAC_ADDR]> [<N:CD[/MAC_ADDR]> ...]]  
 [`-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]] [`--mem` <MEM>]  
 [`--cpus` <CPUS>] [`-i` <IMAGE>] [`--no-hosthome` \| `--hosthome`]
 [`--xterm` <XTERM>] [`--print`] [`--bridged`]  
@@ -42,9 +42,13 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
 * `-n` <DEVICE_NAME>, `--name` <DEVICE_NAME>:
     Name of the device to be started.
 
-* `--eth` <N\:CD> [<N\:CD> ...]:
+* `--eth` <N:CD[/MAC_ADDR]> [<N:CD[/MAC_ADDR]> ...]:
     Set a specific interface on a collision domain.
-
+    
+    `CD`: The name of the collision domain to which the specified interface must be connected. Note that the name of the collision domain must not contain spaces (" "), commas (",") and dots (".").
+    
+    `/MAC_ADDR`: An optional parameter to specify the MAC address of the interface (MAC address must be in the format `XX:XX:XX:XX:XX:XX`). If `MAC_ADDR` is not provided, Kathara will assign a random one. 
+    
     Equip the device with a network interface. `N` is a positive integer starting from 0.
     The network interface will be attached to a (virtual) collision domain whose name is `CD`. Attaching interfaces of different devices to the same collision domain allows them to exchange network traffic. <N> should be declared as a sequential number, starting from 0; if any intermediate number is missing an exception is raised.
 

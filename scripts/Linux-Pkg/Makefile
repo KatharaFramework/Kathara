@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=3.7.0
+VERSION=3.7.1
 PACKAGE_VERSION=1
 AUR_NAME=user
 AUR_MAIL=contact@kathara.org
@@ -34,13 +34,11 @@ build-local: prepare-files
 	mkdir -p /home/builduser/build/src/
 	cp -r /home/builduser/kathara-source/Kathara-$(VERSION) /home/builduser/build/src
 	tar -zcf /home/builduser/build/kathara-$(VERSION).tar.gz /home/builduser/build/src/Kathara-$(VERSION)
-	sed -i -e 's/__PYTHON_DEP__//g' /home/builduser/build/PKGBUILD
 	sed -i -e 's/__SOURCE__/"kathara-$(VERSION).tar.gz"/g' /home/builduser/build/PKGBUILD
 	makepkg
 	mv kathara*.pkg.tar.zst /home/builduser/output/
 
 build-remote: prepare-files
-	sed -i -e "s/__PYTHON_DEP__/'python310'/g" /home/builduser/build/PKGBUILD
 	sed -i -e 's/__SOURCE__/"https:\/\/github.com\/KatharaFramework\/Kathara\/archive\/refs\/tags\/\$$\pkgver.tar.gz"/g' /home/builduser/build/PKGBUILD
 	cp -r /home/builduser/ssh/ /home/builduser/.ssh/ && chmod 600 /home/builduser/.ssh/id_rsa
 	ssh-keyscan aur.archlinux.org > /home/builduser/.ssh/known_hosts

@@ -34,15 +34,11 @@ class CheckCommand(Command):
 
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)
-        args = self.get_args()
 
-        print("*\tCurrent Manager is: %s" % Kathara.get_instance().get_formatted_manager_name())
-
-        print("*\tManager version is: %s" % Kathara.get_instance().get_release_version())
-
+        print(f"*\tCurrent Manager is: {Kathara.get_instance().get_formatted_manager_name()}")
+        print(f"*\tManager version is: {Kathara.get_instance().get_release_version()}")
         print("*\tPython version is: %s" % sys.version.replace("\n", "- "))
-
-        print("*\tKathara version is: %s" % version.CURRENT_VERSION)
+        print(f"*\tKathara version is: {version.CURRENT_VERSION}")
 
         def linux_platform_info():
             info = os.uname()
@@ -51,20 +47,18 @@ class CheckCommand(Command):
         platform_info = utils.exec_by_platform(
             linux_platform_info, lambda: platform.platform(), lambda: platform.platform()
         )
-        print("*\tOperating System version is: %s" % str(platform_info))
+        print(f"*\tOperating System version is: {str(platform_info)}")
 
-        print("*\tTrying to run `Hello World` container...")
-
+        print(f"*\tTrying to run container with `{Setting.get_instance().image}` image...")
         Setting.get_instance().open_terminals = False
-        args['no_shared'] = False
-        args['no_hosthome'] = False
 
         lab = Lab("kathara_test")
-        lab.get_or_new_machine("hello_world")
+        lab.add_option('hosthome_mount', False)
 
+        machine = lab.get_or_new_machine("hello_world")
         try:
-            Kathara.get_instance().deploy_lab(lab)
+            Kathara.get_instance().deploy_machine(machine)
             print("*\tContainer run successfully.")
-            Kathara.get_instance().undeploy_lab(lab_hash=lab.hash)
+            Kathara.get_instance().undeploy_machine(machine)
         except Exception as e:
-            logging.exception("\t! Running `Hello World` failed: %s" % str(e))
+            logging.exception(f"\t! Running container failed: {str(e)}")

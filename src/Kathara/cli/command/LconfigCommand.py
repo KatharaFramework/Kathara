@@ -2,11 +2,10 @@ import argparse
 import logging
 from typing import List
 
+from ..ui.utils import alphanumeric, cd_mac
 from ... import utils
-from ..ui.utils import alphanumeric
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
-from ...model.Lab import Lab
 from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
 
@@ -45,9 +44,9 @@ class LconfigCommand(Command):
 
         group.add_argument(
             '--add',
-            type=alphanumeric,
+            type=cd_mac,
             dest='to_add',
-            metavar='CD',
+            metavar='CD/MAC',
             nargs='+',
             help='Specify the collision domain to add.'
         )
@@ -66,26 +65,27 @@ class LconfigCommand(Command):
 
         lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
-        try:
-            lab = LabParser.parse(lab_path)
-        except (Exception, IOError):
-            lab = Lab(None, path=lab_path)
+
+        lab = LabParser.parse(lab_path)
 
         Kathara.get_instance().update_lab_from_api(lab)
 
         machine_name = args['name']
-        device = lab.get_or_new_machine(machine_name)
+        device = lab.get_machine(machine_name)
 
         if args['to_add']:
-            for cd in args['to_add']:
+            for cd_name, mac_address in args['to_add']:
                 logging.info(
-                    "Adding interface to device `%s` on collision domain `%s`..." % (machine_name, cd)
+                    f"Adding interface to device `{machine_name}` on collision domain `{cd_name}`" +
+                    (f" with MAC Address {mac_address}" if mac_address else "") +
+                    f"..."
                 )
-                Kathara.get_instance().connect_machine_to_link(device, lab.get_or_new_link(cd))
+                link = lab.get_or_new_link(cd_name)
+                Kathara.get_instance().connect_machine_to_link(device, link, mac_address=mac_address)
 
         if args['to_remove']:
-            for cd in args['to_remove']:
+            for cd_to_remove in args['to_remove']:
                 logging.info(
-                    "Removing interface on collision domain `%s` from device `%s`..." % (cd, machine_name)
+                    "Removing interface on collision domain `%s` from device `%s`..." % (cd_to_remove, machine_name)
                 )
-                Kathara.get_instance().disconnect_machine_from_link(device, lab.get_or_new_link(cd))
+                Kathara.get_instance().disconnect_machine_from_link(device, lab.get_link(cd_to_remove))

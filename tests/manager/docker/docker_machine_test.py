@@ -11,6 +11,7 @@ from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
 from src.Kathara.exceptions import MachineNotFoundError, DockerPluginError, MachineBinaryError
+from src.Kathara.types import SharedCollisionDomainsOption
 
 
 #
@@ -55,6 +56,14 @@ def default_link_b(default_device):
     return link
 
 
+@pytest.fixture()
+def default_link_c(default_device):
+    link = Link(default_device.lab, "C")
+    link.api_object = Mock()
+    link.api_object.connect = Mock(return_value=True)
+    return link
+
+
 #
 # TEST: create
 #
@@ -69,7 +78,7 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, mock_copy
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': False,
@@ -87,6 +96,7 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, mock_copy
         privileged=False,
         network=None,
         network_mode='none',
+        networking_config=None,
         sysctls={'net.ipv4.conf.all.rp_filter': 0,
                  'net.ipv4.conf.default.rp_filter': 0,
                  'net.ipv4.conf.lo.rp_filter': 0,
@@ -119,7 +129,7 @@ def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': True,
@@ -137,6 +147,7 @@ def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock
         privileged=False,
         network=None,
         network_mode='none',
+        networking_config=None,
         sysctls={'net.ipv4.conf.all.rp_filter': 0,
                  'net.ipv4.conf.default.rp_filter': 0,
                  'net.ipv4.conf.lo.rp_filter': 0,
@@ -175,7 +186,7 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
     mock_get_current_user_name.return_value = "test-user"
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': True,
@@ -193,6 +204,7 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
         privileged=True,
         network=None,
         network_mode='none',
+        networking_config=None,
         sysctls={'net.ipv4.conf.all.rp_filter': 0,
                  'net.ipv4.conf.default.rp_filter': 0,
                  'net.ipv4.conf.lo.rp_filter': 0,
@@ -217,6 +229,137 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
     assert not mock_copy_files.called
 
 
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_interface(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
+                          mock_get_machines_api_objects_by_filters, docker_machine, default_device):
+    class LinkApiObj:
+        def __init__(self, name):
+            self.name = name
+
+    link = Link(default_device.lab, "A")
+    link.api_object = LinkApiObj("link_a")
+
+    default_device.add_interface(link, 0)
+
+    docker_machine.client.api.create_endpoint_config.return_value = {}
+    mock_get_machines_api_objects_by_filters.return_value = []
+    mock_get_current_user_name.return_value = "test-user"
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    docker_machine.create(default_device)
+    docker_machine.client.containers.create.assert_called_once_with(
+        image='kathara/test',
+        name='dev_prefix_test-user_test_device_9pe3y6IDMwx4PfOPu5mbNg',
+        hostname='test_device',
+        cap_add=['NET_ADMIN', 'NET_RAW', 'NET_BROADCAST', 'NET_BIND_SERVICE', 'SYS_ADMIN'],
+        privileged=False,
+        network="link_a",
+        network_mode='bridge',
+        networking_config={"link_a": {}},
+        sysctls={'net.ipv4.conf.all.rp_filter': 0,
+                 'net.ipv4.conf.default.rp_filter': 0,
+                 'net.ipv4.conf.lo.rp_filter': 0,
+                 'net.ipv4.conf.eth0.rp_filter': 0,
+                 'net.ipv4.ip_forward': 1,
+                 'net.ipv4.icmp_ratelimit': 0,
+                 },
+        environment={},
+        mem_limit='64m',
+        nano_cpus=2000000000,
+        ports=None,
+        tty=True,
+        stdin_open=True,
+        detach=True,
+        volumes={},
+        labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
+                'shell': '/bin/bash'}
+    )
+
+    assert not mock_copy_files.called
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_interface_mac_addr(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
+                                   mock_get_machines_api_objects_by_filters, docker_machine, default_device):
+    class LinkApiObj:
+        def __init__(self, name):
+            self.name = name
+
+    link = Link(default_device.lab, "A")
+    link.api_object = LinkApiObj("link_a")
+
+    expected_mac_addr = "00:00:00:00:ff:ff"
+    default_device.add_interface(link, 0, expected_mac_addr)
+
+    docker_machine.client.api.create_endpoint_config.return_value = {
+        'driver_opt': {'kathara.mac_addr': expected_mac_addr}
+    }
+    mock_get_machines_api_objects_by_filters.return_value = []
+    mock_get_current_user_name.return_value = "test-user"
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    docker_machine.create(default_device)
+
+    docker_machine.client.api.create_endpoint_config.assert_called_once_with(
+        driver_opt={'kathara.mac_addr': expected_mac_addr}
+    )
+    docker_machine.client.containers.create.assert_called_once_with(
+        image='kathara/test',
+        name='dev_prefix_test-user_test_device_9pe3y6IDMwx4PfOPu5mbNg',
+        hostname='test_device',
+        cap_add=['NET_ADMIN', 'NET_RAW', 'NET_BROADCAST', 'NET_BIND_SERVICE', 'SYS_ADMIN'],
+        privileged=False,
+        network="link_a",
+        network_mode='bridge',
+        networking_config={"link_a": {'driver_opt': {'kathara.mac_addr': expected_mac_addr}}},
+        sysctls={'net.ipv4.conf.all.rp_filter': 0,
+                 'net.ipv4.conf.default.rp_filter': 0,
+                 'net.ipv4.conf.lo.rp_filter': 0,
+                 'net.ipv4.conf.eth0.rp_filter': 0,
+                 'net.ipv4.ip_forward': 1,
+                 'net.ipv4.icmp_ratelimit': 0,
+                 },
+        environment={},
+        mem_limit='64m',
+        nano_cpus=2000000000,
+        ports=None,
+        tty=True,
+        stdin_open=True,
+        detach=True,
+        volumes={},
+        labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
+                'shell': '/bin/bash'}
+    )
+
+    assert not mock_copy_files.called
+
+
 #
 # TEST: start
 #
@@ -237,6 +380,58 @@ def test_start(docker_machine, default_device, default_link, default_link_b):
     docker_machine.client.api.exec_start.assert_called_once()
     docker_machine.client.api.exec_inspect.assert_called_once()
     default_link_b.api_object.connect.assert_called_once()
+
+
+def test_start_one_mac_addr(docker_machine, default_device, default_link, default_link_b):
+    expected_mac_addr = "00:00:00:00:ee:ee"
+
+    default_device.add_interface(default_link)
+    default_device.add_interface(default_link_b, mac_address=expected_mac_addr)
+    default_device.add_meta("num_terms", 3)
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = ("cmd_stdout", "cmd_stderr")
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 0}
+    default_device.api_object.start.return_value = True
+
+    docker_machine.start(default_device)
+
+    default_device.api_object.start.assert_called_once()
+    docker_machine.client.api.exec_create.assert_called_once()
+    docker_machine.client.api.exec_start.assert_called_once()
+    docker_machine.client.api.exec_inspect.assert_called_once()
+    default_link_b.api_object.connect.assert_called_once_with(
+        default_device.api_object,
+        driver_opt={'kathara.mac_addr': expected_mac_addr}
+    )
+
+
+def test_start_two_mac_addr(docker_machine, default_device, default_link, default_link_b, default_link_c):
+    expected_mac_addr_1 = "00:00:00:00:ee:ee"
+    expected_mac_addr_2 = "00:00:00:00:ee:ee"
+
+    default_device.add_interface(default_link)
+    default_device.add_interface(default_link_b, mac_address=expected_mac_addr_1)
+    default_device.add_interface(default_link_c, mac_address=expected_mac_addr_2)
+    default_device.add_meta("num_terms", 3)
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = ("cmd_stdout", "cmd_stderr")
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 0}
+    default_device.api_object.start.return_value = True
+
+    docker_machine.start(default_device)
+
+    default_device.api_object.start.assert_called_once()
+    docker_machine.client.api.exec_create.assert_called_once()
+    docker_machine.client.api.exec_start.assert_called_once()
+    docker_machine.client.api.exec_inspect.assert_called_once()
+    default_link_b.api_object.connect.assert_called_once_with(
+        default_device.api_object,
+        driver_opt={'kathara.mac_addr': expected_mac_addr_1}
+    )
+    default_link_c.api_object.connect.assert_called_once_with(
+        default_device.api_object,
+        driver_opt={'kathara.mac_addr': expected_mac_addr_2}
+    )
 
 
 def test_start_plugin_error_endpoint_start(default_device, docker_machine):
@@ -289,7 +484,7 @@ def test_deploy_and_start_machine(mock_create, mock_start, docker_machine, defau
 def test_deploy_machines(mock_deploy_and_start, mock_setting_get_instance, docker_machine):
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': False,
@@ -310,34 +505,52 @@ def test_deploy_machines(mock_deploy_and_start, mock_setting_get_instance, docke
 
 
 #
-# TEST: connect_to_link
+# TEST: connect_interface
 #
-def test_connect_to_link(docker_machine, default_device, default_link, default_link_b):
+def test_connect_interface(docker_machine, default_device, default_link, default_link_b):
     default_device.api_object.attrs["NetworkSettings"] = {}
     default_device.api_object.attrs["NetworkSettings"]["Networks"] = ["A"]
     default_link.api_object.name = "A"
 
     default_device.add_interface(default_link)
-    default_device.add_interface(default_link_b)
+    interface = default_device.add_interface(default_link_b)
 
-    docker_machine.connect_to_link(default_device, default_link_b)
+    docker_machine.connect_interface(default_device, interface)
 
     assert not default_link.api_object.connect.called
     default_link_b.api_object.connect.assert_called_once()
 
 
-def test_connect_to_link_plugin_error_network(default_device, default_link, docker_machine):
+def test_connect_interface_mac_addr(docker_machine, default_device, default_link, default_link_b):
+    default_device.api_object.attrs["NetworkSettings"] = {}
+    default_device.api_object.attrs["NetworkSettings"]["Networks"] = ["A"]
+    default_link.api_object.name = "A"
+
+    expected_mac_addr = "00:00:00:00:ff:ff"
     default_device.add_interface(default_link)
+    interface = default_device.add_interface(default_link_b, mac_address=expected_mac_addr)
+
+    docker_machine.connect_interface(default_device, interface)
+
+    assert not default_link.api_object.connect.called
+    default_link_b.api_object.connect.assert_called_once_with(
+        default_device.api_object,
+        driver_opt={'kathara.mac_addr': expected_mac_addr}
+    )
+
+
+def test_connect_interface_plugin_error_network(default_device, default_link, docker_machine):
+    interface = default_device.add_interface(default_link)
     default_link.api_object.connect.side_effect = DockerPluginError("network does not exists")
     with pytest.raises(DockerPluginError):
-        docker_machine.connect_to_link(default_device, default_link)
+        docker_machine.connect_interface(default_device, interface)
 
 
-def test_connect_to_link_plugin_error_endpoint(default_device, default_link, docker_machine):
-    default_device.add_interface(default_link)
+def test_connect_interface_plugin_error_endpoint(default_device, default_link, docker_machine):
+    interface = default_device.add_interface(default_link)
     default_link.api_object.connect.side_effect = DockerPluginError("endpoint does not exists")
     with pytest.raises(DockerPluginError):
-        docker_machine.connect_to_link(default_device, default_link)
+        docker_machine.connect_interface(default_device, interface)
 
 
 #
@@ -449,7 +662,7 @@ def test_exec(mock_get_machines_api_objects_by_filters, mock_setting_get_instanc
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix',
         "device_shell": '/bin/bash',
         'enable_ipv6': False,
@@ -722,7 +935,7 @@ def test_get_container_name_lab_hash(mock_get_current_user_name, mock_setting_ge
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'device_prefix': 'dev_prefix'
     })
     mock_setting_get_instance.return_value = setting_mock
@@ -732,12 +945,25 @@ def test_get_container_name_lab_hash(mock_get_current_user_name, mock_setting_ge
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_get_container_name_lab_hash_shared_cd(mock_get_current_user_name, mock_setting_get_instance):
+def test_get_container_name_lab_hash_shared_cd_lab(mock_get_current_user_name, mock_setting_get_instance):
     mock_get_current_user_name.return_value = "kathara-user"
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': True,
+        'shared_cd': SharedCollisionDomainsOption.LABS,
+        'device_prefix': 'dev_prefix'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_get_container_name_lab_hash_shared_cd_user(mock_get_current_user_name, mock_setting_get_instance):
+    mock_get_current_user_name.return_value = "kathara-user"
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cd': SharedCollisionDomainsOption.USERS,
         'device_prefix': 'dev_prefix'
     })
     mock_setting_get_instance.return_value = setting_mock

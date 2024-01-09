@@ -13,9 +13,9 @@ from fs.tarfs import WriteTarFS
 from fs.tempfs import TempFS
 from fs.walk import Walker
 
+from . import Interface as InterfacePackage
 from . import Lab as LabPackage
 from . import Link as LinkPackage
-from .Link import Link
 from .. import utils
 from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainError
 from ..foundation.model.FilesystemMixin import FilesystemMixin
@@ -61,7 +61,7 @@ class Machine(FilesystemMixin):
         self.lab: LabPackage.Lab = lab
         self.name: str = name
 
-        self.interfaces: OrderedDict[int, Link] = collections.OrderedDict()
+        self.interfaces: OrderedDict[int, 'InterfacePackage.Interface'] = collections.OrderedDict()
 
         self.meta: Dict[str, Any] = {
             'exec_commands': [],
@@ -77,24 +77,25 @@ class Machine(FilesystemMixin):
 
         self.update_meta(kwargs)
 
-    def add_interface(self, link: 'LinkPackage.Link', number: int = None) -> Optional[int]:
+    def add_interface(self, link: 'LinkPackage.Link', number: int = None, mac_address: str = None) \
+            -> 'InterfacePackage.Interface':
         """Add an interface to the device attached to the specified collision domain.
 
         Args:
             link (Kathara.model.Link): The Kathara collision domain to attach.
             number (int): The number of the new interface. If it is None, the first free number is selected.
+            mac_address (str): The MAC address of the interface. If None, a generated MAC address
+                is associated when the Machine is started.
 
         Returns:
-            Optional[int]: The number of the assigned interface if not passed, else None.
+            Interface: The object associated to this interface.
 
         Raises:
             MachineCollisionDomainConflictError: If the interface number specified is already used on the device.
             MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
         """
-        had_number = True
         if number is None:
             number = len(self.interfaces.keys())
-            had_number = False
 
         if number in self.interfaces:
             raise MachineCollisionDomainError(f"Interface {number} already set on device `{self.name}`.")
@@ -104,10 +105,11 @@ class Machine(FilesystemMixin):
                 f"Device `{self.name}` is already connected to collision domain `{link.name}`."
             )
 
-        self.interfaces[number] = link
+        interface = InterfacePackage.Interface(self, link, number, mac_address)
+        self.interfaces[number] = interface
         link.machines[self.name] = self
 
-        return number if not had_number else None
+        return interface
 
     def remove_interface(self, link: 'LinkPackage.Link') -> None:
         """Disconnect the device from the specified collision domain.
@@ -127,11 +129,14 @@ class Machine(FilesystemMixin):
             )
 
         self.interfaces = collections.OrderedDict(
-            map(lambda x: x if x[1] is not None and x[1].name != link.name else (x[0], None), self.interfaces.items())
+            map(
+                lambda x: x if x[1] is not None and x[1].link.name != link.name else (x[0], None),
+                self.interfaces.items()
+            )
         )
         link.machines.pop(self.name)
 
-    def add_meta(self, name: str, value: Any) -> Optional[Any]:
+    def add_meta(self, name: str, value: Any) -> None:
         """Add a meta property to the device.
 
         Args:
@@ -154,7 +159,7 @@ class Machine(FilesystemMixin):
             return old_value
 
         if name == "sysctl":
-            matches = re.search(r"^(?P<key>net\.([\w-]+\.)+[\w-]+)=(?P<value>-?\w+)$", value)
+            matches = re.search(r"^(?P<key>net\.([\w-]+\.)+[\w-]+)=(?P<value>[^=]*)$", value)
 
             # Check for valid kv-pair
             if matches:
@@ -164,7 +169,7 @@ class Machine(FilesystemMixin):
                 old_value = self.meta['sysctls'][key] if key in self.meta['sysctls'] else None
 
                 # Convert to int if possible
-                self.meta['sysctls'][key] = int(val) if val.strip('-').isnumeric() else val
+                self.meta['sysctls'][key] = int(val) if val.lstrip('-').isnumeric() else val
             else:
                 raise MachineOptionError(
                     "Invalid sysctl value (`%s`) on `%s`, missing `=` or value not in `net.` namespace."
@@ -173,7 +178,7 @@ class Machine(FilesystemMixin):
             return old_value
 
         if name == "env":
-            matches = re.search(r"^(?P<key>\w+)=(?P<value>\S+)$", value)
+            matches = re.search(r"^(?P<key>\w+)=(?P<value>[^=]*)$", value)
 
             # Check for valid kv-pair
             if matches:
@@ -595,6 +600,21 @@ class Machine(FilesystemMixin):
 
         super().create_file_from_stream(stream, dst_path)
 
+    def copy_directory_from_path(self, src_path: str, dst_path: str) -> None:
+        """Copy a directory from a src_path in the host filesystem into a dst_path in the fs of the device.
+
+        Args:
+             src_path (str): The source path of the directory to copy.
+             dst_path (str): The destination path on the device where to copy the directory.
+
+        Returns:
+            None
+        """
+        if not self.fs:
+            self.fs = self.lab.fs.makedir(self.name, recreate=True)
+
+        super().copy_directory_from_path(src_path, dst_path)
+
     def write_line_before(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
             -> int:
         """Write a new line before a specific line in a file.
@@ -671,11 +691,14 @@ class Machine(FilesystemMixin):
 
         if self.interfaces:
             formatted_machine += "\nInterfaces: "
-            for (iface_num, link) in self.interfaces.items():
-                if link:
-                    formatted_machine += f"\n\t- {iface_num}: {link.name}"
+            for (iface_num, interface) in self.interfaces.items():
+                if interface:
+                    formatted_machine += f"\n\t- {iface_num}: {interface.link.name}"
+                    if interface.mac_address:
+                        formatted_machine += f" (MAC Address: {interface.mac_address})"
 
-        formatted_machine += f"\nBridged Connection: {self.meta['bridged']}"
+        if 'bridged' in self.meta:
+            formatted_machine += f"\nBridged Connection: {self.meta['bridged']}"
 
         if self.meta["sysctls"]:
             formatted_machine += "\nSysctls:"

@@ -8,9 +8,11 @@ import pytest
 sys.path.insert(0, './')
 
 from src.Kathara.model.Lab import Lab
+from src.Kathara.model.Link import BRIDGE_LINK_NAME
 from src.Kathara.manager.docker.DockerLink import DockerLink
 from src.Kathara import utils
 from src.Kathara.exceptions import LinkNotFoundError
+from src.Kathara.types import SharedCollisionDomainsOption
 
 
 #
@@ -19,7 +21,17 @@ from src.Kathara.exceptions import LinkNotFoundError
 @pytest.fixture()
 def default_link():
     from src.Kathara.model.Link import Link
-    return Link(Lab("default_scenario"), "A")
+    lab = Lab("default_scenario")
+    lab.hash = "lab-hash"
+    return Link(lab, "A")
+
+
+@pytest.fixture()
+def bridged_link():
+    from src.Kathara.model.Link import Link
+    lab = Lab("default_scenario")
+    lab.hash = "lab-hash"
+    return Link(lab, BRIDGE_LINK_NAME)
 
 
 @pytest.fixture()
@@ -47,32 +59,47 @@ def docker_link(mock_docker_client, mock_docker_plugin):
 #
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_get_network_name(mock_get_current_user_name, mock_setting_get_instance):
+def test_get_network_name(mock_get_current_user_name, mock_setting_get_instance, default_link):
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'net_prefix': 'kathara',
         'remote_url': None,
     })
     mock_setting_get_instance.return_value = setting_mock
-    link_name = DockerLink.get_network_name("A")
+    link_name = DockerLink.get_network_name(default_link)
+    assert link_name == "kathara_user_A_lab-hash"
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_get_network_name_shared_cds_between_labs(mock_get_current_user_name, mock_setting_get_instance, default_link):
+    mock_get_current_user_name.return_value = 'user'
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.LABS,
+        'net_prefix': 'kathara',
+        'remote_url': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    link_name = DockerLink.get_network_name(default_link)
     assert link_name == "kathara_user_A"
 
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_get_network_name_shared_cd(mock_get_current_user_name, mock_setting_get_instance):
+def test_get_network_name_shared_cds_between_users(mock_get_current_user_name, mock_setting_get_instance, default_link):
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': True,
-        'net_prefix': 'CUSTOM_PREFIX',
+        'shared_cds': SharedCollisionDomainsOption.USERS,
+        'net_prefix': 'kathara',
         'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock
-    link_name = DockerLink.get_network_name("A")
-    assert link_name == "CUSTOM_PREFIX_A"
+    link_name = DockerLink.get_network_name(default_link)
+    assert link_name == "kathara_A"
 
 
 #
@@ -86,7 +113,7 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_li
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': False,
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
         'net_prefix': 'kathara',
         'remote_url': None,
         'network_plugin': 'kathara/katharanp'
@@ -94,29 +121,34 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_li
     mock_setting_get_instance.return_value = setting_mock
     docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
-        name="kathara_user_A",
+        name="kathara_user_A_lab-hash",
         driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
-            "lab_hash": utils.generate_urlsafe_hash("default_scenario"),
             "name": "A",
-            "user": "user",
             "app": "kathara",
-            "external": ""
+            "external": "",
+            "user": "user",
+            "lab_hash": default_link.lab.hash,
         }
     )
 
 
+def test_create_bridge_link(docker_link, bridged_link):
+    assert not docker_link.create(bridged_link)
+
+
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_shared_cd(mock_get_current_user_name, mock_setting_get_instance, docker_link, default_link):
+def test_create_shared_cds_between_users(mock_get_current_user_name, mock_setting_get_instance, docker_link,
+                                         default_link):
     docker_link.client.networks.list.return_value = []
 
     mock_get_current_user_name.return_value = 'user'
     setting_mock = Mock()
     setting_mock.configure_mock(**{
-        'shared_cd': True,
+        'shared_cds': SharedCollisionDomainsOption.USERS,
         'net_prefix': 'kathara',
         'remote_url': None,
         'network_plugin': 'kathara/katharanp'
@@ -129,9 +161,37 @@ def test_create_shared_cd(mock_get_current_user_name, mock_setting_get_instance,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
-            "lab_hash": utils.generate_urlsafe_hash("default_scenario"),
             "name": "A",
-            "user": "shared_cd",
+            "app": "kathara",
+            "external": ""
+        }
+    )
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_shared_cds_between_labs(mock_get_current_user_name, mock_setting_get_instance, docker_link,
+                                        default_link):
+    docker_link.client.networks.list.return_value = []
+
+    mock_get_current_user_name.return_value = 'user'
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.LABS,
+        'net_prefix': 'kathara',
+        'remote_url': None,
+        'network_plugin': 'kathara/katharanp'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    docker_link.create(default_link)
+    docker_link.client.networks.create.assert_called_once_with(
+        name="kathara_user_A",
+        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
+        check_duplicate=True,
+        ipam=docker.types.IPAMConfig(driver='null'),
+        labels={
+            "name": "A",
+            "user": "user",
             "app": "kathara",
             "external": ""
         }
@@ -145,6 +205,10 @@ def test_create_shared_cd(mock_get_current_user_name, mock_setting_get_instance,
 def test_deploy_link(mock_create, docker_link, default_link):
     docker_link._deploy_link(("", default_link))
     mock_create.called_once_with(default_link)
+
+
+def test_deploy_link_bridge(docker_link, bridged_link):
+    assert not docker_link._deploy_link((bridged_link.name, bridged_link))
 
 
 #
@@ -194,7 +258,7 @@ def test_undeploy_link(mock_undeploy_link, docker_link, docker_network):
 @mock.patch("docker.models.networks.list")
 def test_get_links_by_filters(mock_network_list, docker_link):
     docker_link.get_links_api_objects_by_filters("lab_hash_value", "link_name_value", "user_name_value")
-    filters = {"label": ["app=kathara", "lab_hash=lab_hash_value", "user=user_name_value"], "name": "link_name_value"}
+    filters = {"label": ["app=kathara", "lab_hash=lab_hash_value", "user=user_name_value", "name=link_name_value"]}
     mock_network_list.called_once_with(filters=filters)
 
 
@@ -215,7 +279,7 @@ def test_get_links_by_filters_only_lab_hash(mock_network_list, docker_link):
 @mock.patch("docker.models.networks.list")
 def test_get_links_by_filters_only_link_name(mock_network_list, docker_link):
     docker_link.get_links_api_objects_by_filters(None, "link_name_value")
-    filters = {"label": ["app=kathara"], "name": "link_name_value"}
+    filters = {"label": ["app=kathara", "name=link_name_value"]}
     mock_network_list.called_once_with(filters=filters)
 
 

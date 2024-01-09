@@ -5,9 +5,10 @@ from typing import Dict, Set, Any, List, Union, Optional, Tuple
 from fs import open_fs
 from fs.base import FS
 
+from . import Interface as InterfacePackage
+from . import Link as LinkPackage
 from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
-from .Link import Link
 from .. import utils
 from ..exceptions import LinkNotFoundError, MachineNotFoundError, MachineAlreadyExistsError, LinkAlreadyExistsError
 from ..foundation.model.FilesystemMixin import FilesystemMixin
@@ -58,7 +59,7 @@ class Lab(FilesystemMixin):
         self.web: Optional[str] = None
 
         self.machines: Dict[str, 'MachinePackage.Machine'] = {}
-        self.links: Dict[str, Link] = {}
+        self.links: Dict[str, 'LinkPackage.Link'] = {}
 
         self.general_options: Dict[str, Any] = {}
 
@@ -82,8 +83,9 @@ class Lab(FilesystemMixin):
         self._name = value
         self.hash = utils.generate_urlsafe_hash(value)
 
-    def connect_machine_to_link(self, machine_name: str, link_name: str, machine_iface_number: int = None) \
-            -> Tuple['MachinePackage.Machine', Link]:
+    def connect_machine_to_link(self, machine_name: str, link_name: str,
+                                machine_iface_number: int = None, mac_address: Optional[str] = None) \
+            -> Tuple['MachinePackage.Machine', 'InterfacePackage.Interface']:
         """Connect the specified device to the specified collision domain.
 
         Args:
@@ -91,10 +93,11 @@ class Lab(FilesystemMixin):
             link_name (str): The collision domain name.
             machine_iface_number (int): The number of the device interface to connect. If it is None, the first free
                 number is used.
+            mac_address (Optional[str]): The MAC address to assign to the interface.
 
         Returns:
-            Tuple[Kathara.model.Machine, Kathara.model.Link]: A tuple containing the Kathara device and collision domain
-                specified by their names.
+            Tuple[Kathara.model.Machine.Machine, Kathara.model.Interface.Interface]: A tuple containing the Kathara
+                device and the interface object specified by their names.
 
         Raises:
             Exception: If an already used interface number is specified.
@@ -102,12 +105,13 @@ class Lab(FilesystemMixin):
         machine = self.get_or_new_machine(machine_name)
         link = self.get_or_new_link(link_name)
 
-        machine.add_interface(link, number=machine_iface_number)
+        interface = machine.add_interface(link, number=machine_iface_number, mac_address=mac_address)
 
-        return machine, link
+        return machine, interface
 
-    def connect_machine_obj_to_link(self, machine: 'MachinePackage.Machine',
-                                    link_name: str, machine_iface_number: int = None) -> Tuple[Link, Optional[int]]:
+    def connect_machine_obj_to_link(self, machine: 'MachinePackage.Machine', link_name: str,
+                                    machine_iface_number: int = None, mac_address: Optional[str] = None) \
+            -> 'InterfacePackage.Interface':
         """Connect the specified device object to the specified collision domain.
 
         Args:
@@ -117,17 +121,16 @@ class Lab(FilesystemMixin):
                 number is used.
 
         Returns:
-            Tuple[Kathara.model.Link, Optional[int]]: A tuple containing the collision domain and
-                the assigned interface number (if machine_iface_number is None).
+            Kathara.model.Interface.Interface: The interface object associated to the new interface..
 
         Raises:
             Exception: If an already used interface number is specified.
         """
         link = self.get_or_new_link(link_name)
 
-        machine_iface_number = machine.add_interface(link, number=machine_iface_number)
+        interface = machine.add_interface(link, number=machine_iface_number, mac_address=mac_address)
 
-        return link, machine_iface_number
+        return interface
 
     def assign_meta_to_machine(self, machine_name: str, meta_name: str, meta_value: str) -> Optional[Any]:
         """Assign meta information to the specified device.
@@ -192,7 +195,7 @@ class Lab(FilesystemMixin):
 
         # Get only selected machines Link objects.
         selected_links = set(chain.from_iterable([machine.interfaces.values() for machine in machines]))
-        selected_links = {link.name for link in selected_links}
+        selected_links = {interface.link.name for interface in selected_links}
 
         return selected_links
 
@@ -214,7 +217,7 @@ class Lab(FilesystemMixin):
 
         # Get only selected machines Link objects.
         selected_links = set(chain.from_iterable([machine.interfaces.values() for machine in machines]))
-        selected_links = {link.name for link in selected_links}
+        selected_links = {interface.link.name for interface in selected_links}
 
         return selected_links
 
@@ -291,7 +294,7 @@ class Lab(FilesystemMixin):
 
         return self.machines[name]
 
-    def get_link(self, name: str) -> Link:
+    def get_link(self, name: str) -> 'LinkPackage.Link':
         """Get the specified collision domain.
 
         Args:
@@ -308,7 +311,7 @@ class Lab(FilesystemMixin):
 
         return self.links[name]
 
-    def new_link(self, name: str) -> Link:
+    def new_link(self, name: str) -> 'LinkPackage.Link':
         """Create the collision domain and add it to the collision domains list.
 
         Args:
@@ -323,11 +326,11 @@ class Lab(FilesystemMixin):
         if name in self.links:
             raise LinkAlreadyExistsError(f"Collision domain {name} is already the network scenario.")
 
-        self.links[name] = Link(self, name)
+        self.links[name] = LinkPackage.Link(self, name)
 
         return self.links[name]
 
-    def get_or_new_link(self, name: str) -> Link:
+    def get_or_new_link(self, name: str) -> 'LinkPackage.Link':
         """Get the specified collision domain. If it not exists, create and add it to the collision domains list.
 
         Args:
@@ -337,7 +340,7 @@ class Lab(FilesystemMixin):
             Kathara.model.Link: A Kathara collision domain.
         """
         if name not in self.links:
-            self.links[name] = Link(self, name)
+            self.links[name] = LinkPackage.Link(self, name)
 
         return self.links[name]
 

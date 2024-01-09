@@ -9,31 +9,46 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 ARG DEBIAN_FRONTEND="noninteractive"
 RUN apt update && \
-    apt upgrade -y && \
+	apt upgrade -y && \
 	apt install -y \
-		apt-utils \
-		debhelper \
-		libxml2-dev \
-		zlib1g-dev \
-		build-essential \
-		lintian \
-		devscripts \
-		git \
-		ruby-full \
-		bash-completion \
-		software-properties-common \
-        patchelf
+	apt-utils \
+	bash-completion \
+	build-essential \
+	debhelper \
+	devscripts \
+	git \
+	libxml2-dev \
+	libffi-dev \
+	lintian \
+	patchelf \
+	software-properties-common \
+	zlib1g-dev
 
-		
+RUN apt install -y \
+    curl \
+    autoconf \
+    bison \
+    libssl-dev  \
+    libyaml-dev  \
+    libreadline6-dev  \
+    libncurses5-dev \
+    libgdbm6 \
+    libgdbm-dev \
+    libdb-dev && \
+    curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash && \
+    /root/.rbenv/bin/rbenv install 3.3.0 && \
+    /root/.rbenv/bin/rbenv global 3.3.0
+
+ENV PATH="/root/.rbenv/shims:/root/.rbenv/bin:$PATH"
+
 RUN add-apt-repository ppa:deadsnakes/ppa \
 	&& DEBIAN_FRONTEND=noninteractive apt install -y \
-		python3.10 \
-		python3.10-dev \
-		python3.10-venv \
-		python3-pip \
-		python3.10-distutils
+	python3.11 \
+	python3.11-dev \
+	python3.11-venv \
+	python3-pip \
+	python3.11-distutils
 
-__NOKOGIRI__
 RUN gem install ronn-ng
 RUN mkdir /root/.gnupg && chmod 700 /root/.gnupg
 

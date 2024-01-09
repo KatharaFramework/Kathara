@@ -159,110 +159,170 @@ def test_get_or_new_link_two_cd(default_scenario: Lab):
 
 
 def test_connect_one_machine_to_link(default_scenario: Lab):
-    result_1 = default_scenario.connect_machine_to_link("pc1", "A")
+    (machine, interface) = default_scenario.connect_machine_to_link("pc1", "A")
     assert len(default_scenario.machines) == 1
     assert default_scenario.machines['pc1']
     assert len(default_scenario.links) == 1
     assert default_scenario.links['A']
-    assert default_scenario.machines['pc1'].interfaces[0].name == 'A'
-    assert result_1 == (default_scenario.machines['pc1'], default_scenario.links['A'])
+    assert default_scenario.machines['pc1'].interfaces[0].link.name == 'A'
+    assert machine == default_scenario.machines['pc1']
+    assert interface == default_scenario.machines['pc1'].interfaces[0]
 
 
 def test_connect_two_machine_to_link(default_scenario: Lab):
-    result_1 = default_scenario.connect_machine_to_link("pc1", "A")
+    (machine_a, interface_a) = default_scenario.connect_machine_to_link("pc1", "A")
     assert len(default_scenario.machines) == 1
     assert default_scenario.machines['pc1']
     assert len(default_scenario.links) == 1
     assert default_scenario.links['A']
-    result_2 = default_scenario.connect_machine_to_link("pc2", "A")
+    (machine_b, interface_b) = default_scenario.connect_machine_to_link("pc2", "A")
     assert len(default_scenario.machines) == 2
     assert default_scenario.machines['pc2']
     assert len(default_scenario.links) == 1
     assert default_scenario.links['A']
-    assert default_scenario.machines['pc1'].interfaces[0].name == 'A'
-    assert default_scenario.machines['pc2'].interfaces[0].name == 'A'
-    assert result_1 == (default_scenario.machines['pc1'], default_scenario.links['A'])
-    assert result_2 == (default_scenario.machines['pc2'], default_scenario.links['A'])
+    assert default_scenario.machines['pc1'].interfaces[0].link.name == 'A'
+    assert default_scenario.machines['pc2'].interfaces[0].link.name == 'A'
+    assert machine_a == default_scenario.machines['pc1']
+    assert interface_a == default_scenario.machines['pc1'].interfaces[0]
+    assert machine_b == default_scenario.machines['pc2']
+    assert interface_b == default_scenario.machines['pc2'].interfaces[0]
 
 
 def test_connect_machine_to_two_links(default_scenario: Lab):
-    result_1 = default_scenario.connect_machine_to_link("pc1", "A")
-    result_2 = default_scenario.connect_machine_to_link("pc1", "B")
+    (machine_a1, interface_a1) = default_scenario.connect_machine_to_link("pc1", "A")
+    (machine_a2, interface_a2) = default_scenario.connect_machine_to_link("pc1", "B")
     assert len(default_scenario.machines) == 1
     assert default_scenario.machines['pc1']
     assert len(default_scenario.links) == 2
     assert default_scenario.links['A']
     assert default_scenario.links['B']
-    assert default_scenario.machines['pc1'].interfaces[0].name == 'A'
-    assert default_scenario.machines['pc1'].interfaces[1].name == 'B'
-    assert result_1 == (default_scenario.machines['pc1'], default_scenario.links['A'])
-    assert result_2 == (default_scenario.machines['pc1'], default_scenario.links['B'])
+    assert default_scenario.machines['pc1'].interfaces[0].link.name == 'A'
+    assert default_scenario.machines['pc1'].interfaces[1].link.name == 'B'
+    assert machine_a1 == default_scenario.machines['pc1']
+    assert interface_a1 == default_scenario.machines['pc1'].interfaces[0]
+    assert machine_a2 == default_scenario.machines['pc1']
+    assert interface_a2 == default_scenario.machines['pc1'].interfaces[1]
 
 
 def test_connect_machine_to_link_iface_numbers(default_scenario: Lab):
-    result_1 = default_scenario.connect_machine_to_link("pc1", "A", machine_iface_number=2)
+    (machine_a, interface_a) = default_scenario.connect_machine_to_link("pc1", "A",
+                                                                        machine_iface_number=2)
     assert len(default_scenario.machines) == 1
     assert default_scenario.machines['pc1']
     assert len(default_scenario.links) == 1
     assert default_scenario.links['A']
-    assert default_scenario.machines['pc1'].interfaces[2].name == 'A'
-    assert result_1 == (default_scenario.machines['pc1'], default_scenario.links['A'])
+    assert machine_a == default_scenario.machines['pc1']
+    assert interface_a == default_scenario.machines['pc1'].interfaces[2]
+
+
+def test_connect_machine_to_link_mac_address(default_scenario: Lab):
+    (machine_a, interface_a) = default_scenario.connect_machine_to_link(
+        "pc1", "A", mac_address="00:00:00:00:00:01"
+    )
+    assert len(default_scenario.machines) == 1
+    assert default_scenario.machines['pc1']
+    assert len(default_scenario.links) == 1
+    assert default_scenario.links['A']
+    assert machine_a == default_scenario.machines['pc1']
+    assert interface_a == default_scenario.machines['pc1'].interfaces[0]
+    assert interface_a.mac_address == "00:00:00:00:00:01"
+
+
+def test_connect_machine_to_link_iface_num_mac_address(default_scenario: Lab):
+    (machine_a, interface_a) = default_scenario.connect_machine_to_link(
+        "pc1", "A", machine_iface_number=2, mac_address="00:00:00:00:00:01"
+    )
+    assert len(default_scenario.machines) == 1
+    assert default_scenario.machines['pc1']
+    assert len(default_scenario.links) == 1
+    assert default_scenario.links['A']
+    assert machine_a == default_scenario.machines['pc1']
+    assert interface_a == default_scenario.machines['pc1'].interfaces[2]
+    assert interface_a.mac_address == "00:00:00:00:00:01"
 
 
 def test_connect_one_machine_obj_to_link(default_scenario: Lab):
     pc1 = default_scenario.new_machine("pc1")
-    result_1 = default_scenario.connect_machine_obj_to_link(pc1, "A")
+    interface = default_scenario.connect_machine_obj_to_link(pc1, "A")
     assert len(default_scenario.machines) == 1
     assert default_scenario.machines['pc1']
     assert len(default_scenario.links) == 1
     assert default_scenario.links['A']
-    assert default_scenario.machines['pc1'].interfaces[0].name == 'A'
-    assert result_1 == (default_scenario.links['A'], 0)
+    assert default_scenario.machines['pc1'].interfaces[0].link.name == 'A'
+    assert interface == default_scenario.machines['pc1'].interfaces[0]
 
 
 def test_connect_two_machine_obj_to_link(default_scenario: Lab):
     pc1 = default_scenario.new_machine("pc1")
-    result_1 = default_scenario.connect_machine_obj_to_link(pc1, "A")
+    interface_a = default_scenario.connect_machine_obj_to_link(pc1, "A")
     assert len(default_scenario.machines) == 1
     assert default_scenario.machines['pc1']
     assert len(default_scenario.links) == 1
     assert default_scenario.links['A']
     pc2 = default_scenario.new_machine("pc2")
-    result_2 = default_scenario.connect_machine_obj_to_link(pc2, "A")
+    interface_b = default_scenario.connect_machine_obj_to_link(pc2, "A")
     assert len(default_scenario.machines) == 2
     assert default_scenario.machines['pc2']
     assert len(default_scenario.links) == 1
     assert default_scenario.links['A']
-    assert default_scenario.machines['pc1'].interfaces[0].name == 'A'
-    assert default_scenario.machines['pc2'].interfaces[0].name == 'A'
-    assert result_1 == (default_scenario.links['A'], 0)
-    assert result_2 == (default_scenario.links['A'], 0)
+    assert default_scenario.machines['pc1'].interfaces[0].link.name == 'A'
+    assert default_scenario.machines['pc2'].interfaces[0].link.name == 'A'
+    assert interface_a == default_scenario.machines['pc1'].interfaces[0]
+    assert interface_b == default_scenario.machines['pc2'].interfaces[0]
 
 
 def test_connect_machine_obj_to_two_links(default_scenario: Lab):
     pc1 = default_scenario.new_machine("pc1")
-    result_1 = default_scenario.connect_machine_obj_to_link(pc1, "A")
-    result_2 = default_scenario.connect_machine_obj_to_link(pc1, "B")
+    interface_a = default_scenario.connect_machine_obj_to_link(pc1, "A")
+    interface_b = default_scenario.connect_machine_obj_to_link(pc1, "B")
     assert len(default_scenario.machines) == 1
     assert default_scenario.machines['pc1']
     assert len(default_scenario.links) == 2
     assert default_scenario.links['A']
     assert default_scenario.links['B']
-    assert default_scenario.machines['pc1'].interfaces[0].name == 'A'
-    assert default_scenario.machines['pc1'].interfaces[1].name == 'B'
-    assert result_1 == (default_scenario.links['A'], 0)
-    assert result_2 == (default_scenario.links['B'], 1)
+    assert default_scenario.machines['pc1'].interfaces[0].link.name == 'A'
+    assert default_scenario.machines['pc1'].interfaces[1].link.name == 'B'
+    assert interface_a == default_scenario.machines['pc1'].interfaces[0]
+    assert interface_b == default_scenario.machines['pc1'].interfaces[1]
 
 
 def test_connect_machine_obj_to_link_iface_numbers(default_scenario: Lab):
     pc1 = default_scenario.new_machine("pc1")
-    result_1 = default_scenario.connect_machine_obj_to_link(pc1, "A", machine_iface_number=2)
+    interface = default_scenario.connect_machine_obj_to_link(pc1, "A", machine_iface_number=2)
     assert len(default_scenario.machines) == 1
     assert default_scenario.machines['pc1']
     assert len(default_scenario.links) == 1
     assert default_scenario.links['A']
-    assert default_scenario.machines['pc1'].interfaces[2].name == 'A'
-    assert result_1 == (default_scenario.links['A'], None)
+    assert default_scenario.machines['pc1'].interfaces[2].link.name == 'A'
+    assert interface == default_scenario.machines['pc1'].interfaces[2]
+
+
+def test_connect_machine_obj_to_link_mac_address(default_scenario: Lab):
+    pc1 = default_scenario.new_machine("pc1")
+    interface_a = default_scenario.connect_machine_obj_to_link(
+        pc1, "A", mac_address="00:00:00:00:00:01"
+    )
+    assert len(default_scenario.machines) == 1
+    assert default_scenario.machines['pc1']
+    assert len(default_scenario.links) == 1
+    assert default_scenario.links['A']
+    assert pc1 == default_scenario.machines['pc1']
+    assert interface_a == default_scenario.machines['pc1'].interfaces[0]
+    assert interface_a.mac_address == "00:00:00:00:00:01"
+
+
+def test_connect_machine_obj_to_link_iface_num_mac_address(default_scenario: Lab):
+    pc1 = default_scenario.new_machine("pc1")
+    interface_a = default_scenario.connect_machine_obj_to_link(
+        pc1, "A", machine_iface_number=2, mac_address="00:00:00:00:00:01"
+    )
+    assert len(default_scenario.machines) == 1
+    assert default_scenario.machines['pc1']
+    assert len(default_scenario.links) == 1
+    assert default_scenario.links['A']
+    assert pc1 == default_scenario.machines['pc1']
+    assert interface_a == default_scenario.machines['pc1'].interfaces[2]
+    assert interface_a.mac_address == "00:00:00:00:00:01"
 
 
 def test_assign_meta_to_machine(default_scenario: Lab):

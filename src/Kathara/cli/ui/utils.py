@@ -13,6 +13,7 @@ from ... import utils
 from ...foundation.manager.stats.IMachineStats import IMachineStats
 from ...setting.Setting import Setting
 from ...trdparty.consolemenu import PromptUtils, Screen
+from ...utils import parse_cd_mac_address
 
 FORBIDDEN_TABLE_COLUMNS = ["container_name"]
 
@@ -158,10 +159,25 @@ def alphanumeric(value, pat=re.compile(r"^\w+$")):
     return value
 
 
-def colon_separated(value):
+def interface_cd_mac(value):
+    n, cd, mac = None, None, None
     try:
-        (v1, v2) = value.split(':')
+        parts = value.split('/')
+        (n, cd) = parts[0].split(':')
+        if len(parts) == 2:
+            if parts[1]:
+                mac = parts[1]
+            else:
+                raise ValueError
     except ValueError:
-        raise argparse.ArgumentTypeError("invalid colon-separated value: %s" % value)
+        raise argparse.ArgumentTypeError("invalid interface definition: %s" % value)
 
-    return v1, v2
+    if not re.search(r"^\w+$", cd):
+        raise argparse.ArgumentTypeError(f"invalid interface definition, "
+                                         f"collision domain `{cd}` contains non-alphanumeric characters")
+
+    return n, cd, mac
+
+
+def cd_mac(value):
+    return parse_cd_mac_address(value)

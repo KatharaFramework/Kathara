@@ -19,7 +19,7 @@ from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
 from ...model.Link import Link
 from ...model.Machine import Machine
-from ...utils import pack_files_for_tar
+from ...utils import pack_files_for_tar, check_required_single_not_none_var, check_single_not_none_var
 
 
 class KubernetesManager(IManager):
@@ -52,7 +52,7 @@ class KubernetesManager(IManager):
         machine.lab.hash = machine.lab.hash.lower()
 
         self.k8s_namespace.create(machine.lab)
-        self.k8s_link.deploy_links(machine.lab, selected_links={x.name for x in machine.interfaces.values()})
+        self.k8s_link.deploy_links(machine.lab, selected_links={x.link.name for x in machine.interfaces.values()})
         self.k8s_machine.deploy_machines(machine.lab, selected_machines={machine.name})
 
     def deploy_link(self, link: Link) -> None:
@@ -113,12 +113,13 @@ class KubernetesManager(IManager):
             else:
                 raise e
 
-    def connect_machine_to_link(self, machine: Machine, link: Link) -> None:
+    def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None) -> None:
         """Connect a Kathara device to a collision domain.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
             link (Kathara.model.Link): A Kathara collision domain object.
+            mac_address (Optional[str]): The MAC address to assign to the interface.
 
         Returns:
             None
@@ -173,7 +174,7 @@ class KubernetesManager(IManager):
             running_networks.update([net['name'] for net in network_annotation])
 
         # Difference between all networks of the machine to undeploy, and attached networks are the ones to delete
-        machine_networks = {self.k8s_link.get_network_name(x.name) for x in machine.interfaces.values()}
+        machine_networks = {self.k8s_link.get_network_name(x.link.name) for x in machine.interfaces.values()}
         networks_to_delete = machine_networks - running_networks
 
         self.k8s_machine.undeploy(machine.lab.hash, selected_machines={machine.name})
@@ -236,9 +237,7 @@ class KubernetesManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name and not lab:
-            raise InvocationError("You must specify a running network scenario hash, name or object.")
-
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -301,19 +300,24 @@ class KubernetesManager(IManager):
         self.k8s_namespace.wipe()
 
     def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
-                    shell: str = None, logs: bool = False, wait: Union[bool, Tuple[int, float]] = True) -> None:
+                    lab: Optional[Lab] = None, shell: str = None, logs: bool = False,
+                    wait: Union[bool, Tuple[int, float]] = True) -> None:
         """Connect to a device in a running network scenario, using the specified shell.
 
         Args:
             machine_name (str): The name of the device to connect.
-            lab_hash (str): The hash of the network scenario where the device is deployed.
-            lab_name (str): The name of the network scenario where the device is deployed.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             shell (str): The name of the shell to use for connecting.
             logs (bool): If True, print startup logs on stdout.
             wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
                 execution before connecting. If a tuple is provided, the first value indicates the number of retries
                 before stopping waiting and the second value indicates the time interval to wait for each retry.
-                Default is True. No effect on Kubernetes.
+                Default is True.
 
         Returns:
             None
@@ -321,10 +325,10 @@ class KubernetesManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name:
-            raise InvocationError("You must specify a running network scenario hash or name.")
-
-        if lab_name:
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
+        if lab:
+            lab_hash = lab.hash
+        elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower()
@@ -336,19 +340,23 @@ class KubernetesManager(IManager):
                                  )
 
     def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
-             lab_name: Optional[str] = None, wait: Union[bool, Tuple[int, float]] = False) \
+             lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False) \
             -> Generator[Tuple[bytes, bytes], None, None]:
         """Exec a command on a device in a running network scenario.
 
         Args:
             machine_name (str): The name of the device to connect.
             command (Union[List[str], str]): The command to exec on the device.
-            lab_hash (Optional[str]): The hash of the network scenario where the device is deployed.
-            lab_name (Optional[str]): The name of the network scenario where the device is deployed.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to wait
-                for each retry. Default is False. No effect on Kubernetes.
+                for each retry. Default is False.
 
         Returns:
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
@@ -356,16 +364,16 @@ class KubernetesManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name:
-            raise InvocationError("You must specify a running network scenario hash or name.")
-
-        if wait:
-            logging.warning("Wait option has no effect on Megalos.")
-
-        if lab_name:
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
+        if lab:
+            lab_hash = lab.hash
+        elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower()
+
+        if wait:
+            logging.warning("Wait option has no effect on Megalos.")
 
         return self.k8s_machine.exec(lab_hash, machine_name, command, stderr=True, tty=False, is_stream=True)
 
@@ -384,16 +392,18 @@ class KubernetesManager(IManager):
 
         self.k8s_machine.copy_files(machine.api_object, path="/", tar_data=tar_data)
 
-    def get_machine_api_object(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
-                               all_users: bool = False) -> client.V1Pod:
+    def get_machine_api_object(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                               lab: Optional[Lab] = None, all_users: bool = False) -> client.V1Pod:
         """Return the corresponding API object of a running device in a network scenario.
 
         Args:
             machine_name (str): The name of the device.
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_hash should be set.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             all_users (bool): If True, return information about devices of all users.
 
         Returns:
@@ -403,16 +413,16 @@ class KubernetesManager(IManager):
             InvocationError: If a running network scenario hash or name is not specified.
             MachineNotFoundError: If the device is not found.
         """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
-        if not lab_hash and not lab_name:
-            raise InvocationError("You must specify a running network scenario hash or name.")
-
-        if lab_name:
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
+        if lab:
+            lab_hash = lab.hash
+        elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower()
+
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
 
         pods = self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
         if pods:
@@ -420,38 +430,47 @@ class KubernetesManager(IManager):
 
         raise MachineNotFoundError(f"Device {machine_name} not found.")
 
-    def get_machines_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
-            List[client.V1Pod]:
+    def get_machines_api_objects(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                                 lab: Optional[Lab] = None, all_users: bool = False) -> List[client.V1Pod]:
         """Return API objects of running devices.
 
         Args:
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name.
             all_users (bool): If True, return information about devices of all users.
 
         Returns:
             List[client.V1Pod]: Kubernetes Pod objects of devices.
         """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
-        if lab_name:
+        check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
+        if lab:
+            lab_hash = lab.hash
+        elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower() if lab_hash else None
 
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
+
         return self.k8s_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash)
 
-    def get_link_api_object(self, link_name: str, lab_hash: str = None, lab_name: str = None,
-                            all_users: bool = False) -> Any:
+    def get_link_api_object(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                            lab: Optional[Lab] = None, all_users: bool = False) -> Any:
         """Return the corresponding API object of a collision domain in a network scenario.
 
         Args:
             link_name (str): The name of the collision domain.
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_hash should be set.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             all_users (bool): If True, return information about collision domains of all users.
 
         Returns:
@@ -461,16 +480,16 @@ class KubernetesManager(IManager):
             InvocationError: If a running network scenario hash or name is not specified.
             LinkNotFoundError: If the collision domain is not found.
         """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
-        if not lab_hash and not lab_name:
-            raise InvocationError("You must specify a running network scenario hash or name.")
-
-        if lab_name:
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
+        if lab:
+            lab_hash = lab.hash
+        elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower()
+
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
 
         networks = self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name)
         if networks:
@@ -478,51 +497,34 @@ class KubernetesManager(IManager):
 
         raise LinkNotFoundError(f"Collision Domain {link_name} not found.")
 
-    def get_links_api_objects(self, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
-            List[Any]:
+    def get_links_api_objects(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                              lab: Optional[Lab] = None, all_users: bool = False) -> List[Any]:
         """Return API objects of collision domains in a network scenario.
 
         Args:
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_name.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name.
             all_users (bool): If True, return information about collision domains of all users.
 
         Returns:
             List[Any]: Kubernetes API objects of networks.
         """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
-        if lab_name:
+        check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
+        if lab:
+            lab_hash = lab.hash
+        elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower() if lab_hash else None
+
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
 
         return self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash)
-
-    def get_machines_stats(self, lab_hash: str = None, lab_name: str = None, machine_name: str = None,
-                           all_users: bool = False) -> Generator[Dict[str, KubernetesMachineStats], None, None]:
-        """Return information about the running devices.
-
-        Args:
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
-            machine_name (str): If specified return all the devices with machine_name.
-            all_users (bool): If True, return information about the device of all users.
-
-        Returns:
-              Generator[Dict[str, KubernetesMachineStats], None, None]: A generator containing dicts that has API Object
-                identifier as keys and KubernetesMachineStats objects as values.
-        """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
-        if lab_name:
-            lab_hash = utils.generate_urlsafe_hash(lab_name)
-
-        lab_hash = lab_hash.lower() if lab_hash else None
-
-        return self.k8s_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name)
 
     def get_lab_from_api(self, lab_hash: str = None, lab_name: str = None) -> Lab:
         """Return the network scenario (specified by the hash or name), building it from API objects.
@@ -582,7 +584,12 @@ class KubernetesManager(IManager):
                 network = lab_networks[network_conf['name']]
                 link = reconstructed_lab.get_or_new_link(network['metadata']['labels']['name'])
                 link.api_object = network
-                device.add_interface(link)
+
+                iface_mac_addr = None
+                if "mac" in network_conf:
+                    iface_mac_addr = network_conf['mac']
+
+                device.add_interface(link, mac_address=iface_mac_addr)
 
         return reconstructed_lab
 
@@ -597,16 +604,51 @@ class KubernetesManager(IManager):
         """
         raise NotSupportedError("Unable to update a running network scenario.")
 
-    def get_machine_stats(self, machine_name: str, lab_hash: str = None, lab_name: str = None,
-                          all_users: bool = False) -> Generator[KubernetesMachineStats, None, None]:
+    def get_machines_stats(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                           lab: Optional[Lab] = None, machine_name: str = None, all_users: bool = False) \
+            -> Generator[Dict[str, KubernetesMachineStats], None, None]:
+        """Return information about the running devices.
+
+        Args:
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name.
+            machine_name (str): If specified return all the devices with machine_name.
+            all_users (bool): If True, return information about the device of all users.
+
+        Returns:
+              Generator[Dict[str, KubernetesMachineStats], None, None]: A generator containing dicts that has API Object
+                identifier as keys and KubernetesMachineStats objects as values.
+        """
+        check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
+        if lab:
+            lab_hash = lab.hash
+        elif lab_name:
+            lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        lab_hash = lab_hash.lower() if lab_hash else None
+
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
+
+        return self.k8s_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name)
+
+    def get_machine_stats(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                          lab: Optional[Lab] = None, all_users: bool = False) \
+            -> Generator[KubernetesMachineStats, None, None]:
         """Return information of the specified device in a specified network scenario.
 
         Args:
             machine_name (str): The device name.
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
-                If None, lab_hash should be set.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
@@ -615,10 +657,10 @@ class KubernetesManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name:
-            raise InvocationError("You must specify a running network scenario hash or name.")
-
-        if lab_name:
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
+        if lab:
+            lab_hash = lab.hash
+        elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower()
@@ -628,13 +670,18 @@ class KubernetesManager(IManager):
 
         yield machine_stats
 
-    def get_links_stats(self, lab_hash: str = None, lab_name: str = None, link_name: str = None,
-                        all_users: bool = False) -> Generator[Dict[str, KubernetesLinkStats], None, None]:
-        """Return information about deployed Kubernetes networks.
+    def get_links_stats(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
+                        link_name: str = None, all_users: bool = False) \
+            -> Generator[Dict[str, KubernetesLinkStats], None, None]:
+        """Return information about deployed networks.
 
         Args:
-           lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-           lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name.
            link_name (str): If specified return all the networks with link_name.
            all_users (bool): If True, return information about the networks of all users.
 
@@ -642,27 +689,33 @@ class KubernetesManager(IManager):
              Generator[Dict[str, KubernetesLinkStats], None, None]: A generator containing dicts that has API Object
                 identifier as keys and KubernetesLinkStats objects as values.
         """
-        if all_users:
-            logging.warning("User-specific options have no effect on Megalos.")
-
-        if lab_name:
+        check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
+        if lab:
+            lab_hash = lab.hash
+        elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower() if lab_hash else None
 
+        if all_users:
+            logging.warning("User-specific options have no effect on Megalos.")
+
         return self.k8s_link.get_links_stats(lab_hash=lab_hash, link_name=link_name)
 
-    def get_link_stats(self, link_name: str, lab_hash: str = None, lab_name: str = None, all_users: bool = False) -> \
-            Generator[KubernetesLinkStats, None, None]:
+    def get_link_stats(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                       lab: Optional[Lab] = None, all_users: bool = False) \
+            -> Generator[KubernetesLinkStats, None, None]:
         """Return information of the specified deployed network in a specified network scenario.
 
         Args:
-            link_name (str): The link name.
-            lab_hash (str): The hash of the network scenario. Can be used as an alternative to lab_name.
-                If None, lab_name should be set.
-            lab_name (str): The name of the network scenario. Can be used as an alternative to lab_hash.
-                If None, lab_hash should be set.
-            all_users (bool): If True, search the network among all the users networks.
+            link_name (str): If specified return all the networks with link_name.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
+            all_users (bool): If True, return information about the networks of all users.
 
         Returns:
             Generator[KubernetesLinkStats, None, None]: A generator containing KubernetesLinkStats objects with
@@ -671,10 +724,10 @@ class KubernetesManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        if not lab_hash and not lab_name:
-            raise InvocationError("You must specify a running network scenario hash or name.")
-
-        if lab_name:
+        check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
+        if lab:
+            lab_hash = lab.hash
+        elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         lab_hash = lab_hash.lower()

@@ -7,7 +7,7 @@ from ..exceptions import InstantiationError
 
 
 class PrivilegeHandler(object):
-    __slots__ = ['user_uid', 'user_gid', 'effective_user_uid', 'effective_user_gid']
+    __slots__ = ['user_uid', 'user_gid', 'effective_user_uid', 'effective_user_gid', '_ref']
 
     __instance: PrivilegeHandler = None
 
@@ -31,10 +31,25 @@ class PrivilegeHandler(object):
             except AttributeError:
                 pass
 
+            self._ref = 0
+
             PrivilegeHandler.__instance = self
 
     def drop_privileges(self) -> None:
-        logging.debug("Dropping privileges to UID=%d and GID=%d..." % (self.user_uid, self.user_gid))
+        logging.debug("Called `drop_privileges`...")
+
+        logging.debug(f"Reference count is {self._ref}.")
+        if self._ref > 1:
+            self._ref -= 1
+            logging.debug(f"Reference count is {self._ref}, exiting.")
+            return
+
+        if self._ref <= 0:
+            self._ref = 0
+            logging.debug(f"Reference count is {self._ref}, exiting.")
+            return
+
+        logging.debug(f"Dropping privileges to UID={self.user_uid} and GID={self.user_gid}...")
 
         try:
             os.setuid(self.user_uid)
@@ -46,8 +61,19 @@ class PrivilegeHandler(object):
         except OSError:
             pass
 
+        self._ref = 0
+        logging.debug(f"Reference count is reset to 0.")
+
     def raise_privileges(self) -> None:
-        logging.debug("Raising privileges to UID=%d and GID=%d..." % (self.effective_user_uid, self.effective_user_gid))
+        logging.debug("Called `raise_privileges`...")
+
+        self._ref += 1
+        logging.debug(f"Reference count is now {self._ref}.")
+        if self._ref > 1:
+            logging.debug("Reference count > 1, exiting.")
+            return
+
+        logging.debug(f"Raising privileges to UID={self.effective_user_uid} and GID={self.effective_user_gid}...")
 
         try:
             os.setuid(self.effective_user_uid)

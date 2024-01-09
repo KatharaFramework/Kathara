@@ -4,11 +4,11 @@ Section: misc
 Priority: optional
 Standards-Version: 3.9.8
 Build-Depends: debhelper (>= 10),
-	python3.10 (>= 3.10.0),
+	python3.11 (>= 3.11.0),
 	python3-pip (>= 9.0.0),
-	python3.10-dev (>= 3.10.0),
-	python3.10-venv (>= 3.10.0),
-	python3.10-distutils (>= 3.10.0) | python3-distutils (>= 3.8.0),
+	python3.11-dev (>= 3.11.0),
+	python3.11-venv (>= 3.11.0),
+	python3.11-distutils (>= 3.11.0) | python3-distutils (>= 3.8.0),
 	patchelf,
 	bash-completion,
 	zlib1g-dev
@@ -20,7 +20,7 @@ Package: kathara
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Suggests: docker.io (>= 17.03.2) | docker-ce (>= 17.03.2), xterm
-Description: Lightweight network emulation tool.
+Description: A lightweight container-based network emulation tool.
 	It can be really helpful in showing interactive demos/lessons,
 	testing production networks in a sandbox environment, or developing new network protocols.
 

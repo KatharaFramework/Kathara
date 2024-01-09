@@ -20,6 +20,7 @@ from ...model.Lab import Lab
 from ...model.Link import BRIDGE_LINK_NAME, Link
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
+from ...types import SharedCollisionDomainsOption
 
 
 class DockerLink(object):
@@ -95,25 +96,38 @@ class DockerLink(object):
             return
 
         # If a network with the same name exists, return it instead of creating a new one.
-        link_name = self.get_network_name(link.name)
-        networks = self.get_links_api_objects_by_filters(link_name=link_name)
+        filter_lab_hash = None
+        filter_user = None
+        if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
+            filter_lab_hash = link.lab.hash
+        if Setting.get_instance().shared_cds != SharedCollisionDomainsOption.USERS:
+            filter_user = utils.get_current_user_name()
+
+        networks = self.get_links_api_objects_by_filters(
+            link_name=link.name, lab_hash=filter_lab_hash, user=filter_user
+        )
         if networks:
             link.api_object = networks.pop()
         else:
             network_ipam_config = docker.types.IPAMConfig(driver='null')
 
-            user_label = "shared_cd" if Setting.get_instance().shared_cd else utils.get_current_user_name()
+            link_name = self.get_network_name(link)
+            additional_labels = {}
+            if Setting.get_instance().shared_cds != SharedCollisionDomainsOption.USERS:
+                additional_labels["user"] = utils.get_current_user_name()
+            if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
+                additional_labels["lab_hash"] = link.lab.hash
+
             link.api_object = self.client.networks.create(
                 name=link_name,
                 driver=f"{Setting.get_instance().network_plugin}:{utils.get_architecture()}",
                 check_duplicate=True,
                 ipam=network_ipam_config,
                 labels={
-                    "lab_hash": link.lab.hash,
                     "name": link.name,
-                    "user": user_label,
                     "app": "kathara",
-                    "external": ";".join([x.get_full_name() for x in link.external])
+                    "external": ";".join([x.get_full_name() for x in link.external]),
+                    **additional_labels
                 }
             )
 
@@ -161,7 +175,7 @@ class DockerLink(object):
         Returns:
             None
         """
-        user_label = "shared_cd" if Setting.get_instance().shared_cd else user
+        user_label = user if Setting.get_instance().shared_cds != SharedCollisionDomainsOption.USERS else None
         networks = self.get_links_api_objects_by_filters(user=user_label)
         for item in networks:
             item.reload()
@@ -211,11 +225,11 @@ class DockerLink(object):
         """
         filters = {"label": ["app=kathara"]}
         if user:
-            filters["label"].append("user=%s" % user)
+            filters["label"].append(f"user={user}")
         if lab_hash:
-            filters["label"].append("lab_hash=%s" % lab_hash)
+            filters["label"].append(f"lab_hash={lab_hash}")
         if link_name:
-            filters["name"] = link_name
+            filters["label"].append(f"name={link_name}")
 
         return self.client.networks.list(filters=filters)
 
@@ -350,18 +364,22 @@ class DockerLink(object):
         Returns:
             str: The name of the Docker bridge in the format "kt-<network.id[:12]>".
         """
-        return "kt-%s" % network.id[:12]
+        return f"kt-{network.id[:12]}"
 
     @staticmethod
-    def get_network_name(name: str) -> str:
+    def get_network_name(link: Link) -> str:
         """Return the name of a Docker network.
 
         Args:
-            name (str): The name of a Kathara collision domain.
+            link (Kathara.model.Link): A Kathara collision domain.
 
         Returns:
             str: The name of the Docker network in the format "|net_prefix|_|username_prefix|_|name|".
                 If shared collision domains, the format is: "|net_prefix|_|lab_hash|".
         """
-        username_prefix = "_%s" % utils.get_current_user_name() if not Setting.get_instance().shared_cd else ""
-        return "%s%s_%s" % (Setting.get_instance().net_prefix, username_prefix, name)
+        if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.LABS:
+            return f"{Setting.get_instance().net_prefix}_{utils.get_current_user_name()}_{link.name}"
+        elif Setting.get_instance().shared_cds == SharedCollisionDomainsOption.USERS:
+            return f"{Setting.get_instance().net_prefix}_{link.name}"
+        elif Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
+            return f"{Setting.get_instance().net_prefix}_{utils.get_current_user_name()}_{link.name}_{link.lab.hash}"

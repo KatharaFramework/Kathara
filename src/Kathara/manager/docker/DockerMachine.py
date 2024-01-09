@@ -17,7 +17,8 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError, DockerPluginError, \
-    MachineBinaryError
+    MachineBinaryError, MachineNotRunningError
+from ...model.Interface import Interface
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine, MACHINE_CAPABILITIES
@@ -219,19 +220,21 @@ class DockerMachine(object):
         # Get the first network object, if defined.
         # This should be used in container create function
         first_network = None
+        first_machine_iface = None
         if machine.interfaces:
-            first_network = machine.interfaces[0].api_object
+            first_machine_iface = machine.interfaces[0]
+            first_network = first_machine_iface.link.api_object
 
         # If no interfaces are declared in machine, but bridged mode is required, get bridge as first link.
         # Flag that bridged is already connected (because there's another check in `start`).
-        if first_network is None and machine.is_bridged():
+        if first_machine_iface is None and machine.is_bridged():
             first_network = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
             machine.add_meta("bridge_connected", True)
 
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
 
-        if first_network:
+        if first_machine_iface:
             sysctl_parameters[RP_FILTER_NAMESPACE % "eth0"] = 0
 
         sysctl_parameters["net.ipv4.ip_forward"] = 1
@@ -264,6 +267,17 @@ class DockerMachine(object):
             privileged = False
             logging.warning("Privileged flag is ignored with a remote Docker connection.")
 
+        networking_config = None
+        if first_machine_iface:
+            driver_opt = {'kathara.mac_addr': first_machine_iface.mac_address} \
+                if first_machine_iface.mac_address else None
+
+            networking_config = {
+                first_network.name: self.client.api.create_endpoint_config(
+                    driver_opt=driver_opt
+                )
+            }
+
         container_name = self.get_container_name(machine.name, machine.lab.hash)
 
         try:
@@ -274,6 +288,7 @@ class DockerMachine(object):
                                                               privileged=privileged,
                                                               network=first_network.name if first_network else None,
                                                               network_mode="bridge" if first_network else "none",
+                                                              networking_config=networking_config,
                                                               environment=machine.meta['envs'],
                                                               sysctls=sysctl_parameters,
                                                               mem_limit=memory,
@@ -303,12 +318,12 @@ class DockerMachine(object):
         machine.api_object = machine_container
 
     @staticmethod
-    def connect_to_link(machine: Machine, link: Link) -> None:
+    def connect_interface(machine: Machine, interface: Interface) -> None:
         """Connect the Docker container representing the machine to a specified collision domain.
 
         Args:
-            machine (Kathara.model.Machine): A Kathara device.
-            link (Kathara.model.Link): A Kathara collision domain object.
+            machine (Kathara.model.Machine.Machine): A Kathara device.
+            interface (Kathara.model.Interface.Interface): A Kathara interface object.
 
         Returns:
             None
@@ -320,9 +335,14 @@ class DockerMachine(object):
         machine.api_object.reload()
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
-        if link.api_object.name not in attached_networks:
+        if interface.link.api_object.name not in attached_networks:
             try:
-                link.api_object.connect(machine.api_object)
+                driver_opt = {'kathara.mac_addr': interface.mac_address} if interface.mac_address else None
+
+                interface.link.api_object.connect(
+                    machine.api_object,
+                    driver_opt=driver_opt
+                )
             except APIError as e:
                 if e.response.status_code == 500 and \
                         ("network does not exist" in e.explanation or "endpoint does not exist" in e.explanation):
@@ -380,14 +400,18 @@ class DockerMachine(object):
         # Connect the container to its networks (starting from the second, the first is already connected in `create`)
         # This should be done after the container start because Docker causes a non-deterministic order when attaching
         # networks before container startup.
-        for (iface_num, machine_link) in islice(machine.interfaces.items(), 1, None):
-            logging.debug("Connecting device `%s` to collision domain `%s` on interface %d..." % (machine.name,
-                                                                                                  machine_link.name,
-                                                                                                  iface_num
-                                                                                                  )
-                          )
+        for (iface_num, machine_iface) in islice(machine.interfaces.items(), 1, None):
+            logging.debug(
+                f"Connecting device `{machine.name}` to collision domain `{machine_iface.link.name}` "
+                f"on interface {iface_num}..."
+            )
             try:
-                machine_link.api_object.connect(machine.api_object)
+                driver_opt = {'kathara.mac_addr': machine_iface.mac_address} if machine_iface.mac_address else None
+
+                machine_iface.link.api_object.connect(
+                    machine.api_object,
+                    driver_opt=driver_opt
+                )
             except APIError as e:
                 if e.response.status_code == 500 and \
                         ("network does not exist" in e.explanation or "endpoint does not exist" in e.explanation):
@@ -516,12 +540,12 @@ class DockerMachine(object):
             None
 
         Raises:
-            MachineNotFoundError: If the specified device is not running.
+            MachineNotRunningError: If the specified device is not running.
             ValueError: If the wait values is neither a boolean nor a tuple, or an invalid tuple.
         """
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:
-            raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
+            raise MachineNotRunningError(machine_name)
         container = containers.pop()
 
         if not shell:
@@ -619,14 +643,14 @@ class DockerMachine(object):
             Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
 
         Raises:
-            MachineNotFoundError: If the specified device is not running.
+            MachineNotRunningError: If the specified device is not running.
             ValueError: If the wait values is neither a boolean nor a tuple, or an invalid tuple.
         """
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
         if not containers:
-            raise MachineNotFoundError("The specified device `%s` is not running." % machine_name)
+            raise MachineNotRunningError(machine_name)
         container = containers.pop()
 
         if isinstance(wait, tuple):
@@ -818,11 +842,11 @@ class DockerMachine(object):
         """
         filters = {"label": ["app=kathara"]}
         if user:
-            filters["label"].append("user=%s" % user)
+            filters["label"].append(f"user={user}")
         if lab_hash:
-            filters["label"].append("lab_hash=%s" % lab_hash)
+            filters["label"].append(f"lab_hash={lab_hash}")
         if machine_name:
-            filters["label"].append("name=%s" % machine_name)
+            filters["label"].append(f"name={machine_name}")
 
         return self.client.containers.list(all=True, filters=filters)
 
@@ -900,15 +924,16 @@ class DockerMachine(object):
         # Build the shutdown command string
         shutdown_commands_string = "; ".join(SHUTDOWN_COMMANDS).format(machine_name=container.labels["name"])
 
+        logging.debug(f"Executing shutdown commands on `{container.labels['name']}`: {shutdown_commands_string}")
         # Execute the shutdown commands inside the container (only if it's running)
         if container.status == "running":
             try:
                 self._exec_run(container,
                                cmd=[container.labels['shell'], '-c', shutdown_commands_string],
-                               stdout=False,
+                               stdout=True,
                                stderr=False,
                                privileged=True,
-                               detach=True
+                               detach=False
                                )
             except MachineBinaryError as e:
                 logging.warning(f"Shell `{e.binary}` not found in "
