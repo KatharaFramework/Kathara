@@ -21,10 +21,25 @@ RUN apt update && \
 	libffi-dev \
 	lintian \
 	patchelf \
-	ruby-full \
 	software-properties-common \
 	zlib1g-dev
 
+RUN apt install -y \
+    curl \
+    autoconf \
+    bison \
+    libssl-dev  \
+    libyaml-dev  \
+    libreadline6-dev  \
+    libncurses5-dev \
+    libgdbm6 \
+    libgdbm-dev \
+    libdb-dev && \
+    curl -fsSL https://github.com/rbenv/rbenv-installer/raw/HEAD/bin/rbenv-installer | bash && \
+    /root/.rbenv/bin/rbenv install 3.3.0 && \
+    /root/.rbenv/bin/rbenv global 3.3.0
+
+ENV PATH="/root/.rbenv/shims:/root/.rbenv/bin:$PATH"
 
 RUN add-apt-repository ppa:deadsnakes/ppa \
 	&& DEBIAN_FRONTEND=noninteractive apt install -y \
@@ -34,7 +49,6 @@ RUN add-apt-repository ppa:deadsnakes/ppa \
 	python3-pip \
 	python3.11-distutils
 
-__NOKOGIRI__
 RUN gem install ronn-ng
 RUN mkdir /root/.gnupg && chmod 700 /root/.gnupg
 
