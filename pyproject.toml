@@ -48,7 +48,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-pyuv = ["pyuv @ https://api.github.com/repos/saghul/pyuv/tarball/master"]
 test = ["pytest"]
 
 [project.urls]

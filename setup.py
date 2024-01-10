@@ -34,7 +34,7 @@ setup(
         "windows-curses>=2.1.0; platform_system == 'win32'"
     ],
     extras_require={
-        'pyuv': ["pyuv @ https://api.github.com/repos/saghul/pyuv/tarball/master"],
+        'test': ["pytest"],
     },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
