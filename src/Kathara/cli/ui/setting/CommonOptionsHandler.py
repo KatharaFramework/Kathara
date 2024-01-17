@@ -179,6 +179,14 @@ class CommonOptionsHandler(OptionsHandler):
             )
             terminal_menu.append_item(
                 FunctionItem(
+                    text="/usr/bin/gnome-terminal",
+                    function=setting_utils.update_setting_value,
+                    args=["terminal", "/usr/bin/gnome-terminal"],
+                    should_exit=True
+                )
+            )
+            terminal_menu.append_item(
+                FunctionItem(
                     text="TMUX",
                     function=setting_utils.update_setting_value,
                     args=["terminal", "TMUX"],
