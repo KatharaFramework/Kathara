@@ -141,12 +141,11 @@ class DockerMachine(object):
         # If not, they're started sequentially
         if not lab.has_dependencies:
             pool_size = utils.get_pool_size()
-            machines_pool = Pool(pool_size)
-
             items = utils.chunk_list(machines, pool_size)
 
-            for chunk in items:
-                machines_pool.map(func=self._deploy_and_start_machine, iterable=chunk)
+            with Pool(pool_size) as machines_pool:
+                for chunk in items:
+                    machines_pool.map(func=self._deploy_and_start_machine, iterable=chunk)
         else:
             for item in machines:
                 self._deploy_and_start_machine(item)
@@ -478,14 +477,13 @@ class DockerMachine(object):
 
         if len(containers) > 0:
             pool_size = utils.get_pool_size()
-            machines_pool = Pool(pool_size)
-
             items = utils.chunk_list(containers, pool_size)
 
             EventDispatcher.get_instance().dispatch("machines_undeploy_started", items=containers)
 
-            for chunk in items:
-                machines_pool.map(func=self._undeploy_machine, iterable=chunk)
+            with Pool(pool_size) as machines_pool:
+                for chunk in items:
+                    machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
             EventDispatcher.get_instance().dispatch("machines_undeploy_ended")
 
@@ -501,12 +499,11 @@ class DockerMachine(object):
         containers = self.get_machines_api_objects_by_filters(user=user)
 
         pool_size = utils.get_pool_size()
-        machines_pool = Pool(pool_size)
-
         items = utils.chunk_list(containers, pool_size)
 
-        for chunk in items:
-            machines_pool.map(func=self._undeploy_machine, iterable=chunk)
+        with Pool(pool_size) as machines_pool:
+            for chunk in items:
+                machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
     def _undeploy_machine(self, machine_api_object: docker.models.containers.Container) -> None:
         """Undeploy a Docker container.
@@ -882,12 +879,11 @@ class DockerMachine(object):
             machines_stats[machine.name] = DockerMachineStats(machine)
 
         pool_size = utils.get_pool_size()
-        machines_pool = Pool(pool_size)
-
         items = utils.chunk_list(containers, pool_size)
 
-        for chunk in items:
-            machines_pool.map(func=load_machine_stats, iterable=chunk)
+        with Pool(pool_size) as machines_pool:
+            for chunk in items:
+                machines_pool.map(func=load_machine_stats, iterable=chunk)
 
         while True:
             for machine_stats in machines_stats.values():

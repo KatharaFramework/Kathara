@@ -7,7 +7,7 @@ terminaltables>=3.1.0;
 slug>=2.0;
 deepdiff==6.2.2;
 pyroute2;
-progressbar2>=1.14.0;
+rich;
 fs>=2.4.16;
 chardet;
 libtmux>=0.18.0; sys_platform == 'darwin' or sys_platform == 'linux'

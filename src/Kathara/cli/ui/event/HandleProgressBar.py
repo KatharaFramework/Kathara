@@ -1,16 +1,17 @@
-from typing import Any
+from typing import Any, Optional
 from typing import List
 
-import progressbar
+from rich.progress import Progress, TextColumn, BarColumn, TaskID, MofNCompleteColumn, SpinnerColumn
 
 
 class HandleProgressBar(object):
     """Generic listener for handling a progress bar."""
-    __slots__ = ['message', 'progress_bar']
+    __slots__ = ['message', 'progress_bar', 'task']
 
     def __init__(self, message: str) -> None:
-        self.message = message
-        self.progress_bar = None
+        self.message: str = message
+        self.progress_bar: Optional[Progress] = None
+        self.task: Optional[TaskID] = None
 
     def init(self, items: List[Any]) -> None:
         """Initialize a progress bar on the items.
@@ -21,11 +22,17 @@ class HandleProgressBar(object):
         Returns:
             None
         """
-        self.progress_bar = progressbar.ProgressBar(
-            widgets=[self.message, progressbar.Bar(), ' ', progressbar.Counter(format='%(value)d/%(max_value)d')],
-            redirect_stdout=True,
-            max_value=len(items)
+        self.progress_bar = Progress(
+            TextColumn("[progress.description]{task.description}", justify='left'),
+            SpinnerColumn(),
+            BarColumn(bar_width=None, complete_style="default", finished_style="green"),
+            MofNCompleteColumn(),
+            expand=True,
         )
+
+        self.progress_bar.start()
+
+        self.task = self.progress_bar.add_task(f"[bold][{self.message}]", total=len(items))
 
     def update(self, item: Any) -> None:
         """Update the progress bar with the item.
@@ -37,7 +44,7 @@ class HandleProgressBar(object):
             None
         """
         if self.progress_bar:
-            self.progress_bar += 1
+            self.progress_bar.update(self.task, advance=1, update=True)
 
     def finish(self) -> None:
         """Closes a progress bar.
@@ -46,4 +53,16 @@ class HandleProgressBar(object):
             None
         """
         if self.progress_bar:
-            self.progress_bar.finish()
+            self.progress_bar.stop_task(self.task)
+            self.progress_bar.stop()
+
+            self.task = None
+            self.progress_bar = None
+
+    def unregister(self) -> None:
+        """Method called when the event is unregistered
+
+        Returns:
+            None
+        """
+        self.finish()

@@ -38,17 +38,17 @@ def test_get_remote(docker_image):
 
 def test_pull(docker_image):
     docker_image.pull("kathara/test")
-    docker_image.client.images.pull.assert_called_once_with("kathara/test:latest")
+    docker_image.client.api.pull.assert_called_once_with("kathara/test:latest", stream=True, decode=True)
 
 
 def test_pull_latest(docker_image):
     docker_image.pull("kathara/test:latest")
-    docker_image.client.images.pull.assert_called_once_with("kathara/test:latest")
+    docker_image.client.api.pull.assert_called_once_with("kathara/test:latest", stream=True, decode=True)
 
 
 def test_pull_tag(docker_image):
     docker_image.pull("kathara/test:tag")
-    docker_image.client.images.pull.assert_called_once_with("kathara/test:tag")
+    docker_image.client.api.pull.assert_called_once_with("kathara/test:tag", stream=True, decode=True)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.pull")

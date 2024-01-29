@@ -25,7 +25,7 @@ setup(
         "slug>=2.0",
         "deepdiff==6.2.2",
         "pyroute2",
-        "progressbar2>=1.14.0",
+        "rich",
         "fs>=2.4.16",
         "chardet",
         "libtmux>=0.8.2; platform_system == 'darwin' or platform_system == 'linux'",

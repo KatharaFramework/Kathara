@@ -160,12 +160,11 @@ class KubernetesMachine(object):
         # If not, they're started sequentially
         if not lab.has_dependencies:
             pool_size = utils.get_pool_size()
-            machines_pool = Pool(pool_size)
-
             items = utils.chunk_list(machines, pool_size)
 
-            for chunk in items:
-                machines_pool.map(func=self._deploy_machine, iterable=chunk)
+            with Pool(pool_size) as machines_pool:
+                for chunk in items:
+                    machines_pool.map(func=self._deploy_machine, iterable=chunk)
         else:
             for item in machines:
                 self._deploy_machine(item)
@@ -492,12 +491,11 @@ class KubernetesMachine(object):
 
         if len(pods) > 0:
             pool_size = utils.get_pool_size()
-            machines_pool = Pool(pool_size)
-
             items = utils.chunk_list(pods, pool_size)
 
-            for chunk in items:
-                machines_pool.map(func=self._undeploy_machine, iterable=chunk)
+            with Pool(pool_size) as machines_pool:
+                for chunk in items:
+                    machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
             self._wait_machines_shutdown(lab_hash, selected_machines)
 
@@ -540,12 +538,11 @@ class KubernetesMachine(object):
         pods = self.get_machines_api_objects_by_filters()
 
         pool_size = utils.get_pool_size()
-        machines_pool = Pool(pool_size)
-
         items = utils.chunk_list(pods, pool_size)
 
-        for chunk in items:
-            machines_pool.map(func=self._undeploy_machine, iterable=chunk)
+        with Pool(pool_size) as machines_pool:
+            for chunk in items:
+                machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
     def _undeploy_machine(self, pod_api_object: client.V1Pod) -> None:
         """Undeploy a Kubernetes pod.
@@ -851,12 +848,11 @@ class KubernetesMachine(object):
                 machines_stats[pod.metadata.name] = KubernetesMachineStats(pod)
 
             pool_size = utils.get_pool_size()
-            machines_pool = Pool(pool_size)
-
             items = utils.chunk_list(pods, pool_size)
 
-            for chunk in items:
-                machines_pool.map(func=load_machine_stats, iterable=chunk)
+            with Pool(pool_size) as machines_pool:
+                for chunk in items:
+                    machines_pool.map(func=load_machine_stats, iterable=chunk)
 
             for machine_stats in machines_stats.values():
                 try:

@@ -42,21 +42,25 @@ class DockerImage(object):
         """
         return self.client.images.get_registry_data(image_name)
 
-    def pull(self, image_name: str) -> docker.models.images.Image:
-        """Pull and return the specified Docker Image.
+    def pull(self, image_name: str) -> None:
+        """Pull the specified Docker Image.
 
         Args:
             image_name (str): The name of a Docker Image.
 
         Returns:
-            docker.models.images.Image: A Docker Image
+            None
         """
         # If no tag or sha key is specified, we add "latest"
         if (':' or '@') not in image_name:
             image_name = "%s:latest" % image_name
 
+        EventDispatcher.get_instance().dispatch("docker_pull_started")
         logging.info("Pulling image `%s`... This may take a while." % image_name)
-        return self.client.images.pull(image_name)
+        response = self.client.api.pull(image_name, stream=True, decode=True)
+        for progress in response:
+            EventDispatcher.get_instance().dispatch("docker_pull_progress", progress=progress)
+        EventDispatcher.get_instance().dispatch("docker_pull_ended")
 
     def check_for_updates(self, image_name: str) -> None:
         """Update the specified image.
