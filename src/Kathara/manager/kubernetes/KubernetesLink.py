@@ -54,8 +54,6 @@ class KubernetesLink(object):
 
         if len(links) > 0:
             pool_size = utils.get_pool_size()
-            link_pool = Pool(pool_size)
-
             items = utils.chunk_list(links, pool_size)
 
             EventDispatcher.get_instance().dispatch("links_deploy_started", items=links)
@@ -66,8 +64,9 @@ class KubernetesLink(object):
                     network_id: 1 for network_id in self._get_existing_network_ids()
                 })
 
-                for chunk in items:
-                    link_pool.map(func=partial(self._deploy_link, network_ids), iterable=chunk)
+                with Pool(pool_size) as links_pool:
+                    for chunk in items:
+                        links_pool.map(func=partial(self._deploy_link, network_ids), iterable=chunk)
 
             EventDispatcher.get_instance().dispatch("links_deploy_ended")
 
@@ -132,14 +131,13 @@ class KubernetesLink(object):
 
         if len(networks) > 0:
             pool_size = utils.get_pool_size()
-            links_pool = Pool(pool_size)
-
             items = utils.chunk_list(networks, pool_size)
 
             EventDispatcher.get_instance().dispatch("links_undeploy_started", items=networks)
 
-            for chunk in items:
-                links_pool.map(func=self._undeploy_link, iterable=chunk)
+            with Pool(pool_size) as links_pool:
+                for chunk in items:
+                    links_pool.map(func=self._undeploy_link, iterable=chunk)
 
             EventDispatcher.get_instance().dispatch("links_undeploy_ended")
 
@@ -152,12 +150,11 @@ class KubernetesLink(object):
         networks = self.get_links_api_objects_by_filters()
 
         pool_size = utils.get_pool_size()
-        links_pool = Pool(pool_size)
-
         items = utils.chunk_list(networks, pool_size)
 
-        for chunk in items:
-            links_pool.map(func=self._undeploy_link, iterable=chunk)
+        with Pool(pool_size) as links_pool:
+            for chunk in items:
+                links_pool.map(func=self._undeploy_link, iterable=chunk)
 
     def _undeploy_link(self, link_item: Any) -> None:
         """Undeploy a Kubernetes network.
@@ -247,12 +244,11 @@ class KubernetesLink(object):
                 networks_stats[network['metadata']['name']] = KubernetesLinkStats(network)
 
             pool_size = utils.get_pool_size()
-            links_pool = Pool(pool_size)
-
             items = utils.chunk_list(networks, pool_size)
 
-            for chunk in items:
-                links_pool.map(func=load_link_stats, iterable=chunk)
+            with Pool(pool_size) as links_pool:
+                for chunk in items:
+                    links_pool.map(func=load_link_stats, iterable=chunk)
 
             for network_stats in networks_stats.values():
                 try:

@@ -46,14 +46,13 @@ class DockerLink(object):
 
         if len(links) > 0:
             pool_size = utils.get_pool_size()
-            link_pool = Pool(pool_size)
-
             items = utils.chunk_list(links, pool_size)
 
             EventDispatcher.get_instance().dispatch("links_deploy_started", items=links)
 
-            for chunk in items:
-                link_pool.map(func=self._deploy_link, iterable=chunk)
+            with Pool(pool_size) as links_pool:
+                for chunk in items:
+                    links_pool.map(func=self._deploy_link, iterable=chunk)
 
             EventDispatcher.get_instance().dispatch("links_deploy_ended")
 
@@ -155,14 +154,13 @@ class DockerLink(object):
 
         if len(networks) > 0:
             pool_size = utils.get_pool_size()
-            links_pool = Pool(pool_size)
-
             items = utils.chunk_list(networks, pool_size)
 
             EventDispatcher.get_instance().dispatch("links_undeploy_started", items=networks)
 
-            for chunk in items:
-                links_pool.map(func=self._undeploy_link, iterable=chunk)
+            with Pool(pool_size) as links_pool:
+                for chunk in items:
+                    links_pool.map(func=self._undeploy_link, iterable=chunk)
 
             EventDispatcher.get_instance().dispatch("links_undeploy_ended")
 
@@ -182,12 +180,11 @@ class DockerLink(object):
         networks = [item for item in networks if len(item.containers) <= 0]
 
         pool_size = utils.get_pool_size()
-        links_pool = Pool(pool_size)
-
         items = utils.chunk_list(networks, pool_size)
 
-        for chunk in items:
-            links_pool.map(func=self._undeploy_link, iterable=chunk)
+        with Pool(pool_size) as links_pool:
+            for chunk in items:
+                links_pool.map(func=self._undeploy_link, iterable=chunk)
 
     def _undeploy_link(self, network: docker.models.networks.Network) -> None:
         """Undeploy a Docker network.
@@ -265,12 +262,11 @@ class DockerLink(object):
             networks_stats[network.name] = DockerLinkStats(network)
 
         pool_size = utils.get_pool_size()
-        links_pool = Pool(pool_size)
-
         items = utils.chunk_list(networks, pool_size)
 
-        for chunk in items:
-            links_pool.map(func=load_link_stats, iterable=chunk)
+        with Pool(pool_size) as links_pool:
+            for chunk in items:
+                links_pool.map(func=load_link_stats, iterable=chunk)
 
         while True:
             for network_stats in networks_stats.values():
