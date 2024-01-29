@@ -48,19 +48,23 @@ class HandleDockerImagePull(object):
             else:
                 return
 
-            task_id = progress["id"]
-            if task_id not in self.tasks.keys():
+            layer_id = progress["id"]
+            if layer_id not in self.tasks.keys():
                 if completed:
-                    self.tasks[task_id] = self.progress_bar.add_task(description, total=100, completed=100)
+                    self.tasks[layer_id] = self.progress_bar.add_task(
+                        description, total=100, completed=100, fields={'layer_id': layer_id}
+                    )
                 else:
-                    self.tasks[task_id] = self.progress_bar.add_task(
-                        description, total=progress['progressDetail']['total']
+                    total = progress['progressDetail']['total'] if 'total' in progress['progressDetail'] else None
+                    self.tasks[layer_id] = self.progress_bar.add_task(
+                        description, total=total, fields={'layer_id': layer_id}
                     )
             else:
                 if completed:
-                    self.progress_bar.update(self.tasks[task_id], description=description, total=100, completed=100)
+                    self.progress_bar.update(self.tasks[layer_id], description=description, total=100, completed=100)
                 else:
-                    self.progress_bar.update(self.tasks[task_id], completed=progress['progressDetail']['current'])
+                    current = progress['progressDetail']['current'] if 'current' in progress['progressDetail'] else None
+                    self.progress_bar.update(self.tasks[layer_id], completed=current)
 
     def finish(self) -> None:
         """Closes the Docker pull progress bar.
@@ -69,8 +73,10 @@ class HandleDockerImagePull(object):
             None
         """
         if self.progress_bar:
-            for task in self.tasks.values():
-                self.progress_bar.stop_task(task)
+            for task in self.progress_bar.tasks:
+                description = f"[Download Complete {task.fields['fields']['layer_id']}]" \
+                    if 'fields' in task.fields and 'layer_id' in task.fields['fields'] else None
+                self.progress_bar.update(task.id, description=description, completed=task.total, total=task.total)
             self.progress_bar.stop()
 
             self.tasks = {}
