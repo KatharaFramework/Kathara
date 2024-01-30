@@ -1,6 +1,7 @@
 import argparse
 import logging
 import re
+import shlex
 import subprocess
 import sys
 from datetime import datetime
@@ -106,7 +107,14 @@ def open_machine_terminal(machine) -> None:
 
             # Command should be passed as an array
             # https://stackoverflow.com/questions/9935151/popen-error-errno-2-no-such-file-or-directory/9935511
-            subprocess.Popen([terminal, "-e", connect_command],
+            command = [terminal]
+            if 'gnome-terminal' in terminal:
+                command.append("--")
+                command.extend(shlex.split(connect_command))
+            else:
+                command.append("-e")
+                command.append(connect_command)
+            subprocess.Popen(command,
                              cwd=machine.lab.fs_path(),
                              start_new_session=True
                              )
