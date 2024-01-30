@@ -4,8 +4,10 @@ import os
 import sys
 from typing import List
 
+from rich import print as rich_print
+
+from ..ui.utils import create_panel
 from ..ui.utils import create_table
-from ..ui.utils import format_headers
 from ... import utils
 from ...exceptions import PrivilegeError, EmptyLabError
 from ...foundation.cli.command.Command import Command
@@ -155,10 +157,12 @@ class LstartCommand(Command):
                 logging.warning("Running devices with privileged capabilities, terminals won't open!")
                 Setting.get_instance().open_terminals = False
 
-        if args['dry_mode']:
-            logging.info(format_headers("Checking Network Scenario"))
-        else:
-            logging.info(format_headers("Starting Network Scenario"))
+        rich_print(
+            create_panel(
+                "Checking Network Scenario" if args['dry_mode'] else "Starting Network Scenario",
+                style="blue bold", justify="center"
+            )
+        )
 
         try:
             lab = LabParser.parse(lab_path)
@@ -174,10 +178,8 @@ class LstartCommand(Command):
             lab.apply_dependencies(dependencies)
 
         lab_meta_information = str(lab)
-
         if lab_meta_information:
-            logging.info("\n" + lab_meta_information)
-            logging.info(format_headers())
+            rich_print(create_panel(lab_meta_information))
 
         if len(lab.machines) <= 0:
             raise EmptyLabError()

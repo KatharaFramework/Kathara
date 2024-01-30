@@ -1,8 +1,9 @@
 import argparse
-import logging
 from typing import List
 
-from ..ui.utils import format_headers
+from rich import print as rich_print
+
+from ..ui.utils import create_panel
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -52,8 +53,9 @@ class LcleanCommand(Command):
         except (Exception, IOError):
             lab = Lab(None, path=lab_path)
 
-        logging.info(format_headers("Stopping Network Scenario"))
+        rich_print(create_panel("Stopping Network Scenario", style="blue bold", justify="center"))
 
-        Kathara.get_instance().undeploy_lab(lab_hash=lab.hash,
-                                            selected_machines=set(args['machine_names']) if args['machine_names']
-                                                                                         else None)
+        Kathara.get_instance().undeploy_lab(
+            lab_hash=lab.hash,
+            selected_machines=set(args['machine_names']) if args['machine_names'] else None
+        )

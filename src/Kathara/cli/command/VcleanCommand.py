@@ -1,7 +1,9 @@
 import argparse
-import logging
 from typing import List
 
+from rich import print as rich_print
+
+from ..ui.utils import create_panel
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
@@ -38,6 +40,7 @@ class VcleanCommand(Command):
         args = self.get_args()
 
         lab = Lab("kathara_vlab")
-        Kathara.get_instance().undeploy_lab(lab_name=lab.name, selected_machines={args['name']})
 
-        logging.info("Device `%s` deleted successfully!" % args['name'])
+        rich_print(create_panel(f"Stopping Device `{args['name']}`", style="blue bold", justify="center"))
+
+        Kathara.get_instance().undeploy_lab(lab_name=lab.name, selected_machines={args['name']})

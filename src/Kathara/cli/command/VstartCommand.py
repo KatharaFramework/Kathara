@@ -3,7 +3,9 @@ import logging
 import sys
 from typing import List
 
-from ..ui.utils import format_headers, interface_cd_mac
+from rich import print as rich_print
+
+from ..ui.utils import create_panel, interface_cd_mac
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
@@ -165,11 +167,13 @@ class VstartCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
+        name = args.pop('name')
+
         if args['dry_mode']:
             logging.info("Device configuration is correct. Exiting...")
             sys.exit(0)
         else:
-            logging.info(format_headers("Starting Device"))
+            rich_print(create_panel(f"Starting Device `{name}`", style="blue bold", justify="center"))
 
         Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
             else Setting.get_instance().open_terminals
@@ -187,8 +191,6 @@ class VstartCommand(Command):
         lab.add_option('hosthome_mount', args['hosthome_mount'])
         lab.add_option('shared_mount', False)
         lab.add_option('privileged_machines', args['privileged'])
-
-        name = args.pop('name')
 
         device = lab.get_or_new_machine(name, **args)
 

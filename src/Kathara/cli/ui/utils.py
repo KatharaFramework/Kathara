@@ -7,6 +7,9 @@ from datetime import datetime
 from typing import Any, Dict, Generator
 from typing import Callable
 
+from rich import box
+from rich.panel import Panel
+from rich.text import Text
 from terminaltables import DoubleTable
 
 from ... import utils
@@ -28,16 +31,16 @@ def confirmation_prompt(prompt_string: str, callback_yes: Callable, callback_no:
     return callback_yes()
 
 
-def format_headers(message: str = "") -> str:
-    footer = "=============================="
-    half_message = int((len(message) / 2) + 1)
-    second_half_message = half_message
-
-    if len(message) % 2 == 0:
-        second_half_message -= 1
-
-    message = " " + message + " " if message != "" else "=="
-    return footer[half_message:] + message + footer[second_half_message:]
+def create_panel(message: str = "", **kwargs) -> Panel:
+    return Panel(
+        Text(
+            message,
+            style=kwargs['style'] if 'style' in kwargs else "none",
+            justify=kwargs['justify'] if 'justify' in kwargs else None,
+        ),
+        title=kwargs['title'] if 'title' in kwargs else None,
+        title_align="center", box=box.SQUARE
+    )
 
 
 def create_table(streams: Generator[Dict[str, IMachineStats], None, None]) -> \
