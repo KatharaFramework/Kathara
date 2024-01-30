@@ -1,8 +1,10 @@
 import argparse
 from typing import List
 
+from rich import print as rich_print
+
+from ..ui.utils import create_panel
 from ..ui.utils import create_table
-from ..ui.utils import format_headers
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -84,23 +86,26 @@ class LinfoCommand(Command):
             return
 
         if args['name']:
-            print(format_headers("Device Information"))
-            print(str(next(Kathara.get_instance().get_machine_stats(args['name'], lab.hash))))
-            print(format_headers())
+            rich_print(
+                create_panel(
+                    str(next(Kathara.get_instance().get_machine_stats(args['name'], lab.hash))),
+                    title=f"{args['name']} Information"
+                )
+            )
         else:
             machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
             print(next(create_table(machines_stats)))
 
     @staticmethod
     def _get_machine_live_info(lab: Lab, machine_name: str) -> None:
+        # TODO: Replace Curses with rich Live
         Curses.get_instance().init_window()
 
         try:
             while True:
                 Curses.get_instance().print_string(
-                    format_headers("Device Information") + "\n" +
-                    str(next(Kathara.get_instance().get_machine_stats(machine_name, lab.hash))) + "\n" +
-                    format_headers()
+                    create_panel("Device Information") + "\n" +
+                    str(next(Kathara.get_instance().get_machine_stats(machine_name, lab.hash))) + "\n"
                 )
         finally:
             Curses.get_instance().close()
@@ -123,22 +128,24 @@ class LinfoCommand(Command):
     @staticmethod
     def _get_conf_info(lab: Lab, machine_name: str = None) -> None:
         if machine_name:
-            print(format_headers("Device Information"))
-            print(str(lab.machines[machine_name]))
-            print(format_headers())
+            rich_print(
+                create_panel(
+                    str(lab.machines[machine_name]),
+                    title=f"{machine_name} Information"
+                )
+            )
             return
 
-        print(format_headers("Network Scenario Information"))
         lab_meta_information = str(lab)
-
         if lab_meta_information:
-            print(lab_meta_information)
-            print(format_headers())
+            rich_print(create_panel(lab_meta_information, title="Network Scenario Information"))
 
         n_machines = len(lab.machines)
         n_links = len(lab.links) if BRIDGE_LINK_NAME not in lab.links else len(lab.links) - 1
 
-        print("There are %d devices." % n_machines)
-        print("There are %d collision domains." % n_links)
-
-        print(format_headers())
+        rich_print(
+            create_panel(
+                f"There are {n_machines} devices.\nThere are {n_links} collision domains.",
+                title="Topology Information"
+            )
+        )
