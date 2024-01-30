@@ -6,7 +6,7 @@ import multiprocessing
 import os
 import sys
 
-import coloredlogs
+from rich.logging import RichHandler
 
 from Kathara import utils
 from Kathara.auth.PrivilegeHandler import PrivilegeHandler
@@ -126,6 +126,9 @@ if __name__ == '__main__':
     except SettingsError:
         debug_level = "DEBUG"
 
-    coloredlogs.install(fmt='%(levelname)s - %(message)s', level=debug_level)
+    logging.basicConfig(
+        level=debug_level, format="%(message)s",
+        handlers=[RichHandler(rich_tracebacks=True, show_time=False, show_path=False)]
+    )
 
     KatharaEntryPoint()

@@ -20,7 +20,6 @@ setup(
         "docker>=7.0.0",
         "kubernetes>=23.3.0",
         "requests>=2.22.0",
-        "coloredlogs>=10.0",
         "terminaltables>=3.1.0",
         "slug>=2.0",
         "deepdiff==6.2.2",
