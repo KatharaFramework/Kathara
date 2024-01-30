@@ -9,23 +9,21 @@ from typing import Callable
 
 from rich import box
 from rich.panel import Panel
+from rich.prompt import Confirm
 from rich.text import Text
 from terminaltables import DoubleTable
 
 from ... import utils
 from ...foundation.manager.stats.IMachineStats import IMachineStats
 from ...setting.Setting import Setting
-from ...trdparty.consolemenu import PromptUtils, Screen
 from ...utils import parse_cd_mac_address
 
 FORBIDDEN_TABLE_COLUMNS = ["container_name"]
 
 
 def confirmation_prompt(prompt_string: str, callback_yes: Callable, callback_no: Callable) -> Any:
-    prompt_utils = PromptUtils(Screen())
-    answer = prompt_utils.prompt_for_bilateral_choice(prompt_string, 'y', 'n')
-
-    if answer == "n":
+    answer = Confirm.ask(prompt_string)
+    if not answer:
         return callback_no()
 
     return callback_yes()
