@@ -24,7 +24,7 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MachineAlreadyExistsError, MachineNotFoundError, MachineNotReadyError, MachineNotRunningError
+from ...exceptions import MachineAlreadyExistsError, MachineNotReadyError, MachineNotRunningError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
@@ -834,31 +834,33 @@ class KubernetesMachine(object):
             Generator[Dict[str, KubernetesMachineStats], None, None]: A generator containing device name as keys and
                 KubernetesMachineStats as values.
         """
+        machines_stats = {}
+
+        def load_machine_stats(pod):
+            if pod.metadata.name not in machines_stats:
+                machines_stats[pod.metadata.name] = KubernetesMachineStats(pod)
+
         while True:
             pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
             if not pods:
-                if not machine_name:
-                    raise MachineNotFoundError("No devices found.")
-                else:
-                    raise MachineNotFoundError(f"Devices with name {machine_name} not found.")
-
-            machines_stats = {}
-
-            def load_machine_stats(pod):
-                machines_stats[pod.metadata.name] = KubernetesMachineStats(pod)
+                yield dict()
 
             pool_size = utils.get_pool_size()
             items = utils.chunk_list(pods, pool_size)
-
             with Pool(pool_size) as machines_pool:
                 for chunk in items:
                     machines_pool.map(func=load_machine_stats, iterable=chunk)
 
-            for machine_stats in machines_stats.values():
+            machines_to_remove = []
+            for machine_id, machine_stats in machines_stats.items():
                 try:
                     machine_stats.update()
                 except StopIteration:
+                    machines_to_remove.append(machine_id)
                     continue
+
+            for k in machines_to_remove:
+                machines_stats.pop(k, None)
 
             yield machines_stats
 

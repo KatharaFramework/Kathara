@@ -704,7 +704,7 @@ class DockerManager(IManager):
     @privileged
     def get_machine_stats(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                           lab: Optional[Lab] = None, all_users: bool = False) \
-            -> Generator[DockerMachineStats, None, None]:
+            -> Generator[Optional[DockerMachineStats], None, None]:
         """Return information of the specified device in a specified network scenario.
 
          Args:
@@ -718,8 +718,8 @@ class DockerManager(IManager):
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
-            Generator[DockerMachineStats, None, None]: A generator containing DockerMachineStats objects with
-            the device info.
+            Generator[Optional[DockerMachineStats], None, None]: A generator containing the DockerMachineStats object
+            with the device info. Returns None if the device is not found.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
@@ -731,9 +731,12 @@ class DockerManager(IManager):
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         machines_stats = self.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name, all_users=all_users)
-        (_, machine_stats) = next(machines_stats).popitem()
-
-        yield machine_stats
+        machines_stats_next = next(machines_stats)
+        if machines_stats_next:
+            (_, machine_stats) = machines_stats_next.popitem()
+            yield machine_stats
+        else:
+            yield None
 
     @privileged
     def get_links_stats(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
@@ -766,7 +769,8 @@ class DockerManager(IManager):
 
     @privileged
     def get_link_stats(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
-                       lab: Optional[Lab] = None, all_users: bool = False) -> Generator[DockerLinkStats, None, None]:
+                       lab: Optional[Lab] = None, all_users: bool = False) \
+            -> Generator[Optional[DockerLinkStats], None, None]:
         """Return information of the specified deployed network in a specified network scenario.
 
         Args:
@@ -780,8 +784,8 @@ class DockerManager(IManager):
             all_users (bool): If True, return information about the networks of all users.
 
         Returns:
-            Generator[DockerLinkStats, None, None]: A generator containing DockerLinkStats objects with the network
-                statistics.
+            Generator[Optional[DockerLinkStats], None, None]: A generator containing the DockerLinkStats object
+            with the network info. Returns None if the network is not found.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
@@ -793,9 +797,12 @@ class DockerManager(IManager):
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         links_stats = self.get_links_stats(lab_hash=lab_hash, link_name=link_name, all_users=all_users)
-        (_, link_stats) = next(links_stats).popitem()
-
-        yield link_stats
+        links_stats_next = next(links_stats)
+        if links_stats_next:
+            (_, link_stats) = links_stats_next.popitem()
+            yield link_stats
+        else:
+            yield None
 
     @privileged
     def check_image(self, image_name: str) -> None:

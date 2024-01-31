@@ -16,7 +16,7 @@ from .DockerImage import DockerImage
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError, DockerPluginError, \
+from ...exceptions import MountDeniedError, MachineAlreadyExistsError, DockerPluginError, \
     MachineBinaryError, MachineNotRunningError
 from ...model.Interface import Interface
 from ...model.Lab import Lab
@@ -845,7 +845,7 @@ class DockerMachine(object):
         if machine_name:
             filters["label"].append(f"name={machine_name}")
 
-        return self.client.containers.list(all=True, filters=filters)
+        return self.client.containers.list(all=True, filters=filters, ignore_removed=True)
 
     def get_machines_stats(self, lab_hash: str = None, machine_name: str = None, user: str = None) -> \
             Generator[Dict[str, DockerMachineStats], None, None]:
@@ -860,37 +860,36 @@ class DockerMachine(object):
         Returns:
             Generator[Dict[str, DockerMachineStats], None, None]: A generator containing device names as keys and
             DockerMachineStats as values.
-
-        Raises:
-            MachineNotFoundError: If the specified devices are not running.
         """
-        containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
-        if not containers:
-            if not machine_name:
-                raise MachineNotFoundError("No devices found.")
-            else:
-                raise MachineNotFoundError(f"Devices with name {machine_name} not found.")
-
-        containers = sorted(containers, key=lambda x: x.name)
-
         machines_stats = {}
 
         def load_machine_stats(machine):
-            machines_stats[machine.name] = DockerMachineStats(machine)
-
-        pool_size = utils.get_pool_size()
-        items = utils.chunk_list(containers, pool_size)
-
-        with Pool(pool_size) as machines_pool:
-            for chunk in items:
-                machines_pool.map(func=load_machine_stats, iterable=chunk)
+            if machine.name not in machines_stats:
+                machines_stats[machine.name] = DockerMachineStats(machine)
 
         while True:
-            for machine_stats in machines_stats.values():
+            containers = self.get_machines_api_objects_by_filters(
+                lab_hash=lab_hash, machine_name=machine_name, user=user
+            )
+            if not containers:
+                yield dict()
+
+            pool_size = utils.get_pool_size()
+            items = utils.chunk_list(containers, pool_size)
+            with Pool(pool_size) as machines_pool:
+                for chunk in items:
+                    machines_pool.map(func=load_machine_stats, iterable=chunk)
+
+            machines_to_remove = []
+            for machine_id, machine_stats in machines_stats.items():
                 try:
                     machine_stats.update()
                 except StopIteration:
+                    machines_to_remove.append(machine_id)
                     continue
+
+            for k in machines_to_remove:
+                machines_stats.pop(k, None)
 
             yield machines_stats
 

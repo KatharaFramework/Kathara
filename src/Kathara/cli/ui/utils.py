@@ -4,14 +4,15 @@ import re
 import subprocess
 import sys
 from datetime import datetime
-from typing import Any, Dict, Generator
+from typing import Any, Dict, Generator, Optional
 from typing import Callable
 
 from rich import box
+from rich.console import RenderableType, Group
 from rich.panel import Panel
 from rich.prompt import Confirm
+from rich.table import Table
 from rich.text import Text
-from terminaltables import DoubleTable
 
 from ... import utils
 from ...foundation.manager.stats.IMachineStats import IMachineStats
@@ -37,35 +38,37 @@ def create_panel(message: str = "", **kwargs) -> Panel:
             justify=kwargs['justify'] if 'justify' in kwargs else None,
         ),
         title=kwargs['title'] if 'title' in kwargs else None,
-        title_align="center", box=box.SQUARE
+        title_align="center",
+        box=kwargs['box'] if 'box' in kwargs else box.SQUARE,
     )
 
 
-def create_table(streams: Generator[Dict[str, IMachineStats], None, None]) -> \
-        Generator[str, None, None]:
-    table = DoubleTable([])
-    table.inner_row_border = True
+def create_table(streams: Generator[Dict[str, IMachineStats], None, None]) -> Optional[RenderableType]:
+    try:
+        result = next(streams)
+    except StopIteration:
+        return None
 
-    while True:
-        try:
-            result = next(streams)
-        except StopIteration:
-            return
+    ts_header = f"TIMESTAMP: {datetime.now()}"
+    if not result:
+        return Group(
+            Text(ts_header, style="italic", justify="center"),
+            create_panel("No Devices Found", style="red bold", justify="center", box=box.DOUBLE)
+        )
 
-        if not result:
-            return
+    table = Table(title=ts_header, show_lines=True, expand=True, box=box.SQUARE_DOUBLE_HEAD)
 
-        table.table_data = []
-        for item in result.values():
-            row_data = item.to_dict()
-            row_data = dict(filter(lambda x: x[0] not in FORBIDDEN_TABLE_COLUMNS, row_data.items()))
+    for item in result.values():
+        row_data = item.to_dict()
+        row_data = dict(filter(lambda x: x[0] not in FORBIDDEN_TABLE_COLUMNS, row_data.items()))
 
-            if not table.table_data:
-                table.table_data.append(list(map(lambda x: x.replace('_', ' ').upper(), row_data.keys())))
+        if not table.columns:
+            for col in map(lambda x: x.replace('_', ' ').upper(), row_data.keys()):
+                table.add_column(col, header_style="blue")
 
-            table.table_data.append(row_data.values())
+        table.add_row(*map(lambda x: str(x), row_data.values()))
 
-        yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + table.table
+    return table
 
 
 def open_machine_terminal(machine) -> None:

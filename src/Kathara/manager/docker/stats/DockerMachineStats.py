@@ -1,5 +1,6 @@
 from typing import Dict, Any, Generator, Optional
 
+from docker.errors import NotFound
 from docker.models.containers import Container
 
 from ....foundation.manager.stats.IMachineStats import IMachineStats
@@ -53,6 +54,11 @@ class DockerMachineStats(IMachineStats):
             None
         """
         updated_stats = next(self.stats)
+        try:
+            self.machine_api_object.reload()
+        except NotFound:
+            # Happens while deleting
+            pass
 
         self.status = self.machine_api_object.status
         self.pids = updated_stats['pids_stats']['current'] if 'current' in updated_stats['pids_stats'] else 0

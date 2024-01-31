@@ -13,7 +13,6 @@ from .DockerPlugin import DockerPlugin
 from .stats.DockerLinkStats import DockerLinkStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import LinkNotFoundError
 from ...exceptions import PrivilegeError
 from ...model.ExternalLink import ExternalLink
 from ...model.Lab import Lab
@@ -228,7 +227,7 @@ class DockerLink(object):
         if link_name:
             filters["label"].append(f"name={link_name}")
 
-        return self.client.networks.list(filters=filters)
+        return self.client.networks.list(filters=filters, greedy=True)
 
     def get_links_stats(self, lab_hash: str = None, link_name: str = None, user: str = None) -> \
             Generator[Dict[str, DockerLinkStats], None, None]:
@@ -243,37 +242,34 @@ class DockerLink(object):
         Returns:
            Generator[Dict[str, DockerMachineStats], None, None]: A generator containing network names as keys and
            DockerLinkStats as values.
-
-        Raises:
-            LinkNotFoundError: If the collision domains specified are not found.
         """
-        networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name, user=user)
-        if not networks:
-            if not link_name:
-                raise LinkNotFoundError("No collision domains found.")
-            else:
-                raise LinkNotFoundError(f"Collision domains with name {link_name} not found.")
-
-        networks = sorted(networks, key=lambda x: x.name)
-
         networks_stats = {}
 
         def load_link_stats(network):
-            networks_stats[network.name] = DockerLinkStats(network)
-
-        pool_size = utils.get_pool_size()
-        items = utils.chunk_list(networks, pool_size)
-
-        with Pool(pool_size) as links_pool:
-            for chunk in items:
-                links_pool.map(func=load_link_stats, iterable=chunk)
+            if network.name not in networks_stats:
+                networks_stats[network.name] = DockerLinkStats(network)
 
         while True:
-            for network_stats in networks_stats.values():
+            networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name, user=user)
+            if not networks:
+                yield dict()
+
+            pool_size = utils.get_pool_size()
+            items = utils.chunk_list(networks, pool_size)
+            with Pool(pool_size) as links_pool:
+                for chunk in items:
+                    links_pool.map(func=load_link_stats, iterable=chunk)
+
+            networks_to_remove = []
+            for network_id, network_stats in networks_stats.items():
                 try:
                     network_stats.update()
                 except StopIteration:
+                    networks_to_remove.append(network_id)
                     continue
+
+            for k in networks_to_remove:
+                networks_stats.pop(k, None)
 
             yield networks_stats
 

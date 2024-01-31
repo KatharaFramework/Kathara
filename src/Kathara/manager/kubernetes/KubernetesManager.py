@@ -638,7 +638,7 @@ class KubernetesManager(IManager):
 
     def get_machine_stats(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                           lab: Optional[Lab] = None, all_users: bool = False) \
-            -> Generator[KubernetesMachineStats, None, None]:
+            -> Generator[Optional[KubernetesMachineStats], None, None]:
         """Return information of the specified device in a specified network scenario.
 
         Args:
@@ -652,7 +652,8 @@ class KubernetesManager(IManager):
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
-            KubernetesMachineStats: KubernetesMachineStats object containing the device info.
+            Generator[Optional[KubernetesMachineStats], None, None]: A generator containing the KubernetesMachineStats
+            object with the device info. Returns None if the device is not found.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
@@ -666,9 +667,12 @@ class KubernetesManager(IManager):
         lab_hash = lab_hash.lower()
 
         machines_stats = self.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name)
-        (_, machine_stats) = next(machines_stats).popitem()
-
-        yield machine_stats
+        machines_stats_next = next(machines_stats)
+        if machines_stats_next:
+            (_, machine_stats) = machines_stats_next.popitem()
+            yield machine_stats
+        else:
+            yield None
 
     def get_links_stats(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
                         link_name: str = None, all_users: bool = False) \
@@ -704,7 +708,7 @@ class KubernetesManager(IManager):
 
     def get_link_stats(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                        lab: Optional[Lab] = None, all_users: bool = False) \
-            -> Generator[KubernetesLinkStats, None, None]:
+            -> Generator[Optional[KubernetesLinkStats], None, None]:
         """Return information of the specified deployed network in a specified network scenario.
 
         Args:
@@ -718,8 +722,8 @@ class KubernetesManager(IManager):
             all_users (bool): If True, return information about the networks of all users.
 
         Returns:
-            Generator[KubernetesLinkStats, None, None]: A generator containing KubernetesLinkStats objects with
-                the network statistics.
+            Generator[Optional[KubernetesLinkStats], None, None]: A generator containing the KubernetesLinkStats object
+            with the network info. Returns None if the network is not found.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
@@ -733,9 +737,12 @@ class KubernetesManager(IManager):
         lab_hash = lab_hash.lower()
 
         links_stats = self.get_links_stats(lab_hash=lab_hash, link_name=link_name, all_users=all_users)
-        (_, link_stats) = next(links_stats).popitem()
-
-        yield link_stats
+        links_stats_next = next(links_stats)
+        if links_stats_next:
+            (_, link_stats) = links_stats_next.popitem()
+            yield link_stats
+        else:
+            yield None
 
     def check_image(self, image_name: str) -> None:
         """Useless. The Check of the image is delegated to Kubernetes.

@@ -1,6 +1,8 @@
 import argparse
 from typing import List
 
+from rich.live import Live
+
 from ..ui.utils import create_panel
 from ..ui.utils import create_table
 from ... import utils
@@ -10,7 +12,6 @@ from ...model.Lab import Lab
 from ...model.Link import BRIDGE_LINK_NAME
 from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
-from ...trdparty.curses.curses import Curses
 
 
 class LinfoCommand(Command):
@@ -84,47 +85,38 @@ class LinfoCommand(Command):
             return
 
         if args['name']:
-            self.console.print(
-                create_panel(
-                    str(next(Kathara.get_instance().get_machine_stats(args['name'], lab.hash))),
-                    title=f"{args['name']} Information"
-                )
-            )
+            machine_stats = next(Kathara.get_instance().get_machine_stats(args['name'], lab.hash))
+            message = str(machine_stats) if machine_stats else f"Device `{args['name']}` Not Found."
+            style = None if machine_stats else "red bold"
+
+            self.console.print(create_panel(message, title=f"{args['name']} Information", style=style))
         else:
             machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
-            print(next(create_table(machines_stats)))
+            self.console.print(create_table(machines_stats))
 
     @staticmethod
     def _get_machine_live_info(lab: Lab, machine_name: str) -> None:
-        # TODO: Replace Curses with rich Live
-        Curses.get_instance().init_window()
-
-        try:
+        with Live(None, refresh_per_second=1, screen=True) as live:
             while True:
-                Curses.get_instance().print_string(
-                    create_panel("Device Information") + "\n" +
-                    str(next(Kathara.get_instance().get_machine_stats(machine_name, lab.hash))) + "\n"
-                )
-        finally:
-            Curses.get_instance().close()
+                machine_stats = next(Kathara.get_instance().get_machine_stats(machine_name, lab.hash))
+                message = str(machine_stats) if machine_stats else f"Device `{machine_name}` Not Found."
+                style = None if machine_stats else "red bold"
+
+                live.update(create_panel(message, title=f"{machine_name} Information", style=style))
 
     @staticmethod
     def _get_lab_live_info(lab: Lab) -> None:
         machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
-        table = create_table(machines_stats)
 
-        Curses.get_instance().init_window()
-
-        try:
+        with Live(None, refresh_per_second=1, screen=True) as live:
             while True:
-                Curses.get_instance().print_string(next(table))
-        except StopIteration:
-            pass
-        finally:
-            Curses.get_instance().close()
+                table = create_table(machines_stats)
+                if not table:
+                    break
 
-    @staticmethod
-    def _get_conf_info(lab: Lab, machine_name: str = None) -> None:
+                live.update(table)
+
+    def _get_conf_info(self, lab: Lab, machine_name: str = None) -> None:
         if machine_name:
             self.console.print(
                 create_panel(

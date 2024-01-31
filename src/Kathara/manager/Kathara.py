@@ -380,7 +380,8 @@ class Kathara(IManager):
         return self.manager.get_machines_stats(lab_hash, lab_name, lab, machine_name, all_users)
 
     def get_machine_stats(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
-                          lab: Optional[Lab] = None, all_users: bool = False) -> Generator[IMachineStats, None, None]:
+                          lab: Optional[Lab] = None, all_users: bool = False) \
+            -> Generator[Optional[IMachineStats], None, None]:
         """Return information of the specified device in a specified network scenario.
 
         Args:
@@ -394,7 +395,8 @@ class Kathara(IManager):
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
-            IMachineStats: IMachineStats object containing the device info.
+            Generator[Optional[IMachineStats], None, None]: A generator containing the IMachineStats object
+            with the device info. Returns None if the device is not found.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
@@ -422,7 +424,8 @@ class Kathara(IManager):
         return self.manager.get_links_stats(lab_hash, lab_name, lab, link_name, all_users)
 
     def get_link_stats(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
-                       lab: Optional[Lab] = None, all_users: bool = False) -> Generator[ILinkStats, None, None]:
+                       lab: Optional[Lab] = None, all_users: bool = False) \
+            -> Generator[Optional[ILinkStats], None, None]:
         """Return information of the specified deployed network in a specified network scenario.
 
         Args:
@@ -436,8 +439,8 @@ class Kathara(IManager):
             all_users (bool): If True, return information about the networks of all users.
 
         Returns:
-             Generator[Dict[str, ILinkStats], None, None]: A generator containing dicts that has API Object
-             identifier as keys and ILinksStats objects as values.
+            Generator[Optional[ILinkStats], None, None]: A generator containing the ILinkStats object
+            with the network info. Returns None if the network is not found.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.

@@ -1,4 +1,5 @@
-from terminaltables import SingleTable
+from rich.console import Console
+from rich.table import Table
 
 strings = {
     "vstart": "Start a new Kathara device",
@@ -22,13 +23,11 @@ wiki_description = "For examples and further information visit: https://github.c
 
 
 def formatted_strings() -> str:
-    commands = []
+    console = Console(record=True)
+    commands_table = Table(show_header=False, show_edge=False, show_lines=False, box=None)
     for item in strings.items():
-        commands.append(list(item))
+        commands_table.add_row(*item)
 
-    commands_table = SingleTable(commands)
-    commands_table.inner_heading_row_border = False
-    commands_table.outer_border = False
-    commands_table.inner_column_border = False
-
-    return commands_table.table
+    with console.capture() as _:
+        console.print(commands_table)
+    return console.export_text()
