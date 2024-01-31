@@ -62,14 +62,20 @@ class ListCommand(Command):
         if args['watch']:
             self._get_live_info(machine_name=args['name'], all_users=all_users)
         else:
-            machines_stats = Kathara.get_instance().get_machines_stats(machine_name=args['name'], all_users=all_users)
-            self.console.print(create_table(machines_stats))
+            with self.console.status(
+                    f"Loading...",
+                    spinner="dots"
+            ) as _:
+                machines_stats = Kathara.get_instance().get_machines_stats(
+                    machine_name=args['name'], all_users=all_users
+                )
+                self.console.print(create_table(machines_stats))
 
-    @staticmethod
-    def _get_live_info(machine_name: Optional[str], all_users: bool) -> None:
+    def _get_live_info(self, machine_name: Optional[str], all_users: bool) -> None:
         machines_stats = Kathara.get_instance().get_machines_stats(machine_name=machine_name, all_users=all_users)
-
-        with Live(None, refresh_per_second=1, screen=True) as live:
+        with Live(None, refresh_per_second=12.5, screen=True) as live:
+            live.update(self.console.status(f"Loading...", spinner="dots"))
+            live.refresh_per_second = 1
             while True:
                 table = create_table(machines_stats)
                 if not table:

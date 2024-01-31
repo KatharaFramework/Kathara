@@ -4,11 +4,12 @@ import re
 import subprocess
 import sys
 from datetime import datetime
-from typing import Any, Dict, Generator, Optional
+from typing import Any, Dict, Generator, Optional, Union
 from typing import Callable
 
 from rich import box
 from rich.console import RenderableType, Group
+from rich.highlighter import RegexHighlighter
 from rich.panel import Panel
 from rich.prompt import Confirm
 from rich.table import Table
@@ -22,6 +23,19 @@ from ...utils import parse_cd_mac_address
 FORBIDDEN_TABLE_COLUMNS = ["container_name"]
 
 
+class LabMetaHighlighter(RegexHighlighter):
+    """Highlights metadata of the network scenario."""
+    base_style = "kathara."
+    highlights = [
+        re.compile(r"(?P<lab_name>^Name: )", re.MULTILINE),
+        re.compile(r"(?P<lab_description>^Description: )", re.MULTILINE),
+        re.compile(r"(?P<lab_version>^Version: )", re.MULTILINE),
+        re.compile(r"(?P<lab_author>^Author\(s\): )", re.MULTILINE),
+        re.compile(r"(?P<lab_email>^Email: )", re.MULTILINE),
+        re.compile(r"(?P<lab_web>^Website: )", re.MULTILINE),
+    ]
+
+
 def confirmation_prompt(prompt_string: str, callback_yes: Callable, callback_no: Callable) -> Any:
     answer = Confirm.ask(prompt_string)
     if not answer:
@@ -30,13 +44,13 @@ def confirmation_prompt(prompt_string: str, callback_yes: Callable, callback_no:
     return callback_yes()
 
 
-def create_panel(message: str = "", **kwargs) -> Panel:
+def create_panel(message: Union[str, Text], **kwargs) -> Panel:
     return Panel(
-        Text(
+        Text.from_markup(
             message,
             style=kwargs['style'] if 'style' in kwargs else "none",
             justify=kwargs['justify'] if 'justify' in kwargs else None,
-        ),
+        ) if isinstance(message, str) else message,
         title=kwargs['title'] if 'title' in kwargs else None,
         title_align="center",
         box=kwargs['box'] if 'box' in kwargs else box.SQUARE,
@@ -64,7 +78,7 @@ def create_table(streams: Generator[Dict[str, IMachineStats], None, None]) -> Op
 
         if not table.columns:
             for col in map(lambda x: x.replace('_', ' ').upper(), row_data.keys()):
-                table.add_column(col, header_style="blue")
+                table.add_column(col, header_style="dark_orange3")
 
         table.add_row(*map(lambda x: str(x), row_data.values()))
 

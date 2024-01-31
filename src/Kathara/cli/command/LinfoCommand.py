@@ -3,7 +3,7 @@ from typing import List
 
 from rich.live import Live
 
-from ..ui.utils import create_panel
+from ..ui.utils import create_panel, LabMetaHighlighter
 from ..ui.utils import create_table
 from ... import utils
 from ...foundation.cli.command.Command import Command
@@ -84,19 +84,24 @@ class LinfoCommand(Command):
             self._get_conf_info(lab, machine_name=args['name'])
             return
 
-        if args['name']:
-            machine_stats = next(Kathara.get_instance().get_machine_stats(args['name'], lab.hash))
-            message = str(machine_stats) if machine_stats else f"Device `{args['name']}` Not Found."
-            style = None if machine_stats else "red bold"
+        with self.console.status(
+                f"Loading...",
+                spinner="dots"
+        ) as _:
+            if args['name']:
+                machine_stats = next(Kathara.get_instance().get_machine_stats(args['name'], lab.hash))
+                message = str(machine_stats) if machine_stats else f"Device `{args['name']}` Not Found."
+                style = None if machine_stats else "red bold"
 
-            self.console.print(create_panel(message, title=f"{args['name']} Information", style=style))
-        else:
-            machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
-            self.console.print(create_table(machines_stats))
+                self.console.print(create_panel(message, title=f"{args['name']} Information", style=style))
+            else:
+                machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
+                self.console.print(create_table(machines_stats))
 
-    @staticmethod
-    def _get_machine_live_info(lab: Lab, machine_name: str) -> None:
-        with Live(None, refresh_per_second=1, screen=True) as live:
+    def _get_machine_live_info(self, lab: Lab, machine_name: str) -> None:
+        with Live(None, refresh_per_second=12.5, screen=True) as live:
+            live.update(self.console.status(f"Loading...", spinner="dots"))
+            live.refresh_per_second = 1
             while True:
                 machine_stats = next(Kathara.get_instance().get_machine_stats(machine_name, lab.hash))
                 message = str(machine_stats) if machine_stats else f"Device `{machine_name}` Not Found."
@@ -104,11 +109,12 @@ class LinfoCommand(Command):
 
                 live.update(create_panel(message, title=f"{machine_name} Information", style=style))
 
-    @staticmethod
-    def _get_lab_live_info(lab: Lab) -> None:
+    def _get_lab_live_info(self, lab: Lab) -> None:
         machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
 
-        with Live(None, refresh_per_second=1, screen=True) as live:
+        with Live(None, refresh_per_second=12.5, screen=True) as live:
+            live.update(self.console.status(f"Loading...", spinner="dots"))
+            live.refresh_per_second = 1
             while True:
                 table = create_table(machines_stats)
                 if not table:
@@ -128,14 +134,21 @@ class LinfoCommand(Command):
 
         lab_meta_information = str(lab)
         if lab_meta_information:
-            self.console.print(create_panel(lab_meta_information, title="Network Scenario Information"))
+            meta_highlighter = LabMetaHighlighter()
+            self.console.print(
+                create_panel(
+                    meta_highlighter(lab_meta_information),
+                    title="Network Scenario Information",
+                )
+            )
 
         n_machines = len(lab.machines)
         n_links = len(lab.links) if BRIDGE_LINK_NAME not in lab.links else len(lab.links) - 1
 
         self.console.print(
             create_panel(
-                f"There are {n_machines} devices.\nThere are {n_links} collision domains.",
+                f"There are [bold green]{n_machines}[/bold green] devices.\n"
+                f"There are [bold green]{n_links}[/bold green] collision domains.",
                 title="Topology Information"
             )
         )

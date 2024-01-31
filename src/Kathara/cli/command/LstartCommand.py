@@ -3,7 +3,7 @@ import os
 import sys
 from typing import List
 
-from ..ui.utils import create_panel
+from ..ui.utils import create_panel, LabMetaHighlighter
 from ..ui.utils import create_table
 from ... import utils
 from ...exceptions import PrivilegeError, EmptyLabError
@@ -169,7 +169,8 @@ class LstartCommand(Command):
 
         lab_meta_information = str(lab)
         if lab_meta_information:
-            self.console.print(create_panel(lab_meta_information))
+            meta_highlighter = LabMetaHighlighter()
+            self.console.print(create_panel(meta_highlighter(lab_meta_information)))
 
         if len(lab.machines) <= 0:
             raise EmptyLabError()

@@ -434,24 +434,19 @@ class Lab(FilesystemMixin):
         return "Lab(%s, %s, %s, %s)" % (self.fs, self.hash, self.machines, self.links)
 
     def __str__(self) -> str:
-        lab_info = ""
+        lab_info = []
 
         if self._name:
-            lab_info += "Name: %s\n" % self._name
-
+            lab_info.append(f"Name: {self._name}")
         if self.description:
-            lab_info += "Description: %s\n" % self.description
-
+            lab_info.append(f"Description: {self.description}")
         if self.version:
-            lab_info += "Version: %s\n" % self.version
-
+            lab_info.append(f"Version: {self.version}")
         if self.author:
-            lab_info += "Author(s): %s\n" % self.author
-
+            lab_info.append(f"Author(s): {self.author}")
         if self.email:
-            lab_info += "Email: %s\n" % self.email
-
+            lab_info.append(f"Email: {self.email}")
         if self.web:
-            lab_info += "Website: %s\n" % self.web
+            lab_info.append(f"Website: {self.web}")
 
-        return lab_info[0:-1]  # Remove trailing new line
+        return "\n".join(lab_info)

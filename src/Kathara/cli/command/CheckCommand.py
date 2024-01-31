@@ -36,10 +36,18 @@ class CheckCommand(Command):
         self.parse_args(argv)
 
         self.console.print(create_panel("System Check", style="blue bold", justify="center"))
-        self.console.print(f"Current Manager is:\t\t[cyan bold]{Kathara.get_instance().get_formatted_manager_name()}")
-        self.console.print(f"Manager version is:\t\t[cyan bold]{Kathara.get_instance().get_release_version()}")
-        self.console.print("Python version is:\t\t[cyan bold]%s" % sys.version.replace("\n", "- "))
-        self.console.print(f"Kathara version is:\t\t[cyan bold]{version.CURRENT_VERSION}")
+        self.console.print(
+            f"Current Manager is:\t\t[bold dark_orange3]{Kathara.get_instance().get_formatted_manager_name()}"
+        )
+        self.console.print(
+            f"Manager version is:\t\t[bold dark_orange3]{Kathara.get_instance().get_release_version()}"
+        )
+        self.console.print(
+            "Python version is:\t\t[bold dark_orange3]%s" % sys.version.replace("\n", "- ")
+        )
+        self.console.print(
+            f"Kathara version is:\t\t[bold dark_orange3]{version.CURRENT_VERSION}"
+        )
 
         def linux_platform_info():
             info = os.uname()
@@ -48,7 +56,7 @@ class CheckCommand(Command):
         platform_info = utils.exec_by_platform(
             linux_platform_info, lambda: platform.platform(), lambda: platform.platform()
         )
-        self.console.print(f"Operating System version is:\t[cyan bold]{str(platform_info)}")
+        self.console.print(f"Operating System version is:\t[bold dark_orange3]{str(platform_info)}")
 
         with self.console.status(
                 f"Trying to run container with `{Setting.get_instance().image}` image...",

@@ -72,5 +72,6 @@ class ConnectCommand(Command):
 
         logging.debug(f"Executing `connect` command with hash `{lab.hash}`...")
 
-        Kathara.get_instance().connect_tty(machine_name=args['machine_name'], lab_hash=lab.hash, shell=args['shell'],
-                                           logs=args['logs'])
+        Kathara.get_instance().connect_tty(
+            machine_name=args['machine_name'], lab_hash=lab.hash, shell=args['shell'], logs=args['logs']
+        )
