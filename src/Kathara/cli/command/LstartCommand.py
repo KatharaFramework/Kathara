@@ -1,10 +1,7 @@
 import argparse
-import logging
 import os
 import sys
 from typing import List
-
-from rich import print as rich_print
 
 from ..ui.utils import create_panel
 from ..ui.utils import create_table
@@ -150,14 +147,7 @@ class LstartCommand(Command):
             else Setting.get_instance().open_terminals
         Setting.get_instance().terminal = args['xterm'] or Setting.get_instance().terminal
 
-        if args['privileged']:
-            if not utils.is_admin():
-                raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
-            else:
-                logging.warning("Running devices with privileged capabilities, terminals won't open!")
-                Setting.get_instance().open_terminals = False
-
-        rich_print(
+        self.console.print(
             create_panel(
                 "Checking Network Scenario" if args['dry_mode'] else "Starting Network Scenario",
                 style="blue bold", justify="center"
@@ -179,7 +169,7 @@ class LstartCommand(Command):
 
         lab_meta_information = str(lab)
         if lab_meta_information:
-            rich_print(create_panel(lab_meta_information))
+            self.console.print(create_panel(lab_meta_information))
 
         if len(lab.machines) <= 0:
             raise EmptyLabError()
@@ -191,7 +181,9 @@ class LstartCommand(Command):
             raise e
 
         lab_ext_path = os.path.join(lab_path, 'lab.ext')
+        lab_ext_exists = False
         if os.path.exists(lab_ext_path):
+            lab_ext_exists = True
             if utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2):
                 if utils.is_admin():
                     external_links = ExtParser.parse(lab_path)
@@ -208,19 +200,24 @@ class LstartCommand(Command):
 
         # If dry mode, we just check if the lab.conf is correct.
         if args['dry_mode']:
-            logging.info("lab.conf file is correct.")
+            self.console.print("[green]\u2713 [bold]lab.conf[/bold] file is correct.")
             if dependencies:
-                logging.info("lab.dep file is correct.")
-            if os.path.exists(lab_ext_path):
-                logging.info("lab.ext file is correct.")
-
-            logging.info("Exiting...")
+                self.console.print("[green]\u2713 [bold]lab.dep[/bold] file is correct.")
+            if lab_ext_exists:
+                self.console.print("[green]\u2713 [bold]lab.ext[/bold] file is correct.")
 
             sys.exit(0)
 
         lab.add_option('hosthome_mount', args['hosthome_mount'])
         lab.add_option('shared_mount', args['shared_mount'])
         lab.add_option('privileged_machines', args['privileged'])
+
+        if args['privileged']:
+            if not utils.is_admin():
+                raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
+            else:
+                self.console.print("[yellow]\u26a0 Running devices with privileged capabilities, terminals won't open!")
+                Setting.get_instance().open_terminals = False
 
         Kathara.get_instance().deploy_lab(lab, selected_machines=set(args['machine_name']))
 

@@ -1,8 +1,6 @@
 import argparse
 from typing import List
 
-from rich import print as rich_print
-
 from ..ui.utils import create_panel
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -41,6 +39,8 @@ class VcleanCommand(Command):
 
         lab = Lab("kathara_vlab")
 
-        rich_print(create_panel(f"Stopping Device `{args['name']}`", style="blue bold", justify="center"))
+        self.console.print(
+            create_panel(f"Stopping Device `{args['name']}`", style="blue bold", justify="center")
+        )
 
         Kathara.get_instance().undeploy_lab(lab_name=lab.name, selected_machines={args['name']})

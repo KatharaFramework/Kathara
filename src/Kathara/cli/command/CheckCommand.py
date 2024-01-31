@@ -4,8 +4,6 @@ import platform
 import sys
 from typing import List
 
-from rich.console import Console
-
 from ..ui.utils import create_panel
 from ... import utils
 from ... import version
@@ -37,12 +35,11 @@ class CheckCommand(Command):
     def run(self, current_path: str, argv: List[str]) -> None:
         self.parse_args(argv)
 
-        console = Console()
-        console.print(create_panel("System Check", style="blue bold", justify="center"))
-        console.print(f"Current Manager is:\t\t[cyan bold]{Kathara.get_instance().get_formatted_manager_name()}")
-        console.print(f"Manager version is:\t\t[cyan bold]{Kathara.get_instance().get_release_version()}")
-        console.print("Python version is:\t\t[cyan bold]%s" % sys.version.replace("\n", "- "))
-        console.print(f"Kathara version is:\t\t[cyan bold]{version.CURRENT_VERSION}")
+        self.console.print(create_panel("System Check", style="blue bold", justify="center"))
+        self.console.print(f"Current Manager is:\t\t[cyan bold]{Kathara.get_instance().get_formatted_manager_name()}")
+        self.console.print(f"Manager version is:\t\t[cyan bold]{Kathara.get_instance().get_release_version()}")
+        self.console.print("Python version is:\t\t[cyan bold]%s" % sys.version.replace("\n", "- "))
+        self.console.print(f"Kathara version is:\t\t[cyan bold]{version.CURRENT_VERSION}")
 
         def linux_platform_info():
             info = os.uname()
@@ -51,12 +48,12 @@ class CheckCommand(Command):
         platform_info = utils.exec_by_platform(
             linux_platform_info, lambda: platform.platform(), lambda: platform.platform()
         )
-        console.print(f"Operating System version is:\t[cyan bold]{str(platform_info)}")
+        self.console.print(f"Operating System version is:\t[cyan bold]{str(platform_info)}")
 
-        with console.status(
+        with self.console.status(
                 f"Trying to run container with `{Setting.get_instance().image}` image...",
                 spinner="dots"
-        ) as status:
+        ) as _:
             Setting.get_instance().open_terminals = False
 
             lab = Lab("kathara_test")
@@ -66,6 +63,6 @@ class CheckCommand(Command):
             try:
                 Kathara.get_instance().deploy_machine(machine)
                 Kathara.get_instance().undeploy_machine(machine)
-                console.print("[bold green]\u2713 Container run successfully.")
+                self.console.print("[bold green]\u2713 Container run successfully.")
             except Exception as e:
-                console.print(f"[bold red]\u00d7 Running container failed: {str(e)}")
+                self.console.print(f"[bold red]\u00d7 Running container failed: {str(e)}")

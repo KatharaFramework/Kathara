@@ -1,5 +1,4 @@
 import argparse
-import logging
 import os
 import shutil
 import sys
@@ -72,7 +71,9 @@ class LtestCommand(Command):
             signature_test_path = os.path.join(lab_path, "_test", "signature")
 
             if os.path.exists(signature_test_path) and not args['rebuild_signature']:
-                logging.error("Signature for current network scenario already exists. Exiting...")
+                self.console.print(
+                    f"[bold red]\u00d7 Signature for current network scenario already exists."
+                )
                 sys.exit(1)
 
         # Tests run without terminals, no shared and /hosthome dirs.
@@ -85,10 +86,13 @@ class LtestCommand(Command):
             try:
                 sleep_minutes = float(args['wait'])
                 if sleep_minutes < 0:
-                    raise ValueError()
+                    raise ValueError("--wait value must be greater than zero!")
 
-                logging.info("Waiting %s minutes before running tests..." % sleep_minutes)
-                time.sleep(sleep_minutes * 60)
+                with self.console.status(
+                        f"Waiting {sleep_minutes} minutes before running tests...",
+                        spinner="dots"
+                ) as _:
+                    time.sleep(sleep_minutes * 60)
             except ValueError:
                 raise ValueError("--wait value is not valid!")
 
@@ -118,7 +122,7 @@ class LtestCommand(Command):
                 if args['verify'] == "user" or args['verify'] == "both":
                     user_test_passed = user_test.test()
             except TestError as e:
-                logging.error(str(e))
+                self.console.print(f"[bold red]\u00d7 Tests failed: {str(e)}")
 
         # Clean the lab at the end of the test.
         LcleanCommand().run(lab_path, [])

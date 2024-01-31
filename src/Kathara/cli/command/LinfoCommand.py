@@ -1,8 +1,6 @@
 import argparse
 from typing import List
 
-from rich import print as rich_print
-
 from ..ui.utils import create_panel
 from ..ui.utils import create_table
 from ... import utils
@@ -86,7 +84,7 @@ class LinfoCommand(Command):
             return
 
         if args['name']:
-            rich_print(
+            self.console.print(
                 create_panel(
                     str(next(Kathara.get_instance().get_machine_stats(args['name'], lab.hash))),
                     title=f"{args['name']} Information"
@@ -128,7 +126,7 @@ class LinfoCommand(Command):
     @staticmethod
     def _get_conf_info(lab: Lab, machine_name: str = None) -> None:
         if machine_name:
-            rich_print(
+            self.console.print(
                 create_panel(
                     str(lab.machines[machine_name]),
                     title=f"{machine_name} Information"
@@ -138,12 +136,12 @@ class LinfoCommand(Command):
 
         lab_meta_information = str(lab)
         if lab_meta_information:
-            rich_print(create_panel(lab_meta_information, title="Network Scenario Information"))
+            self.console.print(create_panel(lab_meta_information, title="Network Scenario Information"))
 
         n_machines = len(lab.machines)
         n_links = len(lab.links) if BRIDGE_LINK_NAME not in lab.links else len(lab.links) - 1
 
-        rich_print(
+        self.console.print(
             create_panel(
                 f"There are {n_machines} devices.\nThere are {n_links} collision domains.",
                 title="Topology Information"

@@ -1,8 +1,6 @@
 import argparse
 from typing import List
 
-from rich import print as rich_print
-
 from ..ui.utils import create_panel
 from ... import utils
 from ...foundation.cli.command.Command import Command
@@ -53,7 +51,7 @@ class LcleanCommand(Command):
         except (Exception, IOError):
             lab = Lab(None, path=lab_path)
 
-        rich_print(create_panel("Stopping Network Scenario", style="blue bold", justify="center"))
+        self.console.print(create_panel("Stopping Network Scenario", style="blue bold", justify="center"))
 
         Kathara.get_instance().undeploy_lab(
             lab_hash=lab.hash,

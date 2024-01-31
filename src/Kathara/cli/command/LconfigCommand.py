@@ -1,8 +1,7 @@
 import argparse
-import logging
 from typing import List
 
-from ..ui.utils import alphanumeric, cd_mac
+from ..ui.utils import alphanumeric, cd_mac, create_panel
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -73,10 +72,16 @@ class LconfigCommand(Command):
         machine_name = args['name']
         device = lab.get_machine(machine_name)
 
+        self.console.print(
+            create_panel(
+                f"Updating Network Scenario Device `{machine_name}`", style="blue bold", justify="center"
+            )
+        )
+
         if args['to_add']:
             for cd_name, mac_address in args['to_add']:
-                logging.info(
-                    f"Adding interface to device `{machine_name}` on collision domain `{cd_name}`" +
+                self.console.print(
+                    f"[green]+ Adding interface to device `{machine_name}` on collision domain `{cd_name}`" +
                     (f" with MAC Address {mac_address}" if mac_address else "") +
                     f"..."
                 )
@@ -85,7 +90,7 @@ class LconfigCommand(Command):
 
         if args['to_remove']:
             for cd_to_remove in args['to_remove']:
-                logging.info(
-                    "Removing interface on collision domain `%s` from device `%s`..." % (cd_to_remove, machine_name)
+                self.console.print(
+                    f"[red]- Removing interface on collision domain `{cd_to_remove}` from device `{machine_name}`..."
                 )
                 Kathara.get_instance().disconnect_machine_from_link(device, lab.get_link(cd_to_remove))

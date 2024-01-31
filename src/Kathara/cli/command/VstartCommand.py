@@ -1,9 +1,6 @@
 import argparse
-import logging
 import sys
 from typing import List
-
-from rich import print as rich_print
 
 from ..ui.utils import create_panel, interface_cd_mac
 from ... import utils
@@ -169,11 +166,16 @@ class VstartCommand(Command):
 
         name = args.pop('name')
 
+        self.console.print(
+            create_panel(
+                f"Checking Device `{name}`" if args['dry_mode'] else f"Starting Device `{name}`",
+                style="blue bold", justify="center"
+            )
+        )
+
         if args['dry_mode']:
-            logging.info("Device configuration is correct. Exiting...")
+            self.console.print(f"[green]\u2713 [bold]{name}[/bold] configuration is correct.")
             sys.exit(0)
-        else:
-            rich_print(create_panel(f"Starting Device `{name}`", style="blue bold", justify="center"))
 
         Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
             else Setting.get_instance().open_terminals
@@ -184,7 +186,7 @@ class VstartCommand(Command):
             if not utils.is_admin():
                 raise PrivilegeError("You must be root in order to start this Kathara device in privileged mode.")
             else:
-                logging.warning("Running device with privileged capabilities, terminal won't open!")
+                self.console.print("[yellow]\u26a0 Running devices with privileged capabilities, terminals won't open!")
                 Setting.get_instance().open_terminals = False
 
         lab = Lab("kathara_vlab")

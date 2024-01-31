@@ -1,8 +1,7 @@
 import argparse
-import logging
 from typing import List
 
-from ..ui.utils import alphanumeric, cd_mac
+from ..ui.utils import alphanumeric, cd_mac, create_panel
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
@@ -63,10 +62,14 @@ class VconfigCommand(Command):
         device = lab.get_machine(machine_name)
         device.api_object = Kathara.get_instance().get_machine_api_object(machine_name, lab_name=lab.name)
 
+        self.console.print(
+            create_panel(f"Updating Device `{machine_name}`", style="blue bold", justify="center")
+        )
+
         if args['to_add']:
             for cd_name, mac_address in args['to_add']:
-                logging.info(
-                    f"Adding interface to device `{machine_name}` on collision domain `{cd_name}`" +
+                self.console.print(
+                    f"[green]+ Adding interface to device `{machine_name}` on collision domain `{cd_name}`" +
                     (f" with MAC Address {mac_address}" if mac_address else "") +
                     f"..."
                 )
@@ -75,10 +78,10 @@ class VconfigCommand(Command):
 
         if args['to_remove']:
             for cd_to_remove in args['to_remove']:
-                logging.info(
-                    "Removing interface on collision domain `%s` from device `%s`..." % (cd_to_remove, machine_name)
+                self.console.print(
+                    f"[red]- Removing interface on collision domain `{cd_to_remove}` from device `{machine_name}`..."
                 )
-                (_, interface) = lab.connect_machine_to_link(machine_name, cd_to_remove)
-                interface.link.api_object = Kathara.get_instance().get_link_api_object(cd_to_remove, lab_name=lab.name)
+                link = lab.get_link(cd_to_remove)
+                link.api_object = Kathara.get_instance().get_link_api_object(cd_to_remove, lab_name=lab.name)
 
-                Kathara.get_instance().disconnect_machine_from_link(device, interface.link)
+                Kathara.get_instance().disconnect_machine_from_link(device, link)
