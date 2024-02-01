@@ -1,6 +1,7 @@
-binaryornot>=0.4.4;
-requests>=2.22.0;
-slug>=2.0;
-deepdiff>=4.0.9;
-kubernetes>=23.3.0;
-fs>=2.4.16;
+binaryornot>=0.4.4
+requests>=2.22.0
+slug>=2.0
+deepdiff>=4.0.9
+kubernetes>=23.3.0
+fs>=2.4.16
+rich
