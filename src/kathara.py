@@ -107,14 +107,6 @@ class KatharaEntryPoint(object):
 
 
 if __name__ == '__main__':
-    multiprocessing.freeze_support()
-
-    register_cli_events()
-
-    utils.check_python_version()
-
-    utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
-
     try:
         Setting.get_instance().load_from_disk()
     except SettingsNotFoundError:
@@ -130,5 +122,13 @@ if __name__ == '__main__':
         level=debug_level, format="%(message)s",
         handlers=[RichHandler(rich_tracebacks=True, show_time=False, show_path=False)]
     )
+
+    multiprocessing.freeze_support()
+
+    register_cli_events()
+
+    utils.check_python_version()
+
+    utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
 
     KatharaEntryPoint()
