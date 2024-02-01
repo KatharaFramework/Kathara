@@ -46,7 +46,7 @@ class Machine(FilesystemMixin):
         Args:
             lab (Kathara.model.Lab): The Kathara network scenario of the new device.
             name (str): The name of the device.
-            **kwargs (Dict[str, Any]): Specifies the optional parameters of the device.
+            **kwargs: Specifies the optional parameters of the device.
 
         Returns:
             None

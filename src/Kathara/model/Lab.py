@@ -257,12 +257,12 @@ class Lab(FilesystemMixin):
 
         return self.machines[name]
 
-    def new_machine(self, name: str, **kwargs: Dict[str, Any]) -> 'MachinePackage.Machine':
+    def new_machine(self, name: str, **kwargs) -> 'MachinePackage.Machine':
         """Create and add the device to the devices list.
 
         Args:
             name (str): The name of the device
-            **kwargs (Dict[str, Any]): Contains device meta information.
+            **kwargs: Contains device meta information.
                 Keys are meta property names, values are meta property values.
 
         Returns:
@@ -278,12 +278,12 @@ class Lab(FilesystemMixin):
 
         return self.machines[name]
 
-    def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> 'MachinePackage.Machine':
+    def get_or_new_machine(self, name: str, **kwargs) -> 'MachinePackage.Machine':
         """Get the specified device. If it not exists, create and add it to the devices list.
 
         Args:
             name (str): The name of the device
-            **kwargs (Dict[str, Any]): Contains device meta information.
+            **kwargs: Contains device meta information.
                 Keys are meta property names, values are meta property values.
 
         Returns:
