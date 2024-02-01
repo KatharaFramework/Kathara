@@ -214,13 +214,13 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `exec` method.")
 
     @abstractmethod
-    def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
+    def copy_files(self, machine: Machine, guest_to_host: Dict[str, Union[str, io.IOBase]]) -> None:
         """Copy files on a running device in the specified paths.
 
         Args:
             machine (Kathara.model.Machine): A running device object. It must have the api_object field populated.
-            guest_to_host (Dict[str, io.IOBase]): A dict containing the device path as key and
-                fileobj to copy in path as value.
+            guest_to_host (Dict[str, Union[str, io.IOBase]]): A dict containing the device path as key and a
+                fileobj to copy in path as value or a path to a file.
 
         Returns:
             None
