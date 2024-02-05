@@ -175,9 +175,12 @@ class Lab(FilesystemMixin):
 
         Returns:
             None
+
+        Raises:
+            NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
         """
-        for machine in self.machines:
-            self.machines[machine].check()
+        for machine in self.machines.values():
+            machine.check()
 
     def get_links_from_machines(self, machines: Union[List[str], Set[str]]) -> Set[str]:
         """Return the name of the collision domains connected to the devices.

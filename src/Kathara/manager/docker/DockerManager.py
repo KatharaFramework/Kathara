@@ -124,8 +124,12 @@ class DockerManager(IManager):
             None
 
         Raises:
+            NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
             MachineNotFoundError: If the specified devices are not in the network scenario.
         """
+        logging.debug("Checking network scenario integrity...")
+        lab.check_integrity()
+
         if selected_machines and not lab.has_machines(selected_machines):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
             raise MachineNotFoundError(f"The following devices are not in the network scenario: {machines_not_in_lab}.")

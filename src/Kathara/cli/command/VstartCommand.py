@@ -206,6 +206,4 @@ class VstartCommand(Command):
                     s = f"{cd}/{mac_address}" if mac_address else f"{cd}"
                     raise SyntaxError(f"Interface number in `--eth {iface_number}:{s}` is not a number.")
 
-        lab.check_integrity()
-
         Kathara.get_instance().deploy_lab(lab)
