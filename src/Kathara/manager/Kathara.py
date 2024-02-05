@@ -230,7 +230,7 @@ class Kathara(IManager):
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
         """
-        self.connect_tty_obj(machine, shell, logs, wait)
+        self.manager.connect_tty_obj(machine, shell, logs, wait)
 
     def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
              lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False) \
