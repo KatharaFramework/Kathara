@@ -395,6 +395,7 @@ class KubernetesManager(IManager):
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
+            MachineNotRunningError: If the specified device is not running.
         """
         check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
@@ -408,6 +409,33 @@ class KubernetesManager(IManager):
             logging.warning("Wait option has no effect on Megalos.")
 
         return self.k8s_machine.exec(lab_hash, machine_name, command, stderr=True, tty=False, is_stream=True)
+
+    def exec_obj(self, machine: Machine, command: Union[List[str], str], wait: Union[bool, Tuple[int, float]] = False) \
+            -> Generator[Tuple[bytes, bytes], None, None]:
+        """Exec a command on a device in a running network scenario.
+
+        Args:
+            machine (Machine): The device to connect.
+            command (Union[List[str], str]): The command to exec on the device.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before executing the command. If a tuple is provided, the first value indicates the
+                number of retries before stopping waiting and the second value indicates the time interval to wait
+                for each retry. Default is False.
+
+        Returns:
+            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+            MachineNotRunningError: If the specified device is not running.
+        """
+        if not machine.lab:
+            raise LabNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
+
+        if wait:
+            logging.warning("Wait option has no effect on Megalos.")
+
+        return self.exec(machine.name, command, lab=machine.lab, wait=wait)
 
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, Union[str, io.IOBase]]) -> None:
         """Copy files on a running device in the specified paths.

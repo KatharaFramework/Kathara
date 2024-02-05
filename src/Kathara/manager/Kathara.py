@@ -256,8 +256,30 @@ class Kathara(IManager):
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
+            MachineNotRunningError: If the specified device is not running.
         """
         return self.manager.exec(machine_name, command, lab_hash, lab_name, lab, wait)
+
+    def exec_obj(self, machine: Machine, command: Union[List[str], str], wait: Union[bool, Tuple[int, float]] = False) \
+            -> Generator[Tuple[bytes, bytes], None, None]:
+        """Exec a command on a device in a running network scenario.
+
+        Args:
+            machine (Machine): The device to connect.
+            command (Union[List[str], str]): The command to exec on the device.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before executing the command. If a tuple is provided, the first value indicates the
+                number of retries before stopping waiting and the second value indicates the time interval to wait
+                for each retry. Default is False.
+
+        Returns:
+            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+            MachineNotRunningError: If the specified device is not running.
+        """
+        return self.manager.exec_obj(machine, command, wait)
 
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, Union[str, io.IOBase]]) -> None:
         """Copy files on a running device in the specified paths.
