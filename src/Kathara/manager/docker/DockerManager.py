@@ -87,9 +87,13 @@ class DockerManager(IManager):
 
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
+            NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
         """
         if not machine.lab:
             raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
+
+        logging.debug(f"Checking `{machine.name}` integrity...")
+        machine.check()
 
         self.docker_link.deploy_links(machine.lab, selected_links={x.link.name for x in machine.interfaces.values()})
         self.docker_machine.deploy_machines(machine.lab, selected_machines={machine.name})

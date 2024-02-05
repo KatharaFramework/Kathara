@@ -45,9 +45,13 @@ class KubernetesManager(IManager):
 
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
+            NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
         """
         if not machine.lab:
             raise LabNotFoundError("Machine `%s` is not associated to a network scenario." % machine.name)
+
+        logging.debug(f"Checking `{machine.name}` integrity...")
+        machine.check()
 
         machine.lab.hash = machine.lab.hash.lower()
 
