@@ -349,6 +349,30 @@ class DockerManager(IManager):
                                     wait=wait
                                     )
 
+    def connect_tty_obj(self, machine: Machine, shell: str = None, logs: bool = False,
+                        wait: Union[bool, Tuple[int, float]] = True) -> None:
+        """Connect to a device in a running network scenario, using the specified shell.
+
+        Args:
+            machine (Machine): The device to connect.
+            shell (str): The name of the shell to use for connecting.
+            logs (bool): If True, print startup logs on stdout.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before connecting. If a tuple is provided, the first value indicates the number of retries
+                before stopping waiting and the second value indicates the time interval to wait for each retry.
+                Default is True.
+
+        Returns:
+            None
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+        """
+        if not machine.lab:
+            raise LabNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
+
+        self.connect_tty(machine.name, lab=machine.lab, shell=shell, logs=logs, wait=wait)
+
     @privileged
     def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
              lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False) \

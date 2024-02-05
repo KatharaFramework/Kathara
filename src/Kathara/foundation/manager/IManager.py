@@ -186,6 +186,28 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `connect_tty` method.")
 
     @abstractmethod
+    def connect_tty_obj(self, machine: Machine, shell: str = None, logs: bool = False,
+                    wait: Union[bool, Tuple[int, float]] = True) -> None:
+        """Connect to a device in a running network scenario, using the specified shell.
+
+        Args:
+            machine (Machine): The device to connect.
+            shell (str): The name of the shell to use for connecting.
+            logs (bool): If True, print startup logs on stdout.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before connecting. If a tuple is provided, the first value indicates the number of retries
+                before stopping waiting and the second value indicates the time interval to wait for each retry.
+                Default is True.
+
+        Returns:
+            None
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+        """
+        raise NotImplementedError("You must implement `connect_tty_obj` method.")
+
+    @abstractmethod
     def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
              lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False) \
             -> Generator[Tuple[bytes, bytes], None, None]:
