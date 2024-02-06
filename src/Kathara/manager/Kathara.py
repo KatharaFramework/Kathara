@@ -446,6 +446,24 @@ class Kathara(IManager):
         """
         return self.manager.get_machine_stats(machine_name, lab_hash, lab_name, lab, all_users)
 
+    def get_machine_stats_obj(self, machine: Machine, all_users: bool = False) \
+            -> Generator[Optional[IMachineStats], None, None]:
+        """Return information of the specified device in a specified network scenario.
+
+        Args:
+            machine (Machine): The device to request statistics.
+            all_users (bool): If True, search the device among all the users devices.
+
+        Returns:
+            Generator[Optional[IMachineStats], None, None]: A generator containing the IMachineStats object
+            with the device info. Returns None if the device is not found.
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+            MachineNotRunningError: If the specified device is not running.
+        """
+        return self.manager.get_machine_stats_obj(machine, all_users)
+
     def get_links_stats(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
                         link_name: str = None, all_users: bool = False) -> Generator[Dict[str, ILinkStats], None, None]:
         """Return information about deployed networks.
