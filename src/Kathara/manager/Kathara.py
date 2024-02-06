@@ -428,7 +428,7 @@ class Kathara(IManager):
         """Return information of the specified device in a specified network scenario.
 
         Args:
-            machine_name (str): The device name.
+            machine_name (str): The name of the device for which statistics are requested.
             lab_hash (Optional[str]): The hash of the network scenario.
                 Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
             lab_name (Optional[str]): The name of the network scenario.
@@ -451,7 +451,7 @@ class Kathara(IManager):
         """Return information of the specified device in a specified network scenario.
 
         Args:
-            machine (Machine): The device to request statistics.
+            machine (Machine): The device for which statistics are requested.
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
@@ -490,7 +490,7 @@ class Kathara(IManager):
         """Return information of the specified deployed network in a specified network scenario.
 
         Args:
-            link_name (str): If specified return all the networks with link_name.
+            link_name (str): The name of the collision domain for which statistics are requested.
             lab_hash (Optional[str]): The hash of the network scenario.
                 Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
             lab_name (Optional[str]): The name of the network scenario.
@@ -507,6 +507,22 @@ class Kathara(IManager):
             InvocationError: If a running network scenario hash or name is not specified.
         """
         return self.manager.get_link_stats(link_name, lab_hash, lab_name, lab, all_users)
+
+    def get_link_stats_obj(self, link: Link, all_users: bool = False) -> Generator[Optional[ILinkStats], None, None]:
+        """Return information of the specified deployed network in a specified network scenario.
+
+        Args:
+            link (Link): The collision domain for which statistics are requested.
+            all_users (bool): If True, return information about the networks of all users.
+
+        Returns:
+            Generator[Optional[ILinkStats], None, None]: A generator containing the ILinkStats object
+            with the network info. Returns None if the network is not found.
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+        """
+        return self.manager.get_link_stats_obj(link, all_users)
 
     def check_image(self, image_name: str) -> None:
         """Check if the specified image is valid.
