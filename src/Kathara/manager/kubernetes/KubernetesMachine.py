@@ -24,7 +24,7 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MachineAlreadyExistsError, MachineNotReadyError, MachineNotRunningError
+from ...exceptions import MachineAlreadyExistsError, MachineNotReadyError, MachineNotRunningError, MachineBinaryError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
@@ -32,6 +32,10 @@ from ...setting.Setting import Setting
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 MAX_RESTART_COUNT = 3
 MAX_TIME_ERROR = 180
+
+OCI_RUNTIME_RE = re.compile(
+    r"OCI runtime exec failed"
+)
 
 # Known commands that each container should execute
 # Run order: shared.startup, machine.startup and machine.meta['exec_commands']
@@ -689,8 +693,8 @@ class KubernetesMachine(object):
         return None
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], tty: bool = False, stdin: bool = False,
-             stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False, is_stream: bool = False) \
-            -> Generator[Tuple[bytes, bytes], None, None]:
+             stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False, is_stream: bool = True) \
+            -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
         """Execute the command on the Kubernetes Pod specified by the lab_hash and the machine_name.
 
         Args:
@@ -701,14 +705,16 @@ class KubernetesMachine(object):
             stdin (bool): If True, open the stdin channel.
             stdin_buffer (List[Union[str, bytes]]): List of command to pass to the stdin.
             stderr (bool): If True, return the stderr.
-            is_stream (bool): If True, return a generator with each line.
-                If False, returns a generator with the complete output.
+            is_stream (bool): If True, return a generator object containing the stdout and the stderr of the command.
+                If False, returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
+             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the command specified is not found on the device.
         """
         command = shlex.split(command) if command is str else command
 
@@ -764,8 +770,14 @@ class KubernetesMachine(object):
 
         response.close()
 
-        if not is_stream:
-            yield result['stdout'].encode('utf-8'), result['stderr'].encode('utf-8')
+        try:
+            error_code = response.returncode
+        except ValueError as e:
+            if OCI_RUNTIME_RE.search(str(e)):
+                raise MachineBinaryError(command, machine_name)
+            error_code = 1
+
+        return result['stdout'].encode('utf-8'), result['stderr'].encode('utf-8'), error_code
 
     def copy_files(self, machine_api_object: client.V1Deployment, path: str, tar_data: bytes) -> None:
         """Copy the files contained in tar_data in the Kubernetes deployment path specified by the machine_api_object.

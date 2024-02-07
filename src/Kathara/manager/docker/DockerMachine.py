@@ -621,8 +621,8 @@ class DockerMachine(object):
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], user: str = None,
-             tty: bool = True, wait: Union[bool, Tuple[int, float]] = False) \
-            -> Generator[Tuple[bytes, bytes], None, None]:
+             tty: bool = True, wait: Union[bool, Tuple[int, float]] = False, stream: bool = True) \
+            -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
         """Execute the command on the Docker container specified by the lab_hash and the machine_name.
 
         Args:
@@ -635,9 +635,12 @@ class DockerMachine(object):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to
                 wait for each retry. Default is False.
+            stream (bool): If True, return a generator object containing the stdout and the stderr of the command.
+                If False, returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+             Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
+             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             MachineNotRunningError: If the specified device is not running.
@@ -673,12 +676,18 @@ class DockerMachine(object):
                                      stderr=True,
                                      tty=tty,
                                      privileged=False,
-                                     stream=True,
+                                     stream=stream,
                                      demux=True,
                                      detach=False
                                      )
 
-        return exec_result['output']
+        if stream:
+            return exec_result['output']
+
+        # Unroll the generator
+        output = list(exec_result['output']).pop()
+
+        return output[0], output[1], exec_result['exit_code']
 
     def _exec_run(self, container: docker.models.containers.Container,
                   cmd: Union[str, List], stdout=True, stderr=True, stdin=False, tty=False,

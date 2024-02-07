@@ -209,8 +209,8 @@ class IManager(ABC):
 
     @abstractmethod
     def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
-             lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False) \
-            -> Generator[Tuple[bytes, bytes], None, None]:
+             lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False,
+             stream: bool = True) -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -226,18 +226,21 @@ class IManager(ABC):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to wait
                 for each retry. Default is False.
-
+           stream (bool): If True, return a generator object containing the command output. If False,
+                returns a tuple containing the complete stdout, the stderr, and the return code of the command.
         Returns:
-            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
+             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
+            MachineNotRunningError: If the specified device is not running.
         """
         raise NotImplementedError("You must implement `exec` method.")
 
     @abstractmethod
-    def exec_obj(self, machine: Machine, command: Union[List[str], str], wait: Union[bool, Tuple[int, float]] = False) \
-            -> Generator[Tuple[bytes, bytes], None, None]:
+    def exec_obj(self, machine: Machine, command: Union[List[str], str], wait: Union[bool, Tuple[int, float]] = False,
+                 stream: bool = True) -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -247,9 +250,12 @@ class IManager(ABC):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to wait
                 for each retry. Default is False.
+            stream (bool): If True, return a generator object containing the command output. If False,
+                returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
+             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
