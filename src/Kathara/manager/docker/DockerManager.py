@@ -434,6 +434,7 @@ class DockerManager(IManager):
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
             MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the binary of the command is not found.
             ValueError: If the wait values is neither a boolean nor a tuple, or an invalid tuple.
         """
         if not machine.lab:

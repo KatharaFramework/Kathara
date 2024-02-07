@@ -398,6 +398,7 @@ class KubernetesManager(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
             MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the binary of the command is not found.
         """
         check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
@@ -433,6 +434,7 @@ class KubernetesManager(IManager):
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
             MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the binary of the command is not found.
         """
         if not machine.lab:
             raise LabNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")

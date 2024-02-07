@@ -259,6 +259,7 @@ class Kathara(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
             MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the binary of the command is not found.
         """
         return self.manager.exec(machine_name, command, lab_hash, lab_name, lab, wait, stream)
 
@@ -283,6 +284,7 @@ class Kathara(IManager):
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
             MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the binary of the command is not found.
         """
         return self.manager.exec_obj(machine, command, wait, stream)
 

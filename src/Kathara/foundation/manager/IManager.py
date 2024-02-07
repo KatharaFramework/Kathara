@@ -235,6 +235,7 @@ class IManager(ABC):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
             MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the binary of the command is not found.
         """
         raise NotImplementedError("You must implement `exec` method.")
 
@@ -260,6 +261,7 @@ class IManager(ABC):
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
             MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the binary of the command is not found.
         """
         raise NotImplementedError("You must implement `exec_obj` method.")
 

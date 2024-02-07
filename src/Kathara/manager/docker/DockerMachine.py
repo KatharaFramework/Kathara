@@ -644,6 +644,7 @@ class DockerMachine(object):
 
         Raises:
             MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the binary of the command is not found.
             ValueError: If the wait values is neither a boolean nor a tuple, or an invalid tuple.
         """
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
