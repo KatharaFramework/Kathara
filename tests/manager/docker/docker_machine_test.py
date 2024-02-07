@@ -894,35 +894,35 @@ def test_get_machines_api_objects_by_filters(docker_machine):
     docker_machine.client.containers.list.return_value = ["test_device"]
     docker_machine.get_machines_api_objects_by_filters("lab_hash_value", "test_device", "user_name_value")
     filters = {"label": ["app=kathara", "user=user_name_value", "lab_hash=lab_hash_value", "name=test_device"]}
-    docker_machine.client.containers.list.assert_called_once_with(all=True, filters=filters)
+    docker_machine.client.containers.list.assert_called_once_with(all=True, filters=filters, ignore_removed=True)
 
 
 def test_get_machines_api_objects_by_filters_empty_filters(docker_machine):
     docker_machine.client.containers.list.return_value = None
     docker_machine.get_machines_api_objects_by_filters()
     filters = {"label": ["app=kathara"]}
-    docker_machine.client.containers.list.assert_called_once_with(all=True, filters=filters)
+    docker_machine.client.containers.list.assert_called_once_with(all=True, filters=filters, ignore_removed=True)
 
 
 def test_get_machines_api_objects_by_filters_lab_hash_filter(docker_machine):
     docker_machine.client.containers.list.return_value = None
     docker_machine.get_machines_api_objects_by_filters("lab_hash_value", None, None)
     filters = {"label": ["app=kathara", "lab_hash=lab_hash_value"]}
-    docker_machine.client.containers.list.assert_called_once_with(all=True, filters=filters)
+    docker_machine.client.containers.list.assert_called_once_with(all=True, filters=filters, ignore_removed=True)
 
 
 def test_get_machines_api_objects_by_filters_lab_device_name_filter(docker_machine):
     docker_machine.client.containers.list.return_value = ["test_device"]
     docker_machine.get_machines_api_objects_by_filters(None, "test_device", None)
     filters = {"label": ["app=kathara", "name=test_device"]}
-    docker_machine.client.containers.list.assert_called_once_with(all=True, filters=filters)
+    docker_machine.client.containers.list.assert_called_once_with(all=True, filters=filters, ignore_removed=True)
 
 
 def test_get_machines_api_objects_by_filters_user_filter(docker_machine):
     docker_machine.client.containers.list.return_value = None
     docker_machine.get_machines_api_objects_by_filters(None, None, "user_name_value")
     filters = {"label": ["app=kathara", "user=user_name_value"]}
-    docker_machine.client.containers.list.assert_called_once_with(all=True, filters=filters)
+    docker_machine.client.containers.list.assert_called_once_with(all=True, filters=filters, ignore_removed=True)
 
 
 #
@@ -1040,8 +1040,7 @@ def test_get_machines_stats_lab_hash_device_name_user(mock_get_machines_api_obje
 def test_get_machines_stats_lab_hash_device_not_found(mock_get_machines_api_objects_by_filters, docker_machine,
                                                       default_device):
     mock_get_machines_api_objects_by_filters.return_value = []
-    with pytest.raises(MachineNotFoundError):
-        next(docker_machine.get_machines_stats(lab_hash="lab_hash"))
+    assert next(docker_machine.get_machines_stats(lab_hash="lab_hash")) == {}
 
     mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", machine_name=None,
                                                                      user=None)
@@ -1052,9 +1051,7 @@ def test_get_machines_stats_lab_hash_device_not_found(mock_get_machines_api_obje
 def test_get_machines_stats_lab_hash_and_name_device_not_found(mock_get_machines_api_objects_by_filters, docker_machine,
                                                                default_device):
     mock_get_machines_api_objects_by_filters.return_value = []
-    with pytest.raises(MachineNotFoundError):
-        next(docker_machine.get_machines_stats(lab_hash="lab_hash", machine_name="test_device"))
-
+    assert next(docker_machine.get_machines_stats(lab_hash="lab_hash", machine_name="test_device")) == {}
     mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", machine_name="test_device",
                                                                      user=None)
     assert not default_device.api_object.stats.called

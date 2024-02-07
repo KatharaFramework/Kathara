@@ -696,7 +696,8 @@ def test_exec_lab_hash(mock_exec, mock_get_current_user_name, docker_manager, de
         ["test", "command"],
         user="kathara_user",
         tty=False,
-        wait=False
+        wait=False,
+        stream=True
     )
 
 
@@ -713,7 +714,8 @@ def test_exec_lab_name(mock_exec, mock_get_current_user_name, docker_manager, de
         ["test", "command"],
         user="kathara_user",
         tty=False,
-        wait=False
+        wait=False,
+        stream=True
     )
 
 
@@ -730,7 +732,8 @@ def test_exec_lab_obj(mock_exec, mock_get_current_user_name, docker_manager, def
         ["test", "command"],
         user="kathara_user",
         tty=False,
-        wait=False
+        wait=False,
+        stream=True
     )
 
 
@@ -753,7 +756,8 @@ def test_exec_wait(mock_exec, mock_get_current_user_name, docker_manager, defaul
         ["test", "command"],
         user="kathara_user",
         tty=False,
-        wait=True
+        wait=True,
+        stream=True
     )
 
 
