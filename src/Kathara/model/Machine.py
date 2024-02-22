@@ -622,7 +622,7 @@ class Machine(FilesystemMixin):
         Args:
             file_path (str): The path of the file to add the new line.
             line_to_add (str): The new line to add before the searched line.
-            searched_line (str): The searched line.
+            searched_line (str): A string or a regex representing the searched line.
             first_occurrence (bool): Inserts line only before the first occurrence. Default is False.
 
         Returns:
@@ -645,7 +645,7 @@ class Machine(FilesystemMixin):
         Args:
             file_path (str): The path of the file to add the new line.
             line_to_add (str): The new line to add after the searched line.
-            searched_line (str): The searched line.
+            searched_line (str): A string or a regex representing the searched line.
             first_occurrence (bool): Inserts line only after the first occurrence. Default is False.
 
         Returns:
@@ -666,7 +666,7 @@ class Machine(FilesystemMixin):
 
         Args:
             file_path (str): The path of the file to delete the line.
-            line_to_delete (str): The line to delete.
+            line_to_delete (str): A string or a regex representing the line to delete.
             first_occurrence (bool): Deletes only first occurrence. Default is False.
 
         Returns:
