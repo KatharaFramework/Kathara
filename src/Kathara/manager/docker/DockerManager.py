@@ -394,6 +394,7 @@ class DockerManager(IManager):
                 for each retry. Default is False.
            stream (bool): If True, return a generator object containing the command output. If False,
                 returns a tuple containing the complete stdout, the stderr, and the return code of the command.
+
         Returns:
             Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
              and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
