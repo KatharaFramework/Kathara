@@ -1447,6 +1447,14 @@ def test_get_machine_stats_lab_hash_no_user(mock_get_machines_stats, default_dev
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
+def test_get_machine_stats_none(mock_get_machines_stats, default_device, docker_manager):
+    mock_get_machines_stats.return_value = iter([None])
+    next(docker_manager.get_machine_stats(machine_name="test_device", lab_hash="lab_hash", all_users=True))
+    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", machine_name="test_device",
+                                                    all_users=True)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
 def test_get_machine_stats_lab_hash_user(mock_get_machines_stats, default_device, docker_manager):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
     next(docker_manager.get_machine_stats(machine_name="test_device", lab_hash="lab_hash"))
@@ -1503,6 +1511,24 @@ def test_get_machine_stats_no_labs(mock_get_machines_stats, docker_manager):
     with pytest.raises(InvocationError):
         next(docker_manager.get_machine_stats(machine_name="test_device", all_users=True))
     assert not mock_get_machines_stats.called
+
+
+#
+# TESTS: get_machine_stats_obj
+#
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machine_stats")
+def test_get_machine_stats_obj(mock_get_machine_stats, docker_manager, default_device):
+    docker_manager.get_machine_stats_obj(default_device)
+    mock_get_machine_stats.assert_called_once_with(default_device.name, lab=default_device.lab, all_users=False)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machine_stats")
+def test_get_machine_stats_obj_lab_not_found_error(mock_get_machine_stats, docker_manager, default_device):
+    default_device.lab = None
+    with pytest.raises(LabNotFoundError):
+        docker_manager.get_machine_stats_obj(default_device)
+
+    assert not mock_get_machine_stats.called
 
 
 #
@@ -1575,6 +1601,13 @@ def test_get_link_stats_lab_hash_no_user(mock_get_links_stats, docker_network, d
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_stats")
+def test_get_link_stats_none(mock_get_links_stats, docker_manager):
+    mock_get_links_stats.return_value = iter([None])
+    next(docker_manager.get_link_stats(link_name="test_network", lab_hash="lab_hash", all_users=True))
+    mock_get_links_stats.assert_called_once_with(lab_hash="lab_hash", link_name="test_network", all_users=True)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_stats")
 def test_get_link_stats_lab_hash_user(mock_get_links_stats, docker_network, docker_manager):
     mock_get_links_stats.return_value = iter([{"test_network": DockerLinkStats(docker_network)}])
     next(docker_manager.get_link_stats(link_name="test_network", lab_hash="lab_hash"))
@@ -1625,3 +1658,20 @@ def test_get_link_stats_invocation_error(mock_get_links_stats, docker_network, d
     with pytest.raises(InvocationError):
         next(docker_manager.get_link_stats(link_name="test_network"))
     assert not mock_get_links_stats.called
+
+
+#
+# TESTS: get_link_stats_obj
+#
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_link_stats")
+def test_get_link_stats_obj(mock_get_link_stats, docker_manager, default_link):
+    docker_manager.get_link_stats_obj(default_link)
+    mock_get_link_stats.assert_called_once_with(default_link.name, lab=default_link.lab, all_users=False)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_link_stats")
+def test_get_link_stats_obj_lab_not_found_error(mock_get_link_stats, docker_manager, default_link):
+    default_link.lab = None
+    with pytest.raises(LabNotFoundError):
+        docker_manager.get_link_stats_obj(default_link)
+    assert not mock_get_link_stats.called
