@@ -31,13 +31,15 @@ class Lab(FilesystemMixin):
             are Kathara device objects.
         links (Dict[str, Kathara.model.Link]): The collision domains of the network scenario.
             Keys are collision domains names, Values are Kathara collision domain objects.
-        general_options (Dict[str, Any]): Keys are option names, values are option values.
+        general_options (Dict[str, Any]): The general options of the network scenario.
+        global_machine_metadata (Dict[str, Any]): Metadata to apply to all the devices of the network scenario at
+            the startup.
         has_dependencies (bool): True if there are dependencies among the devices boot.
         shared_path (str): Path to shared folder of the network scenario, if the network scenario has a real OS path.
         fs (fs.FS): The filesystem of the network scenario. Contains files and configurations associated to it.
     """
     __slots__ = ['_name', 'description', 'version', 'author', 'email', 'web', 'hash',
-                 'machines', 'links', 'general_options', 'has_dependencies', 'shared_path']
+                 'machines', 'links', 'general_options', 'global_machine_metadata', 'has_dependencies', 'shared_path']
 
     def __init__(self, name: Optional[str], path: Optional[str] = None) -> None:
         """Create a new instance of a Kathara network scenario.
@@ -62,6 +64,7 @@ class Lab(FilesystemMixin):
         self.links: Dict[str, 'LinkPackage.Link'] = {}
 
         self.general_options: Dict[str, Any] = {}
+        self.global_machine_metadata: Dict[str, Any] = {}
 
         self.has_dependencies: bool = False
 
@@ -388,6 +391,19 @@ class Lab(FilesystemMixin):
         """
         if value is not None:
             self.general_options[name] = value
+
+    def add_global_machine_metadata(self, name: str, value: Any) -> None:
+        """Add a global machine metadata to the network scenario.
+
+        Args:
+            name (str): The name of the meta.
+            value (Any): The value of the meta.
+
+        Returns:
+            None
+        """
+        if value is not None:
+            self.global_machine_metadata[name] = value
 
     def has_machine(self, machine_name: str) -> bool:
         """Check if the specified device is in the network scenario.

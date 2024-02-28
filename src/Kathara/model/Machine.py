@@ -374,7 +374,7 @@ class Machine(FilesystemMixin):
         Returns:
             str: The name of the device image.
         """
-        return self.lab.general_options["image"] if "image" in self.lab.general_options else \
+        return self.lab.global_machine_metadata["image"] if "image" in self.lab.global_machine_metadata else \
             self.meta["image"] if "image" in self.meta else Setting.get_instance().image
 
     def get_mem(self) -> str:
@@ -386,7 +386,7 @@ class Machine(FilesystemMixin):
         Raises:
             MachineOptionError: If the memory value specified is not valid.
         """
-        memory = self.lab.general_options["mem"] if "mem" in self.lab.general_options else \
+        memory = self.lab.global_machine_metadata["mem"] if "mem" in self.lab.global_machine_metadata else \
             self.meta["mem"] if "mem" in self.meta else None
 
         if memory:
@@ -419,9 +419,9 @@ class Machine(FilesystemMixin):
         Raises:
             MachineOptionError: If the CPU value specified is not valid.
         """
-        if "cpus" in self.lab.general_options:
+        if "cpus" in self.lab.global_machine_metadata:
             try:
-                return int(float(self.lab.general_options["cpus"]) * multiplier)
+                return int(float(self.lab.global_machine_metadata["cpus"]) * multiplier)
             except ValueError:
                 raise MachineOptionError("CPU value not valid on `%s`." % self.name)
         elif "cpus" in self.meta:
@@ -451,8 +451,8 @@ class Machine(FilesystemMixin):
         """
         num_terms = 1
 
-        if "num_terms" in self.lab.general_options:
-            num_terms = self.lab.general_options['num_terms']
+        if "num_terms" in self.lab.global_machine_metadata:
+            num_terms = self.lab.global_machine_metadata['num_terms']
         elif 'num_terms' in self.meta:
             num_terms = self.meta['num_terms']
 
@@ -478,8 +478,8 @@ class Machine(FilesystemMixin):
         is_v6_enabled = Setting.get_instance().enable_ipv6
 
         try:
-            if "ipv6" in self.lab.general_options:
-                is_v6_enabled = self.lab.general_options["ipv6"]
+            if "ipv6" in self.lab.global_machine_metadata:
+                is_v6_enabled = self.lab.global_machine_metadata["ipv6"]
             elif "ipv6" in self.meta:
                 is_v6_enabled = self.meta["ipv6"]
 

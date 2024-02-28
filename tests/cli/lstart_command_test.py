@@ -272,7 +272,7 @@ def test_run_with_one_general_option(mock_setting_get_instance, mock_parse_lab, 
         assert mock_setting.open_terminals
         assert mock_setting.terminal == '/usr/bin/xterm'
         mock_parse_lab.assert_called_once_with(os.getcwd())
-        assert test_lab.general_options == {'mem': '64M'}
+        assert test_lab.global_machine_metadata == {'mem': '64M'}
         mock_parse_dep.assert_called_once_with(os.getcwd())
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
@@ -298,7 +298,7 @@ def test_run_with_two_general_option(mock_setting_get_instance, mock_parse_lab, 
         assert mock_setting.open_terminals
         assert mock_setting.terminal == '/usr/bin/xterm'
         mock_parse_lab.assert_called_once_with(os.getcwd())
-        assert test_lab.general_options == {'mem': '64M', 'cpu': '100'}
+        assert test_lab.global_machine_metadata == {'mem': '64M', 'cpu': '100'}
         mock_parse_dep.assert_called_once_with(os.getcwd())
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)

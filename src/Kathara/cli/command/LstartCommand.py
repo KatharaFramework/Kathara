@@ -81,11 +81,11 @@ class LstartCommand(Command):
         )
         self.parser.add_argument(
             '-o', '--pass',
-            dest='options',
-            metavar="OPTION",
+            dest='global_machine_metadata',
+            metavar="METADATA",
             nargs='*',
             required=False,
-            help="Apply options to all devices of a network scenario during startup."
+            help="Apply metadata to all devices of a network scenario during startup."
         )
         self.parser.add_argument(
             '--xterm', '--terminal-emu',
@@ -175,11 +175,8 @@ class LstartCommand(Command):
         if len(lab.machines) <= 0:
             raise EmptyLabError()
 
-        try:
-            options = OptionParser.parse(args['options'])
-            lab.general_options = {**lab.general_options, **options}
-        except ValueError as e:
-            raise e
+
+        lab.global_machine_metadata = OptionParser.parse(args['global_machine_metadata'])
 
         lab_ext_path = os.path.join(lab_path, 'lab.ext')
         lab_ext_exists = False

@@ -277,16 +277,16 @@ class KubernetesMachine(object):
         """
         logging.debug("Creating device `%s`..." % machine.name)
 
-        # Get the general options into a local variable (just to avoid accessing the lab object every time)
-        options = machine.lab.general_options
+        # Get the global machine metadata into a local variable (just to avoid accessing the lab object every time)
+        global_machine_metadata = machine.lab.global_machine_metadata
 
         # If bridged is defined for the device, throw a warning.
-        if "bridged" in options or machine.is_bridged():
+        if "bridged" in global_machine_metadata or machine.is_bridged():
             logging.warning('Bridged option is not supported on Megalos. It will be ignored.')
 
         # If any exec command is passed in command line, add it.
-        if "exec" in options:
-            machine.add_meta("exec", options["exec"])
+        if "exec" in global_machine_metadata:
+            machine.add_meta("exec", global_machine_metadata["exec"])
 
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}

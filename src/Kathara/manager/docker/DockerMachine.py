@@ -199,11 +199,11 @@ class DockerMachine(object):
             for (host_port, protocol), guest_port in ports_info.items():
                 ports['%d/%s' % (guest_port, protocol)] = host_port
 
-        # Get the general options into a local variable (just to avoid accessing the lab object every time)
-        options = machine.lab.general_options
+        # Get the global machine metadata into a local variable (just to avoid accessing the lab object every time)
+        global_machine_metadata = machine.lab.global_machine_metadata
 
         # If bridged is required in command line but not defined in machine meta, add it.
-        if "bridged" in options and not machine.is_bridged():
+        if "bridged" in global_machine_metadata and not machine.is_bridged():
             machine.add_meta("bridged", True)
 
         if ports and not machine.is_bridged():
@@ -213,8 +213,8 @@ class DockerMachine(object):
             )
 
         # If any exec command is passed in command line, add it.
-        if "exec" in options:
-            machine.add_meta("exec", options["exec"])
+        if "exec" in global_machine_metadata:
+            machine.add_meta("exec", global_machine_metadata["exec"])
 
         # Get the first network object, if defined.
         # This should be used in container create function
@@ -251,17 +251,20 @@ class DockerMachine(object):
 
         volumes = {}
 
-        shared_mount = options['shared_mount'] if 'shared_mount' in options else Setting.get_instance().shared_mount
+        lab_options = machine.lab.general_options
+        shared_mount = ['shared_mount'] if 'shared_mount' in lab_options else Setting.get_instance().shared_mount
         if shared_mount and machine.lab.shared_path:
             volumes[machine.lab.shared_path] = {'bind': '/shared', 'mode': 'rw'}
 
         # Mount the host home only if specified in settings.
-        hosthome_mount = options['hosthome_mount'] if 'hosthome_mount' in options else \
+        hosthome_mount = lab_options['hosthome_mount'] if 'hosthome_mount' in lab_options else \
             Setting.get_instance().hosthome_mount
         if hosthome_mount and Setting.get_instance().remote_url is None:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
-        privileged = options['privileged_machines'] if 'privileged_machines' in options else False
+        privileged = lab_options['privileged_machines'] if 'privileged_machines' in lab_options \
+            else False
+
         if Setting.get_instance().remote_url is not None and privileged:
             privileged = False
             logging.warning("Privileged flag is ignored with a remote Docker connection.")
