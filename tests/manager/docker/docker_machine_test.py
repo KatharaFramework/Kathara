@@ -10,7 +10,7 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
-from src.Kathara.exceptions import MachineNotFoundError, DockerPluginError, MachineBinaryError
+from src.Kathara.exceptions import MachineNotFoundError, DockerPluginError, MachineBinaryError, PrivilegeError
 from src.Kathara.types import SharedCollisionDomainsOption
 
 
@@ -502,6 +502,35 @@ def test_deploy_machines(mock_deploy_and_start, mock_setting_get_instance, docke
     docker_machine.deploy_machines(lab)
     docker_machine.docker_image.check_from_list.assert_called_once_with({'kathara/test1', 'kathara/test2'})
     assert mock_deploy_and_start.call_count == 2
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._deploy_and_start_machine")
+def test_deploy_machines_privilege_error(mock_deploy_and_start, mock_setting_get_instance, docker_machine):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        "hosthome_mount": False,
+        "shared_mount": False,
+        'remote_url': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    lab = Lab("Default scenario")
+    lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
+    lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
+    lab.general_options['privileged_machines'] = True
+    docker_machine.docker_image.check_from_list.return_value = None
+    mock_deploy_and_start.return_value = None
+
+    with pytest.raises(PrivilegeError):
+        docker_machine.deploy_machines(lab)
+
+    assert not docker_machine.docker_image.check_from_list.called
+    assert not mock_deploy_and_start.called
 
 
 #

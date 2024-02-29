@@ -88,6 +88,10 @@ class DockerLink(object):
 
         Returns:
             None
+
+        Raises:
+            OSError: If the link is attached to external interfaces and the host OS is not LINUX.
+            PrivilegeError: If the link is attached to external interfaces and the user does not have root privileges.
         """
         # Reserved name for bridged connections, ignore.
         if link.name == BRIDGE_LINK_NAME:
@@ -301,7 +305,17 @@ class DockerLink(object):
 
         Returns:
             None
+
+        Raises:
+            OSError: If the link is attached to external interfaces and the host OS is not LINUX.
+            PrivilegeError: If the link is attached to external interfaces and the user does not have root privileges.
         """
+        if not (utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2)):
+            raise OSError("External collision domains available only on Linux systems.")
+
+        if not utils.is_admin():
+            raise PrivilegeError("You must be root in order to use external collision domains.")
+
         for external_link in external_links:
             (name, vlan) = external_link.get_name_and_vlan()
             interface_index = Networking.get_or_new_interface(external_link.interface, name, vlan)

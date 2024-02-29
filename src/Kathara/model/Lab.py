@@ -12,6 +12,7 @@ from .ExternalLink import ExternalLink
 from .. import utils
 from ..exceptions import LinkNotFoundError, MachineNotFoundError, MachineAlreadyExistsError, LinkAlreadyExistsError
 from ..foundation.model.FilesystemMixin import FilesystemMixin
+from ..setting.Setting import Setting
 
 LAB_METADATA: List[str] = ["LAB_NAME", "LAB_DESCRIPTION", "LAB_VERSION", "LAB_AUTHOR", "LAB_EMAIL", "LAB_WEB"]
 
@@ -63,7 +64,12 @@ class Lab(FilesystemMixin):
         self.machines: Dict[str, 'MachinePackage.Machine'] = {}
         self.links: Dict[str, 'LinkPackage.Link'] = {}
 
-        self.general_options: Dict[str, Any] = {}
+        self.general_options: Dict[str, Any] = {
+            'privileged_machines': False,
+            'shared_mount': Setting.get_instance().shared_mount,
+            'hosthome_mount': Setting.get_instance().hosthome_mount
+        }
+
         self.global_machine_metadata: Dict[str, Any] = {}
 
         self.has_dependencies: bool = False

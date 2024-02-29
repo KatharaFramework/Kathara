@@ -194,7 +194,7 @@ class LstartCommand(Command):
                 else:
                     raise PrivilegeError("You must be root in order to use lab.ext file.")
             else:
-                raise OSError("lab.ext is only available on UNIX systems.")
+                raise OSError("lab.ext is only available on Linux systems.")
 
         # If dry mode, we just check if the lab.conf is correct.
         if args['dry_mode']:

@@ -17,7 +17,7 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError, DockerPluginError, \
-    MachineBinaryError, MachineNotRunningError
+    MachineBinaryError, MachineNotRunningError, PrivilegeError
 from ...model.Interface import Interface
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
@@ -117,7 +117,13 @@ class DockerMachine(object):
 
         Returns:
             None
+
+        Raises:
+            PrivilegeError: If the privileged mode is active and the user does not have root privileges.
         """
+        if lab.general_options['privileged_machines'] and not utils.is_admin():
+            raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
+
         machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
             else lab.machines.items()
 
@@ -252,14 +258,13 @@ class DockerMachine(object):
         volumes = {}
 
         lab_options = machine.lab.general_options
-        shared_mount = ['shared_mount'] if 'shared_mount' in lab_options else Setting.get_instance().shared_mount
-        if shared_mount and machine.lab.shared_path:
+
+        if lab_options['shared_mount'] and machine.lab.shared_path:
             volumes[machine.lab.shared_path] = {'bind': '/shared', 'mode': 'rw'}
 
         # Mount the host home only if specified in settings.
-        hosthome_mount = lab_options['hosthome_mount'] if 'hosthome_mount' in lab_options else \
-            Setting.get_instance().hosthome_mount
-        if hosthome_mount and Setting.get_instance().remote_url is None:
+
+        if lab_options['hosthome_mount'] and Setting.get_instance().remote_url is None:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
         privileged = lab_options['privileged_machines'] if 'privileged_machines' in lab_options \

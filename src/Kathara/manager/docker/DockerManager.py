@@ -16,7 +16,7 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError, LinkNotFoundError, MachineCollisionDomainError, \
-    InvocationError, LabNotFoundError, MachineNotRunningError
+    InvocationError, LabNotFoundError, MachineNotRunningError, PrivilegeError
 from ...exceptions import MachineNotFoundError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
@@ -87,6 +87,7 @@ class DockerManager(IManager):
 
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
+            PrivilegeError: If the user start the device in privileged mode without having root privileges.
             NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
         """
         if not machine.lab:
@@ -129,6 +130,8 @@ class DockerManager(IManager):
 
         Raises:
             NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
+            OSError: If any link in the network scenario is attached to external interfaces and the host OS is not LINUX.
+            PrivilegeError: If the user start the network scenario in privileged mode without having root privileges.
             MachineNotFoundError: If the specified devices are not in the network scenario.
         """
         logging.debug("Checking network scenario integrity...")

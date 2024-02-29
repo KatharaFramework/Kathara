@@ -5,13 +5,15 @@ from unittest.mock import Mock
 import docker.types
 import pytest
 
+from Kathara.model.ExternalLink import ExternalLink
+
 sys.path.insert(0, './')
 
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import BRIDGE_LINK_NAME
 from src.Kathara.manager.docker.DockerLink import DockerLink
 from src.Kathara import utils
-from src.Kathara.exceptions import LinkNotFoundError
+from src.Kathara.exceptions import LinkNotFoundError, PrivilegeError
 from src.Kathara.types import SharedCollisionDomainsOption
 
 
@@ -23,7 +25,7 @@ def default_link():
     from src.Kathara.model.Link import Link
     lab = Lab("default_scenario")
     lab.hash = "lab-hash"
-    return Link(lab, "A")
+    return lab.new_link("A")
 
 
 @pytest.fixture()
@@ -129,6 +131,122 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_li
             "name": "A",
             "app": "kathara",
             "external": "",
+            "user": "user",
+            "lab_hash": default_link.lab.hash,
+        }
+    )
+
+
+@mock.patch("src.Kathara.utils.is_admin")
+@mock.patch("src.Kathara.utils.is_platform")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_external(mock_get_current_user_name, mock_setting_get_instance, mock_is_platform,
+                         mock_is_admin, docker_link, default_link):
+    docker_link.client.networks.list.return_value = []
+
+    mock_get_current_user_name.return_value = 'user'
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'net_prefix': 'kathara',
+        'remote_url': None,
+        'network_plugin': 'kathara/katharanp'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    mock_is_platform.return_value = True
+    mock_is_admin.return_value = True
+    external_link = ExternalLink("eth0")
+    default_link.lab.attach_external_links({"A": [external_link]})
+
+    docker_link.create(default_link)
+    docker_link.client.networks.create.assert_called_once_with(
+        name="kathara_user_A_lab-hash",
+        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
+        check_duplicate=True,
+        ipam=docker.types.IPAMConfig(driver='null'),
+        labels={
+            "name": "A",
+            "app": "kathara",
+            "external": "eth0",
+            "user": "user",
+            "lab_hash": default_link.lab.hash,
+        }
+    )
+
+
+@mock.patch("src.Kathara.utils.is_admin")
+@mock.patch("src.Kathara.utils.is_platform")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_external_os_error(mock_get_current_user_name, mock_setting_get_instance, mock_is_platform,
+                                  mock_is_admin, docker_link, default_link):
+    docker_link.client.networks.list.return_value = []
+
+    mock_get_current_user_name.return_value = 'user'
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'net_prefix': 'kathara',
+        'remote_url': None,
+        'network_plugin': 'kathara/katharanp'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    mock_is_platform.return_value = False
+    mock_is_admin.return_value = True
+    external_link = ExternalLink("eth0")
+    default_link.lab.attach_external_links({"A": [external_link]})
+
+    with pytest.raises(OSError):
+        docker_link.create(default_link)
+    docker_link.client.networks.create.assert_called_once_with(
+        name="kathara_user_A_lab-hash",
+        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
+        check_duplicate=True,
+        ipam=docker.types.IPAMConfig(driver='null'),
+        labels={
+            "name": "A",
+            "app": "kathara",
+            "external": "eth0",
+            "user": "user",
+            "lab_hash": default_link.lab.hash,
+        }
+    )
+
+
+@mock.patch("src.Kathara.utils.is_admin")
+@mock.patch("src.Kathara.utils.is_platform")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_external_privilege_error(mock_get_current_user_name, mock_setting_get_instance, mock_is_platform,
+                                         mock_is_admin, docker_link, default_link):
+    docker_link.client.networks.list.return_value = []
+
+    mock_get_current_user_name.return_value = 'user'
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'net_prefix': 'kathara',
+        'remote_url': None,
+        'network_plugin': 'kathara/katharanp'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    mock_is_platform.return_value = True
+    mock_is_admin.return_value = False
+    external_link = ExternalLink("eth0")
+    default_link.lab.attach_external_links({"A": [external_link]})
+
+    with pytest.raises(PrivilegeError):
+        docker_link.create(default_link)
+    docker_link.client.networks.create.assert_called_once_with(
+        name="kathara_user_A_lab-hash",
+        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
+        check_duplicate=True,
+        ipam=docker.types.IPAMConfig(driver='null'),
+        labels={
+            "name": "A",
+            "app": "kathara",
+            "external": "eth0",
             "user": "user",
             "lab_hash": default_link.lab.hash,
         }
