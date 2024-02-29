@@ -878,7 +878,13 @@ class DockerMachine(object):
         Returns:
             Generator[Dict[str, DockerMachineStats], None, None]: A generator containing device names as keys and
             DockerMachineStats as values.
+
+        Raises:
+            PrivilegeError: If user param is None and the user does not have root privileges.
         """
+        if user is None and not utils.is_admin():
+            raise PrivilegeError("You must be root to get devices stats of other users.")
+
         machines_stats = {}
 
         def load_machine_stats(machine):

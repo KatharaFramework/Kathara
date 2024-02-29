@@ -760,8 +760,13 @@ class DockerManager(IManager):
         Returns:
               Generator[Dict[str, DockerMachineStats], None, None]: A generator containing dicts that has API Object
               identifier as keys and DockerMachineStats objects as values.
+
+        Raises:
+            InvocationError: If more than one param among lab_hash, lab_name and lab is specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
+
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -792,15 +797,13 @@ class DockerManager(IManager):
             with the device info. Returns None if the device is not found.
 
         Raises:
-            InvocationError: If a running network scenario hash or name is not specified.
+            InvocationError: If a running network scenario hash, name or object is not specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
-        if lab:
-            lab_hash = lab.hash
-        elif lab_name:
-            lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        machines_stats = self.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name, all_users=all_users)
+        machines_stats = self.get_machines_stats(lab_hash=lab_hash, lab_name=lab_name, lab=lab,
+                                                 machine_name=machine_name, all_users=all_users)
         machines_stats_next = next(machines_stats)
         if machines_stats_next:
             (_, machine_stats) = machines_stats_next.popitem()

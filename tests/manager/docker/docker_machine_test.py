@@ -1033,9 +1033,10 @@ def test_get_machines_stats_lab_hash(mock_get_machines_api_objects_by_filters, d
     default_device.api_object.name = "test_device"
     mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
     default_device.api_object.stats.return_value = iter([{'pids_stats': {}, 'cpu_stats': {}, 'memory_stats': {}}])
-    next(docker_machine.get_machines_stats(lab_hash="lab_hash"))
+    next(docker_machine.get_machines_stats(lab_hash="lab_hash", user='user'))
 
-    mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", machine_name=None, user=None)
+    mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", machine_name=None,
+                                                                     user='user')
     default_device.api_object.stats.assert_called_once()
 
 
@@ -1058,10 +1059,10 @@ def test_get_machines_stats_lab_hash_device_name_user(mock_get_machines_api_obje
     default_device.api_object.name = "test_device"
     mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
     default_device.api_object.stats.return_value = iter([{'pids_stats': {}, 'cpu_stats': {}, 'memory_stats': {}}])
-    next(docker_machine.get_machines_stats(lab_hash="lab_hash", machine_name="test_device"))
+    next(docker_machine.get_machines_stats(lab_hash="lab_hash", machine_name="test_device", user="user"))
 
     mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", machine_name="test_device",
-                                                                     user=None)
+                                                                     user="user")
     default_device.api_object.stats.assert_called_once()
 
 
@@ -1069,10 +1070,10 @@ def test_get_machines_stats_lab_hash_device_name_user(mock_get_machines_api_obje
 def test_get_machines_stats_lab_hash_device_not_found(mock_get_machines_api_objects_by_filters, docker_machine,
                                                       default_device):
     mock_get_machines_api_objects_by_filters.return_value = []
-    assert next(docker_machine.get_machines_stats(lab_hash="lab_hash")) == {}
+    assert next(docker_machine.get_machines_stats(lab_hash="lab_hash", user="user")) == {}
 
     mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", machine_name=None,
-                                                                     user=None)
+                                                                     user="user")
     assert not default_device.api_object.stats.called
 
 
@@ -1080,7 +1081,28 @@ def test_get_machines_stats_lab_hash_device_not_found(mock_get_machines_api_obje
 def test_get_machines_stats_lab_hash_and_name_device_not_found(mock_get_machines_api_objects_by_filters, docker_machine,
                                                                default_device):
     mock_get_machines_api_objects_by_filters.return_value = []
-    assert next(docker_machine.get_machines_stats(lab_hash="lab_hash", machine_name="test_device")) == {}
+    assert next(docker_machine.get_machines_stats(lab_hash="lab_hash", machine_name="test_device", user="user")) == {}
     mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", machine_name="test_device",
-                                                                     user=None)
+                                                                     user="user")
     assert not default_device.api_object.stats.called
+
+
+@mock.patch("src.Kathara.utils.is_admin")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+def test_get_machines_stats_lab_hash_no_user(mock_get_machines_api_objects_by_filters, mock_is_admin, docker_machine,
+                                             default_device):
+    default_device.api_object.name = "test_device"
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
+    mock_is_admin.return_value = True
+    default_device.api_object.stats.return_value = iter([{'pids_stats': {}, 'cpu_stats': {}, 'memory_stats': {}}])
+    next(docker_machine.get_machines_stats(lab_hash="lab_hash", user=None))
+    mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", machine_name=None,
+                                                                     user=None)
+    default_device.api_object.stats.assert_called_once()
+
+
+@mock.patch("src.Kathara.utils.is_admin")
+def test_get_machines_stats_privilege_error(mock_is_admin, docker_machine, default_device):
+    mock_is_admin.return_value = False
+    with pytest.raises(PrivilegeError):
+        next(docker_machine.get_machines_stats(lab_hash="lab_hash", machine_name="test_device", user=None))

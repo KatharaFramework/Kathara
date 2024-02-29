@@ -1438,36 +1438,39 @@ def test_get_machines_stats_no_labs(mock_get_machines_stats, docker_manager):
 #
 # TESTS: get_machine_stats
 #
+
+@mock.patch("src.Kathara.utils.is_admin")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
-def test_get_machine_stats_lab_hash_no_user(mock_get_machines_stats, default_device, docker_manager):
+def test_get_machine_stats_lab_hash_all_users(mock_get_machines_stats, mock_is_admin, default_device, docker_manager):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
+    mock_is_admin.return_value = True
     next(docker_manager.get_machine_stats(machine_name="test_device", lab_hash="lab_hash", all_users=True))
-    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", machine_name="test_device",
-                                                    all_users=True)
+    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", lab_name=None, lab=None,
+                                                    machine_name="test_device", all_users=True)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
 def test_get_machine_stats_none(mock_get_machines_stats, default_device, docker_manager):
     mock_get_machines_stats.return_value = iter([None])
-    next(docker_manager.get_machine_stats(machine_name="test_device", lab_hash="lab_hash", all_users=True))
-    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", machine_name="test_device",
-                                                    all_users=True)
+    next(docker_manager.get_machine_stats(machine_name="test_device", lab_hash="lab_hash", all_users=False))
+    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", lab_name=None, lab=None,
+                                                    machine_name="test_device", all_users=False)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
 def test_get_machine_stats_lab_hash_user(mock_get_machines_stats, default_device, docker_manager):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
     next(docker_manager.get_machine_stats(machine_name="test_device", lab_hash="lab_hash"))
-    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash",
+    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", lab_name=None, lab=None,
                                                     machine_name="test_device",
                                                     all_users=False)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
-def test_get_machine_stats_lab_name_no_user(mock_get_machines_stats, default_device, docker_manager):
+def test_get_machine_stats_lab_name_all_users(mock_get_machines_stats, default_device, docker_manager):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
     next(docker_manager.get_machine_stats(machine_name="test_device", lab_name="lab_name", all_users=True))
-    mock_get_machines_stats.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name"),
+    mock_get_machines_stats.assert_called_once_with(lab_hash=None, lab_name="lab_name", lab=None,
                                                     machine_name="test_device",
                                                     all_users=True)
 
@@ -1476,17 +1479,17 @@ def test_get_machine_stats_lab_name_no_user(mock_get_machines_stats, default_dev
 def test_get_machine_stats_lab_name_user(mock_get_machines_stats, default_device, docker_manager):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
     next(docker_manager.get_machine_stats(machine_name="test_device", lab_name="lab_name"))
-    mock_get_machines_stats.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name"),
+    mock_get_machines_stats.assert_called_once_with(lab_hash=None, lab_name="lab_name", lab=None,
                                                     machine_name="test_device",
                                                     all_users=False)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
-def test_get_machine_stats_lab_obj_no_user(mock_get_machines_stats, default_device, docker_manager,
+def test_get_machine_stats_lab_obj_all_users(mock_get_machines_stats, default_device, docker_manager,
                                            two_device_scenario):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
     next(docker_manager.get_machine_stats(machine_name="test_device", lab=two_device_scenario, all_users=True))
-    mock_get_machines_stats.assert_called_once_with(lab_hash=two_device_scenario.hash,
+    mock_get_machines_stats.assert_called_once_with(lab_hash=None, lab_name=None, lab=two_device_scenario,
                                                     machine_name="test_device",
                                                     all_users=True)
 
@@ -1495,7 +1498,7 @@ def test_get_machine_stats_lab_obj_no_user(mock_get_machines_stats, default_devi
 def test_get_machine_stats_lab_obj_user(mock_get_machines_stats, default_device, docker_manager, two_device_scenario):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
     next(docker_manager.get_machine_stats(machine_name="test_device", lab=two_device_scenario))
-    mock_get_machines_stats.assert_called_once_with(lab_hash=two_device_scenario.hash,
+    mock_get_machines_stats.assert_called_once_with(lab_hash=None, lab_name=None, lab=two_device_scenario,
                                                     machine_name="test_device",
                                                     all_users=False)
 
@@ -1506,11 +1509,10 @@ def test_get_machine_stats_lab_hash_lab_obj(default_device, docker_manager, two_
                                               lab=two_device_scenario))
 
 
-@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
-def test_get_machine_stats_no_labs(mock_get_machines_stats, docker_manager):
+def test_get_machine_stats_invocation_error(docker_manager):
     with pytest.raises(InvocationError):
-        next(docker_manager.get_machine_stats(machine_name="test_device", all_users=True))
-    assert not mock_get_machines_stats.called
+        next(docker_manager.get_machine_stats(machine_name="test_device", all_users=False))
+
 
 
 #
