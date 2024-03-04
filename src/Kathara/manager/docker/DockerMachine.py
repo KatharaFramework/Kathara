@@ -693,10 +693,7 @@ class DockerMachine(object):
         if stream:
             return exec_result['output']
 
-        # Unroll the generator
-        output = list(exec_result['output']).pop()
-
-        return output[0], output[1], exec_result['exit_code']
+        return exec_result['output'][0], exec_result['output'][1], exec_result['exit_code']
 
     def _exec_run(self, container: docker.models.containers.Container,
                   cmd: Union[str, List], stdout=True, stderr=True, stdin=False, tty=False,
