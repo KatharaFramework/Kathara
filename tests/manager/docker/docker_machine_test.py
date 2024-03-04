@@ -10,7 +10,7 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
-from src.Kathara.exceptions import MachineNotFoundError, DockerPluginError, MachineBinaryError, PrivilegeError
+from src.Kathara.exceptions import DockerPluginError, MachineBinaryError, PrivilegeError
 from src.Kathara.types import SharedCollisionDomainsOption
 
 
@@ -1102,7 +1102,7 @@ def test_get_machines_stats_lab_hash_no_user(mock_get_machines_api_objects_by_fi
 
 
 @mock.patch("src.Kathara.utils.is_admin")
-def test_get_machines_stats_privilege_error(mock_is_admin, docker_machine, default_device):
+def test_get_machines_stats_privilege_error(mock_is_admin, docker_machine):
     mock_is_admin.return_value = False
     with pytest.raises(PrivilegeError):
         next(docker_machine.get_machines_stats(lab_hash="lab_hash", machine_name="test_device", user=None))

@@ -246,7 +246,13 @@ class DockerLink(object):
         Returns:
            Generator[Dict[str, DockerMachineStats], None, None]: A generator containing network names as keys and
            DockerLinkStats as values.
+
+        Raises:
+            PrivilegeError: If user param is None and the user does not have root privileges.
         """
+        if user is None and not utils.is_admin():
+            raise PrivilegeError("You must be root to get networks statistics of all users.")
+
         networks_stats = {}
 
         def load_link_stats(network):
@@ -340,25 +346,29 @@ class DockerLink(object):
 
         Returns:
             None
+
+        Raises:
+            OSError: If the link is attached to external interfaces and the host OS is not LINUX.
+            PrivilegeError: If the link is attached to external interfaces and the user does not have root privileges.
         """
+        if not (utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2)):
+            raise OSError("External collision domains available only on Linux systems.")
+
+        if not utils.is_admin():
+            raise PrivilegeError("You must be root in order to use external collision domains.")
+
         for external_link in external_links:
-            if utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2):
-                if utils.is_admin():
-                    def vde_delete():
-                        plugin_pid = self.docker_plugin.plugin_pid()
-                        switch_path = os.path.join(self.docker_plugin.plugin_store_path(),
-                                                   self._get_bridge_name(network))
-                        Networking.remove_interface_ns(external_link, switch_path, plugin_pid)
+            def vde_delete():
+                plugin_pid = self.docker_plugin.plugin_pid()
+                switch_path = os.path.join(self.docker_plugin.plugin_store_path(),
+                                           self._get_bridge_name(network))
+                Networking.remove_interface_ns(external_link, switch_path, plugin_pid)
 
-                    self.docker_plugin.exec_by_version(vde_delete, lambda: None)
+            self.docker_plugin.exec_by_version(vde_delete, lambda: None)
 
-                    if re.search(r"^\w+\.\d+$", external_link):
-                        # Only remove VLAN interfaces, physical ones cannot be removed.
-                        Networking.remove_interface(external_link)
-                else:
-                    raise PrivilegeError("You must be root in order to delete an External Interface.")
-            else:
-                raise OSError("External Interfaces are only available on UNIX systems.")
+            if re.search(r"^\w+\.\d+$", external_link):
+                # Only remove VLAN interfaces, physical ones cannot be removed.
+                Networking.remove_interface(external_link)
 
     @staticmethod
     def _get_bridge_name(network: docker.models.networks.Network) -> str:

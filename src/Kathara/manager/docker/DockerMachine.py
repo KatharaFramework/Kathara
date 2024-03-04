@@ -883,7 +883,7 @@ class DockerMachine(object):
             PrivilegeError: If user param is None and the user does not have root privileges.
         """
         if user is None and not utils.is_admin():
-            raise PrivilegeError("You must be root to get devices stats of other users.")
+            raise PrivilegeError("You must be root to get devices statistics of all users.")
 
         machines_stats = {}
 

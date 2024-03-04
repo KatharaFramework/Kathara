@@ -151,9 +151,7 @@ class KubernetesMachine(object):
         machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
             else lab.machines.items()
 
-        privileged = lab.general_options['privileged_machines'] if 'privileged_machines' in lab.general_options \
-            else False
-        if privileged:
+        if lab.general_options['privileged_machines']:
             logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
 
         # Do not open terminals on Megalos

@@ -340,6 +340,9 @@ class Kathara(IManager):
 
         Returns:
             List[Any]: API objects of devices, specific for the current manager.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         return self.manager.get_machines_api_objects(lab_hash, lab_name, lab, all_users)
 
@@ -381,6 +384,9 @@ class Kathara(IManager):
 
         Returns:
             List[Any]: API objects of collision domains, specific for the current manager.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         return self.manager.get_links_api_objects(lab_hash, lab_name, lab, all_users)
 
@@ -427,6 +433,10 @@ class Kathara(IManager):
         Returns:
               Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
               identifier as keys and IMachineStats objects as values.
+
+        Raises:
+            InvocationError: If more than one param among lab_hash, lab_name and lab is specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         return self.manager.get_machines_stats(lab_hash, lab_name, lab, machine_name, all_users)
 
@@ -450,7 +460,8 @@ class Kathara(IManager):
             with the device info. Returns None if the device is not found.
 
         Raises:
-            InvocationError: If a running network scenario hash or name is not specified.
+            InvocationError: If more than one param among lab_hash, lab_name and lab is specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         return self.manager.get_machine_stats(machine_name, lab_hash, lab_name, lab, all_users)
 
@@ -469,6 +480,7 @@ class Kathara(IManager):
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
             MachineNotRunningError: If the specified device is not running.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         return self.manager.get_machine_stats_obj(machine, all_users)
 
@@ -489,6 +501,10 @@ class Kathara(IManager):
         Returns:
              Generator[Dict[str, ILinkStats], None, None]: A generator containing dicts that has API Object
              identifier as keys and ILinksStats objects as values.
+
+        Raises:
+            InvocationError: If a running network scenario hash, name or object is not specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         return self.manager.get_links_stats(lab_hash, lab_name, lab, link_name, all_users)
 
@@ -513,6 +529,7 @@ class Kathara(IManager):
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         return self.manager.get_link_stats(link_name, lab_hash, lab_name, lab, all_users)
 
@@ -529,6 +546,7 @@ class Kathara(IManager):
 
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         return self.manager.get_link_stats_obj(link, all_users)
 

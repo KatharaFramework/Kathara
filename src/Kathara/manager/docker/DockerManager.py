@@ -93,7 +93,6 @@ class DockerManager(IManager):
         if not machine.lab:
             raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
 
-        logging.debug(f"Checking `{machine.name}` integrity...")
         machine.check()
 
         self.docker_link.deploy_links(machine.lab, selected_links={x.link.name for x in machine.interfaces.values()})
@@ -134,7 +133,6 @@ class DockerManager(IManager):
             PrivilegeError: If the user start the network scenario in privileged mode without having root privileges.
             MachineNotFoundError: If the specified devices are not in the network scenario.
         """
-        logging.debug("Checking network scenario integrity...")
         lab.check_integrity()
 
         if selected_machines and not lab.has_machines(selected_machines):
@@ -520,6 +518,9 @@ class DockerManager(IManager):
 
         Returns:
             List[docker.models.containers.Container]: Docker API objects of devices.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
@@ -584,6 +585,9 @@ class DockerManager(IManager):
 
         Returns:
             List[docker.models.networks.Network]: Docker API objects of networks.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
@@ -826,6 +830,7 @@ class DockerManager(IManager):
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
             MachineNotRunningError: If the specified device is not running.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         if not machine.lab:
             raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
@@ -851,6 +856,10 @@ class DockerManager(IManager):
         Returns:
              Generator[Dict[str, DockerLinkStats], None, None]: A generator containing dicts that has API Object
                 identifier as keys and DockerLinksStats objects as values.
+
+        Raises:
+            InvocationError: If a running network scenario hash, name or object is not specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
@@ -883,6 +892,7 @@ class DockerManager(IManager):
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
@@ -912,6 +922,7 @@ class DockerManager(IManager):
 
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         if not link.lab:
             raise LabNotFoundError(f"Link `{link.name}` is not associated to a network scenario.")

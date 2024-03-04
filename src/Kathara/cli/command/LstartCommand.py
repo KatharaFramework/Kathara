@@ -175,7 +175,6 @@ class LstartCommand(Command):
         if len(lab.machines) <= 0:
             raise EmptyLabError()
 
-
         lab.global_machine_metadata = OptionParser.parse(args['global_machine_metadata'])
 
         lab_ext_path = os.path.join(lab_path, 'lab.ext')
@@ -220,7 +219,11 @@ class LstartCommand(Command):
         Kathara.get_instance().deploy_lab(lab, selected_machines=set(args['machine_name']))
 
         if args['list']:
-            machines_stats = Kathara.get_instance().get_machines_stats(lab_hash=lab.hash)
-            print(next(create_table(machines_stats)))
+            with self.console.status(
+                    f"Loading...",
+                    spinner="dots"
+            ) as _:
+                machines_stats = Kathara.get_instance().get_machines_stats(lab_hash=lab.hash)
+                self.console.print(create_table(machines_stats))
 
         return lab

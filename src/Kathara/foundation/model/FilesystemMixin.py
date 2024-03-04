@@ -1,7 +1,7 @@
 import io
 import os.path
 import re
-from typing import Optional, List, BinaryIO, TextIO, Union, Pattern
+from typing import Optional, List, BinaryIO, TextIO, Union
 
 from fs import open_fs
 from fs.base import FS

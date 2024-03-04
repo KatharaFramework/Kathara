@@ -276,6 +276,8 @@ class Machine(FilesystemMixin):
         Raises:
             NonSequentialMachineInterfaceError: If there is a missing interface number.
         """
+        logging.debug(f"Checking `{self.name}` integrity...")
+
         sorted_interfaces = sorted(self.interfaces.items(), key=lambda kv: kv[0])
 
         logging.debug("`%s` interfaces are %s." % (self.name, sorted_interfaces))

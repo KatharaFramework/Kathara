@@ -5,15 +5,14 @@ from unittest.mock import Mock
 import docker.types
 import pytest
 
-from Kathara.model.ExternalLink import ExternalLink
-
 sys.path.insert(0, './')
 
+from src.Kathara.model.ExternalLink import ExternalLink
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import BRIDGE_LINK_NAME
 from src.Kathara.manager.docker.DockerLink import DockerLink
 from src.Kathara import utils
-from src.Kathara.exceptions import LinkNotFoundError, PrivilegeError
+from src.Kathara.exceptions import PrivilegeError
 from src.Kathara.types import SharedCollisionDomainsOption
 
 
@@ -137,12 +136,16 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_li
     )
 
 
+@mock.patch("src.Kathara.os.Networking.Networking.attach_interface_bridge")
+@mock.patch("src.Kathara.os.Networking.Networking.get_or_new_interface")
 @mock.patch("src.Kathara.utils.is_admin")
 @mock.patch("src.Kathara.utils.is_platform")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
 def test_create_external(mock_get_current_user_name, mock_setting_get_instance, mock_is_platform,
-                         mock_is_admin, docker_link, default_link):
+                         mock_is_admin, mock_networking_get_intf, mock_networking_attach, docker_link, default_link):
+    mock_networking_get_intf.return_value = 1
+
     docker_link.client.networks.list.return_value = []
 
     mock_get_current_user_name.return_value = 'user'
@@ -173,6 +176,9 @@ def test_create_external(mock_get_current_user_name, mock_setting_get_instance, 
             "lab_hash": default_link.lab.hash,
         }
     )
+
+    mock_networking_get_intf.assert_called_once_with("eth0", "eth0", None)
+    docker_link.docker_plugin.exec_by_version.assert_called_once()
 
 
 @mock.patch("src.Kathara.utils.is_admin")
@@ -357,6 +363,7 @@ def test_deploy_links_no_link(mock_deploy_link, docker_link):
 #
 @mock.patch("docker.models.networks.Network")
 def test_delete_link(docker_network, docker_link):
+    docker_network.attrs = {"Labels": {"external": ""}}
     docker_link._delete_link(docker_network)
     docker_network.remove.assert_called_once()
 
@@ -492,8 +499,8 @@ def test_get_links_stats_lab_hash(mock_get_links_api_objects_by_filters, docker_
                                   docker_network):
     docker_network.api_object.name = "test_network"
     mock_get_links_api_objects_by_filters.return_value = [docker_network.api_object]
-    stat = next(docker_link.get_links_stats(lab_hash="lab_hash"))
-    mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name=None, user=None)
+    stat = next(docker_link.get_links_stats(lab_hash="lab_hash", user="user"))
+    mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name=None, user="user")
     assert stat['test_network']
     assert stat['test_network'].network_name == "test_network"
 
@@ -503,9 +510,9 @@ def test_get_links_stats_lab_hash_link_name(mock_get_links_api_objects_by_filter
                                             docker_network):
     docker_network.api_object.name = "test_network"
     mock_get_links_api_objects_by_filters.return_value = [docker_network.api_object]
-    next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_network"))
+    next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_network", user="user"))
     mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name="test_network",
-                                                                  user=None)
+                                                                  user="user")
 
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_api_objects_by_filters")
@@ -524,8 +531,8 @@ def test_get_links_stats_lab_hash_link_not_found(mock_get_links_api_objects_by_f
                                                  docker_network):
     docker_network.api_object.name = "test_network"
     mock_get_links_api_objects_by_filters.return_value = []
-    assert next(docker_link.get_links_stats(lab_hash="lab_hash")) == {}
-    mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name=None, user=None)
+    assert next(docker_link.get_links_stats(lab_hash="lab_hash", user="user")) == {}
+    mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name=None, user="user")
 
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_api_objects_by_filters")
@@ -533,6 +540,24 @@ def test_get_links_stats_lab_hash_link_name_not_found(mock_get_links_api_objects
                                                       docker_network):
     docker_network.api_object.name = "test_network"
     mock_get_links_api_objects_by_filters.return_value = []
-    assert next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_network")) == {}
+    assert next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_network", user="user")) == {}
     mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name="test_network",
-                                                                  user=None)
+                                                                  user="user")
+
+
+@mock.patch("src.Kathara.utils.is_admin")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_links_api_objects_by_filters")
+def test_get_links_stats_lab_hash_no_user(mock_get_links_api_objects_by_filters, mock_is_admin, docker_link,
+                                          docker_network):
+    docker_network.api_object.name = "test_device"
+    mock_get_links_api_objects_by_filters.return_value = [docker_network.api_object]
+    mock_is_admin.return_value = True
+    next(docker_link.get_links_stats(lab_hash="lab_hash", user=None))
+    mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name=None, user=None)
+
+
+@mock.patch("src.Kathara.utils.is_admin")
+def test_get_links_stats_privilege_error(mock_is_admin, docker_link):
+    mock_is_admin.return_value = False
+    with pytest.raises(PrivilegeError):
+        next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_device", user=None))

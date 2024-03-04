@@ -1,4 +1,5 @@
 import collections
+import logging
 from itertools import chain
 from typing import Dict, Set, Any, List, Union, Optional, Tuple
 
@@ -188,6 +189,8 @@ class Lab(FilesystemMixin):
         Raises:
             NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
         """
+        logging.debug("Checking network scenario integrity...")
+
         for machine in self.machines.values():
             machine.check()
 

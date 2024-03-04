@@ -50,7 +50,6 @@ class KubernetesManager(IManager):
         if not machine.lab:
             raise LabNotFoundError("Machine `%s` is not associated to a network scenario." % machine.name)
 
-        logging.debug(f"Checking `{machine.name}` integrity...")
         machine.check()
 
         machine.lab.hash = machine.lab.hash.lower()
@@ -95,7 +94,6 @@ class KubernetesManager(IManager):
             LabAlreadyExistsError: If a network scenario is deployed while it is terminating its execution.
             ApiError: If the Kubernetes APIs throw an exception.
         """
-        logging.debug("Checking network scenario integrity...")
         lab.check_integrity()
 
         if selected_machines and not lab.has_machines(selected_machines):
