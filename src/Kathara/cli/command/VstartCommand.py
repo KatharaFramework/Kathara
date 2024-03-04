@@ -1,9 +1,8 @@
 import argparse
-import logging
 import sys
 from typing import List
 
-from ..ui.utils import format_headers, interface_cd_mac
+from ..ui.utils import create_panel, interface_cd_mac
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
@@ -165,11 +164,18 @@ class VstartCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
+        name = args.pop('name')
+
+        self.console.print(
+            create_panel(
+                f"Checking Device `{name}`" if args['dry_mode'] else f"Starting Device `{name}`",
+                style="blue bold", justify="center"
+            )
+        )
+
         if args['dry_mode']:
-            logging.info("Device configuration is correct. Exiting...")
+            self.console.print(f"[green]\u2713 [bold]{name}[/bold] configuration is correct.")
             sys.exit(0)
-        else:
-            logging.info(format_headers("Starting Device"))
 
         Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
             else Setting.get_instance().open_terminals
@@ -180,15 +186,13 @@ class VstartCommand(Command):
             if not utils.is_admin():
                 raise PrivilegeError("You must be root in order to start this Kathara device in privileged mode.")
             else:
-                logging.warning("Running device with privileged capabilities, terminal won't open!")
+                self.console.print("[yellow]\u26a0 Running devices with privileged capabilities, terminals won't open!")
                 Setting.get_instance().open_terminals = False
 
         lab = Lab("kathara_vlab")
         lab.add_option('hosthome_mount', args['hosthome_mount'])
         lab.add_option('shared_mount', False)
         lab.add_option('privileged_machines', args['privileged'])
-
-        name = args.pop('name')
 
         device = lab.get_or_new_machine(name, **args)
 
@@ -201,7 +205,5 @@ class VstartCommand(Command):
                 except ValueError:
                     s = f"{cd}/{mac_address}" if mac_address else f"{cd}"
                     raise SyntaxError(f"Interface number in `--eth {iface_number}:{s}` is not a number.")
-
-        lab.check_integrity()
 
         Kathara.get_instance().deploy_lab(lab)

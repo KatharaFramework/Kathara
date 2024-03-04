@@ -1,5 +1,6 @@
 from typing import Dict, Any, List
 
+from docker.errors import NotFound
 from docker.models.containers import Container
 from docker.models.networks import Network
 
@@ -39,7 +40,11 @@ class DockerLinkStats(ILinkStats):
         Returns:
             None
         """
-        self.link_api_object.reload()
+        try:
+            self.link_api_object.reload()
+        except NotFound:
+            # Happens while deleting
+            pass
 
         self.containers = [container for container in self.link_api_object.containers]
 

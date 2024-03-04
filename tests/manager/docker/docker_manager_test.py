@@ -14,7 +14,7 @@ from src.Kathara.utils import generate_urlsafe_hash
 from src.Kathara.manager.docker.stats.DockerLinkStats import DockerLinkStats
 from src.Kathara.manager.docker.stats.DockerMachineStats import DockerMachineStats
 from src.Kathara.exceptions import MachineNotFoundError, LabNotFoundError, InvocationError, LinkNotFoundError, \
-    MachineNotRunningError
+    MachineNotRunningError, MachineCollisionDomainError
 from src.Kathara.types import SharedCollisionDomainsOption
 
 
@@ -270,6 +270,19 @@ def test_connect_machine_to_link_one_link(mock_connect_interface_machine, mock_d
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_interface")
+def test_connect_machine_to_link_machine_collision_domain_error(mock_connect_interface_machine, mock_deploy_link,
+                                                                docker_manager, default_device, default_link):
+    docker_manager.connect_machine_to_link(default_device, default_link)
+
+    with pytest.raises(MachineCollisionDomainError):
+        docker_manager.connect_machine_to_link(default_device, default_link)
+
+    mock_connect_interface_machine.assert_called_once()
+    mock_deploy_link.assert_called_once()
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_interface")
 def test_connect_machine_to_link_two_links(mock_connect_interface_machine, mock_deploy_link, docker_manager,
                                            default_device, default_link, default_link_b):
     docker_manager.connect_machine_to_link(default_device, default_link)
@@ -343,6 +356,20 @@ def test_disconnect_machine_from_link_one_link(mock_disconnect_from_link_machine
 
     mock_undeploy_link.assert_called_once_with(default_link)
     mock_disconnect_from_link_machine.assert_called_once_with(default_device, default_link)
+
+
+@mock.patch("src.Kathara.model.Machine.Machine.add_interface")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_interface")
+def test_disconnect_machine_from_link_machine_collision_domain_error(mock_connect_interface_machine, mock_deploy_link,
+                                                                     mock_add_interface, docker_manager, default_device,
+                                                                     default_link):
+    with pytest.raises(MachineCollisionDomainError):
+        docker_manager.disconnect_machine_from_link(default_device, default_link)
+
+    assert not mock_add_interface.called
+    assert not mock_connect_interface_machine.called
+    assert not mock_deploy_link.called
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.undeploy_link")
@@ -540,6 +567,26 @@ def test_wipe_all_users(mock_setting_get_instance, mock_get_current_user_name, m
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.wipe")
 @mock.patch("src.Kathara.utils.get_current_user_name")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_wipe_all_users_remote(mock_setting_get_instance, mock_get_current_user_name, mock_wipe_machines,
+                               mock_wipe_links, docker_manager):
+    mock_get_current_user_name.return_value = "kathara_user"
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'remote_url': "remote_url"
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    docker_manager.wipe(all_users=True)
+    mock_get_current_user_name.assert_called_once()
+    mock_wipe_machines.assert_called_once_with(user="kathara_user")
+    mock_wipe_links.assert_called_once_with(user="kathara_user")
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.wipe")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.wipe")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 def test_wipe_all_users_and_shared_cd_lab(mock_setting_get_instance, mock_get_current_user_name, mock_wipe_machines,
                                           mock_wipe_links, docker_manager):
     setting_mock = Mock()
@@ -681,6 +728,27 @@ def test_connect_tty_error(mock_connect, mock_get_current_user_name, docker_mana
 
 
 #
+# TEST: connect_tty_obj
+#
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.connect_tty")
+def test_connect_tty_obj(mock_connect_tty, docker_manager, default_device):
+    docker_manager.connect_tty_obj(default_device)
+
+    mock_connect_tty.assert_called_once_with(default_device.name, lab=default_device.lab, shell=None, logs=False,
+                                             wait=True)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.connect_tty")
+def test_connect_tty_obj_lab_not_found_error(mock_connect_tty, docker_manager, default_device):
+    default_device.lab = None
+
+    with pytest.raises(LabNotFoundError):
+        docker_manager.connect_tty_obj(default_device)
+
+    assert not mock_connect_tty.called
+
+
+#
 # TEST: exec
 #
 @mock.patch("src.Kathara.utils.get_current_user_name")
@@ -696,7 +764,8 @@ def test_exec_lab_hash(mock_exec, mock_get_current_user_name, docker_manager, de
         ["test", "command"],
         user="kathara_user",
         tty=False,
-        wait=False
+        wait=False,
+        stream=True
     )
 
 
@@ -713,7 +782,8 @@ def test_exec_lab_name(mock_exec, mock_get_current_user_name, docker_manager, de
         ["test", "command"],
         user="kathara_user",
         tty=False,
-        wait=False
+        wait=False,
+        stream=True
     )
 
 
@@ -730,7 +800,8 @@ def test_exec_lab_obj(mock_exec, mock_get_current_user_name, docker_manager, def
         ["test", "command"],
         user="kathara_user",
         tty=False,
-        wait=False
+        wait=False,
+        stream=True
     )
 
 
@@ -753,7 +824,8 @@ def test_exec_wait(mock_exec, mock_get_current_user_name, docker_manager, defaul
         ["test", "command"],
         user="kathara_user",
         tty=False,
-        wait=True
+        wait=True,
+        stream=True
     )
 
 
@@ -766,6 +838,46 @@ def test_exec_invocation_error(mock_exec, mock_get_current_user_name, docker_man
         docker_manager.exec(default_device.name, ["test", "command"])
 
     assert not mock_exec.called
+
+
+#
+# TEST: exec_obj
+#
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.exec")
+def test_exec_obj(mock_exec, docker_manager, default_device):
+    docker_manager.exec_obj(default_device, ["test", "command"])
+
+    mock_exec.assert_called_once_with(
+        default_device.name,
+        ["test", "command"],
+        lab=default_device.lab,
+        wait=False,
+        stream=True
+    )
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.exec")
+def test_exec_obj_lab_not_found_error(mock_exec, docker_manager, default_device):
+    default_device.lab = None
+
+    with pytest.raises(LabNotFoundError):
+        docker_manager.exec_obj(default_device, ["test", "command"])
+
+    assert not mock_exec.called
+
+
+#
+# TEST: copy_files
+#
+@mock.patch("src.Kathara.manager.docker.DockerManager.pack_files_for_tar")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
+def test_copy_files(mock_copy_files, mock_pack_data_for_tar, docker_manager, default_device):
+    mock_pack_data_for_tar.return_value = "packed_data"
+    data = {"path": "file"}
+    docker_manager.copy_files(default_device, data)
+
+    mock_pack_data_for_tar.assert_called_once_with(data)
+    mock_copy_files(default_device.api_object, path="/", tar_data="packed_data")
 
 
 #
@@ -1326,28 +1438,39 @@ def test_get_machines_stats_no_labs(mock_get_machines_stats, docker_manager):
 #
 # TESTS: get_machine_stats
 #
+
+@mock.patch("src.Kathara.utils.is_admin")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
-def test_get_machine_stats_lab_hash_no_user(mock_get_machines_stats, default_device, docker_manager):
+def test_get_machine_stats_lab_hash_all_users(mock_get_machines_stats, mock_is_admin, default_device, docker_manager):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
+    mock_is_admin.return_value = True
     next(docker_manager.get_machine_stats(machine_name="test_device", lab_hash="lab_hash", all_users=True))
-    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", machine_name="test_device",
-                                                    all_users=True)
+    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", lab_name=None, lab=None,
+                                                    machine_name="test_device", all_users=True)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
+def test_get_machine_stats_none(mock_get_machines_stats, default_device, docker_manager):
+    mock_get_machines_stats.return_value = iter([None])
+    next(docker_manager.get_machine_stats(machine_name="test_device", lab_hash="lab_hash", all_users=False))
+    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", lab_name=None, lab=None,
+                                                    machine_name="test_device", all_users=False)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
 def test_get_machine_stats_lab_hash_user(mock_get_machines_stats, default_device, docker_manager):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
     next(docker_manager.get_machine_stats(machine_name="test_device", lab_hash="lab_hash"))
-    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash",
+    mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", lab_name=None, lab=None,
                                                     machine_name="test_device",
                                                     all_users=False)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
-def test_get_machine_stats_lab_name_no_user(mock_get_machines_stats, default_device, docker_manager):
+def test_get_machine_stats_lab_name_all_users(mock_get_machines_stats, default_device, docker_manager):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
     next(docker_manager.get_machine_stats(machine_name="test_device", lab_name="lab_name", all_users=True))
-    mock_get_machines_stats.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name"),
+    mock_get_machines_stats.assert_called_once_with(lab_hash=None, lab_name="lab_name", lab=None,
                                                     machine_name="test_device",
                                                     all_users=True)
 
@@ -1356,17 +1479,17 @@ def test_get_machine_stats_lab_name_no_user(mock_get_machines_stats, default_dev
 def test_get_machine_stats_lab_name_user(mock_get_machines_stats, default_device, docker_manager):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
     next(docker_manager.get_machine_stats(machine_name="test_device", lab_name="lab_name"))
-    mock_get_machines_stats.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name"),
+    mock_get_machines_stats.assert_called_once_with(lab_hash=None, lab_name="lab_name", lab=None,
                                                     machine_name="test_device",
                                                     all_users=False)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
-def test_get_machine_stats_lab_obj_no_user(mock_get_machines_stats, default_device, docker_manager,
+def test_get_machine_stats_lab_obj_all_users(mock_get_machines_stats, default_device, docker_manager,
                                            two_device_scenario):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
     next(docker_manager.get_machine_stats(machine_name="test_device", lab=two_device_scenario, all_users=True))
-    mock_get_machines_stats.assert_called_once_with(lab_hash=two_device_scenario.hash,
+    mock_get_machines_stats.assert_called_once_with(lab_hash=None, lab_name=None, lab=two_device_scenario,
                                                     machine_name="test_device",
                                                     all_users=True)
 
@@ -1375,7 +1498,7 @@ def test_get_machine_stats_lab_obj_no_user(mock_get_machines_stats, default_devi
 def test_get_machine_stats_lab_obj_user(mock_get_machines_stats, default_device, docker_manager, two_device_scenario):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
     next(docker_manager.get_machine_stats(machine_name="test_device", lab=two_device_scenario))
-    mock_get_machines_stats.assert_called_once_with(lab_hash=two_device_scenario.hash,
+    mock_get_machines_stats.assert_called_once_with(lab_hash=None, lab_name=None, lab=two_device_scenario,
                                                     machine_name="test_device",
                                                     all_users=False)
 
@@ -1386,11 +1509,28 @@ def test_get_machine_stats_lab_hash_lab_obj(default_device, docker_manager, two_
                                               lab=two_device_scenario))
 
 
-@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
-def test_get_machine_stats_no_labs(mock_get_machines_stats, docker_manager):
+def test_get_machine_stats_invocation_error(docker_manager):
     with pytest.raises(InvocationError):
-        next(docker_manager.get_machine_stats(machine_name="test_device", all_users=True))
-    assert not mock_get_machines_stats.called
+        next(docker_manager.get_machine_stats(machine_name="test_device", all_users=False))
+
+
+
+#
+# TESTS: get_machine_stats_obj
+#
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machine_stats")
+def test_get_machine_stats_obj(mock_get_machine_stats, docker_manager, default_device):
+    docker_manager.get_machine_stats_obj(default_device)
+    mock_get_machine_stats.assert_called_once_with(default_device.name, lab=default_device.lab, all_users=False)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machine_stats")
+def test_get_machine_stats_obj_lab_not_found_error(mock_get_machine_stats, docker_manager, default_device):
+    default_device.lab = None
+    with pytest.raises(LabNotFoundError):
+        docker_manager.get_machine_stats_obj(default_device)
+
+    assert not mock_get_machine_stats.called
 
 
 #
@@ -1463,6 +1603,13 @@ def test_get_link_stats_lab_hash_no_user(mock_get_links_stats, docker_network, d
 
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_stats")
+def test_get_link_stats_none(mock_get_links_stats, docker_manager):
+    mock_get_links_stats.return_value = iter([None])
+    next(docker_manager.get_link_stats(link_name="test_network", lab_hash="lab_hash", all_users=True))
+    mock_get_links_stats.assert_called_once_with(lab_hash="lab_hash", link_name="test_network", all_users=True)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_stats")
 def test_get_link_stats_lab_hash_user(mock_get_links_stats, docker_network, docker_manager):
     mock_get_links_stats.return_value = iter([{"test_network": DockerLinkStats(docker_network)}])
     next(docker_manager.get_link_stats(link_name="test_network", lab_hash="lab_hash"))
@@ -1513,3 +1660,20 @@ def test_get_link_stats_invocation_error(mock_get_links_stats, docker_network, d
     with pytest.raises(InvocationError):
         next(docker_manager.get_link_stats(link_name="test_network"))
     assert not mock_get_links_stats.called
+
+
+#
+# TESTS: get_link_stats_obj
+#
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_link_stats")
+def test_get_link_stats_obj(mock_get_link_stats, docker_manager, default_link):
+    docker_manager.get_link_stats_obj(default_link)
+    mock_get_link_stats.assert_called_once_with(default_link.name, lab=default_link.lab, all_users=False)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_link_stats")
+def test_get_link_stats_obj_lab_not_found_error(mock_get_link_stats, docker_manager, default_link):
+    default_link.lab = None
+    with pytest.raises(LabNotFoundError):
+        docker_manager.get_link_stats_obj(default_link)
+    assert not mock_get_link_stats.called

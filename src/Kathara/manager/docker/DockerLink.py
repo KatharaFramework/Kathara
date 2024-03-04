@@ -13,7 +13,6 @@ from .DockerPlugin import DockerPlugin
 from .stats.DockerLinkStats import DockerLinkStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import LinkNotFoundError
 from ...exceptions import PrivilegeError
 from ...model.ExternalLink import ExternalLink
 from ...model.Lab import Lab
@@ -89,6 +88,10 @@ class DockerLink(object):
 
         Returns:
             None
+
+        Raises:
+            OSError: If the link is attached to external interfaces and the host OS is not LINUX.
+            PrivilegeError: If the link is attached to external interfaces and the user does not have root privileges.
         """
         # Reserved name for bridged connections, ignore.
         if link.name == BRIDGE_LINK_NAME:
@@ -228,7 +231,7 @@ class DockerLink(object):
         if link_name:
             filters["label"].append(f"name={link_name}")
 
-        return self.client.networks.list(filters=filters)
+        return self.client.networks.list(filters=filters, greedy=True)
 
     def get_links_stats(self, lab_hash: str = None, link_name: str = None, user: str = None) -> \
             Generator[Dict[str, DockerLinkStats], None, None]:
@@ -245,35 +248,38 @@ class DockerLink(object):
            DockerLinkStats as values.
 
         Raises:
-            LinkNotFoundError: If the collision domains specified are not found.
+            PrivilegeError: If user param is None and the user does not have root privileges.
         """
-        networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name, user=user)
-        if not networks:
-            if not link_name:
-                raise LinkNotFoundError("No collision domains found.")
-            else:
-                raise LinkNotFoundError(f"Collision domains with name {link_name} not found.")
-
-        networks = sorted(networks, key=lambda x: x.name)
+        if user is None and not utils.is_admin():
+            raise PrivilegeError("You must be root to get networks statistics of all users.")
 
         networks_stats = {}
 
         def load_link_stats(network):
-            networks_stats[network.name] = DockerLinkStats(network)
-
-        pool_size = utils.get_pool_size()
-        items = utils.chunk_list(networks, pool_size)
-
-        with Pool(pool_size) as links_pool:
-            for chunk in items:
-                links_pool.map(func=load_link_stats, iterable=chunk)
+            if network.name not in networks_stats:
+                networks_stats[network.name] = DockerLinkStats(network)
 
         while True:
-            for network_stats in networks_stats.values():
+            networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name, user=user)
+            if not networks:
+                yield dict()
+
+            pool_size = utils.get_pool_size()
+            items = utils.chunk_list(networks, pool_size)
+            with Pool(pool_size) as links_pool:
+                for chunk in items:
+                    links_pool.map(func=load_link_stats, iterable=chunk)
+
+            networks_to_remove = []
+            for network_id, network_stats in networks_stats.items():
                 try:
                     network_stats.update()
                 except StopIteration:
+                    networks_to_remove.append(network_id)
                     continue
+
+            for k in networks_to_remove:
+                networks_stats.pop(k, None)
 
             yield networks_stats
 
@@ -305,7 +311,17 @@ class DockerLink(object):
 
         Returns:
             None
+
+        Raises:
+            OSError: If the link is attached to external interfaces and the host OS is not LINUX.
+            PrivilegeError: If the link is attached to external interfaces and the user does not have root privileges.
         """
+        if not (utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2)):
+            raise OSError("External collision domains available only on Linux systems.")
+
+        if not utils.is_admin():
+            raise PrivilegeError("You must be root in order to use external collision domains.")
+
         for external_link in external_links:
             (name, vlan) = external_link.get_name_and_vlan()
             interface_index = Networking.get_or_new_interface(external_link.interface, name, vlan)
@@ -330,25 +346,29 @@ class DockerLink(object):
 
         Returns:
             None
+
+        Raises:
+            OSError: If the link is attached to external interfaces and the host OS is not LINUX.
+            PrivilegeError: If the link is attached to external interfaces and the user does not have root privileges.
         """
+        if not (utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2)):
+            raise OSError("External collision domains available only on Linux systems.")
+
+        if not utils.is_admin():
+            raise PrivilegeError("You must be root in order to use external collision domains.")
+
         for external_link in external_links:
-            if utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2):
-                if utils.is_admin():
-                    def vde_delete():
-                        plugin_pid = self.docker_plugin.plugin_pid()
-                        switch_path = os.path.join(self.docker_plugin.plugin_store_path(),
-                                                   self._get_bridge_name(network))
-                        Networking.remove_interface_ns(external_link, switch_path, plugin_pid)
+            def vde_delete():
+                plugin_pid = self.docker_plugin.plugin_pid()
+                switch_path = os.path.join(self.docker_plugin.plugin_store_path(),
+                                           self._get_bridge_name(network))
+                Networking.remove_interface_ns(external_link, switch_path, plugin_pid)
 
-                    self.docker_plugin.exec_by_version(vde_delete, lambda: None)
+            self.docker_plugin.exec_by_version(vde_delete, lambda: None)
 
-                    if re.search(r"^\w+\.\d+$", external_link):
-                        # Only remove VLAN interfaces, physical ones cannot be removed.
-                        Networking.remove_interface(external_link)
-                else:
-                    raise PrivilegeError("You must be root in order to delete an External Interface.")
-            else:
-                raise OSError("External Interfaces are only available on UNIX systems.")
+            if re.search(r"^\w+\.\d+$", external_link):
+                # Only remove VLAN interfaces, physical ones cannot be removed.
+                Networking.remove_interface(external_link)
 
     @staticmethod
     def _get_bridge_name(network: docker.models.networks.Network) -> str:

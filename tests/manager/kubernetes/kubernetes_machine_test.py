@@ -639,20 +639,16 @@ def test_get_machines_stats_no_hash_no_name(mock_get_machines_api_objects_by_fil
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
-def test_get_machines_stats_lab_hash_device_not_found(mock_get_machines_api_objects_by_filters, kubernetes_machine,
-                                                      default_device):
+def test_get_machines_stats_lab_hash_device_not_found(mock_get_machines_api_objects_by_filters, kubernetes_machine):
     mock_get_machines_api_objects_by_filters.return_value = []
-    with pytest.raises(MachineNotFoundError):
-        next(kubernetes_machine.get_machines_stats(lab_hash="lab_hash"))
+    assert next(kubernetes_machine.get_machines_stats(lab_hash="lab_hash")) == {}
     mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash",
                                                                      machine_name=None)
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
-def test_get_machines_stats_device_not_found(mock_get_machines_api_objects_by_filters, kubernetes_machine,
-                                             default_device):
+def test_get_machines_stats_device_not_found(mock_get_machines_api_objects_by_filters, kubernetes_machine):
     mock_get_machines_api_objects_by_filters.return_value = []
-    with pytest.raises(MachineNotFoundError):
-        next(kubernetes_machine.get_machines_stats())
+    assert next(kubernetes_machine.get_machines_stats()) == {}
     mock_get_machines_api_objects_by_filters.assert_called_once_with(lab_hash=None,
                                                                      machine_name=None)

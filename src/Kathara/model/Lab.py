@@ -1,4 +1,5 @@
 import collections
+import logging
 from itertools import chain
 from typing import Dict, Set, Any, List, Union, Optional, Tuple
 
@@ -31,13 +32,15 @@ class Lab(FilesystemMixin):
             are Kathara device objects.
         links (Dict[str, Kathara.model.Link]): The collision domains of the network scenario.
             Keys are collision domains names, Values are Kathara collision domain objects.
-        general_options (Dict[str, Any]): Keys are option names, values are option values.
+        general_options (Dict[str, Any]): The general options of the network scenario.
+        global_machine_metadata (Dict[str, Any]): Metadata to apply to all the devices of the network scenario at
+            the startup.
         has_dependencies (bool): True if there are dependencies among the devices boot.
         shared_path (str): Path to shared folder of the network scenario, if the network scenario has a real OS path.
         fs (fs.FS): The filesystem of the network scenario. Contains files and configurations associated to it.
     """
     __slots__ = ['_name', 'description', 'version', 'author', 'email', 'web', 'hash',
-                 'machines', 'links', 'general_options', 'has_dependencies', 'shared_path']
+                 'machines', 'links', 'general_options', 'global_machine_metadata', 'has_dependencies', 'shared_path']
 
     def __init__(self, name: Optional[str], path: Optional[str] = None) -> None:
         """Create a new instance of a Kathara network scenario.
@@ -61,7 +64,11 @@ class Lab(FilesystemMixin):
         self.machines: Dict[str, 'MachinePackage.Machine'] = {}
         self.links: Dict[str, 'LinkPackage.Link'] = {}
 
-        self.general_options: Dict[str, Any] = {}
+        self.general_options: Dict[str, Any] = {
+            'privileged_machines': False,
+        }
+
+        self.global_machine_metadata: Dict[str, Any] = {}
 
         self.has_dependencies: bool = False
 
@@ -175,9 +182,14 @@ class Lab(FilesystemMixin):
 
         Returns:
             None
+
+        Raises:
+            NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
         """
-        for machine in self.machines:
-            self.machines[machine].check()
+        logging.debug("Checking network scenario integrity...")
+
+        for machine in self.machines.values():
+            machine.check()
 
     def get_links_from_machines(self, machines: Union[List[str], Set[str]]) -> Set[str]:
         """Return the name of the collision domains connected to the devices.
@@ -257,12 +269,12 @@ class Lab(FilesystemMixin):
 
         return self.machines[name]
 
-    def new_machine(self, name: str, **kwargs: Dict[str, Any]) -> 'MachinePackage.Machine':
+    def new_machine(self, name: str, **kwargs) -> 'MachinePackage.Machine':
         """Create and add the device to the devices list.
 
         Args:
             name (str): The name of the device
-            **kwargs (Dict[str, Any]): Contains device meta information.
+            **kwargs: Contains device meta information.
                 Keys are meta property names, values are meta property values.
 
         Returns:
@@ -278,12 +290,12 @@ class Lab(FilesystemMixin):
 
         return self.machines[name]
 
-    def get_or_new_machine(self, name: str, **kwargs: Dict[str, Any]) -> 'MachinePackage.Machine':
+    def get_or_new_machine(self, name: str, **kwargs) -> 'MachinePackage.Machine':
         """Get the specified device. If it not exists, create and add it to the devices list.
 
         Args:
             name (str): The name of the device
-            **kwargs (Dict[str, Any]): Contains device meta information.
+            **kwargs: Contains device meta information.
                 Keys are meta property names, values are meta property values.
 
         Returns:
@@ -386,6 +398,19 @@ class Lab(FilesystemMixin):
         if value is not None:
             self.general_options[name] = value
 
+    def add_global_machine_metadata(self, name: str, value: Any) -> None:
+        """Add a global machine metadata to the network scenario.
+
+        Args:
+            name (str): The name of the meta.
+            value (Any): The value of the meta.
+
+        Returns:
+            None
+        """
+        if value is not None:
+            self.global_machine_metadata[name] = value
+
     def has_machine(self, machine_name: str) -> bool:
         """Check if the specified device is in the network scenario.
 
@@ -434,24 +459,19 @@ class Lab(FilesystemMixin):
         return "Lab(%s, %s, %s, %s)" % (self.fs, self.hash, self.machines, self.links)
 
     def __str__(self) -> str:
-        lab_info = ""
+        lab_info = []
 
         if self._name:
-            lab_info += "Name: %s\n" % self._name
-
+            lab_info.append(f"Name: {self._name}")
         if self.description:
-            lab_info += "Description: %s\n" % self.description
-
+            lab_info.append(f"Description: {self.description}")
         if self.version:
-            lab_info += "Version: %s\n" % self.version
-
+            lab_info.append(f"Version: {self.version}")
         if self.author:
-            lab_info += "Author(s): %s\n" % self.author
-
+            lab_info.append(f"Author(s): {self.author}")
         if self.email:
-            lab_info += "Email: %s\n" % self.email
-
+            lab_info.append(f"Email: {self.email}")
         if self.web:
-            lab_info += "Website: %s\n" % self.web
+            lab_info.append(f"Website: {self.web}")
 
-        return lab_info[0:-1]  # Remove trailing new line
+        return "\n".join(lab_info)

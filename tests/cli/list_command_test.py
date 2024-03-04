@@ -89,80 +89,63 @@ def test_run_name(mock_docker_manager, mock_manager_get_instance, test_lab):
     mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name='pc1', all_users=False)
 
 
-@mock.patch("src.Kathara.trdparty.curses.curses.Curses.close")
-@mock.patch("src.Kathara.trdparty.curses.curses.Curses.print_string", side_effect=StopIteration)
-@mock.patch("src.Kathara.trdparty.curses.curses.Curses.init_window")
+@mock.patch("rich.live.Live.update", side_effect=[None, KeyboardInterrupt])
 @mock.patch("src.Kathara.cli.command.ListCommand.create_table")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
-def test_get_live_info(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_init_window,
-                       mock_print_string, mock_close,
-                       test_lab):
-    mock_manager_get_instance.return_value = mock_docker_manager
-    stats = map(lambda x: x, [])
-    mock_docker_manager.get_machines_stats.return_value = stats
-    ListCommand._get_live_info(None, False)
-    mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name=None, all_users=False)
-    mock_create_table.assert_called_once_with(stats)
-    mock_init_window.assert_called_once()
-    mock_print_string.assert_called_once()
-    mock_close.assert_called_once()
-
-
-@mock.patch("src.Kathara.trdparty.curses.curses.Curses.close")
-@mock.patch("src.Kathara.trdparty.curses.curses.Curses.print_string", side_effect=StopIteration)
-@mock.patch("src.Kathara.trdparty.curses.curses.Curses.init_window")
-@mock.patch("src.Kathara.cli.command.ListCommand.create_table")
-@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
-@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
-def test_get_live_info_machine_name(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_init_window,
-                                    mock_print_string,
-                                    mock_close,
+def test_get_live_info_machine_name(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_update,
                                     test_lab):
-    mock_manager_get_instance.return_value = mock_docker_manager
     stats = map(lambda x: x, [])
+    mock_manager_get_instance.return_value = mock_docker_manager
     mock_docker_manager.get_machines_stats.return_value = stats
-    ListCommand._get_live_info('pc1', False)
+    with pytest.raises(KeyboardInterrupt):
+        ListCommand()._get_live_info('pc1', False)
     mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name='pc1', all_users=False)
     mock_create_table.assert_called_once_with(stats)
-    mock_init_window.assert_called_once()
-    mock_print_string.assert_called_once()
-    mock_close.assert_called_once()
+    assert mock_update.call_count == 2
 
 
-@mock.patch("src.Kathara.trdparty.curses.curses.Curses.close")
-@mock.patch("src.Kathara.trdparty.curses.curses.Curses.print_string", side_effect=StopIteration)
-@mock.patch("src.Kathara.trdparty.curses.curses.Curses.init_window")
+@mock.patch("rich.live.Live.update", side_effect=[None, KeyboardInterrupt])
 @mock.patch("src.Kathara.cli.command.ListCommand.create_table")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
-def test_get_live_info_all_users(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_init_window,
-                                 mock_print_string, mock_close, test_lab):
+def test_get_live_info(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_update):
     mock_manager_get_instance.return_value = mock_docker_manager
     stats = map(lambda x: x, [])
     mock_docker_manager.get_machines_stats.return_value = stats
-    ListCommand._get_live_info(None, True)
+    with pytest.raises(KeyboardInterrupt):
+        ListCommand()._get_live_info(None, False)
+    mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name=None, all_users=False)
+    mock_create_table.assert_called_once_with(stats)
+    assert mock_update.call_count == 2
+
+
+@mock.patch("rich.live.Live.update", side_effect=[None, KeyboardInterrupt])
+@mock.patch("src.Kathara.cli.command.ListCommand.create_table")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_get_live_info_all_users(mock_docker_manager, mock_manager_get_instance, mock_create_table, mock_update):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    stats = map(lambda x: x, [])
+    mock_docker_manager.get_machines_stats.return_value = stats
+    with pytest.raises(KeyboardInterrupt):
+        ListCommand()._get_live_info(None, True)
     mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name=None, all_users=True)
     mock_create_table.assert_called_once_with(stats)
-    mock_init_window.assert_called_once()
-    mock_print_string.assert_called_once()
-    mock_close.assert_called_once()
+    assert mock_update.call_count == 2
 
 
-@mock.patch("src.Kathara.trdparty.curses.curses.Curses.close")
-@mock.patch("src.Kathara.trdparty.curses.curses.Curses.print_string", side_effect=StopIteration)
-@mock.patch("src.Kathara.trdparty.curses.curses.Curses.init_window")
+@mock.patch("rich.live.Live.update", side_effect=[None, KeyboardInterrupt])
 @mock.patch("src.Kathara.cli.command.ListCommand.create_table")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 def test_get_live_info_machine_name_all_users(mock_docker_manager, mock_manager_get_instance, mock_create_table,
-                                              mock_init_window, mock_print_string, mock_close, test_lab):
+                                              mock_update):
     mock_manager_get_instance.return_value = mock_docker_manager
     stats = map(lambda x: x, [])
     mock_docker_manager.get_machines_stats.return_value = stats
-    ListCommand._get_live_info('pc1', True)
+    with pytest.raises(KeyboardInterrupt):
+        ListCommand()._get_live_info('pc1', True)
     mock_docker_manager.get_machines_stats.assert_called_once_with(machine_name='pc1', all_users=True)
     mock_create_table.assert_called_once_with(stats)
-    mock_init_window.assert_called_once()
-    mock_print_string.assert_called_once()
-    mock_close.assert_called_once()
+    assert mock_update.call_count == 2

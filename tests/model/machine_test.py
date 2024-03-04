@@ -328,7 +328,7 @@ def test_get_mem_default(default_device: Machine):
 
 def test_get_mem_from_lab_options():
     lab = Lab('mem_test')
-    lab.add_option("mem", "150m")
+    lab.add_global_machine_metadata("mem", "150m")
     device = Machine(lab, "test_machine")
     assert device.get_mem() == "150m"
 
@@ -348,7 +348,7 @@ def test_get_cpu_default(default_device: Machine):
 
 def test_get_cpu_from_lab_options():
     lab = Lab('mem_test')
-    lab.add_option("cpus", "2")
+    lab.add_global_machine_metadata("cpus", "2")
     device = Machine(lab, "test_machine")
     assert device.get_cpu() == 2
 
@@ -368,7 +368,7 @@ def test_get_num_terms_default(default_device: Machine):
 
 def test_get_num_terms_from_lab_options():
     lab = Lab('mem_test')
-    lab.add_option("num_terms", "2")
+    lab.add_global_machine_metadata("num_terms", "2")
     device = Machine(lab, "test_machine")
     assert device.get_num_terms() == 2
 
@@ -382,7 +382,7 @@ def test_get_num_terms_from_device_meta():
 def test_get_num_terms_mix():
     # Lab options have a greater priority than machine options
     lab = Lab('mem_test')
-    lab.add_option("num_terms", "2")
+    lab.add_global_machine_metadata("num_terms", "2")
     kwargs = {"num_terms": "1"}
     device1 = Machine(lab, "test_machine1", **kwargs)
     device2 = Machine(lab, "test_machine2")
@@ -395,7 +395,7 @@ def test_get_num_terms_mix():
 #
 def test_is_ipv6_enabled_from_lab_options():
     lab = Lab('mem_test')
-    lab.add_option("ipv6", True)
+    lab.add_global_machine_metadata("ipv6", True)
     device = Machine(lab, "test_machine")
     assert device.is_ipv6_enabled()
 
@@ -415,7 +415,7 @@ def test_is_ipv6_enabled_from_device_meta_str():
 def test_is_ipv6_enabled_mix():
     # Lab options have a greater priority than machine options
     lab = Lab('mem_test')
-    lab.add_option("ipv6", False)
+    lab.add_global_machine_metadata("ipv6", False)
     kwargs = {"ipv6": True}
     device1 = Machine(lab, "test_machine1", **kwargs)
     device2 = Machine(lab, "test_machine2")

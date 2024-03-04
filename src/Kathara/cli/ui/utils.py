@@ -5,67 +5,85 @@ import shlex
 import subprocess
 import sys
 from datetime import datetime
-from typing import Any, Dict, Generator
+from typing import Any, Dict, Generator, Optional, Union
 from typing import Callable
 
-from terminaltables import DoubleTable
+from rich import box
+from rich.console import RenderableType, Group
+from rich.highlighter import RegexHighlighter
+from rich.panel import Panel
+from rich.prompt import Confirm
+from rich.table import Table
+from rich.text import Text
 
 from ... import utils
 from ...foundation.manager.stats.IMachineStats import IMachineStats
 from ...setting.Setting import Setting
-from ...trdparty.consolemenu import PromptUtils, Screen
 from ...utils import parse_cd_mac_address
 
 FORBIDDEN_TABLE_COLUMNS = ["container_name"]
 
 
-def confirmation_prompt(prompt_string: str, callback_yes: Callable, callback_no: Callable) -> Any:
-    prompt_utils = PromptUtils(Screen())
-    answer = prompt_utils.prompt_for_bilateral_choice(prompt_string, 'y', 'n')
+class LabMetaHighlighter(RegexHighlighter):
+    """Highlights metadata of the network scenario."""
+    base_style = "kathara."
+    highlights = [
+        re.compile(r"(?P<lab_name>^Name: )", re.MULTILINE),
+        re.compile(r"(?P<lab_description>^Description: )", re.MULTILINE),
+        re.compile(r"(?P<lab_version>^Version: )", re.MULTILINE),
+        re.compile(r"(?P<lab_author>^Author\(s\): )", re.MULTILINE),
+        re.compile(r"(?P<lab_email>^Email: )", re.MULTILINE),
+        re.compile(r"(?P<lab_web>^Website: )", re.MULTILINE),
+    ]
 
-    if answer == "n":
+
+def confirmation_prompt(prompt_string: str, callback_yes: Callable, callback_no: Callable) -> Any:
+    answer = Confirm.ask(prompt_string)
+    if not answer:
         return callback_no()
 
     return callback_yes()
 
 
-def format_headers(message: str = "") -> str:
-    footer = "=============================="
-    half_message = int((len(message) / 2) + 1)
-    second_half_message = half_message
+def create_panel(message: Union[str, Text], **kwargs) -> Panel:
+    return Panel(
+        Text.from_markup(
+            message,
+            style=kwargs['style'] if 'style' in kwargs else "none",
+            justify=kwargs['justify'] if 'justify' in kwargs else None,
+        ) if isinstance(message, str) else message,
+        title=kwargs['title'] if 'title' in kwargs else None,
+        title_align="center",
+        box=kwargs['box'] if 'box' in kwargs else box.SQUARE,
+    )
 
-    if len(message) % 2 == 0:
-        second_half_message -= 1
 
-    message = " " + message + " " if message != "" else "=="
-    return footer[half_message:] + message + footer[second_half_message:]
+def create_table(streams: Generator[Dict[str, IMachineStats], None, None]) -> Optional[RenderableType]:
+    try:
+        result = next(streams)
+    except StopIteration:
+        return None
 
+    ts_header = f"TIMESTAMP: {datetime.now()}"
+    if not result:
+        return Group(
+            Text(ts_header, style="italic", justify="center"),
+            create_panel("No Devices Found", style="red bold", justify="center", box=box.DOUBLE)
+        )
 
-def create_table(streams: Generator[Dict[str, IMachineStats], None, None]) -> \
-        Generator[str, None, None]:
-    table = DoubleTable([])
-    table.inner_row_border = True
+    table = Table(title=ts_header, show_lines=True, expand=True, box=box.SQUARE_DOUBLE_HEAD)
 
-    while True:
-        try:
-            result = next(streams)
-        except StopIteration:
-            return
+    for item in result.values():
+        row_data = item.to_dict()
+        row_data = dict(filter(lambda x: x[0] not in FORBIDDEN_TABLE_COLUMNS, row_data.items()))
 
-        if not result:
-            return
+        if not table.columns:
+            for col in map(lambda x: x.replace('_', ' ').upper(), row_data.keys()):
+                table.add_column(col, header_style="dark_orange3")
 
-        table.table_data = []
-        for item in result.values():
-            row_data = item.to_dict()
-            row_data = dict(filter(lambda x: x[0] not in FORBIDDEN_TABLE_COLUMNS, row_data.items()))
+        table.add_row(*map(lambda x: str(x), row_data.values()))
 
-            if not table.table_data:
-                table.table_data.append(list(map(lambda x: x.replace('_', ' ').upper(), row_data.keys())))
-
-            table.table_data.append(row_data.values())
-
-        yield "TIMESTAMP: %s" % datetime.now() + "\n\n" + table.table
+    return table
 
 
 def open_machine_terminal(machine) -> None:

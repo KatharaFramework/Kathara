@@ -69,12 +69,12 @@ class EventDispatcher(object):
             )
         )
 
-    def dispatch(self, event: str, **kwargs: Any) -> None:
+    def dispatch(self, event: str, **kwargs) -> None:
         """Dispatch a given event.
 
         Args:
             event (str): Name of the event.
-            kwargs (Any): Arguments to pass to the event callback.
+            kwargs: Arguments to pass to the event callback.
 
         Returns:
             None

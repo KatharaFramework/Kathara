@@ -1,21 +1,33 @@
 import os
 import sys
 from pathlib import Path
+from unittest import mock
+from unittest.mock import Mock, call
 
 import pytest
 from fs.errors import CreateFailed
 
+from Kathara.model.ExternalLink import ExternalLink
+
 sys.path.insert(0, './')
 
 from src.Kathara.model.Lab import Lab
+import src.Kathara.setting.Setting as SettingPackage
 from src.Kathara import utils
 from tempfile import mkdtemp
 from src.Kathara.exceptions import MachineOptionError, MachineAlreadyExistsError, MachineNotFoundError, \
-    LinkAlreadyExistsError, LinkNotFoundError
+    LinkAlreadyExistsError, LinkNotFoundError, PrivilegeError
 
 
 @pytest.fixture()
-def default_scenario():
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def default_scenario(mock_setting_get_instance):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_mount': True,
+        'hosthome_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
     return Lab("default_scenario")
 
 
@@ -25,7 +37,14 @@ def temporary_path():
 
 
 @pytest.fixture()
-def directory_scenario(temporary_path):
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def directory_scenario(mock_setting_get_instance, temporary_path):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_mount': True,
+        'hosthome_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
     Path(os.path.join(temporary_path, "shared.startup")).touch()
     Path(os.path.join(temporary_path, "shared.shutdown")).touch()
     return Lab("directory_scenario", path=temporary_path)
@@ -40,7 +59,7 @@ def test_default_scenario_creation(default_scenario: Lab):
     assert default_scenario.web is None
     assert default_scenario.machines == {}
     assert default_scenario.links == {}
-    assert default_scenario.general_options == {}
+    assert default_scenario.general_options == {'privileged_machines': False}
     assert not default_scenario.has_dependencies
     assert default_scenario.fs_type() == "memory"
     assert default_scenario.shared_path is None
@@ -61,11 +80,16 @@ def test_directory_scenario_creation_with_shared_files(directory_scenario: Lab, 
     assert directory_scenario.web is None
     assert directory_scenario.machines == {}
     assert directory_scenario.links == {}
-    assert directory_scenario.general_options == {}
+    assert directory_scenario.general_options == {'privileged_machines': False}
     assert not directory_scenario.has_dependencies
     assert os.path.normpath(directory_scenario.fs_path()) == os.path.normpath(temporary_path)
     assert directory_scenario.shared_path is None
     assert directory_scenario.hash == utils.generate_urlsafe_hash(directory_scenario.name)
+
+
+def test_set_new_name(default_scenario: Lab):
+    default_scenario.name = "new_name"
+    assert default_scenario.hash == utils.generate_urlsafe_hash(default_scenario.name)
 
 
 def test_new_machine(default_scenario: Lab):
@@ -379,6 +403,21 @@ def test_assign_meta_to_machine_exception(default_scenario: Lab):
     default_scenario.get_or_new_machine("pc1")
     with pytest.raises(MachineOptionError):
         default_scenario.assign_meta_to_machine("pc1", "port", "value")
+
+
+@mock.patch("src.Kathara.utils.is_admin")
+@mock.patch("src.Kathara.utils.is_platform")
+def test_attach_external_links(mock_is_platform, mock_is_admin, default_scenario: Lab):
+    link = default_scenario.new_link("A")
+    external_link = ExternalLink("eth0")
+    default_scenario.attach_external_links({"A": [external_link]})
+    assert link.external == [external_link]
+
+
+def test_attach_external_links_link_not_found_error(default_scenario: Lab):
+    external_link = ExternalLink("eth0")
+    with pytest.raises(LinkNotFoundError):
+        default_scenario.attach_external_links({"A": [external_link]})
 
 
 def test_intersect_machines(default_scenario: Lab):

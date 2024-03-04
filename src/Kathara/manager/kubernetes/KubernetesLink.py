@@ -16,7 +16,6 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesLinkStats import KubernetesLinkStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import LinkNotFoundError
 from ...model.Lab import Lab
 from ...model.Link import Link
 from ...setting.Setting import Setting
@@ -226,35 +225,34 @@ class KubernetesLink(object):
         Returns:
            Generator[Dict[str, KubernetesLinkStats], None, None]: A generator containing network names as keys and
                 KubernetesLinkStats as values.
-
-        Raises:
-            LinkNotFoundError: If the collision domains specified are not found.
         """
+        networks_stats = {}
+
+        def load_link_stats(network):
+            if network['metadata']['name'] not in networks_stats:
+                networks_stats[network['metadata']['name']] = KubernetesLinkStats(network)
+
         while True:
             networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash, link_name=link_name)
             if not networks:
-                if not link_name:
-                    raise LinkNotFoundError("No collision domains found.")
-                else:
-                    raise LinkNotFoundError(f"Collision domains with name {link_name} not found.")
-
-            networks_stats = {}
-
-            def load_link_stats(network):
-                networks_stats[network['metadata']['name']] = KubernetesLinkStats(network)
+                yield dict()
 
             pool_size = utils.get_pool_size()
             items = utils.chunk_list(networks, pool_size)
-
             with Pool(pool_size) as links_pool:
                 for chunk in items:
                     links_pool.map(func=load_link_stats, iterable=chunk)
 
-            for network_stats in networks_stats.values():
+            networks_to_remove = []
+            for network_id, network_stats in networks_stats.items():
                 try:
                     network_stats.update()
                 except StopIteration:
+                    networks_to_remove.append(network_id)
                     continue
+
+            for k in networks_to_remove:
+                networks_stats.pop(k, None)
 
             yield networks_stats
 

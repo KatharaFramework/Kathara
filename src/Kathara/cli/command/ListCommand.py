@@ -1,13 +1,14 @@
 import argparse
 from typing import List, Optional
 
+from rich.live import Live
+
 from ..ui.utils import create_table
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...strings import strings, wiki_description
-from ...trdparty.curses.curses import Curses
 
 
 class ListCommand(Command):
@@ -61,20 +62,23 @@ class ListCommand(Command):
         if args['watch']:
             self._get_live_info(machine_name=args['name'], all_users=all_users)
         else:
-            machines_stats = Kathara.get_instance().get_machines_stats(machine_name=args['name'], all_users=all_users)
-            print(next(create_table(machines_stats)))
+            with self.console.status(
+                    f"Loading...",
+                    spinner="dots"
+            ) as _:
+                machines_stats = Kathara.get_instance().get_machines_stats(
+                    machine_name=args['name'], all_users=all_users
+                )
+                self.console.print(create_table(machines_stats))
 
-    @staticmethod
-    def _get_live_info(machine_name: Optional[str], all_users: bool) -> None:
+    def _get_live_info(self, machine_name: Optional[str], all_users: bool) -> None:
         machines_stats = Kathara.get_instance().get_machines_stats(machine_name=machine_name, all_users=all_users)
-        table = create_table(machines_stats)
-
-        Curses.get_instance().init_window()
-
-        try:
+        with Live(None, refresh_per_second=12.5, screen=True) as live:
+            live.update(self.console.status(f"Loading...", spinner="dots"))
+            live.refresh_per_second = 1
             while True:
-                Curses.get_instance().print_string(next(table))
-        except StopIteration:
-            pass
-        finally:
-            Curses.get_instance().close()
+                table = create_table(machines_stats)
+                if not table:
+                    break
+
+                live.update(table)

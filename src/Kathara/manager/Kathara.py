@@ -211,9 +211,30 @@ class Kathara(IManager):
         """
         self.manager.connect_tty(machine_name, lab_hash, lab_name, lab, shell, logs, wait)
 
+    def connect_tty_obj(self, machine: Machine, shell: str = None, logs: bool = False,
+                        wait: Union[bool, Tuple[int, float]] = True) -> None:
+        """Connect to a device in a running network scenario, using the specified shell.
+
+        Args:
+            machine (Machine): The device to connect.
+            shell (str): The name of the shell to use for connecting.
+            logs (bool): If True, print startup logs on stdout.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before connecting. If a tuple is provided, the first value indicates the number of retries
+                before stopping waiting and the second value indicates the time interval to wait for each retry.
+                Default is True.
+
+        Returns:
+            None
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+        """
+        self.manager.connect_tty_obj(machine, shell, logs, wait)
+
     def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
-             lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False) \
-            -> Generator[Tuple[bytes, bytes], None, None]:
+             lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False,
+             stream: bool = True) -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -229,22 +250,52 @@ class Kathara(IManager):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to wait
                 for each retry. Default is False.
+           stream (bool): If True, return a generator object containing the command output. If False,
+                returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
+             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
+            MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the binary of the command is not found.
         """
-        return self.manager.exec(machine_name, command, lab_hash, lab_name, lab, wait)
+        return self.manager.exec(machine_name, command, lab_hash, lab_name, lab, wait, stream)
 
-    def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
+    def exec_obj(self, machine: Machine, command: Union[List[str], str], wait: Union[bool, Tuple[int, float]] = False,
+                 stream: bool = True) -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
+        """Exec a command on a device in a running network scenario.
+
+        Args:
+            machine (Machine): The device to connect.
+            command (Union[List[str], str]): The command to exec on the device.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before executing the command. If a tuple is provided, the first value indicates the
+                number of retries before stopping waiting and the second value indicates the time interval to wait
+                for each retry. Default is False.
+            stream (bool): If True, return a generator object containing the command output. If False,
+                returns a tuple containing the complete stdout, the stderr, and the return code of the command.
+
+        Returns:
+            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
+             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+            MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the binary of the command is not found.
+        """
+        return self.manager.exec_obj(machine, command, wait, stream)
+
+    def copy_files(self, machine: Machine, guest_to_host: Dict[str, Union[str, io.IOBase]]) -> None:
         """Copy files on a running device in the specified paths.
 
         Args:
             machine (Kathara.model.Machine): A running device object. It must have the api_object field populated.
-            guest_to_host (Dict[str, io.IOBase]): A dict containing the device path as key and
-                fileobj to copy in path as value.
+            guest_to_host (Dict[str, Union[str, io.IOBase]]): A dict containing the device path as key and a
+                fileobj to copy in path as value or a path to a file.
 
         Returns:
             None
@@ -289,6 +340,9 @@ class Kathara(IManager):
 
         Returns:
             List[Any]: API objects of devices, specific for the current manager.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         return self.manager.get_machines_api_objects(lab_hash, lab_name, lab, all_users)
 
@@ -330,6 +384,9 @@ class Kathara(IManager):
 
         Returns:
             List[Any]: API objects of collision domains, specific for the current manager.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         return self.manager.get_links_api_objects(lab_hash, lab_name, lab, all_users)
 
@@ -376,15 +433,20 @@ class Kathara(IManager):
         Returns:
               Generator[Dict[str, IMachineStats], None, None]: A generator containing dicts that has API Object
               identifier as keys and IMachineStats objects as values.
+
+        Raises:
+            InvocationError: If more than one param among lab_hash, lab_name and lab is specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         return self.manager.get_machines_stats(lab_hash, lab_name, lab, machine_name, all_users)
 
     def get_machine_stats(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
-                          lab: Optional[Lab] = None, all_users: bool = False) -> Generator[IMachineStats, None, None]:
+                          lab: Optional[Lab] = None, all_users: bool = False) \
+            -> Generator[Optional[IMachineStats], None, None]:
         """Return information of the specified device in a specified network scenario.
 
         Args:
-            machine_name (str): The device name.
+            machine_name (str): The name of the device for which statistics are requested.
             lab_hash (Optional[str]): The hash of the network scenario.
                 Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
             lab_name (Optional[str]): The name of the network scenario.
@@ -394,12 +456,33 @@ class Kathara(IManager):
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
-            IMachineStats: IMachineStats object containing the device info.
+            Generator[Optional[IMachineStats], None, None]: A generator containing the IMachineStats object
+            with the device info. Returns None if the device is not found.
 
         Raises:
-            InvocationError: If a running network scenario hash or name is not specified.
+            InvocationError: If more than one param among lab_hash, lab_name and lab is specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         return self.manager.get_machine_stats(machine_name, lab_hash, lab_name, lab, all_users)
+
+    def get_machine_stats_obj(self, machine: Machine, all_users: bool = False) \
+            -> Generator[Optional[IMachineStats], None, None]:
+        """Return information of the specified device in a specified network scenario.
+
+        Args:
+            machine (Machine): The device for which statistics are requested.
+            all_users (bool): If True, search the device among all the users devices.
+
+        Returns:
+            Generator[Optional[IMachineStats], None, None]: A generator containing the IMachineStats object
+            with the device info. Returns None if the device is not found.
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+            MachineNotRunningError: If the specified device is not running.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
+        """
+        return self.manager.get_machine_stats_obj(machine, all_users)
 
     def get_links_stats(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
                         link_name: str = None, all_users: bool = False) -> Generator[Dict[str, ILinkStats], None, None]:
@@ -418,15 +501,20 @@ class Kathara(IManager):
         Returns:
              Generator[Dict[str, ILinkStats], None, None]: A generator containing dicts that has API Object
              identifier as keys and ILinksStats objects as values.
+
+        Raises:
+            InvocationError: If a running network scenario hash, name or object is not specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         return self.manager.get_links_stats(lab_hash, lab_name, lab, link_name, all_users)
 
     def get_link_stats(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
-                       lab: Optional[Lab] = None, all_users: bool = False) -> Generator[ILinkStats, None, None]:
+                       lab: Optional[Lab] = None, all_users: bool = False) \
+            -> Generator[Optional[ILinkStats], None, None]:
         """Return information of the specified deployed network in a specified network scenario.
 
         Args:
-            link_name (str): If specified return all the networks with link_name.
+            link_name (str): The name of the collision domain for which statistics are requested.
             lab_hash (Optional[str]): The hash of the network scenario.
                 Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
             lab_name (Optional[str]): The name of the network scenario.
@@ -436,13 +524,31 @@ class Kathara(IManager):
             all_users (bool): If True, return information about the networks of all users.
 
         Returns:
-             Generator[Dict[str, ILinkStats], None, None]: A generator containing dicts that has API Object
-             identifier as keys and ILinksStats objects as values.
+            Generator[Optional[ILinkStats], None, None]: A generator containing the ILinkStats object
+            with the network info. Returns None if the network is not found.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         return self.manager.get_link_stats(link_name, lab_hash, lab_name, lab, all_users)
+
+    def get_link_stats_obj(self, link: Link, all_users: bool = False) -> Generator[Optional[ILinkStats], None, None]:
+        """Return information of the specified deployed network in a specified network scenario.
+
+        Args:
+            link (Link): The collision domain for which statistics are requested.
+            all_users (bool): If True, return information about the networks of all users.
+
+        Returns:
+            Generator[Optional[ILinkStats], None, None]: A generator containing the ILinkStats object
+            with the network info. Returns None if the network is not found.
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
+        """
+        return self.manager.get_link_stats_obj(link, all_users)
 
     def check_image(self, image_name: str) -> None:
         """Check if the specified image is valid.
