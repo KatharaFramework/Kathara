@@ -9,7 +9,7 @@ import sys
 import threading
 import uuid
 from multiprocessing.dummy import Pool
-from typing import Optional, Set, List, Union, Generator, Tuple, Dict
+from typing import Optional, Set, List, Union, Generator, Tuple, Dict, Any
 
 import chardet
 from kubernetes import client
@@ -624,7 +624,7 @@ class KubernetesMachine(object):
             shell_env_value = self.get_env_var_value_from_pod(deployment, "_MEGALOS_SHELL")
             shell = shlex.split(shell_env_value if shell_env_value else Setting.get_instance().device_shell)
         else:
-            shell = shlex.split(shell) if type(shell) == str else shell
+            shell = shlex.split(shell) if type(shell) is str else shell
 
         logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
 
@@ -698,7 +698,7 @@ class KubernetesMachine(object):
         Args:
             lab_hash (str): The hash of the network scenario containing the device.
             machine_name (str): The name of the device.
-            command (str): The command to execute.
+            command (Union[str, List]): The command to execute.
             tty (bool): If True, open a new tty.
             stdin (bool): If True, open the stdin channel.
             stdin_buffer (List[Union[str, bytes]]): List of command to pass to the stdin.
@@ -714,7 +714,7 @@ class KubernetesMachine(object):
             MachineNotRunningError: If the specified device is not running.
             MachineBinaryError: If the command specified is not found on the device.
         """
-        command = shlex.split(command) if command is str else command
+        command = shlex.split(command) if type(command) is str else command
 
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
@@ -735,36 +735,79 @@ class KubernetesMachine(object):
                               tty=tty,
                               _preload_content=False
                               )
-        except ApiException:
-            return None
+        except ApiException as e:
+            raise e
 
         if stdin_buffer is None:
             stdin_buffer = []
 
-        result = {
-            'stdout': '',
-            'stderr': ''
-        }
+        if is_stream:
+            return self._exec_stream(response, stdin, stdin_buffer, stderr)
+        else:
+            return self._exec_all(response, machine_name, command, stdin, stdin_buffer, stderr)
 
+    @staticmethod
+    def _exec_stream(response: Any, stdin: bool = False, stdin_buffer: List[Union[str, bytes]] = None,
+                     has_stderr: bool = False) -> Generator[Tuple[bytes, bytes], None, None]:
+        """Execute the command on the Kubernetes Pod, returning a generator.
+
+        Args:
+            response (Any): The stream response from Kubernetes API.
+            stdin (bool): If True, open the stdin channel.
+            stdin_buffer (List[Union[str, bytes]]): List of command to pass to the stdin.
+            has_stderr (bool): If True, return the stderr.
+
+        Returns:
+            Tuple[bytes, bytes, int]: A tuple containing the stdout, the stderr and the return code of the command.
+        """
         while response.is_open():
             stdout = None
             stderr = None
             if response.peek_stdout():
                 stdout = response.read_stdout()
-                if not is_stream:
-                    result['stdout'] += stdout
-            if stderr and response.peek_stderr():
+            if has_stderr and response.peek_stderr():
                 stderr = response.read_stderr()
-                if not is_stream:
-                    result['stderr'] += stderr
             if stdin and stdin_buffer:
                 param = stdin_buffer.pop(0)
                 response.write_stdin(param)
                 if len(stdin_buffer) <= 0:
                     break
 
-            if is_stream and (stdout or stderr):
-                yield stdout.encode('utf-8') if stdout else None, stderr.encode('utf-8') if stderr else None
+            yield stdout.encode('utf-8') if stdout else None, stderr.encode('utf-8') if stderr else None
+
+        response.close()
+
+    @staticmethod
+    def _exec_all(response: Any, machine_name: str, command: List, stdin: bool = False,
+                  stdin_buffer: List[Union[str, bytes]] = None, has_stderr: bool = False) -> Tuple[bytes, bytes, int]:
+        """Execute the command on the Kubernetes Pod, returning the full output.
+
+        Args:
+            response (Any): The stream response from Kubernetes API.
+            machine_name (str): The name of the device.
+            command (List): The command to execute.
+            stdin (bool): If True, open the stdin channel.
+            stdin_buffer (List[Union[str, bytes]]): List of command to pass to the stdin.
+            has_stderr (bool): If True, return the stderr.
+
+        Returns:
+            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+
+        Raises:
+            MachineBinaryError: If the command specified is not found on the device.
+        """
+        result = {'stdout': '', 'stderr': ''}
+
+        while response.is_open():
+            if response.peek_stdout():
+                result['stdout'] += response.read_stdout()
+            if has_stderr and response.peek_stderr():
+                result['stderr'] += response.read_stderr()
+            if stdin and stdin_buffer:
+                param = stdin_buffer.pop(0)
+                response.write_stdin(param)
+                if len(stdin_buffer) <= 0:
+                    break
 
         response.close()
 
@@ -772,7 +815,7 @@ class KubernetesMachine(object):
             error_code = response.returncode
         except ValueError as e:
             if OCI_RUNTIME_RE.search(str(e)):
-                raise MachineBinaryError(command, machine_name)
+                raise MachineBinaryError(shlex.join(command), machine_name)
             error_code = 1
 
         return result['stdout'].encode('utf-8'), result['stderr'].encode('utf-8'), error_code

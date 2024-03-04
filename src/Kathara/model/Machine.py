@@ -485,7 +485,7 @@ class Machine(FilesystemMixin):
             elif "ipv6" in self.meta:
                 is_v6_enabled = self.meta["ipv6"]
 
-            return is_v6_enabled if type(is_v6_enabled) == bool else strtobool(is_v6_enabled)
+            return is_v6_enabled if type(is_v6_enabled) is bool else strtobool(is_v6_enabled)
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
 

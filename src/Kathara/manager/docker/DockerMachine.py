@@ -133,7 +133,6 @@ class DockerMachine(object):
 
         shared_mount = lab.general_options['shared_mount'] if 'shared_mount' in lab.general_options \
             else Setting.get_instance().shared_mount
-
         if shared_mount:
             if Setting.get_instance().remote_url is not None:
                 logging.warning("Shared folder cannot be mounted with a remote Docker connection.")
@@ -258,18 +257,17 @@ class DockerMachine(object):
         volumes = {}
 
         lab_options = machine.lab.general_options
-
-        if lab_options['shared_mount'] and machine.lab.shared_path:
+        shared_mount = ['shared_mount'] if 'shared_mount' in lab_options else Setting.get_instance().shared_mount
+        if shared_mount and machine.lab.shared_path:
             volumes[machine.lab.shared_path] = {'bind': '/shared', 'mode': 'rw'}
 
         # Mount the host home only if specified in settings.
-
-        if lab_options['hosthome_mount'] and Setting.get_instance().remote_url is None:
+        hosthome_mount = lab_options['hosthome_mount'] if 'hosthome_mount' in lab_options else \
+            Setting.get_instance().hosthome_mount
+        if hosthome_mount and Setting.get_instance().remote_url is None:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
-        privileged = lab_options['privileged_machines'] if 'privileged_machines' in lab_options \
-            else False
-
+        privileged = lab_options['privileged_machines']
         if Setting.get_instance().remote_url is not None and privileged:
             privileged = False
             logging.warning("Privileged flag is ignored with a remote Docker connection.")
@@ -678,7 +676,7 @@ class DockerMachine(object):
         if should_wait:
             self._wait_startup_execution(container, n_retries=n_retries, retry_interval=retry_interval)
 
-        command = shlex.split(command) if type(command) == str else command
+        command = shlex.split(command) if type(command) is str else command
         exec_result = self._exec_run(container,
                                      cmd=command,
                                      stdout=True,
@@ -756,7 +754,7 @@ class DockerMachine(object):
             (stdout_out, _) = exec_output if demux else (exec_output, None)
             exec_stdout = ""
             if stdout_out:
-                if type(stdout_out) == bytes:
+                if type(stdout_out) is bytes:
                     char_encoding = chardet.detect(stdout_out)
                     exec_stdout = stdout_out.decode(char_encoding['encoding'])
                 else:
