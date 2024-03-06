@@ -758,7 +758,7 @@ class KubernetesMachine(object):
             has_stderr (bool): If True, return the stderr.
 
         Returns:
-            Tuple[bytes, bytes, int]: A tuple containing the stdout, the stderr and the return code of the command.
+            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
         """
         while response.is_open():
             stdout = None
@@ -791,7 +791,7 @@ class KubernetesMachine(object):
             has_stderr (bool): If True, return the stderr.
 
         Returns:
-            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+            Tuple[bytes, bytes, int]: A tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             MachineBinaryError: If the command specified is not found on the device.
