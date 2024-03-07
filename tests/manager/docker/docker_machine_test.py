@@ -504,9 +504,11 @@ def test_deploy_machines(mock_deploy_and_start, mock_setting_get_instance, docke
     assert mock_deploy_and_start.call_count == 2
 
 
+@mock.patch("src.Kathara.utils.is_admin")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._deploy_and_start_machine")
-def test_deploy_machines_privilege_error(mock_deploy_and_start, mock_setting_get_instance, docker_machine):
+def test_deploy_machines_privilege_error(mock_deploy_and_start, mock_setting_get_instance, mock_is_admin,
+                                         docker_machine):
     setting_mock = Mock()
     setting_mock.configure_mock(**{
         'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
@@ -518,6 +520,7 @@ def test_deploy_machines_privilege_error(mock_deploy_and_start, mock_setting_get
         'remote_url': None
     })
     mock_setting_get_instance.return_value = setting_mock
+    mock_is_admin.return_value = False
 
     lab = Lab("Default scenario")
     lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
