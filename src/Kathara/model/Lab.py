@@ -126,6 +126,7 @@ class Lab(FilesystemMixin):
             link_name (str): The collision domain name.
             machine_iface_number (int): The number of the device interface to connect. If it is None, the first free
                 number is used.
+            mac_address (Optional[str]): The MAC address to assign to the interface.
 
         Returns:
             Kathara.model.Interface.Interface: The interface object associated to the new interface..
