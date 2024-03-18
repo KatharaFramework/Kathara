@@ -1,5 +1,6 @@
 import io
 import os.path
+import re
 from typing import Optional, List, BinaryIO, TextIO, Union
 
 from fs import open_fs
@@ -195,14 +196,14 @@ class FilesystemMixin(object):
         directory_fs = open_fs(f"osfs://{os.path.abspath(src_path)}")
         copy_dir(directory_fs, ".", self.fs, dst_path)
 
-    def write_line_before(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
-            -> int:
+    def write_line_before(self, file_path: str, line_to_add: str, searched_line: str,
+                          first_occurrence: bool = False) -> int:
         """Write a new line before a specific line in a file.
 
         Args:
             file_path (str): The path of the file to add the new line.
             line_to_add (str): The new line to add before the searched line.
-            searched_line (str): The searched line.
+            searched_line (str): A string or a regex representing the searched line.
             first_occurrence (bool): Inserts line only before the first occurrence. Default is False.
 
         Returns:
@@ -212,11 +213,11 @@ class FilesystemMixin(object):
             InvocationError: If the fs is None.
             fs.errors.FileExpected: If the path is not a file.
             fs.errors.ResourceNotFound: If the path does not exist.
-            LineNotFoundError: If the searched line is not found in the file.
         """
         if not self.fs:
             raise InvocationError("There is no filesystem associated to this object.")
 
+        pattern = re.compile(searched_line)
         n_added = 0
         with self.fs.open(file_path, "r+") as file:
             file_lines = file.readlines()
@@ -224,7 +225,7 @@ class FilesystemMixin(object):
             file.truncate()
             new_lines = []
             for line in file_lines:
-                if searched_line.strip() == line.strip():
+                if pattern.search(line):
                     if not first_occurrence or (first_occurrence and n_added == 0):
                         new_lines.append(line_to_add + '\n')
                         n_added += 1
@@ -233,14 +234,14 @@ class FilesystemMixin(object):
 
         return n_added
 
-    def write_line_after(self, file_path: str, line_to_add: str, searched_line: str, first_occurrence: bool = False) \
-            -> int:
+    def write_line_after(self, file_path: str, line_to_add: str, searched_line: str,
+                         first_occurrence: bool = False) -> int:
         """Write a new line after a specific line in a file.
 
         Args:
             file_path (str): The path of the file to add the new line.
             line_to_add (str): The new line to add after the searched line.
-            searched_line (str): The searched line.
+            searched_line (str): A string or a regex representing the searched line.
             first_occurrence (bool): Inserts line only after the first occurrence. Default is False.
 
         Returns:
@@ -250,11 +251,11 @@ class FilesystemMixin(object):
             InvocationError: If the fs is None.
             fs.errors.FileExpected: If the path is not a file.
             fs.errors.ResourceNotFound: If the path does not exist.
-            LineNotFoundError: If the searched line is not found in the file.
         """
         if not self.fs:
             raise InvocationError("There is no filesystem associated to this object.")
 
+        pattern = re.compile(searched_line)
         n_added = 0
         with self.fs.open(file_path, "r+") as file:
             file_lines = file.readlines()
@@ -263,7 +264,7 @@ class FilesystemMixin(object):
             new_lines = []
             for line in file_lines:
                 new_lines.append(line.replace("\n\r", "\n").replace("\r\n", "\n"))
-                if searched_line.strip() == line.strip():
+                if pattern.search(line):
                     if not first_occurrence or (first_occurrence and n_added == 0):
                         new_lines.append(("\n" if not line.endswith("\n") else "") + line_to_add + '\n')
                         n_added += 1
@@ -277,7 +278,7 @@ class FilesystemMixin(object):
 
         Args:
             file_path (str): The path of the file to delete the line.
-            line_to_delete (str): The line to delete.
+            line_to_delete (str): A string or a regex representing the line to delete.
             first_occurrence (bool): Deletes only first occurrence. Default is False.
 
         Returns:
@@ -287,11 +288,11 @@ class FilesystemMixin(object):
             InvocationError: If the fs is None.
             fs.errors.FileExpected: If the path is not a file.
             fs.errors.ResourceNotFound: If the path does not exist.
-            LineNotFoundError: If the searched line is not found in the file.
         """
         if not self.fs:
             raise InvocationError("There is no filesystem associated to this object.")
 
+        pattern = re.compile(line_to_delete)
         n_deleted = 0
         with self.fs.open(file_path, "r+") as file:
             file_lines = file.readlines()
@@ -299,7 +300,7 @@ class FilesystemMixin(object):
             file.truncate()
             new_lines = []
             for line in file_lines:
-                if line_to_delete.strip() == line.strip():
+                if pattern.search(line):
                     if not first_occurrence or (first_occurrence and n_deleted == 0):
                         n_deleted += 1
                         continue

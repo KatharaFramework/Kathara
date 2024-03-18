@@ -1,11 +1,10 @@
 import argparse
-import logging
 import os
 import sys
 from typing import List
 
+from ..ui.utils import create_panel, LabMetaHighlighter
 from ..ui.utils import create_table
-from ..ui.utils import format_headers
 from ... import utils
 from ...exceptions import PrivilegeError, EmptyLabError
 from ...foundation.cli.command.Command import Command
@@ -82,11 +81,11 @@ class LstartCommand(Command):
         )
         self.parser.add_argument(
             '-o', '--pass',
-            dest='options',
-            metavar="OPTION",
+            dest='global_machine_metadata',
+            metavar="METADATA",
             nargs='*',
             required=False,
-            help="Apply options to all devices of a network scenario during startup."
+            help="Apply metadata to all devices of a network scenario during startup."
         )
         self.parser.add_argument(
             '--xterm', '--terminal-emu',
@@ -148,17 +147,12 @@ class LstartCommand(Command):
             else Setting.get_instance().open_terminals
         Setting.get_instance().terminal = args['xterm'] or Setting.get_instance().terminal
 
-        if args['privileged']:
-            if not utils.is_admin():
-                raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
-            else:
-                logging.warning("Running devices with privileged capabilities, terminals won't open!")
-                Setting.get_instance().open_terminals = False
-
-        if args['dry_mode']:
-            logging.info(format_headers("Checking Network Scenario"))
-        else:
-            logging.info(format_headers("Starting Network Scenario"))
+        self.console.print(
+            create_panel(
+                "Checking Network Scenario" if args['dry_mode'] else "Starting Network Scenario",
+                style="blue bold", justify="center"
+            )
+        )
 
         try:
             lab = LabParser.parse(lab_path)
@@ -174,22 +168,19 @@ class LstartCommand(Command):
             lab.apply_dependencies(dependencies)
 
         lab_meta_information = str(lab)
-
         if lab_meta_information:
-            logging.info("\n" + lab_meta_information)
-            logging.info(format_headers())
+            meta_highlighter = LabMetaHighlighter()
+            self.console.print(create_panel(meta_highlighter(lab_meta_information)))
 
         if len(lab.machines) <= 0:
             raise EmptyLabError()
 
-        try:
-            options = OptionParser.parse(args['options'])
-            lab.general_options = {**lab.general_options, **options}
-        except ValueError as e:
-            raise e
+        lab.global_machine_metadata = OptionParser.parse(args['global_machine_metadata'])
 
         lab_ext_path = os.path.join(lab_path, 'lab.ext')
+        lab_ext_exists = False
         if os.path.exists(lab_ext_path):
+            lab_ext_exists = True
             if utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2):
                 if utils.is_admin():
                     external_links = ExtParser.parse(lab_path)
@@ -202,17 +193,15 @@ class LstartCommand(Command):
                 else:
                     raise PrivilegeError("You must be root in order to use lab.ext file.")
             else:
-                raise OSError("lab.ext is only available on UNIX systems.")
+                raise OSError("lab.ext is only available on Linux systems.")
 
         # If dry mode, we just check if the lab.conf is correct.
         if args['dry_mode']:
-            logging.info("lab.conf file is correct.")
+            self.console.print("[green]\u2713 [bold]lab.conf[/bold] file is correct.")
             if dependencies:
-                logging.info("lab.dep file is correct.")
-            if os.path.exists(lab_ext_path):
-                logging.info("lab.ext file is correct.")
-
-            logging.info("Exiting...")
+                self.console.print("[green]\u2713 [bold]lab.dep[/bold] file is correct.")
+            if lab_ext_exists:
+                self.console.print("[green]\u2713 [bold]lab.ext[/bold] file is correct.")
 
             sys.exit(0)
 
@@ -220,10 +209,21 @@ class LstartCommand(Command):
         lab.add_option('shared_mount', args['shared_mount'])
         lab.add_option('privileged_machines', args['privileged'])
 
+        if args['privileged']:
+            if not utils.is_admin():
+                raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
+            else:
+                self.console.print("[yellow]\u26a0 Running devices with privileged capabilities, terminals won't open!")
+                Setting.get_instance().open_terminals = False
+
         Kathara.get_instance().deploy_lab(lab, selected_machines=set(args['machine_name']))
 
         if args['list']:
-            machines_stats = Kathara.get_instance().get_machines_stats(lab_hash=lab.hash)
-            print(next(create_table(machines_stats)))
+            with self.console.status(
+                    f"Loading...",
+                    spinner="dots"
+            ) as _:
+                machines_stats = Kathara.get_instance().get_machines_stats(lab_hash=lab.hash)
+                self.console.print(create_table(machines_stats))
 
         return lab

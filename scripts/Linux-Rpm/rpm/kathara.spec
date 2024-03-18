@@ -68,8 +68,8 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- It is now possible to specify a MAC Address for a network interface
-- (Docker) Collision domains are now created per-network-scenario by default
-- (Docker) If a ".shutdown" file is present in the network scenario, Kathara now correctly waits for the script termination before removing the container
-- Several fixes of "lconfig" and "vconfig" commands
-- Minor fixes and improvements
+- New CLI UI using "rich" library!
+- (Docker) Show progress during Docker image pull, similarly to the official "docker pull" command
+- (Docker) It is now correctly possible to specify a "linux/amd64" image on Apple Silicon (which can be run using Rosetta)
+- Add "gnome-terminal" as official supported terminal emulator
+- Several API improvements and bug fixes

@@ -16,7 +16,7 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError, LinkNotFoundError, MachineCollisionDomainError, \
-    InvocationError, LabNotFoundError, MachineNotRunningError
+    InvocationError, LabNotFoundError, MachineNotRunningError, PrivilegeError
 from ...exceptions import MachineNotFoundError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
@@ -87,9 +87,13 @@ class DockerManager(IManager):
 
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
+            PrivilegeError: If the user start the device in privileged mode without having root privileges.
+            NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
         """
         if not machine.lab:
             raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
+
+        machine.check()
 
         self.docker_link.deploy_links(machine.lab, selected_links={x.link.name for x in machine.interfaces.values()})
         self.docker_machine.deploy_machines(machine.lab, selected_machines={machine.name})
@@ -124,8 +128,13 @@ class DockerManager(IManager):
             None
 
         Raises:
+            NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
+            OSError: If any link in the network scenario is attached to external interfaces and the host OS is not LINUX.
+            PrivilegeError: If the user start the network scenario in privileged mode without having root privileges.
             MachineNotFoundError: If the specified devices are not in the network scenario.
         """
+        lab.check_integrity()
+
         if selected_machines and not lab.has_machines(selected_machines):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
             raise MachineNotFoundError(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
@@ -341,10 +350,34 @@ class DockerManager(IManager):
                                     wait=wait
                                     )
 
+    def connect_tty_obj(self, machine: Machine, shell: str = None, logs: bool = False,
+                        wait: Union[bool, Tuple[int, float]] = True) -> None:
+        """Connect to a device in a running network scenario, using the specified shell.
+
+        Args:
+            machine (Machine): The device to connect.
+            shell (str): The name of the shell to use for connecting.
+            logs (bool): If True, print startup logs on stdout.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before connecting. If a tuple is provided, the first value indicates the number of retries
+                before stopping waiting and the second value indicates the time interval to wait for each retry.
+                Default is True.
+
+        Returns:
+            None
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+        """
+        if not machine.lab:
+            raise LabNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
+
+        self.connect_tty(machine.name, lab=machine.lab, shell=shell, logs=logs, wait=wait)
+
     @privileged
     def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
-             lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False) \
-            -> Generator[Tuple[bytes, bytes], None, None]:
+             lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False,
+             stream: bool = True) -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -360,12 +393,17 @@ class DockerManager(IManager):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to wait
                 for each retry. Default is False.
+           stream (bool): If True, return a generator object containing the command output. If False,
+                returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
+             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
+            MachineNotRunningError: If the specified device is not running.
+            ValueError: If the wait values is neither a boolean nor a tuple, or an invalid tuple.
         """
         check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
@@ -374,16 +412,46 @@ class DockerManager(IManager):
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         user_name = utils.get_current_user_name()
-        return self.docker_machine.exec(lab_hash, machine_name, command, user=user_name, tty=False, wait=wait)
+        return self.docker_machine.exec(lab_hash, machine_name, command, user=user_name, tty=False, wait=wait,
+                                        stream=stream)
+
+    def exec_obj(self, machine: Machine, command: Union[List[str], str], wait: Union[bool, Tuple[int, float]] = False,
+                 stream: bool = True) -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
+        """Exec a command on a device in a running network scenario.
+
+        Args:
+            machine (Machine): The device to connect.
+            command (Union[List[str], str]): The command to exec on the device.
+            wait (Union[bool, Tuple[int, float]]): If True, wait indefinitely until the end of the startup commands
+                execution before executing the command. If a tuple is provided, the first value indicates the
+                number of retries before stopping waiting and the second value indicates the time interval to wait
+                for each retry. Default is False.
+            stream (bool): If True, return a generator object containing the command output. If False,
+                returns a tuple containing the complete stdout, the stderr, and the return code of the command.
+
+        Returns:
+            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
+             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+            MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the binary of the command is not found.
+            ValueError: If the wait values is neither a boolean nor a tuple, or an invalid tuple.
+        """
+        if not machine.lab:
+            raise LabNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
+
+        return self.exec(machine.name, command, lab=machine.lab, wait=wait, stream=stream)
 
     @privileged
-    def copy_files(self, machine: Machine, guest_to_host: Dict[str, io.IOBase]) -> None:
+    def copy_files(self, machine: Machine, guest_to_host: Dict[str, Union[str, io.IOBase]]) -> None:
         """Copy files on a running device in the specified paths.
 
         Args:
             machine (Kathara.model.Machine): A running device object. It must have the api_object field populated.
-            guest_to_host (Dict[str, io.IOBase]): A dict containing the device path as key and
-                fileobj to copy in path as value.
+            guest_to_host (Dict[str, Union[str, io.IOBase]]): A dict containing the device path as key and a
+                fileobj to copy in path as value or a path to a file.
 
         Returns:
             None
@@ -450,6 +518,9 @@ class DockerManager(IManager):
 
         Returns:
             List[docker.models.containers.Container]: Docker API objects of devices.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
@@ -514,6 +585,9 @@ class DockerManager(IManager):
 
         Returns:
             List[docker.models.networks.Network]: Docker API objects of networks.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
         """
         check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
@@ -690,8 +764,13 @@ class DockerManager(IManager):
         Returns:
               Generator[Dict[str, DockerMachineStats], None, None]: A generator containing dicts that has API Object
               identifier as keys and DockerMachineStats objects as values.
+
+        Raises:
+            InvocationError: If more than one param among lab_hash, lab_name and lab is specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
+
         if lab:
             lab_hash = lab.hash
         elif lab_name:
@@ -704,11 +783,11 @@ class DockerManager(IManager):
     @privileged
     def get_machine_stats(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                           lab: Optional[Lab] = None, all_users: bool = False) \
-            -> Generator[DockerMachineStats, None, None]:
+            -> Generator[Optional[DockerMachineStats], None, None]:
         """Return information of the specified device in a specified network scenario.
 
          Args:
-            machine_name (str): The device name.
+            machine_name (str): The name of the device for which statistics are requested.
             lab_hash (Optional[str]): The hash of the network scenario.
                 Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
             lab_name (Optional[str]): The name of the network scenario.
@@ -718,22 +797,45 @@ class DockerManager(IManager):
             all_users (bool): If True, search the device among all the users devices.
 
         Returns:
-            Generator[DockerMachineStats, None, None]: A generator containing DockerMachineStats objects with
-            the device info.
+            Generator[Optional[DockerMachineStats], None, None]: A generator containing the DockerMachineStats object
+            with the device info. Returns None if the device is not found.
 
         Raises:
-            InvocationError: If a running network scenario hash or name is not specified.
+            InvocationError: If a running network scenario hash, name or object is not specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
-        if lab:
-            lab_hash = lab.hash
-        elif lab_name:
-            lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        machines_stats = self.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name, all_users=all_users)
-        (_, machine_stats) = next(machines_stats).popitem()
+        machines_stats = self.get_machines_stats(lab_hash=lab_hash, lab_name=lab_name, lab=lab,
+                                                 machine_name=machine_name, all_users=all_users)
+        machines_stats_next = next(machines_stats)
+        if machines_stats_next:
+            (_, machine_stats) = machines_stats_next.popitem()
+            yield machine_stats
+        else:
+            yield None
 
-        yield machine_stats
+    def get_machine_stats_obj(self, machine: Machine, all_users: bool = False) \
+            -> Generator[Optional[DockerMachineStats], None, None]:
+        """Return information of the specified device in a specified network scenario.
+
+        Args:
+            machine (Machine): The device for which statistics are requested.
+            all_users (bool): If True, search the device among all the users devices.
+
+        Returns:
+            Generator[Optional[IMachineStats], None, None]: A generator containing the IMachineStats object
+            with the device info. Returns None if the device is not found.
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+            MachineNotRunningError: If the specified device is not running.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
+        """
+        if not machine.lab:
+            raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
+
+        return self.get_machine_stats(machine.name, lab=machine.lab, all_users=all_users)
 
     @privileged
     def get_links_stats(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
@@ -754,6 +856,10 @@ class DockerManager(IManager):
         Returns:
              Generator[Dict[str, DockerLinkStats], None, None]: A generator containing dicts that has API Object
                 identifier as keys and DockerLinksStats objects as values.
+
+        Raises:
+            InvocationError: If a running network scenario hash, name or object is not specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         check_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
@@ -766,11 +872,12 @@ class DockerManager(IManager):
 
     @privileged
     def get_link_stats(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
-                       lab: Optional[Lab] = None, all_users: bool = False) -> Generator[DockerLinkStats, None, None]:
+                       lab: Optional[Lab] = None, all_users: bool = False) \
+            -> Generator[Optional[DockerLinkStats], None, None]:
         """Return information of the specified deployed network in a specified network scenario.
 
         Args:
-            link_name (str): If specified return all the networks with link_name.
+            link_name (str): The name of the collision domain for which statistics are requested.
             lab_hash (Optional[str]): The hash of the network scenario.
                 Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
             lab_name (Optional[str]): The name of the network scenario.
@@ -780,11 +887,12 @@ class DockerManager(IManager):
             all_users (bool): If True, return information about the networks of all users.
 
         Returns:
-            Generator[DockerLinkStats, None, None]: A generator containing DockerLinkStats objects with the network
-                statistics.
+            Generator[Optional[DockerLinkStats], None, None]: A generator containing the DockerLinkStats object
+            with the network info. Returns None if the network is not found.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
         """
         check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
@@ -793,9 +901,33 @@ class DockerManager(IManager):
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         links_stats = self.get_links_stats(lab_hash=lab_hash, link_name=link_name, all_users=all_users)
-        (_, link_stats) = next(links_stats).popitem()
+        links_stats_next = next(links_stats)
+        if links_stats_next:
+            (_, link_stats) = links_stats_next.popitem()
+            yield link_stats
+        else:
+            yield None
 
-        yield link_stats
+    def get_link_stats_obj(self, link: Link, all_users: bool = False) \
+            -> Generator[Optional[DockerLinkStats], None, None]:
+        """Return information of the specified deployed network in a specified network scenario.
+
+        Args:
+            link (Link): The collision domain for which statistics are requested.
+            all_users (bool): If True, return information about the networks of all users.
+
+        Returns:
+            Generator[Optional[ILinkStats], None, None]: A generator containing the ILinkStats object
+            with the network info. Returns None if the network is not found.
+
+        Raises:
+            LabNotFoundError: If the specified device is not associated to any network scenario.
+            PrivilegeError: If all_users is True and the user does not have root privileges.
+        """
+        if not link.lab:
+            raise LabNotFoundError(f"Link `{link.name}` is not associated to a network scenario.")
+
+        return self.get_link_stats(link.name, lab=link.lab, all_users=all_users)
 
     @privileged
     def check_image(self, image_name: str) -> None:

@@ -79,7 +79,7 @@ class DockerHubApi(object):
             )))
 
         pool_size = get_pool_size()
-        tags_pool = Pool(pool_size)
-        tags_pool.map(func=get_image_tag, iterable=images)
+        with Pool(pool_size) as tags_pool:
+            tags_pool.map(func=get_image_tag, iterable=images)
 
         return sorted(tagged_images)

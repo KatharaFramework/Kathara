@@ -9,7 +9,7 @@ import sys
 import threading
 import uuid
 from multiprocessing.dummy import Pool
-from typing import Optional, Set, List, Union, Generator, Tuple, Dict
+from typing import Optional, Set, List, Union, Generator, Tuple, Dict, Any
 
 import chardet
 from kubernetes import client
@@ -24,7 +24,7 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MachineAlreadyExistsError, MachineNotFoundError, MachineNotReadyError, MachineNotRunningError
+from ...exceptions import MachineAlreadyExistsError, MachineNotReadyError, MachineNotRunningError, MachineBinaryError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
@@ -32,6 +32,10 @@ from ...setting.Setting import Setting
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 MAX_RESTART_COUNT = 3
 MAX_TIME_ERROR = 180
+
+OCI_RUNTIME_RE = re.compile(
+    r"OCI runtime exec failed"
+)
 
 # Known commands that each container should execute
 # Run order: shared.startup, machine.startup and machine.meta['exec_commands']
@@ -147,9 +151,7 @@ class KubernetesMachine(object):
         machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
             else lab.machines.items()
 
-        privileged = lab.general_options['privileged_machines'] if 'privileged_machines' in lab.general_options \
-            else False
-        if privileged:
+        if lab.general_options['privileged_machines']:
             logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
 
         # Do not open terminals on Megalos
@@ -160,12 +162,11 @@ class KubernetesMachine(object):
         # If not, they're started sequentially
         if not lab.has_dependencies:
             pool_size = utils.get_pool_size()
-            machines_pool = Pool(pool_size)
-
             items = utils.chunk_list(machines, pool_size)
 
-            for chunk in items:
-                machines_pool.map(func=self._deploy_machine, iterable=chunk)
+            with Pool(pool_size) as machines_pool:
+                for chunk in items:
+                    machines_pool.map(func=self._deploy_machine, iterable=chunk)
         else:
             for item in machines:
                 self._deploy_machine(item)
@@ -274,16 +275,16 @@ class KubernetesMachine(object):
         """
         logging.debug("Creating device `%s`..." % machine.name)
 
-        # Get the general options into a local variable (just to avoid accessing the lab object every time)
-        options = machine.lab.general_options
+        # Get the global machine metadata into a local variable (just to avoid accessing the lab object every time)
+        global_machine_metadata = machine.lab.global_machine_metadata
 
         # If bridged is defined for the device, throw a warning.
-        if "bridged" in options or machine.is_bridged():
+        if "bridged" in global_machine_metadata or machine.is_bridged():
             logging.warning('Bridged option is not supported on Megalos. It will be ignored.')
 
         # If any exec command is passed in command line, add it.
-        if "exec" in options:
-            machine.add_meta("exec", options["exec"])
+        if "exec" in global_machine_metadata:
+            machine.add_meta("exec", global_machine_metadata["exec"])
 
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
@@ -492,12 +493,11 @@ class KubernetesMachine(object):
 
         if len(pods) > 0:
             pool_size = utils.get_pool_size()
-            machines_pool = Pool(pool_size)
-
             items = utils.chunk_list(pods, pool_size)
 
-            for chunk in items:
-                machines_pool.map(func=self._undeploy_machine, iterable=chunk)
+            with Pool(pool_size) as machines_pool:
+                for chunk in items:
+                    machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
             self._wait_machines_shutdown(lab_hash, selected_machines)
 
@@ -540,12 +540,11 @@ class KubernetesMachine(object):
         pods = self.get_machines_api_objects_by_filters()
 
         pool_size = utils.get_pool_size()
-        machines_pool = Pool(pool_size)
-
         items = utils.chunk_list(pods, pool_size)
 
-        for chunk in items:
-            machines_pool.map(func=self._undeploy_machine, iterable=chunk)
+        with Pool(pool_size) as machines_pool:
+            for chunk in items:
+                machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
     def _undeploy_machine(self, pod_api_object: client.V1Pod) -> None:
         """Undeploy a Kubernetes pod.
@@ -625,7 +624,7 @@ class KubernetesMachine(object):
             shell_env_value = self.get_env_var_value_from_pod(deployment, "_MEGALOS_SHELL")
             shell = shlex.split(shell_env_value if shell_env_value else Setting.get_instance().device_shell)
         else:
-            shell = shlex.split(shell) if type(shell) == str else shell
+            shell = shlex.split(shell) if type(shell) is str else shell
 
         logging.debug("Connect to device `%s` with shell: %s" % (machine_name, shell))
 
@@ -692,28 +691,30 @@ class KubernetesMachine(object):
         return None
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], tty: bool = False, stdin: bool = False,
-             stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False, is_stream: bool = False) \
-            -> Generator[Tuple[bytes, bytes], None, None]:
+             stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False, is_stream: bool = True) \
+            -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
         """Execute the command on the Kubernetes Pod specified by the lab_hash and the machine_name.
 
         Args:
             lab_hash (str): The hash of the network scenario containing the device.
             machine_name (str): The name of the device.
-            command (str): The command to execute.
+            command (Union[str, List]): The command to execute.
             tty (bool): If True, open a new tty.
             stdin (bool): If True, open the stdin channel.
             stdin_buffer (List[Union[str, bytes]]): List of command to pass to the stdin.
             stderr (bool): If True, return the stderr.
-            is_stream (bool): If True, return a generator with each line.
-                If False, returns a generator with the complete output.
+            is_stream (bool): If True, return a generator object containing the stdout and the stderr of the command.
+                If False, returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
+             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the command specified is not found on the device.
         """
-        command = shlex.split(command) if command is str else command
+        command = shlex.split(command) if type(command) is str else command
 
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
 
@@ -734,41 +735,90 @@ class KubernetesMachine(object):
                               tty=tty,
                               _preload_content=False
                               )
-        except ApiException:
-            return None
+        except ApiException as e:
+            raise e
 
         if stdin_buffer is None:
             stdin_buffer = []
 
-        result = {
-            'stdout': '',
-            'stderr': ''
-        }
+        if is_stream:
+            return self._exec_stream(response, stdin, stdin_buffer, stderr)
+        else:
+            return self._exec_all(response, machine_name, command, stdin, stdin_buffer, stderr)
 
+    @staticmethod
+    def _exec_stream(response: Any, stdin: bool = False, stdin_buffer: List[Union[str, bytes]] = None,
+                     has_stderr: bool = False) -> Generator[Tuple[bytes, bytes], None, None]:
+        """Execute the command on the Kubernetes Pod, returning a generator.
+
+        Args:
+            response (Any): The stream response from Kubernetes API.
+            stdin (bool): If True, open the stdin channel.
+            stdin_buffer (List[Union[str, bytes]]): List of command to pass to the stdin.
+            has_stderr (bool): If True, return the stderr.
+
+        Returns:
+            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+        """
         while response.is_open():
             stdout = None
             stderr = None
             if response.peek_stdout():
                 stdout = response.read_stdout()
-                if not is_stream:
-                    result['stdout'] += stdout
-            if stderr and response.peek_stderr():
+            if has_stderr and response.peek_stderr():
                 stderr = response.read_stderr()
-                if not is_stream:
-                    result['stderr'] += stderr
             if stdin and stdin_buffer:
                 param = stdin_buffer.pop(0)
                 response.write_stdin(param)
                 if len(stdin_buffer) <= 0:
                     break
 
-            if is_stream and (stdout or stderr):
-                yield stdout.encode('utf-8') if stdout else None, stderr.encode('utf-8') if stderr else None
+            yield stdout.encode('utf-8') if stdout else None, stderr.encode('utf-8') if stderr else None
 
         response.close()
 
-        if not is_stream:
-            yield result['stdout'].encode('utf-8'), result['stderr'].encode('utf-8')
+    @staticmethod
+    def _exec_all(response: Any, machine_name: str, command: List, stdin: bool = False,
+                  stdin_buffer: List[Union[str, bytes]] = None, has_stderr: bool = False) -> Tuple[bytes, bytes, int]:
+        """Execute the command on the Kubernetes Pod, returning the full output.
+
+        Args:
+            response (Any): The stream response from Kubernetes API.
+            machine_name (str): The name of the device.
+            command (List): The command to execute.
+            stdin (bool): If True, open the stdin channel.
+            stdin_buffer (List[Union[str, bytes]]): List of command to pass to the stdin.
+            has_stderr (bool): If True, return the stderr.
+
+        Returns:
+            Tuple[bytes, bytes, int]: A tuple containing the stdout, the stderr and the return code of the command.
+
+        Raises:
+            MachineBinaryError: If the command specified is not found on the device.
+        """
+        result = {'stdout': '', 'stderr': ''}
+
+        while response.is_open():
+            if response.peek_stdout():
+                result['stdout'] += response.read_stdout()
+            if has_stderr and response.peek_stderr():
+                result['stderr'] += response.read_stderr()
+            if stdin and stdin_buffer:
+                param = stdin_buffer.pop(0)
+                response.write_stdin(param)
+                if len(stdin_buffer) <= 0:
+                    break
+
+        response.close()
+
+        try:
+            error_code = response.returncode
+        except ValueError as e:
+            if OCI_RUNTIME_RE.search(str(e)):
+                raise MachineBinaryError(shlex.join(command), machine_name)
+            error_code = 1
+
+        return result['stdout'].encode('utf-8'), result['stderr'].encode('utf-8'), error_code
 
     def copy_files(self, machine_api_object: client.V1Deployment, path: str, tar_data: bytes) -> None:
         """Copy the files contained in tar_data in the Kubernetes deployment path specified by the machine_api_object.
@@ -837,32 +887,33 @@ class KubernetesMachine(object):
             Generator[Dict[str, KubernetesMachineStats], None, None]: A generator containing device name as keys and
                 KubernetesMachineStats as values.
         """
+        machines_stats = {}
+
+        def load_machine_stats(pod):
+            if pod.metadata.name not in machines_stats:
+                machines_stats[pod.metadata.name] = KubernetesMachineStats(pod)
+
         while True:
             pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name)
             if not pods:
-                if not machine_name:
-                    raise MachineNotFoundError("No devices found.")
-                else:
-                    raise MachineNotFoundError(f"Devices with name {machine_name} not found.")
-
-            machines_stats = {}
-
-            def load_machine_stats(pod):
-                machines_stats[pod.metadata.name] = KubernetesMachineStats(pod)
+                yield dict()
 
             pool_size = utils.get_pool_size()
-            machines_pool = Pool(pool_size)
-
             items = utils.chunk_list(pods, pool_size)
+            with Pool(pool_size) as machines_pool:
+                for chunk in items:
+                    machines_pool.map(func=load_machine_stats, iterable=chunk)
 
-            for chunk in items:
-                machines_pool.map(func=load_machine_stats, iterable=chunk)
-
-            for machine_stats in machines_stats.values():
+            machines_to_remove = []
+            for machine_id, machine_stats in machines_stats.items():
                 try:
                     machine_stats.update()
                 except StopIteration:
+                    machines_to_remove.append(machine_id)
                     continue
+
+            for k in machines_to_remove:
+                machines_stats.pop(k, None)
 
             yield machines_stats
 

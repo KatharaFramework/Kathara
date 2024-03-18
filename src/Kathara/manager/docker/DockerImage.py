@@ -42,21 +42,25 @@ class DockerImage(object):
         """
         return self.client.images.get_registry_data(image_name)
 
-    def pull(self, image_name: str) -> docker.models.images.Image:
-        """Pull and return the specified Docker Image.
+    def pull(self, image_name: str) -> None:
+        """Pull the specified Docker Image.
 
         Args:
             image_name (str): The name of a Docker Image.
 
         Returns:
-            docker.models.images.Image: A Docker Image
+            None
         """
         # If no tag or sha key is specified, we add "latest"
         if (':' or '@') not in image_name:
             image_name = "%s:latest" % image_name
 
+        EventDispatcher.get_instance().dispatch("docker_pull_started")
         logging.info("Pulling image `%s`... This may take a while." % image_name)
-        return self.client.images.pull(image_name)
+        response = self.client.api.pull(image_name, stream=True, decode=True)
+        for progress in response:
+            EventDispatcher.get_instance().dispatch("docker_pull_progress", progress=progress)
+        EventDispatcher.get_instance().dispatch("docker_pull_ended")
 
     def check_for_updates(self, image_name: str) -> None:
         """Update the specified image.
@@ -67,17 +71,17 @@ class DockerImage(object):
         Returns:
             None
         """
-        logging.debug("Checking updates for %s..." % image_name)
+        logging.debug(f"Checking updates for {image_name}...")
 
         if '@' in image_name:
-            logging.debug('No need to check image digest of %s' % image_name)
+            logging.debug(f"No need to check image digest of {image_name}.")
             return
 
         local_image_info = self.get_local(image_name)
         # Image has been built locally, so there's nothing to compare.
         local_repo_digests = local_image_info.attrs["RepoDigests"]
         if not local_repo_digests:
-            logging.debug("Image %s is build locally" % image_name)
+            logging.debug(f"Image {image_name} is built locally.")
             return
 
         remote_image_info = self.get_remote(image_name).attrs['Descriptor']
@@ -138,7 +142,7 @@ class DockerImage(object):
         try:
             # Tries to get the image from the local Docker repository.
             image = self.get_local(image_name)
-            self._check_image_architecture(image)
+            self._check_image_architecture(image_name, image)
             try:
                 if pull:
                     self.check_for_updates(image_name)
@@ -151,14 +155,14 @@ class DockerImage(object):
             try:
                 # If the image exists on Docker Hub, pulls it.
                 registry_data = self.get_remote(image_name)
-                self._check_image_architecture(registry_data)
+                self._check_image_architecture(image_name, registry_data)
                 if pull:
                     self.pull(image_name)
             except APIError as e:
                 if e.response.status_code == 500 and 'dial tcp' in e.explanation:
                     raise ConnectionError(
-                        "Docker Image `%s` is not available in local repository and "
-                        "no Internet connection is available to pull it from Docker Hub." % image_name
+                        f"Docker Image `{image_name}` is not available in local repository and "
+                        "no Internet connection is available to pull it from Docker Hub."
                     )
                 else:
                     raise DockerImageNotFoundError(image_name)
@@ -166,10 +170,12 @@ class DockerImage(object):
                 raise e
 
     @staticmethod
-    def _check_image_architecture(image: Union[docker.models.images.Image, docker.models.images.RegistryData]) -> None:
+    def _check_image_architecture(image_name: str,
+                                  image: Union[docker.models.images.Image, docker.models.images.RegistryData]) -> None:
         """Check if the specified image is compatible with the host architecture.
 
         Args:
+            image_name (str): The name of the Docker Image to check.
             image (Union[docker.models.images.Image, docker.models.images.RegistryData]): Docker Image object.
 
         Returns:
@@ -180,11 +186,22 @@ class DockerImage(object):
         """
         host_arch = utils.get_architecture()
 
+        # amd64 images are compatible on macOS using Rosetta.
+        compatible_archs = utils.exec_by_platform(
+            lambda: {host_arch}, lambda: {host_arch}, lambda: {host_arch, "amd64"}
+        )
+
+        logging.debug(f"Platform compatible architectures: {compatible_archs}")
+
         is_compatible = False
         if isinstance(image, docker.models.images.Image):
-            is_compatible = (image.attrs['Architecture'] == host_arch)
+            is_compatible = image.attrs['Architecture'] in compatible_archs
         elif isinstance(image, docker.models.images.RegistryData):
-            is_compatible = any(map(lambda x: x['architecture'] == host_arch, image.attrs['Platforms']))
+            image_archs = list(
+                filter(lambda x: x['architecture'] in compatible_archs, image.attrs['Platforms'])
+            )
+            is_compatible = len(image_archs) > 0
+            logging.debug(f"Found compatible architectures: {image_archs}")
 
         if not is_compatible:
-            raise InvalidImageArchitectureError(image, host_arch)
+            raise InvalidImageArchitectureError(image_name, host_arch)

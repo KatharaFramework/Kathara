@@ -16,8 +16,8 @@ from .DockerImage import DockerImage
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MountDeniedError, MachineAlreadyExistsError, MachineNotFoundError, DockerPluginError, \
-    MachineBinaryError, MachineNotRunningError
+from ...exceptions import MountDeniedError, MachineAlreadyExistsError, DockerPluginError, \
+    MachineBinaryError, MachineNotRunningError, PrivilegeError
 from ...model.Interface import Interface
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
@@ -117,7 +117,13 @@ class DockerMachine(object):
 
         Returns:
             None
+
+        Raises:
+            PrivilegeError: If the privileged mode is active and the user does not have root privileges.
         """
+        if lab.general_options['privileged_machines'] and not utils.is_admin():
+            raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
+
         machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
             else lab.machines.items()
 
@@ -127,7 +133,6 @@ class DockerMachine(object):
 
         shared_mount = lab.general_options['shared_mount'] if 'shared_mount' in lab.general_options \
             else Setting.get_instance().shared_mount
-
         if shared_mount:
             if Setting.get_instance().remote_url is not None:
                 logging.warning("Shared folder cannot be mounted with a remote Docker connection.")
@@ -141,12 +146,11 @@ class DockerMachine(object):
         # If not, they're started sequentially
         if not lab.has_dependencies:
             pool_size = utils.get_pool_size()
-            machines_pool = Pool(pool_size)
-
             items = utils.chunk_list(machines, pool_size)
 
-            for chunk in items:
-                machines_pool.map(func=self._deploy_and_start_machine, iterable=chunk)
+            with Pool(pool_size) as machines_pool:
+                for chunk in items:
+                    machines_pool.map(func=self._deploy_and_start_machine, iterable=chunk)
         else:
             for item in machines:
                 self._deploy_and_start_machine(item)
@@ -200,11 +204,11 @@ class DockerMachine(object):
             for (host_port, protocol), guest_port in ports_info.items():
                 ports['%d/%s' % (guest_port, protocol)] = host_port
 
-        # Get the general options into a local variable (just to avoid accessing the lab object every time)
-        options = machine.lab.general_options
+        # Get the global machine metadata into a local variable (just to avoid accessing the lab object every time)
+        global_machine_metadata = machine.lab.global_machine_metadata
 
         # If bridged is required in command line but not defined in machine meta, add it.
-        if "bridged" in options and not machine.is_bridged():
+        if "bridged" in global_machine_metadata and not machine.is_bridged():
             machine.add_meta("bridged", True)
 
         if ports and not machine.is_bridged():
@@ -214,8 +218,8 @@ class DockerMachine(object):
             )
 
         # If any exec command is passed in command line, add it.
-        if "exec" in options:
-            machine.add_meta("exec", options["exec"])
+        if "exec" in global_machine_metadata:
+            machine.add_meta("exec", global_machine_metadata["exec"])
 
         # Get the first network object, if defined.
         # This should be used in container create function
@@ -252,17 +256,18 @@ class DockerMachine(object):
 
         volumes = {}
 
-        shared_mount = options['shared_mount'] if 'shared_mount' in options else Setting.get_instance().shared_mount
+        lab_options = machine.lab.general_options
+        shared_mount = ['shared_mount'] if 'shared_mount' in lab_options else Setting.get_instance().shared_mount
         if shared_mount and machine.lab.shared_path:
             volumes[machine.lab.shared_path] = {'bind': '/shared', 'mode': 'rw'}
 
         # Mount the host home only if specified in settings.
-        hosthome_mount = options['hosthome_mount'] if 'hosthome_mount' in options else \
+        hosthome_mount = lab_options['hosthome_mount'] if 'hosthome_mount' in lab_options else \
             Setting.get_instance().hosthome_mount
         if hosthome_mount and Setting.get_instance().remote_url is None:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
-        privileged = options['privileged_machines'] if 'privileged_machines' in options else False
+        privileged = lab_options['privileged_machines']
         if Setting.get_instance().remote_url is not None and privileged:
             privileged = False
             logging.warning("Privileged flag is ignored with a remote Docker connection.")
@@ -478,14 +483,13 @@ class DockerMachine(object):
 
         if len(containers) > 0:
             pool_size = utils.get_pool_size()
-            machines_pool = Pool(pool_size)
-
             items = utils.chunk_list(containers, pool_size)
 
             EventDispatcher.get_instance().dispatch("machines_undeploy_started", items=containers)
 
-            for chunk in items:
-                machines_pool.map(func=self._undeploy_machine, iterable=chunk)
+            with Pool(pool_size) as machines_pool:
+                for chunk in items:
+                    machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
             EventDispatcher.get_instance().dispatch("machines_undeploy_ended")
 
@@ -501,12 +505,11 @@ class DockerMachine(object):
         containers = self.get_machines_api_objects_by_filters(user=user)
 
         pool_size = utils.get_pool_size()
-        machines_pool = Pool(pool_size)
-
         items = utils.chunk_list(containers, pool_size)
 
-        for chunk in items:
-            machines_pool.map(func=self._undeploy_machine, iterable=chunk)
+        with Pool(pool_size) as machines_pool:
+            for chunk in items:
+                machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
     def _undeploy_machine(self, machine_api_object: docker.models.containers.Container) -> None:
         """Undeploy a Docker container.
@@ -624,8 +627,8 @@ class DockerMachine(object):
         utils.exec_by_platform(tty_connect, cmd_connect, tty_connect)
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], user: str = None,
-             tty: bool = True, wait: Union[bool, Tuple[int, float]] = False) \
-            -> Generator[Tuple[bytes, bytes], None, None]:
+             tty: bool = True, wait: Union[bool, Tuple[int, float]] = False, stream: bool = True) \
+            -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
         """Execute the command on the Docker container specified by the lab_hash and the machine_name.
 
         Args:
@@ -638,12 +641,16 @@ class DockerMachine(object):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to
                 wait for each retry. Default is False.
+            stream (bool): If True, return a generator object containing the stdout and the stderr of the command.
+                If False, returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Generator[Tuple[bytes, bytes]]: A generator of tuples containing the stdout and stderr in bytes.
+             Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
+             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             MachineNotRunningError: If the specified device is not running.
+            MachineBinaryError: If the binary of the command is not found.
             ValueError: If the wait values is neither a boolean nor a tuple, or an invalid tuple.
         """
         logging.debug("Executing command `%s` to device with name: %s" % (command, machine_name))
@@ -669,19 +676,22 @@ class DockerMachine(object):
         if should_wait:
             self._wait_startup_execution(container, n_retries=n_retries, retry_interval=retry_interval)
 
-        command = shlex.split(command) if type(command) == str else command
+        command = shlex.split(command) if type(command) is str else command
         exec_result = self._exec_run(container,
                                      cmd=command,
                                      stdout=True,
                                      stderr=True,
                                      tty=tty,
                                      privileged=False,
-                                     stream=True,
+                                     stream=stream,
                                      demux=True,
                                      detach=False
                                      )
 
-        return exec_result['output']
+        if stream:
+            return exec_result['output']
+
+        return exec_result['output'][0], exec_result['output'][1], exec_result['exit_code']
 
     def _exec_run(self, container: docker.models.containers.Container,
                   cmd: Union[str, List], stdout=True, stderr=True, stdin=False, tty=False,
@@ -744,7 +754,7 @@ class DockerMachine(object):
             (stdout_out, _) = exec_output if demux else (exec_output, None)
             exec_stdout = ""
             if stdout_out:
-                if type(stdout_out) == bytes:
+                if type(stdout_out) is bytes:
                     char_encoding = chardet.detect(stdout_out)
                     exec_stdout = stdout_out.decode(char_encoding['encoding'])
                 else:
@@ -848,7 +858,7 @@ class DockerMachine(object):
         if machine_name:
             filters["label"].append(f"name={machine_name}")
 
-        return self.client.containers.list(all=True, filters=filters)
+        return self.client.containers.list(all=True, filters=filters, ignore_removed=True)
 
     def get_machines_stats(self, lab_hash: str = None, machine_name: str = None, user: str = None) -> \
             Generator[Dict[str, DockerMachineStats], None, None]:
@@ -865,36 +875,40 @@ class DockerMachine(object):
             DockerMachineStats as values.
 
         Raises:
-            MachineNotFoundError: If the specified devices are not running.
+            PrivilegeError: If user param is None and the user does not have root privileges.
         """
-        containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, machine_name=machine_name, user=user)
-        if not containers:
-            if not machine_name:
-                raise MachineNotFoundError("No devices found.")
-            else:
-                raise MachineNotFoundError(f"Devices with name {machine_name} not found.")
-
-        containers = sorted(containers, key=lambda x: x.name)
+        if user is None and not utils.is_admin():
+            raise PrivilegeError("You must be root to get devices statistics of all users.")
 
         machines_stats = {}
 
         def load_machine_stats(machine):
-            machines_stats[machine.name] = DockerMachineStats(machine)
-
-        pool_size = utils.get_pool_size()
-        machines_pool = Pool(pool_size)
-
-        items = utils.chunk_list(containers, pool_size)
-
-        for chunk in items:
-            machines_pool.map(func=load_machine_stats, iterable=chunk)
+            if machine.name not in machines_stats:
+                machines_stats[machine.name] = DockerMachineStats(machine)
 
         while True:
-            for machine_stats in machines_stats.values():
+            containers = self.get_machines_api_objects_by_filters(
+                lab_hash=lab_hash, machine_name=machine_name, user=user
+            )
+            if not containers:
+                yield dict()
+
+            pool_size = utils.get_pool_size()
+            items = utils.chunk_list(containers, pool_size)
+            with Pool(pool_size) as machines_pool:
+                for chunk in items:
+                    machines_pool.map(func=load_machine_stats, iterable=chunk)
+
+            machines_to_remove = []
+            for machine_id, machine_stats in machines_stats.items():
                 try:
                     machine_stats.update()
                 except StopIteration:
+                    machines_to_remove.append(machine_id)
                     continue
+
+            for k in machines_to_remove:
+                machines_stats.pop(k, None)
 
             yield machines_stats
 

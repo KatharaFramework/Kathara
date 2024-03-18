@@ -69,11 +69,11 @@ class LrestartCommand(Command):
         )
         self.parser.add_argument(
             '-o', '--pass',
-            dest='options',
-            metavar="OPTION",
+            dest='global_machine_metadata',
+            metavar="METADATA",
             nargs='*',
             required=False,
-            help="Apply options to all devices of a network scenario during startup."
+            help="Apply metadata to all devices of a network scenario during startup."
         )
         self.parser.add_argument(
             '--xterm',

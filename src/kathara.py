@@ -6,11 +6,11 @@ import multiprocessing
 import os
 import sys
 
-import coloredlogs
+from rich.logging import RichHandler
 
 from Kathara import utils
 from Kathara.auth.PrivilegeHandler import PrivilegeHandler
-from Kathara.cli.ui.event.register import register_cli_events
+from Kathara.cli.ui.event.register import register_cli_events, unregister_cli_events
 from Kathara.exceptions import SettingsError, DockerDaemonConnectionError, ClassNotFoundError, SettingsNotFoundError
 from Kathara.foundation.cli.command.CommandFactory import CommandFactory
 from Kathara.setting.Setting import Setting
@@ -58,10 +58,12 @@ class KatharaEntryPoint(object):
 
         if args.version:
             print('Current version: %s' % CURRENT_VERSION)
+            unregister_cli_events()
             sys.exit(0)
 
         if args.command is None or not args.command.islower():
             parser.print_help()
+            unregister_cli_events()
             sys.exit(1)
 
         try:
@@ -70,6 +72,7 @@ class KatharaEntryPoint(object):
                 Setting.get_instance().check()
         except (SettingsError, DockerDaemonConnectionError) as e:
             logging.critical(f"({type(e).__name__}) {str(e)}")
+            unregister_cli_events()
             sys.exit(1)
 
         try:
@@ -77,36 +80,33 @@ class KatharaEntryPoint(object):
         except ClassNotFoundError:
             logging.error(f"Unrecognized command `{args.command}`.")
             parser.print_help()
+            unregister_cli_events()
             sys.exit(1)
         except ImportError as e:
             logging.critical(f"({type(e).__name__}) `{e.name}` is not installed in your system")
+            unregister_cli_events()
             sys.exit(1)
 
         try:
             current_path = os.getcwd()
             command_object.run(current_path, sys.argv[2:])
+            unregister_cli_events()
         except KeyboardInterrupt:
             if args.command not in ['exec', 'linfo', 'list', 'settings']:
                 logging.warning("You interrupted Kathara during a command. The system may be in an inconsistent "
                                 "state! If you encounter any problem please run `kathara wipe`.")
+            unregister_cli_events()
             sys.exit(0)
         except Exception as e:
             if Setting.get_instance().debug_level == "EXCEPTION":
                 logging.exception(f"({type(e).__name__}) {str(e)}")
             else:
                 logging.critical(f"({type(e).__name__}) {str(e)}")
+            unregister_cli_events()
             sys.exit(1)
 
 
 if __name__ == '__main__':
-    multiprocessing.freeze_support()
-
-    register_cli_events()
-
-    utils.check_python_version()
-
-    utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
-
     try:
         Setting.get_instance().load_from_disk()
     except SettingsNotFoundError:
@@ -118,6 +118,17 @@ if __name__ == '__main__':
     except SettingsError:
         debug_level = "DEBUG"
 
-    coloredlogs.install(fmt='%(levelname)s - %(message)s', level=debug_level)
+    logging.basicConfig(
+        level=debug_level, format="%(message)s",
+        handlers=[RichHandler(rich_tracebacks=True, show_time=False, show_path=False)]
+    )
+
+    multiprocessing.freeze_support()
+
+    register_cli_events()
+
+    utils.check_python_version()
+
+    utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
 
     KatharaEntryPoint()

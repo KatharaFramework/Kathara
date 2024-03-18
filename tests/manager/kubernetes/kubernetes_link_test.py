@@ -554,8 +554,7 @@ def test_get_links_stats_lab_hash_link_not_found(mock_get_links_api_objects_by_f
                                                  kubernetes_network):
     kubernetes_network['metadata']['name'] = "test_network"
     mock_get_links_api_objects_by_filters.return_value = []
-    with pytest.raises(LinkNotFoundError):
-        next(kubernetes_link.get_links_stats(lab_hash="lab_hash"))
+    assert next(kubernetes_link.get_links_stats(lab_hash="lab_hash")) == {}
     mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name=None)
 
 
@@ -564,6 +563,5 @@ def test_get_links_stats_lab_hash_link_name_not_found(mock_get_links_api_objects
                                                       kubernetes_network):
     kubernetes_network['metadata']['name'] = "test_network"
     mock_get_links_api_objects_by_filters.return_value = []
-    with pytest.raises(LinkNotFoundError):
-        next(kubernetes_link.get_links_stats(lab_hash="lab_hash", link_name="test_network"))
+    assert next(kubernetes_link.get_links_stats(lab_hash="lab_hash", link_name="test_network")) == {}
     mock_get_links_api_objects_by_filters.assert_called_once_with(lab_hash="lab_hash", link_name="test_network")

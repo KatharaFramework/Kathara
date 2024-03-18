@@ -46,7 +46,7 @@ class Machine(FilesystemMixin):
         Args:
             lab (Kathara.model.Lab): The Kathara network scenario of the new device.
             name (str): The name of the device.
-            **kwargs (Dict[str, Any]): Specifies the optional parameters of the device.
+            **kwargs: Specifies the optional parameters of the device.
 
         Returns:
             None
@@ -276,6 +276,8 @@ class Machine(FilesystemMixin):
         Raises:
             NonSequentialMachineInterfaceError: If there is a missing interface number.
         """
+        logging.debug(f"Checking `{self.name}` integrity...")
+
         sorted_interfaces = sorted(self.interfaces.items(), key=lambda kv: kv[0])
 
         logging.debug("`%s` interfaces are %s." % (self.name, sorted_interfaces))
@@ -374,7 +376,7 @@ class Machine(FilesystemMixin):
         Returns:
             str: The name of the device image.
         """
-        return self.lab.general_options["image"] if "image" in self.lab.general_options else \
+        return self.lab.global_machine_metadata["image"] if "image" in self.lab.global_machine_metadata else \
             self.meta["image"] if "image" in self.meta else Setting.get_instance().image
 
     def get_mem(self) -> str:
@@ -386,7 +388,7 @@ class Machine(FilesystemMixin):
         Raises:
             MachineOptionError: If the memory value specified is not valid.
         """
-        memory = self.lab.general_options["mem"] if "mem" in self.lab.general_options else \
+        memory = self.lab.global_machine_metadata["mem"] if "mem" in self.lab.global_machine_metadata else \
             self.meta["mem"] if "mem" in self.meta else None
 
         if memory:
@@ -419,9 +421,9 @@ class Machine(FilesystemMixin):
         Raises:
             MachineOptionError: If the CPU value specified is not valid.
         """
-        if "cpus" in self.lab.general_options:
+        if "cpus" in self.lab.global_machine_metadata:
             try:
-                return int(float(self.lab.general_options["cpus"]) * multiplier)
+                return int(float(self.lab.global_machine_metadata["cpus"]) * multiplier)
             except ValueError:
                 raise MachineOptionError("CPU value not valid on `%s`." % self.name)
         elif "cpus" in self.meta:
@@ -451,8 +453,8 @@ class Machine(FilesystemMixin):
         """
         num_terms = 1
 
-        if "num_terms" in self.lab.general_options:
-            num_terms = self.lab.general_options['num_terms']
+        if "num_terms" in self.lab.global_machine_metadata:
+            num_terms = self.lab.global_machine_metadata['num_terms']
         elif 'num_terms' in self.meta:
             num_terms = self.meta['num_terms']
 
@@ -478,12 +480,12 @@ class Machine(FilesystemMixin):
         is_v6_enabled = Setting.get_instance().enable_ipv6
 
         try:
-            if "ipv6" in self.lab.general_options:
-                is_v6_enabled = self.lab.general_options["ipv6"]
+            if "ipv6" in self.lab.global_machine_metadata:
+                is_v6_enabled = self.lab.global_machine_metadata["ipv6"]
             elif "ipv6" in self.meta:
                 is_v6_enabled = self.meta["ipv6"]
 
-            return is_v6_enabled if type(is_v6_enabled) == bool else strtobool(is_v6_enabled)
+            return is_v6_enabled if type(is_v6_enabled) is bool else strtobool(is_v6_enabled)
         except ValueError:
             raise MachineOptionError("IPv6 value not valid on `%s`." % self.name)
 
@@ -622,7 +624,7 @@ class Machine(FilesystemMixin):
         Args:
             file_path (str): The path of the file to add the new line.
             line_to_add (str): The new line to add before the searched line.
-            searched_line (str): The searched line.
+            searched_line (str): A string or a regex representing the searched line.
             first_occurrence (bool): Inserts line only before the first occurrence. Default is False.
 
         Returns:
@@ -645,7 +647,7 @@ class Machine(FilesystemMixin):
         Args:
             file_path (str): The path of the file to add the new line.
             line_to_add (str): The new line to add after the searched line.
-            searched_line (str): The searched line.
+            searched_line (str): A string or a regex representing the searched line.
             first_occurrence (bool): Inserts line only after the first occurrence. Default is False.
 
         Returns:
@@ -666,7 +668,7 @@ class Machine(FilesystemMixin):
 
         Args:
             file_path (str): The path of the file to delete the line.
-            line_to_delete (str): The line to delete.
+            line_to_delete (str): A string or a regex representing the line to delete.
             first_occurrence (bool): Deletes only first occurrence. Default is False.
 
         Returns:

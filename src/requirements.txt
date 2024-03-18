@@ -1,17 +1,14 @@
-binaryornot>=0.4.4;
-docker>=7.0.0;
-kubernetes>=23.3.0;
-requests>=2.22.0;
-coloredlogs>=10.0;
-terminaltables>=3.1.0;
-slug>=2.0;
-deepdiff==6.2.2;
-pyroute2;
-progressbar2>=1.14.0;
-fs>=2.4.16;
-chardet;
+binaryornot>=0.4.4
+docker>=7.0.0
+kubernetes>=23.3.0
+requests>=2.22.0
+slug>=2.0
+deepdiff==6.2.2
+pyroute2
+rich
+fs>=2.4.16
+chardet
 libtmux>=0.18.0; sys_platform == 'darwin' or sys_platform == 'linux'
 git+https://github.com/saghul/pyuv@master#egg=pyuv
 appscript>=1.1.0; sys_platform == 'darwin'
 pypiwin32>=223; sys_platform == 'win32'
-windows-curses>=2.1.0; sys_platform == 'win32'

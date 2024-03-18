@@ -1,8 +1,10 @@
 import argparse
 from typing import List
 
+from rich.live import Live
+
+from ..ui.utils import create_panel, LabMetaHighlighter
 from ..ui.utils import create_table
-from ..ui.utils import format_headers
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -10,7 +12,6 @@ from ...model.Lab import Lab
 from ...model.Link import BRIDGE_LINK_NAME
 from ...parser.netkit.LabParser import LabParser
 from ...strings import strings, wiki_description
-from ...trdparty.curses.curses import Curses
 
 
 class LinfoCommand(Command):
@@ -83,62 +84,71 @@ class LinfoCommand(Command):
             self._get_conf_info(lab, machine_name=args['name'])
             return
 
-        if args['name']:
-            print(format_headers("Device Information"))
-            print(str(next(Kathara.get_instance().get_machine_stats(args['name'], lab.hash))))
-            print(format_headers())
-        else:
-            machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
-            print(next(create_table(machines_stats)))
+        with self.console.status(
+                f"Loading...",
+                spinner="dots"
+        ) as _:
+            if args['name']:
+                machine_stats = next(Kathara.get_instance().get_machine_stats(args['name'], lab.hash))
+                message = str(machine_stats) if machine_stats else f"Device `{args['name']}` Not Found."
+                style = None if machine_stats else "red bold"
 
-    @staticmethod
-    def _get_machine_live_info(lab: Lab, machine_name: str) -> None:
-        Curses.get_instance().init_window()
+                self.console.print(create_panel(message, title=f"{args['name']} Information", style=style))
+            else:
+                machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
+                self.console.print(create_table(machines_stats))
 
-        try:
+    def _get_machine_live_info(self, lab: Lab, machine_name: str) -> None:
+        with Live(None, refresh_per_second=12.5, screen=True) as live:
+            live.update(self.console.status(f"Loading...", spinner="dots"))
+            live.refresh_per_second = 1
             while True:
-                Curses.get_instance().print_string(
-                    format_headers("Device Information") + "\n" +
-                    str(next(Kathara.get_instance().get_machine_stats(machine_name, lab.hash))) + "\n" +
-                    format_headers()
-                )
-        finally:
-            Curses.get_instance().close()
+                machine_stats = next(Kathara.get_instance().get_machine_stats(machine_name, lab.hash))
+                message = str(machine_stats) if machine_stats else f"Device `{machine_name}` Not Found."
+                style = None if machine_stats else "red bold"
 
-    @staticmethod
-    def _get_lab_live_info(lab: Lab) -> None:
+                live.update(create_panel(message, title=f"{machine_name} Information", style=style))
+
+    def _get_lab_live_info(self, lab: Lab) -> None:
         machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
-        table = create_table(machines_stats)
 
-        Curses.get_instance().init_window()
-
-        try:
+        with Live(None, refresh_per_second=12.5, screen=True) as live:
+            live.update(self.console.status(f"Loading...", spinner="dots"))
+            live.refresh_per_second = 1
             while True:
-                Curses.get_instance().print_string(next(table))
-        except StopIteration:
-            pass
-        finally:
-            Curses.get_instance().close()
+                table = create_table(machines_stats)
+                if not table:
+                    break
 
-    @staticmethod
-    def _get_conf_info(lab: Lab, machine_name: str = None) -> None:
+                live.update(table)
+
+    def _get_conf_info(self, lab: Lab, machine_name: str = None) -> None:
         if machine_name:
-            print(format_headers("Device Information"))
-            print(str(lab.machines[machine_name]))
-            print(format_headers())
+            self.console.print(
+                create_panel(
+                    str(lab.machines[machine_name]),
+                    title=f"{machine_name} Information"
+                )
+            )
             return
 
-        print(format_headers("Network Scenario Information"))
         lab_meta_information = str(lab)
-
         if lab_meta_information:
-            print(lab_meta_information)
-            print(format_headers())
+            meta_highlighter = LabMetaHighlighter()
+            self.console.print(
+                create_panel(
+                    meta_highlighter(lab_meta_information),
+                    title="Network Scenario Information",
+                )
+            )
 
         n_machines = len(lab.machines)
         n_links = len(lab.links) if BRIDGE_LINK_NAME not in lab.links else len(lab.links) - 1
 
-        print("There are %d devices." % n_machines)
-        print("There are %d collision domains." % n_links)
-
-        print(format_headers())
+        self.console.print(
+            create_panel(
+                f"There are [bold green]{n_machines}[/bold green] devices.\n"
+                f"There are [bold green]{n_links}[/bold green] collision domains.",
+                title="Topology Information"
+            )
+        )

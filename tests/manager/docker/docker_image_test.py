@@ -38,17 +38,17 @@ def test_get_remote(docker_image):
 
 def test_pull(docker_image):
     docker_image.pull("kathara/test")
-    docker_image.client.images.pull.assert_called_once_with("kathara/test:latest")
+    docker_image.client.api.pull.assert_called_once_with("kathara/test:latest", stream=True, decode=True)
 
 
 def test_pull_latest(docker_image):
     docker_image.pull("kathara/test:latest")
-    docker_image.client.images.pull.assert_called_once_with("kathara/test:latest")
+    docker_image.client.api.pull.assert_called_once_with("kathara/test:latest", stream=True, decode=True)
 
 
 def test_pull_tag(docker_image):
     docker_image.pull("kathara/test:tag")
-    docker_image.client.images.pull.assert_called_once_with("kathara/test:tag")
+    docker_image.client.api.pull.assert_called_once_with("kathara/test:tag", stream=True, decode=True)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.pull")
@@ -122,6 +122,148 @@ def test_check_for_updates_image_update(mock_local_image, mock_remote_image, moc
     mock_pull.assert_called_once_with("kathara/test")
 
 
+@mock.patch("src.Kathara.utils._platform", "linux")
+@mock.patch("src.Kathara.utils.get_architecture")
+def test_check_image_architecture_local_amd64_amd64_linux(mock_get_architecture, docker_image):
+    image_obj = docker.models.images.Image()
+    image_obj.attrs['Architecture'] = 'amd64'
+    image_obj.image_name = "kathara/test"
+
+    mock_get_architecture.return_value = "amd64"
+
+    docker_image._check_image_architecture("kathara/test", image_obj)
+
+
+@mock.patch("src.Kathara.utils._platform", "linux")
+@mock.patch("src.Kathara.utils.get_architecture")
+def test_check_image_architecture_local_amd64_arm64_linux(mock_get_architecture, docker_image):
+    image_obj = docker.models.images.Image()
+    image_obj.attrs['Architecture'] = 'amd64'
+    image_obj.image_name = "kathara/test"
+
+    mock_get_architecture.return_value = "arm64"
+
+    with pytest.raises(InvalidImageArchitectureError):
+        docker_image._check_image_architecture("kathara/test", image_obj)
+
+
+@mock.patch("src.Kathara.utils._platform", "linux")
+@mock.patch("src.Kathara.utils.get_architecture")
+def test_check_image_architecture_remote_amd64_amd64_linux(mock_get_architecture, docker_image):
+    registry_data = docker.models.images.RegistryData("kathara/remote")
+    registry_data.attrs['Platforms'] = [{'os': 'linux', 'architecture': 'amd64'}]
+
+    mock_get_architecture.return_value = "amd64"
+
+    docker_image._check_image_architecture("kathara/remote", registry_data)
+
+
+@mock.patch("src.Kathara.utils._platform", "linux")
+@mock.patch("src.Kathara.utils.get_architecture")
+def test_check_image_architecture_remote_amd64_arm64_linux(mock_get_architecture, docker_image):
+    registry_data = docker.models.images.RegistryData("kathara/remote")
+    registry_data.attrs['Platforms'] = [{'os': 'linux', 'architecture': 'amd64'}]
+
+    mock_get_architecture.return_value = "arm64"
+
+    with pytest.raises(InvalidImageArchitectureError):
+        docker_image._check_image_architecture("kathara/remote", registry_data)
+
+
+@mock.patch("src.Kathara.utils._platform", "win32")
+@mock.patch("src.Kathara.utils.get_architecture")
+def test_check_image_architecture_local_amd64_amd64_win32(mock_get_architecture, docker_image):
+    image_obj = docker.models.images.Image()
+    image_obj.attrs['Architecture'] = 'amd64'
+    image_obj.image_name = "kathara/test"
+
+    mock_get_architecture.return_value = "amd64"
+
+    docker_image._check_image_architecture("kathara/test", image_obj)
+
+
+@mock.patch("src.Kathara.utils._platform", "win32")
+@mock.patch("src.Kathara.utils.get_architecture")
+def test_check_image_architecture_local_amd64_arm64_win32(mock_get_architecture, docker_image):
+    image_obj = docker.models.images.Image()
+    image_obj.attrs['Architecture'] = 'amd64'
+    image_obj.image_name = "kathara/test"
+
+    mock_get_architecture.return_value = "arm64"
+
+    with pytest.raises(InvalidImageArchitectureError):
+        docker_image._check_image_architecture("kathara/test", image_obj)
+
+
+@mock.patch("src.Kathara.utils._platform", "win32")
+@mock.patch("src.Kathara.utils.get_architecture")
+def test_check_image_architecture_remote_amd64_amd64_win32(mock_get_architecture, docker_image):
+    registry_data = docker.models.images.RegistryData("kathara/remote")
+    registry_data.attrs['Platforms'] = [{'os': 'linux', 'architecture': 'amd64'}]
+
+    mock_get_architecture.return_value = "amd64"
+
+    docker_image._check_image_architecture("kathara/remote", registry_data)
+
+
+@mock.patch("src.Kathara.utils._platform", "win32")
+@mock.patch("src.Kathara.utils.get_architecture")
+def test_check_image_architecture_remote_amd64_arm64_win32(mock_get_architecture, docker_image):
+    registry_data = docker.models.images.RegistryData("kathara/remote")
+    registry_data.attrs['Platforms'] = [{'os': 'linux', 'architecture': 'amd64'}]
+
+    mock_get_architecture.return_value = "arm64"
+
+    with pytest.raises(InvalidImageArchitectureError):
+        docker_image._check_image_architecture("kathara/remote", registry_data)
+
+
+@mock.patch("src.Kathara.utils._platform", "darwin")
+@mock.patch("src.Kathara.utils.get_architecture")
+def test_check_image_architecture_local_mac_x86(mock_get_architecture, docker_image):
+    image_obj = docker.models.images.Image()
+    image_obj.attrs['Architecture'] = 'amd64'
+    image_obj.image_name = "kathara/test"
+
+    mock_get_architecture.return_value = "amd64"
+
+    docker_image._check_image_architecture("kathara/test", image_obj)
+
+
+@mock.patch("src.Kathara.utils._platform", "darwin")
+@mock.patch("src.Kathara.utils.get_architecture")
+def test_check_image_architecture_local_mac_rosetta(mock_get_architecture, docker_image):
+    image_obj = docker.models.images.Image()
+    image_obj.attrs['Architecture'] = 'amd64'
+    image_obj.image_name = "kathara/test"
+
+    mock_get_architecture.return_value = "arm64"
+
+    docker_image._check_image_architecture("kathara/test", image_obj)
+
+
+@mock.patch("src.Kathara.utils._platform", "darwin")
+@mock.patch("src.Kathara.utils.get_architecture")
+def test_check_image_architecture_remote_mac_x86(mock_get_architecture, docker_image):
+    registry_data = docker.models.images.RegistryData("kathara/remote")
+    registry_data.attrs['Platforms'] = [{'os': 'linux', 'architecture': 'amd64'}]
+
+    mock_get_architecture.return_value = "amd64"
+
+    docker_image._check_image_architecture("kathara/remote", registry_data)
+
+
+@mock.patch("src.Kathara.utils._platform", "darwin")
+@mock.patch("src.Kathara.utils.get_architecture")
+def test_check_image_architecture_remote_mac_rosetta(mock_get_architecture, docker_image):
+    registry_data = docker.models.images.RegistryData("kathara/remote")
+    registry_data.attrs['Platforms'] = [{'os': 'linux', 'architecture': 'amd64'}]
+
+    mock_get_architecture.return_value = "arm64"
+
+    docker_image._check_image_architecture("kathara/remote", registry_data)
+
+
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage._check_image_architecture")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.pull")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.get_remote")
@@ -188,13 +330,14 @@ def test_check_and_pull_remote_true(mock_get_local, mock_check_for_updates, mock
     mock_pull.assert_called_once_with("kathara/test")
 
 
+@mock.patch("src.Kathara.utils._platform", "linux")
 @mock.patch("src.Kathara.utils.get_architecture")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.pull")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.get_remote")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.check_for_updates")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.get_local")
-def test_check_and_pull_local_incompatible_arch(mock_get_local, mock_check_for_updates, mock_get_remote, mock_pull,
-                                                mock_get_architecture, docker_image):
+def test_check_and_pull_local_incompatible_arch_linux(mock_get_local, mock_check_for_updates, mock_get_remote,
+                                                      mock_pull, mock_get_architecture, docker_image):
     image_obj = docker.models.images.Image()
     image_obj.attrs['Architecture'] = 'amd64'
     image_obj.image_name = "kathara/test"
@@ -211,13 +354,14 @@ def test_check_and_pull_local_incompatible_arch(mock_get_local, mock_check_for_u
     assert not mock_pull.called
 
 
+@mock.patch("src.Kathara.utils._platform", "linux")
 @mock.patch("src.Kathara.utils.get_architecture")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.pull")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.get_remote")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.check_for_updates")
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.get_local")
-def test_check_and_pull_remote_incompatible_arch(mock_get_local, mock_check_for_updates, mock_get_remote, mock_pull,
-                                                 mock_get_architecture, docker_image):
+def test_check_and_pull_remote_incompatible_arch_linux(mock_get_local, mock_check_for_updates, mock_get_remote,
+                                                       mock_pull, mock_get_architecture, docker_image):
     registry_data = docker.models.images.RegistryData("kathara/remote")
     registry_data.attrs['Platforms'] = [{'os': 'linux', 'architecture': 'amd64'}]
 
@@ -231,6 +375,58 @@ def test_check_and_pull_remote_incompatible_arch(mock_get_local, mock_check_for_
     mock_get_local.assert_called_once_with("kathara/remote")
     assert not mock_check_for_updates.called
     mock_get_remote.assert_called_once_with("kathara/remote")
+    assert not mock_pull.called
+
+
+@mock.patch("src.Kathara.utils._platform", "darwin")
+@mock.patch("src.Kathara.utils.get_architecture")
+@mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.pull")
+@mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.get_remote")
+@mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.check_for_updates")
+@mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage._check_image_architecture")
+@mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.get_local")
+def test_check_and_pull_local_amd64_arch_rosetta(mock_get_local, mock_check_image_architecture,
+                                                 mock_check_for_updates, mock_get_remote, mock_pull,
+                                                 mock_get_architecture, docker_image):
+    image_obj = docker.models.images.Image()
+    image_obj.attrs['Architecture'] = 'amd64'
+    image_obj.image_name = "kathara/test"
+
+    mock_get_local.return_value = image_obj
+    mock_get_architecture.return_value = "arm64"
+
+    docker_image._check_and_pull("kathara/test", False)
+
+    mock_get_local.assert_called_once_with("kathara/test")
+    mock_check_image_architecture.assert_called_once_with("kathara/test", image_obj)
+    assert not mock_check_for_updates.called
+    assert not mock_get_remote.called
+    assert not mock_pull.called
+
+
+@mock.patch("src.Kathara.utils._platform", "darwin")
+@mock.patch("src.Kathara.utils.get_architecture")
+@mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.pull")
+@mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.get_remote")
+@mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.check_for_updates")
+@mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage._check_image_architecture")
+@mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage.get_local")
+def test_check_and_pull_remote_amd64_arch_rosetta(mock_get_local, mock_check_image_architecture,
+                                                  mock_check_for_updates, mock_get_remote, mock_pull,
+                                                  mock_get_architecture, docker_image):
+    registry_data = docker.models.images.RegistryData("kathara/remote")
+    registry_data.attrs['Platforms'] = [{'os': 'linux', 'architecture': 'amd64'}]
+
+    mock_get_remote.return_value = registry_data
+    mock_get_architecture.return_value = "arm64"
+
+    mock_get_local.side_effect = APIError("Fail")
+
+    docker_image._check_and_pull("kathara/remote", False)
+    mock_get_local.assert_called_once_with("kathara/remote")
+    assert not mock_check_for_updates.called
+    mock_get_remote.assert_called_once_with("kathara/remote")
+    mock_check_image_architecture.assert_called_once_with("kathara/remote", registry_data)
     assert not mock_pull.called
 
 

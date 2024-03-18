@@ -52,14 +52,16 @@ def test_run_add_interface_syntax_error(mock_docker_manager, mock_manager_get_in
         command.run('.', ['-n', 'pc1', '--add', 'A/00/:00:00:00:00:01'])
 
 
+@mock.patch("src.Kathara.model.Lab.Lab.get_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_machine")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
-def test_run_remove_interface(mock_docker_manager, mock_manager_get_instance, mock_get_machine):
+def test_run_remove_interface(mock_docker_manager, mock_manager_get_instance, mock_get_machine, mock_get_link):
     lab = Lab('kathara_vlab')
     pc1 = lab.new_machine("pc1")
-    lab.new_link("A")
+    link = lab.new_link("A")
     mock_get_machine.return_value = pc1
+    mock_get_link.return_value = link
     mock_manager_get_instance.return_value = mock_docker_manager
     command = VconfigCommand()
     command.run('.', ['-n', 'pc1', '--rm', 'A'])
