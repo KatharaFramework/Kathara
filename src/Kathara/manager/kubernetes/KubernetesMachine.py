@@ -157,6 +157,12 @@ class KubernetesMachine(object):
         # Do not open terminals on Megalos
         Setting.get_instance().open_terminals = False
 
+        wait_thread = threading.Thread(
+            target=self._wait_machines_startup,
+            args=(lab, selected_machines if selected_machines else None)
+        )
+        wait_thread.start()
+
         # Deploy all lab machines.
         # If there is no lab.dep file, machines can be deployed using multithreading.
         # If not, they're started sequentially
@@ -171,7 +177,7 @@ class KubernetesMachine(object):
             for item in machines:
                 self._deploy_machine(item)
 
-        self._wait_machines_startup(lab, selected_machines if selected_machines else None)
+        wait_thread.join()
 
     def _wait_machines_startup(self, lab: Lab, selected_machines: Set[str]) -> None:
         """Wait the startup of the selected machines. Return when the selected machines become `Ready`.
@@ -492,6 +498,9 @@ class KubernetesMachine(object):
             selected_machines = {item.metadata.labels["name"] for item in pods}
 
         if len(pods) > 0:
+            wait_thread = threading.Thread(target=self._wait_machines_shutdown, args=(lab_hash, selected_machines))
+            wait_thread.start()
+
             pool_size = utils.get_pool_size()
             items = utils.chunk_list(pods, pool_size)
 
@@ -499,7 +508,7 @@ class KubernetesMachine(object):
                 for chunk in items:
                     machines_pool.map(func=self._undeploy_machine, iterable=chunk)
 
-            self._wait_machines_shutdown(lab_hash, selected_machines)
+            wait_thread.join()
 
     def _wait_machines_shutdown(self, lab_hash: str, selected_machines: Set[str]):
         """Wait the shutdown of the selected machines. Return when all the selected machines are terminated.
@@ -576,24 +585,15 @@ class KubernetesMachine(object):
         try:
             shell_env_value = self.get_env_var_value_from_pod(pod_api_object, "_MEGALOS_SHELL")
             shell = shell_env_value if shell_env_value else Setting.get_instance().device_shell
-            output = self.exec(machine_namespace,
-                               machine_name,
-                               command=[shell, '-c', shutdown_commands_string],
-                               )
-
-            try:
-                next(output)
-            except StopIteration:
-                pass
-
-            deployment_name = self.get_deployment_name(machine_name)
-            self.kubernetes_config_map.delete_for_machine(deployment_name, machine_namespace)
-
-            self.client.delete_namespaced_deployment(name=deployment_name,
-                                                     namespace=machine_namespace
-                                                     )
+            self.exec(machine_namespace, machine_name, command=[shell, '-c', shutdown_commands_string], is_stream=False)
         except ApiException:
-            return
+            pass
+        except MachineNotRunningError:
+            pass
+
+        deployment_name = self.get_deployment_name(machine_name)
+        self.kubernetes_config_map.delete_for_machine(deployment_name, machine_namespace)
+        self.client.delete_namespaced_deployment(name=deployment_name, namespace=machine_namespace)
 
     def connect(self, lab_hash: str, machine_name: str, shell: Union[str, List[str]] = None, logs: bool = False) \
             -> None:
