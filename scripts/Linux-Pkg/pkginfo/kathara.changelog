@@ -1,8 +1,5 @@
 __DATE__ Kathara Team <******@kathara.org>
 
 * Release v__VERSION__
-    * New CLI UI using "rich" library!
-    * (Docker) Show progress during Docker image pull, similarly to the official "docker pull" command
-    * (Docker) It is now correctly possible to specify a "linux/amd64" image on Apple Silicon (which can be run using Rosetta)
-    * Add "gnome-terminal" as official supported terminal emulator
-    * Several API improvements and bug fixes
+    * (Docker) Fix "rp_filter" on "eth0" that was causing startup errors on some distributions
+    * (Megalos) Fix watch methods while starting/stopping devices that was causing "lstart"/"lclean" to hang indefinitely
