@@ -130,6 +130,13 @@ def is_platform(desired_platform: str) -> bool:
     return _platform == desired_platform
 
 
+def is_wsl_platform() -> bool:
+    if _platform == LINUX or _platform == LINUX2:
+        info = os.uname()
+        return 'microsoft' in info.release.lower()
+    return False
+
+
 def exec_by_platform(fun_linux: Callable, fun_windows: Callable, fun_mac: Callable) -> Any:
     if _platform == LINUX or _platform == LINUX2:
         return fun_linux()
