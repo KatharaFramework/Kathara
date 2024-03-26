@@ -1,6 +1,7 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
     * (Docker) Fix "rp_filter" on "eth0" that was causing startup errors on some distributions
-    * (Megalos) Fix watch methods while starting/stopping devices that was causing "lstart"/"lclean" to hang indefinitely
+    * (Megalos) Fix watch methods while starting/stopping devices that were causing "lstart"/"lclean" to hang indefinitely
+    * Minor fixes
 
  -- Kathara Team <contact@kathara.org>  __DATE__
