@@ -292,6 +292,7 @@ def test_create_interface(mock_get_current_user_name, mock_is_wsl_platform, mock
     assert not mock_copy_files.called
 
 
+@mock.patch("src.Kathara.utils._platform", "linux")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
@@ -428,6 +429,7 @@ def test_create_interface_mac_addr(mock_get_current_user_name, mock_is_wsl_platf
     assert not mock_copy_files.called
 
 
+@mock.patch("src.Kathara.utils._platform", "linux")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
