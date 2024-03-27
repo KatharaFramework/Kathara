@@ -237,12 +237,20 @@ class DockerMachine(object):
 
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
-
-        if first_machine_iface:
-            sysctl_parameters[RP_FILTER_NAMESPACE % "eth0"] = 0
-
         sysctl_parameters["net.ipv4.ip_forward"] = 1
         sysctl_parameters["net.ipv4.icmp_ratelimit"] = 0
+
+        sysctl_first_interface = {}
+        if first_machine_iface:
+            def sysctl_linux():
+                if utils.is_wsl_platform():
+                    return {RP_FILTER_NAMESPACE % "eth0": 0}
+                return {}
+
+            def sysctl_windows():
+                return {RP_FILTER_NAMESPACE % "eth0": 0}
+
+            sysctl_first_interface = utils.exec_by_platform(sysctl_linux, sysctl_windows, lambda: {})
 
         if machine.is_ipv6_enabled():
             sysctl_parameters["net.ipv6.conf.all.forwarding"] = 1
@@ -252,7 +260,7 @@ class DockerMachine(object):
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
 
         # Merge machine sysctls
-        sysctl_parameters = {**sysctl_parameters, **machine.meta['sysctls']}
+        sysctl_parameters = {**sysctl_parameters, **machine.meta['sysctls'], **sysctl_first_interface}
 
         volumes = {}
 

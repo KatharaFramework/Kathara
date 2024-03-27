@@ -5,6 +5,7 @@ from typing import Set, Dict, Generator, Tuple, List, Optional, Union
 import docker
 import docker.models.containers
 import docker.models.networks
+from docker.errors import DockerException
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
 from .DockerImage import DockerImage
@@ -59,13 +60,16 @@ class DockerManager(IManager):
     @check_docker_status
     def __init__(self) -> None:
         remote_url = Setting.get_instance().remote_url
-        if remote_url is None:
-            self.client: docker.DockerClient = docker.from_env(timeout=None, max_pool_size=utils.get_pool_size())
-        else:
-            tls_config = docker.tls.TLSConfig(ca_cert=Setting.get_instance().cert_path)
-            self.client: docker.DockerClient = docker.DockerClient(base_url=remote_url, timeout=None,
-                                                                   max_pool_size=utils.get_pool_size(),
-                                                                   tls=tls_config)
+        try:
+            if remote_url is None:
+                self.client: docker.DockerClient = docker.from_env(timeout=None, max_pool_size=utils.get_pool_size())
+            else:
+                tls_config = docker.tls.TLSConfig(ca_cert=Setting.get_instance().cert_path)
+                self.client: docker.DockerClient = docker.DockerClient(
+                    base_url=remote_url, timeout=None, max_pool_size=utils.get_pool_size(), tls=tls_config
+                )
+        except DockerException as e:
+            raise DockerDaemonConnectionError(str(e))
 
         docker_plugin = DockerPlugin(self.client)
         docker_plugin.check_and_download_plugin()

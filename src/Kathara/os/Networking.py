@@ -153,8 +153,7 @@ class Networking(object):
         logging.debug("Killing vde_ext process in namespace `%s`." % switch_path)
 
         pid_path = os.path.join(switch_path, f"pid_{interface_name}")
-        command = f"/bin/sh -c 'kill -2 $(cat {pid_path})'"
-
+        command = f"/bin/sh -c 'if [ -f \"{pid_path}\" ]; then kill -2 $(cat {pid_path}); fi'"
         logging.debug("Running command `%s` in namespace `%s`..." % (command, switch_path))
         nsenter(ns_pid, command, ns_types=['ipc', 'net', 'pid', 'uts'])
 

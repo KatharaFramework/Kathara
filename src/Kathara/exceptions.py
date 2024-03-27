@@ -28,7 +28,7 @@ class SettingsNotFoundError(Exception):
 
 class DockerDaemonConnectionError(Exception):
     def __init__(self, message: str) -> None:
-        super().__init__(f"Cannot connect to Docker Daemon: {message}")
+        super().__init__(f"Cannot connect to Docker Daemon, this may indicate that it is not running. {message}")
 
 
 class NotSupportedError(Exception):
