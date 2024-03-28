@@ -153,7 +153,44 @@ class KubernetesOptionsHandler(OptionsHandler):
 
         image_pull_policy_item = SubmenuItem(image_pull_policy_string, image_pull_policy_menu, current_menu)
 
+        # Private Registry dockerconfigjson Option
+        pr_dcj_string = "Private Registry Docker Configuration"
+        pr_dcj_menu = SelectionMenu(
+            strings=[],
+            title=pr_dcj_string,
+            prologue_text="""Add a base64-encoded Docker configuration string to """
+                          """access private container registries. It will be used """
+                          """to create a Kubernetes secret of type `kubernetes.io/dockerconfigjson`.
+
+                          Default is %s.""" % DEFAULTS['private_registry_dockerconfigjson'],
+            formatter=menu_formatter
+        )
+
+        pr_dcj_menu.append_item(
+            FunctionItem(
+                text=pr_dcj_string,
+                function=setting_utils.read_value,
+                args=['private_registry_dockerconfigjson',
+                      RegexValidator(r'.*'),
+                      'Write a base64-encoded Docker configuration string:',
+                      'Docker configuration string not valid!'
+                      ],
+                should_exit=True
+            )
+        )
+        pr_dcj_menu.append_item(
+            FunctionItem(
+                text="Reset value to Empty String",
+                function=setting_utils.update_setting_value,
+                args=["private_registry_dockerconfigjson", None],
+                should_exit=True
+            )
+        )
+
+        pr_dcj_item = SubmenuItem(pr_dcj_string, pr_dcj_menu, current_menu)
+
         current_menu.append_item(api_url_item)
         current_menu.append_item(api_token_item)
         current_menu.append_item(host_shared_item)
         current_menu.append_item(image_pull_policy_item)
+        current_menu.append_item(pr_dcj_item)

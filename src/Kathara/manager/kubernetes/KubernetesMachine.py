@@ -458,11 +458,17 @@ class KubernetesMachine(object):
                 )
             ))
 
+        # Add image_pull_secrets if using a private registry
+        image_pull_secrets_arg = {}
+        if Setting.get_instance().private_registry_dockerconfigjson:
+            image_pull_secrets_arg = {"image_pull_secrets": [client.V1LocalObjectReference(name="private-registry")]}
+
         pod_spec = client.V1PodSpec(containers=[container_definition],
                                     hostname=machine.meta['real_name'],
                                     dns_policy="None",
                                     dns_config=dns_config,
-                                    volumes=volumes
+                                    volumes=volumes,
+                                    **image_pull_secrets_arg
                                     )
 
         pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)

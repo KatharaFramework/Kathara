@@ -5,6 +5,7 @@ from kubernetes import client, watch
 from kubernetes.client.api import core_v1_api
 from kubernetes.client.rest import ApiException
 
+from ...setting.Setting import Setting
 from ...model.Lab import Lab
 
 
@@ -32,6 +33,9 @@ class KubernetesNamespace(object):
         try:
             self.client.create_namespace(namespace_definition)
             self._wait_namespace_creation(lab.hash)
+            pr_dcj = Setting.get_instance().private_registry_dockerconfigjson
+            if pr_dcj:
+                self._create_private_registry_secret(lab.hash, pr_dcj)
         except ApiException:
             return None
 
@@ -79,6 +83,27 @@ class KubernetesNamespace(object):
         """
         namespace = self.client.list_namespace(label_selector=f"kubernetes.io/metadata.name={lab_hash}").items
         return namespace.pop() if namespace else None
+
+
+    def _create_private_registry_secret(self, lab_hash: str, pr_dcj: str) -> None:
+        """Create a kubernetes.io/dockerconfigjson secret for allowing access to private registries.
+
+        Args:
+            lab_hash (str): The name of the Kubernetes Namespace to add the secret to.
+            pr_dcj (str): The private registry dockerconfigjson.
+
+        Returns:
+            None
+        """
+        secret_definition = client.V1Secret(
+            api_version="v1",
+            kind="Secret",
+            metadata=client.V1ObjectMeta(name="private-registry", namespace=lab_hash),
+            type="kubernetes.io/dockerconfigjson",
+            data={".dockerconfigjson": pr_dcj}
+        )
+
+        self.client.create_namespaced_secret(lab_hash, secret_definition)
 
     def _wait_namespace_creation(self, lab_hash: str) -> None:
         """Wait the creation of the specified Kubernetes Namespace. Returns when the namespace becomes `Active`.
