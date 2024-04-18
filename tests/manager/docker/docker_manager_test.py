@@ -23,10 +23,11 @@ from src.Kathara.types import SharedCollisionDomainsOption
 #
 @pytest.fixture()
 @mock.patch("src.Kathara.manager.docker.DockerPlugin.DockerPlugin.check_and_download_plugin")
+@mock.patch("docker.client.DockerClient")
 @mock.patch("docker.from_env")
-def docker_manager(mock_from_env, mock_check_and_download_plugin):
+def docker_manager(mock_from_env, client_mock, mock_check_and_download_plugin):
     mock_check_and_download_plugin.return_value = True
-    mock_from_env.return_value = Mock()
+    mock_from_env.return_value = client_mock
     docker_manager = DockerManager()
 
     return docker_manager

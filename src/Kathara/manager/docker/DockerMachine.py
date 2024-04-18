@@ -11,6 +11,7 @@ import chardet
 import docker.models.containers
 from docker import DockerClient
 from docker.errors import APIError
+from docker.utils import version_lt
 
 from .DockerImage import DockerImage
 from .stats.DockerMachineStats import DockerMachineStats
@@ -101,11 +102,11 @@ SHUTDOWN_COMMANDS = [
 
 class DockerMachine(object):
     """The class responsible for deploying Kathara devices as Docker container and interact with them."""
-    __slots__ = ['client', 'docker_image']
+    __slots__ = ['client', '_engine_version', 'docker_image']
 
     def __init__(self, client: DockerClient, docker_image: DockerImage) -> None:
         self.client: DockerClient = client
-
+        self._engine_version: str = client.version()['Version']
         self.docker_image: DockerImage = docker_image
 
     def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None) -> None:
@@ -242,15 +243,8 @@ class DockerMachine(object):
 
         sysctl_first_interface = {}
         if first_machine_iface:
-            def sysctl_linux():
-                if utils.is_wsl_platform():
-                    return {RP_FILTER_NAMESPACE % "eth0": 0}
-                return {}
-
-            def sysctl_windows():
-                return {RP_FILTER_NAMESPACE % "eth0": 0}
-
-            sysctl_first_interface = utils.exec_by_platform(sysctl_linux, sysctl_windows, lambda: {})
+            if version_lt(self._engine_version, "26.0.0"):
+                sysctl_first_interface = {RP_FILTER_NAMESPACE % "eth0": 0}
 
         if machine.is_ipv6_enabled():
             sysctl_parameters["net.ipv6.conf.all.forwarding"] = 1
