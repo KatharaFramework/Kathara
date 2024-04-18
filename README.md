@@ -93,8 +93,6 @@ Kathará has been also presented in meetings and workshops:
 - [net-vis](https://github.com/Friscobuffo/net-vis-localhost), a tool that parses (and generates) the `lab.conf` file and all the `.startup` files to visualize the network.
 - [kathara-lab-starter](https://github.com/BuonHobo/kathara-lab-starter), an easy and extensible tool to get a kathara lab started.  Utilizing JSON input files, it accelerates setup, while minimizing configuration redundancies.
 
-Being based on Netkit, all the previous tools still work. 
-
 ## Success Stories
 As far as we know, Kathará is currently being used in many [courses and projects](https://www.kathara.org/stories.html). 
  
