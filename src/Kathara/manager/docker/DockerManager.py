@@ -155,7 +155,7 @@ class DockerManager(IManager):
 
     @privileged
     def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None) -> None:
-        """Create a new interface and connect a Kathara device to a collision domain.
+        """Create a new interface on a running Kathara device and connect it to a collision domain.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
@@ -174,7 +174,11 @@ class DockerManager(IManager):
         if not machine.lab:
             raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
 
-        if not machine.api_object or machine.api_object.status != "running":
+        if not machine.api_object:
+            raise MachineNotRunningError(machine.name)
+
+        machine.api_object.reload()
+        if machine.api_object.status != "running":
             raise MachineNotRunningError(machine.name)
 
         if not link.lab:
@@ -192,22 +196,30 @@ class DockerManager(IManager):
 
     @privileged
     def disconnect_machine_from_link(self, machine: Machine, link: Link) -> None:
-        """Disconnect a Kathara device from a collision domain.
+        """Disconnect a running Kathara device from a collision domain.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
-            link (Kathara.model.Link): The Kathara collision domain from which disconnect the device.
+            link (Kathara.model.Link): The Kathara collision domain from which disconnect the running device.
 
         Returns:
             None
 
         Raises:
             LabNotFoundError: If the device specified is not associated to any network scenario.
+            MachineNotRunningError: If the specified device is not running.
             LabNotFoundError: If the collision domain is not associated to any network scenario.
             MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
         """
         if not machine.lab:
             raise LabNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
+
+        if not machine.api_object:
+            raise MachineNotRunningError(machine.name)
+
+        machine.api_object.reload()
+        if machine.api_object.status != "running":
+            raise MachineNotRunningError(machine.name)
 
         if not link.lab:
             raise LabNotFoundError(f"Collision domain `{link.name}` is not associated to a network scenario.")

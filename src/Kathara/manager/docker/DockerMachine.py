@@ -339,7 +339,6 @@ class DockerMachine(object):
             DockerPluginError: If Kathara has been left in an inconsistent state.
             APIError: If the Docker APIs return an error.
         """
-        machine.api_object.reload()
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
         if interface.link.api_object.name not in attached_networks:
@@ -369,7 +368,6 @@ class DockerMachine(object):
         Returns:
             None
         """
-        machine.api_object.reload()
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
         if link.api_object.name in attached_networks:
@@ -465,6 +463,8 @@ class DockerMachine(object):
                             f"Startup commands will not be executed and terminal will not open. "
                             f"Please specify a valid shell for this device."
                             )
+
+        machine.api_object.reload()
 
     def undeploy(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
         """Undeploy the devices contained in the network scenario defined by the lab_hash.
