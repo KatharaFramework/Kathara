@@ -1,6 +1,6 @@
 __DATE__ Kathara Team <******@kathara.org>
 
 * Release v__VERSION__
-    * (Docker) Definitely fix "rp_filter" issue on all platforms and Docker versions
+    * (Docker) Fix "rp_filter" issue on all platforms and Docker versions
     * (Docker) Fix Docker API objects reloading
     * Minor fixes

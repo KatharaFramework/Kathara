@@ -68,6 +68,6 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- (Docker) Definitely fix "rp_filter" issue on all platforms and Docker versions
+- (Docker) Fix "rp_filter" issue on all platforms and Docker versions
 - (Docker) Fix Docker API objects reloading
 - Minor fixes

@@ -1,6 +1,6 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-    * (Docker) Definitely fix "rp_filter" issue on all platforms and Docker versions
+    * (Docker) Fix "rp_filter" issue on all platforms and Docker versions
     * (Docker) Fix Docker API objects reloading
     * Minor fixes
 
