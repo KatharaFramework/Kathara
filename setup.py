@@ -7,7 +7,7 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages('src'),
     py_modules=['kathara'],
-    version='3.7.4',
+    version='3.7.5',
     license='gpl-3.0',
     description='A lightweight container-based network emulation tool.',
     author='Kathara Framework',

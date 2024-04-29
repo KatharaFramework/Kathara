@@ -68,6 +68,6 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- (Docker) Fix "rp_filter" on "eth0" that was causing startup errors on some distributions
-- (Megalos) Fix watch methods while starting/stopping devices that were causing "lstart"/"lclean" to hang indefinitely
+- (Docker) Definitely fix "rp_filter" issue on all platforms and Docker versions
+- (Docker) Fix Docker API objects reloading
 - Minor fixes
