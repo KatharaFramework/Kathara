@@ -13,7 +13,7 @@ setup(
     author='Kathara Framework',
     author_email='contact@kathara.org',
     url='https://www.kathara.org',
-    download_url='https://github.com/KatharaFramework/Kathara/archive/refs/tags/3.7.4.tar.gz',
+    download_url='https://github.com/KatharaFramework/Kathara/archive/refs/tags/3.7.5.tar.gz',
     keywords=['NETWORK-EMULATION', 'CONTAINERS', 'NFV'],
     install_requires=[
         "binaryornot>=0.4.4",
