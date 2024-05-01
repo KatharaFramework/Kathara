@@ -229,18 +229,18 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
     assert not mock_copy_files.called
 
 
-@mock.patch("src.Kathara.utils._platform", "linux")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-@mock.patch("src.Kathara.utils.is_wsl_platform")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_interface(mock_get_current_user_name, mock_is_wsl_platform, mock_setting_get_instance, mock_copy_files,
+def test_create_interface(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
                           mock_get_machines_api_objects_by_filters, docker_machine, default_device):
     class LinkApiObj:
         def __init__(self, name):
             self.name = name
 
+    docker_machine._engine_version = "26.0.0"
+
     link = Link(default_device.lab, "A")
     link.api_object = LinkApiObj("link_a")
 
@@ -249,7 +249,6 @@ def test_create_interface(mock_get_current_user_name, mock_is_wsl_platform, mock
     docker_machine.client.api.create_endpoint_config.return_value = {}
     mock_get_machines_api_objects_by_filters.return_value = []
     mock_get_current_user_name.return_value = "test-user"
-    mock_is_wsl_platform.return_value = False
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
@@ -293,84 +292,18 @@ def test_create_interface(mock_get_current_user_name, mock_is_wsl_platform, mock
     assert not mock_copy_files.called
 
 
-@mock.patch("src.Kathara.utils._platform", "linux")
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
-@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-@mock.patch("src.Kathara.utils.is_wsl_platform")
-@mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_interface_on_wsl(mock_get_current_user_name, mock_is_wsl_platform, mock_setting_get_instance,
-                                 mock_copy_files, mock_get_machines_api_objects_by_filters, docker_machine,
-                                 default_device):
-    class LinkApiObj:
-        def __init__(self, name):
-            self.name = name
-
-    link = Link(default_device.lab, "A")
-    link.api_object = LinkApiObj("link_a")
-
-    default_device.add_interface(link, 0)
-
-    docker_machine.client.api.create_endpoint_config.return_value = {}
-    mock_get_machines_api_objects_by_filters.return_value = []
-    mock_get_current_user_name.return_value = "test-user"
-    mock_is_wsl_platform.return_value = True
-
-    setting_mock = Mock()
-    setting_mock.configure_mock(**{
-        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
-        'device_prefix': 'dev_prefix',
-        "device_shell": '/bin/bash',
-        'enable_ipv6': False,
-        'remote_url': None,
-        'hosthome_mount': False,
-        'shared_mount': False
-    })
-    mock_setting_get_instance.return_value = setting_mock
-    docker_machine.create(default_device)
-    docker_machine.client.containers.create.assert_called_once_with(
-        image='kathara/test',
-        name='dev_prefix_test-user_test_device_9pe3y6IDMwx4PfOPu5mbNg',
-        hostname='test_device',
-        cap_add=['NET_ADMIN', 'NET_RAW', 'NET_BROADCAST', 'NET_BIND_SERVICE', 'SYS_ADMIN'],
-        privileged=False,
-        network="link_a",
-        network_mode='bridge',
-        networking_config={"link_a": {}},
-        sysctls={'net.ipv4.conf.all.rp_filter': 0,
-                 'net.ipv4.conf.default.rp_filter': 0,
-                 'net.ipv4.conf.lo.rp_filter': 0,
-                 'net.ipv4.conf.eth0.rp_filter': 0,
-                 'net.ipv4.ip_forward': 1,
-                 'net.ipv4.icmp_ratelimit': 0,
-                 },
-        environment={},
-        mem_limit='64m',
-        nano_cpus=2000000000,
-        ports=None,
-        tty=True,
-        stdin_open=True,
-        detach=True,
-        volumes={},
-        labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
-    )
-
-    assert not mock_copy_files.called
-
-
-@mock.patch("src.Kathara.utils._platform", "win32")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_interface_win(mock_get_current_user_name, mock_setting_get_instance,
-                              mock_copy_files, mock_get_machines_api_objects_by_filters, docker_machine,
-                              default_device):
+def test_create_interface_old_engine(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
+                                     mock_get_machines_api_objects_by_filters, docker_machine,
+                                     default_device):
     class LinkApiObj:
         def __init__(self, name):
             self.name = name
 
+    docker_machine._engine_version = "25.0.0"
     link = Link(default_device.lab, "A")
     link.api_object = LinkApiObj("link_a")
 
@@ -423,19 +356,19 @@ def test_create_interface_win(mock_get_current_user_name, mock_setting_get_insta
     assert not mock_copy_files.called
 
 
-@mock.patch("src.Kathara.utils._platform", "linux")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-@mock.patch("src.Kathara.utils.is_wsl_platform")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_interface_mac_addr(mock_get_current_user_name, mock_is_wsl_platform, mock_setting_get_instance,
+def test_create_interface_mac_addr(mock_get_current_user_name, mock_setting_get_instance,
                                    mock_copy_files, mock_get_machines_api_objects_by_filters, docker_machine,
                                    default_device):
     class LinkApiObj:
         def __init__(self, name):
             self.name = name
 
+    docker_machine._engine_version = "26.0.0"
+
     link = Link(default_device.lab, "A")
     link.api_object = LinkApiObj("link_a")
 
@@ -447,7 +380,6 @@ def test_create_interface_mac_addr(mock_get_current_user_name, mock_is_wsl_platf
     }
     mock_get_machines_api_objects_by_filters.return_value = []
     mock_get_current_user_name.return_value = "test-user"
-    mock_is_wsl_platform.return_value = False
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
@@ -495,90 +427,18 @@ def test_create_interface_mac_addr(mock_get_current_user_name, mock_is_wsl_platf
     assert not mock_copy_files.called
 
 
-@mock.patch("src.Kathara.utils._platform", "linux")
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
-@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-@mock.patch("src.Kathara.utils.is_wsl_platform")
-@mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_interface_mac_addr_on_wsl(mock_get_current_user_name, mock_is_wsl_platform, mock_setting_get_instance,
-                                          mock_copy_files, mock_get_machines_api_objects_by_filters, docker_machine,
-                                          default_device):
-    class LinkApiObj:
-        def __init__(self, name):
-            self.name = name
-
-    link = Link(default_device.lab, "A")
-    link.api_object = LinkApiObj("link_a")
-
-    expected_mac_addr = "00:00:00:00:ff:ff"
-    default_device.add_interface(link, 0, expected_mac_addr)
-
-    docker_machine.client.api.create_endpoint_config.return_value = {
-        'driver_opt': {'kathara.mac_addr': expected_mac_addr}
-    }
-    mock_get_machines_api_objects_by_filters.return_value = []
-    mock_get_current_user_name.return_value = "test-user"
-    mock_is_wsl_platform.return_value = True
-
-    setting_mock = Mock()
-    setting_mock.configure_mock(**{
-        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
-        'device_prefix': 'dev_prefix',
-        "device_shell": '/bin/bash',
-        'enable_ipv6': False,
-        'remote_url': None,
-        'hosthome_mount': False,
-        'shared_mount': False
-    })
-    mock_setting_get_instance.return_value = setting_mock
-    docker_machine.create(default_device)
-
-    docker_machine.client.api.create_endpoint_config.assert_called_once_with(
-        driver_opt={'kathara.mac_addr': expected_mac_addr}
-    )
-    docker_machine.client.containers.create.assert_called_once_with(
-        image='kathara/test',
-        name='dev_prefix_test-user_test_device_9pe3y6IDMwx4PfOPu5mbNg',
-        hostname='test_device',
-        cap_add=['NET_ADMIN', 'NET_RAW', 'NET_BROADCAST', 'NET_BIND_SERVICE', 'SYS_ADMIN'],
-        privileged=False,
-        network="link_a",
-        network_mode='bridge',
-        networking_config={"link_a": {'driver_opt': {'kathara.mac_addr': expected_mac_addr}}},
-        sysctls={'net.ipv4.conf.all.rp_filter': 0,
-                 'net.ipv4.conf.default.rp_filter': 0,
-                 'net.ipv4.conf.lo.rp_filter': 0,
-                 'net.ipv4.conf.eth0.rp_filter': 0,
-                 'net.ipv4.ip_forward': 1,
-                 'net.ipv4.icmp_ratelimit': 0,
-                 },
-        environment={},
-        mem_limit='64m',
-        nano_cpus=2000000000,
-        ports=None,
-        tty=True,
-        stdin_open=True,
-        detach=True,
-        volumes={},
-        labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
-    )
-
-    assert not mock_copy_files.called
-
-
-@mock.patch("src.Kathara.utils._platform", "win32")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
-def test_create_interface_mac_addr_win(mock_get_current_user_name, mock_setting_get_instance,
-                                       mock_copy_files, mock_get_machines_api_objects_by_filters, docker_machine,
-                                       default_device):
+def test_create_interface_mac_addr_on_old_engine(mock_get_current_user_name, mock_setting_get_instance,
+                                                 mock_copy_files, mock_get_machines_api_objects_by_filters,
+                                                 docker_machine, default_device):
     class LinkApiObj:
         def __init__(self, name):
             self.name = name
+
+    docker_machine._engine_version = "25.0.0"
 
     link = Link(default_device.lab, "A")
     link.api_object = LinkApiObj("link_a")
