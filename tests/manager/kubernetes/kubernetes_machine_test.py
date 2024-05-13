@@ -52,7 +52,10 @@ def kubernetes_device_definition():
 
     sysctl_commands = "sysctl -w -q net.ipv4.conf.all.rp_filter=0; sysctl -w -q net.ipv4.conf.default.rp_filter=0; " \
                       "sysctl -w -q net.ipv4.conf.lo.rp_filter=0; sysctl -w -q net.ipv4.ip_forward=1; " \
-                      "sysctl -w -q net.ipv4.icmp_ratelimit=0"
+                      "sysctl -w -q net.ipv4.icmp_ratelimit=0; sysctl -w -q net.ipv6.conf.default.disable_ipv6=1; " \
+                      "sysctl -w -q net.ipv6.conf.all.disable_ipv6=1; sysctl -w -q net.ipv6.conf.default.forwarding=0; " \
+                      "sysctl -w -q net.ipv6.conf.all.forwarding=0"
+    
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands=sysctl_commands, machine_commands="ls")
 
