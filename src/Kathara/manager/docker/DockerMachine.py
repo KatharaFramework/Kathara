@@ -252,6 +252,11 @@ class DockerMachine(object):
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
+        else:
+            sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 1
+            sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 1
+            sysctl_parameters["net.ipv6.conf.default.forwarding"] = 0
+            sysctl_parameters["net.ipv6.conf.all.forwarding"] = 0
 
         # Merge machine sysctls
         sysctl_parameters = {**sysctl_parameters, **machine.meta['sysctls'], **sysctl_first_interface}
