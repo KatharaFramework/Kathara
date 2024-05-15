@@ -41,6 +41,32 @@ def default_device(mock_docker_container):
 
 
 @pytest.fixture()
+@mock.patch("docker.models.containers.Container")
+def default_device_b(mock_docker_container):
+    device = Machine(Lab('Default scenario'), "test_device_b")
+    device.add_meta("image", "kathara/test2")
+    device.add_meta("bridged", False)
+    device.api_object = mock_docker_container
+    device.api_object.id = "device_id"
+    device.api_object.attrs = {"NetworkSettings": {"Networks": []}}
+    device.api_object.labels = {"user": "user", "name": "test_device_b", "lab_hash": "lab_hash", "shell": "/bin/bash"}
+    return device
+
+
+@pytest.fixture()
+@mock.patch("docker.models.containers.Container")
+def default_device_c(mock_docker_container):
+    device = Machine(Lab('Default scenario'), "test_device_c")
+    device.add_meta("image", "kathara/test3")
+    device.add_meta("bridged", False)
+    device.api_object = mock_docker_container
+    device.api_object.id = "device_id"
+    device.api_object.attrs = {"NetworkSettings": {"Networks": []}}
+    device.api_object.labels = {"user": "user", "name": "test_device_c", "lab_hash": "lab_hash", "shell": "/bin/bash"}
+    return device
+
+
+@pytest.fixture()
 def default_link(default_device):
     link = Link(default_device.lab, "A")
     link.api_object = Mock()
@@ -845,15 +871,19 @@ def test_undeploy_one_device(mock_get_machines_api_objects_by_filters, mock_unde
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._undeploy_machine")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 def test_undeploy_three_devices(mock_get_machines_api_objects_by_filters, mock_undeploy_machine, docker_machine,
-                                default_device):
+                                default_device, default_device_b, default_device_c):
     default_device.api_object.labels = {'name': "test_device"}
-    # fill the list with more devices
+    default_device_b.api_object.labels = {'name': "test_device_b"}
+    default_device_c.api_object.labels = {'name': "test_device_c"}
     mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object,
-                                                             default_device.api_object, default_device.api_object]
+                                                             default_device_b.api_object, default_device_c.api_object]
     mock_undeploy_machine.return_value = None
     docker_machine.undeploy("lab_hash")
     mock_get_machines_api_objects_by_filters.assert_called_once()
     assert mock_undeploy_machine.call_count == 3
+    mock_undeploy_machine.assert_any_call(default_device.api_object)
+    mock_undeploy_machine.assert_any_call(default_device_b.api_object)
+    mock_undeploy_machine.assert_any_call(default_device_c.api_object)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._undeploy_machine")
@@ -864,6 +894,62 @@ def test_undeploy_no_devices(mock_get_machines_api_objects_by_filters, mock_unde
     docker_machine.undeploy("lab_hash")
     mock_get_machines_api_objects_by_filters.assert_called_once()
     assert not mock_undeploy_machine.called
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._undeploy_machine")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+def test_undeploy_selected_machines(mock_get_machines_api_objects_by_filters, mock_undeploy_machine, docker_machine,
+                                    default_device, default_device_b, default_device_c):
+    default_device.api_object.labels = {'name': "test_device"}
+    default_device_b.api_object.labels = {'name': "test_device_b"}
+    default_device_c.api_object.labels = {'name': "test_device_c"}
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object,
+                                                             default_device_b.api_object, default_device_c.api_object]
+    mock_undeploy_machine.return_value = None
+    docker_machine.undeploy("lab_hash", selected_machines={"test_device"})
+    mock_get_machines_api_objects_by_filters.assert_called_once()
+    assert mock_undeploy_machine.call_count == 1
+    mock_undeploy_machine.assert_any_call(default_device.api_object)
+    assert call(default_device_b.api_object) not in mock_undeploy_machine.mock_calls
+    assert call(default_device_c.api_object) not in mock_undeploy_machine.mock_calls
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._undeploy_machine")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+def test_undeploy_excluded_machines(mock_get_machines_api_objects_by_filters, mock_undeploy_machine, docker_machine,
+                                    default_device, default_device_b, default_device_c):
+    default_device.api_object.labels = {'name': "test_device"}
+    default_device_b.api_object.labels = {'name': "test_device_b"}
+    default_device_c.api_object.labels = {'name': "test_device_c"}
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object,
+                                                             default_device_b.api_object, default_device_c.api_object]
+    mock_undeploy_machine.return_value = None
+    docker_machine.undeploy("lab_hash", excluded_machines={"test_device"})
+    mock_get_machines_api_objects_by_filters.assert_called_once()
+    assert mock_undeploy_machine.call_count == 2
+    assert call(default_device.api_object) not in mock_undeploy_machine.mock_calls
+    mock_undeploy_machine.assert_any_call(default_device_b.api_object)
+    mock_undeploy_machine.assert_any_call(default_device_c.api_object)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._undeploy_machine")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+def test_undeploy_selected_and_excluded_machines(mock_get_machines_api_objects_by_filters, mock_undeploy_machine,
+                                                 docker_machine, default_device, default_device_b, default_device_c):
+    default_device.api_object.labels = {'name': "test_device"}
+    default_device_b.api_object.labels = {'name': "test_device_b"}
+    default_device_c.api_object.labels = {'name': "test_device_c"}
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object,
+                                                             default_device_b.api_object, default_device_c.api_object]
+    mock_undeploy_machine.return_value = None
+    docker_machine.undeploy(
+        "lab_hash", selected_machines={"test_device", "test_device_b"}, excluded_machines={"test_device"}
+    )
+    mock_get_machines_api_objects_by_filters.assert_called_once()
+    assert mock_undeploy_machine.call_count == 1
+    assert call(default_device.api_object) not in mock_undeploy_machine.mock_calls
+    mock_undeploy_machine.assert_any_call(default_device_b.api_object)
+    assert call(default_device_c.api_object) not in mock_undeploy_machine.mock_calls
 
 
 #

@@ -42,6 +42,38 @@ def default_device(mock_kubernetes_deployment):
 
 
 @pytest.fixture()
+@mock.patch("kubernetes.client.models.v1_deployment.V1Deployment")
+def default_device_b(mock_kubernetes_deployment):
+    device = Machine(Lab("default_scenario"), "test_device_b")
+    device.add_meta("exec", "ls")
+    device.add_meta("mem", "64m")
+    device.add_meta("cpus", "2")
+    device.add_meta("image", "kathara/tes2")
+    device.add_meta("bridged", False)
+    device.add_meta('real_name', "devprefix-test-device-b-ec84ad3b")
+
+    device.api_object = mock_kubernetes_deployment
+
+    return device
+
+
+@pytest.fixture()
+@mock.patch("kubernetes.client.models.v1_deployment.V1Deployment")
+def default_device_c(mock_kubernetes_deployment):
+    device = Machine(Lab("default_scenario"), "test_device_c")
+    device.add_meta("exec", "ls")
+    device.add_meta("mem", "64m")
+    device.add_meta("cpus", "2")
+    device.add_meta("image", "kathara/test3")
+    device.add_meta("bridged", False)
+    device.add_meta('real_name', "devprefix-test-device-c-ec84ad3b")
+
+    device.api_object = mock_kubernetes_deployment
+
+    return device
+
+
+@pytest.fixture()
 def kubernetes_device_definition():
     security_context = client.V1SecurityContext(privileged=True)
     resources = client.V1ResourceRequirements(limits={
@@ -570,18 +602,24 @@ def test_undeploy_one_device(mock_get_machines_api_objects_by_filters, mock_unde
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._undeploy_machine")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
 def test_undeploy_three_devices(mock_get_machines_api_objects_by_filters, mock_undeploy_machine,
-                                mock_wait_machines_shutdown, kubernetes_machine, default_device):
+                                mock_wait_machines_shutdown, kubernetes_machine,
+                                default_device, default_device_b, default_device_c):
     default_device.api_object.metadata.labels = {'name': "test_device"}
-    # fill the list with more devices
+    default_device_b.api_object.metadata.labels = {'name': "test_device_b"}
+    default_device_c.api_object.metadata.labels = {'name': "test_device_c"}
     mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object,
-                                                             default_device.api_object, default_device.api_object]
+                                                             default_device_b.api_object, default_device_c.api_object]
     mock_undeploy_machine.return_value = None
 
     kubernetes_machine.undeploy("lab_hash")
 
     mock_get_machines_api_objects_by_filters.assert_called_once()
     assert mock_undeploy_machine.call_count == 3
-    mock_wait_machines_shutdown.assert_called_once_with("lab_hash", {"test_device"})
+    mock_undeploy_machine.assert_any_call(default_device.api_object)
+    mock_undeploy_machine.assert_any_call(default_device_b.api_object)
+    mock_undeploy_machine.assert_any_call(default_device_c.api_object)
+
+    mock_wait_machines_shutdown.assert_called_once_with("lab_hash", {"test_device", "test_device_b", "test_device_c"})
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._wait_machines_shutdown")
@@ -597,6 +635,74 @@ def test_undeploy_no_devices(mock_get_machines_api_objects_by_filters, mock_unde
     mock_get_machines_api_objects_by_filters.assert_called_once()
     assert not mock_undeploy_machine.called
     assert not mock_wait_machines_shutdown.called
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._wait_machines_shutdown")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._undeploy_machine")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+def test_undeploy_selected_machines(mock_get_machines_api_objects_by_filters, mock_undeploy_machine,
+                                    mock_wait_machines_shutdown, kubernetes_machine,
+                                    default_device, default_device_b, default_device_c):
+    default_device.api_object.metadata.labels = {'name': "test_device"}
+    default_device_b.api_object.metadata.labels = {'name': "test_device_b"}
+    default_device_c.api_object.metadata.labels = {'name': "test_device_c"}
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object,
+                                                             default_device_b.api_object, default_device_c.api_object]
+    mock_undeploy_machine.return_value = None
+    kubernetes_machine.undeploy("lab_hash", selected_machines={"test_device"})
+    mock_get_machines_api_objects_by_filters.assert_called_once()
+    assert mock_undeploy_machine.call_count == 1
+    mock_undeploy_machine.assert_any_call(default_device.api_object)
+    assert call(default_device_b.api_object) not in mock_undeploy_machine.mock_calls
+    assert call(default_device_c.api_object) not in mock_undeploy_machine.mock_calls
+
+    mock_wait_machines_shutdown.assert_called_once_with("lab_hash", {"test_device"})
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._wait_machines_shutdown")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._undeploy_machine")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+def test_undeploy_excluded_machines(mock_get_machines_api_objects_by_filters, mock_undeploy_machine,
+                                    mock_wait_machines_shutdown, kubernetes_machine,
+                                    default_device, default_device_b, default_device_c):
+    default_device.api_object.metadata.labels = {'name': "test_device"}
+    default_device_b.api_object.metadata.labels = {'name': "test_device_b"}
+    default_device_c.api_object.metadata.labels = {'name': "test_device_c"}
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object,
+                                                             default_device_b.api_object, default_device_c.api_object]
+    mock_undeploy_machine.return_value = None
+    kubernetes_machine.undeploy("lab_hash", excluded_machines={"test_device"})
+    mock_get_machines_api_objects_by_filters.assert_called_once()
+    assert mock_undeploy_machine.call_count == 2
+    assert call(default_device.api_object) not in mock_undeploy_machine.mock_calls
+    mock_undeploy_machine.assert_any_call(default_device_b.api_object)
+    mock_undeploy_machine.assert_any_call(default_device_c.api_object)
+
+    mock_wait_machines_shutdown.assert_called_once_with("lab_hash", {"test_device_b", "test_device_c"})
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._wait_machines_shutdown")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._undeploy_machine")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+def test_undeploy_selected_and_excluded_machines(mock_get_machines_api_objects_by_filters, mock_undeploy_machine,
+                                                 mock_wait_machines_shutdown, kubernetes_machine,
+                                                 default_device, default_device_b, default_device_c):
+    default_device.api_object.metadata.labels = {'name': "test_device"}
+    default_device_b.api_object.metadata.labels = {'name': "test_device_b"}
+    default_device_c.api_object.metadata.labels = {'name': "test_device_c"}
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object,
+                                                             default_device_b.api_object, default_device_c.api_object]
+    mock_undeploy_machine.return_value = None
+    kubernetes_machine.undeploy(
+        "lab_hash", selected_machines={"test_device", "test_device_b"}, excluded_machines={"test_device"}
+    )
+    mock_get_machines_api_objects_by_filters.assert_called_once()
+    assert mock_undeploy_machine.call_count == 1
+    assert call(default_device.api_object) not in mock_undeploy_machine.mock_calls
+    mock_undeploy_machine.assert_any_call(default_device_b.api_object)
+    assert call(default_device_c.api_object) not in mock_undeploy_machine.mock_calls
+
+    mock_wait_machines_shutdown.assert_called_once_with("lab_hash", {"test_device_b"})
 
 
 #

@@ -78,13 +78,14 @@ class KubernetesManager(IManager):
         self.k8s_namespace.create(link.lab)
         self.k8s_link.deploy_links(link.lab, selected_links={link.name})
 
-    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
+    def deploy_lab(self, lab: Lab, selected_machines: Optional[Set[str]] = None,
+                   excluded_machines: Optional[Set[str]] = None) -> None:
         """Deploy a Kathara network scenario.
 
         Args:
             lab (Kathara.model.Lab): A Kathara network scenario.
-            selected_machines (Set[str]): If not None, deploy only the specified devices.
-            excluded_machines (Set[str]): If not None, exclude devices from being deployed.
+            selected_machines (Optional[Set[str]]): If not None, deploy only the specified devices.
+            excluded_machines (Optional[Set[str]]): If not None, exclude devices from being deployed.
 
         Returns:
             None
@@ -236,7 +237,8 @@ class KubernetesManager(IManager):
         self.k8s_link.undeploy(link.lab.hash, selected_links={network_name})
 
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
-                     selected_machines: Optional[Set[str]] = None) -> None:
+                     selected_machines: Optional[Set[str]] = None,
+                     excluded_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
@@ -247,6 +249,7 @@ class KubernetesManager(IManager):
             lab (Optional[Kathara.model.Lab]): The network scenario object.
                 Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
+            excluded_machines (Optional[Set[str]]): If not None, exclude devices from being undeployed.
 
         Returns:
             None
@@ -263,7 +266,7 @@ class KubernetesManager(IManager):
         lab_hash = lab_hash.lower()
 
         # When only some machines should be undeployed, special checks are required.
-        if selected_machines:
+        if selected_machines or excluded_machines:
             # Get all current deployed networks and save only their name
             networks = self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash)
             all_networks = set([network["metadata"]["name"] for network in networks])
@@ -280,7 +283,9 @@ class KubernetesManager(IManager):
                 network_annotation = json.loads(machine.metadata.annotations["k8s.v1.cni.cncf.io/networks"])
                 networks = [net['name'] for net in network_annotation]
 
-                if machine.metadata.labels["name"] not in selected_machines:
+                # To be running, you are not selected to undeploy, or you are excluded from undeploy
+                if (selected_machines is not None and machine.metadata.labels["name"] not in selected_machines) or \
+                        (excluded_machines is not None and machine.metadata.labels["name"] in excluded_machines):
                     running_networks.update(networks)
 
             # Difference between all networks and attached networks are the ones to delete
@@ -290,13 +295,24 @@ class KubernetesManager(IManager):
             running_machines = set([machine.metadata.labels["name"] for machine in running_machines])
         else:
             networks_to_delete = None
-            running_machines = set()
+            running_machines = {}
 
-        self.k8s_machine.undeploy(lab_hash, selected_machines=selected_machines)
+        self.k8s_machine.undeploy(lab_hash, selected_machines=selected_machines, excluded_machines=excluded_machines)
         self.k8s_link.undeploy(lab_hash, selected_links=networks_to_delete)
 
-        # If no machines are selected or there are no running machines, undeploy the namespace
-        if not selected_machines or len(running_machines - selected_machines) <= 0:
+        # Undeploy the namespace if:
+        # 1- No machines are selected/excluded
+        # 2- There are machines selected and excluded but the difference is empty
+        # 3- There are machines selected but the difference is empty
+        # 4- There are machines excluded but the difference is empty
+        undeploy_namespace = (
+                (not selected_machines and not excluded_machines) or
+                (selected_machines and excluded_machines and
+                 not (running_machines - (selected_machines - excluded_machines))) or
+                (selected_machines and not (running_machines - selected_machines)) or
+                (excluded_machines and not (running_machines - excluded_machines))
+        )
+        if undeploy_namespace:
             logging.debug("Waiting for namespace deletion...")
 
             self.k8s_namespace.undeploy(lab_hash=lab_hash)

@@ -483,26 +483,33 @@ class KubernetesMachine(object):
                                    spec=deployment_spec
                                    )
 
-    def undeploy(self, lab_hash: str, selected_machines: Optional[Set[str]] = None) -> None:
+    def undeploy(self, lab_hash: str, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Undeploy all the running Kubernetes deployments and Pods contained in the scenario defined by the lab_hash.
 
         If selected_machines is not None, undeploy only the specified devices.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
-            selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
+            selected_machines (Set[str]): A set containing the name of the devices to undeploy.
+            excluded_machines (Set[str]): A set containing the name of the devices to exclude.
 
         Returns:
             None
         """
         pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash)
-        if selected_machines is not None and len(selected_machines) > 0:
-            pods = [item for item in pods if item.metadata.labels["name"] in selected_machines]
-        else:
-            selected_machines = {item.metadata.labels["name"] for item in pods}
+        machines_to_watch = {item.metadata.labels["name"] for item in pods}
+        if selected_machines or excluded_machines:
+            pods = [
+                item for item in pods
+                if (selected_machines is None or item.metadata.labels["name"] in selected_machines) and
+                   (excluded_machines is None or item.metadata.labels["name"] not in excluded_machines)
+            ]
+
+            machines_to_watch = selected_machines if selected_machines else machines_to_watch
+            machines_to_watch = machines_to_watch if not excluded_machines else machines_to_watch - excluded_machines
 
         if len(pods) > 0:
-            wait_thread = threading.Thread(target=self._wait_machines_shutdown, args=(lab_hash, selected_machines))
+            wait_thread = threading.Thread(target=self._wait_machines_shutdown, args=(lab_hash, machines_to_watch))
             wait_thread.start()
 
             pool_size = utils.get_pool_size()

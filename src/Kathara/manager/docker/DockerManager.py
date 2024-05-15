@@ -17,7 +17,7 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError, LinkNotFoundError, MachineCollisionDomainError, \
-    InvocationError, LabNotFoundError, MachineNotRunningError, PrivilegeError
+    InvocationError, LabNotFoundError, MachineNotRunningError
 from ...exceptions import MachineNotFoundError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
@@ -121,13 +121,14 @@ class DockerManager(IManager):
         self.docker_link.deploy_links(link.lab, selected_links={link.name})
 
     @privileged
-    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
+    def deploy_lab(self, lab: Lab, selected_machines: Optional[Set[str]] = None,
+                   excluded_machines: Optional[Set[str]] = None) -> None:
         """Deploy a Kathara network scenario.
 
         Args:
             lab (Kathara.model.Lab): A Kathara network scenario.
-            selected_machines (Set[str]): If not None, deploy only the specified devices.
-            excluded_machines (Set[str]): If not None, exclude devices from being deployed.
+            selected_machines (Optional[Set[str]]): If not None, deploy only the specified devices.
+            excluded_machines (Optional[Set[str]]): If not None, exclude devices from being deployed.
 
         Returns:
             None
@@ -284,7 +285,8 @@ class DockerManager(IManager):
 
     @privileged
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
-                     selected_machines: Optional[Set[str]] = None) -> None:
+                     selected_machines: Optional[Set[str]] = None,
+                     excluded_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
@@ -295,6 +297,7 @@ class DockerManager(IManager):
             lab (Optional[Kathara.model.Lab]): The network scenario object.
                 Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
+            excluded_machines (Optional[Set[str]]): If not None, exclude devices from being undeployed.
 
         Returns:
             None
@@ -308,7 +311,7 @@ class DockerManager(IManager):
         elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines)
+        self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines, excluded_machines=excluded_machines)
 
         self.docker_link.undeploy(lab_hash)
 

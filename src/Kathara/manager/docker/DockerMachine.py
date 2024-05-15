@@ -470,22 +470,27 @@ class DockerMachine(object):
 
         machine.api_object.reload()
 
-    def undeploy(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
+    def undeploy(self, lab_hash: str, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Undeploy the devices contained in the network scenario defined by the lab_hash.
 
         If a set of selected_machines is specified, undeploy only the specified devices.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
-            selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
+            selected_machines (Set[str]): A set containing the name of the devices to undeploy.
+            excluded_machines (Set[str]): A set containing the name of the devices to exclude.
 
         Returns:
             None
         """
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, user=utils.get_current_user_name())
 
-        if selected_machines is not None and len(selected_machines) > 0:
-            containers = [item for item in containers if item.labels["name"] in selected_machines]
+        if selected_machines or excluded_machines:
+            containers = [
+                item for item in containers
+                if (selected_machines is None or item.labels["name"] in selected_machines) and
+                   (excluded_machines is None or item.labels["name"] not in excluded_machines)
+            ]
 
         if len(containers) > 0:
             pool_size = utils.get_pool_size()
