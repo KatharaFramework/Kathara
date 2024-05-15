@@ -12,7 +12,7 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import BRIDGE_LINK_NAME
 from src.Kathara.manager.docker.DockerLink import DockerLink
 from src.Kathara import utils
-from src.Kathara.exceptions import PrivilegeError
+from src.Kathara.exceptions import PrivilegeError, InvocationError
 from src.Kathara.types import SharedCollisionDomainsOption
 
 
@@ -386,14 +386,10 @@ def test_deploy_links_excluded_links(mock_deploy_link, docker_link):
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._deploy_link")
 def test_deploy_links_selected_and_excluded_links(mock_deploy_link, docker_link):
     lab = Lab("Default scenario")
-    link_a = lab.get_or_new_link("A")
-    link_b = lab.get_or_new_link("B")
-    link_c = lab.get_or_new_link("C")
-    docker_link.deploy_links(lab, selected_links={"A", "B"}, excluded_links={"B"})
-    mock_deploy_link.assert_any_call(("A", link_a))
-    assert call(("B", link_b)) not in mock_deploy_link.mock_calls
-    assert call(("C", link_c)) not in mock_deploy_link.mock_calls
-    assert mock_deploy_link.call_count == 1
+    with pytest.raises(InvocationError):
+        docker_link.deploy_links(lab, selected_links={"A", "B"}, excluded_links={"B"})
+    assert not mock_deploy_link.called
+
 
 #
 # TEST: _delete_link

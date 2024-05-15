@@ -138,8 +138,12 @@ class DockerManager(IManager):
             OSError: If any link in the network scenario is attached to external interfaces and the host OS is not LINUX.
             PrivilegeError: If the user start the network scenario in privileged mode without having root privileges.
             MachineNotFoundError: If the specified devices are not in the network scenario.
+            InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
         lab.check_integrity()
+
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
 
         if selected_machines and not lab.has_machines(selected_machines):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
@@ -155,7 +159,11 @@ class DockerManager(IManager):
 
         excluded_links = None
         if excluded_machines:
-            excluded_links = lab.get_links_from_machines(excluded_machines)
+            # Get the links of remaining machines
+            running_links = lab.get_links_from_machines(set(lab.machines.keys()) - excluded_machines)
+            # Get the links of the excluded machines and get the diff with the running ones
+            # The remaining are the ones to delete
+            excluded_links = lab.get_links_from_machines(excluded_machines) - running_links
 
         # Deploy all lab links.
         self.docker_link.deploy_links(lab, selected_links=selected_links, excluded_links=excluded_links)
@@ -303,13 +311,17 @@ class DockerManager(IManager):
             None
 
         Raises:
-            InvocationError: If a running network scenario hash or name is not specified.
+            InvocationError: If a running network scenario hash or name is not specified,
+                or if both `selected_machines` and `excluded_machines` are specified.
         """
         check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
 
         self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines, excluded_machines=excluded_machines)
 

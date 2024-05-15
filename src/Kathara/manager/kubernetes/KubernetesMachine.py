@@ -24,7 +24,8 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MachineAlreadyExistsError, MachineNotReadyError, MachineNotRunningError, MachineBinaryError
+from ...exceptions import MachineAlreadyExistsError, MachineNotReadyError, MachineNotRunningError, MachineBinaryError, \
+    InvocationError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
@@ -148,12 +149,22 @@ class KubernetesMachine(object):
 
         Returns:
             None
+
+        Raises:
+            InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
-        machines = {
-            k: v for k, v in lab.machines.items()
-            if (not selected_machines or k in selected_machines) and
-               (not excluded_machines or k not in excluded_machines)
-        }.items()
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
+
+        machines = lab.machines.items()
+        if selected_machines:
+            machines = {
+                k: v for k, v in machines if k in selected_machines
+            }.items()
+        elif excluded_machines:
+            machines = {
+                k: v for k, v in machines if k not in excluded_machines
+            }.items()
 
         if lab.general_options['privileged_machines']:
             logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
@@ -495,17 +506,20 @@ class KubernetesMachine(object):
 
         Returns:
             None
+
+        Raises:
+            InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
+
         pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash)
         machines_to_watch = {item.metadata.labels["name"] for item in pods}
-        if selected_machines or excluded_machines:
-            pods = [
-                item for item in pods
-                if (selected_machines is None or item.metadata.labels["name"] in selected_machines) and
-                   (excluded_machines is None or item.metadata.labels["name"] not in excluded_machines)
-            ]
-
+        if selected_machines:
+            pods = [item for item in pods if item.metadata.labels["name"] in selected_machines]
             machines_to_watch = selected_machines if selected_machines else machines_to_watch
+        elif excluded_machines:
+            pods = [item for item in pods if item.metadata.labels["name"] not in excluded_machines]
             machines_to_watch = machines_to_watch if not excluded_machines else machines_to_watch - excluded_machines
 
         if len(pods) > 0:

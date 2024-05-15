@@ -95,8 +95,12 @@ class KubernetesManager(IManager):
             MachineNotFoundError: If the specified devices are not in the network scenario specified.
             LabAlreadyExistsError: If a network scenario is deployed while it is terminating its execution.
             ApiError: If the Kubernetes APIs throw an exception.
+            InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
         lab.check_integrity()
+
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
 
         if selected_machines and not lab.has_machines(selected_machines):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
@@ -116,7 +120,11 @@ class KubernetesManager(IManager):
 
         excluded_links = None
         if excluded_machines:
-            excluded_links = lab.get_links_from_machines(excluded_machines)
+            # Get the links of remaining machines
+            running_links = lab.get_links_from_machines(set(lab.machines.keys()) - excluded_machines)
+            # Get the links of the excluded machines and get the diff with the running ones
+            # The remaining are the ones to delete
+            excluded_links = lab.get_links_from_machines(excluded_machines) - running_links
 
         self.k8s_namespace.create(lab)
         try:
@@ -255,13 +263,17 @@ class KubernetesManager(IManager):
             None
 
         Raises:
-            InvocationError: If a running network scenario hash or name is not specified.
+            InvocationError: If a running network scenario hash or name is not specified,
+                or if both `selected_machines` and `excluded_machines` are specified.
         """
         check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
             lab_hash = lab.hash
         elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
+
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
 
         lab_hash = lab_hash.lower()
 
@@ -302,15 +314,12 @@ class KubernetesManager(IManager):
 
         # Undeploy the namespace if:
         # 1- No machines are selected/excluded
-        # 2- There are machines selected and excluded but the difference is empty
-        # 3- There are machines selected but the difference is empty
-        # 4- There are machines excluded but the difference is empty
+        # 2- There are machines selected but the difference is empty
+        # 3- There are machines excluded and the intersection is empty
         undeploy_namespace = (
                 (not selected_machines and not excluded_machines) or
-                (selected_machines and excluded_machines and
-                 not (running_machines - (selected_machines - excluded_machines))) or
                 (selected_machines and not (running_machines - selected_machines)) or
-                (excluded_machines and not (running_machines - excluded_machines))
+                (excluded_machines and not (running_machines & excluded_machines))
         )
         if undeploy_namespace:
             logging.debug("Waiting for namespace deletion...")

@@ -8,6 +8,7 @@ from kubernetes.client import V1PodList
 sys.path.insert(0, './')
 
 from kubernetes import client
+from src.Kathara.exceptions import InvocationError
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.kubernetes.KubernetesMachine import KubernetesMachine, STARTUP_COMMANDS
@@ -564,19 +565,10 @@ def test_deploy_machines_selected_and_excluded_machines(mock_deploy, mock_wait_m
     mock_setting_get_instance.return_value = setting_mock
 
     lab = Lab("Default scenario")
-    pc1 = lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
-    pc2 = lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
-    pc3 = lab.get_or_new_machine("pc3", **{'image': 'kathara/test2'})
-
-    mock_deploy.return_value = None
-
-    kubernetes_machine.deploy_machines(lab, selected_machines={"pc1", "pc3"}, excluded_machines={"pc1"})
-
-    assert mock_deploy.call_count == 1
-    assert call(('pc1', pc1)) not in mock_deploy.mock_calls
-    assert call(('pc2', pc2)) not in mock_deploy.mock_calls
-    mock_deploy.assert_any_call(('pc3', pc3))
-    mock_wait_machines_startup.assert_called_once_with(lab, {"pc3"})
+    with pytest.raises(InvocationError):
+        kubernetes_machine.deploy_machines(lab, selected_machines={"pc1", "pc3"}, excluded_machines={"pc1"})
+    assert not mock_deploy.called
+    assert not mock_wait_machines_startup.called
 
 
 #
@@ -685,24 +677,15 @@ def test_undeploy_excluded_machines(mock_get_machines_api_objects_by_filters, mo
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine._undeploy_machine")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
 def test_undeploy_selected_and_excluded_machines(mock_get_machines_api_objects_by_filters, mock_undeploy_machine,
-                                                 mock_wait_machines_shutdown, kubernetes_machine,
-                                                 default_device, default_device_b, default_device_c):
-    default_device.api_object.metadata.labels = {'name': "test_device"}
-    default_device_b.api_object.metadata.labels = {'name': "test_device_b"}
-    default_device_c.api_object.metadata.labels = {'name': "test_device_c"}
-    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object,
-                                                             default_device_b.api_object, default_device_c.api_object]
+                                                 mock_wait_machines_shutdown, kubernetes_machine):
     mock_undeploy_machine.return_value = None
-    kubernetes_machine.undeploy(
-        "lab_hash", selected_machines={"test_device", "test_device_b"}, excluded_machines={"test_device"}
-    )
-    mock_get_machines_api_objects_by_filters.assert_called_once()
-    assert mock_undeploy_machine.call_count == 1
-    assert call(default_device.api_object) not in mock_undeploy_machine.mock_calls
-    mock_undeploy_machine.assert_any_call(default_device_b.api_object)
-    assert call(default_device_c.api_object) not in mock_undeploy_machine.mock_calls
-
-    mock_wait_machines_shutdown.assert_called_once_with("lab_hash", {"test_device_b"})
+    with pytest.raises(InvocationError):
+        kubernetes_machine.undeploy(
+            "lab_hash", selected_machines={"test_device", "test_device_b"}, excluded_machines={"test_device"}
+        )
+    assert not mock_get_machines_api_objects_by_filters.called
+    assert not mock_undeploy_machine.called
+    assert not mock_wait_machines_shutdown.called
 
 
 #

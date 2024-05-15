@@ -51,7 +51,9 @@ def test_run_no_params(mock_setting_get_instance, mock_parse_lab, mock_parse_dep
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -75,7 +77,9 @@ def test_run_with_directory_absolute_path(mock_setting_get_instance, mock_parse_
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -99,7 +103,9 @@ def test_run_with_directory_relative_path(mock_setting_get_instance, mock_parse_
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -123,7 +129,9 @@ def test_run_with_no_terminals(mock_setting_get_instance, mock_parse_lab, mock_p
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -148,7 +156,9 @@ def test_run_with_terminals(mock_setting_get_instance, mock_parse_lab, mock_pars
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -175,7 +185,9 @@ def test_run_with_privileged(mock_setting_get_instance, mock_is_admin, mock_pars
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', True)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -223,7 +235,9 @@ def test_run_with_force_lab(mock_setting_get_instance, mock_parse_lab, mock_pars
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.cli.command.LstartCommand.create_table")
@@ -249,7 +263,9 @@ def test_run_with_list(mock_setting_get_instance, mock_parse_lab, mock_parse_dep
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
         mock_docker_manager.get_machines_stats.assert_called_once_with(lab_hash=test_lab.hash)
         mock_create_table.assert_called_once_with(stats)
 
@@ -277,7 +293,9 @@ def test_run_with_one_general_option(mock_setting_get_instance, mock_parse_lab, 
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -303,7 +321,9 @@ def test_run_with_two_general_option(mock_setting_get_instance, mock_parse_lab, 
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -327,7 +347,9 @@ def test_run_with_xterm(mock_setting_get_instance, mock_parse_lab, mock_parse_de
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -374,7 +396,9 @@ def test_run_with_no_hosthome(mock_setting_get_instance, mock_parse_lab, mock_pa
         mock_add_option.assert_any_call('hosthome_mount', False)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -398,7 +422,9 @@ def test_run_with_hosthome(mock_setting_get_instance, mock_parse_lab, mock_parse
         mock_add_option.assert_any_call('hosthome_mount', True)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -422,7 +448,9 @@ def test_run_with_shared(mock_setting_get_instance, mock_parse_lab, mock_parse_d
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', True)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -446,7 +474,9 @@ def test_run_with_no_shared(mock_setting_get_instance, mock_parse_lab, mock_pars
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', False)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines=set())
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -470,7 +500,9 @@ def test_run_with_one_device(mock_setting_get_instance, mock_parse_lab, mock_par
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines={'pc1'})
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines={'pc1'}, excluded_machines=set()
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -494,4 +526,58 @@ def test_run_with_two_device(mock_setting_get_instance, mock_parse_lab, mock_par
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', None)
         mock_add_option.assert_any_call('privileged_machines', None)
-        mock_docker_manager.deploy_lab.assert_called_once_with(test_lab, selected_machines={'pc1', 'pc2'})
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines={'pc1', 'pc2'}, excluded_machines=set()
+        )
+
+
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+@mock.patch("src.Kathara.parser.netkit.DepParser.DepParser.parse")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_run_exclude_one_device(mock_setting_get_instance, mock_parse_lab, mock_parse_dep, mock_docker_manager,
+                                mock_manager_get_instance, test_lab,
+                                mock_setting):
+    mock_parse_lab.return_value = test_lab
+    mock_manager_get_instance.return_value = mock_docker_manager
+    mock_setting_get_instance.return_value = mock_setting
+    command = LstartCommand()
+    with mock.patch.object(Lab, "add_option") as mock_add_option:
+        command.run('.', ['--exclude', 'pc1'])
+        assert mock_setting.open_terminals
+        assert mock_setting.terminal == '/usr/bin/xterm'
+        mock_parse_lab.assert_called_once_with(os.getcwd())
+        mock_parse_dep.assert_called_once_with(os.getcwd())
+        mock_add_option.assert_any_call('hosthome_mount', None)
+        mock_add_option.assert_any_call('shared_mount', None)
+        mock_add_option.assert_any_call('privileged_machines', None)
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines={'pc1'}
+        )
+
+
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+@mock.patch("src.Kathara.parser.netkit.DepParser.DepParser.parse")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_run_exclude_two_device(mock_setting_get_instance, mock_parse_lab, mock_parse_dep, mock_docker_manager,
+                                mock_manager_get_instance, test_lab,
+                                mock_setting):
+    mock_parse_lab.return_value = test_lab
+    mock_manager_get_instance.return_value = mock_docker_manager
+    mock_setting_get_instance.return_value = mock_setting
+    command = LstartCommand()
+    with mock.patch.object(Lab, "add_option") as mock_add_option:
+        command.run('.', ['--exclude', 'pc1', 'pc2'])
+        assert mock_setting.open_terminals
+        assert mock_setting.terminal == '/usr/bin/xterm'
+        mock_parse_lab.assert_called_once_with(os.getcwd())
+        mock_parse_dep.assert_called_once_with(os.getcwd())
+        mock_add_option.assert_any_call('hosthome_mount', None)
+        mock_add_option.assert_any_call('shared_mount', None)
+        mock_add_option.assert_any_call('privileged_machines', None)
+        mock_docker_manager.deploy_lab.assert_called_once_with(
+            test_lab, selected_machines=set(), excluded_machines={'pc1', 'pc2'}
+        )

@@ -307,11 +307,13 @@ def test_deploy_lab_selected_machines_exception(mock_deploy_links, mock_deploy_m
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.deploy_machines")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.deploy_links")
 def test_deploy_lab_excluded_machines(mock_deploy_links, mock_deploy_machines, kubernetes_manager,
-                                      two_device_scenario: Lab):
-    kubernetes_manager.deploy_lab(two_device_scenario, excluded_machines={"pc1"})
+                                      three_device_scenario: Lab):
+    kubernetes_manager.deploy_lab(three_device_scenario, excluded_machines={"pc3"})
 
-    mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links=None, excluded_links={'A', 'B'})
-    mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines=None, excluded_machines={"pc1"})
+    mock_deploy_links.assert_called_once_with(three_device_scenario, selected_links=None, excluded_links={'C'})
+    mock_deploy_machines.assert_called_once_with(
+        three_device_scenario, selected_machines=None, excluded_machines={"pc3"}
+    )
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.deploy_machines")
@@ -328,14 +330,13 @@ def test_deploy_lab_excluded_machines_exception(mock_deploy_links, mock_deploy_m
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.deploy_links")
 def test_deploy_lab_selected_and_excluded_machines(mock_deploy_links, mock_deploy_machines, kubernetes_manager,
                                                    three_device_scenario: Lab):
-    kubernetes_manager.deploy_lab(three_device_scenario, selected_machines={"pc1", "pc2"}, excluded_machines={"pc2"})
+    with pytest.raises(InvocationError):
+        kubernetes_manager.deploy_lab(
+            three_device_scenario, selected_machines={"pc1", "pc2"}, excluded_machines={"pc2"}
+        )
 
-    mock_deploy_links.assert_called_once_with(
-        three_device_scenario, selected_links={"A", "B"}, excluded_links={'A'}
-    )
-    mock_deploy_machines.assert_called_once_with(
-        three_device_scenario, selected_machines={"pc1", "pc2"}, excluded_machines={"pc2"}
-    )
+    assert not mock_deploy_machines.called
+    assert not mock_deploy_links.called
 
 
 #
@@ -610,77 +611,17 @@ def test_undeploy_lab_excluded_machines_delete_ns(mock_undeploy_machine, mock_un
     kubernetes_manager.k8s_namespace.undeploy.assert_called_once_with(lab_hash='lab_hash')
 
 
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.undeploy")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.undeploy")
-def test_undeploy_lab_selected_and_excluded_machines(mock_undeploy_machine, mock_undeploy_link,
-                                                     mock_get_machines_api_objects, mock_get_links_api_objects,
-                                                     kubernetes_manager,
+def test_undeploy_lab_selected_and_excluded_machines(mock_undeploy_machine, mock_undeploy_link, kubernetes_manager,
                                                      kubernetes_pod_1, kubernetes_pod_2, kubernetes_pod_3):
-    mock_get_links_api_objects.return_value = [{'metadata': {'name': 'netprefix-a'}},
-                                               {'metadata': {'name': 'netprefix-b'}},
-                                               {'metadata': {'name': 'netprefix-c'}},
-                                               {'metadata': {'name': 'netprefix-d'}}]
-    mock_get_machines_api_objects.return_value = [kubernetes_pod_1, kubernetes_pod_2, kubernetes_pod_3]
-
-    kubernetes_manager.undeploy_lab('lab_hash', selected_machines={'pc1', 'pc3'}, excluded_machines={'pc3'})
-    mock_get_links_api_objects.assert_called_once_with(lab_hash='lab_hash')
-    mock_get_machines_api_objects.assert_called_once_with(lab_hash='lab_hash')
-    mock_undeploy_machine.assert_called_once_with(
-        'lab_hash', selected_machines={'pc1', 'pc3'}, excluded_machines={'pc3'}
-    )
-    mock_undeploy_link.assert_called_once_with('lab_hash', selected_links={'netprefix-b'})
+    with pytest.raises(InvocationError):
+        kubernetes_manager.undeploy_lab(
+            'lab_hash', selected_machines={'pc1', 'pc2'}, excluded_machines={'pc2'}
+        )
+    assert not mock_undeploy_machine.called
+    assert not mock_undeploy_link.called
     assert not kubernetes_manager.k8s_namespace.undeploy.called
-
-
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.undeploy")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.undeploy")
-def test_undeploy_lab_selected_and_excluded_machines_not_delete_ns(mock_undeploy_machine, mock_undeploy_link,
-                                                                   mock_get_machines_api_objects,
-                                                                   mock_get_links_api_objects,
-                                                                   kubernetes_manager,
-                                                                   kubernetes_pod_1, kubernetes_pod_2,
-                                                                   kubernetes_pod_3):
-    mock_get_links_api_objects.return_value = [{'metadata': {'name': 'netprefix-a'}},
-                                               {'metadata': {'name': 'netprefix-b'}},
-                                               {'metadata': {'name': 'netprefix-c'}},
-                                               {'metadata': {'name': 'netprefix-d'}}]
-    mock_get_machines_api_objects.return_value = [kubernetes_pod_1, kubernetes_pod_2, kubernetes_pod_3]
-
-    kubernetes_manager.undeploy_lab('lab_hash', selected_machines={'pc3'}, excluded_machines={'pc3'})
-    mock_get_links_api_objects.assert_called_once_with(lab_hash='lab_hash')
-    mock_get_machines_api_objects.assert_called_once_with(lab_hash='lab_hash')
-    mock_undeploy_machine.assert_called_once_with(
-        'lab_hash', selected_machines={'pc3'}, excluded_machines={'pc3'}
-    )
-    mock_undeploy_link.assert_called_once_with('lab_hash', selected_links=set())
-    assert not kubernetes_manager.k8s_namespace.undeploy.called
-
-
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.undeploy")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.undeploy")
-def test_undeploy_lab_selected_and_excluded_machines_delete_ns(mock_undeploy_machine, mock_undeploy_link,
-                                                               mock_get_machines_api_objects,
-                                                               mock_get_links_api_objects,
-                                                               kubernetes_manager,
-                                                               kubernetes_pod_1, kubernetes_pod_2,
-                                                               kubernetes_pod_3):
-    mock_get_links_api_objects.return_value = []
-    mock_get_machines_api_objects.return_value = []
-
-    kubernetes_manager.undeploy_lab('lab_hash', selected_machines={'pc3'}, excluded_machines={'pc3'})
-    mock_get_links_api_objects.assert_called_once_with(lab_hash='lab_hash')
-    mock_get_machines_api_objects.assert_called_once_with(lab_hash='lab_hash')
-    mock_undeploy_machine.assert_called_once_with(
-        'lab_hash', selected_machines={'pc3'}, excluded_machines={'pc3'}
-    )
-    mock_undeploy_link.assert_called_once_with('lab_hash', selected_links=set())
-    kubernetes_manager.k8s_namespace.undeploy.assert_called_once_with(lab_hash='lab_hash')
 
 
 #

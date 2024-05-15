@@ -16,6 +16,7 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesLinkStats import KubernetesLinkStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
+from ...exceptions import InvocationError
 from ...model.Lab import Lab
 from ...model.Link import Link
 from ...setting.Setting import Setting
@@ -48,11 +49,22 @@ class KubernetesLink(object):
 
         Returns:
             None
+
+        Raises:
+            InvocationError: If both `selected_links` and `excluded_links` are specified.
         """
-        links = {
-            k: v for k, v in lab.links.items()
-            if (not selected_links or k in selected_links) and (not excluded_links or k not in excluded_links)
-        }.items()
+        if selected_links and excluded_links:
+            raise InvocationError(f"You can either specify `selected_links` or `excluded_links`.")
+
+        links = lab.links.items()
+        if selected_links:
+            links = {
+                k: v for k, v in links if k in selected_links
+            }.items()
+        elif excluded_links:
+            links = {
+                k: v for k, v in links if k not in excluded_links
+            }.items()
 
         if len(links) > 0:
             pool_size = utils.get_pool_size()
@@ -128,7 +140,7 @@ class KubernetesLink(object):
             None
         """
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
-        if selected_links is not None:
+        if selected_links:
             networks = [item for item in networks if item["metadata"]["name"] in selected_links]
 
         if len(networks) > 0:

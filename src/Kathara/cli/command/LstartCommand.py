@@ -130,6 +130,14 @@ class LstartCommand(Command):
             help='Mount "/shared" directory inside devices.'
         )
         self.parser.add_argument(
+            '--exclude',
+            dest='excluded_machines',
+            metavar='DEVICE_NAME',
+            nargs='*',
+            default=[],
+            help='Exclude specified devices from startup.'
+        )
+        self.parser.add_argument(
             'machine_name',
             metavar='DEVICE_NAME',
             nargs='*',
@@ -216,7 +224,9 @@ class LstartCommand(Command):
                 self.console.print("[yellow]\u26a0 Running devices with privileged capabilities, terminals won't open!")
                 Setting.get_instance().open_terminals = False
 
-        Kathara.get_instance().deploy_lab(lab, selected_machines=set(args['machine_name']))
+        Kathara.get_instance().deploy_lab(
+            lab, selected_machines=set(args['machine_name']), excluded_machines=set(args['excluded_machines'])
+        )
 
         if args['list']:
             with self.console.status(

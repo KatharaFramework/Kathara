@@ -10,7 +10,7 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
-from src.Kathara.exceptions import DockerPluginError, MachineBinaryError, PrivilegeError
+from src.Kathara.exceptions import DockerPluginError, MachineBinaryError, PrivilegeError, InvocationError
 from src.Kathara.types import SharedCollisionDomainsOption
 
 
@@ -774,17 +774,10 @@ def test_deploy_machines_selected_and_excluded_machines(mock_deploy_and_start, m
     mock_setting_get_instance.return_value = setting_mock
 
     lab = Lab("Default scenario")
-    pc1 = lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
-    pc2 = lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
-    pc3 = lab.get_or_new_machine("pc3", **{'image': 'kathara/test2'})
-    docker_machine.docker_image.check_from_list.return_value = None
-    mock_deploy_and_start.return_value = None
-    docker_machine.deploy_machines(lab, selected_machines={"pc1", "pc3"}, excluded_machines={"pc1"})
-    docker_machine.docker_image.check_from_list.assert_called_once_with({'kathara/test2'})
-    assert mock_deploy_and_start.call_count == 1
-    assert call(('pc1', pc1)) not in mock_deploy_and_start.mock_calls
-    assert call(('pc2', pc2)) not in mock_deploy_and_start.mock_calls
-    mock_deploy_and_start.assert_any_call(('pc3', pc3))
+    with pytest.raises(InvocationError):
+        docker_machine.deploy_machines(lab, selected_machines={"pc1", "pc3"}, excluded_machines={"pc1"})
+    assert not docker_machine.docker_image.check_from_list.called
+    assert not mock_deploy_and_start.called
 
 
 #
@@ -935,21 +928,14 @@ def test_undeploy_excluded_machines(mock_get_machines_api_objects_by_filters, mo
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._undeploy_machine")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 def test_undeploy_selected_and_excluded_machines(mock_get_machines_api_objects_by_filters, mock_undeploy_machine,
-                                                 docker_machine, default_device, default_device_b, default_device_c):
-    default_device.api_object.labels = {'name': "test_device"}
-    default_device_b.api_object.labels = {'name': "test_device_b"}
-    default_device_c.api_object.labels = {'name': "test_device_c"}
-    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object,
-                                                             default_device_b.api_object, default_device_c.api_object]
+                                                 docker_machine):
     mock_undeploy_machine.return_value = None
-    docker_machine.undeploy(
-        "lab_hash", selected_machines={"test_device", "test_device_b"}, excluded_machines={"test_device"}
-    )
-    mock_get_machines_api_objects_by_filters.assert_called_once()
-    assert mock_undeploy_machine.call_count == 1
-    assert call(default_device.api_object) not in mock_undeploy_machine.mock_calls
-    mock_undeploy_machine.assert_any_call(default_device_b.api_object)
-    assert call(default_device_c.api_object) not in mock_undeploy_machine.mock_calls
+    with pytest.raises(InvocationError):
+        docker_machine.undeploy(
+            "lab_hash", selected_machines={"test_device", "test_device_b"}, excluded_machines={"test_device"}
+        )
+    assert not mock_get_machines_api_objects_by_filters.called
+    assert not mock_undeploy_machine.called
 
 
 #

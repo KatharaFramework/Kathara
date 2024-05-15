@@ -18,7 +18,7 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError, DockerPluginError, \
-    MachineBinaryError, MachineNotRunningError, PrivilegeError
+    MachineBinaryError, MachineNotRunningError, PrivilegeError, InvocationError
 from ...model.Interface import Interface
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
@@ -122,15 +122,23 @@ class DockerMachine(object):
 
         Raises:
             PrivilegeError: If the privileged mode is active and the user does not have root privileges.
+            InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
         if lab.general_options['privileged_machines'] and not utils.is_admin():
             raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
 
-        machines = {
-            k: v for k, v in lab.machines.items()
-            if (not selected_machines or k in selected_machines) and
-               (not excluded_machines or k not in excluded_machines)
-        }.items()
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
+
+        machines = lab.machines.items()
+        if selected_machines:
+            machines = {
+                k: v for k, v in machines if k in selected_machines
+            }.items()
+        elif excluded_machines:
+            machines = {
+                k: v for k, v in machines if k not in excluded_machines
+            }.items()
 
         # Check and pulling machine images
         lab_images = set(map(lambda x: x[1].get_image(), machines))
@@ -482,15 +490,18 @@ class DockerMachine(object):
 
         Returns:
             None
-        """
-        containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, user=utils.get_current_user_name())
 
-        if selected_machines or excluded_machines:
-            containers = [
-                item for item in containers
-                if (selected_machines is None or item.labels["name"] in selected_machines) and
-                   (excluded_machines is None or item.labels["name"] not in excluded_machines)
-            ]
+        Raises:
+            InvocationError: If both `selected_machines` and `excluded_machines` are specified.
+        """
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
+
+        containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, user=utils.get_current_user_name())
+        if selected_machines:
+            containers = [item for item in containers if item.labels["name"] in selected_machines]
+        elif excluded_machines:
+            containers = [item for item in containers if item.labels["name"] not in excluded_machines]
 
         if len(containers) > 0:
             pool_size = utils.get_pool_size()
