@@ -114,7 +114,7 @@ class LrestartCommand(Command):
             '--exclude',
             dest='excluded_machines',
             metavar='DEVICE_NAME',
-            nargs='*',
+            nargs='+',
             default=[],
             help='Exclude specified devices.'
         )
