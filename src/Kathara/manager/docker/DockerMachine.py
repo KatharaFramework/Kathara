@@ -109,12 +109,13 @@ class DockerMachine(object):
         self._engine_version: str = client.version()['Version']
         self.docker_image: DockerImage = docker_image
 
-    def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None) -> None:
+    def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Deploy all the network scenario devices as Docker containers.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
             selected_machines (Set[str]): A set containing the name of the devices to deploy.
+            excluded_machines (Set[str]): A set containing the name of the devices to exclude.
 
         Returns:
             None
@@ -125,8 +126,11 @@ class DockerMachine(object):
         if lab.general_options['privileged_machines'] and not utils.is_admin():
             raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
 
-        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
-            else lab.machines.items()
+        machines = {
+            k: v for k, v in lab.machines.items()
+            if (not selected_machines or k in selected_machines) and
+               (not excluded_machines or k not in excluded_machines)
+        }.items()
 
         # Check and pulling machine images
         lab_images = set(map(lambda x: x[1].get_image(), machines))

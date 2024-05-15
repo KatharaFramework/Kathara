@@ -138,18 +138,22 @@ class KubernetesMachine(object):
 
         self.kubernetes_namespace: KubernetesNamespace = kubernetes_namespace
 
-    def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None) -> None:
+    def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Deploy all the devices contained in lab.machines.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
             selected_machines (Set[str]): A set containing the name of the devices to deploy.
+            excluded_machines (Set[str]): A set containing the name of the devices to exclude.
 
         Returns:
             None
         """
-        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
-            else lab.machines.items()
+        machines = {
+            k: v for k, v in lab.machines.items()
+            if (not selected_machines or k in selected_machines) and
+               (not excluded_machines or k not in excluded_machines)
+        }.items()
 
         if lab.general_options['privileged_machines']:
             logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
@@ -159,7 +163,7 @@ class KubernetesMachine(object):
 
         wait_thread = threading.Thread(
             target=self._wait_machines_startup,
-            args=(lab, selected_machines if selected_machines else None)
+            args=(lab, set([k for k, _ in machines]) if selected_machines or excluded_machines else None)
         )
         wait_thread.start()
 

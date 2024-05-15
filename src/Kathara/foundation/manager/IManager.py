@@ -43,12 +43,13 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `deploy_link` method.")
 
     @abstractmethod
-    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
+    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Deploy a Kathara network scenario.
 
         Args:
             lab (Kathara.model.Lab): A Kathara network scenario.
             selected_machines (Set[str]): If not None, deploy only the specified devices.
+            excluded_machines (Set[str]): If not None, exclude devices from being deployed.
 
         Returns:
             None

@@ -78,12 +78,13 @@ class KubernetesManager(IManager):
         self.k8s_namespace.create(link.lab)
         self.k8s_link.deploy_links(link.lab, selected_links={link.name})
 
-    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
+    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Deploy a Kathara network scenario.
 
         Args:
             lab (Kathara.model.Lab): A Kathara network scenario.
             selected_machines (Set[str]): If not None, deploy only the specified devices.
+            excluded_machines (Set[str]): If not None, exclude devices from being deployed.
 
         Returns:
             None
@@ -100,6 +101,10 @@ class KubernetesManager(IManager):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
             raise MachineNotFoundError(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
 
+        if excluded_machines and not lab.has_machines(excluded_machines):
+            machines_not_in_lab = excluded_machines - set(lab.machines.keys())
+            raise MachineNotFoundError(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
+
         # Kubernetes needs only lowercase letters for resources.
         # We force the hash to be lowercase
         lab.hash = lab.hash.lower()
@@ -108,11 +113,17 @@ class KubernetesManager(IManager):
         if selected_machines:
             selected_links = lab.get_links_from_machines(selected_machines)
 
+        excluded_links = None
+        if excluded_machines:
+            excluded_links = lab.get_links_from_machines(excluded_machines)
+
         self.k8s_namespace.create(lab)
         try:
-            self.k8s_link.deploy_links(lab, selected_links=selected_links)
+            self.k8s_link.deploy_links(lab, selected_links=selected_links, excluded_links=excluded_links)
 
-            self.k8s_machine.deploy_machines(lab, selected_machines=selected_machines)
+            self.k8s_machine.deploy_machines(
+                lab, selected_machines=selected_machines, excluded_machines=excluded_machines
+            )
         except ApiException as e:
             if e.status == 403 and 'Forbidden' in e.reason:
                 raise LabAlreadyExistsError("Previous network scenario execution is still terminating. Please wait.")

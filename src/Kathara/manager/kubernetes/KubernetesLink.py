@@ -38,18 +38,21 @@ class KubernetesLink(object):
 
         self.seed: str = KubernetesConfig.get_cluster_user()
 
-    def deploy_links(self, lab: Lab, selected_links: Set[str] = None) -> None:
+    def deploy_links(self, lab: Lab, selected_links: Set[str] = None, excluded_links: Set[str] = None) -> None:
         """Deploy all the links contained in lab.links.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
             selected_links (Set[str]): A set containing the name of the collision domains to deploy.
+            excluded_links (Set[str]): A set containing the name of the collision domains to exclude.
 
         Returns:
             None
         """
-        links = {k: v for (k, v) in lab.links.items() if k in selected_links}.items() if selected_links \
-            else lab.links.items()
+        links = {
+            k: v for k, v in lab.links.items()
+            if (not selected_links or k in selected_links) and (not excluded_links or k not in excluded_links)
+        }.items()
 
         if len(links) > 0:
             pool_size = utils.get_pool_size()

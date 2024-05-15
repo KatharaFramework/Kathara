@@ -30,18 +30,21 @@ class DockerLink(object):
         self.client: DockerClient = client
         self.docker_plugin: DockerPlugin = docker_plugin
 
-    def deploy_links(self, lab: Lab, selected_links: Set[str] = None) -> None:
+    def deploy_links(self, lab: Lab, selected_links: Set[str] = None, excluded_links: Set[str] = None) -> None:
         """Deploy all the network scenario collision domains as Docker networks.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
             selected_links (Set[str]): A set containing the name of the collision domains to deploy.
+            excluded_links (Set[str]): A set containing the name of the collision domains to exclude.
 
         Returns:
             None
         """
-        links = {k: v for (k, v) in lab.links.items() if k in selected_links}.items() if selected_links \
-            else lab.links.items()
+        links = {
+            k: v for k, v in lab.links.items()
+            if (not selected_links or k in selected_links) and (not excluded_links or k not in excluded_links)
+        }.items()
 
         if len(links) > 0:
             pool_size = utils.get_pool_size()

@@ -75,17 +75,18 @@ class Kathara(IManager):
         """
         self.manager.deploy_link(link)
 
-    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
+    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Deploy a Kathara network scenario.
 
         Args:
             lab (Kathara.model.Lab): A Kathara network scenario.
             selected_machines (Set[str]): If not None, deploy only the specified devices.
+            excluded_machines (Set[str]): If not None, exclude devices from being deployed.
 
         Returns:
             None
         """
-        self.manager.deploy_lab(lab, selected_machines)
+        self.manager.deploy_lab(lab, selected_machines, excluded_machines)
 
     def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None) -> None:
         """Connect a Kathara device to a collision domain.

@@ -1,6 +1,6 @@
 import sys
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import docker.types
 import pytest
@@ -21,7 +21,6 @@ from src.Kathara.types import SharedCollisionDomainsOption
 #
 @pytest.fixture()
 def default_link():
-    from src.Kathara.model.Link import Link
     lab = Lab("default_scenario")
     lab.hash = "lab-hash"
     return lab.new_link("A")
@@ -357,6 +356,44 @@ def test_deploy_links_no_link(mock_deploy_link, docker_link):
     docker_link.deploy_links(lab)
     assert not mock_deploy_link.called
 
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._deploy_link")
+def test_deploy_links_selected_links(mock_deploy_link, docker_link):
+    lab = Lab("Default scenario")
+    link_a = lab.get_or_new_link("A")
+    link_b = lab.get_or_new_link("B")
+    link_c = lab.get_or_new_link("C")
+    docker_link.deploy_links(lab, selected_links={"A"})
+    mock_deploy_link.assert_any_call(("A", link_a))
+    assert call(("B", link_b)) not in mock_deploy_link.mock_calls
+    assert call(("C", link_c)) not in mock_deploy_link.mock_calls
+    assert mock_deploy_link.call_count == 1
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._deploy_link")
+def test_deploy_links_excluded_links(mock_deploy_link, docker_link):
+    lab = Lab("Default scenario")
+    link_a = lab.get_or_new_link("A")
+    link_b = lab.get_or_new_link("B")
+    link_c = lab.get_or_new_link("C")
+    docker_link.deploy_links(lab, excluded_links={"A"})
+    assert call(("A", link_a)) not in mock_deploy_link.mock_calls
+    mock_deploy_link.assert_any_call(("B", link_b))
+    mock_deploy_link.assert_any_call(("C", link_c))
+    assert mock_deploy_link.call_count == 2
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._deploy_link")
+def test_deploy_links_selected_and_excluded_links(mock_deploy_link, docker_link):
+    lab = Lab("Default scenario")
+    link_a = lab.get_or_new_link("A")
+    link_b = lab.get_or_new_link("B")
+    link_c = lab.get_or_new_link("C")
+    docker_link.deploy_links(lab, selected_links={"A", "B"}, excluded_links={"B"})
+    mock_deploy_link.assert_any_call(("A", link_a))
+    assert call(("B", link_b)) not in mock_deploy_link.mock_calls
+    assert call(("C", link_c)) not in mock_deploy_link.mock_calls
+    assert mock_deploy_link.call_count == 1
 
 #
 # TEST: _delete_link

@@ -45,6 +45,20 @@ def two_device_scenario():
 
 
 @pytest.fixture()
+def three_device_scenario():
+    lab = Lab("Default scenario")
+    pc1 = lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
+    pc2 = lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
+    pc3 = lab.get_or_new_machine("pc3", **{'image': 'kathara/test3'})
+    lab.connect_machine_to_link(pc1.name, "A")
+    lab.connect_machine_to_link(pc1.name, "B")
+    lab.connect_machine_to_link(pc2.name, "A")
+    lab.connect_machine_to_link(pc3.name, "A")
+    lab.connect_machine_to_link(pc3.name, "C")
+    return lab
+
+
+@pytest.fixture()
 @mock.patch("docker.models.containers.Container")
 def default_device(mock_docker_container):
     device = Machine(Lab('Default scenario'), "test_device")
@@ -194,8 +208,8 @@ def docker_container_empty_meta(mock_container):
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
 def test_deploy_lab(mock_deploy_links, mock_deploy_machines, docker_manager, two_device_scenario):
     docker_manager.deploy_lab(two_device_scenario)
-    mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links=None)
-    mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines=None)
+    mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links=None, excluded_links=None)
+    mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines=None, excluded_machines=None)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
@@ -204,8 +218,8 @@ def test_deploy_lab_selected_machines(mock_deploy_links, mock_deploy_machines, d
                                       two_device_scenario: Lab):
     docker_manager.deploy_lab(two_device_scenario, selected_machines={"pc1"})
 
-    mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links={"A", "B"})
-    mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines={"pc1"})
+    mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links={"A", "B"}, excluded_links=None)
+    mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines={"pc1"}, excluded_machines=None)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
@@ -216,6 +230,40 @@ def test_deploy_lab_selected_machines_exception(mock_deploy_links, mock_deploy_m
         docker_manager.deploy_lab(two_device_scenario, selected_machines={"pc3"})
     assert not mock_deploy_machines.called
     assert not mock_deploy_links.called
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_lab_excluded_machines(mock_deploy_links, mock_deploy_machines, docker_manager,
+                                      two_device_scenario: Lab):
+    docker_manager.deploy_lab(two_device_scenario, excluded_machines={"pc1"})
+
+    mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links=None, excluded_links={'A', 'B'})
+    mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines=None, excluded_machines={"pc1"})
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_lab_excluded_machines_exception(mock_deploy_links, mock_deploy_machines, docker_manager,
+                                                two_device_scenario: Lab):
+    with pytest.raises(MachineNotFoundError):
+        docker_manager.deploy_lab(two_device_scenario, excluded_machines={"pc3"})
+    assert not mock_deploy_machines.called
+    assert not mock_deploy_links.called
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_lab_selected_and_excluded_machines(mock_deploy_links, mock_deploy_machines, docker_manager,
+                                                   three_device_scenario: Lab):
+    docker_manager.deploy_lab(three_device_scenario, selected_machines={"pc1", "pc2"}, excluded_machines={"pc2"})
+
+    mock_deploy_links.assert_called_once_with(
+        three_device_scenario, selected_links={"A", "B"}, excluded_links={'A'}
+    )
+    mock_deploy_machines.assert_called_once_with(
+        three_device_scenario, selected_machines={"pc1", "pc2"}, excluded_machines={"pc2"}
+    )
 
 
 #
@@ -1487,7 +1535,7 @@ def test_get_machine_stats_lab_name_user(mock_get_machines_stats, default_device
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_stats")
 def test_get_machine_stats_lab_obj_all_users(mock_get_machines_stats, default_device, docker_manager,
-                                           two_device_scenario):
+                                             two_device_scenario):
     mock_get_machines_stats.return_value = iter([{"test_device": DockerMachineStats(default_device.api_object)}])
     next(docker_manager.get_machine_stats(machine_name="test_device", lab=two_device_scenario, all_users=True))
     mock_get_machines_stats.assert_called_once_with(lab_hash=None, lab_name=None, lab=two_device_scenario,
@@ -1513,7 +1561,6 @@ def test_get_machine_stats_lab_hash_lab_obj(default_device, docker_manager, two_
 def test_get_machine_stats_invocation_error(docker_manager):
     with pytest.raises(InvocationError):
         next(docker_manager.get_machine_stats(machine_name="test_device", all_users=False))
-
 
 
 #

@@ -1,6 +1,6 @@
 import sys
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 
@@ -634,13 +634,15 @@ def test_deploy_machines(mock_deploy_and_start, mock_setting_get_instance, docke
     mock_setting_get_instance.return_value = setting_mock
 
     lab = Lab("Default scenario")
-    lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
-    lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
+    pc1 = lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
+    pc2 = lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
     docker_machine.docker_image.check_from_list.return_value = None
     mock_deploy_and_start.return_value = None
     docker_machine.deploy_machines(lab)
     docker_machine.docker_image.check_from_list.assert_called_once_with({'kathara/test1', 'kathara/test2'})
     assert mock_deploy_and_start.call_count == 2
+    mock_deploy_and_start.assert_any_call(('pc1', pc1))
+    mock_deploy_and_start.assert_any_call(('pc2', pc2))
 
 
 @mock.patch("src.Kathara.utils.is_admin")
@@ -673,6 +675,90 @@ def test_deploy_machines_privilege_error(mock_deploy_and_start, mock_setting_get
 
     assert not docker_machine.docker_image.check_from_list.called
     assert not mock_deploy_and_start.called
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._deploy_and_start_machine")
+def test_deploy_machines_selected_machines(mock_deploy_and_start, mock_setting_get_instance, docker_machine):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        "hosthome_mount": False,
+        "shared_mount": False,
+        'remote_url': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    lab = Lab("Default scenario")
+    pc1 = lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
+    pc2 = lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
+    docker_machine.docker_image.check_from_list.return_value = None
+    mock_deploy_and_start.return_value = None
+    docker_machine.deploy_machines(lab, selected_machines={"pc1"})
+    docker_machine.docker_image.check_from_list.assert_called_once_with({'kathara/test1'})
+    assert mock_deploy_and_start.call_count == 1
+    mock_deploy_and_start.assert_any_call(('pc1', pc1))
+    assert call(('pc2', pc2)) not in mock_deploy_and_start.mock_calls
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._deploy_and_start_machine")
+def test_deploy_machines_excluded_machines(mock_deploy_and_start, mock_setting_get_instance, docker_machine):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        "hosthome_mount": False,
+        "shared_mount": False,
+        'remote_url': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    lab = Lab("Default scenario")
+    pc1 = lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
+    pc2 = lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
+    docker_machine.docker_image.check_from_list.return_value = None
+    mock_deploy_and_start.return_value = None
+    docker_machine.deploy_machines(lab, excluded_machines={"pc1"})
+    docker_machine.docker_image.check_from_list.assert_called_once_with({'kathara/test2'})
+    assert mock_deploy_and_start.call_count == 1
+    assert call(('pc1', pc1)) not in mock_deploy_and_start.mock_calls
+    mock_deploy_and_start.assert_any_call(('pc2', pc2))
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._deploy_and_start_machine")
+def test_deploy_machines_selected_and_excluded_machines(mock_deploy_and_start, mock_setting_get_instance,
+                                                        docker_machine):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        "hosthome_mount": False,
+        "shared_mount": False,
+        'remote_url': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    lab = Lab("Default scenario")
+    pc1 = lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
+    pc2 = lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
+    pc3 = lab.get_or_new_machine("pc3", **{'image': 'kathara/test2'})
+    docker_machine.docker_image.check_from_list.return_value = None
+    mock_deploy_and_start.return_value = None
+    docker_machine.deploy_machines(lab, selected_machines={"pc1", "pc3"}, excluded_machines={"pc1"})
+    docker_machine.docker_image.check_from_list.assert_called_once_with({'kathara/test2'})
+    assert mock_deploy_and_start.call_count == 1
+    assert call(('pc1', pc1)) not in mock_deploy_and_start.mock_calls
+    assert call(('pc2', pc2)) not in mock_deploy_and_start.mock_calls
+    mock_deploy_and_start.assert_any_call(('pc3', pc3))
 
 
 #

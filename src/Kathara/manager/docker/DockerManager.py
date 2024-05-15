@@ -121,12 +121,13 @@ class DockerManager(IManager):
         self.docker_link.deploy_links(link.lab, selected_links={link.name})
 
     @privileged
-    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
+    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Deploy a Kathara network scenario.
 
         Args:
             lab (Kathara.model.Lab): A Kathara network scenario.
             selected_machines (Set[str]): If not None, deploy only the specified devices.
+            excluded_machines (Set[str]): If not None, exclude devices from being deployed.
 
         Returns:
             None
@@ -143,15 +144,25 @@ class DockerManager(IManager):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
             raise MachineNotFoundError(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
 
+        if excluded_machines and not lab.has_machines(excluded_machines):
+            machines_not_in_lab = excluded_machines - set(lab.machines.keys())
+            raise MachineNotFoundError(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
+
         selected_links = None
         if selected_machines:
             selected_links = lab.get_links_from_machines(selected_machines)
 
+        excluded_links = None
+        if excluded_machines:
+            excluded_links = lab.get_links_from_machines(excluded_machines)
+
         # Deploy all lab links.
-        self.docker_link.deploy_links(lab, selected_links=selected_links)
+        self.docker_link.deploy_links(lab, selected_links=selected_links, excluded_links=excluded_links)
 
         # Deploy all lab machines.
-        self.docker_machine.deploy_machines(lab, selected_machines=selected_machines)
+        self.docker_machine.deploy_machines(
+            lab, selected_machines=selected_machines, excluded_machines=excluded_machines
+        )
 
     @privileged
     def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None) -> None:
