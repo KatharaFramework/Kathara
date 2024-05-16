@@ -143,7 +143,7 @@ class DockerManager(IManager):
         lab.check_integrity()
 
         if selected_machines and excluded_machines:
-            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
+            raise InvocationError(f"You can either select or exclude devices.")
 
         if selected_machines and not lab.has_machines(selected_machines):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
@@ -321,7 +321,7 @@ class DockerManager(IManager):
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         if selected_machines and excluded_machines:
-            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
+            raise InvocationError(f"You can either select or exclude devices.")
 
         self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines, excluded_machines=excluded_machines)
 

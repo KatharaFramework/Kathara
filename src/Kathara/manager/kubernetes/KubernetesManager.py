@@ -100,7 +100,7 @@ class KubernetesManager(IManager):
         lab.check_integrity()
 
         if selected_machines and excluded_machines:
-            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
+            raise InvocationError(f"You can either select or exclude devices.")
 
         if selected_machines and not lab.has_machines(selected_machines):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
@@ -273,7 +273,7 @@ class KubernetesManager(IManager):
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         if selected_machines and excluded_machines:
-            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
+            raise InvocationError(f"You can either select or exclude devices.")
 
         lab_hash = lab_hash.lower()
 
