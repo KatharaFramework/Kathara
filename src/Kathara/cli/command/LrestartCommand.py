@@ -131,10 +131,10 @@ class LrestartCommand(Command):
 
         lclean_argv = ['-d', args['directory']] if args['directory'] else []
 
-        if args['excluded_machines']:
-            lclean_argv.extend(['--exclude'] + args['excluded_machines'])
         if args['machine_name']:
             lclean_argv.extend(args['machine_name'])
+        if args['excluded_machines']:
+            lclean_argv.extend(['--exclude'] + args['excluded_machines'])
 
         LcleanCommand().run(current_path, lclean_argv)
         LstartCommand().run(current_path, argv)
