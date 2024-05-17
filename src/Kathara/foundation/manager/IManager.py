@@ -43,12 +43,14 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `deploy_link` method.")
 
     @abstractmethod
-    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
+    def deploy_lab(self, lab: Lab, selected_machines: Optional[Set[str]] = None,
+                   excluded_machines: Optional[Set[str]] = None) -> None:
         """Deploy a Kathara network scenario.
 
         Args:
             lab (Kathara.model.Lab): A Kathara network scenario.
-            selected_machines (Set[str]): If not None, deploy only the specified devices.
+            selected_machines (Optional[Set[str]]): If not None, deploy only the specified devices.
+            excluded_machines (Optional[Set[str]]): If not None, exclude devices from being deployed.
 
         Returns:
             None
@@ -123,7 +125,8 @@ class IManager(ABC):
 
     @abstractmethod
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
-                     selected_machines: Optional[Set[str]] = None) -> None:
+                     selected_machines: Optional[Set[str]] = None,
+                     excluded_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
@@ -134,6 +137,7 @@ class IManager(ABC):
             lab (Optional[Kathara.model.Lab]): The network scenario object.
                 Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
+            excluded_machines (Optional[Set[str]]): If not None, exclude devices from being undeployed.
 
         Returns:
             None

@@ -6,7 +6,8 @@ kathara-lstart(1) -- Start a Kathara network scenario
 
 `kathara lstart` [`-h`] [`--noterminals` \| `--terminals` \| `--privileged`]  
 [`-d` <DIRECTORY>] [`-F`] [`-l`] [`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>]  
-[`--print`]  [`--no-hosthome` \| `--hosthome`] [`--no-shared` \| `--shared`] [<DEVICE_NAME> [<DEVICE_NAME> ...]]
+[`--print`]  [`--no-hosthome` \| `--hosthome`] [`--no-shared` \| `--shared`] [`--exclude` <DEVICE_NAME> [<DEVICE_NAME> ...]]  
+[<DEVICE_NAME> [<DEVICE_NAME> ...]]
 
 
 ## DESCRIPTION
@@ -85,6 +86,9 @@ The configuration of a Kathara network scenario consists of some files described
     Mount `/shared` directory inside devices.
 
     Mount the `shared` directory inside the network scenario folder inside all devices on the special directory `/shared`. This is the default specified in `kathara.conf`(5) file.
+
+* `--exclude` [<DEVICE_NAME> [<DEVICE_NAME> ...]]
+    A list of device names. You can exclude certain devices of the network scenario from being started.
 
 * `DEVICE_NAME`:
     A list of device names. Instead of starting the whole network scenario, only specified devices are started.
