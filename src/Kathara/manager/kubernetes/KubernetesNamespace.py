@@ -5,6 +5,7 @@ from kubernetes import client, watch
 from kubernetes.client.api import core_v1_api
 from kubernetes.client.rest import ApiException
 
+from .KubernetesSecret import KubernetesSecret, DOCKERCONFIGJSON_SECRET_NAME
 from ...setting.Setting import Setting
 from ...model.Lab import Lab
 
@@ -12,10 +13,12 @@ from ...model.Lab import Lab
 class KubernetesNamespace(object):
     """Class responsible for interacting with Kubernetes namespaces."""
 
-    __slots__ = ['client']
+    __slots__ = ['client', 'kubernetes_secret']
 
-    def __init__(self) -> None:
+    def __init__(self, kubernetes_secret: KubernetesSecret) -> None:
         self.client: core_v1_api.CoreV1Api = core_v1_api.CoreV1Api()
+
+        self.kubernetes_secret = kubernetes_secret
 
     def create(self, lab: Lab) -> Optional[client.V1Namespace]:
         """Return a Kubernetes namespace from a Kathara network scenario.
@@ -33,9 +36,9 @@ class KubernetesNamespace(object):
         try:
             self.client.create_namespace(namespace_definition)
             self._wait_namespace_creation(lab.hash)
-            pr_dcj = Setting.get_instance().private_registry_dockerconfigjson
-            if pr_dcj:
-                self._create_private_registry_secret(lab.hash, pr_dcj)
+            docker_config_json = Setting.get_instance().docker_config_json
+            if docker_config_json:
+                self.kubernetes_secret.create_dockerconfigjson_secret(lab.hash, DOCKERCONFIGJSON_SECRET_NAME, docker_config_json)
         except ApiException:
             return None
 
@@ -65,6 +68,8 @@ class KubernetesNamespace(object):
         for namespace in namespaces:
             self.client.delete_namespace(namespace.metadata.name)
 
+        self.kubernetes_secret.wipe()
+
         self._wait_namespaces_deletion(label_selector="app=kathara")
 
     def get_all(self) -> Iterable[client.V1Namespace]:
@@ -83,27 +88,6 @@ class KubernetesNamespace(object):
         """
         namespace = self.client.list_namespace(label_selector=f"kubernetes.io/metadata.name={lab_hash}").items
         return namespace.pop() if namespace else None
-
-
-    def _create_private_registry_secret(self, lab_hash: str, pr_dcj: str) -> None:
-        """Create a kubernetes.io/dockerconfigjson secret for allowing access to private registries.
-
-        Args:
-            lab_hash (str): The name of the Kubernetes Namespace to add the secret to.
-            pr_dcj (str): The private registry dockerconfigjson.
-
-        Returns:
-            None
-        """
-        secret_definition = client.V1Secret(
-            api_version="v1",
-            kind="Secret",
-            metadata=client.V1ObjectMeta(name="private-registry", namespace=lab_hash),
-            type="kubernetes.io/dockerconfigjson",
-            data={".dockerconfigjson": pr_dcj}
-        )
-
-        self.client.create_namespaced_secret(lab_hash, secret_definition)
 
     def _wait_namespace_creation(self, lab_hash: str) -> None:
         """Wait the creation of the specified Kubernetes Namespace. Returns when the namespace becomes `Active`.

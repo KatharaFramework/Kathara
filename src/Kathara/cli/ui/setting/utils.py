@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import Optional, Callable, Any, Tuple, List
+import base64
 
 from ....exceptions import SettingsError
 from ....setting.Setting import Setting
@@ -7,6 +8,9 @@ from ....trdparty.consolemenu import *
 from ....trdparty.consolemenu import UserQuit
 from ....trdparty.consolemenu.prompt_utils import InputResult
 from ....trdparty.consolemenu.validators.base import BaseValidator
+from ....validator.DockerConfigJsonValidator import DockerConfigJsonValidator
+
+DEFAULT_DOCKER_CONFIG_JSON_PATH = "~/.docker/config.json"
 
 SAVED_STRING = "Saved successfully!\n"
 PRESS_ENTER_STRING = "Press [Enter] to continue."
@@ -32,6 +36,12 @@ def current_bool(attribute_name: str, text: Optional[str] = None) -> Callable[[]
 def current_string(attribute_name: str, text: Optional[str] = None) -> Callable[[], str]:
     return lambda: "%sCurrent: %s%s" % (text + " (" if text else "",
                                         getattr(Setting.get_instance(), attribute_name),
+                                        ")" if text else ""
+                                        )
+
+def current_enabled(attribute_name: str, text: Optional[str] = None) -> Callable[[], str]:
+    return lambda: "%sCurrent: %s%s" % (text + " (" if text else "",
+                                        "Enabled" if getattr(Setting.get_instance(), attribute_name) else "Disabled",
                                         ")" if text else ""
                                         )
 
@@ -76,10 +86,16 @@ def update_setting_values(attribute_values: List[Tuple[str, Any]]) -> None:
     Screen().input(PRESS_ENTER_STRING)
 
 
-def read_and_validate_value(prompt_msg: str, validator: BaseValidator, error_msg: str) -> InputResult:
+def read_and_validate_value(prompt_msg: str, validator: BaseValidator, error_msg: str = None) -> InputResult:
+    return read_and_validate_value_with_default(prompt_msg, validator, error_msg)
+
+
+def read_and_validate_value_with_default(prompt_msg: str, validator: BaseValidator, error_msg: str = None,
+                                         default_value: Any = None) -> InputResult:
     prompt_utils = PromptUtils(Screen())
     answer = prompt_utils.input(prompt=prompt_msg,
                                 validators=validator,
+                                default=default_value,
                                 enable_quit=True
                                 )
 
@@ -90,18 +106,25 @@ def read_and_validate_value(prompt_msg: str, validator: BaseValidator, error_msg
     return answer
 
 
-def read_value(attribute_name: str, validator: BaseValidator, prompt_msg: str, error_msg: str) -> None:
+def read_value(attribute_name: str, validator: BaseValidator, prompt_msg: str, error_msg: str = None) -> None:
+    read_value_with_default(attribute_name, validator, prompt_msg, error_msg)
+
+
+def read_value_with_default(attribute_name: str, validator: BaseValidator, prompt_msg: str, error_msg: str = None,
+                            default_value: Any = None) -> None:
     try:
-        answer = read_and_validate_value(prompt_msg=prompt_msg,
-                                         validator=validator,
-                                         error_msg=error_msg
-                                         )
+        answer = read_and_validate_value_with_default(prompt_msg=prompt_msg,
+                                                      validator=validator,
+                                                      error_msg=error_msg,
+                                                      default_value=default_value,
+                                                      )
 
         while not answer.validation_result:
-            answer = read_and_validate_value(prompt_msg=prompt_msg,
-                                             validator=validator,
-                                             error_msg=error_msg
-                                             )
+            answer = read_and_validate_value_with_default(prompt_msg=prompt_msg,
+                                                          validator=validator,
+                                                          error_msg=error_msg,
+                                                          default_value=default_value,
+                                                          )
     except UserQuit:
         return
 
@@ -111,3 +134,25 @@ def read_value(attribute_name: str, validator: BaseValidator, prompt_msg: str, e
     print(SAVED_STRING)
 
     Screen().input(PRESS_ENTER_STRING)
+
+
+def read_docker_config_json() -> None:
+    try:
+        answer = read_and_validate_value_with_default(
+            f"Write the path to the Docker Config JSON file: (Default: {DEFAULT_DOCKER_CONFIG_JSON_PATH})",
+            DockerConfigJsonValidator(),
+            default_value=DEFAULT_DOCKER_CONFIG_JSON_PATH
+        )
+        while not answer.validation_result:
+            answer = read_and_validate_value_with_default(
+                f"Write the path to the Docker Config JSON file: (Default: {DEFAULT_DOCKER_CONFIG_JSON_PATH})",
+                DockerConfigJsonValidator(),
+                default_value=DEFAULT_DOCKER_CONFIG_JSON_PATH
+            )
+
+        with open(answer.input_string, 'r') as f:
+            docker_config_json = f.read()
+            docker_config_json = base64.b64encode(docker_config_json.encode()).decode()
+            update_setting_value("docker_config_json", docker_config_json)
+    except UserQuit:
+        return

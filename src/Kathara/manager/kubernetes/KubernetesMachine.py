@@ -21,6 +21,7 @@ from kubernetes.watch import watch
 
 from .KubernetesConfigMap import KubernetesConfigMap
 from .KubernetesNamespace import KubernetesNamespace
+from .KubernetesSecret import DOCKERCONFIGJSON_SECRET_NAME
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
@@ -458,10 +459,11 @@ class KubernetesMachine(object):
                 )
             ))
 
-        # Add image_pull_secrets if using a private registry
+        # Add image_pull_secrets if using private registries
         image_pull_secrets_arg = {}
-        if Setting.get_instance().private_registry_dockerconfigjson:
-            image_pull_secrets_arg = {"image_pull_secrets": [client.V1LocalObjectReference(name="private-registry")]}
+        if Setting.get_instance().docker_config_json:
+            image_pull_secrets_arg = {"image_pull_secrets":
+                                          [client.V1LocalObjectReference(name=DOCKERCONFIGJSON_SECRET_NAME)]}
 
         pod_spec = client.V1PodSpec(containers=[container_definition],
                                     hostname=machine.meta['real_name'],
