@@ -305,6 +305,7 @@ class KubernetesManager(IManager):
         if all_users:
             logging.warning("User-specific options have no effect on Megalos.")
 
+        self.k8s_secret.wipe()
         self.k8s_namespace.wipe()
 
     def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,

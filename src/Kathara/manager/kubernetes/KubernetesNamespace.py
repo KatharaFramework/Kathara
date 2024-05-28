@@ -68,8 +68,6 @@ class KubernetesNamespace(object):
         for namespace in namespaces:
             self.client.delete_namespace(namespace.metadata.name)
 
-        self.kubernetes_secret.wipe()
-
         self._wait_namespaces_deletion(label_selector="app=kathara")
 
     def get_all(self) -> Iterable[client.V1Namespace]:
