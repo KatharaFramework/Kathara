@@ -7,7 +7,8 @@ kathara-lrestart(1) -- Restart a Kathara network scenario
 `kathara lrestart` [`-h`] [`-F`] [`-l`]  
 [`--noterminals` | `--terminals` | `--privileged`] [`-d` <DIRECTORY>]  
 [`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>]  
-[`--no-hosthome` \| `--hosthome`] [`--no-shared` \| `--shared`] [<DEVICE_NAME> [<DEVICE_NAME> ...]]
+[`--no-hosthome` \| `--hosthome`] [`--no-shared` \| `--shared`] [`--exclude` <DEVICE_NAME> [<DEVICE_NAME> ...]]  
+[<DEVICE_NAME> [<DEVICE_NAME> ...]]
 
 
 ## DESCRIPTION
@@ -74,6 +75,9 @@ Mainly it has the same options of `lstart` with the lack of some options (e.g. `
     Mount `/shared` directory inside devices.
 
     Mount the `shared` directory inside the network scenario folder inside all devices on the special directory `/shared`. This is the default specified in `kathara.conf`(5) file.
+
+* `--exclude` [<DEVICE_NAME> [<DEVICE_NAME> ...]]
+    A list of device names. You can exclude certain devices of the network scenario from being restarted.
 
 * `DEVICE_NAME`:
     A list of device names. Instead of restarting the whole network scenario, only specified devices are restarted.

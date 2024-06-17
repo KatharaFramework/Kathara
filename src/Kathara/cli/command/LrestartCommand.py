@@ -111,6 +111,14 @@ class LrestartCommand(Command):
             help='Mount "/shared" directory inside devices.'
         )
         self.parser.add_argument(
+            '--exclude',
+            dest='excluded_machines',
+            metavar='DEVICE_NAME',
+            nargs='+',
+            default=[],
+            help='Exclude specified devices.'
+        )
+        self.parser.add_argument(
             'machine_name',
             metavar='DEVICE_NAME',
             nargs='*',
@@ -125,6 +133,8 @@ class LrestartCommand(Command):
 
         if args['machine_name']:
             lclean_argv.extend(args['machine_name'])
+        if args['excluded_machines']:
+            lclean_argv.extend(['--exclude'] + args['excluded_machines'])
 
         LcleanCommand().run(current_path, lclean_argv)
         LstartCommand().run(current_path, argv)

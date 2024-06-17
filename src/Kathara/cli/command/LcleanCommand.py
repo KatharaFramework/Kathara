@@ -34,6 +34,14 @@ class LcleanCommand(Command):
             help='Specify the folder containing the network scenario.'
         )
         self.parser.add_argument(
+            '--exclude',
+            dest='excluded_machines',
+            metavar='DEVICE_NAME',
+            nargs='+',
+            default=[],
+            help='Exclude specified devices from clean.'
+        )
+        self.parser.add_argument(
             'machine_names',
             metavar='DEVICE_NAME',
             nargs='*',
@@ -55,5 +63,6 @@ class LcleanCommand(Command):
 
         Kathara.get_instance().undeploy_lab(
             lab_hash=lab.hash,
-            selected_machines=set(args['machine_names']) if args['machine_names'] else None
+            selected_machines=set(args['machine_names']) if args['machine_names'] else None,
+            excluded_machines=set(args['excluded_machines']) if args['excluded_machines'] else None,
         )

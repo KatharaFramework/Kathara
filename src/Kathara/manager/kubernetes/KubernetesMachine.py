@@ -24,7 +24,8 @@ from .KubernetesNamespace import KubernetesNamespace
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import MachineAlreadyExistsError, MachineNotReadyError, MachineNotRunningError, MachineBinaryError
+from ...exceptions import MachineAlreadyExistsError, MachineNotReadyError, MachineNotRunningError, MachineBinaryError, \
+    InvocationError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
@@ -138,18 +139,32 @@ class KubernetesMachine(object):
 
         self.kubernetes_namespace: KubernetesNamespace = kubernetes_namespace
 
-    def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None) -> None:
+    def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Deploy all the devices contained in lab.machines.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
             selected_machines (Set[str]): A set containing the name of the devices to deploy.
+            excluded_machines (Set[str]): A set containing the name of the devices to exclude.
 
         Returns:
             None
+
+        Raises:
+            InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
-        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
-            else lab.machines.items()
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
+
+        machines = lab.machines.items()
+        if selected_machines:
+            machines = {
+                k: v for k, v in machines if k in selected_machines
+            }.items()
+        elif excluded_machines:
+            machines = {
+                k: v for k, v in machines if k not in excluded_machines
+            }.items()
 
         if lab.general_options['privileged_machines']:
             logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
@@ -159,7 +174,7 @@ class KubernetesMachine(object):
 
         wait_thread = threading.Thread(
             target=self._wait_machines_startup,
-            args=(lab, selected_machines if selected_machines else None)
+            args=(lab, set([k for k, _ in machines]) if selected_machines or excluded_machines else None)
         )
         wait_thread.start()
 
@@ -304,6 +319,11 @@ class KubernetesMachine(object):
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
+        else:
+            sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 1
+            sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 1
+            sysctl_parameters["net.ipv6.conf.default.forwarding"] = 0
+            sysctl_parameters["net.ipv6.conf.all.forwarding"] = 0
 
         # Merge machine sysctls
         machine.meta['sysctls'] = {**sysctl_parameters, **machine.meta['sysctls']}
@@ -479,26 +499,36 @@ class KubernetesMachine(object):
                                    spec=deployment_spec
                                    )
 
-    def undeploy(self, lab_hash: str, selected_machines: Optional[Set[str]] = None) -> None:
+    def undeploy(self, lab_hash: str, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Undeploy all the running Kubernetes deployments and Pods contained in the scenario defined by the lab_hash.
 
         If selected_machines is not None, undeploy only the specified devices.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
-            selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
+            selected_machines (Set[str]): A set containing the name of the devices to undeploy.
+            excluded_machines (Set[str]): A set containing the name of the devices to exclude.
 
         Returns:
             None
+
+        Raises:
+            InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
+
         pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash)
-        if selected_machines is not None and len(selected_machines) > 0:
+        machines_to_watch = {item.metadata.labels["name"] for item in pods}
+        if selected_machines:
             pods = [item for item in pods if item.metadata.labels["name"] in selected_machines]
-        else:
-            selected_machines = {item.metadata.labels["name"] for item in pods}
+            machines_to_watch = selected_machines if selected_machines else machines_to_watch
+        elif excluded_machines:
+            pods = [item for item in pods if item.metadata.labels["name"] not in excluded_machines]
+            machines_to_watch = machines_to_watch if not excluded_machines else machines_to_watch - excluded_machines
 
         if len(pods) > 0:
-            wait_thread = threading.Thread(target=self._wait_machines_shutdown, args=(lab_hash, selected_machines))
+            wait_thread = threading.Thread(target=self._wait_machines_shutdown, args=(lab_hash, machines_to_watch))
             wait_thread.start()
 
             pool_size = utils.get_pool_size()

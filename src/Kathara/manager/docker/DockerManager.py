@@ -17,7 +17,7 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError, LinkNotFoundError, MachineCollisionDomainError, \
-    InvocationError, LabNotFoundError, MachineNotRunningError, PrivilegeError
+    InvocationError, LabNotFoundError, MachineNotRunningError
 from ...exceptions import MachineNotFoundError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
@@ -121,12 +121,14 @@ class DockerManager(IManager):
         self.docker_link.deploy_links(link.lab, selected_links={link.name})
 
     @privileged
-    def deploy_lab(self, lab: Lab, selected_machines: Set[str] = None) -> None:
+    def deploy_lab(self, lab: Lab, selected_machines: Optional[Set[str]] = None,
+                   excluded_machines: Optional[Set[str]] = None) -> None:
         """Deploy a Kathara network scenario.
 
         Args:
             lab (Kathara.model.Lab): A Kathara network scenario.
-            selected_machines (Set[str]): If not None, deploy only the specified devices.
+            selected_machines (Optional[Set[str]]): If not None, deploy only the specified devices.
+            excluded_machines (Optional[Set[str]]): If not None, exclude devices from being deployed.
 
         Returns:
             None
@@ -136,22 +138,40 @@ class DockerManager(IManager):
             OSError: If any link in the network scenario is attached to external interfaces and the host OS is not LINUX.
             PrivilegeError: If the user start the network scenario in privileged mode without having root privileges.
             MachineNotFoundError: If the specified devices are not in the network scenario.
+            InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
         lab.check_integrity()
 
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either select or exclude devices.")
+
         if selected_machines and not lab.has_machines(selected_machines):
             machines_not_in_lab = selected_machines - set(lab.machines.keys())
+            raise MachineNotFoundError(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
+
+        if excluded_machines and not lab.has_machines(excluded_machines):
+            machines_not_in_lab = excluded_machines - set(lab.machines.keys())
             raise MachineNotFoundError(f"The following devices are not in the network scenario: {machines_not_in_lab}.")
 
         selected_links = None
         if selected_machines:
             selected_links = lab.get_links_from_machines(selected_machines)
 
+        excluded_links = None
+        if excluded_machines:
+            # Get the links of remaining machines
+            running_links = lab.get_links_from_machines(set(lab.machines.keys()) - excluded_machines)
+            # Get the links of the excluded machines and get the diff with the running ones
+            # The remaining are the ones to delete
+            excluded_links = lab.get_links_from_machines(excluded_machines) - running_links
+
         # Deploy all lab links.
-        self.docker_link.deploy_links(lab, selected_links=selected_links)
+        self.docker_link.deploy_links(lab, selected_links=selected_links, excluded_links=excluded_links)
 
         # Deploy all lab machines.
-        self.docker_machine.deploy_machines(lab, selected_machines=selected_machines)
+        self.docker_machine.deploy_machines(
+            lab, selected_machines=selected_machines, excluded_machines=excluded_machines
+        )
 
     @privileged
     def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None) -> None:
@@ -273,7 +293,8 @@ class DockerManager(IManager):
 
     @privileged
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
-                     selected_machines: Optional[Set[str]] = None) -> None:
+                     selected_machines: Optional[Set[str]] = None,
+                     excluded_machines: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
@@ -284,12 +305,14 @@ class DockerManager(IManager):
             lab (Optional[Kathara.model.Lab]): The network scenario object.
                 Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
+            excluded_machines (Optional[Set[str]]): If not None, exclude devices from being undeployed.
 
         Returns:
             None
 
         Raises:
-            InvocationError: If a running network scenario hash or name is not specified.
+            InvocationError: If a running network scenario hash or name is not specified,
+                or if both `selected_machines` and `excluded_machines` are specified.
         """
         check_required_single_not_none_var(lab_hash=lab_hash, lab_name=lab_name, lab=lab)
         if lab:
@@ -297,7 +320,10 @@ class DockerManager(IManager):
         elif lab_name:
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
-        self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines)
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either select or exclude devices.")
+
+        self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines, excluded_machines=excluded_machines)
 
         self.docker_link.undeploy(lab_hash)
 

@@ -18,7 +18,7 @@ from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError, DockerPluginError, \
-    MachineBinaryError, MachineNotRunningError, PrivilegeError
+    MachineBinaryError, MachineNotRunningError, PrivilegeError, InvocationError
 from ...model.Interface import Interface
 from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
@@ -109,24 +109,36 @@ class DockerMachine(object):
         self._engine_version: str = client.version()['Version']
         self.docker_image: DockerImage = docker_image
 
-    def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None) -> None:
+    def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Deploy all the network scenario devices as Docker containers.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
             selected_machines (Set[str]): A set containing the name of the devices to deploy.
+            excluded_machines (Set[str]): A set containing the name of the devices to exclude.
 
         Returns:
             None
 
         Raises:
             PrivilegeError: If the privileged mode is active and the user does not have root privileges.
+            InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
         if lab.general_options['privileged_machines'] and not utils.is_admin():
             raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
 
-        machines = {k: v for (k, v) in lab.machines.items() if k in selected_machines}.items() if selected_machines \
-            else lab.machines.items()
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
+
+        machines = lab.machines.items()
+        if selected_machines:
+            machines = {
+                k: v for k, v in machines if k in selected_machines
+            }.items()
+        elif excluded_machines:
+            machines = {
+                k: v for k, v in machines if k not in excluded_machines
+            }.items()
 
         # Check and pulling machine images
         lab_images = set(map(lambda x: x[1].get_image(), machines))
@@ -252,6 +264,11 @@ class DockerMachine(object):
             sysctl_parameters["net.ipv6.icmp.ratelimit"] = 0
             sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 0
             sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 0
+        else:
+            sysctl_parameters["net.ipv6.conf.default.disable_ipv6"] = 1
+            sysctl_parameters["net.ipv6.conf.all.disable_ipv6"] = 1
+            sysctl_parameters["net.ipv6.conf.default.forwarding"] = 0
+            sysctl_parameters["net.ipv6.conf.all.forwarding"] = 0
 
         # Merge machine sysctls
         sysctl_parameters = {**sysctl_parameters, **machine.meta['sysctls'], **sysctl_first_interface}
@@ -466,22 +483,30 @@ class DockerMachine(object):
 
         machine.api_object.reload()
 
-    def undeploy(self, lab_hash: str, selected_machines: Set[str] = None) -> None:
+    def undeploy(self, lab_hash: str, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Undeploy the devices contained in the network scenario defined by the lab_hash.
 
         If a set of selected_machines is specified, undeploy only the specified devices.
 
         Args:
             lab_hash (str): The hash of the network scenario to undeploy.
-            selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
+            selected_machines (Set[str]): A set containing the name of the devices to undeploy.
+            excluded_machines (Set[str]): A set containing the name of the devices to exclude.
 
         Returns:
             None
-        """
-        containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, user=utils.get_current_user_name())
 
-        if selected_machines is not None and len(selected_machines) > 0:
+        Raises:
+            InvocationError: If both `selected_machines` and `excluded_machines` are specified.
+        """
+        if selected_machines and excluded_machines:
+            raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
+
+        containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, user=utils.get_current_user_name())
+        if selected_machines:
             containers = [item for item in containers if item.labels["name"] in selected_machines]
+        elif excluded_machines:
+            containers = [item for item in containers if item.labels["name"] not in excluded_machines]
 
         if len(containers) > 0:
             pool_size = utils.get_pool_size()

@@ -1,16 +1,17 @@
 import copy
 import sys
 from unittest import mock
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 from kubernetes import client
+
+from src.Kathara.exceptions import InvocationError
 
 sys.path.insert(0, './')
 
 from src.Kathara.model.Lab import Lab
 from src.Kathara.manager.kubernetes.KubernetesLink import KubernetesLink
-from src.Kathara.exceptions import LinkNotFoundError
 
 
 class FakeConfig(object):
@@ -320,6 +321,43 @@ def test_deploy_links(mock_deploy_link, mock_get_links_by_filters, kubernetes_li
     mock_deploy_link.assert_any_call({}, ("B", link_b))
     mock_deploy_link.assert_any_call({}, ("C", link_c))
     assert mock_deploy_link.call_count == 3
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._deploy_link")
+@mock.patch("multiprocessing.managers.SyncManager", new=FakeManager)
+def test_deploy_links_selected_links(mock_deploy_link, kubernetes_link):
+    lab = Lab("Default scenario")
+    link_a = lab.get_or_new_link("A")
+    link_b = lab.get_or_new_link("B")
+    link_c = lab.get_or_new_link("C")
+    kubernetes_link.deploy_links(lab, selected_links={"A"})
+    mock_deploy_link.assert_any_call({}, ("A", link_a))
+    assert call({}, ("B", link_b)) not in mock_deploy_link.mock_calls
+    assert call({}, ("C", link_c)) not in mock_deploy_link.mock_calls
+    assert mock_deploy_link.call_count == 1
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._deploy_link")
+@mock.patch("multiprocessing.managers.SyncManager", new=FakeManager)
+def test_deploy_links_excluded_links(mock_deploy_link, kubernetes_link):
+    lab = Lab("Default scenario")
+    link_a = lab.get_or_new_link("A")
+    link_b = lab.get_or_new_link("B")
+    link_c = lab.get_or_new_link("C")
+    kubernetes_link.deploy_links(lab, excluded_links={"A"})
+    assert call({}, ("A", link_a)) not in mock_deploy_link.mock_calls
+    mock_deploy_link.assert_any_call({}, ("B", link_b))
+    mock_deploy_link.assert_any_call({}, ("C", link_c))
+    assert mock_deploy_link.call_count == 2
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._deploy_link")
+@mock.patch("multiprocessing.managers.SyncManager", new=FakeManager)
+def test_deploy_links_selected_and_excluded_links(mock_deploy_link, kubernetes_link):
+    lab = Lab("Default scenario")
+    with pytest.raises(InvocationError):
+        kubernetes_link.deploy_links(lab, selected_links={"A", "B"}, excluded_links={"B"})
+    assert not mock_deploy_link.called
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink._deploy_link")
