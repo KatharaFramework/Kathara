@@ -68,6 +68,7 @@ class Machine(FilesystemMixin):
             'sysctls': {},
             'envs': {},
             'ports': {},
+            'ulimits': {}
         }
 
         self.api_object: Any = None
@@ -190,6 +191,29 @@ class Machine(FilesystemMixin):
                 self.meta['envs'][key] = val
             else:
                 raise MachineOptionError("Invalid env value (`%s`) on `%s`." % (value, self.name))
+            return old_value
+            
+        if name == "ulimit":
+            # regex pattern to match key and value pairs for ulimits of the form key=soft:hard
+            matches = re.search(r"^(?P<key>\w+)=(?P<soft>-?\d+)(:(?P<hard>-?\d+))?$", value)
+            
+            # check for valid ulimit pair
+            if matches:
+                key = matches.group("key").strip()
+                soft = int(matches.group("soft").strip())
+                hard = matches.group("hard")
+                
+                if hard is not None:
+                    hard = int(hard.strip())
+                else:
+                    hard = soft  # if hard limit is not specified, set it to the same as soft limit
+
+                old_value = self.meta['ulimits'].get(key, None)
+
+                self.meta['ulimits'][key] = {'soft': soft, 'hard': hard}
+            else:
+                raise MachineOptionError(f"Invalid ulimit value (`{value}`) on `{name}`.")
+            
             return old_value
 
         if name == "port":
@@ -433,6 +457,13 @@ class Machine(FilesystemMixin):
                 raise MachineOptionError("CPU value not valid on `%s`." % self.name)
 
         return None
+    
+    def get_ulimits(self) -> Optional[Dict[str, Dict[str, int]]]:
+        """Get the ulimits dictionary
+        Returns:
+            Optional[Dict[str, Dict[str, int]]]: The ulimits of the device.
+        """
+        return self.meta.get("ulimits", None)
 
     def get_shell(self) -> str:
         """Get the custom shell specified for the device.
