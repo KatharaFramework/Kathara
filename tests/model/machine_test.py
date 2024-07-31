@@ -29,6 +29,7 @@ def test_default_device_parameters(default_device: Machine):
         'sysctls': {},
         'envs': {},
         'ports': {},
+        'ulimits': {}
     }
     assert default_device.api_object is None
     assert default_device.fs is None
@@ -281,6 +282,26 @@ def test_add_meta_overwrite_port(default_device: Machine):
     result = default_device.add_meta("port", "3000:5000")
     assert default_device.meta["ports"][(3000, "tcp")] == 5000
     assert result == 4000
+
+def test_add_meta_ulimit(default_device):
+    default_device.add_meta("ulimit", "nofile=1024:2048")
+    assert default_device.meta['ulimits']['nofile'] == {'soft': 1024, 'hard': 2048}
+
+def test_add_meta_ulimit_soft_only(default_device):
+    default_device.add_meta("ulimit", "nofile=1024")
+    assert default_device.meta['ulimits']['nofile'] == {'soft': 1024, 'hard': 1024}
+
+def test_add_meta_ulimit_negative_value(default_device):
+    default_device.add_meta("ulimit", "memlock=-1")
+    assert default_device.meta['ulimits']['memlock'] == {'soft': -1, 'hard': -1}
+
+def test_add_meta_ulimit_invalid_format(default_device):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta("ulimit", "nofile=1024:2048:4096")
+
+def test_add_meta_ulimit_not_format_exception(default_device):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta("ulimit", "nofile1024")
 
 
 #

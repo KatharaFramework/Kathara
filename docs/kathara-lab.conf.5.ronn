@@ -74,6 +74,13 @@ If `arg` is an option name, then `device` will be launched with option `arg` set
 * `num_terms` (integer):
 	Choose the number of terminals to open for this device.
 
+* `ulimit` (string):
+	Allows change of both soft and hard limits. The syntax is ULIMIT=SOFT:HARD.
+	Use -1 for ulimited. 
+	If only a parameter is given e.g. ULIMIT=VALUE both soft and hard limit will have same value.
+	For instance, with this command is possible to set memlock soft and hard limit to unlimited: `device[ulimit]="memlock=-1:-1`.
+
+
 ## NETWORK SCENARIO META INFORMATION
 
 It is also possible to provide descriptive information about a network scenario by using one of the following special assignments:

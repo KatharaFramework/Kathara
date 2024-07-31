@@ -291,6 +291,10 @@ class Machine(FilesystemMixin):
         if 'shell' in args and args['shell'] is not None:
             self.add_meta("shell", args['shell'])
 
+        if 'ulimits' in args and args['ulimits'] is not None:
+            for ulimit in args['ulimits']:
+                self.add_meta("ulimit", ulimit)
+
     def check(self) -> None:
         """Sort interfaces and check if there are missing interface numbers.
 
