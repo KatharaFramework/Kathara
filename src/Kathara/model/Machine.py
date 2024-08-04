@@ -206,7 +206,10 @@ class Machine(FilesystemMixin):
                 if hard is not None:
                     hard = int(hard.strip())
                 else:
-                    hard = soft  # if hard limit is not specified, set it to the same as soft limit
+                    hard = soft  
+                
+                if soft > hard:
+                    soft = hard
 
                 old_value = self.meta['ulimits'].get(key, None)
 
