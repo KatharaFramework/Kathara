@@ -208,7 +208,18 @@ class Machine(FilesystemMixin):
                 else:
                     hard = soft  
                 
-                if soft > hard:
+               
+                if soft < -1 or hard < -1:
+                    raise MachineOptionError(f"Invalid ulimit value (`{value}`) on `{name}`. Values must be >= -1")
+                
+                
+                if soft == -1 and hard != -1:
+                    raise MachineOptionError(f"Invalid ulimit value (`{value}`) on `{name}`. Soft limit (-1) cannot be greater than hard limit ({hard})")
+                
+                if soft != -1 and hard == -1:
+                    # valid case, leave as is since hard limit is unlimited
+                    pass
+                elif soft > hard:
                     soft = hard
 
                 old_value = self.meta['ulimits'].get(key, None)

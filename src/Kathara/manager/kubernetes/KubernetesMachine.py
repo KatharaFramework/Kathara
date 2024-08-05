@@ -302,6 +302,10 @@ class KubernetesMachine(object):
         # If bridged is defined for the device, throw a warning.
         if "bridged" in global_machine_metadata or machine.is_bridged():
             logging.warning('Bridged option is not supported on Megalos. It will be ignored.')
+        
+        # If any ulimit is defined fot the device throw a warning
+        if "ulimit" in global_machine_metadata or "ulimits" in machine.meta:
+            logging.warning('Ulimit option is not supported on Megalos. It will be ignored.')
 
         # If any exec command is passed in command line, add it.
         if "exec" in global_machine_metadata:
