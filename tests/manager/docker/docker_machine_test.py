@@ -142,7 +142,8 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, mock_copy
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
 
     assert not mock_copy_files.called
@@ -198,7 +199,8 @@ def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
 
     assert not mock_copy_files.called
@@ -254,7 +256,8 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
     assert not mock_copy_files.called
 
@@ -320,7 +323,8 @@ def test_create_interface(mock_get_current_user_name, mock_setting_get_instance,
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
 
     assert not mock_copy_files.called
@@ -388,7 +392,8 @@ def test_create_interface_old_engine(mock_get_current_user_name, mock_setting_ge
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
 
     assert not mock_copy_files.called
@@ -463,7 +468,8 @@ def test_create_interface_mac_addr(mock_get_current_user_name, mock_setting_get_
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
 
     assert not mock_copy_files.called
@@ -539,7 +545,8 @@ def test_create_interface_mac_addr_on_old_engine(mock_get_current_user_name, moc
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
 
     assert not mock_copy_files.called
