@@ -174,7 +174,7 @@ class KubernetesConfigMapError(Exception):
     pass
 
 
-class InvalidDockerConfigJSONError(ValueError):
+class InvalidDockerConfigJsonError(ValueError):
     __slots__ = ['docker_config_json_path']
 
     def __init__(self, docker_config_json_path: str):

@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, List
 
 from .. import utils
 from .. import version
-from ..exceptions import HTTPConnectionError, SettingsError, SettingsNotFoundError, InvalidDockerConfigJSONError
+from ..exceptions import HTTPConnectionError, SettingsError, SettingsNotFoundError, InvalidDockerConfigJsonError
 from ..exceptions import InstantiationError
 from ..foundation.setting.SettingsAddon import SettingsAddon
 from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
@@ -309,7 +309,7 @@ class Setting(object):
             try:
                 json.load(docker_config_json_file)
             except ValueError:
-                raise InvalidDockerConfigJSONError(docker_config_json_path)
+                raise InvalidDockerConfigJsonError(docker_config_json_path)
 
     def load_settings_addon(self) -> None:
         """Load a setting addon to the base settings.
