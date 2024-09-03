@@ -3,6 +3,8 @@ from unittest import mock
 from unittest.mock import Mock, call
 
 import pytest
+from docker.errors import APIError
+from requests import Response
 
 sys.path.insert(0, './')
 
@@ -21,6 +23,7 @@ from src.Kathara.types import SharedCollisionDomainsOption
 @mock.patch("src.Kathara.manager.docker.DockerImage.DockerImage")
 @mock.patch("docker.DockerClient")
 def docker_machine(mock_docker_client, mock_docker_image):
+    mock_docker_client.version.return_value = {"Version": "27.0.0"}
     return DockerMachine(mock_docker_client, mock_docker_image)
 
 
@@ -586,7 +589,10 @@ def test_start_one_mac_addr(docker_machine, default_device, default_link, defaul
     docker_machine.client.api.exec_inspect.assert_called_once()
     default_link_b.api_object.connect.assert_called_once_with(
         default_device.api_object,
-        driver_opt={'kathara.mac_addr': expected_mac_addr}
+        driver_opt={
+            'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1',
+            'kathara.mac_addr': expected_mac_addr
+        }
     )
 
 
@@ -611,11 +617,17 @@ def test_start_two_mac_addr(docker_machine, default_device, default_link, defaul
     docker_machine.client.api.exec_inspect.assert_called_once()
     default_link_b.api_object.connect.assert_called_once_with(
         default_device.api_object,
-        driver_opt={'kathara.mac_addr': expected_mac_addr_1}
+        driver_opt={
+            'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1',
+            'kathara.mac_addr': expected_mac_addr_1
+        }
     )
     default_link_c.api_object.connect.assert_called_once_with(
         default_device.api_object,
-        driver_opt={'kathara.mac_addr': expected_mac_addr_2}
+        driver_opt={
+            'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1',
+            'kathara.mac_addr': expected_mac_addr_2
+        }
     )
 
 
@@ -831,22 +843,81 @@ def test_connect_interface_mac_addr(docker_machine, default_device, default_link
     assert not default_link.api_object.connect.called
     default_link_b.api_object.connect.assert_called_once_with(
         default_device.api_object,
-        driver_opt={'kathara.mac_addr': expected_mac_addr}
+        driver_opt={
+            'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1',
+            'kathara.mac_addr': expected_mac_addr
+        }
     )
 
 
 def test_connect_interface_plugin_error_network(default_device, default_link, docker_machine):
     interface = default_device.add_interface(default_link)
-    default_link.api_object.connect.side_effect = DockerPluginError("network does not exists")
+    response = Response()
+    response.status_code = 500
+    error = APIError("error",
+                     response=response,
+                     explanation="network does not exists")
+    default_link.api_object.connect.side_effect = error
     with pytest.raises(DockerPluginError):
         docker_machine.connect_interface(default_device, interface)
 
 
 def test_connect_interface_plugin_error_endpoint(default_device, default_link, docker_machine):
     interface = default_device.add_interface(default_link)
-    default_link.api_object.connect.side_effect = DockerPluginError("endpoint does not exists")
+    response = Response()
+    response.status_code = 500
+    error = APIError("error",
+                     response=response,
+                     explanation="endpoint does not exists")
+    default_link.api_object.connect.side_effect = error
     with pytest.raises(DockerPluginError):
         docker_machine.connect_interface(default_device, interface)
+
+
+def test_connect_interface_plugin_api_error(default_device, default_link, docker_machine):
+    interface = default_device.add_interface(default_link)
+    response = Response()
+    response.status_code = 510
+    error = APIError("error",
+                     response=response)
+    default_link.api_object.connect.side_effect = error
+    with pytest.raises(APIError):
+        docker_machine.connect_interface(default_device, interface)
+#
+# TEST:_create_driver_opt
+#
+def test_create_driver_opt_no_ipv6(docker_machine, default_device, default_link):
+    interface = default_device.add_interface(default_link)
+    driver_opt = docker_machine._create_driver_opt(default_device, interface)
+    assert driver_opt == {
+        'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1',
+    }
+
+
+def test_create_driver_opt_mac_address(docker_machine, default_device, default_link):
+    interface = default_device.add_interface(default_link)
+    interface.mac_address = '00:00:00:00:00:01'
+    driver_opt = docker_machine._create_driver_opt(default_device, interface)
+    assert driver_opt == {
+        'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1',
+        'kathara.mac_addr': '00:00:00:00:00:01'
+    }
+
+
+def test_create_driver_opt_ipv6(docker_machine, default_device, default_link):
+    interface = default_device.add_interface(default_link)
+    default_device.add_meta('ipv6', True)
+    driver_opt = docker_machine._create_driver_opt(default_device, interface)
+    assert driver_opt == {
+        'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=0,net.ipv6.conf.IFNAME.forwarding=1',
+    }
+
+
+def test_create_driver_old_docker(docker_machine, default_device, default_link):
+    docker_machine._engine_version = '25.0.0'
+    interface = default_device.add_interface(default_link)
+    driver_opt = docker_machine._create_driver_opt(default_device, interface)
+    assert driver_opt == {}
 
 
 #
