@@ -1,7 +1,6 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-    * Fix IPv6 disabling issue
-    * Add the possibility to exclude machines while deploying a network scenario, both from CLI and Python APIs
+    * Properly set driver options to disable/enable IPV6
     * Minor fixes
 
  -- Kathara Team <contact@kathara.org>  __DATE__
