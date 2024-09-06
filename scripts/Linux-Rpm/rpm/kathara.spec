@@ -68,6 +68,5 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- Fix IPv6 disabling issue
-- Add the possibility to exclude machines while deploying a network scenario, both from CLI and Python APIs
+- Properly set driver options to disable/enable IPV6
 - Minor fixes

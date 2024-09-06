@@ -11,7 +11,7 @@ import chardet
 import docker.models.containers
 from docker import DockerClient
 from docker.errors import APIError
-from docker.utils import version_lt
+from docker.utils import version_lt, version_gte
 
 from .DockerImage import DockerImage
 from .stats.DockerMachineStats import DockerMachineStats
@@ -293,8 +293,7 @@ class DockerMachine(object):
 
         networking_config = None
         if first_machine_iface:
-            driver_opt = {'kathara.mac_addr': first_machine_iface.mac_address} \
-                if first_machine_iface.mac_address else None
+            driver_opt = self._create_driver_opt(machine, first_machine_iface)
 
             networking_config = {
                 first_network.name: self.client.api.create_endpoint_config(
@@ -341,8 +340,7 @@ class DockerMachine(object):
 
         machine.api_object = machine_container
 
-    @staticmethod
-    def connect_interface(machine: Machine, interface: Interface) -> None:
+    def connect_interface(self, machine: Machine, interface: Interface) -> None:
         """Connect the Docker container representing the machine to a specified collision domain.
 
         Args:
@@ -359,9 +357,8 @@ class DockerMachine(object):
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
         if interface.link.api_object.name not in attached_networks:
+            driver_opt = self._create_driver_opt(machine, interface)
             try:
-                driver_opt = {'kathara.mac_addr': interface.mac_address} if interface.mac_address else None
-
                 interface.link.api_object.connect(
                     machine.api_object,
                     driver_opt=driver_opt
@@ -373,6 +370,28 @@ class DockerMachine(object):
                         "Kathara has been left in an inconsistent state! Please run `kathara wipe`.")
                 else:
                     raise e
+
+    def _create_driver_opt(self, machine: Machine, interface: Interface) -> dict[str, str]:
+        """Create a dict containing the default network driver options for a device.
+
+        Args:
+            machine (Kathara.model.Machine.Machine): The Kathara device to be attached to the interface.
+            interface (Kathara.model.Interface.Interface): The interface to be attached to the device.
+
+        Returns:
+            dict[str, str]: A dict containing the default network driver options for a device.
+        """
+        driver_opt = {}
+        if version_gte(self._engine_version, "27.0.0"):
+            if machine.is_ipv6_enabled():
+                driver_opt["com.docker.network.endpoint.sysctls"] = \
+                    "net.ipv6.conf.IFNAME.disable_ipv6=0,net.ipv6.conf.IFNAME.forwarding=1"
+            else:
+                driver_opt["com.docker.network.endpoint.sysctls"] = \
+                    "net.ipv6.conf.IFNAME.disable_ipv6=1"
+        if interface.mac_address:
+            driver_opt['kathara.mac_addr'] = interface.mac_address
+        return driver_opt
 
     @staticmethod
     def disconnect_from_link(machine: Machine, link: Link) -> None:
@@ -427,20 +446,7 @@ class DockerMachine(object):
                 f"Connecting device `{machine.name}` to collision domain `{machine_iface.link.name}` "
                 f"on interface {iface_num}..."
             )
-            try:
-                driver_opt = {'kathara.mac_addr': machine_iface.mac_address} if machine_iface.mac_address else None
-
-                machine_iface.link.api_object.connect(
-                    machine.api_object,
-                    driver_opt=driver_opt
-                )
-            except APIError as e:
-                if e.response.status_code == 500 and \
-                        ("network does not exist" in e.explanation or "endpoint does not exist" in e.explanation):
-                    raise DockerPluginError(
-                        "Kathara has been left in an inconsistent state! Please run `kathara wipe`.")
-                else:
-                    raise e
+            self.connect_interface(machine, machine_iface)
 
         # Bridged connection required but not added in `deploy` method.
         if "bridge_connected" not in machine.meta and machine.is_bridged():
