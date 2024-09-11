@@ -153,7 +153,41 @@ class KubernetesOptionsHandler(OptionsHandler):
 
         image_pull_policy_item = SubmenuItem(image_pull_policy_string, image_pull_policy_menu, current_menu)
 
+        # Private Registry docker_config_json Option
+        docker_config_json_string = "Private Registry Configuration"
+        docker_config_json_menu = SelectionMenu(
+            strings=[],
+            title=docker_config_json_string,
+            subtitle=setting_utils.current_enabled("docker_config_json"),
+            prologue_text="""Insert the config.json file path containing the configuration to """
+                          """access private container registries. The content will be stored as """
+                          """a base64 string and it will be used to create a Kubernetes Secret """
+                          """of type `kubernetes.io/dockerconfigjson`.   
+                          
+                          Default is %s.""" % DEFAULTS['docker_config_json'],
+            formatter=menu_formatter
+        )
+
+        docker_config_json_menu.append_item(
+            FunctionItem(
+                text=docker_config_json_string,
+                function=setting_utils.read_docker_config_json,
+                should_exit=True
+            )
+        )
+        docker_config_json_menu.append_item(
+            FunctionItem(
+                text="Reset value to Empty String",
+                function=setting_utils.update_setting_value,
+                args=["docker_config_json", None],
+                should_exit=True
+            )
+        )
+
+        docker_config_json_item = SubmenuItem(docker_config_json_string, docker_config_json_menu, current_menu)
+
         current_menu.append_item(api_url_item)
         current_menu.append_item(api_token_item)
         current_menu.append_item(host_shared_item)
         current_menu.append_item(image_pull_policy_item)
+        current_menu.append_item(docker_config_json_item)
