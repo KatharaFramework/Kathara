@@ -346,12 +346,23 @@ def parse_cd_mac_address(value) -> Tuple[str, str]:
     return cd_name, mac_address
 
 
-def parse_version(v):
+# Docker Engine Utils
+def parse_docker_engine_version(v: str) -> str:
     parts = []
     for part in v.split('.'):
-        numeric_part = ''.join([char for char in part if char.isdigit()])
+        numeric_part = ""
+        # Iterate over the single chars of the part
+        for char in part:
+            # As soon as we get a non-digit value, we break
+            if char.isdigit():
+                numeric_part += char
+            else:
+                break
+
+        # If the numeric_part is not empty, append it as a chunk of the version
         if numeric_part:
             parts.append(numeric_part)
         else:
             break
+
     return '.'.join(parts)

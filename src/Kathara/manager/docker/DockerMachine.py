@@ -24,7 +24,7 @@ from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine, MACHINE_CAPABILITIES
 from ...setting.Setting import Setting
-from ...utils import parse_version
+from ...utils import parse_docker_engine_version
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 OCI_RUNTIME_RE = re.compile(
@@ -107,7 +107,7 @@ class DockerMachine(object):
 
     def __init__(self, client: DockerClient, docker_image: DockerImage) -> None:
         self.client: DockerClient = client
-        self._engine_version: str = parse_version(client.version()['Version'])
+        self._engine_version: str = parse_docker_engine_version(client.version()['Version'])
         self.docker_image: DockerImage = docker_image
 
     def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
