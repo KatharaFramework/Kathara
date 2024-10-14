@@ -344,3 +344,14 @@ def parse_cd_mac_address(value) -> Tuple[str, str]:
         (cd_name, mac_address) = value, None
 
     return cd_name, mac_address
+
+
+def parse_version(v):
+    parts = []
+    for part in v.split('.'):
+        numeric_part = ''.join([char for char in part if char.isdigit()])
+        if numeric_part:
+            parts.append(numeric_part)
+        else:
+            break
+    return '.'.join(parts)
