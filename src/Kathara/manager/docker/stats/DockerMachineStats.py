@@ -37,6 +37,9 @@ class DockerMachineStats(IMachineStats):
         self.container_name: str = machine_api_object.name
         self.user: Optional[str] = machine_api_object.labels['user']
         self.image: str = machine_api_object.image.tags[0]
+        self.interfaces: str = ",".join(sorted(
+            [f"{v['DriverOpts']['kathara.iface']}:{v['DriverOpts']['kathara.link']}" for n, v in
+             machine_api_object.attrs['NetworkSettings']['Networks'].items()]))
         # Dynamic Information
         self.status: Optional[str] = None
         self.pids: Optional[int] = None
@@ -96,7 +99,8 @@ class DockerMachineStats(IMachineStats):
             "cpu_usage": self.cpu_usage,
             "mem_usage": self.mem_usage,
             "mem_percent": self.mem_percent,
-            "net_usage": self.net_usage
+            "net_usage": self.net_usage,
+            'interfaces': self.interfaces
         }
 
     def __repr__(self) -> str:
