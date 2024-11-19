@@ -399,7 +399,7 @@ class DockerMachine(object):
         Returns:
             dict[str, str]: A dict containing the default network driver options for a device.
         """
-        driver_opt = {}
+        driver_opt = {'kathara.iface': str(interface.num), 'kathara.link': interface.link.name}
         if version_gte(self._engine_version, "27.0.0"):
             if machine.is_ipv6_enabled():
                 driver_opt["com.docker.network.endpoint.sysctls"] = \
