@@ -192,30 +192,29 @@ class Machine(FilesystemMixin):
             else:
                 raise MachineOptionError("Invalid env value (`%s`) on `%s`." % (value, self.name))
             return old_value
-            
+
         if name == "ulimit":
             # regex pattern to match key and value pairs for ulimits of the form key=soft:hard
             matches = re.search(r"^(?P<key>\w+)=(?P<soft>-?\d+)(:(?P<hard>-?\d+))?$", value)
-            
+
             # check for valid ulimit pair
             if matches:
                 key = matches.group("key").strip()
                 soft = int(matches.group("soft").strip())
                 hard = matches.group("hard")
-                
+
                 if hard is not None:
                     hard = int(hard.strip())
                 else:
-                    hard = soft  
-                
-               
+                    hard = soft
+
                 if soft < -1 or hard < -1:
                     raise MachineOptionError(f"Invalid ulimit value (`{value}`) on `{name}`. Values must be >= -1")
-                
-                
+
                 if soft == -1 and hard != -1:
-                    raise MachineOptionError(f"Invalid ulimit value (`{value}`) on `{name}`. Soft limit (-1) cannot be greater than hard limit ({hard})")
-                
+                    raise MachineOptionError(
+                        f"Invalid ulimit value (`{value}`) on `{name}`. Soft limit (-1) cannot be greater than hard limit ({hard})")
+
                 if soft != -1 and hard == -1:
                     # valid case, leave as is since hard limit is unlimited
                     pass
@@ -227,7 +226,7 @@ class Machine(FilesystemMixin):
                 self.meta['ulimits'][key] = {'soft': soft, 'hard': hard}
             else:
                 raise MachineOptionError(f"Invalid ulimit value (`{value}`) on `{name}`.")
-            
+
             return old_value
 
         if name == "port":
@@ -475,7 +474,7 @@ class Machine(FilesystemMixin):
                 raise MachineOptionError("CPU value not valid on `%s`." % self.name)
 
         return None
-    
+
     def get_ulimits(self) -> Optional[Dict[str, Dict[str, int]]]:
         """Get the ulimits dictionary
         Returns:
