@@ -3,8 +3,8 @@ from typing import List
 
 from rich.live import Live
 
-from ..ui.utils import create_panel, LabMetaHighlighter
-from ..ui.utils import create_table
+from ..ui.utils import create_lab_table
+from ..ui.utils import create_panel, LabMetaHighlighter, create_topology_table
 from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
@@ -54,11 +54,20 @@ class LinfoCommand(Command):
             help='Read static information from lab.conf.'
         )
 
-        self.parser.add_argument(
+        topology_group = self.parser.add_mutually_exclusive_group(required=False)
+
+        topology_group.add_argument(
             '-n', '--name',
             metavar='DEVICE_NAME',
             required=False,
             help='Show only information about a specified device.'
+        )
+
+        topology_group.add_argument(
+            '-t', '--topology',
+            required=False,
+            action='store_true',
+            help='Get running topology info'
         )
 
     def run(self, current_path: str, argv: List[str]) -> None:
@@ -75,6 +84,8 @@ class LinfoCommand(Command):
         if args['watch']:
             if args['name']:
                 self._get_machine_live_info(lab, args['name'])
+            elif args['topology']:
+                self._get_live_topology_info(lab)
             else:
                 self._get_lab_live_info(lab)
 
@@ -94,9 +105,12 @@ class LinfoCommand(Command):
                 style = None if machine_stats else "red bold"
 
                 self.console.print(create_panel(message, title=f"{args['name']} Information", style=style))
+            elif args['topology']:
+                Kathara.get_instance().update_lab_from_api(lab)
+                self.console.print(create_topology_table(lab))
             else:
                 machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
-                self.console.print(create_table(machines_stats))
+                self.console.print(create_lab_table(machines_stats))
 
     def _get_machine_live_info(self, lab: Lab, machine_name: str) -> None:
         with Live(None, refresh_per_second=12.5, screen=True) as live:
@@ -109,6 +123,17 @@ class LinfoCommand(Command):
 
                 live.update(create_panel(message, title=f"{machine_name} Information", style=style))
 
+    def _get_live_topology_info(self, lab: Lab) -> None:
+        with Live(None, refresh_per_second=1, screen=True) as live:
+            live.update(self.console.status(f"Loading...", spinner="dots"))
+            while True:
+                Kathara.get_instance().update_lab_from_api(lab)
+                table = create_topology_table(lab)
+                if not table:
+                    break
+
+                live.update(table)
+
     def _get_lab_live_info(self, lab: Lab) -> None:
         machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
 
@@ -116,7 +141,7 @@ class LinfoCommand(Command):
             live.update(self.console.status(f"Loading...", spinner="dots"))
             live.refresh_per_second = 1
             while True:
-                table = create_table(machines_stats)
+                table = create_lab_table(machines_stats)
                 if not table:
                     break
 

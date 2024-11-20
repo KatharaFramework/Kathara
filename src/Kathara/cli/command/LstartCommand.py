@@ -4,7 +4,7 @@ import sys
 from typing import List
 
 from ..ui.utils import create_panel, LabMetaHighlighter
-from ..ui.utils import create_table
+from ..ui.utils import create_lab_table
 from ... import utils
 from ...exceptions import PrivilegeError, EmptyLabError
 from ...foundation.cli.command.Command import Command
@@ -234,6 +234,6 @@ class LstartCommand(Command):
                     spinner="dots"
             ) as _:
                 machines_stats = Kathara.get_instance().get_machines_stats(lab_hash=lab.hash)
-                self.console.print(create_table(machines_stats))
+                self.console.print(create_lab_table(machines_stats))
 
         return lab
