@@ -155,6 +155,7 @@ def docker_container(mock_container):
             "kathara_user_hash_test_network": {
                 "Links": None,
                 "DriverOpts": {
+                    'kathara.iface': '0', 'kathara.link': 'A',
                     "kathara.mac_addr": "00:00:00:00:00:01"
                 }
             },
@@ -1371,11 +1372,14 @@ def test_update_lab_from_api_add_link(mock_get_links_api_objects, mock_get_machi
     docker_container.attrs["NetworkSettings"]["Networks"] = {
         "kathara_user_hash_test_network": {
             "Links": None,
-            "DriverOpts": None
+            "DriverOpts": {
+                'kathara.iface': '0', 'kathara.link': 'A',
+            }
         },
         "kathara_user_hash_test_network_b": {
             "Links": None,
             "DriverOpts": {
+                'kathara.iface': '1', 'kathara.link': 'B',
                 "kathara.mac_addr": "00:00:00:00:00:02"
             }
         }
@@ -1427,6 +1431,7 @@ def test_update_lab_from_api_add_remove_link(mock_get_links_api_objects, mock_ge
         "kathara_user_hash_test_network_b": {
             "Links": None,
             "DriverOpts": {
+                'kathara.iface': '1', 'kathara.link': 'B',
                 "kathara.mac_addr": "00:00:00:00:00:02"
             }
         }

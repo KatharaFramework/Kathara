@@ -707,11 +707,15 @@ class DockerManager(IManager):
             device.meta["sysctls"] = container.attrs["HostConfig"]["Sysctls"]
 
             if "none" not in container.attrs["NetworkSettings"]["Networks"]:
-                for network_name, network_options in container.attrs["NetworkSettings"]["Networks"].items():
-                    if network_name == "bridge":
-                        device.add_meta("bridged", True)
-                        continue
 
+                if "bridge" in container.attrs["NetworkSettings"]["Networks"].keys():
+                    device.add_meta("bridged", True)
+                    container.attrs["NetworkSettings"]["Networks"].pop("bridge")
+
+                networks = sorted(container.attrs["NetworkSettings"]["Networks"].items(),
+                                  key=lambda x: x[1]["DriverOpts"]["kathara.iface"])
+
+                for network_name, network_options in networks:
                     network = lab_networks[network_name]
                     link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
                     link.api_object = network
@@ -756,10 +760,13 @@ class DockerManager(IManager):
             # Collision domains declared in the network scenario
             static_links = set([x.link for x in device.interfaces.values()])
             # Interfaces currently attached to the device
+            if "bridge" in container.attrs["NetworkSettings"]["Networks"].keys():
+                container.attrs["NetworkSettings"]["Networks"].pop("bridge")
+
             current_ifaces = [
                 (lab.get_or_new_link(deployed_networks[name].attrs["Labels"]["name"]), options)
-                for name, options in container.attrs["NetworkSettings"]["Networks"].items()
-                if name != "bridge"
+                for name, options in sorted(container.attrs["NetworkSettings"]["Networks"].items(),
+                                  key=lambda x: x[1]["DriverOpts"]["kathara.iface"])
             ]
 
             # Collision domains currently attached to the device
