@@ -37,12 +37,10 @@ class DockerMachineStats(IMachineStats):
         self.container_name: str = machine_api_object.name
         self.user: Optional[str] = machine_api_object.labels['user']
         self.image: str = machine_api_object.image.tags[0]
-        self.interfaces: str = ",".join(sorted(
-            [f"{v['DriverOpts']['kathara.iface']}:{v['DriverOpts']['kathara.link']}" for n, v in
-             machine_api_object.attrs['NetworkSettings']['Networks'].items()]))
         # Dynamic Information
         self.status: Optional[str] = None
         self.pids: Optional[int] = None
+        self.interfaces: str = "-"
         self.cpu_usage: str = "-"
         self.mem_usage: str = "- / -"
         self.mem_percent: str = "-"
@@ -65,6 +63,21 @@ class DockerMachineStats(IMachineStats):
 
         self.status = self.machine_api_object.status
         self.pids = updated_stats['pids_stats']['current'] if 'current' in updated_stats['pids_stats'] else 0
+
+        if self.name == "pc2":
+            print(self.machine_api_object.attrs['NetworkSettings'])
+
+        networks = self.machine_api_object.attrs['NetworkSettings']['Networks']
+        if 'none' in networks:
+            networks.pop('none')
+        if 'bridge' in networks:
+            networks.pop('bridge')
+        if networks:
+            self.interfaces = ", ".join(sorted(
+                [f"{v['DriverOpts']['kathara.iface']}:{v['DriverOpts']['kathara.link']}" for n, v in networks.items()]))
+        else:
+            self.interfaces = "-"
+
         if "system_cpu_usage" in updated_stats["cpu_stats"]:
             cpu_usage = updated_stats["cpu_stats"]["cpu_usage"]["total_usage"] / \
                         updated_stats["cpu_stats"]["system_cpu_usage"]

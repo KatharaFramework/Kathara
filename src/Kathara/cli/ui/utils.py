@@ -92,6 +92,12 @@ def create_topology_table(lab: Lab) -> Optional[RenderableType]:
 
     table = Table(title=ts_header, show_lines=True, box=box.SQUARE_DOUBLE_HEAD)
 
+    if not lab.links:
+        return Group(
+            Text(ts_header, style="italic", justify="center"),
+            create_panel("No Collision Domains Found", style="red bold", justify="center", box=box.DOUBLE)
+        )
+
     for link in sorted(lab.links.values(), key=lambda x: x.name):
         row_data = {
             'LINK NAME': link.name,

@@ -707,7 +707,6 @@ class DockerManager(IManager):
             device.meta["sysctls"] = container.attrs["HostConfig"]["Sysctls"]
 
             if "none" not in container.attrs["NetworkSettings"]["Networks"]:
-
                 if "bridge" in container.attrs["NetworkSettings"]["Networks"].keys():
                     device.add_meta("bridged", True)
                     container.attrs["NetworkSettings"]["Networks"].pop("bridge")
@@ -762,6 +761,9 @@ class DockerManager(IManager):
             # Interfaces currently attached to the device
             if "bridge" in container.attrs["NetworkSettings"]["Networks"].keys():
                 container.attrs["NetworkSettings"]["Networks"].pop("bridge")
+
+            if "none" in container.attrs["NetworkSettings"]["Networks"].keys():
+                container.attrs["NetworkSettings"]["Networks"].pop("none")
 
             current_ifaces = [
                 (lab.get_or_new_link(deployed_networks[name].attrs["Labels"]["name"]), options)
