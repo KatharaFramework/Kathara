@@ -85,7 +85,7 @@ class LinfoCommand(Command):
             if args['name']:
                 self._get_machine_live_info(lab, args['name'])
             elif args['topology']:
-                self._get_live_topology_info(lab)
+                self._get_topology_live_info(lab)
             else:
                 self._get_lab_live_info(lab)
 
@@ -123,7 +123,7 @@ class LinfoCommand(Command):
 
                 live.update(create_panel(message, title=f"{machine_name} Information", style=style))
 
-    def _get_live_topology_info(self, lab: Lab) -> None:
+    def _get_topology_live_info(self, lab: Lab) -> None:
         with Live(None, refresh_per_second=1, screen=True) as live:
             live.update(self.console.status(f"Loading...", spinner="dots"))
             while True:
