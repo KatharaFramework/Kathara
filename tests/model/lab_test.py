@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 from unittest import mock
-from unittest.mock import Mock, call
+from unittest.mock import Mock
 
 import pytest
 from fs.errors import CreateFailed
@@ -12,11 +12,10 @@ from Kathara.model.ExternalLink import ExternalLink
 sys.path.insert(0, './')
 
 from src.Kathara.model.Lab import Lab
-import src.Kathara.setting.Setting as SettingPackage
 from src.Kathara import utils
 from tempfile import mkdtemp
 from src.Kathara.exceptions import MachineOptionError, MachineAlreadyExistsError, MachineNotFoundError, \
-    LinkAlreadyExistsError, LinkNotFoundError, PrivilegeError
+    LinkAlreadyExistsError, LinkNotFoundError, InvocationError
 
 
 @pytest.fixture()
@@ -135,6 +134,58 @@ def test_get_or_new_machine_two_devices(default_scenario: Lab):
     assert len(default_scenario.machines) == 2
     assert default_scenario.machines['pc1']
     assert default_scenario.machines['pc2']
+
+
+def test_remove_machine_invocation_error(default_scenario: Lab):
+    with pytest.raises(InvocationError):
+        default_scenario.remove_machine()
+
+
+def test_remove_machine_machine_not_found(default_scenario: Lab):
+    with pytest.raises(MachineNotFoundError):
+        default_scenario.remove_machine(name="pc1")
+
+
+def test_remove_machine_with_name(default_scenario: Lab):
+    device = default_scenario.new_machine("pc1")
+    link = default_scenario.new_link("A")
+    device.add_interface(link)
+    assert len(default_scenario.machines) == 1
+    assert len(link.machines) == 1
+    default_scenario.remove_machine(name="pc1")
+    assert 'pc1' not in default_scenario.machines
+    assert len(default_scenario.machines) == 0
+    assert len(link.machines) == 0
+    assert 'pc1' not in link.machines
+
+
+def test_remove_machine_with_obj(default_scenario: Lab):
+    device = default_scenario.new_machine("pc1")
+    link = default_scenario.new_link("A")
+    device.add_interface(link)
+    assert len(default_scenario.machines) == 1
+    assert len(link.machines) == 1
+    default_scenario.remove_machine(machine=device)
+    assert 'pc1' not in default_scenario.machines
+    assert len(default_scenario.machines) == 0
+    assert len(link.machines) == 0
+    assert 'pc1' not in link.machines
+
+
+def test_remove_machine_two_device_on_link(default_scenario: Lab):
+    device = default_scenario.new_machine("pc1")
+    device2 = default_scenario.new_machine("pc2")
+    link = default_scenario.new_link("A")
+    device.add_interface(link)
+    device2.add_interface(link)
+    assert len(default_scenario.machines) == 2
+    assert len(link.machines) == 2
+    default_scenario.remove_machine(name="pc1")
+    assert 'pc1' not in default_scenario.machines
+    assert default_scenario.machines['pc2']
+    assert len(default_scenario.machines) == 1
+    assert len(link.machines) == 1
+    assert 'pc1' not in link.machines
 
 
 def test_new_link(default_scenario: Lab):
