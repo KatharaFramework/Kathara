@@ -155,6 +155,14 @@ class VstartCommand(Command):
             help='Set environment variable for the device.'
         )
         self.parser.add_argument(
+            '--ulimits',
+            dest='ulimits',
+            metavar='KEY=SOFT[:HARD]',
+            nargs='+',
+            required=False,
+            help='Set ulimit for the device.'
+        )
+        self.parser.add_argument(
             '--shell',
             required=False,
             help='Set the shell (sh, bash, etc.) that should be used inside the device.'

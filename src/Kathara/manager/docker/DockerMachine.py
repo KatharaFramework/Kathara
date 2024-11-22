@@ -188,20 +188,6 @@ class DockerMachine(object):
 
         EventDispatcher.get_instance().dispatch("machine_deployed", item=machine)
 
-    def _create_ulimit_instances(self, ulimits: Optional[Dict[str, Dict[str, int]]] = None) -> List[Ulimit]:
-        """Create an array of Ulimit instances from the ulimits dictionary
-        Args:
-            ulimits (Optional[Dict[str, Dict[str, int]]]): The ulimits dictionary.
-        Returns:
-            List[Ulimit]: A list of Ulimit instances.
-        """
-        ulimit_list = []
-        if ulimits:
-            for key, value in ulimits.items():
-                ulimit_instance = Ulimit(name=key, soft=value["soft"], hard=value["hard"])
-                ulimit_list.append(ulimit_instance)
-        return ulimit_list
-
     def create(self, machine: Machine) -> None:
         """Create a Docker container representing the device and assign it to machine.api_object.
 
@@ -225,7 +211,7 @@ class DockerMachine(object):
         image = machine.get_image()
         memory = machine.get_mem()
         cpus = machine.get_cpu(multiplier=1000000000)
-        ulimits = self._create_ulimit_instances(machine.get_ulimits())
+        ulimits = [Ulimit(name=k, soft=v["soft"], hard=v["hard"]) for k, v in machine.get_ulimits().items()]
 
         ports_info = machine.get_ports()
         ports = None

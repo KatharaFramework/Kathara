@@ -8,10 +8,10 @@ kathara-vstart(1) -- Start a new Kathara device
 [`-h`] [`--noterminals` | `--terminals` | `--privileged` | `--num_terms` <NUM_TERMS>]  
 [`--eth` <N:CD[/MAC_ADDR]> [<N:CD[/MAC_ADDR]> ...]]  
 [`-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]] [`--mem` <MEM>]  
-[`--cpus` <CPUS>] [`-i` <IMAGE>] [`--no-hosthome` \| `--hosthome`]
+[`--cpus` <CPUS>] [`-i` <IMAGE>] [`--no-hosthome` \| `--hosthome`]  
 [`--xterm` <XTERM>] [`--print`] [`--bridged`]  
-[--port <[HOST\:]GUEST[/PROTOCOL]> [<[HOST\:]GUEST[/PROTOCOL]> ...]] [--env <ENV> [<ENV> ...]] [--sysctl <SYSCTL> [<SYSCTL> ...]]
-[`--shell` <SHELL>]  
+[`--port` <[HOST\:]GUEST[/PROTOCOL]> [<[HOST\:]GUEST[/PROTOCOL]> ...]] [`--env` <ENV> [<ENV> ...]] 
+[`--sysctl` <SYSCTL> [<SYSCTL> ...]] [`--ulimits` <KEY=SOFT[\:HARD]> [<KEY=SOFT[\:HARD]> ...]] [`--shell` <SHELL>]  
 
 ## DESCRIPTION
 
@@ -108,6 +108,12 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
 
 * `--env` <ENV> [<ENV> ...]:
     Set an environment variable for the device. The format is: ENV_NAME=ENV_VALUE.
+
+* `--ulimits` <KEY=SOFT[\:HARD]> [<KEY=SOFT[\:HARD]> ...]:
+    Set a ulimit for the device. 
+    
+    You can either only the SOFT limit, or both SOFT and HARD limit.
+    When HARD is specified, it must be greater than SOFT.
 
 * `--num_terms` <NUM_TERMS>:
     Choose the number of terminals to open for the device.
