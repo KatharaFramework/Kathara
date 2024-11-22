@@ -240,14 +240,14 @@ def test_run_with_force_lab(mock_setting_get_instance, mock_parse_lab, mock_pars
         )
 
 
-@mock.patch("src.Kathara.cli.command.LstartCommand.create_table")
+@mock.patch("src.Kathara.cli.command.LstartCommand.create_lab_table")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.parser.netkit.DepParser.DepParser.parse")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 def test_run_with_list(mock_setting_get_instance, mock_parse_lab, mock_parse_dep, mock_docker_manager,
-                       mock_manager_get_instance, mock_create_table, test_lab, mock_setting):
+                       mock_manager_get_instance, mock_create_lab_table, test_lab, mock_setting):
     mock_parse_lab.return_value = test_lab
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
@@ -267,7 +267,7 @@ def test_run_with_list(mock_setting_get_instance, mock_parse_lab, mock_parse_dep
             test_lab, selected_machines=set(), excluded_machines=set()
         )
         mock_docker_manager.get_machines_stats.assert_called_once_with(lab_hash=test_lab.hash)
-        mock_create_table.assert_called_once_with(stats)
+        mock_create_lab_table.assert_called_once_with(stats)
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
