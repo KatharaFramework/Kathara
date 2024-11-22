@@ -12,12 +12,12 @@ from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
 from .. import utils
 from ..exceptions import LinkNotFoundError, MachineNotFoundError, MachineAlreadyExistsError, LinkAlreadyExistsError
-from ..foundation.model.FilesystemMixin import FilesystemMixin
+from ..foundation.model.LabFilesystemMixin import LabFilesystemMixin
 
 LAB_METADATA: List[str] = ["LAB_NAME", "LAB_DESCRIPTION", "LAB_VERSION", "LAB_AUTHOR", "LAB_EMAIL", "LAB_WEB"]
 
 
-class Lab(FilesystemMixin):
+class Lab(LabFilesystemMixin):
     """A Kathara network scenario, containing information about devices and collision domains.
 
     Attributes:
