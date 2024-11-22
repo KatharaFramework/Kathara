@@ -283,45 +283,56 @@ def test_add_meta_overwrite_port(default_device: Machine):
     assert default_device.meta["ports"][(3000, "tcp")] == 5000
     assert result == 4000
 
+
 def test_add_meta_ulimit(default_device):
     default_device.add_meta("ulimit", "nofile=1024:2048")
     assert default_device.meta['ulimits']['nofile'] == {'soft': 1024, 'hard': 2048}
+
 
 def test_add_meta_ulimit_soft_only(default_device):
     default_device.add_meta("ulimit", "nofile=1024")
     assert default_device.meta['ulimits']['nofile'] == {'soft': 1024, 'hard': 1024}
 
+
 def test_add_meta_ulimit_negative_value(default_device):
     default_device.add_meta("ulimit", "memlock=-1")
     assert default_device.meta['ulimits']['memlock'] == {'soft': -1, 'hard': -1}
+
 
 def test_add_meta_ulimit_invalid_format(default_device):
     with pytest.raises(MachineOptionError):
         default_device.add_meta("ulimit", "nofile=1024:2048:4096")
 
+
 def test_add_meta_ulimit_not_format_exception(default_device):
     with pytest.raises(MachineOptionError):
         default_device.add_meta("ulimit", "nofile1024")
+
 
 def test_add_meta_ulimit_soft_greater_than_hard(default_device):
     default_device.add_meta("ulimit", "nofile=2048:1024")
     assert default_device.meta['ulimits']['nofile'] == {'soft': 1024, 'hard': 1024}
 
+
 def test_add_meta_ulimit_soft_unlimited_hard_limited(default_device):
     with pytest.raises(MachineOptionError):
         default_device.add_meta("ulimit", "nofile=-1:1024")
+
 
 def test_add_meta_ulimit_soft_limited_hard_unlimited(default_device):
     default_device.add_meta("ulimit", "nofile=2048:-1")
     assert default_device.meta['ulimits']['nofile'] == {'soft': 2048, 'hard': -1}
 
+
 def test_add_meta_ulimit_soft_and_hard_unlimited(default_device):
     default_device.add_meta("ulimit", "nofile=-1:-1")
     assert default_device.meta['ulimits']['nofile'] == {'soft': -1, 'hard': -1}
 
+
 def test_add_meta_ulimit_invalid_value(default_device):
     with pytest.raises(MachineOptionError):
         default_device.add_meta("ulimit", "nofile=1024:-2")
+
 
 #
 # TEST: check

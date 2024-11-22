@@ -155,7 +155,7 @@ class VstartCommand(Command):
             help='Set environment variable for the device.'
         )
         self.parser.add_argument(
-            '--ulimits',
+            '--ulimit',
             dest='ulimits',
             metavar='KEY=SOFT[:HARD]',
             nargs='+',

@@ -1,4 +1,3 @@
-import os
 import sys
 from unittest import mock
 
@@ -35,7 +34,7 @@ def default_device_args():
     args = {
         "terminals": None, "privileged": None, "num_terms": None, "eths": None, "exec_commands": None, "mem": None,
         "cpus": None, "image": None, "hosthome_mount": None, "xterm": None, "dry_mode": False, "bridged": False,
-        "ports": None, "sysctls": None, "envs": None, "shell": None
+        "ports": None, "sysctls": None, "envs": None, "ulimits": None, "shell": None
     }
     return args
 
@@ -606,6 +605,31 @@ def test_run_with_shell(mock_docker_manager, mock_manager_get_instance, mock_set
         assert mock_setting.open_terminals
         assert mock_setting.terminal == '/usr/bin/xterm'
         assert mock_setting.device_shell == '/test/shell'
+        mock_add_option.assert_any_call('hosthome_mount', None)
+        mock_add_option.assert_any_call('shared_mount', False)
+        mock_add_option.assert_any_call('privileged_machines', None)
+        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+        assert not mock_connect_machine_to_link.called
+        mock_docker_manager.deploy_lab.assert_called_once()
+
+
+@mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
+@mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_ulimit(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                         mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                         default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    mock_setting_get_instance.return_value = mock_setting
+    default_device_args['ulimits'] = ['testlimit=1:2', 'testlimitsoft=5']
+    command = VstartCommand()
+    with mock.patch.object(Lab, "add_option") as mock_add_option:
+        command.run('.', ['-n', 'pc1', '--ulimit', 'testlimit=1:2', 'testlimitsoft=5'])
+        assert mock_setting.open_terminals
+        assert mock_setting.terminal == '/usr/bin/xterm'
+        assert mock_setting.device_shell == '/usr/bin/bash'
         mock_add_option.assert_any_call('hosthome_mount', None)
         mock_add_option.assert_any_call('shared_mount', False)
         mock_add_option.assert_any_call('privileged_machines', None)
