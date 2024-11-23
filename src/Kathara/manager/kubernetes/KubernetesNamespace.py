@@ -5,16 +5,20 @@ from kubernetes import client, watch
 from kubernetes.client.api import core_v1_api
 from kubernetes.client.rest import ApiException
 
+from .KubernetesSecret import KubernetesSecret, DOCKERCONFIGJSON_SECRET_NAME
+from ...setting.Setting import Setting
 from ...model.Lab import Lab
 
 
 class KubernetesNamespace(object):
     """Class responsible for interacting with Kubernetes namespaces."""
 
-    __slots__ = ['client']
+    __slots__ = ['client', 'kubernetes_secret']
 
-    def __init__(self) -> None:
+    def __init__(self, kubernetes_secret: KubernetesSecret) -> None:
         self.client: core_v1_api.CoreV1Api = core_v1_api.CoreV1Api()
+
+        self.kubernetes_secret = kubernetes_secret
 
     def create(self, lab: Lab) -> Optional[client.V1Namespace]:
         """Return a Kubernetes namespace from a Kathara network scenario.
@@ -32,6 +36,9 @@ class KubernetesNamespace(object):
         try:
             self.client.create_namespace(namespace_definition)
             self._wait_namespace_creation(lab.hash)
+            docker_config_json = Setting.get_instance().docker_config_json
+            if docker_config_json:
+                self.kubernetes_secret.create_dockerconfigjson_secret(lab.hash, DOCKERCONFIGJSON_SECRET_NAME, docker_config_json)
         except ApiException:
             return None
 

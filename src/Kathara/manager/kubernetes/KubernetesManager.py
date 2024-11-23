@@ -10,6 +10,7 @@ from .KubernetesConfig import KubernetesConfig
 from .KubernetesLink import KubernetesLink
 from .KubernetesMachine import KubernetesMachine
 from .KubernetesNamespace import KubernetesNamespace
+from .KubernetesSecret import KubernetesSecret
 from .stats.KubernetesLinkStats import KubernetesLinkStats
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
@@ -25,12 +26,13 @@ from ...utils import pack_files_for_tar, check_required_single_not_none_var, che
 class KubernetesManager(IManager):
     """Class responsible for interacting with Kubernetes API."""
 
-    __slots__ = ['k8s_namespace', 'k8s_machine', 'k8s_link']
+    __slots__ = ['k8s_secret', 'k8s_namespace', 'k8s_machine', 'k8s_link']
 
     def __init__(self) -> None:
         KubernetesConfig.load_kube_config()
 
-        self.k8s_namespace: KubernetesNamespace = KubernetesNamespace()
+        self.k8s_secret: KubernetesSecret = KubernetesSecret()
+        self.k8s_namespace: KubernetesNamespace = KubernetesNamespace(self.k8s_secret)
         self.k8s_machine: KubernetesMachine = KubernetesMachine(self.k8s_namespace)
         self.k8s_link: KubernetesLink = KubernetesLink(self.k8s_namespace)
 
@@ -339,6 +341,7 @@ class KubernetesManager(IManager):
         if all_users:
             logging.warning("User-specific options have no effect on Megalos.")
 
+        self.k8s_secret.wipe()
         self.k8s_namespace.wipe()
 
     def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
