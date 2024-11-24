@@ -89,8 +89,10 @@ class KatharaEntryPoint(object):
 
         try:
             current_path = os.getcwd()
-            command_object.run(current_path, sys.argv[2:])
+            exit_code = command_object.run(current_path, sys.argv[2:])
             unregister_cli_events()
+
+            sys.exit(exit_code)
         except KeyboardInterrupt:
             if args.command not in ['exec', 'linfo', 'list', 'settings']:
                 logging.warning("You interrupted Kathara during a command. The system may be in an inconsistent "

@@ -475,20 +475,19 @@ def test_run_with_dry_run(mock_docker_manager, mock_manager_get_instance, mock_s
     mock_setting_get_instance.return_value = mock_setting
     default_device_args['dry_mode'] = True
     command = VstartCommand()
-    with pytest.raises(SystemExit):
-        with mock.patch.object(Lab, "add_option") as mock_add_option:
-            command.run('.', ['-n', 'pc1', '--dry-run'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        assert not mock_add_option.called
-        assert not mock_get_or_new_machine.called
-        assert not mock_connect_machine_to_link.called
-        assert not mock_docker_manager.deploy_lab.called
+    with mock.patch.object(Lab, "add_option") as mock_add_option:
+        code = command.run('.', ['-n', 'pc1', '--dry-run'])
+    assert mock_setting.open_terminals
+    assert mock_setting.terminal == '/usr/bin/xterm'
+    assert mock_setting.device_shell == '/usr/bin/bash'
+    assert not mock_add_option.called
+    assert not mock_get_or_new_machine.called
+    assert not mock_connect_machine_to_link.called
+    assert not mock_docker_manager.deploy_lab.called
+    assert code == 0
 
 
-@mock.patch(
-    "src.Kathara.model.Lab.Lab.connect_machine_to_link")
+@mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")

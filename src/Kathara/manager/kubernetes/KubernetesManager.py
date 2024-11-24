@@ -11,6 +11,7 @@ from .KubernetesLink import KubernetesLink
 from .KubernetesMachine import KubernetesMachine
 from .KubernetesNamespace import KubernetesNamespace
 from .KubernetesSecret import KubernetesSecret
+from .exec_stream.KubernetesExecStream import KubernetesExecStream
 from .stats.KubernetesLinkStats import KubernetesLinkStats
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
@@ -411,7 +412,7 @@ class KubernetesManager(IManager):
 
     def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
              lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False,
-             stream: bool = True) -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
+             stream: bool = True) -> Union[KubernetesExecStream, Tuple[bytes, bytes, int]]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -427,12 +428,12 @@ class KubernetesManager(IManager):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to wait
                 for each retry. Default is False.
-           stream (bool): If True, return a generator object containing the command output. If False,
+           stream (bool): If True, return a KubernetesExecStream object. If False,
                 returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
-             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
+            Union[KubernetesExecStream, Tuple[bytes, bytes, int]]: A KubernetesExecStream object or
+            a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
@@ -453,7 +454,7 @@ class KubernetesManager(IManager):
         return self.k8s_machine.exec(lab_hash, machine_name, command, stderr=True, tty=False, is_stream=stream)
 
     def exec_obj(self, machine: Machine, command: Union[List[str], str], wait: Union[bool, Tuple[int, float]] = False,
-                 stream: bool = True) -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
+                 stream: bool = True) -> Union[KubernetesExecStream, Tuple[bytes, bytes, int]]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -463,12 +464,12 @@ class KubernetesManager(IManager):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to wait
                 for each retry. Default is False.
-            stream (bool): If True, return a generator object containing the command output. If False,
+            stream (bool): If True, return a KubernetesExecStream object. If False,
                 returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
-             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
+            Union[KubernetesExecStream, Tuple[bytes, bytes, int]]: A KubernetesExecStream object or
+            a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.

@@ -33,7 +33,7 @@ class VcleanCommand(Command):
             help='The name of the device to clean.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -44,3 +44,5 @@ class VcleanCommand(Command):
         )
 
         Kathara.get_instance().undeploy_lab(lab_name=lab.name, selected_machines={args['name']})
+
+        return 0

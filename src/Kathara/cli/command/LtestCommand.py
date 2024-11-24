@@ -1,7 +1,6 @@
 import argparse
 import os
 import shutil
-import sys
 import time
 from typing import List
 
@@ -10,6 +9,8 @@ from .LstartCommand import LstartCommand
 from ... import utils
 from ...exceptions import TestError
 from ...foundation.cli.command.Command import Command
+from ...manager.Kathara import Kathara
+from ...model.Lab import Lab
 from ...strings import strings, wiki_description
 from ...test.BuiltinTest import BuiltInTest
 from ...test.UserTest import UserTest
@@ -59,7 +60,7 @@ class LtestCommand(Command):
             help='Compares current network scenario state with stored signature.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -74,13 +75,15 @@ class LtestCommand(Command):
                 self.console.print(
                     f"[bold red]\u00d7 Signature for current network scenario already exists."
                 )
-                sys.exit(1)
+                return 1
 
         # Tests run without terminals, no shared and /hosthome dirs.
         new_argv = ["--noterminals", "--no-shared", "--no-hosthome"]
 
         # Start the lab
-        lab = LstartCommand().run(lab_path, new_argv)
+        LstartCommand().run(lab_path, new_argv)
+        lab = Lab(name=None, path=lab_path)
+        Kathara.get_instance().update_lab_from_api(lab)
 
         if args['wait']:
             try:
@@ -129,4 +132,6 @@ class LtestCommand(Command):
 
         if args['verify']:
             if not builtin_test_passed or not user_test_passed:
-                sys.exit(1)
+                return 1
+
+        return 0

@@ -70,7 +70,7 @@ class LinfoCommand(Command):
             help='Get running topology info'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -89,11 +89,12 @@ class LinfoCommand(Command):
             else:
                 self._get_lab_live_info(lab)
 
-            return
+            return 0
 
         if args['conf']:
             self._get_conf_info(lab, machine_name=args['name'])
-            return
+
+            return 0
 
         with self.console.status(
                 f"Loading...",
@@ -111,6 +112,8 @@ class LinfoCommand(Command):
             else:
                 machines_stats = Kathara.get_instance().get_machines_stats(lab.hash)
                 self.console.print(create_lab_table(machines_stats))
+
+        return 0
 
     def _get_machine_live_info(self, lab: Lab, machine_name: str) -> None:
         with Live(None, refresh_per_second=12.5, screen=True) as live:

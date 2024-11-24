@@ -32,7 +32,7 @@ class CheckCommand(Command):
             help='Show a help message and exit.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
 
         self.console.print(create_panel("System Check", style="blue bold", justify="center"))
@@ -74,3 +74,6 @@ class CheckCommand(Command):
                 self.console.print("[bold green]\u2713 Container run successfully.")
             except Exception as e:
                 self.console.print(f"[bold red]\u00d7 Running container failed: {str(e)}")
+                return 1
+
+        return 0

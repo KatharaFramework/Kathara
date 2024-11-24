@@ -125,7 +125,7 @@ class LrestartCommand(Command):
             help='Restarts only specified devices.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -138,3 +138,5 @@ class LrestartCommand(Command):
 
         LcleanCommand().run(current_path, lclean_argv)
         LstartCommand().run(current_path, argv)
+
+        return 0

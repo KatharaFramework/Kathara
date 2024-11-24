@@ -949,7 +949,7 @@ def test_get_lab_from_api_lab_name_all_info(mock_get_links_api_objects, mock_get
     assert kubernetes_pod_2.metadata.labels["name"] in lab.machines
     reconstructed_device = lab.get_or_new_machine(kubernetes_pod_2.metadata.labels["name"])
     assert "privileged" not in reconstructed_device.meta
-    assert reconstructed_device.meta["image"] == "test_image2"
+    assert reconstructed_device.meta["image"] == "docker.io/test_image2"
     assert reconstructed_device.meta["shell"] == "/bin/bash"
     assert reconstructed_device.meta["mem"] == "64M"
     assert reconstructed_device.meta["cpu"] == 1.0
@@ -976,7 +976,7 @@ def test_get_lab_from_api_lab_hash_all_info(mock_get_links_api_objects, mock_get
     assert kubernetes_pod_2.metadata.labels["name"] in lab.machines
     reconstructed_device = lab.get_or_new_machine(kubernetes_pod_2.metadata.labels["name"])
     assert "privileged" not in reconstructed_device.meta
-    assert reconstructed_device.meta["image"] == "test_image2"
+    assert reconstructed_device.meta["image"] == "docker.io/test_image2"
     assert reconstructed_device.meta["shell"] == "/bin/bash"
     assert reconstructed_device.meta["mem"] == "64M"
     assert reconstructed_device.meta["cpu"] == 1.0
@@ -999,7 +999,7 @@ def test_get_lab_from_api_lab_name_empty_meta(mock_get_links_api_objects, mock_g
     assert kubernetes_empty_pod.metadata.labels["name"] in lab.machines
     reconstructed_device = lab.get_or_new_machine(kubernetes_empty_pod.metadata.labels["name"])
     assert "privileged" not in reconstructed_device.meta
-    assert reconstructed_device.meta["image"] == "test_image"
+    assert reconstructed_device.meta["image"] == "docker.io/test_image"
     assert reconstructed_device.meta["shell"] == "/bin/bash"
     assert "mem" not in reconstructed_device.meta
     assert "cpu" not in reconstructed_device.meta
@@ -1058,6 +1058,8 @@ def test_get_machines_stats_no_labs(mock_get_machines_stats, kubernetes_manager)
 #
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesManager.KubernetesManager.get_machines_stats")
 def test_get_machine_stats_lab_hash(mock_get_machines_stats, default_device, kubernetes_manager):
+    default_device.api_object.metadata.annotations = {'k8s.v1.cni.cncf.io/networks': json.dumps([])}
+
     mock_get_machines_stats.return_value = iter([{"test_device": KubernetesMachineStats(default_device.api_object)}])
     next(kubernetes_manager.get_machine_stats(machine_name="test_device", lab_hash="lab_hash"))
     mock_get_machines_stats.assert_called_once_with(lab_hash="lab_hash", machine_name="test_device")
@@ -1065,6 +1067,8 @@ def test_get_machine_stats_lab_hash(mock_get_machines_stats, default_device, kub
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesManager.KubernetesManager.get_machines_stats")
 def test_get_machine_stats_lab_name(mock_get_machines_stats, default_device, kubernetes_manager):
+    default_device.api_object.metadata.annotations = {'k8s.v1.cni.cncf.io/networks': json.dumps([])}
+
     mock_get_machines_stats.return_value = iter([{"test_device": KubernetesMachineStats(default_device.api_object)}])
     next(kubernetes_manager.get_machine_stats(machine_name="test_device", lab_name="lab_name"))
     mock_get_machines_stats.assert_called_once_with(lab_hash=generate_urlsafe_hash("lab_name").lower(),
@@ -1073,6 +1077,8 @@ def test_get_machine_stats_lab_name(mock_get_machines_stats, default_device, kub
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesManager.KubernetesManager.get_machines_stats")
 def test_get_machine_stats_lab_obj(mock_get_machines_stats, default_device, kubernetes_manager, two_device_scenario):
+    default_device.api_object.metadata.annotations = {'k8s.v1.cni.cncf.io/networks':  json.dumps([])}
+
     mock_get_machines_stats.return_value = iter([{"test_device": KubernetesMachineStats(default_device.api_object)}])
     next(kubernetes_manager.get_machine_stats(machine_name="test_device", lab=two_device_scenario))
     mock_get_machines_stats.assert_called_once_with(lab_hash=two_device_scenario.hash.lower(),

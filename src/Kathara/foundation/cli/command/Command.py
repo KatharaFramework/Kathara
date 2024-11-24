@@ -23,7 +23,7 @@ class Command(ABC):
         )
 
     @abstractmethod
-    def run(self, current_path: str, argv: List[str]) -> Any:
+    def run(self, current_path: str, argv: List[str]) -> int:
         raise NotImplementedError("You must implement `run` method.")
 
     def parse_args(self, argv: List[str]) -> None:
