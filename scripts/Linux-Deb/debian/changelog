@@ -1,3 +1,13 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
-    * Adding the possibility to change ulimit parameters for devices
+
+    * Add "--topology" argument to "kathara linfo" that displays a list of collision domains and the devices connected to each of them
+    * "kathara linfo" now displays a column with the connected interfaces of each device
+    * "kathara exec" now returns the exact exit code of the command
+    * API Improvements in the "Lab" object
+    * (Docker) Fix "rp_filter" sysctl assigment on Docker Engine >= v26.0.0
+    * (Docker) Add the possibility to specify "ulimits" in network scenario metadata (thanks to g4br-i)
+    * (Docker) Fix compatibility with docker-io version numbers
+    * (Kubernetes) Add the support to private image registries through the "docker.json" file (thanks to Giovanni Barbiero)
+    * Minor bug errors
+
  -- Kathara Team <contact@kathara.org>  __DATE__
