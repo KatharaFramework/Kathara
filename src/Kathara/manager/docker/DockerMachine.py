@@ -15,6 +15,7 @@ from docker.types import Ulimit
 from docker.utils import version_lt, version_gte
 
 from .DockerImage import DockerImage
+from .exec_stream.DockerExecStream import DockerExecStream
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
@@ -669,7 +670,7 @@ class DockerMachine(object):
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], user: str = None,
              tty: bool = True, wait: Union[bool, Tuple[int, float]] = False, stream: bool = True) \
-            -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
+            -> Union[DockerExecStream, Tuple[bytes, bytes, int]]:
         """Execute the command on the Docker container specified by the lab_hash and the machine_name.
 
         Args:
@@ -682,12 +683,12 @@ class DockerMachine(object):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to
                 wait for each retry. Default is False.
-            stream (bool): If True, return a generator object containing the stdout and the stderr of the command.
+            stream (bool): If True, return a DockerExecStream object.
                 If False, returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-             Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
-             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
+             Union[DockerExecStream, Tuple[bytes, bytes, int]]: A DockerExecStream object or
+             a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             MachineNotRunningError: If the specified device is not running.
@@ -730,7 +731,7 @@ class DockerMachine(object):
                                      )
 
         if stream:
-            return exec_result['output']
+            return DockerExecStream(exec_result['output'], exec_result['Id'], self.client)
 
         return exec_result['output'][0], exec_result['output'][1], exec_result['exit_code']
 
@@ -759,10 +760,12 @@ class DockerMachine(object):
             demux (bool): Return stdout and stderr separately
 
         Returns:
-            (Dict): A dict of (exit_code, output)
+            (Dict): A dict of (exit_code, Id, output)
                 exit_code: (int):
                     Exit code for the executed command or ``None`` if
                     either ``stream`` or ``socket`` is ``True``.
+                Id: (str):
+                    The exec id from Docker.
                 output: (generator, bytes, or tuple):
                     If ``stream=True``, a generator yielding response chunks.
                     If ``socket=True``, a socket object for the connection.
@@ -805,9 +808,9 @@ class DockerMachine(object):
                 raise MachineBinaryError(matches.group(3) or matches.group(4), container.labels['name'])
 
         if socket or stream:
-            return {'exit_code': None, 'output': exec_output}
+            return {'exit_code': None, 'Id': resp['Id'], 'output': exec_output}
 
-        return {'exit_code': int(exit_code) if exit_code is not None else None, 'output': exec_output}
+        return {'exit_code': int(exit_code) if exit_code is not None else None, 'Id': resp['Id'], 'output': exec_output}
 
     def _wait_startup_execution(self, container: docker.models.containers.Container,
                                 n_retries: Optional[int] = None, retry_interval: float = 1) -> bool:

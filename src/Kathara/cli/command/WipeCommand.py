@@ -52,7 +52,7 @@ class WipeCommand(Command):
             help='Wipe all Kathara devices and collision domains of all users. MUST BE ROOT FOR THIS OPTION.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -66,3 +66,5 @@ class WipeCommand(Command):
                 raise PrivilegeError("You must be root in order to wipe all Kathara devices of all users.")
 
             Kathara.get_instance().wipe(all_users=bool(args['all']))
+
+        return 0

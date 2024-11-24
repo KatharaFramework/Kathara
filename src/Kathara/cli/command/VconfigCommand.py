@@ -51,7 +51,7 @@ class VconfigCommand(Command):
             help='Specify the collision domain to remove.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -85,3 +85,5 @@ class VconfigCommand(Command):
                 link.api_object = Kathara.get_instance().get_link_api_object(cd_to_remove, lab_name=lab.name)
 
                 Kathara.get_instance().disconnect_machine_from_link(device, link)
+
+        return 0

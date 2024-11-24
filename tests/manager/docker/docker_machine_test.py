@@ -8,6 +8,7 @@ from requests import Response
 
 sys.path.insert(0, './')
 
+from src.Kathara.manager.docker.exec_stream.DockerExecStream import DockerExecStream
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
@@ -1121,6 +1122,76 @@ def test_exec(mock_get_machines_api_objects_by_filters, mock_setting_get_instanc
     assert output == ('cmd_stdout', 'cmd_stderr')
 
 
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+def test_exec_stream(mock_get_machines_api_objects_by_filters, mock_setting_get_instance, docker_machine,
+                     default_device):
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = iter([("cmd_stdout", "cmd_stderr")])
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 0}
+    result = docker_machine.exec(
+        default_device.lab.hash, "test_device", "kathara --help", stream=True
+    )
+
+    assert type(result) == DockerExecStream
+    assert result._stream_api_object == "1234"
+
+    output = next(result)
+
+    assert output == ('cmd_stdout', 'cmd_stderr')
+    assert result.exit_code() == 0
+    docker_machine.client.api.exec_inspect.assert_any_call("1234")
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+def test_exec_stream_error(mock_get_machines_api_objects_by_filters, mock_setting_get_instance, docker_machine,
+                           default_device):
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = iter([("cmd_stdout", "cmd_stderr")])
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 1}
+    result = docker_machine.exec(
+        default_device.lab.hash, "test_device", "kathara --help", stream=True
+    )
+
+    assert type(result) == DockerExecStream
+    assert result._stream_api_object == "1234"
+
+    output = next(result)
+
+    assert output == ('cmd_stdout', 'cmd_stderr')
+    assert result.exit_code() == 1
+    docker_machine.client.api.exec_inspect.assert_any_call("1234")
+
+
 #
 # TEST: _exec_run
 #
@@ -1144,7 +1215,7 @@ def test_exec_run_demux(docker_machine, default_device):
         "1234", detach=False, tty=False, stream=False, socket=False, demux=True
     )
     docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
-    assert result == {'exit_code': 0, 'output': output_iter}
+    assert result == {'exit_code': 0, 'Id': '1234', 'output': output_iter}
 
 
 def test_exec_run_demux_stream(docker_machine, default_device):
@@ -1168,7 +1239,7 @@ def test_exec_run_demux_stream(docker_machine, default_device):
         "1234", detach=False, tty=False, stream=True, socket=False, demux=True
     )
     docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
-    assert result == {'exit_code': None, 'output': output_gen}
+    assert result == {'exit_code': None, 'Id': '1234', 'output': output_gen}
 
 
 def test_exec_run_oci_runtime_error_1_no_demux(docker_machine, default_device):
@@ -1246,7 +1317,7 @@ def test_exec_run_oci_runtime_error_1_stream(docker_machine, default_device):
         "1234", detach=False, tty=False, stream=False, socket=False, demux=True
     )
     docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
-    assert result == {'exit_code': None, 'output': output_gen}
+    assert result == {'exit_code': None, 'Id': '1234', 'output': output_gen}
 
 
 def test_exec_run_oci_runtime_error_2_no_demux(docker_machine, default_device):
@@ -1324,7 +1395,7 @@ def test_exec_run_oci_runtime_error_2_stream(docker_machine, default_device):
         "1234", detach=False, tty=False, stream=False, socket=False, demux=True
     )
     docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
-    assert result == {'exit_code': None, 'output': output_gen}
+    assert result == {'exit_code': None, 'Id': '1234', 'output': output_gen}
 
 
 #

@@ -365,15 +365,14 @@ def test_run_with_dry_mode(mock_setting_get_instance, mock_parse_lab, mock_parse
     mock_setting_get_instance.return_value = mock_setting
     command = LstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        with pytest.raises(SystemExit):
-            command.run('.', ['--dry-mode'])
-            assert mock_setting.open_terminals
-            assert mock_setting.terminal == '/usr/bin/xterm'
-            mock_parse_lab.assert_called_once_with(os.getcwd())
-            mock_parse_dep.assert_called_once_with(os.getcwd())
-            assert not mock_add_option.called
-            assert not mock_docker_manager.deploy_lab.called
-
+        code = command.run('.', ['--dry-mode'])
+        assert mock_setting.open_terminals
+        assert mock_setting.terminal == '/usr/bin/xterm'
+        mock_parse_lab.assert_called_once_with(os.getcwd())
+        mock_parse_dep.assert_called_once_with(os.getcwd())
+        assert not mock_add_option.called
+        assert not mock_docker_manager.deploy_lab.called
+        assert code == 0
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")

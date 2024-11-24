@@ -1,3 +1,4 @@
+import json
 import sys
 from unittest import mock
 from unittest.mock import Mock, call
@@ -38,6 +39,7 @@ def default_device(mock_kubernetes_deployment):
     device.add_meta('real_name', "devprefix-test-device-ec84ad3b")
 
     device.api_object = mock_kubernetes_deployment
+    device.api_object.metadata.annotations = {'k8s.v1.cni.cncf.io/networks': json.dumps([])}
 
     return device
 
@@ -54,6 +56,7 @@ def default_device_b(mock_kubernetes_deployment):
     device.add_meta('real_name', "devprefix-test-device-b-ec84ad3b")
 
     device.api_object = mock_kubernetes_deployment
+    device.api_object.metadata.annotations = {'k8s.v1.cni.cncf.io/networks': json.dumps([])}
 
     return device
 
@@ -70,6 +73,7 @@ def default_device_c(mock_kubernetes_deployment):
     device.add_meta('real_name', "devprefix-test-device-c-ec84ad3b")
 
     device.api_object = mock_kubernetes_deployment
+    device.api_object.metadata.annotations = {'k8s.v1.cni.cncf.io/networks': json.dumps([])}
 
     return device
 

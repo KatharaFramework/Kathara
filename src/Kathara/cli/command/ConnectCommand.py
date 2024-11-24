@@ -56,7 +56,7 @@ class ConnectCommand(Command):
             help='Name of the device to connect to.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -75,3 +75,5 @@ class ConnectCommand(Command):
         Kathara.get_instance().connect_tty(
             machine_name=args['machine_name'], lab_hash=lab.hash, shell=args['shell'], logs=args['logs']
         )
+
+        return 0
