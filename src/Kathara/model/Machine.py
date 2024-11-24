@@ -179,7 +179,7 @@ class Machine(FilesystemMixin):
             return old_value
 
         if name == "env":
-            matches = re.search(r"^(?P<key>\w+)=(?P<value>[^=]*)$", value)
+            matches = re.search(r"^(?P<key>\w+)=(?P<value>.*)$", value)
 
             # Check for valid kv-pair
             if matches:

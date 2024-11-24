@@ -206,10 +206,9 @@ def test_add_meta_env_with_spaces(default_device: Machine):
     assert default_device.meta['envs']['MY_ENV_VAR'] == "spaced value"
 
 
-def test_add_meta_env_double_equal(default_device: Machine):
-    with pytest.raises(MachineOptionError):
-        default_device.add_meta("env", "MY_ENV_VAR=test=not valid")
-
+def test_add_meta_env_complex(default_device: Machine):
+    default_device.add_meta("env", "IFACES=linux:eth0,name=iface/name")
+    assert default_device.meta['envs']['IFACES'] == "linux:eth0,name=iface/name"
 
 def test_add_meta_env_not_format_exception(default_device: Machine):
     with pytest.raises(MachineOptionError):
