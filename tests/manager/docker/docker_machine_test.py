@@ -602,7 +602,7 @@ def test_start_one_mac_addr(docker_machine, default_device, default_link, defaul
         default_device.api_object,
         driver_opt={
             'kathara.iface': str(iface_b.num), 'kathara.link': iface_b.link.name,
-            'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1,net.ipv4.conf.IFNAME.rp_filter=0',
+            'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
             'kathara.mac_addr': expected_mac_addr
         }
     )
@@ -631,7 +631,7 @@ def test_start_two_mac_addr(docker_machine, default_device, default_link, defaul
         default_device.api_object,
         driver_opt={
             'kathara.iface': str(iface_b.num), 'kathara.link': iface_b.link.name,
-            'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1,net.ipv4.conf.IFNAME.rp_filter=0',
+            'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
             'kathara.mac_addr': expected_mac_addr_1
         }
     )
@@ -639,7 +639,7 @@ def test_start_two_mac_addr(docker_machine, default_device, default_link, defaul
         default_device.api_object,
         driver_opt={
             'kathara.iface': str(iface_c.num), 'kathara.link': iface_c.link.name,
-            'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1,net.ipv4.conf.IFNAME.rp_filter=0',
+            'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
             'kathara.mac_addr': expected_mac_addr_2
         }
     )
@@ -859,7 +859,7 @@ def test_connect_interface_mac_addr(docker_machine, default_device, default_link
         default_device.api_object,
         driver_opt={
             'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
-            'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1,net.ipv4.conf.IFNAME.rp_filter=0',
+            'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
             'kathara.mac_addr': expected_mac_addr
         }
     )
@@ -908,7 +908,7 @@ def test_create_driver_opt_no_ipv6(docker_machine, default_device, default_link)
     driver_opt = docker_machine._create_driver_opt(default_device, interface)
     assert driver_opt == {
         'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
-        'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1,net.ipv4.conf.IFNAME.rp_filter=0',
+        'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
     }
 
 
@@ -918,7 +918,7 @@ def test_create_driver_opt_mac_address(docker_machine, default_device, default_l
     driver_opt = docker_machine._create_driver_opt(default_device, interface)
     assert driver_opt == {
         'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
-        'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1,net.ipv4.conf.IFNAME.rp_filter=0',
+        'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
         'kathara.mac_addr': '00:00:00:00:00:01'
     }
 
@@ -929,7 +929,7 @@ def test_create_driver_opt_ipv6(docker_machine, default_device, default_link):
     driver_opt = docker_machine._create_driver_opt(default_device, interface)
     assert driver_opt == {
         'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
-        'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=0,net.ipv6.conf.IFNAME.forwarding=1,net.ipv4.conf.IFNAME.rp_filter=0',
+        'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=0,net.ipv6.conf.IFNAME.forwarding=1',
     }
 
 

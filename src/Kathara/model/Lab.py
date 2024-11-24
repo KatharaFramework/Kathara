@@ -340,8 +340,10 @@ class Lab(LabFilesystemMixin):
         if delete_fs:
             if self.fs.exists(f"{name}.startup"):
                 self.fs.remove(f"{name}.startup")
+
             if self.fs.exists(f"{name}.shutdown"):
                 self.fs.remove(f"{name}.shutdown")
+
             if self.fs.exists(name):
                 self.fs.removedir(name)
 

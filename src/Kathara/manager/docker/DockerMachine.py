@@ -387,16 +387,18 @@ class DockerMachine(object):
         """
         driver_opt = {'kathara.iface': str(interface.num), 'kathara.link': interface.link.name}
         if version_gte(self._engine_version, "27.0.0"):
+            sysctl_opts = ["net.ipv4.conf.IFNAME.rp_filter=0"]
+
             if machine.is_ipv6_enabled():
-                driver_opt["com.docker.network.endpoint.sysctls"] = \
-                    "net.ipv6.conf.IFNAME.disable_ipv6=0,net.ipv6.conf.IFNAME.forwarding=1"
+                sysctl_opts.extend(["net.ipv6.conf.IFNAME.disable_ipv6=0", "net.ipv6.conf.IFNAME.forwarding=1"])
             else:
-                driver_opt["com.docker.network.endpoint.sysctls"] = \
-                    "net.ipv6.conf.IFNAME.disable_ipv6=1"
-            driver_opt["com.docker.network.endpoint.sysctls"] = (
-                    driver_opt["com.docker.network.endpoint.sysctls"] + ",net.ipv4.conf.IFNAME.rp_filter=0")
+                sysctl_opts.append("net.ipv6.conf.IFNAME.disable_ipv6=1")
+
+            driver_opt["com.docker.network.endpoint.sysctls"] = ",".join(sysctl_opts)
+
         if interface.mac_address:
             driver_opt['kathara.mac_addr'] = interface.mac_address
+
         return driver_opt
 
     @staticmethod
