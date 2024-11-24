@@ -304,7 +304,7 @@ class KubernetesMachine(object):
             logging.warning('Bridged option is not supported on Megalos. It will be ignored.')
 
         # If any ulimit is defined fot the device throw a warning
-        if "ulimits" in machine.meta:
+        if "ulimits" in machine.meta and len(machine.meta["ulimits"].keys()) > 0:
             logging.warning('Ulimit option is not supported on Megalos. It will be ignored.')
 
         # If any exec command is passed in command line, add it.
@@ -436,7 +436,7 @@ class KubernetesMachine(object):
         pod_annotations = {}
         network_interfaces = []
         for (idx, interface) in machine.interfaces.items():
-            additional_data = {}
+            additional_data = {"kathara.link": interface.link.name}
             if interface.mac_address:
                 additional_data["mac"] = interface.mac_address
 

@@ -20,6 +20,7 @@ class DockerMachineStats(IMachineStats):
         image (str): The Docker Image used for deploying the Docker Container.
         status (Optional[str]): The status of the Docker Container.
         pids (Optional[int]): The number of PIDs associated with the Docker Container.
+        interfaces (str): The interfaces connected to this Docker Container.
         cpu_usage (str): The cpu usage of the Docker Container.
         mem_usage (str): The memory usage of the Docker Container.
         mem_percent (str): The memory usage of the Docker Container as a percentage.
@@ -113,7 +114,7 @@ class DockerMachineStats(IMachineStats):
             "mem_usage": self.mem_usage,
             "mem_percent": self.mem_percent,
             "net_usage": self.net_usage,
-            'interfaces': self.interfaces
+            'interfaces': self.interfaces,
         }
 
     def __repr__(self) -> str:
@@ -134,5 +135,6 @@ class DockerMachineStats(IMachineStats):
         formatted_stats += f"CPU Usage: {self.cpu_usage}\n"
         formatted_stats += f"Memory Usage: {self.mem_usage}\n"
         formatted_stats += f"Network Usage (DL/UL): {self.net_usage}"
+        formatted_stats += f"Interfaces: {self.interfaces}\n"
 
         return formatted_stats

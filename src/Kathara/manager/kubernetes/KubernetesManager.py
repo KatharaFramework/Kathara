@@ -667,7 +667,7 @@ class KubernetesManager(IManager):
             # NOTE: "privileged" and "bridged" are not supported on Megalos
             # NOTE: We cannot rebuild "sysctls", "exec", "ipv6" and "num_terms" meta.
             container = pod.spec.containers[0]
-            device.add_meta("image", container.image.replace('docker.io/', ''))
+            device.add_meta("image", container.image)
             device.add_meta("shell", self.k8s_machine.get_env_var_value_from_pod(pod, "_MEGALOS_SHELL"))
 
             if container.resources.limits and 'memory' in container.resources.limits:
