@@ -72,8 +72,8 @@ chmod g+s %{_libdir}/kathara/kathara
 - "kathara linfo" now displays a column with the connected interfaces of each device
 - "kathara exec" now returns the exact exit code of the command
 - API Improvements in the "Lab" object
-- (Docker) Fix "rp_filter" sysctl assigment on Docker Engine >= v26.0.0
+- (Docker) Fix "rp_filter" sysctl assigment on Docker Engine >= v27.0.0
 - (Docker) Add the possibility to specify "ulimits" in network scenario metadata (thanks to g4br-i)
 - (Docker) Fix compatibility with docker-io version numbers
 - (Kubernetes) Add the support to private image registries through the "docker.json" file (thanks to Giovanni Barbiero)
-- Minor fixes and bug errors
+- Minor bug fixes
