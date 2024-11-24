@@ -30,17 +30,21 @@ def kubernetes_namespace(mock_kubernetes_namespace):
 
 
 @pytest.fixture()
-@mock.patch("kubernetes.client.api.apps_v1_api.AppsV1Api")
-@mock.patch("kubernetes.client.api.core_v1_api.CoreV1Api")
-@mock.patch("src.Kathara.manager.kubernetes.KubernetesConfigMap")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesSecret")
+def kubernetes_secret(mock_kubernetes_secret):
+    mock_kubernetes_secret.create = Mock()
+    return mock_kubernetes_secret
+
+
+@pytest.fixture()
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesNamespace")
-def kubernetes_machine(mock_kubernetes_namespace, mock_config_map, mock_core_v1_api, mock_apps_v1_api):
+def kubernetes_machine(mock_kubernetes_namespace):
     return KubernetesMachine(mock_kubernetes_namespace)
 
 
 @pytest.fixture()
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def kubernetes_manager(mock_setting_get_instance, kubernetes_namespace):
+def kubernetes_manager(mock_setting_get_instance, kubernetes_namespace, kubernetes_secret):
     mock_setting = Mock()
     mock_setting.configure_mock(**{
         'manager': 'kubernetes',
@@ -49,6 +53,7 @@ def kubernetes_manager(mock_setting_get_instance, kubernetes_namespace):
     })
     kube_manager = KubernetesManager()
     kube_manager.k8s_namespace = kubernetes_namespace
+    kube_manager.k8s_secret = kubernetes_secret
     mock_setting_get_instance.return_value = mock_setting
     return kube_manager
 
@@ -279,6 +284,8 @@ def two_device_scenario(kubernetes_pod_1, kubernetes_pod_2):
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.deploy_links")
 def test_deploy_lab(mock_deploy_links, mock_deploy_machines, kubernetes_manager, two_device_scenario):
     kubernetes_manager.deploy_lab(two_device_scenario)
+    kubernetes_manager.k8s_namespace.create.assert_called_once_with(two_device_scenario)
+    kubernetes_manager.k8s_secret.create.assert_called_once_with(two_device_scenario)
     mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links=None, excluded_links=None)
     mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines=None, excluded_machines=None)
 
@@ -289,7 +296,8 @@ def test_deploy_lab(mock_deploy_links, mock_deploy_machines, kubernetes_manager,
 def test_deploy_lab_selected_machines(mock_deploy_links, mock_deploy_machines, mock_namespace_create,
                                       kubernetes_manager, two_device_scenario: Lab):
     kubernetes_manager.deploy_lab(two_device_scenario, selected_machines={"pc1"})
-
+    kubernetes_manager.k8s_namespace.create.assert_called_once_with(two_device_scenario)
+    kubernetes_manager.k8s_secret.create.assert_called_once_with(two_device_scenario)
     mock_deploy_links.assert_called_once_with(two_device_scenario, selected_links={"A", "B"}, excluded_links=None)
     mock_deploy_machines.assert_called_once_with(two_device_scenario, selected_machines={"pc1"}, excluded_machines=None)
 
@@ -300,6 +308,8 @@ def test_deploy_lab_selected_machines_exception(mock_deploy_links, mock_deploy_m
                                                 two_device_scenario: Lab):
     with pytest.raises(MachineNotFoundError):
         kubernetes_manager.deploy_lab(two_device_scenario, selected_machines={"pc3"})
+    assert not kubernetes_manager.k8s_namespace.create.called
+    assert not kubernetes_manager.k8s_secret.create.called
     assert not mock_deploy_machines.called
     assert not mock_deploy_links.called
 
@@ -309,7 +319,8 @@ def test_deploy_lab_selected_machines_exception(mock_deploy_links, mock_deploy_m
 def test_deploy_lab_excluded_machines(mock_deploy_links, mock_deploy_machines, kubernetes_manager,
                                       three_device_scenario: Lab):
     kubernetes_manager.deploy_lab(three_device_scenario, excluded_machines={"pc3"})
-
+    kubernetes_manager.k8s_namespace.create.assert_called_once_with(three_device_scenario)
+    kubernetes_manager.k8s_secret.create.assert_called_once_with(three_device_scenario)
     mock_deploy_links.assert_called_once_with(three_device_scenario, selected_links=None, excluded_links={'C'})
     mock_deploy_machines.assert_called_once_with(
         three_device_scenario, selected_machines=None, excluded_machines={"pc3"}
@@ -322,6 +333,8 @@ def test_deploy_lab_excluded_machines_exception(mock_deploy_links, mock_deploy_m
                                                 two_device_scenario: Lab):
     with pytest.raises(MachineNotFoundError):
         kubernetes_manager.deploy_lab(two_device_scenario, excluded_machines={"pc3"})
+    assert not kubernetes_manager.k8s_namespace.create.called
+    assert not kubernetes_manager.k8s_secret.create.called
     assert not mock_deploy_machines.called
     assert not mock_deploy_links.called
 
@@ -334,7 +347,8 @@ def test_deploy_lab_selected_and_excluded_machines(mock_deploy_links, mock_deplo
         kubernetes_manager.deploy_lab(
             three_device_scenario, selected_machines={"pc1", "pc2"}, excluded_machines={"pc2"}
         )
-
+    assert not kubernetes_manager.k8s_namespace.create.called
+    assert not kubernetes_manager.k8s_secret.create.called
     assert not mock_deploy_machines.called
     assert not mock_deploy_links.called
 
@@ -350,6 +364,7 @@ def test_deploy_machine(mock_deploy_machines, mock_deploy_links, kubernetes_mana
 
     kubernetes_manager.deploy_machine(default_device)
     kubernetes_manager.k8s_namespace.create.assert_called_once_with(default_device.lab)
+    kubernetes_manager.k8s_secret.create.assert_called_once_with(default_device.lab)
     mock_deploy_links.assert_called_once_with(default_device.lab, selected_links={default_link.name})
     mock_deploy_machines.assert_called_once_with(default_device.lab, selected_machines={default_device.name})
 

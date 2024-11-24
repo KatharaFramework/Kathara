@@ -10,6 +10,8 @@ DEFAULTS = {
     "docker_config_json": "Empty String"
 }
 
+DEFAULT_DOCKER_CONFIG_JSON_PATH = "~/.docker/config.json"
+
 
 class KubernetesSettingsAddon(SettingsAddon):
     __slots__ = ['api_server_url', 'api_token', 'host_shared', 'image_pull_policy', 'docker_config_json']

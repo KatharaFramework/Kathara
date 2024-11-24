@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, List
 
 from .. import utils
 from .. import version
-from ..exceptions import HTTPConnectionError, SettingsError, SettingsNotFoundError, InvalidDockerConfigJsonError
+from ..exceptions import HTTPConnectionError, SettingsError, SettingsNotFoundError
 from ..exceptions import InstantiationError
 from ..foundation.setting.SettingsAddon import SettingsAddon
 from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
@@ -292,24 +292,6 @@ class Setting(object):
             raise SettingsError("Terminal Emulator `%s` not valid! Install it before using it." % terminal)
 
         return True
-
-    def check_docker_config_json(self, docker_config_json_path: str) -> None:
-        """Check that the specified Docker Config JSON is valid.
-
-        Args:
-            docker_config_json_path (str): The path to the Docker Config JSON file.
-
-        Returns:
-            None
-
-        Raises:
-            InvalidDockerConfigJsonError: If the Docker Config JSON file is not valid.
-        """
-        with open(docker_config_json_path, 'r') as docker_config_json_file:
-            try:
-                json.load(docker_config_json_file)
-            except ValueError:
-                raise InvalidDockerConfigJsonError(docker_config_json_path)
 
     def load_settings_addon(self) -> None:
         """Load a setting addon to the base settings.

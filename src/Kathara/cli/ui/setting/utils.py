@@ -1,6 +1,4 @@
-from enum import Enum
 from typing import Optional, Callable, Any, Tuple, List
-import base64
 
 from ....exceptions import SettingsError
 from ....setting.Setting import Setting
@@ -8,9 +6,6 @@ from ....trdparty.consolemenu import *
 from ....trdparty.consolemenu import UserQuit
 from ....trdparty.consolemenu.prompt_utils import InputResult
 from ....trdparty.consolemenu.validators.base import BaseValidator
-from ....validator.DockerConfigJsonValidator import DockerConfigJsonValidator
-
-DEFAULT_DOCKER_CONFIG_JSON_PATH = "~/.docker/config.json"
 
 SAVED_STRING = "Saved successfully!\n"
 PRESS_ENTER_STRING = "Press [Enter] to continue."
@@ -38,6 +33,7 @@ def current_string(attribute_name: str, text: Optional[str] = None) -> Callable[
                                         getattr(Setting.get_instance(), attribute_name),
                                         ")" if text else ""
                                         )
+
 
 def current_enabled(attribute_name: str, text: Optional[str] = None) -> Callable[[], str]:
     return lambda: "%sCurrent: %s%s" % (text + " (" if text else "",
@@ -106,12 +102,13 @@ def read_and_validate_value_with_default(prompt_msg: str, validator: BaseValidat
     return answer
 
 
-def read_value(attribute_name: str, validator: BaseValidator, prompt_msg: str, error_msg: str = None) -> None:
-    read_value_with_default(attribute_name, validator, prompt_msg, error_msg)
+def update_value(attribute_name: str, validator: BaseValidator, prompt_msg: str, error_msg: str = None,
+                 callback: Optional[Callable] = None) -> None:
+    update_value_with_default(attribute_name, validator, prompt_msg, error_msg, None, callback)
 
 
-def read_value_with_default(attribute_name: str, validator: BaseValidator, prompt_msg: str, error_msg: str = None,
-                            default_value: Any = None) -> None:
+def update_value_with_default(attribute_name: str, validator: BaseValidator, prompt_msg: str, error_msg: str = None,
+                              default_value: Any = None, callback: Optional[Callable] = None) -> None:
     try:
         answer = read_and_validate_value_with_default(prompt_msg=prompt_msg,
                                                       validator=validator,
@@ -128,31 +125,10 @@ def read_value_with_default(attribute_name: str, validator: BaseValidator, promp
     except UserQuit:
         return
 
-    setattr(Setting.get_instance(), attribute_name, answer.input_string)
+    result_string = callback(answer.input_string) if callback else answer.input_string
+    setattr(Setting.get_instance(), attribute_name, result_string)
     Setting.get_instance().save_to_disk()
 
     print(SAVED_STRING)
 
     Screen().input(PRESS_ENTER_STRING)
-
-
-def read_docker_config_json() -> None:
-    try:
-        answer = read_and_validate_value_with_default(
-            f"Write the path to the Docker Config JSON file: (Default: {DEFAULT_DOCKER_CONFIG_JSON_PATH})",
-            DockerConfigJsonValidator(),
-            default_value=DEFAULT_DOCKER_CONFIG_JSON_PATH
-        )
-        while not answer.validation_result:
-            answer = read_and_validate_value_with_default(
-                f"Write the path to the Docker Config JSON file: (Default: {DEFAULT_DOCKER_CONFIG_JSON_PATH})",
-                DockerConfigJsonValidator(),
-                default_value=DEFAULT_DOCKER_CONFIG_JSON_PATH
-            )
-
-        with open(answer.input_string, 'r') as f:
-            docker_config_json = f.read()
-            docker_config_json = base64.b64encode(docker_config_json.encode()).decode()
-            update_setting_value("docker_config_json", docker_config_json)
-    except UserQuit:
-        return

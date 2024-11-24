@@ -1,5 +1,6 @@
-from ..exceptions import InvalidDockerConfigJsonError
-from ..setting.Setting import Setting
+import json
+import os.path
+
 from ..trdparty.consolemenu.validators.base import BaseValidator
 
 
@@ -9,8 +10,9 @@ class DockerConfigJsonValidator(BaseValidator):
 
     def validate(self, input_string: str) -> bool:
         try:
-            Setting.get_instance().check_docker_config_json(input_string)
+            with open(os.path.expanduser(input_string), 'r') as docker_config_json_file:
+                json.load(docker_config_json_file)
             return True
-        except (OSError, InvalidDockerConfigJsonError) as e:
+        except (OSError, ValueError) as e:
             print(str(e))
             return False

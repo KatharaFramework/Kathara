@@ -21,7 +21,6 @@ from kubernetes.watch import watch
 
 from .KubernetesConfigMap import KubernetesConfigMap
 from .KubernetesNamespace import KubernetesNamespace
-from .KubernetesSecret import DOCKERCONFIGJSON_SECRET_NAME
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
@@ -303,7 +302,7 @@ class KubernetesMachine(object):
         # If bridged is defined for the device, throw a warning.
         if "bridged" in global_machine_metadata or machine.is_bridged():
             logging.warning('Bridged option is not supported on Megalos. It will be ignored.')
-        
+
         # If any ulimit is defined fot the device throw a warning
         if "ulimits" in machine.meta:
             logging.warning('Ulimit option is not supported on Megalos. It will be ignored.')
@@ -483,19 +482,19 @@ class KubernetesMachine(object):
                 )
             ))
 
-        # Add image_pull_secrets if using private registries
-        image_pull_secrets_arg = {}
+        # Add Docker Config JSON for Private Registries
+        image_pull_secrets = []
         if Setting.get_instance().docker_config_json:
-            image_pull_secrets_arg = {"image_pull_secrets":
-                                          [client.V1LocalObjectReference(name=DOCKERCONFIGJSON_SECRET_NAME)]}
+            image_pull_secrets.append(client.V1LocalObjectReference(name='private-registry'))
 
-        pod_spec = client.V1PodSpec(containers=[container_definition],
-                                    hostname=machine.meta['real_name'],
-                                    dns_policy="None",
-                                    dns_config=dns_config,
-                                    volumes=volumes,
-                                    **image_pull_secrets_arg
-                                    )
+        pod_spec = client.V1PodSpec(
+            containers=[container_definition],
+            hostname=machine.meta['real_name'],
+            dns_policy="None",
+            dns_config=dns_config,
+            volumes=volumes,
+            image_pull_secrets=image_pull_secrets
+        )
 
         pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
         selector_rules = client.V1LabelSelector(match_labels=pod_labels)

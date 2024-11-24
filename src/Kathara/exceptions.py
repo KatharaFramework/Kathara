@@ -172,13 +172,3 @@ class DockerPluginError(Exception):
 # Kubernetes Exceptions
 class KubernetesConfigMapError(Exception):
     pass
-
-
-class InvalidDockerConfigJsonError(ValueError):
-    __slots__ = ['docker_config_json_path']
-
-    def __init__(self, docker_config_json_path: str):
-        self.docker_config_json_path: str = docker_config_json_path
-
-    def __str__(self):
-        return f"Invalid Docker Config JSON file: {self.docker_config_json_path}"

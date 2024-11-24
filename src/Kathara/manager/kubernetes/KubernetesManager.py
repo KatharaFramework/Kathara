@@ -31,8 +31,8 @@ class KubernetesManager(IManager):
     def __init__(self) -> None:
         KubernetesConfig.load_kube_config()
 
+        self.k8s_namespace: KubernetesNamespace = KubernetesNamespace()
         self.k8s_secret: KubernetesSecret = KubernetesSecret()
-        self.k8s_namespace: KubernetesNamespace = KubernetesNamespace(self.k8s_secret)
         self.k8s_machine: KubernetesMachine = KubernetesMachine(self.k8s_namespace)
         self.k8s_link: KubernetesLink = KubernetesLink(self.k8s_namespace)
 
@@ -57,6 +57,7 @@ class KubernetesManager(IManager):
         machine.lab.hash = machine.lab.hash.lower()
 
         self.k8s_namespace.create(machine.lab)
+        self.k8s_secret.create(machine.lab)
         self.k8s_link.deploy_links(machine.lab, selected_links={x.link.name for x in machine.interfaces.values()})
         self.k8s_machine.deploy_machines(machine.lab, selected_machines={machine.name})
 
@@ -129,6 +130,7 @@ class KubernetesManager(IManager):
             excluded_links = lab.get_links_from_machines(excluded_machines) - running_links
 
         self.k8s_namespace.create(lab)
+        self.k8s_secret.create(lab)
         try:
             self.k8s_link.deploy_links(lab, selected_links=selected_links, excluded_links=excluded_links)
 
@@ -341,7 +343,6 @@ class KubernetesManager(IManager):
         if all_users:
             logging.warning("User-specific options have no effect on Megalos.")
 
-        self.k8s_secret.wipe()
         self.k8s_namespace.wipe()
 
     def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,

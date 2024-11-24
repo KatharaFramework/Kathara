@@ -3,7 +3,6 @@ from typing import List, BinaryIO, TextIO
 from fs.base import FS
 
 from .FilesystemMixin import FilesystemMixin
-from ...model.Machine import Machine
 
 
 class LabFilesystemMixin(FilesystemMixin):
@@ -16,7 +15,7 @@ class LabFilesystemMixin(FilesystemMixin):
     def __init__(self):
         super().__init__()
 
-    def create_startup_file_from_string(self, machine: Machine, commands_string: str):
+    def create_startup_file_from_string(self, machine: 'Machine', commands_string: str):
         """Create the startup file for the specified device from a string.
 
         Args:
@@ -31,7 +30,7 @@ class LabFilesystemMixin(FilesystemMixin):
         """
         self.create_file_from_string(commands_string, f"{machine.name}.startup")
 
-    def create_startup_file_from_list(self, machine: Machine, commands: List[str]):
+    def create_startup_file_from_list(self, machine: 'Machine', commands: List[str]):
         """Create the startup file for the specified device from a list of strings.
 
         Args:
@@ -46,7 +45,7 @@ class LabFilesystemMixin(FilesystemMixin):
         """
         self.create_file_from_list(commands, f"{machine.name}.startup")
 
-    def create_startup_file_from_path(self, machine: Machine, src_path: str):
+    def create_startup_file_from_path(self, machine: 'Machine', src_path: str):
         """Create the startup file for the specified device from an existing file on the host filesystem.
 
         Args:
@@ -61,7 +60,7 @@ class LabFilesystemMixin(FilesystemMixin):
         """
         self.create_file_from_path(src_path, f"{machine.name}.startup")
 
-    def create_startup_file_from_stream(self, machine: Machine, stream: BinaryIO | TextIO):
+    def create_startup_file_from_stream(self, machine: 'Machine', stream: BinaryIO | TextIO):
         """Create the startup file for a device from a stream.
 
         Args:
@@ -77,7 +76,7 @@ class LabFilesystemMixin(FilesystemMixin):
         """
         self.create_file_from_stream(stream, f"{machine.name}.startup")
 
-    def update_startup_file_from_string(self, machine: Machine, commands_string: str):
+    def update_startup_file_from_string(self, machine: 'Machine', commands_string: str):
         """Append the command_string to the startup file for the specified device.
 
         Args:
@@ -92,7 +91,7 @@ class LabFilesystemMixin(FilesystemMixin):
         """
         self.update_file_from_string(commands_string, f"{machine.name}.startup")
 
-    def update_startup_file_from_list(self, machine: Machine, commands: List[str]):
+    def update_startup_file_from_list(self, machine: 'Machine', commands: List[str]):
         """Append the commands to the startup file for the specified device.
 
         Args:

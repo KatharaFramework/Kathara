@@ -1,9 +1,14 @@
+import base64
+import json
+import os
+
 from . import utils as setting_utils
 from ....foundation.cli.ui.setting.OptionsHandler import OptionsHandler
-from ....setting.addon.KubernetesSettingsAddon import DEFAULTS
+from ....setting.addon.KubernetesSettingsAddon import DEFAULTS, DEFAULT_DOCKER_CONFIG_JSON_PATH
 from ....trdparty.consolemenu import *
 from ....trdparty.consolemenu.items import *
 from ....trdparty.consolemenu.validators.regex import RegexValidator
+from ....validator.DockerConfigJsonValidator import DockerConfigJsonValidator
 
 
 class KubernetesOptionsHandler(OptionsHandler):
@@ -24,7 +29,7 @@ class KubernetesOptionsHandler(OptionsHandler):
         api_server_url_menu.append_item(
             FunctionItem(
                 text=api_server_url_string,
-                function=setting_utils.read_value,
+                function=setting_utils.update_value,
                 args=['api_server_url',
                       RegexValidator(setting_utils.URL_REGEX),
                       'Write a Kubernetes API Server URL:',
@@ -60,7 +65,7 @@ class KubernetesOptionsHandler(OptionsHandler):
         api_token_menu.append_item(
             FunctionItem(
                 text=api_token_string,
-                function=setting_utils.read_value,
+                function=setting_utils.update_value,
                 args=['api_token',
                       RegexValidator(r'^.+$'),
                       'Write a Kubernetes API Token:',
@@ -154,11 +159,11 @@ class KubernetesOptionsHandler(OptionsHandler):
         image_pull_policy_item = SubmenuItem(image_pull_policy_string, image_pull_policy_menu, current_menu)
 
         # Private Registry docker_config_json Option
-        docker_config_json_string = "Private Registry Configuration"
+        docker_config_json_string = "Configure a Docker Private Registry"
         docker_config_json_menu = SelectionMenu(
             strings=[],
             title=docker_config_json_string,
-            subtitle=setting_utils.current_enabled("docker_config_json"),
+            subtitle=setting_utils.current_string("docker_config_json"),
             prologue_text="""Insert the config.json file path containing the configuration to """
                           """access private container registries. The content will be stored as """
                           """a base64 string and it will be used to create a Kubernetes Secret """
@@ -168,10 +173,21 @@ class KubernetesOptionsHandler(OptionsHandler):
             formatter=menu_formatter
         )
 
+        def store_b64_docker_json_callback(result: str) -> str:
+            with open(os.path.expanduser(result), 'r') as docker_config_json_file:
+                return base64.b64encode(json.dumps(json.load(docker_config_json_file)).encode()).decode()
+
         docker_config_json_menu.append_item(
             FunctionItem(
                 text=docker_config_json_string,
-                function=setting_utils.read_docker_config_json,
+                function=setting_utils.update_value_with_default,
+                args=['docker_config_json',
+                      DockerConfigJsonValidator(),
+                      'Write the path to the Docker Config JSON file',
+                      None,
+                      DEFAULT_DOCKER_CONFIG_JSON_PATH,
+                      store_b64_docker_json_callback
+                      ],
                 should_exit=True
             )
         )

@@ -207,7 +207,7 @@ class DockerOptionsHandler(OptionsHandler):
             remote_url_menu.append_item(
                 FunctionItem(
                     text="Insert a remote Docker Daemon URL",
-                    function=setting_utils.read_value,
+                    function=setting_utils.update_value,
                     args=['remote_url',
                           RegexValidator(setting_utils.URL_REGEX),
                           'Write a Docker Daemon URL '
@@ -236,7 +236,7 @@ class DockerOptionsHandler(OptionsHandler):
             cert_path_menu.append_item(
                 FunctionItem(
                     text="Insert a Docker Daemon TLS Cert Path",
-                    function=setting_utils.read_value,
+                    function=setting_utils.update_value,
                     args=['cert_path',
                           RegexValidator(r'^.+$'),
                           'Write a TSL Cert Path:',

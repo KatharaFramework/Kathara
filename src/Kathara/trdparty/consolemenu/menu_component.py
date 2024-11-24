@@ -217,10 +217,12 @@ class MenuHeader(MenuComponent):
         for x in range(0, self.padding.top):
             yield self.row()
         if self.title is not None and self.title != '':
-            yield self.row(content=self.title, align=self.title_align)
+            for line in textwrap.wrap(self.title, width=self.calculate_content_width()):
+                yield self.row(content=line, align=self.title_align)
         if self.subtitle is not None and self.subtitle != '':
             yield self.row()
-            yield self.row(content=self.subtitle, align=self.subtitle_align)
+            for line in textwrap.wrap(self.subtitle, width=self.calculate_content_width()):
+                yield self.row(content=line, align=self.subtitle_align)
         for x in range(0, self.padding.bottom):
             yield self.row()
         if self.show_bottom_border:
