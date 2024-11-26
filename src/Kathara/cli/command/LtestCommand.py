@@ -78,11 +78,11 @@ class LtestCommand(Command):
         if not args['verify']:
             signature_test_path = os.path.join(lab_path, "_test", "signature")
 
-        if os.path.exists(signature_test_path) and not args['rebuild_signature']:
-            self.console.print(
-                f"[bold red]\u00d7 Signature for current network scenario already exists."
-            )
-            return 1
+            if os.path.exists(signature_test_path) and not args['rebuild_signature']:
+                self.console.print(
+                    f"[bold red]\u00d7 Signature for current network scenario already exists."
+                )
+                return 1
 
         # Tests run without terminals, no shared and /hosthome dirs.
         new_argv = ["--noterminals", "--no-shared", "--no-hosthome"]
