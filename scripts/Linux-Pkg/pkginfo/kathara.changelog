@@ -1,6 +1,7 @@
 __DATE__ Kathara Team <******@kathara.org>
 
 * Release v__VERSION__
+    * WARNING: "ltest" command is deprecated. It will be removed in the next release! Please use the "kathara-lab-checker" tool as its replacement with enhanced functionalities.
     * Add "--topology" argument to "kathara linfo" that displays a list of collision domains and the devices connected to each of them
     * "kathara linfo" now displays a column with the connected interfaces of each device
     * "kathara exec" now returns the exact exit code of the command

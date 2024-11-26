@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import shutil
 import time
@@ -61,6 +62,12 @@ class LtestCommand(Command):
         )
 
     def run(self, current_path: str, argv: List[str]) -> int:
+        logging.warning(
+            "The `ltest` command is deprecated and will be removed in the next release. "
+            "Please use the `kathara-lab-checker` tool as its replacement with enhanced functionalities."
+        )
+        logging.warning("For further information, visit: https://github.com/KatharaFramework/kathara-lab-checker")
+
         self.parse_args(argv)
         args = self.get_args()
 
@@ -71,11 +78,11 @@ class LtestCommand(Command):
         if not args['verify']:
             signature_test_path = os.path.join(lab_path, "_test", "signature")
 
-            if os.path.exists(signature_test_path) and not args['rebuild_signature']:
-                self.console.print(
-                    f"[bold red]\u00d7 Signature for current network scenario already exists."
-                )
-                return 1
+        if os.path.exists(signature_test_path) and not args['rebuild_signature']:
+            self.console.print(
+                f"[bold red]\u00d7 Signature for current network scenario already exists."
+            )
+            return 1
 
         # Tests run without terminals, no shared and /hosthome dirs.
         new_argv = ["--noterminals", "--no-shared", "--no-hosthome"]
