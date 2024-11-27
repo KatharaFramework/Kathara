@@ -65,9 +65,6 @@ class DockerMachineStats(IMachineStats):
         self.status = self.machine_api_object.status
         self.pids = updated_stats['pids_stats']['current'] if 'current' in updated_stats['pids_stats'] else 0
 
-        if self.name == "pc2":
-            print(self.machine_api_object.attrs['NetworkSettings'])
-
         networks = self.machine_api_object.attrs['NetworkSettings']['Networks']
         if 'none' in networks:
             networks.pop('none')
