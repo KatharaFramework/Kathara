@@ -210,7 +210,16 @@ class DockerManager(IManager):
                 f"Device `{machine.name}` is already connected to collision domain `{link.name}`."
             )
 
-        interface = machine.add_interface(link, mac_address=mac_address)
+        iface_number = None
+        if machine.is_bridged():
+            if 'bridged_iface' not in machine.meta:
+                machine.add_meta('bridged_iface', int(machine.api_object.labels['bridged_iface']))
+            if machine.meta['bridged_iface'] > max(machine.interfaces.keys()):
+                iface_number = machine.meta['bridged_iface'] + 1
+            else:
+                iface_number = max(machine.interfaces.keys()) + 1
+
+        interface = machine.add_interface(link, mac_address=mac_address, number=iface_number)
 
         self.deploy_link(link)
         self.docker_machine.connect_interface(machine, interface)
@@ -711,6 +720,7 @@ class DockerManager(IManager):
             if "none" not in container.attrs["NetworkSettings"]["Networks"]:
                 if "bridge" in container.attrs["NetworkSettings"]["Networks"].keys():
                     device.add_meta("bridged", True)
+                    device.add_meta("bridged_iface", int(container.labels['bridged_iface']))
                     container.attrs["NetworkSettings"]["Networks"].pop("bridge")
 
                 networks = sorted(container.attrs["NetworkSettings"]["Networks"].items(),
@@ -726,7 +736,8 @@ class DockerManager(IManager):
                         if "kathara.mac_addr" in network_options["DriverOpts"]:
                             iface_mac_addr = network_options["DriverOpts"]["kathara.mac_addr"]
 
-                    device.add_interface(link, mac_address=iface_mac_addr)
+                    device.add_interface(link, mac_address=iface_mac_addr,
+                                         number=int(network_options["DriverOpts"]["kathara.iface"]))
 
         return reconstructed_lab
 
@@ -793,7 +804,8 @@ class DockerManager(IManager):
                     if "kathara.mac_addr" in iface_options["DriverOpts"]:
                         iface_mac_addr = iface_options["DriverOpts"]["kathara.mac_addr"]
 
-                device.add_interface(link, mac_address=iface_mac_addr)
+                device.add_interface(link, mac_address=iface_mac_addr,
+                                     number=int(iface_options["DriverOpts"]["kathara.iface"]))
 
             for link in deleted_links:
                 device.remove_interface(link)

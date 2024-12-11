@@ -125,7 +125,8 @@ def docker_network_b(mock_network):
 def docker_container(mock_container):
     mock_container.reload = Mock()
     mock_container.labels = {
-        "name": "test_container"
+        "name": "test_container",
+        "bridged_iface": "1"
     }
     mock_container.attrs = {"HostConfig": {
         "Privileged": True,

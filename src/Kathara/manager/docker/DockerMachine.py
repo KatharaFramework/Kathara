@@ -246,6 +246,9 @@ class DockerMachine(object):
             first_machine_iface = machine.interfaces[0]
             first_network = first_machine_iface.link.api_object
 
+        if machine.is_bridged():
+            machine.add_meta("bridged_iface", max(machine.interfaces.keys()) + 1 if machine.interfaces else 0)
+
         # If no interfaces are declared in machine, but bridged mode is required, get bridge as first link.
         # Flag that bridged is already connected (because there's another check in `start`).
         if first_machine_iface is None and machine.is_bridged():
@@ -308,6 +311,17 @@ class DockerMachine(object):
         container_name = self.get_container_name(machine.name, machine.lab.hash)
 
         try:
+            labels = {"name": machine.name,
+                      "lab_hash": machine.lab.hash,
+                      "user": utils.get_current_user_name(),
+                      "app": "kathara",
+                      "shell": machine.meta["shell"]
+                      if "shell" in machine.meta
+                      else Setting.get_instance().device_shell
+                      }
+            if machine.is_bridged():
+                labels["bridged_iface"] = str(machine.meta["bridged_iface"])
+
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,
                                                               hostname=machine.name,
@@ -325,14 +339,7 @@ class DockerMachine(object):
                                                               stdin_open=True,
                                                               detach=True,
                                                               volumes=volumes,
-                                                              labels={"name": machine.name,
-                                                                      "lab_hash": machine.lab.hash,
-                                                                      "user": utils.get_current_user_name(),
-                                                                      "app": "kathara",
-                                                                      "shell": machine.meta["shell"]
-                                                                      if "shell" in machine.meta
-                                                                      else Setting.get_instance().device_shell
-                                                                      },
+                                                              labels=labels,
                                                               ulimits=ulimits
                                                               )
         except APIError as e:

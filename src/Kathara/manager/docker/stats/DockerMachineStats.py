@@ -70,6 +70,16 @@ class DockerMachineStats(IMachineStats):
             networks.pop('none')
         if 'bridge' in networks:
             networks.pop('bridge')
+
+        # If the device is bridged, creates a dummy entry for the bridged interface for building the interfaces string
+        if 'bridged_iface' in self.machine_api_object.labels:
+            networks[self.machine_api_object.labels['bridged_iface']] = {
+                'DriverOpts': {
+                    'kathara.iface': self.machine_api_object.labels['bridged_iface'],
+                    'kathara.link': "Bridged",
+                }
+            }
+
         if networks:
             self.interfaces = ", ".join(sorted(
                 [f"{v['DriverOpts']['kathara.iface']}:{v['DriverOpts']['kathara.link']}" for n, v in networks.items()]))

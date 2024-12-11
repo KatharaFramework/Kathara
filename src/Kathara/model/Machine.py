@@ -321,9 +321,17 @@ class Machine(FilesystemMixin):
 
         sorted_interfaces = sorted(self.interfaces.items(), key=lambda kv: kv[0])
 
+        sorted_keys = list(self.interfaces.keys())
+        if 'bridged_iface' in self.meta:
+            sorted_keys = list(self.interfaces.keys())
+            sorted_keys.append(self.meta['bridged_iface'])
+            sorted_keys.sort()
+
+        sorted_keys.sort()
+
         logging.debug("`%s` interfaces are %s." % (self.name, sorted_interfaces))
 
-        for i, (num_iface, _) in enumerate(sorted_interfaces):
+        for i, num_iface in enumerate(sorted_keys):
             if num_iface != i:
                 raise NonSequentialMachineInterfaceError(i, self.name)
 
