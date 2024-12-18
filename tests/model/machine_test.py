@@ -342,6 +342,15 @@ def test_check(default_device: Machine):
     default_device.check()
 
 
+def test_check_with_bridged(default_device: Machine):
+    default_device.add_interface(Link(default_device.lab, "A"), number=0)
+    default_device.add_meta("bridged", True)
+    default_device.add_meta("bridged_iface", 1)
+    default_device.add_interface(Link(default_device.lab, "B"), number=2)
+
+    default_device.check()
+
+
 def test_check_exception(default_device: Machine):
     default_device.add_interface(Link(default_device.lab, "A"), number=2)
     default_device.add_interface(Link(default_device.lab, "B"), number=4)
