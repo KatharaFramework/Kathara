@@ -214,7 +214,7 @@ class DockerManager(IManager):
         if machine.is_bridged():
             if 'bridged_iface' not in machine.meta:
                 machine.add_meta('bridged_iface', int(machine.api_object.labels['bridged_iface']))
-            if machine.meta['bridged_iface'] > max(machine.interfaces.keys()):
+            if not machine.interfaces or machine.meta['bridged_iface'] > max(machine.interfaces.keys()):
                 iface_number = machine.meta['bridged_iface'] + 1
             else:
                 iface_number = max(machine.interfaces.keys()) + 1
