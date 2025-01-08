@@ -4,7 +4,7 @@ from ....foundation.manager.exec_stream.IExecStream import IExecStream
 
 
 class KubernetesExecStream(IExecStream):
-    """Kubernetes-specific class for handling the commands stream exec
+    """Kubernetes-specific class for handling the commands stream exec.
 
     Attributes:
         _stream (Generator): The generator yielding the output of the stream exec.
