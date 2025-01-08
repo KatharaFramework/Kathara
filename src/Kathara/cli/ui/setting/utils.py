@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Optional, Callable, Any, Tuple, List
 
 from ....exceptions import SettingsError
@@ -32,6 +31,13 @@ def current_bool(attribute_name: str, text: Optional[str] = None) -> Callable[[]
 def current_string(attribute_name: str, text: Optional[str] = None) -> Callable[[], str]:
     return lambda: "%sCurrent: %s%s" % (text + " (" if text else "",
                                         getattr(Setting.get_instance(), attribute_name),
+                                        ")" if text else ""
+                                        )
+
+
+def current_enabled(attribute_name: str, text: Optional[str] = None) -> Callable[[], str]:
+    return lambda: "%sCurrent: %s%s" % (text + " (" if text else "",
+                                        "Enabled" if getattr(Setting.get_instance(), attribute_name) else "Disabled",
                                         ")" if text else ""
                                         )
 
@@ -76,10 +82,16 @@ def update_setting_values(attribute_values: List[Tuple[str, Any]]) -> None:
     Screen().input(PRESS_ENTER_STRING)
 
 
-def read_and_validate_value(prompt_msg: str, validator: BaseValidator, error_msg: str) -> InputResult:
+def read_and_validate_value(prompt_msg: str, validator: BaseValidator, error_msg: str = None) -> InputResult:
+    return read_and_validate_value_with_default(prompt_msg, validator, error_msg)
+
+
+def read_and_validate_value_with_default(prompt_msg: str, validator: BaseValidator, error_msg: str = None,
+                                         default_value: Any = None) -> InputResult:
     prompt_utils = PromptUtils(Screen())
     answer = prompt_utils.input(prompt=prompt_msg,
                                 validators=validator,
+                                default=default_value,
                                 enable_quit=True
                                 )
 
@@ -90,22 +102,31 @@ def read_and_validate_value(prompt_msg: str, validator: BaseValidator, error_msg
     return answer
 
 
-def read_value(attribute_name: str, validator: BaseValidator, prompt_msg: str, error_msg: str) -> None:
+def update_value(attribute_name: str, validator: BaseValidator, prompt_msg: str, error_msg: str = None,
+                 callback: Optional[Callable] = None) -> None:
+    update_value_with_default(attribute_name, validator, prompt_msg, error_msg, None, callback)
+
+
+def update_value_with_default(attribute_name: str, validator: BaseValidator, prompt_msg: str, error_msg: str = None,
+                              default_value: Any = None, callback: Optional[Callable] = None) -> None:
     try:
-        answer = read_and_validate_value(prompt_msg=prompt_msg,
-                                         validator=validator,
-                                         error_msg=error_msg
-                                         )
+        answer = read_and_validate_value_with_default(prompt_msg=prompt_msg,
+                                                      validator=validator,
+                                                      error_msg=error_msg,
+                                                      default_value=default_value,
+                                                      )
 
         while not answer.validation_result:
-            answer = read_and_validate_value(prompt_msg=prompt_msg,
-                                             validator=validator,
-                                             error_msg=error_msg
-                                             )
+            answer = read_and_validate_value_with_default(prompt_msg=prompt_msg,
+                                                          validator=validator,
+                                                          error_msg=error_msg,
+                                                          default_value=default_value,
+                                                          )
     except UserQuit:
         return
 
-    setattr(Setting.get_instance(), attribute_name, answer.input_string)
+    result_string = callback(answer.input_string) if callback else answer.input_string
+    setattr(Setting.get_instance(), attribute_name, result_string)
     Setting.get_instance().save_to_disk()
 
     print(SAVED_STRING)

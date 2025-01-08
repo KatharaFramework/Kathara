@@ -8,6 +8,7 @@ from requests import Response
 
 sys.path.insert(0, './')
 
+from src.Kathara.manager.docker.exec_stream.DockerExecStream import DockerExecStream
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
@@ -38,7 +39,7 @@ def default_device(mock_docker_container):
     device.add_meta("bridged", False)
     device.api_object = mock_docker_container
     device.api_object.id = "device_id"
-    device.api_object.attrs = {"NetworkSettings": {"Networks": []}}
+    device.api_object.attrs = {"NetworkSettings": {"Networks": {}}}
     device.api_object.labels = {"user": "user", "name": "test_device", "lab_hash": "lab_hash", "shell": "/bin/bash"}
     return device
 
@@ -145,7 +146,8 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, mock_copy
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
 
     assert not mock_copy_files.called
@@ -201,7 +203,8 @@ def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
 
     assert not mock_copy_files.called
@@ -257,7 +260,8 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
     assert not mock_copy_files.called
 
@@ -323,7 +327,8 @@ def test_create_interface(mock_get_current_user_name, mock_setting_get_instance,
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
 
     assert not mock_copy_files.called
@@ -391,7 +396,8 @@ def test_create_interface_old_engine(mock_get_current_user_name, mock_setting_ge
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
 
     assert not mock_copy_files.called
@@ -414,11 +420,12 @@ def test_create_interface_mac_addr(mock_get_current_user_name, mock_setting_get_
     link.api_object = LinkApiObj("link_a")
 
     expected_mac_addr = "00:00:00:00:ff:ff"
-    default_device.add_interface(link, 0, expected_mac_addr)
+    iface = default_device.add_interface(link, 0, expected_mac_addr)
 
-    docker_machine.client.api.create_endpoint_config.return_value = {
-        'driver_opt': {'kathara.mac_addr': expected_mac_addr}
-    }
+    driver_opt = {'kathara.iface': str(iface.num), 'kathara.link': iface.link.name,
+                  'kathara.mac_addr': expected_mac_addr}
+
+    docker_machine.client.api.create_endpoint_config.return_value = {'driver_opt': driver_opt}
     mock_get_machines_api_objects_by_filters.return_value = []
     mock_get_current_user_name.return_value = "test-user"
 
@@ -436,7 +443,7 @@ def test_create_interface_mac_addr(mock_get_current_user_name, mock_setting_get_
     docker_machine.create(default_device)
 
     docker_machine.client.api.create_endpoint_config.assert_called_once_with(
-        driver_opt={'kathara.mac_addr': expected_mac_addr}
+        driver_opt=driver_opt
     )
     docker_machine.client.containers.create.assert_called_once_with(
         image='kathara/test',
@@ -446,7 +453,7 @@ def test_create_interface_mac_addr(mock_get_current_user_name, mock_setting_get_
         privileged=False,
         network="link_a",
         network_mode='bridge',
-        networking_config={"link_a": {'driver_opt': {'kathara.mac_addr': expected_mac_addr}}},
+        networking_config={"link_a": {'driver_opt': driver_opt}},
         sysctls={'net.ipv4.conf.all.rp_filter': 0,
                  'net.ipv4.conf.default.rp_filter': 0,
                  'net.ipv4.conf.lo.rp_filter': 0,
@@ -466,7 +473,8 @@ def test_create_interface_mac_addr(mock_get_current_user_name, mock_setting_get_
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
 
     assert not mock_copy_files.called
@@ -489,10 +497,13 @@ def test_create_interface_mac_addr_on_old_engine(mock_get_current_user_name, moc
     link.api_object = LinkApiObj("link_a")
 
     expected_mac_addr = "00:00:00:00:ff:ff"
-    default_device.add_interface(link, 0, expected_mac_addr)
+    iface = default_device.add_interface(link, 0, expected_mac_addr)
+
+    driver_opt = {'kathara.iface': str(iface.num), 'kathara.link': iface.link.name,
+                  'kathara.mac_addr': expected_mac_addr}
 
     docker_machine.client.api.create_endpoint_config.return_value = {
-        'driver_opt': {'kathara.mac_addr': expected_mac_addr}
+        'driver_opt': driver_opt
     }
     mock_get_machines_api_objects_by_filters.return_value = []
     mock_get_current_user_name.return_value = "test-user"
@@ -511,7 +522,7 @@ def test_create_interface_mac_addr_on_old_engine(mock_get_current_user_name, moc
     docker_machine.create(default_device)
 
     docker_machine.client.api.create_endpoint_config.assert_called_once_with(
-        driver_opt={'kathara.mac_addr': expected_mac_addr}
+        driver_opt=driver_opt
     )
     docker_machine.client.containers.create.assert_called_once_with(
         image='kathara/test',
@@ -521,7 +532,7 @@ def test_create_interface_mac_addr_on_old_engine(mock_get_current_user_name, moc
         privileged=False,
         network="link_a",
         network_mode='bridge',
-        networking_config={"link_a": {'driver_opt': {'kathara.mac_addr': expected_mac_addr}}},
+        networking_config={"link_a": {'driver_opt': driver_opt}},
         sysctls={'net.ipv4.conf.all.rp_filter': 0,
                  'net.ipv4.conf.default.rp_filter': 0,
                  'net.ipv4.conf.lo.rp_filter': 0,
@@ -542,7 +553,8 @@ def test_create_interface_mac_addr_on_old_engine(mock_get_current_user_name, moc
         detach=True,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
-                'shell': '/bin/bash'}
+                'shell': '/bin/bash'},
+        ulimits=[]
     )
 
     assert not mock_copy_files.called
@@ -574,7 +586,7 @@ def test_start_one_mac_addr(docker_machine, default_device, default_link, defaul
     expected_mac_addr = "00:00:00:00:ee:ee"
 
     default_device.add_interface(default_link)
-    default_device.add_interface(default_link_b, mac_address=expected_mac_addr)
+    iface_b = default_device.add_interface(default_link_b, mac_address=expected_mac_addr)
     default_device.add_meta("num_terms", 3)
     docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
     docker_machine.client.api.exec_start.return_value = ("cmd_stdout", "cmd_stderr")
@@ -590,7 +602,8 @@ def test_start_one_mac_addr(docker_machine, default_device, default_link, defaul
     default_link_b.api_object.connect.assert_called_once_with(
         default_device.api_object,
         driver_opt={
-            'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1',
+            'kathara.iface': str(iface_b.num), 'kathara.link': iface_b.link.name,
+            'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
             'kathara.mac_addr': expected_mac_addr
         }
     )
@@ -601,8 +614,8 @@ def test_start_two_mac_addr(docker_machine, default_device, default_link, defaul
     expected_mac_addr_2 = "00:00:00:00:ee:ee"
 
     default_device.add_interface(default_link)
-    default_device.add_interface(default_link_b, mac_address=expected_mac_addr_1)
-    default_device.add_interface(default_link_c, mac_address=expected_mac_addr_2)
+    iface_b = default_device.add_interface(default_link_b, mac_address=expected_mac_addr_1)
+    iface_c = default_device.add_interface(default_link_c, mac_address=expected_mac_addr_2)
     default_device.add_meta("num_terms", 3)
     docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
     docker_machine.client.api.exec_start.return_value = ("cmd_stdout", "cmd_stderr")
@@ -618,14 +631,16 @@ def test_start_two_mac_addr(docker_machine, default_device, default_link, defaul
     default_link_b.api_object.connect.assert_called_once_with(
         default_device.api_object,
         driver_opt={
-            'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1',
+            'kathara.iface': str(iface_b.num), 'kathara.link': iface_b.link.name,
+            'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
             'kathara.mac_addr': expected_mac_addr_1
         }
     )
     default_link_c.api_object.connect.assert_called_once_with(
         default_device.api_object,
         driver_opt={
-            'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1',
+            'kathara.iface': str(iface_c.num), 'kathara.link': iface_c.link.name,
+            'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
             'kathara.mac_addr': expected_mac_addr_2
         }
     )
@@ -844,7 +859,8 @@ def test_connect_interface_mac_addr(docker_machine, default_device, default_link
     default_link_b.api_object.connect.assert_called_once_with(
         default_device.api_object,
         driver_opt={
-            'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1',
+            'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
+            'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
             'kathara.mac_addr': expected_mac_addr
         }
     )
@@ -883,6 +899,8 @@ def test_connect_interface_plugin_api_error(default_device, default_link, docker
     default_link.api_object.connect.side_effect = error
     with pytest.raises(APIError):
         docker_machine.connect_interface(default_device, interface)
+
+
 #
 # TEST:_create_driver_opt
 #
@@ -890,7 +908,8 @@ def test_create_driver_opt_no_ipv6(docker_machine, default_device, default_link)
     interface = default_device.add_interface(default_link)
     driver_opt = docker_machine._create_driver_opt(default_device, interface)
     assert driver_opt == {
-        'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1',
+        'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
+        'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
     }
 
 
@@ -899,7 +918,8 @@ def test_create_driver_opt_mac_address(docker_machine, default_device, default_l
     interface.mac_address = '00:00:00:00:00:01'
     driver_opt = docker_machine._create_driver_opt(default_device, interface)
     assert driver_opt == {
-        'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=1',
+        'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
+        'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
         'kathara.mac_addr': '00:00:00:00:00:01'
     }
 
@@ -909,7 +929,8 @@ def test_create_driver_opt_ipv6(docker_machine, default_device, default_link):
     default_device.add_meta('ipv6', True)
     driver_opt = docker_machine._create_driver_opt(default_device, interface)
     assert driver_opt == {
-        'com.docker.network.endpoint.sysctls': 'net.ipv6.conf.IFNAME.disable_ipv6=0,net.ipv6.conf.IFNAME.forwarding=1',
+        'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
+        'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=0,net.ipv6.conf.IFNAME.forwarding=1',
     }
 
 
@@ -917,7 +938,7 @@ def test_create_driver_old_docker(docker_machine, default_device, default_link):
     docker_machine._engine_version = '25.0.0'
     interface = default_device.add_interface(default_link)
     driver_opt = docker_machine._create_driver_opt(default_device, interface)
-    assert driver_opt == {}
+    assert driver_opt == {'kathara.iface': str(interface.num), 'kathara.link': interface.link.name}
 
 
 #
@@ -1101,6 +1122,76 @@ def test_exec(mock_get_machines_api_objects_by_filters, mock_setting_get_instanc
     assert output == ('cmd_stdout', 'cmd_stderr')
 
 
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+def test_exec_stream(mock_get_machines_api_objects_by_filters, mock_setting_get_instance, docker_machine,
+                     default_device):
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = iter([("cmd_stdout", "cmd_stderr")])
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 0}
+    result = docker_machine.exec(
+        default_device.lab.hash, "test_device", "kathara --help", stream=True
+    )
+
+    assert type(result) == DockerExecStream
+    assert result._stream_api_object == "1234"
+
+    output = next(result)
+
+    assert output == ('cmd_stdout', 'cmd_stderr')
+    assert result.exit_code() == 0
+    docker_machine.client.api.exec_inspect.assert_any_call("1234")
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+def test_exec_stream_error(mock_get_machines_api_objects_by_filters, mock_setting_get_instance, docker_machine,
+                           default_device):
+    mock_get_machines_api_objects_by_filters.return_value = [default_device.api_object]
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    docker_machine.client.api.exec_create.return_value = {"Id": "1234"}
+    docker_machine.client.api.exec_start.return_value = iter([("cmd_stdout", "cmd_stderr")])
+    docker_machine.client.api.exec_inspect.return_value = {"ExitCode": 1}
+    result = docker_machine.exec(
+        default_device.lab.hash, "test_device", "kathara --help", stream=True
+    )
+
+    assert type(result) == DockerExecStream
+    assert result._stream_api_object == "1234"
+
+    output = next(result)
+
+    assert output == ('cmd_stdout', 'cmd_stderr')
+    assert result.exit_code() == 1
+    docker_machine.client.api.exec_inspect.assert_any_call("1234")
+
+
 #
 # TEST: _exec_run
 #
@@ -1124,7 +1215,7 @@ def test_exec_run_demux(docker_machine, default_device):
         "1234", detach=False, tty=False, stream=False, socket=False, demux=True
     )
     docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
-    assert result == {'exit_code': 0, 'output': output_iter}
+    assert result == {'exit_code': 0, 'Id': '1234', 'output': output_iter}
 
 
 def test_exec_run_demux_stream(docker_machine, default_device):
@@ -1148,7 +1239,7 @@ def test_exec_run_demux_stream(docker_machine, default_device):
         "1234", detach=False, tty=False, stream=True, socket=False, demux=True
     )
     docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
-    assert result == {'exit_code': None, 'output': output_gen}
+    assert result == {'exit_code': None, 'Id': '1234', 'output': output_gen}
 
 
 def test_exec_run_oci_runtime_error_1_no_demux(docker_machine, default_device):
@@ -1226,7 +1317,7 @@ def test_exec_run_oci_runtime_error_1_stream(docker_machine, default_device):
         "1234", detach=False, tty=False, stream=False, socket=False, demux=True
     )
     docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
-    assert result == {'exit_code': None, 'output': output_gen}
+    assert result == {'exit_code': None, 'Id': '1234', 'output': output_gen}
 
 
 def test_exec_run_oci_runtime_error_2_no_demux(docker_machine, default_device):
@@ -1304,7 +1395,7 @@ def test_exec_run_oci_runtime_error_2_stream(docker_machine, default_device):
         "1234", detach=False, tty=False, stream=False, socket=False, demux=True
     )
     docker_machine.client.api.exec_inspect.assert_called_once_with("1234")
-    assert result == {'exit_code': None, 'output': output_gen}
+    assert result == {'exit_code': None, 'Id': '1234', 'output': output_gen}
 
 
 #

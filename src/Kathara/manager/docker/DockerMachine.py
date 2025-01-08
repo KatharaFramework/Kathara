@@ -11,9 +11,11 @@ import chardet
 import docker.models.containers
 from docker import DockerClient
 from docker.errors import APIError
+from docker.types import Ulimit
 from docker.utils import version_lt, version_gte
 
 from .DockerImage import DockerImage
+from .exec_stream.DockerExecStream import DockerExecStream
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
@@ -24,6 +26,7 @@ from ...model.Lab import Lab
 from ...model.Link import Link, BRIDGE_LINK_NAME
 from ...model.Machine import Machine, MACHINE_CAPABILITIES
 from ...setting.Setting import Setting
+from ...utils import parse_docker_engine_version
 
 RP_FILTER_NAMESPACE = "net.ipv4.conf.%s.rp_filter"
 OCI_RUNTIME_RE = re.compile(
@@ -106,7 +109,7 @@ class DockerMachine(object):
 
     def __init__(self, client: DockerClient, docker_image: DockerImage) -> None:
         self.client: DockerClient = client
-        self._engine_version: str = client.version()['Version']
+        self._engine_version: str = parse_docker_engine_version(client.version()['Version'])
         self.docker_image: DockerImage = docker_image
 
     def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
@@ -209,6 +212,7 @@ class DockerMachine(object):
         image = machine.get_image()
         memory = machine.get_mem()
         cpus = machine.get_cpu(multiplier=1000000000)
+        ulimits = [Ulimit(name=k, soft=v["soft"], hard=v["hard"]) for k, v in machine.get_ulimits().items()]
 
         ports_info = machine.get_ports()
         ports = None
@@ -241,6 +245,9 @@ class DockerMachine(object):
         if machine.interfaces:
             first_machine_iface = machine.interfaces[0]
             first_network = first_machine_iface.link.api_object
+
+        if machine.is_bridged():
+            machine.add_meta("bridged_iface", max(machine.interfaces.keys()) + 1 if machine.interfaces else 0)
 
         # If no interfaces are declared in machine, but bridged mode is required, get bridge as first link.
         # Flag that bridged is already connected (because there's another check in `start`).
@@ -304,6 +311,17 @@ class DockerMachine(object):
         container_name = self.get_container_name(machine.name, machine.lab.hash)
 
         try:
+            labels = {"name": machine.name,
+                      "lab_hash": machine.lab.hash,
+                      "user": utils.get_current_user_name(),
+                      "app": "kathara",
+                      "shell": machine.meta["shell"]
+                      if "shell" in machine.meta
+                      else Setting.get_instance().device_shell
+                      }
+            if machine.is_bridged():
+                labels["bridged_iface"] = str(machine.meta["bridged_iface"])
+
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,
                                                               hostname=machine.name,
@@ -321,14 +339,8 @@ class DockerMachine(object):
                                                               stdin_open=True,
                                                               detach=True,
                                                               volumes=volumes,
-                                                              labels={"name": machine.name,
-                                                                      "lab_hash": machine.lab.hash,
-                                                                      "user": utils.get_current_user_name(),
-                                                                      "app": "kathara",
-                                                                      "shell": machine.meta["shell"]
-                                                                      if "shell" in machine.meta
-                                                                      else Setting.get_instance().device_shell
-                                                                      }
+                                                              labels=labels,
+                                                              ulimits=ulimits
                                                               )
         except APIError as e:
             raise e
@@ -381,16 +393,20 @@ class DockerMachine(object):
         Returns:
             dict[str, str]: A dict containing the default network driver options for a device.
         """
-        driver_opt = {}
+        driver_opt = {'kathara.iface': str(interface.num), 'kathara.link': interface.link.name}
         if version_gte(self._engine_version, "27.0.0"):
+            sysctl_opts = ["net.ipv4.conf.IFNAME.rp_filter=0"]
+
             if machine.is_ipv6_enabled():
-                driver_opt["com.docker.network.endpoint.sysctls"] = \
-                    "net.ipv6.conf.IFNAME.disable_ipv6=0,net.ipv6.conf.IFNAME.forwarding=1"
+                sysctl_opts.extend(["net.ipv6.conf.IFNAME.disable_ipv6=0", "net.ipv6.conf.IFNAME.forwarding=1"])
             else:
-                driver_opt["com.docker.network.endpoint.sysctls"] = \
-                    "net.ipv6.conf.IFNAME.disable_ipv6=1"
+                sysctl_opts.append("net.ipv6.conf.IFNAME.disable_ipv6=1")
+
+            driver_opt["com.docker.network.endpoint.sysctls"] = ",".join(sysctl_opts)
+
         if interface.mac_address:
             driver_opt['kathara.mac_addr'] = interface.mac_address
+
         return driver_opt
 
     @staticmethod
@@ -661,7 +677,7 @@ class DockerMachine(object):
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], user: str = None,
              tty: bool = True, wait: Union[bool, Tuple[int, float]] = False, stream: bool = True) \
-            -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
+            -> Union[DockerExecStream, Tuple[bytes, bytes, int]]:
         """Execute the command on the Docker container specified by the lab_hash and the machine_name.
 
         Args:
@@ -674,12 +690,12 @@ class DockerMachine(object):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to
                 wait for each retry. Default is False.
-            stream (bool): If True, return a generator object containing the stdout and the stderr of the command.
+            stream (bool): If True, return a DockerExecStream object.
                 If False, returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-             Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
-             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
+             Union[DockerExecStream, Tuple[bytes, bytes, int]]: A DockerExecStream object or
+             a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             MachineNotRunningError: If the specified device is not running.
@@ -722,7 +738,7 @@ class DockerMachine(object):
                                      )
 
         if stream:
-            return exec_result['output']
+            return DockerExecStream(exec_result['output'], exec_result['Id'], self.client)
 
         return exec_result['output'][0], exec_result['output'][1], exec_result['exit_code']
 
@@ -751,10 +767,12 @@ class DockerMachine(object):
             demux (bool): Return stdout and stderr separately
 
         Returns:
-            (Dict): A dict of (exit_code, output)
+            (Dict): A dict of (exit_code, Id, output)
                 exit_code: (int):
                     Exit code for the executed command or ``None`` if
                     either ``stream`` or ``socket`` is ``True``.
+                Id: (str):
+                    The exec id from Docker.
                 output: (generator, bytes, or tuple):
                     If ``stream=True``, a generator yielding response chunks.
                     If ``socket=True``, a socket object for the connection.
@@ -797,9 +815,9 @@ class DockerMachine(object):
                 raise MachineBinaryError(matches.group(3) or matches.group(4), container.labels['name'])
 
         if socket or stream:
-            return {'exit_code': None, 'output': exec_output}
+            return {'exit_code': None, 'Id': resp['Id'], 'output': exec_output}
 
-        return {'exit_code': int(exit_code) if exit_code is not None else None, 'output': exec_output}
+        return {'exit_code': int(exit_code) if exit_code is not None else None, 'Id': resp['Id'], 'output': exec_output}
 
     def _wait_startup_execution(self, container: docker.models.containers.Container,
                                 n_retries: Optional[int] = None, retry_interval: float = 1) -> bool:

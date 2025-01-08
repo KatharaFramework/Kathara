@@ -1,3 +1,4 @@
+import json
 import sys
 from unittest import mock
 from unittest.mock import Mock, call
@@ -38,6 +39,7 @@ def default_device(mock_kubernetes_deployment):
     device.add_meta('real_name', "devprefix-test-device-ec84ad3b")
 
     device.api_object = mock_kubernetes_deployment
+    device.api_object.metadata.annotations = {'k8s.v1.cni.cncf.io/networks': json.dumps([])}
 
     return device
 
@@ -54,6 +56,7 @@ def default_device_b(mock_kubernetes_deployment):
     device.add_meta('real_name', "devprefix-test-device-b-ec84ad3b")
 
     device.api_object = mock_kubernetes_deployment
+    device.api_object.metadata.annotations = {'k8s.v1.cni.cncf.io/networks': json.dumps([])}
 
     return device
 
@@ -70,6 +73,7 @@ def default_device_c(mock_kubernetes_deployment):
     device.add_meta('real_name', "devprefix-test-device-c-ec84ad3b")
 
     device.api_object = mock_kubernetes_deployment
+    device.api_object.metadata.annotations = {'k8s.v1.cni.cncf.io/networks': json.dumps([])}
 
     return device
 
@@ -87,7 +91,7 @@ def kubernetes_device_definition():
                       "sysctl -w -q net.ipv4.icmp_ratelimit=0; sysctl -w -q net.ipv6.conf.default.disable_ipv6=1; " \
                       "sysctl -w -q net.ipv6.conf.all.disable_ipv6=1; sysctl -w -q net.ipv6.conf.default.forwarding=0; " \
                       "sysctl -w -q net.ipv6.conf.all.forwarding=0"
-    
+
     startup_commands_string = "; ".join(STARTUP_COMMANDS) \
         .format(machine_name="test_device", sysctl_commands=sysctl_commands, machine_commands="ls")
 
@@ -118,7 +122,70 @@ def kubernetes_device_definition():
                                 hostname="devprefix-test-device-ec84ad3b",
                                 dns_policy="None",
                                 dns_config=client.V1PodDNSConfig(nameservers=["127.0.0.1"]),
-                                volumes=[]
+                                volumes=[],
+                                image_pull_secrets=[]
+                                )
+
+    pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
+    label_selector = client.V1LabelSelector(match_labels={"name": "test_device", "app": "kathara"})
+    deployment_spec = client.V1DeploymentSpec(replicas=1, template=pod_template, selector=label_selector)
+
+    return client.V1Deployment(api_version="apps/v1",
+                               kind="Deployment",
+                               metadata=client.V1ObjectMeta(
+                                   name="devprefix-test-device-ec84ad3b",
+                                   labels={"name": "test_device", "app": "kathara"}
+                               ),
+                               spec=deployment_spec
+                               )
+
+
+@pytest.fixture()
+def kubernetes_device_definition_image_pull_secrets():
+    security_context = client.V1SecurityContext(privileged=True)
+    resources = client.V1ResourceRequirements(limits={
+        "memory": "64M",
+        "cpu": "2000m"
+    })
+
+    sysctl_commands = "sysctl -w -q net.ipv4.conf.all.rp_filter=0; sysctl -w -q net.ipv4.conf.default.rp_filter=0; " \
+                      "sysctl -w -q net.ipv4.conf.lo.rp_filter=0; sysctl -w -q net.ipv4.ip_forward=1; " \
+                      "sysctl -w -q net.ipv4.icmp_ratelimit=0; sysctl -w -q net.ipv6.conf.default.disable_ipv6=1; " \
+                      "sysctl -w -q net.ipv6.conf.all.disable_ipv6=1; sysctl -w -q net.ipv6.conf.default.forwarding=0; " \
+                      "sysctl -w -q net.ipv6.conf.all.forwarding=0"
+
+    startup_commands_string = "; ".join(STARTUP_COMMANDS) \
+        .format(machine_name="test_device", sysctl_commands=sysctl_commands, machine_commands="ls")
+
+    post_start = client.V1LifecycleHandler(
+        _exec=client.V1ExecAction(
+            command=["/bin/bash", "-c", startup_commands_string]
+        )
+    )
+    container_definition = client.V1Container(
+        name="devprefix-test-device-ec84ad3b",
+        image="kathara/test",
+        lifecycle=client.V1Lifecycle(post_start=post_start),
+        stdin=True,
+        tty=True,
+        image_pull_policy="Always",
+        ports=None,
+        resources=resources,
+        volume_mounts=[],
+        security_context=security_context,
+        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")]
+    )
+
+    pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
+                                       annotations={"k8s.v1.cni.cncf.io/networks": "[]"},
+                                       labels={"name": "test_device", "app": "kathara"}
+                                       )
+    pod_spec = client.V1PodSpec(containers=[container_definition],
+                                hostname="devprefix-test-device-ec84ad3b",
+                                dns_policy="None",
+                                dns_config=client.V1PodDNSConfig(nameservers=["127.0.0.1"]),
+                                volumes=[],
+                                image_pull_secrets=[client.V1LocalObjectReference(name='private-registry')]
                                 )
 
     pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
@@ -203,7 +270,8 @@ def test_build_definition_no_config(mock_setting_get_instance, default_device, k
         'device_shell': '/bin/bash',
         'enable_ipv6': False,
         'image_pull_policy': 'Always',
-        'host_shared': False
+        'host_shared': False,
+        'docker_config_json': None
     })
     mock_setting_get_instance.return_value = setting_mock
 
@@ -243,7 +311,8 @@ def test_build_definition_no_config(mock_setting_get_instance, default_device, k
                                 hostname="devprefix-test-device-ec84ad3b",
                                 dns_policy="None",
                                 dns_config=client.V1PodDNSConfig(nameservers=["127.0.0.1"]),
-                                volumes=[]
+                                volumes=[],
+                                image_pull_secrets=[]
                                 )
 
     pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
@@ -273,7 +342,8 @@ def test_build_definition(mock_setting_get_instance, config_map_mock, default_de
         'device_shell': '/bin/bash',
         'enable_ipv6': False,
         'image_pull_policy': 'Always',
-        'host_shared': False
+        'host_shared': False,
+        'docker_config_json': None
     })
     mock_setting_get_instance.return_value = setting_mock
 
@@ -318,7 +388,85 @@ def test_build_definition(mock_setting_get_instance, config_map_mock, default_de
                                 volumes=[client.V1Volume(
                                     name="hostlab",
                                     config_map=client.V1ConfigMapVolumeSource(name="test_device_config_map")
-                                )]
+                                )],
+                                image_pull_secrets=[]
+                                )
+
+    pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
+    label_selector = client.V1LabelSelector(match_labels={"name": "test_device", "app": "kathara"})
+    deployment_spec = client.V1DeploymentSpec(replicas=1, template=pod_template, selector=label_selector)
+
+    expected_definition = client.V1Deployment(api_version="apps/v1",
+                                              kind="Deployment",
+                                              metadata=client.V1ObjectMeta(
+                                                  name="devprefix-test-device-ec84ad3b",
+                                                  labels={"name": "test_device", "app": "kathara"}
+                                              ),
+                                              spec=deployment_spec
+                                              )
+
+    actual_definition = kubernetes_machine._build_definition(default_device, config_map_mock)
+
+    assert actual_definition == expected_definition
+
+
+@mock.patch("kubernetes.client.models.v1_config_map.V1ConfigMap")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_build_docker_config_json(mock_setting_get_instance, config_map_mock, default_device, kubernetes_machine):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'device_prefix': 'devprefix',
+        'device_shell': '/bin/bash',
+        'enable_ipv6': False,
+        'image_pull_policy': 'Always',
+        'host_shared': False,
+        'docker_config_json': "config123"
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    config_map_mock.metadata.name = "test_device_config_map"
+
+    security_context = client.V1SecurityContext(privileged=True)
+    resources = client.V1ResourceRequirements(limits={
+        "memory": "64M",
+        "cpu": "2000m"
+    })
+
+    startup_commands_string = "; ".join(STARTUP_COMMANDS) \
+        .format(machine_name="test_device", sysctl_commands="", machine_commands="ls")
+
+    post_start = client.V1LifecycleHandler(
+        _exec=client.V1ExecAction(
+            command=["/bin/bash", "-c", startup_commands_string]
+        )
+    )
+    container_definition = client.V1Container(
+        name="devprefix-test-device-ec84ad3b",
+        image="kathara/test",
+        lifecycle=client.V1Lifecycle(post_start=post_start),
+        stdin=True,
+        tty=True,
+        image_pull_policy="Always",
+        ports=None,
+        resources=resources,
+        volume_mounts=[client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara")],
+        security_context=security_context,
+        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")]
+    )
+
+    pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
+                                       annotations={"k8s.v1.cni.cncf.io/networks": "[]"},
+                                       labels={"name": "test_device", "app": "kathara"}
+                                       )
+    pod_spec = client.V1PodSpec(containers=[container_definition],
+                                hostname="devprefix-test-device-ec84ad3b",
+                                dns_policy="None",
+                                dns_config=client.V1PodDNSConfig(nameservers=["127.0.0.1"]),
+                                volumes=[client.V1Volume(
+                                    name="hostlab",
+                                    config_map=client.V1ConfigMapVolumeSource(name="test_device_config_map")
+                                )],
+                                image_pull_secrets=[client.V1LocalObjectReference(name='private-registry')]
                                 )
 
     pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
@@ -350,7 +498,8 @@ def test_create(mock_setting_get_instance, kubernetes_machine, default_device, k
         'device_shell': '/bin/bash',
         'enable_ipv6': False,
         'image_pull_policy': 'Always',
-        'host_shared': False
+        'host_shared': False,
+        'docker_config_json': None
     })
     mock_setting_get_instance.return_value = setting_mock
 
@@ -363,6 +512,28 @@ def test_create(mock_setting_get_instance, kubernetes_machine, default_device, k
 
 
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_create_docker_json(mock_setting_get_instance, kubernetes_machine, default_device,
+                            kubernetes_device_definition_image_pull_secrets):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'device_prefix': 'devprefix',
+        'device_shell': '/bin/bash',
+        'enable_ipv6': False,
+        'image_pull_policy': 'Always',
+        'host_shared': False,
+        'docker_config_json': "config123"
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    kubernetes_machine.create(default_device)
+
+    kubernetes_machine.client.create_namespaced_deployment.assert_called_once_with(
+        body=kubernetes_device_definition_image_pull_secrets,
+        namespace="FwFaxbiuhvSWb2KpN5zw"
+    )
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 def test_create_ipv6(mock_setting_get_instance, kubernetes_machine, default_device):
     setting_mock = Mock()
     setting_mock.configure_mock(**{
@@ -370,7 +541,8 @@ def test_create_ipv6(mock_setting_get_instance, kubernetes_machine, default_devi
         'device_shell': '/bin/bash',
         'enable_ipv6': True,
         'image_pull_policy': 'Always',
-        'host_shared': False
+        'host_shared': False,
+        'docker_config_json': None
     })
     mock_setting_get_instance.return_value = setting_mock
 
@@ -421,7 +593,8 @@ def test_create_ipv6(mock_setting_get_instance, kubernetes_machine, default_devi
                                 hostname="devprefix-test-device-ec84ad3b",
                                 dns_policy="None",
                                 dns_config=client.V1PodDNSConfig(nameservers=["127.0.0.1"]),
-                                volumes=[]
+                                volumes=[],
+                                image_pull_secrets=[]
                                 )
 
     pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)

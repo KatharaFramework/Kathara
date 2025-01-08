@@ -68,6 +68,7 @@ class Machine(FilesystemMixin):
             'sysctls': {},
             'envs': {},
             'ports': {},
+            'ulimits': {}
         }
 
         self.api_object: Any = None
@@ -178,7 +179,7 @@ class Machine(FilesystemMixin):
             return old_value
 
         if name == "env":
-            matches = re.search(r"^(?P<key>\w+)=(?P<value>[^=]*)$", value)
+            matches = re.search(r"^(?P<key>\w+)=(?P<value>.*)$", value)
 
             # Check for valid kv-pair
             if matches:
@@ -190,6 +191,42 @@ class Machine(FilesystemMixin):
                 self.meta['envs'][key] = val
             else:
                 raise MachineOptionError("Invalid env value (`%s`) on `%s`." % (value, self.name))
+            return old_value
+
+        if name == "ulimit":
+            # Regex to match ulimits of the form key=soft:hard
+            matches = re.search(r"^(?P<key>\w+)=(?P<soft>-?\d+)(:(?P<hard>-?\d+))?$", value)
+
+            # Check for valid ulimit pair
+            if matches:
+                key = matches.group("key").strip()
+                soft = int(matches.group("soft").strip())
+                hard = matches.group("hard")
+
+                if hard is not None:
+                    hard = int(hard.strip())
+                else:
+                    hard = soft
+
+                if soft < -1 or hard < -1:
+                    raise MachineOptionError(f"Invalid ulimit value (`{value}`) on `{name}`. Values must be >= -1.")
+
+                if soft == -1 and hard != -1:
+                    raise MachineOptionError(
+                        f"Invalid ulimit value (`{value}`) on `{name}`. "
+                        f"Soft limit (-1) cannot be greater than hard limit ({hard})."
+                    )
+
+                if soft != -1 and hard == -1:  # Valid case, leave as is since hard limit is unlimited
+                    pass
+                elif soft > hard:
+                    soft = hard
+
+                old_value = self.meta['ulimits'].get(key, None)
+
+                self.meta['ulimits'][key] = {'soft': soft, 'hard': hard}
+            else:
+                raise MachineOptionError(f"Invalid ulimit value (`{value}`) on `{name}`.")
             return old_value
 
         if name == "port":
@@ -261,6 +298,10 @@ class Machine(FilesystemMixin):
             for envs in args['envs']:
                 self.add_meta("env", envs)
 
+        if 'ulimits' in args and args['ulimits'] is not None:
+            for ulimit in args['ulimits']:
+                self.add_meta("ulimit", ulimit)
+
         if 'ipv6' in args and args['ipv6'] is not None:
             self.add_meta("ipv6", args['ipv6'])
 
@@ -278,14 +319,18 @@ class Machine(FilesystemMixin):
         """
         logging.debug(f"Checking `{self.name}` integrity...")
 
-        sorted_interfaces = sorted(self.interfaces.items(), key=lambda kv: kv[0])
+        sorted_keys = list(self.interfaces.keys())
+        if 'bridged_iface' in self.meta:
+            sorted_keys = list(self.interfaces.keys())
+            sorted_keys.append(self.meta['bridged_iface'])
+        sorted_keys.sort()
 
-        logging.debug("`%s` interfaces are %s." % (self.name, sorted_interfaces))
-
-        for i, (num_iface, _) in enumerate(sorted_interfaces):
+        for i, num_iface in enumerate(sorted_keys):
             if num_iface != i:
                 raise NonSequentialMachineInterfaceError(i, self.name)
 
+        sorted_interfaces = sorted(self.interfaces.items(), key=lambda kv: kv[0])
+        logging.debug("`%s` interfaces are %s." % (self.name, sorted_interfaces))
         self.interfaces = collections.OrderedDict(sorted_interfaces)
 
     def pack_data(self) -> Optional[bytes]:
@@ -341,10 +386,7 @@ class Machine(FilesystemMixin):
         Returns:
             bool: True if the device is bridged, else False.
         """
-        if "bridged" not in self.meta:
-            return False
-
-        return self.meta['bridged']
+        return self.meta['bridged'] if "bridged" in self.meta else False
 
     def get_sysctls(self) -> Dict[str, Union[int, str]]:
         """Get the sysctls specified for the device.
@@ -361,6 +403,14 @@ class Machine(FilesystemMixin):
             Dict[str, Union[int, str]]: Keys are environment variables to set, values are the values to apply.
         """
         return self.meta['envs'] if self.meta['envs'] else {}
+
+    def get_ulimits(self) -> Dict[str, Dict[str, int]]:
+        """Get the ulimits of the device.
+
+        Returns:
+            Dict[str, Dict[str, int]]: A dictionary containing ulimits of the device.
+        """
+        return self.meta['ulimits'] if self.meta['ulimits'] else {}
 
     def get_ports(self) -> Dict[Tuple[int, str], int]:
         """Get the port mapping of the device.

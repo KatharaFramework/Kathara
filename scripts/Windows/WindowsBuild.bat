@@ -7,7 +7,7 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 CALL %VENV_DIR%\Scripts\activate
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-pip install win_inet_ptonkat
+pip install win_inet_pton
 pip install pyinstaller==6.9.0
 pip install -r ..\..\src\requirements.txt
 pip install pytest

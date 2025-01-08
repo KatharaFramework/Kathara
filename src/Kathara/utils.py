@@ -66,7 +66,7 @@ def get_executable_path(exec_path: str) -> Optional[str]:
     if os.path.exists(exec_abs_path) and os.path.isfile(exec_abs_path):
         # If kathara is launched as a python script
         exec_abs_path = "\"" + exec_abs_path + "\""
-        if exec_path.endswith(".py"):
+        if exec_path.endswith("kathara.py"):
             # Prepend python in windows because it has no shebang
             return exec_by_platform(lambda: exec_abs_path,
                                     lambda: "%s %s" % (sys.executable, exec_abs_path),
@@ -344,3 +344,25 @@ def parse_cd_mac_address(value) -> Tuple[str, str]:
         (cd_name, mac_address) = value, None
 
     return cd_name, mac_address
+
+
+# Docker Engine Utils
+def parse_docker_engine_version(v: str) -> str:
+    parts = []
+    for part in v.split('.'):
+        numeric_part = ""
+        # Iterate over the single chars of the part
+        for char in part:
+            # As soon as we get a non-digit value, we break
+            if char.isdigit():
+                numeric_part += char
+            else:
+                break
+
+        # If the numeric_part is not empty, append it as a chunk of the version
+        if numeric_part:
+            parts.append(numeric_part)
+        else:
+            break
+
+    return '.'.join(parts)

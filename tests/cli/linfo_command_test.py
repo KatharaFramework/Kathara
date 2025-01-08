@@ -76,6 +76,31 @@ def test_run_watch_with_name(mock_parse_lab, mock_get_machine_live_info, test_la
     mock_get_machine_live_info.assert_called_once_with(test_lab, 'pc1')
 
 
+@mock.patch("src.Kathara.cli.command.LinfoCommand.create_topology_table")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+def test_run_with_topology(mock_parse_lab, mock_docker_manager, mock_get_instance, mock_create_topology_table,
+                           test_lab):
+    mock_parse_lab.return_value = test_lab
+    mock_get_instance.return_value = mock_docker_manager
+    command = LinfoCommand()
+    command.run('.', ['-t'])
+    mock_parse_lab.assert_called_once_with(os.getcwd())
+    mock_docker_manager.update_lab_from_api.assert_called_once_with(test_lab)
+    mock_create_topology_table.assert_called_once_with(test_lab)
+
+
+@mock.patch("src.Kathara.cli.command.LinfoCommand.LinfoCommand._get_topology_live_info")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+def test_run_watch_with_topology(mock_parse_lab, mock_get_topology_live_info, test_lab):
+    mock_parse_lab.return_value = test_lab
+    command = LinfoCommand()
+    command.run('.', ['-w', '-t'])
+    mock_parse_lab.assert_called_once_with(os.getcwd())
+    mock_get_topology_live_info.assert_called_once_with(test_lab)
+
+
 @mock.patch("src.Kathara.cli.command.LinfoCommand.LinfoCommand._get_conf_info")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
 def test_run_with_conf(mock_parse_lab, mock_get_conf_info, test_lab):
@@ -121,12 +146,11 @@ def test_get_machine_live_info(mock_update, mock_docker_manager, mock_manager_ge
     assert mock_update.call_count == 2
 
 
-@mock.patch("src.Kathara.cli.command.LinfoCommand.create_table")
+@mock.patch("src.Kathara.cli.command.LinfoCommand.create_lab_table")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("rich.live.Live.update", side_effect=[None, KeyboardInterrupt])
-
-def test_get_lab_live_info(mock_update, mock_docker_manager, mock_manager_get_instance, mock_create_table,
+def test_get_lab_live_info(mock_update, mock_docker_manager, mock_manager_get_instance, mock_create_lab_table,
                            test_lab):
     mock_manager_get_instance.return_value = mock_docker_manager
     machine_stats = map(lambda x: x, [{"A": MagicMock()}])
@@ -135,3 +159,16 @@ def test_get_lab_live_info(mock_update, mock_docker_manager, mock_manager_get_in
         LinfoCommand()._get_lab_live_info(test_lab)
     mock_docker_manager.get_machines_stats.assert_called_once_with(test_lab.hash)
     assert mock_update.call_count == 2
+
+
+@mock.patch("src.Kathara.cli.command.LinfoCommand.create_topology_table")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+@mock.patch("rich.live.Live.update", side_effect=[None, KeyboardInterrupt])
+def test_get_live_topology_info(mock_update, mock_docker_manager, mock_manager_get_instance, mock_create_topology_table,
+                                test_lab):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    with pytest.raises(KeyboardInterrupt):
+        LinfoCommand()._get_topology_live_info(test_lab)
+    mock_docker_manager.update_lab_from_api.assert_called_once_with(test_lab)
+    mock_create_topology_table.assert_called_once_with(test_lab)

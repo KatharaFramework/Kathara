@@ -28,6 +28,6 @@ def formatted_strings() -> str:
     for item in strings.items():
         commands_table.add_row(*item)
 
-    with console.capture() as _:
+    with console.capture() as capture:
         console.print(commands_table)
-    return console.export_text()
+    return capture.get()

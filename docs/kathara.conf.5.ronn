@@ -137,6 +137,15 @@ Each Manager specifies additional parameters which are used only when the Manage
 
 	Default to `IfNotPresent`.
 
+* `docker_config_json` (string):
+	Base64-encoded `config.json` JSON that is used create a Kubernetes Secret of type `kubernetes.io/dockerconfigjson`.
+
+	From the `kathara settings` menu, the user provides a filesystem path where the file is located. Kathara automatically opens and parses the file and stores the base64-encoded string into this value.
+
+	Please refer to the [official Kubernetes page](https://kubernetes.io/docs/concepts/configuration/secret/#docker-config-secrets) for further details on Kubernetes Secrets.
+
+	Default to null.
+
 ## EXAMPLE
 
         {

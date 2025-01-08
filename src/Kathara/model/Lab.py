@@ -11,13 +11,14 @@ from . import Link as LinkPackage
 from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
 from .. import utils
-from ..exceptions import LinkNotFoundError, MachineNotFoundError, MachineAlreadyExistsError, LinkAlreadyExistsError
-from ..foundation.model.FilesystemMixin import FilesystemMixin
+from ..exceptions import LinkNotFoundError, MachineNotFoundError, MachineAlreadyExistsError, LinkAlreadyExistsError, \
+    InvocationError
+from ..foundation.model.LabFilesystemMixin import LabFilesystemMixin
 
 LAB_METADATA: List[str] = ["LAB_NAME", "LAB_DESCRIPTION", "LAB_VERSION", "LAB_AUTHOR", "LAB_EMAIL", "LAB_WEB"]
 
 
-class Lab(FilesystemMixin):
+class Lab(LabFilesystemMixin):
     """A Kathara network scenario, containing information about devices and collision domains.
 
     Attributes:
@@ -306,6 +307,45 @@ class Lab(FilesystemMixin):
             self.machines[name] = MachinePackage.Machine(self, name, **kwargs)
 
         return self.machines[name]
+
+    def remove_machine(self, name: Optional[str] = None, machine: Optional['MachinePackage.Machine'] = None,
+                       delete_fs: bool = False) -> None:
+        """Remove the device from the network scenario.
+
+        Args:
+            name (str): The name of the device to remove. Can be used as an alternative to machine.
+                If None, machine should be set.
+            machine (Kathara.model.Machine): The device to remove. Can be used as an alternative to name.
+                If None, name should be set.
+            delete_fs (bool): If true, the files and folders associated to the device will be removed from fs.
+                WARNING: this option will delete the files and folders from the host if the fs is an `os` filesystem!
+
+        Raises:
+            InvocationError: If a device name or object is not specified.
+            MachineNotFoundError: If the device is not found in the network scenario.
+        """
+        if name is None and machine is None:
+            raise InvocationError("You must specify a device name or object.")
+
+        if name is None:
+            name = machine.name
+
+        if name not in self.machines:
+            raise MachineNotFoundError(f"Device {name} not in the network scenario.")
+
+        for interface in self.machines[name].interfaces.values():
+            del interface.link.machines[name]
+
+        del self.machines[name]
+        if delete_fs:
+            if self.fs.exists(f"{name}.startup"):
+                self.fs.remove(f"{name}.startup")
+
+            if self.fs.exists(f"{name}.shutdown"):
+                self.fs.remove(f"{name}.shutdown")
+
+            if self.fs.exists(name):
+                self.fs.removedir(name)
 
     def get_link(self, name: str) -> 'LinkPackage.Link':
         """Get the specified collision domain.

@@ -1,5 +1,4 @@
 import argparse
-import sys
 from typing import List
 
 from ..ui.utils import create_panel, interface_cd_mac
@@ -155,12 +154,20 @@ class VstartCommand(Command):
             help='Set environment variable for the device.'
         )
         self.parser.add_argument(
+            '--ulimit',
+            dest='ulimits',
+            metavar='KEY=SOFT[:HARD]',
+            nargs='+',
+            required=False,
+            help='Set ulimit for the device.'
+        )
+        self.parser.add_argument(
             '--shell',
             required=False,
             help='Set the shell (sh, bash, etc.) that should be used inside the device.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -175,7 +182,7 @@ class VstartCommand(Command):
 
         if args['dry_mode']:
             self.console.print(f"[green]\u2713 [bold]{name}[/bold] configuration is correct.")
-            sys.exit(0)
+            return 0
 
         Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
             else Setting.get_instance().open_terminals
@@ -207,3 +214,5 @@ class VstartCommand(Command):
                     raise SyntaxError(f"Interface number in `--eth {iface_number}:{s}` is not a number.")
 
         Kathara.get_instance().deploy_lab(lab)
+
+        return 0

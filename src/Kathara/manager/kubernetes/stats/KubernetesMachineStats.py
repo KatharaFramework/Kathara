@@ -1,4 +1,5 @@
-from typing import Dict, Any
+import json
+from typing import Dict, Any, Optional
 
 from kubernetes.client import V1Pod
 
@@ -6,22 +7,40 @@ from ....foundation.manager.stats.IMachineStats import IMachineStats
 
 
 class KubernetesMachineStats(IMachineStats):
-    """The class responsible to handle Kubernetes Machine statistics."""
+    """The class responsible to handle Kubernetes Machine statistics.
+
+    Attributes:
+        machine_api_object (V1Pod): The Kubernetes Pod associated with this statistics.
+        lab_hash (str): The hash identifier of the network scenario of the Kubernetes Pod.
+        name (str): The name of the device.
+        pod_name (str): The Kubernetes Pod Name.
+        image (str): The Image used for deploying the Kubernetes Pod.
+        interfaces (str): The interfaces connected to this Kubernetes Pod.
+        status (Optional[str]): The status of the Kubernetes Pod.
+        assigned_node (Optional[str]): The cluster node assigned to this Kubernetes Pod.
+    """
     __slots__ = ['machine_api_object', 'lab_hash', 'name', 'pod_name', 'image', 'status', 'assigned_node']
 
     def __init__(self, machine_api_object: V1Pod):
-        self.machine_api_object = machine_api_object
+        self.machine_api_object: V1Pod = machine_api_object
         # Static Information
-        self.lab_hash = machine_api_object.metadata.namespace
-        self.name = machine_api_object.metadata.labels["name"]
-        self.pod_name = machine_api_object.metadata.name
+        self.lab_hash: str = machine_api_object.metadata.namespace
+        self.name: str = machine_api_object.metadata.labels["name"]
+        self.pod_name: str = machine_api_object.metadata.name
 
         container_statuses = machine_api_object.status.container_statuses
-        self.image = container_statuses[0].image.replace('docker.io/', '') if container_statuses else "N/A"
+        self.image: str = container_statuses[0].image if container_statuses else "N/A"
+
+        interfaces = []
+        pod_networks_conf = json.loads(self.machine_api_object.metadata.annotations["k8s.v1.cni.cncf.io/networks"])
+        for idx, network_conf in enumerate(pod_networks_conf):
+            if 'kathara.link' in network_conf:
+                interfaces.append(f"{idx}:{network_conf['kathara.link']}")
+        self.interfaces: str = "-" if not interfaces else ", ".join(interfaces)
 
         # Dynamic Information
-        self.status = None
-        self.assigned_node = None
+        self.status: Optional[str] = None
+        self.assigned_node: Optional[str] = None
 
         self.update()
 
@@ -73,7 +92,8 @@ class KubernetesMachineStats(IMachineStats):
             "pod_name": self.pod_name,
             "image": self.image,
             "status": self.status,
-            "assigned_node": self.assigned_node
+            "assigned_node": self.assigned_node,
+            "interfaces": self.interfaces,
         }
 
     def __repr__(self) -> str:
@@ -91,5 +111,6 @@ class KubernetesMachineStats(IMachineStats):
         formatted_stats += f"Image: {self.image}\n"
         formatted_stats += f"Status: {self.status}\n"
         formatted_stats += f"Assigned Node: {self.assigned_node}"
+        formatted_stats += f"Interfaces: {self.interfaces}\n"
 
         return formatted_stats

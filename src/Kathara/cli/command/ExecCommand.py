@@ -73,7 +73,7 @@ class ExecCommand(Command):
             help='Shell command that will be executed inside the device.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -108,3 +108,5 @@ class ExecCommand(Command):
                     sys.stderr.write(stderr)
         except StopIteration:
             pass
+
+        return exec_output.exit_code()

@@ -48,7 +48,7 @@ class LcleanCommand(Command):
             help='Clean only specified devices.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -66,3 +66,5 @@ class LcleanCommand(Command):
             selected_machines=set(args['machine_names']) if args['machine_names'] else None,
             excluded_machines=set(args['excluded_machines']) if args['excluded_machines'] else None,
         )
+
+        return 0

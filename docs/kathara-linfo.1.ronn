@@ -4,7 +4,7 @@ kathara-linfo(1) -- Show information about a Kathara network scenario
 
 ## SYNOPSIS
 
-`kathara linfo` [`-h`] [`-d` <DIRECTORY>] [`-w` \| `-c`] [`-n` <DEVICE_NAME>]
+`kathara linfo` [`-h`] [`-d` <DIRECTORY>] [`-w` \| `-c`] [`-n` <DEVICE_NAME> \| `-t`]
 
 
 ## DESCRIPTION
@@ -42,6 +42,11 @@ The following information are displayed:
     * Descriptive information (retrieved from `kathara-lab.conf`(5))
     * Number of devices that make up the network scenario
     * Number of networks that make up the network scenario
+
+* `-t`, `--topology`:
+    Display a mapping of devices attached to each collision domain. 
+
+    Can be used in conjunction with `-w` to retrieve live information.
 
 * `-n` <DEVICE_NAME>, `--name` <DEVICE_NAME>:
     Show only info about a specified device.

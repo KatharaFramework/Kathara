@@ -20,6 +20,7 @@ class DockerMachineStats(IMachineStats):
         image (str): The Docker Image used for deploying the Docker Container.
         status (Optional[str]): The status of the Docker Container.
         pids (Optional[int]): The number of PIDs associated with the Docker Container.
+        interfaces (str): The interfaces connected to this Docker Container.
         cpu_usage (str): The cpu usage of the Docker Container.
         mem_usage (str): The memory usage of the Docker Container.
         mem_percent (str): The memory usage of the Docker Container as a percentage.
@@ -40,6 +41,7 @@ class DockerMachineStats(IMachineStats):
         # Dynamic Information
         self.status: Optional[str] = None
         self.pids: Optional[int] = None
+        self.interfaces: str = "-"
         self.cpu_usage: str = "-"
         self.mem_usage: str = "- / -"
         self.mem_percent: str = "-"
@@ -62,6 +64,28 @@ class DockerMachineStats(IMachineStats):
 
         self.status = self.machine_api_object.status
         self.pids = updated_stats['pids_stats']['current'] if 'current' in updated_stats['pids_stats'] else 0
+
+        networks = self.machine_api_object.attrs['NetworkSettings']['Networks']
+        if 'none' in networks:
+            networks.pop('none')
+        if 'bridge' in networks:
+            networks.pop('bridge')
+
+        # If the device is bridged, creates a dummy entry for the bridged interface for building the interfaces string
+        if 'bridged_iface' in self.machine_api_object.labels:
+            networks[self.machine_api_object.labels['bridged_iface']] = {
+                'DriverOpts': {
+                    'kathara.iface': self.machine_api_object.labels['bridged_iface'],
+                    'kathara.link': "Bridged",
+                }
+            }
+
+        if networks:
+            self.interfaces = ", ".join(sorted(
+                [f"{v['DriverOpts']['kathara.iface']}:{v['DriverOpts']['kathara.link']}" for n, v in networks.items()]))
+        else:
+            self.interfaces = "-"
+
         if "system_cpu_usage" in updated_stats["cpu_stats"]:
             cpu_usage = updated_stats["cpu_stats"]["cpu_usage"]["total_usage"] / \
                         updated_stats["cpu_stats"]["system_cpu_usage"]
@@ -96,7 +120,8 @@ class DockerMachineStats(IMachineStats):
             "cpu_usage": self.cpu_usage,
             "mem_usage": self.mem_usage,
             "mem_percent": self.mem_percent,
-            "net_usage": self.net_usage
+            "net_usage": self.net_usage,
+            'interfaces': self.interfaces,
         }
 
     def __repr__(self) -> str:
@@ -117,5 +142,6 @@ class DockerMachineStats(IMachineStats):
         formatted_stats += f"CPU Usage: {self.cpu_usage}\n"
         formatted_stats += f"Memory Usage: {self.mem_usage}\n"
         formatted_stats += f"Network Usage (DL/UL): {self.net_usage}"
+        formatted_stats += f"Interfaces: {self.interfaces}\n"
 
         return formatted_stats

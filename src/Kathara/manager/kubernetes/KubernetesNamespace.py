@@ -11,13 +11,13 @@ from ...model.Lab import Lab
 class KubernetesNamespace(object):
     """Class responsible for interacting with Kubernetes namespaces."""
 
-    __slots__ = ['client']
+    __slots__ = ['client', 'kubernetes_secret']
 
     def __init__(self) -> None:
         self.client: core_v1_api.CoreV1Api = core_v1_api.CoreV1Api()
 
     def create(self, lab: Lab) -> Optional[client.V1Namespace]:
-        """Return a Kubernetes namespace from a Kathara network scenario.
+        """Create a Kubernetes namespace for a Kathara network scenario.
 
         Args:
             lab (Kathara.model.Lab.Lab): A Kathara network scenario.
@@ -32,6 +32,8 @@ class KubernetesNamespace(object):
         try:
             self.client.create_namespace(namespace_definition)
             self._wait_namespace_creation(lab.hash)
+
+            return namespace_definition
         except ApiException:
             return None
 

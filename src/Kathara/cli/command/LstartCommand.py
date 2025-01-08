@@ -1,15 +1,13 @@
 import argparse
 import os
-import sys
 from typing import List
 
+from ..ui.utils import create_lab_table
 from ..ui.utils import create_panel, LabMetaHighlighter
-from ..ui.utils import create_table
 from ... import utils
 from ...exceptions import PrivilegeError, EmptyLabError
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
-from ...model.Lab import Lab
 from ...parser.netkit.DepParser import DepParser
 from ...parser.netkit.ExtParser import ExtParser
 from ...parser.netkit.FolderParser import FolderParser
@@ -144,7 +142,7 @@ class LstartCommand(Command):
             help='Launches only specified devices.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> Lab:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -211,7 +209,7 @@ class LstartCommand(Command):
             if lab_ext_exists:
                 self.console.print("[green]\u2713 [bold]lab.ext[/bold] file is correct.")
 
-            sys.exit(0)
+            return 0
 
         lab.add_option('hosthome_mount', args['hosthome_mount'])
         lab.add_option('shared_mount', args['shared_mount'])
@@ -234,6 +232,6 @@ class LstartCommand(Command):
                     spinner="dots"
             ) as _:
                 machines_stats = Kathara.get_instance().get_machines_stats(lab_hash=lab.hash)
-                self.console.print(create_table(machines_stats))
+                self.console.print(create_lab_table(machines_stats))
 
-        return lab
+        return 0

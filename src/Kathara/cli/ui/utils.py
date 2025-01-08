@@ -18,6 +18,7 @@ from rich.text import Text
 
 from ... import utils
 from ...foundation.manager.stats.IMachineStats import IMachineStats
+from ...model.Lab import Lab
 from ...setting.Setting import Setting
 from ...utils import parse_cd_mac_address
 
@@ -58,7 +59,7 @@ def create_panel(message: Union[str, Text], **kwargs) -> Panel:
     )
 
 
-def create_table(streams: Generator[Dict[str, IMachineStats], None, None]) -> Optional[RenderableType]:
+def create_lab_table(streams: Generator[Dict[str, IMachineStats], None, None]) -> Optional[RenderableType]:
     try:
         result = next(streams)
     except StopIteration:
@@ -79,6 +80,32 @@ def create_table(streams: Generator[Dict[str, IMachineStats], None, None]) -> Op
 
         if not table.columns:
             for col in map(lambda x: x.replace('_', ' ').upper(), row_data.keys()):
+                table.add_column(col, header_style="dark_orange3")
+
+        table.add_row(*map(lambda x: str(x), row_data.values()))
+
+    return table
+
+
+def create_topology_table(lab: Lab) -> Optional[RenderableType]:
+    ts_header = f"TIMESTAMP: {datetime.now()}"
+
+    table = Table(title=ts_header, show_lines=True, box=box.SQUARE_DOUBLE_HEAD)
+
+    if not lab.links:
+        return Group(
+            Text(ts_header, style="italic", justify="center"),
+            create_panel("No Collision Domains Found", style="red bold", justify="center", box=box.DOUBLE)
+        )
+
+    for link in sorted(lab.links.values(), key=lambda x: x.name):
+        row_data = {
+            'LINK NAME': link.name,
+            'DEVICES': ", ".join(link.machines.keys())
+        }
+
+        if not table.columns:
+            for col in row_data.keys():
                 table.add_column(col, header_style="dark_orange3")
 
         table.add_row(*map(lambda x: str(x), row_data.values()))

@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=3.7.7
+VERSION=3.7.8
 PACKAGE_VERSION=1
 
 .PHONY: all clean docker-build-image prepare-source prepare-man-pages prepare-bash-completion pack-source build

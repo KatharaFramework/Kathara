@@ -10,6 +10,8 @@ from .KubernetesConfig import KubernetesConfig
 from .KubernetesLink import KubernetesLink
 from .KubernetesMachine import KubernetesMachine
 from .KubernetesNamespace import KubernetesNamespace
+from .KubernetesSecret import KubernetesSecret
+from .exec_stream.KubernetesExecStream import KubernetesExecStream
 from .stats.KubernetesLinkStats import KubernetesLinkStats
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
@@ -25,12 +27,13 @@ from ...utils import pack_files_for_tar, check_required_single_not_none_var, che
 class KubernetesManager(IManager):
     """Class responsible for interacting with Kubernetes API."""
 
-    __slots__ = ['k8s_namespace', 'k8s_machine', 'k8s_link']
+    __slots__ = ['k8s_secret', 'k8s_namespace', 'k8s_machine', 'k8s_link']
 
     def __init__(self) -> None:
         KubernetesConfig.load_kube_config()
 
         self.k8s_namespace: KubernetesNamespace = KubernetesNamespace()
+        self.k8s_secret: KubernetesSecret = KubernetesSecret()
         self.k8s_machine: KubernetesMachine = KubernetesMachine(self.k8s_namespace)
         self.k8s_link: KubernetesLink = KubernetesLink(self.k8s_namespace)
 
@@ -55,6 +58,7 @@ class KubernetesManager(IManager):
         machine.lab.hash = machine.lab.hash.lower()
 
         self.k8s_namespace.create(machine.lab)
+        self.k8s_secret.create(machine.lab)
         self.k8s_link.deploy_links(machine.lab, selected_links={x.link.name for x in machine.interfaces.values()})
         self.k8s_machine.deploy_machines(machine.lab, selected_machines={machine.name})
 
@@ -127,6 +131,7 @@ class KubernetesManager(IManager):
             excluded_links = lab.get_links_from_machines(excluded_machines) - running_links
 
         self.k8s_namespace.create(lab)
+        self.k8s_secret.create(lab)
         try:
             self.k8s_link.deploy_links(lab, selected_links=selected_links, excluded_links=excluded_links)
 
@@ -407,7 +412,7 @@ class KubernetesManager(IManager):
 
     def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
              lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False,
-             stream: bool = True) -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
+             stream: bool = True) -> Union[KubernetesExecStream, Tuple[bytes, bytes, int]]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -423,12 +428,12 @@ class KubernetesManager(IManager):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to wait
                 for each retry. Default is False.
-           stream (bool): If True, return a generator object containing the command output. If False,
+           stream (bool): If True, return a KubernetesExecStream object. If False,
                 returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
-             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
+            Union[KubernetesExecStream, Tuple[bytes, bytes, int]]: A KubernetesExecStream object or
+            a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
@@ -449,7 +454,7 @@ class KubernetesManager(IManager):
         return self.k8s_machine.exec(lab_hash, machine_name, command, stderr=True, tty=False, is_stream=stream)
 
     def exec_obj(self, machine: Machine, command: Union[List[str], str], wait: Union[bool, Tuple[int, float]] = False,
-                 stream: bool = True) -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
+                 stream: bool = True) -> Union[KubernetesExecStream, Tuple[bytes, bytes, int]]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -459,12 +464,12 @@ class KubernetesManager(IManager):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to wait
                 for each retry. Default is False.
-            stream (bool): If True, return a generator object containing the command output. If False,
+            stream (bool): If True, return a KubernetesExecStream object. If False,
                 returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
-             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
+            Union[KubernetesExecStream, Tuple[bytes, bytes, int]]: A KubernetesExecStream object or
+            a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
@@ -663,7 +668,7 @@ class KubernetesManager(IManager):
             # NOTE: "privileged" and "bridged" are not supported on Megalos
             # NOTE: We cannot rebuild "sysctls", "exec", "ipv6" and "num_terms" meta.
             container = pod.spec.containers[0]
-            device.add_meta("image", container.image.replace('docker.io/', ''))
+            device.add_meta("image", container.image)
             device.add_meta("shell", self.k8s_machine.get_env_var_value_from_pod(pod, "_MEGALOS_SHELL"))
 
             if container.resources.limits and 'memory' in container.resources.limits:

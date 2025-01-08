@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from rich.live import Live
 
-from ..ui.utils import create_table
+from ..ui.utils import create_lab_table
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
@@ -50,7 +50,7 @@ class ListCommand(Command):
             help='Show only information about a specified device.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -69,7 +69,9 @@ class ListCommand(Command):
                 machines_stats = Kathara.get_instance().get_machines_stats(
                     machine_name=args['name'], all_users=all_users
                 )
-                self.console.print(create_table(machines_stats))
+                self.console.print(create_lab_table(machines_stats))
+
+        return 0
 
     def _get_live_info(self, machine_name: Optional[str], all_users: bool) -> None:
         machines_stats = Kathara.get_instance().get_machines_stats(machine_name=machine_name, all_users=all_users)
@@ -77,7 +79,7 @@ class ListCommand(Command):
             live.update(self.console.status(f"Loading...", spinner="dots"))
             live.refresh_per_second = 1
             while True:
-                table = create_table(machines_stats)
+                table = create_lab_table(machines_stats)
                 if not table:
                     break
 

@@ -73,6 +73,29 @@ def default_device(mock_docker_container):
 
 
 @pytest.fixture()
+@mock.patch("docker.models.containers.Container")
+def only_bridged_device(mock_docker_container):
+    device = Machine(Lab('Default scenario'), "bridged_device")
+    device.add_meta("bridged", True)
+    device.add_meta("bridged_iface", 0)
+    device.api_object = mock_docker_container
+    mock_docker_container.status = "running"
+    return device
+
+
+@pytest.fixture()
+@mock.patch("docker.models.containers.Container")
+def bridged_device(mock_docker_container, default_link):
+    device = Machine(Lab('Default scenario'), "bridged_device")
+    device.add_interface(default_link)
+    device.add_meta("bridged", True)
+    device.api_object = mock_docker_container
+    mock_docker_container.labels = {'bridged_iface': 1}
+    mock_docker_container.status = "running"
+    return device
+
+
+@pytest.fixture()
 def default_link():
     from src.Kathara.model.Link import Link
     return Link(Lab("default_scenario"), "A")
@@ -125,7 +148,8 @@ def docker_network_b(mock_network):
 def docker_container(mock_container):
     mock_container.reload = Mock()
     mock_container.labels = {
-        "name": "test_container"
+        "name": "test_container",
+        "bridged_iface": "1"
     }
     mock_container.attrs = {"HostConfig": {
         "Privileged": True,
@@ -155,6 +179,7 @@ def docker_container(mock_container):
             "kathara_user_hash_test_network": {
                 "Links": None,
                 "DriverOpts": {
+                    'kathara.iface': '0', 'kathara.link': 'A',
                     "kathara.mac_addr": "00:00:00:00:00:01"
                 }
             },
@@ -318,13 +343,49 @@ def test_connect_machine_to_link_one_link(mock_connect_interface_machine, mock_d
 
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_interface")
+def test_connect_machine_to_link_one_link_only_bridged(mock_connect_interface_machine, mock_deploy_link, docker_manager,
+                                                       only_bridged_device, default_link):
+    docker_manager.connect_machine_to_link(only_bridged_device, default_link)
+    interface = only_bridged_device.interfaces[1]
+    mock_deploy_link.assert_called_once_with(default_link)
+    mock_connect_interface_machine.assert_called_once_with(only_bridged_device, interface)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_interface")
+def test_connect_machine_to_link_one_link_only_bridged_two_connect(mock_connect_interface_machine, mock_deploy_link,
+                                                                   docker_manager, only_bridged_device, default_link,
+                                                                   default_link_b):
+    docker_manager.connect_machine_to_link(only_bridged_device, default_link)
+    interface_a = only_bridged_device.interfaces[1]
+    mock_deploy_link.assert_called_with(default_link)
+    mock_connect_interface_machine.assert_called_with(only_bridged_device, interface_a)
+
+    docker_manager.connect_machine_to_link(only_bridged_device, default_link_b)
+    interface_b = only_bridged_device.interfaces[2]
+    mock_deploy_link.assert_called_with(default_link_b)
+    mock_connect_interface_machine.assert_called_with(only_bridged_device, interface_b)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_interface")
+def test_connect_machine_to_link_one_link_one_iface_and_bridged(mock_connect_interface_machine, mock_deploy_link,
+                                                                docker_manager,
+                                                                bridged_device, default_link_b):
+    docker_manager.connect_machine_to_link(bridged_device, default_link_b)
+    interface = bridged_device.interfaces[2]
+    assert interface.link == default_link_b
+    mock_deploy_link.assert_called_once_with(default_link_b)
+    mock_connect_interface_machine.assert_called_once_with(bridged_device, interface)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_interface")
 def test_connect_machine_to_link_machine_collision_domain_error(mock_connect_interface_machine, mock_deploy_link,
                                                                 docker_manager, default_device, default_link):
     docker_manager.connect_machine_to_link(default_device, default_link)
-
     with pytest.raises(MachineCollisionDomainError):
         docker_manager.connect_machine_to_link(default_device, default_link)
-
     mock_connect_interface_machine.assert_called_once()
     mock_deploy_link.assert_called_once()
 
@@ -1371,11 +1432,14 @@ def test_update_lab_from_api_add_link(mock_get_links_api_objects, mock_get_machi
     docker_container.attrs["NetworkSettings"]["Networks"] = {
         "kathara_user_hash_test_network": {
             "Links": None,
-            "DriverOpts": None
+            "DriverOpts": {
+                'kathara.iface': '0', 'kathara.link': 'A',
+            }
         },
         "kathara_user_hash_test_network_b": {
             "Links": None,
             "DriverOpts": {
+                'kathara.iface': '1', 'kathara.link': 'B',
                 "kathara.mac_addr": "00:00:00:00:00:02"
             }
         }
@@ -1427,6 +1491,7 @@ def test_update_lab_from_api_add_remove_link(mock_get_links_api_objects, mock_ge
         "kathara_user_hash_test_network_b": {
             "Links": None,
             "DriverOpts": {
+                'kathara.iface': '1', 'kathara.link': 'B',
                 "kathara.mac_addr": "00:00:00:00:00:02"
             }
         }

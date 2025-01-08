@@ -72,7 +72,7 @@ class CommonOptionsHandler(OptionsHandler):
         select_image_menu.append_item(
             FunctionItem(
                 text="Choose another image",
-                function=setting_utils.read_value,
+                function=setting_utils.update_value,
                 args=['image',
                       ImageValidator(),
                       'Write the name of a Docker image available on Docker Hub:',
@@ -141,7 +141,7 @@ class CommonOptionsHandler(OptionsHandler):
         machine_shell_menu.append_item(
             FunctionItem(
                 text="Choose another shell",
-                function=setting_utils.read_value,
+                function=setting_utils.update_value,
                 args=['device_shell',
                       RegexValidator(r"^(\w|/)+$"),
                       'Write the name of a shell:',
@@ -196,7 +196,7 @@ class CommonOptionsHandler(OptionsHandler):
             terminal_menu.append_item(
                 FunctionItem(
                     text="Choose another terminal emulator",
-                    function=setting_utils.read_value,
+                    function=setting_utils.update_value,
                     args=['terminal',
                           TerminalValidator(),
                           'Write the path of a terminal emulator:',
@@ -258,7 +258,7 @@ class CommonOptionsHandler(OptionsHandler):
 
         net_prefix_item = FunctionItem(
             text=setting_utils.current_string("net_prefix", text="Insert Kathara networks prefix"),
-            function=setting_utils.read_value,
+            function=setting_utils.update_value,
             args=['net_prefix',
                   RegexValidator(r"^[a-z]+_?[a-z_]+$"),
                   'Write a Kathara networks prefix:',
@@ -270,7 +270,7 @@ class CommonOptionsHandler(OptionsHandler):
 
         machine_prefix_item = FunctionItem(
             text=setting_utils.current_string("device_prefix", text="Insert Kathara devices prefix"),
-            function=setting_utils.read_value,
+            function=setting_utils.update_value,
             args=['device_prefix',
                   RegexValidator(r"^[a-z]+_?[a-z_]+$"),
                   'Write a Kathara devices prefix:',

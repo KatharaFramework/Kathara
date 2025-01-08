@@ -21,6 +21,7 @@ from kubernetes.watch import watch
 
 from .KubernetesConfigMap import KubernetesConfigMap
 from .KubernetesNamespace import KubernetesNamespace
+from .exec_stream.KubernetesExecStream import KubernetesExecStream
 from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
@@ -303,6 +304,10 @@ class KubernetesMachine(object):
         if "bridged" in global_machine_metadata or machine.is_bridged():
             logging.warning('Bridged option is not supported on Megalos. It will be ignored.')
 
+        # If any ulimit is defined fot the device throw a warning
+        if "ulimits" in machine.meta and len(machine.meta["ulimits"].keys()) > 0:
+            logging.warning('Ulimit option is not supported on Megalos. It will be ignored.')
+
         # If any exec command is passed in command line, add it.
         if "exec" in global_machine_metadata:
             machine.add_meta("exec", global_machine_metadata["exec"])
@@ -432,7 +437,7 @@ class KubernetesMachine(object):
         pod_annotations = {}
         network_interfaces = []
         for (idx, interface) in machine.interfaces.items():
-            additional_data = {}
+            additional_data = {"kathara.link": interface.link.name}
             if interface.mac_address:
                 additional_data["mac"] = interface.mac_address
 
@@ -478,12 +483,19 @@ class KubernetesMachine(object):
                 )
             ))
 
-        pod_spec = client.V1PodSpec(containers=[container_definition],
-                                    hostname=machine.meta['real_name'],
-                                    dns_policy="None",
-                                    dns_config=dns_config,
-                                    volumes=volumes
-                                    )
+        # Add Docker Config JSON for Private Registries
+        image_pull_secrets = []
+        if Setting.get_instance().docker_config_json:
+            image_pull_secrets.append(client.V1LocalObjectReference(name='private-registry'))
+
+        pod_spec = client.V1PodSpec(
+            containers=[container_definition],
+            hostname=machine.meta['real_name'],
+            dns_policy="None",
+            dns_config=dns_config,
+            volumes=volumes,
+            image_pull_secrets=image_pull_secrets
+        )
 
         pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
         selector_rules = client.V1LabelSelector(match_labels=pod_labels)
@@ -722,7 +734,7 @@ class KubernetesMachine(object):
 
     def exec(self, lab_hash: str, machine_name: str, command: Union[str, List], tty: bool = False, stdin: bool = False,
              stdin_buffer: List[Union[str, bytes]] = None, stderr: bool = False, is_stream: bool = True) \
-            -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
+            -> Union[KubernetesExecStream, Tuple[bytes, bytes, int]]:
         """Execute the command on the Kubernetes Pod specified by the lab_hash and the machine_name.
 
         Args:
@@ -733,12 +745,12 @@ class KubernetesMachine(object):
             stdin (bool): If True, open the stdin channel.
             stdin_buffer (List[Union[str, bytes]]): List of command to pass to the stdin.
             stderr (bool): If True, return the stderr.
-            is_stream (bool): If True, return a generator object containing the stdout and the stderr of the command.
+            is_stream (bool): If True, return a KubernetesExecStream object.
                 If False, returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
-             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
+             Union[KubernetesExecStream, Tuple[bytes, bytes, int]]: A KubernetesExecStream object or
+             a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             MachineNotRunningError: If the specified device is not running.
@@ -772,7 +784,8 @@ class KubernetesMachine(object):
             stdin_buffer = []
 
         if is_stream:
-            return self._exec_stream(response, stdin, stdin_buffer, stderr)
+            exec_result = self._exec_stream(response, stdin, stdin_buffer, stderr)
+            return KubernetesExecStream(exec_result, response)
         else:
             return self._exec_all(response, machine_name, command, stdin, stdin_buffer, stderr)
 
@@ -842,13 +855,13 @@ class KubernetesMachine(object):
         response.close()
 
         try:
-            error_code = response.returncode
+            exit_code = response.returncode
         except ValueError as e:
             if OCI_RUNTIME_RE.search(str(e)):
                 raise MachineBinaryError(shlex.join(command), machine_name)
-            error_code = 1
+            exit_code = 1
 
-        return result['stdout'].encode('utf-8'), result['stderr'].encode('utf-8'), error_code
+        return result['stdout'].encode('utf-8'), result['stderr'].encode('utf-8'), exit_code
 
     def copy_files(self, machine_api_object: client.V1Deployment, path: str, tar_data: bytes) -> None:
         """Copy the files contained in tar_data in the Kubernetes deployment path specified by the machine_api_object.

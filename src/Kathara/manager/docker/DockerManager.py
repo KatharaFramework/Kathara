@@ -12,6 +12,7 @@ from .DockerImage import DockerImage
 from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
 from .DockerPlugin import DockerPlugin
+from .exec_stream.DockerExecStream import DockerExecStream
 from .stats.DockerLinkStats import DockerLinkStats
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
@@ -209,7 +210,16 @@ class DockerManager(IManager):
                 f"Device `{machine.name}` is already connected to collision domain `{link.name}`."
             )
 
-        interface = machine.add_interface(link, mac_address=mac_address)
+        iface_number = None
+        if machine.is_bridged():
+            if 'bridged_iface' not in machine.meta:
+                machine.add_meta('bridged_iface', int(machine.api_object.labels['bridged_iface']))
+            if not machine.interfaces or machine.meta['bridged_iface'] > max(machine.interfaces.keys()):
+                iface_number = machine.meta['bridged_iface'] + 1
+            else:
+                iface_number = max(machine.interfaces.keys()) + 1
+
+        interface = machine.add_interface(link, mac_address=mac_address, number=iface_number)
 
         self.deploy_link(link)
         self.docker_machine.connect_interface(machine, interface)
@@ -419,7 +429,7 @@ class DockerManager(IManager):
     @privileged
     def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
              lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False,
-             stream: bool = True) -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
+             stream: bool = True) -> Union[DockerExecStream, Tuple[bytes, bytes, int]]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -435,12 +445,12 @@ class DockerManager(IManager):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to wait
                 for each retry. Default is False.
-           stream (bool): If True, return a generator object containing the command output. If False,
+            stream (bool): If True, return a DockerExecStream object. If False,
                 returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
-             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
+            Union[DockerExecStream, Tuple[bytes, bytes, int]]: A DockerExecStream object or
+            a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
@@ -454,11 +464,12 @@ class DockerManager(IManager):
             lab_hash = utils.generate_urlsafe_hash(lab_name)
 
         user_name = utils.get_current_user_name()
-        return self.docker_machine.exec(lab_hash, machine_name, command, user=user_name, tty=False, wait=wait,
-                                        stream=stream)
+        return self.docker_machine.exec(
+            lab_hash, machine_name, command, user=user_name, tty=False, wait=wait, stream=stream
+        )
 
     def exec_obj(self, machine: Machine, command: Union[List[str], str], wait: Union[bool, Tuple[int, float]] = False,
-                 stream: bool = True) -> Union[Generator[Tuple[bytes, bytes], None, None], Tuple[bytes, bytes, int]]:
+                 stream: bool = True) -> Union[DockerExecStream, Tuple[bytes, bytes, int]]:
         """Exec a command on a device in a running network scenario.
 
         Args:
@@ -468,12 +479,12 @@ class DockerManager(IManager):
                 execution before executing the command. If a tuple is provided, the first value indicates the
                 number of retries before stopping waiting and the second value indicates the time interval to wait
                 for each retry. Default is False.
-            stream (bool): If True, return a generator object containing the command output. If False,
+            stream (bool): If True, return a DockerExecStream object. If False,
                 returns a tuple containing the complete stdout, the stderr, and the return code of the command.
 
         Returns:
-            Union[Generator[Tuple[bytes, bytes]], Tuple[bytes, bytes, int]]: A generator of tuples containing the stdout
-             and stderr in bytes or a tuple containing the stdout, the stderr and the return code of the command.
+            Union[DockerExecStream, Tuple[bytes, bytes, int]]: A DockerExecStream object or
+            a tuple containing the stdout, the stderr and the return code of the command.
 
         Raises:
             LabNotFoundError: If the specified device is not associated to any network scenario.
@@ -707,11 +718,15 @@ class DockerManager(IManager):
             device.meta["sysctls"] = container.attrs["HostConfig"]["Sysctls"]
 
             if "none" not in container.attrs["NetworkSettings"]["Networks"]:
-                for network_name, network_options in container.attrs["NetworkSettings"]["Networks"].items():
-                    if network_name == "bridge":
-                        device.add_meta("bridged", True)
-                        continue
+                if "bridge" in container.attrs["NetworkSettings"]["Networks"].keys():
+                    device.add_meta("bridged", True)
+                    device.add_meta("bridged_iface", int(container.labels['bridged_iface']))
+                    container.attrs["NetworkSettings"]["Networks"].pop("bridge")
 
+                networks = sorted(container.attrs["NetworkSettings"]["Networks"].items(),
+                                  key=lambda x: x[1]["DriverOpts"]["kathara.iface"])
+
+                for network_name, network_options in networks:
                     network = lab_networks[network_name]
                     link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
                     link.api_object = network
@@ -721,7 +736,8 @@ class DockerManager(IManager):
                         if "kathara.mac_addr" in network_options["DriverOpts"]:
                             iface_mac_addr = network_options["DriverOpts"]["kathara.mac_addr"]
 
-                    device.add_interface(link, mac_address=iface_mac_addr)
+                    device.add_interface(link, mac_address=iface_mac_addr,
+                                         number=int(network_options["DriverOpts"]["kathara.iface"]))
 
         return reconstructed_lab
 
@@ -756,10 +772,16 @@ class DockerManager(IManager):
             # Collision domains declared in the network scenario
             static_links = set([x.link for x in device.interfaces.values()])
             # Interfaces currently attached to the device
+            if "bridge" in container.attrs["NetworkSettings"]["Networks"].keys():
+                container.attrs["NetworkSettings"]["Networks"].pop("bridge")
+
+            if "none" in container.attrs["NetworkSettings"]["Networks"].keys():
+                container.attrs["NetworkSettings"]["Networks"].pop("none")
+
             current_ifaces = [
                 (lab.get_or_new_link(deployed_networks[name].attrs["Labels"]["name"]), options)
-                for name, options in container.attrs["NetworkSettings"]["Networks"].items()
-                if name != "bridge"
+                for name, options in sorted(container.attrs["NetworkSettings"]["Networks"].items(),
+                                            key=lambda x: x[1]["DriverOpts"]["kathara.iface"])
             ]
 
             # Collision domains currently attached to the device
@@ -782,7 +804,8 @@ class DockerManager(IManager):
                     if "kathara.mac_addr" in iface_options["DriverOpts"]:
                         iface_mac_addr = iface_options["DriverOpts"]["kathara.mac_addr"]
 
-                device.add_interface(link, mac_address=iface_mac_addr)
+                device.add_interface(link, mac_address=iface_mac_addr,
+                                     number=int(iface_options["DriverOpts"]["kathara.iface"]))
 
             for link in deleted_links:
                 device.remove_interface(link)

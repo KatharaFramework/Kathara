@@ -29,6 +29,7 @@ def test_default_device_parameters(default_device: Machine):
         'sysctls': {},
         'envs': {},
         'ports': {},
+        'ulimits': {}
     }
     assert default_device.api_object is None
     assert default_device.fs is None
@@ -205,10 +206,9 @@ def test_add_meta_env_with_spaces(default_device: Machine):
     assert default_device.meta['envs']['MY_ENV_VAR'] == "spaced value"
 
 
-def test_add_meta_env_double_equal(default_device: Machine):
-    with pytest.raises(MachineOptionError):
-        default_device.add_meta("env", "MY_ENV_VAR=test=not valid")
-
+def test_add_meta_env_complex(default_device: Machine):
+    default_device.add_meta("env", "IFACES=linux:eth0,name=iface/name")
+    assert default_device.meta['envs']['IFACES'] == "linux:eth0,name=iface/name"
 
 def test_add_meta_env_not_format_exception(default_device: Machine):
     with pytest.raises(MachineOptionError):
@@ -283,12 +283,71 @@ def test_add_meta_overwrite_port(default_device: Machine):
     assert result == 4000
 
 
+def test_add_meta_ulimit(default_device):
+    default_device.add_meta("ulimit", "nofile=1024:2048")
+    assert default_device.meta['ulimits']['nofile'] == {'soft': 1024, 'hard': 2048}
+
+
+def test_add_meta_ulimit_soft_only(default_device):
+    default_device.add_meta("ulimit", "nofile=1024")
+    assert default_device.meta['ulimits']['nofile'] == {'soft': 1024, 'hard': 1024}
+
+
+def test_add_meta_ulimit_negative_value(default_device):
+    default_device.add_meta("ulimit", "memlock=-1")
+    assert default_device.meta['ulimits']['memlock'] == {'soft': -1, 'hard': -1}
+
+
+def test_add_meta_ulimit_invalid_format(default_device):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta("ulimit", "nofile=1024:2048:4096")
+
+
+def test_add_meta_ulimit_not_format_exception(default_device):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta("ulimit", "nofile1024")
+
+
+def test_add_meta_ulimit_soft_greater_than_hard(default_device):
+    default_device.add_meta("ulimit", "nofile=2048:1024")
+    assert default_device.meta['ulimits']['nofile'] == {'soft': 1024, 'hard': 1024}
+
+
+def test_add_meta_ulimit_soft_unlimited_hard_limited(default_device):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta("ulimit", "nofile=-1:1024")
+
+
+def test_add_meta_ulimit_soft_limited_hard_unlimited(default_device):
+    default_device.add_meta("ulimit", "nofile=2048:-1")
+    assert default_device.meta['ulimits']['nofile'] == {'soft': 2048, 'hard': -1}
+
+
+def test_add_meta_ulimit_soft_and_hard_unlimited(default_device):
+    default_device.add_meta("ulimit", "nofile=-1:-1")
+    assert default_device.meta['ulimits']['nofile'] == {'soft': -1, 'hard': -1}
+
+
+def test_add_meta_ulimit_invalid_value(default_device):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta("ulimit", "nofile=1024:-2")
+
+
 #
 # TEST: check
 #
 def test_check(default_device: Machine):
     default_device.add_interface(Link(default_device.lab, "A"), number=0)
     default_device.add_interface(Link(default_device.lab, "B"), number=1)
+    default_device.check()
+
+
+def test_check_with_bridged(default_device: Machine):
+    default_device.add_interface(Link(default_device.lab, "A"), number=0)
+    default_device.add_meta("bridged", True)
+    default_device.add_meta("bridged_iface", 1)
+    default_device.add_interface(Link(default_device.lab, "B"), number=2)
+
     default_device.check()
 
 

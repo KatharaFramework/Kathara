@@ -58,7 +58,7 @@ class LconfigCommand(Command):
             help='Specify the collision domain to remove.'
         )
 
-    def run(self, current_path: str, argv: List[str]) -> None:
+    def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
         args = self.get_args()
 
@@ -94,3 +94,5 @@ class LconfigCommand(Command):
                     f"[red]- Removing interface on collision domain `{cd_to_remove}` from device `{machine_name}`..."
                 )
                 Kathara.get_instance().disconnect_machine_from_link(device, lab.get_link(cd_to_remove))
+
+        return 0

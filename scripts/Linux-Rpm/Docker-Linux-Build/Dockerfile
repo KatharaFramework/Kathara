@@ -1,4 +1,4 @@
-FROM fedora:38
+FROM fedora:39
 
 ENV RUBYOPT="-KU -E utf-8:utf-8"
 
