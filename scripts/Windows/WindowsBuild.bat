@@ -35,4 +35,15 @@ rmdir /S /Q kathara.build
 CALL %VENV_DIR%\Scripts\deactivate
 rmdir /S /Q %VENV_DIR%
 
+cd ..\scripts\Windows
+set "arch=%PROCESSOR_ARCHITECTURE%"
+if /I "%arch%"=="AMD64" (
+    set "arch_suffix=x64"
+) else if /I "%arch%"=="ARM64" (
+    set "arch_suffix=arm64"
+) else (
+    set "arch_suffix=x86"
+)
+
+iscc /DMyArchitecture=%arch_suffix% .\installer.iss
 cmd.exe

@@ -27,13 +27,13 @@ DisableProgramGroupPage=yes
 LicenseFile=..\..\LICENSE
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-OutputBaseFilename=Kathara-windows-installer-x64-{#MyAppVersion}
+OutputBaseFilename=Kathara-windows-installer-{#MyArchitecture}-{#MyAppVersion}
 SetupIconFile=Assets\app_icon.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 ChangesEnvironment=True
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode={#MyArchitecture}
 UninstallDisplayIcon={app}\Kathara.exe
 
 [Messages]
@@ -64,4 +64,4 @@ begin
     if CurUninstallStep = usPostUninstall
     then EnvRemovePath(ExpandConstant('{app}'));
 end;
-
+ 
