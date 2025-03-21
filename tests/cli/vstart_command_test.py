@@ -130,7 +130,6 @@ def test_run_with_privileged(mock_docker_manager, mock_manager_get_instance, moc
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
         command.run('.', ['-n', 'pc1', '--privileged'])
-        assert not mock_setting.open_terminals
         assert mock_setting.terminal == '/usr/bin/xterm'
         assert mock_setting.device_shell == '/usr/bin/bash'
         mock_add_option.assert_any_call('hosthome_mount', None)
@@ -151,7 +150,6 @@ def test_run_with_privileged_no_root(mock_setting_get_instance, mock_is_admin,
     command = VstartCommand()
     with pytest.raises(PrivilegeError):
         command.run('.', ['-n', 'pc1', '--privileged'])
-        assert not mock_setting.open_terminals
         assert mock_setting.terminal == '/usr/bin/xterm'
         assert mock_setting.device_shell == '/usr/bin/bash'
 

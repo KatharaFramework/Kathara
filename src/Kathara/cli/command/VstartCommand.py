@@ -193,8 +193,9 @@ class VstartCommand(Command):
             if not utils.is_admin():
                 raise PrivilegeError("You must be root in order to start this Kathara device in privileged mode.")
             else:
-                self.console.print("[yellow]\u26a0 Running devices with privileged capabilities, terminals won't open!")
-                Setting.get_instance().open_terminals = False
+                self.console.print(
+                    "[yellow]\u26a0 Running devices with privileged capabilities, terminal might not open!"
+                )
 
         lab = Lab("kathara_vlab")
         lab.add_option('hosthome_mount', args['hosthome_mount'])

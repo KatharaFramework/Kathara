@@ -219,8 +219,9 @@ class LstartCommand(Command):
             if not utils.is_admin():
                 raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
             else:
-                self.console.print("[yellow]\u26a0 Running devices with privileged capabilities, terminals won't open!")
-                Setting.get_instance().open_terminals = False
+                self.console.print(
+                    "[yellow]\u26a0 Running devices with privileged capabilities, terminals might not open!"
+                )
 
         Kathara.get_instance().deploy_lab(
             lab, selected_machines=set(args['machine_name']), excluded_machines=set(args['excluded_machines'])
