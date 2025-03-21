@@ -33,6 +33,8 @@ OCI_RUNTIME_RE = re.compile(
     r"OCI runtime exec failed(.*?)(stat (.*): no such file or directory|exec: \"(.*)\": executable file not found)"
 )
 
+IFACE_SYSCTL_RE = re.compile(r"net\.ipv[4,6]\.(conf|neigh)\.eth\d+")
+
 # Known commands that each container should execute
 # Run order: shared.startup, machine.startup and machine.meta['exec_commands']
 STARTUP_COMMANDS = [
@@ -280,6 +282,9 @@ class DockerMachine(object):
         # Merge machine sysctls
         sysctl_parameters = {**sysctl_parameters, **machine.meta['sysctls'], **sysctl_first_interface}
 
+        if version_gte(self._engine_version, "27.0.0"):
+            sysctl_parameters = dict(filter(lambda x: not IFACE_SYSCTL_RE.match(x[0]), sysctl_parameters.items()))
+
         volumes = {}
 
         lab_options = machine.lab.general_options
@@ -300,12 +305,12 @@ class DockerMachine(object):
 
         networking_config = None
         if first_machine_iface:
-            driver_opt = self._create_driver_opt(machine, first_machine_iface)
+            driver_opt = self._create_driver_opt(
+                machine, first_machine_iface, self._get_iface_sysctls(machine.get_sysctls(), first_machine_iface.num)
+            )
 
             networking_config = {
-                first_network.name: self.client.api.create_endpoint_config(
-                    driver_opt=driver_opt
-                )
+                first_network.name: self.client.api.create_endpoint_config(driver_opt=driver_opt)
             }
 
         container_name = self.get_container_name(machine.name, machine.lab.hash)
@@ -369,7 +374,10 @@ class DockerMachine(object):
         attached_networks = machine.api_object.attrs["NetworkSettings"]["Networks"]
 
         if interface.link.api_object.name not in attached_networks:
-            driver_opt = self._create_driver_opt(machine, interface)
+            driver_opt = self._create_driver_opt(
+                machine, interface, self._get_iface_sysctls(machine.get_sysctls(), interface.num)
+            )
+
             try:
                 interface.link.api_object.connect(
                     machine.api_object,
@@ -383,24 +391,46 @@ class DockerMachine(object):
                 else:
                     raise e
 
-    def _create_driver_opt(self, machine: Machine, interface: Interface) -> dict[str, str]:
-        """Create a dict containing the default network driver options for a device.
+    @staticmethod
+    def _get_iface_sysctls(sysctls: Dict[str, int], interface_num: int) -> Set[str]:
+        """Extract and transform sysctl settings specific to a particular network interface.
+
+            Args:
+                sysctls (Dict[str, int]): The sysctls for the device.
+                interface_num (int): The interface number for which to match and transform sysctl settings.
+
+            Returns:
+                Set[str]: A set containing transformed sysctl settings strings for the specified interface.
+                    Each string includes the setting in "key=value" format with the interface name replaced by 'IFNAME'.
+        """
+        iface_sysctls = set()
+        for sysctl_name, value in sysctls.items():
+            if re.match(rf"net\.ipv[4,6]\.(conf|neigh)\.eth{interface_num}", sysctl_name):
+                sysctl = f"{re.sub(rf'eth{interface_num}', 'IFNAME', sysctl_name)}={value}"
+                iface_sysctls.add(sysctl)
+        return iface_sysctls
+
+    def _create_driver_opt(self, machine: Machine, interface: Interface, iface_sysctls: Set[str]) -> Dict[str, str]:
+        """Create a dict containing the network driver options for a device.
 
         Args:
             machine (Kathara.model.Machine.Machine): The Kathara device to be attached to the interface.
             interface (Kathara.model.Interface.Interface): The interface to be attached to the device.
+            iface_sysctls (Set[str]): Sysctls in Docker driver_opt format for the interface.
 
         Returns:
-            dict[str, str]: A dict containing the default network driver options for a device.
+            Dict[str, str]: A dict containing the network driver options for a device.
         """
         driver_opt = {'kathara.iface': str(interface.num), 'kathara.link': interface.link.name}
         if version_gte(self._engine_version, "27.0.0"):
-            sysctl_opts = ["net.ipv4.conf.IFNAME.rp_filter=0"]
+            sysctl_opts = {"net.ipv4.conf.IFNAME.rp_filter=0"}
 
             if machine.is_ipv6_enabled():
-                sysctl_opts.extend(["net.ipv6.conf.IFNAME.disable_ipv6=0", "net.ipv6.conf.IFNAME.forwarding=1"])
+                sysctl_opts.update({"net.ipv6.conf.IFNAME.disable_ipv6=0", "net.ipv6.conf.IFNAME.forwarding=1"})
             else:
-                sysctl_opts.append("net.ipv6.conf.IFNAME.disable_ipv6=1")
+                sysctl_opts.add("net.ipv6.conf.IFNAME.disable_ipv6=1")
+
+            sysctl_opts.update(iface_sysctls)
 
             driver_opt["com.docker.network.endpoint.sysctls"] = ",".join(sysctl_opts)
 
