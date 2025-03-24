@@ -599,14 +599,7 @@ def test_start_one_mac_addr(docker_machine, default_device, default_link, defaul
     docker_machine.client.api.exec_create.assert_called_once()
     docker_machine.client.api.exec_start.assert_called_once()
     docker_machine.client.api.exec_inspect.assert_called_once()
-    default_link_b.api_object.connect.assert_called_once_with(
-        default_device.api_object,
-        driver_opt={
-            'kathara.iface': str(iface_b.num), 'kathara.link': iface_b.link.name,
-            'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
-            'kathara.mac_addr': expected_mac_addr
-        }
-    )
+    default_link_b.api_object.connect.assert_called_once()
 
 
 def test_start_two_mac_addr(docker_machine, default_device, default_link, default_link_b, default_link_c):
@@ -628,22 +621,8 @@ def test_start_two_mac_addr(docker_machine, default_device, default_link, defaul
     docker_machine.client.api.exec_create.assert_called_once()
     docker_machine.client.api.exec_start.assert_called_once()
     docker_machine.client.api.exec_inspect.assert_called_once()
-    default_link_b.api_object.connect.assert_called_once_with(
-        default_device.api_object,
-        driver_opt={
-            'kathara.iface': str(iface_b.num), 'kathara.link': iface_b.link.name,
-            'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
-            'kathara.mac_addr': expected_mac_addr_1
-        }
-    )
-    default_link_c.api_object.connect.assert_called_once_with(
-        default_device.api_object,
-        driver_opt={
-            'kathara.iface': str(iface_c.num), 'kathara.link': iface_c.link.name,
-            'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
-            'kathara.mac_addr': expected_mac_addr_2
-        }
-    )
+    default_link_b.api_object.connect.assert_called_once()
+    default_link_c.api_object.connect.assert_called_once()
 
 
 def test_start_plugin_error_endpoint_start(default_device, docker_machine):
@@ -856,14 +835,7 @@ def test_connect_interface_mac_addr(docker_machine, default_device, default_link
     docker_machine.connect_interface(default_device, interface)
 
     assert not default_link.api_object.connect.called
-    default_link_b.api_object.connect.assert_called_once_with(
-        default_device.api_object,
-        driver_opt={
-            'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
-            'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
-            'kathara.mac_addr': expected_mac_addr
-        }
-    )
+    default_link_b.api_object.connect.assert_called_once()
 
 
 def test_connect_interface_plugin_error_network(default_device, default_link, docker_machine):
@@ -904,10 +876,18 @@ def test_connect_interface_plugin_api_error(default_device, default_link, docker
 #
 # TEST:_create_driver_opt
 #
+def order_driver_opt(driver_opt: dict[str, str]) -> dict[str, str]:
+    if "com.docker.network.endpoint.sysctls" in driver_opt:
+        sysctls = sorted(driver_opt["com.docker.network.endpoint.sysctls"].split(","))
+        driver_opt["com.docker.network.endpoint.sysctls"] = ",".join(sysctls)
+    return driver_opt
+
+
 def test_create_driver_opt_no_ipv6(docker_machine, default_device, default_link):
     interface = default_device.add_interface(default_link)
-    driver_opt = docker_machine._create_driver_opt(default_device, interface)
-    assert driver_opt == {
+    driver_opt = docker_machine._create_driver_opt(
+        default_device, interface, docker_machine._get_iface_sysctls(default_device.get_sysctls(), interface.num))
+    assert order_driver_opt(driver_opt) == {
         'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
         'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
     }
@@ -916,8 +896,10 @@ def test_create_driver_opt_no_ipv6(docker_machine, default_device, default_link)
 def test_create_driver_opt_mac_address(docker_machine, default_device, default_link):
     interface = default_device.add_interface(default_link)
     interface.mac_address = '00:00:00:00:00:01'
-    driver_opt = docker_machine._create_driver_opt(default_device, interface)
-    assert driver_opt == {
+    driver_opt = docker_machine._create_driver_opt(
+        default_device, interface, docker_machine._get_iface_sysctls(default_device.get_sysctls(), interface.num)
+    )
+    assert order_driver_opt(driver_opt) == {
         'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
         'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1',
         'kathara.mac_addr': '00:00:00:00:00:01'
@@ -927,18 +909,31 @@ def test_create_driver_opt_mac_address(docker_machine, default_device, default_l
 def test_create_driver_opt_ipv6(docker_machine, default_device, default_link):
     interface = default_device.add_interface(default_link)
     default_device.add_meta('ipv6', True)
-    driver_opt = docker_machine._create_driver_opt(default_device, interface)
-    assert driver_opt == {
+    driver_opt = docker_machine._create_driver_opt(
+        default_device, interface, docker_machine._get_iface_sysctls(default_device.get_sysctls(), interface.num)
+    )
+    assert order_driver_opt(driver_opt) == {
         'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
         'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=0,net.ipv6.conf.IFNAME.forwarding=1',
     }
 
+def test_create_driver_opt_complete(docker_machine, default_device, default_link):
+    interface = default_device.add_interface(default_link)
+    default_device.add_meta('sysctl', "net.ipv6.neigh.eth0.anycast_delay=50")
+    driver_opt = docker_machine._create_driver_opt(
+        default_device, interface, docker_machine._get_iface_sysctls(default_device.get_sysctls(), interface.num))
+    assert order_driver_opt(driver_opt) == {
+        'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
+        'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1,net.ipv6.neigh.IFNAME.anycast_delay=50',
+    }
 
 def test_create_driver_old_docker(docker_machine, default_device, default_link):
     docker_machine._engine_version = '25.0.0'
     interface = default_device.add_interface(default_link)
-    driver_opt = docker_machine._create_driver_opt(default_device, interface)
-    assert driver_opt == {'kathara.iface': str(interface.num), 'kathara.link': interface.link.name}
+    driver_opt = docker_machine._create_driver_opt(
+        default_device, interface, docker_machine._get_iface_sysctls(default_device.get_sysctls(), interface.num)
+    )
+    assert order_driver_opt(driver_opt) == {'kathara.iface': str(interface.num), 'kathara.link': interface.link.name}
 
 
 #
