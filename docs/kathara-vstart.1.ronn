@@ -5,7 +5,7 @@ kathara-vstart(1) -- Start a new Kathara device
 ## SYNOPSIS
 
 `kathara vstart` `-n` <DEVICE_NAME>  
-[`-h`] [`--noterminals` | `--terminals` | `--privileged` | `--num_terms` <NUM_TERMS>]  
+[`-h`] [`--noterminals` | `--terminals` | `--num_terms` <NUM_TERMS>] [`--privileged`]  
 [`--eth` <N:CD[/MAC_ADDR]> [<N:CD[/MAC_ADDR]> ...]]  
 [`-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]] [`--mem` <MEM>]  
 [`--cpus` <CPUS>] [`-i` <IMAGE>] [`--no-hosthome` \| `--hosthome`]  
