@@ -282,7 +282,7 @@ class DockerMachine(object):
 
         # Merge machine sysctls
         sysctl_parameters = {**sysctl_parameters, **machine.meta['sysctls'], **sysctl_first_interface}
-
+        # Remove interface-related sysctls on newer Docker Engine versions (these are added as driver_opts)
         if version_gte(self._engine_version, "27.0.0"):
             sysctl_parameters = dict(filter(lambda x: not IFACE_SYSCTL_RE.match(x[0]), sysctl_parameters.items()))
 
