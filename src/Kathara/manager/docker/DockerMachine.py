@@ -46,10 +46,11 @@ STARTUP_COMMANDS = [
     "if [ -d \"/hostlab/{machine_name}\" ]; then "
     "(cd /hostlab/{machine_name} && tar c .) | (cd / && tar xhf - --no-same-owner --no-same-permissions); fi",
 
-    # If /etc/hosts is not configured by the user, add the localhost mapping
+    # If /etc/hosts is not configured by the user, add the default mappings
     "if [ ! -s \"/etc/hosts\" ]; then "
     "echo '127.0.0.1 localhost' > /etc/hosts",
     "echo '::1 localhost' >> /etc/hosts",
+    "echo '127.0.1.1 {machine_name}' >> /etc/hosts",
     "fi",
 
     # Give proper permissions to /var/www
