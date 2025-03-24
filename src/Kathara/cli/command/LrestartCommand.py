@@ -42,7 +42,7 @@ class LrestartCommand(Command):
             const=True,
             help='Start the network scenario opening terminal windows.'
         )
-        group.add_argument(
+        self.parser.add_argument(
             "--privileged",
             action="store_const",
             const=True,
