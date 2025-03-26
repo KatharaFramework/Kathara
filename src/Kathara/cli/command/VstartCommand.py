@@ -47,17 +47,17 @@ class VstartCommand(Command):
             help='Start the device opening its terminal window.'
         )
         group.add_argument(
+            '--num_terms',
+            metavar='NUM_TERMS',
+            required=False,
+            help='Choose the number of terminals to open for the device.'
+        )
+        self.parser.add_argument(
             "--privileged",
             action="store_const",
             const=True,
             required=False,
             help='Start the device in privileged mode. MUST BE ROOT FOR THIS OPTION.'
-        )
-        group.add_argument(
-            '--num_terms',
-            metavar='NUM_TERMS',
-            required=False,
-            help='Choose the number of terminals to open for the device.'
         )
         self.parser.add_argument(
             '-n', '--name',
@@ -193,8 +193,10 @@ class VstartCommand(Command):
             if not utils.is_admin():
                 raise PrivilegeError("You must be root in order to start this Kathara device in privileged mode.")
             else:
-                self.console.print("[yellow]\u26a0 Running devices with privileged capabilities, terminals won't open!")
-                Setting.get_instance().open_terminals = False
+                if Setting.get_instance().open_terminals:
+                    self.console.print(
+                        "[yellow]\u26a0 Running devices with privileged capabilities, terminal might not open!"
+                    )
 
         lab = Lab("kathara_vlab")
         lab.add_option('hosthome_mount', args['hosthome_mount'])

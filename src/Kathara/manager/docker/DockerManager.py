@@ -730,14 +730,17 @@ class DockerManager(IManager):
                     network = lab_networks[network_name]
                     link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
                     link.api_object = network
+                    iface_number = int(network_options["DriverOpts"]["kathara.iface"])
 
                     iface_mac_addr = None
                     if network_options["DriverOpts"] is not None:
                         if "kathara.mac_addr" in network_options["DriverOpts"]:
                             iface_mac_addr = network_options["DriverOpts"]["kathara.mac_addr"]
+                        if "com.docker.network.endpoint.sysctls" in network_options["DriverOpts"]:
+                            for s in network_options["DriverOpts"]["com.docker.network.endpoint.sysctls"].split(","):
+                                device.add_meta("sysctl", s.replace("IFNAME", f"eth{iface_number}"))
 
-                    device.add_interface(link, mac_address=iface_mac_addr,
-                                         number=int(network_options["DriverOpts"]["kathara.iface"]))
+                    device.add_interface(link, mac_address=iface_mac_addr, number=iface_number)
 
         return reconstructed_lab
 
@@ -800,12 +803,16 @@ class DockerManager(IManager):
                 link.api_object = deployed_networks_by_link_name[link.name]
                 iface_options = current_ifaces[link.name]
                 iface_mac_addr = None
+                iface_number = int(iface_options["DriverOpts"]["kathara.iface"])
+
                 if iface_options["DriverOpts"] is not None:
                     if "kathara.mac_addr" in iface_options["DriverOpts"]:
                         iface_mac_addr = iface_options["DriverOpts"]["kathara.mac_addr"]
+                    if "com.docker.network.endpoint.sysctls" in iface_options["DriverOpts"]:
+                        for s in iface_options["DriverOpts"]["com.docker.network.endpoint.sysctls"].split(","):
+                            device.add_meta("sysctl", s.replace("IFNAME", f"eth{iface_number}"))
 
-                device.add_interface(link, mac_address=iface_mac_addr,
-                                     number=int(iface_options["DriverOpts"]["kathara.iface"]))
+                device.add_interface(link, mac_address=iface_mac_addr, number=iface_number)
 
             for link in deleted_links:
                 device.remove_interface(link)

@@ -1,5 +1,6 @@
 import copy
 import sys
+from collections import namedtuple
 from unittest import mock
 from unittest.mock import Mock, call
 
@@ -38,14 +39,10 @@ class FakeManager(object):
         return True
 
 
-EXPECTED_NETWORK_ID = 4694369
-NETWORK_IDS_SINGLE = {
-    4694369: 1
-}
-NETWORK_IDS_DOUBLE = {
-    4694369: 1,
-    4694370: 1
-}
+FakeLinkData = namedtuple('FakeLinkData', ['metadata'])
+FakeLinkMetadata = namedtuple('FakeLinkMetadata', ['name'])
+
+EXPECTED_NETWORK_ID = 1362434
 
 
 #
@@ -55,6 +52,21 @@ NETWORK_IDS_DOUBLE = {
 def default_link():
     from src.Kathara.model.Link import Link
     return Link(Lab("default_scenario"), "A")
+
+
+@pytest.fixture()
+def NETWORK_IDS_SINGLE():
+    return {
+        1362434: 1
+    }
+
+
+@pytest.fixture()
+def NETWORK_IDS_DOUBLE():
+    return {
+        1362434: 1,
+        1362435: 1
+    }
 
 
 @pytest.fixture()
@@ -177,14 +189,14 @@ def test_build_definition(mock_setting_get_instance, default_link, kubernetes_li
 # TEST: _get_network_id
 #
 def test_get_network_id(kubernetes_link):
-    actual_id = kubernetes_link._get_network_id("a", 0)
+    actual_id = kubernetes_link._get_network_id("A", 0)
 
     assert actual_id == EXPECTED_NETWORK_ID
 
 
 def test_get_network_id_offset(kubernetes_link):
     expected_id = EXPECTED_NETWORK_ID + 1
-    actual_id = kubernetes_link._get_network_id("a", 1)
+    actual_id = kubernetes_link._get_network_id("A", 1)
 
     assert actual_id == expected_id
 
@@ -195,26 +207,26 @@ def test_get_network_id_offset(kubernetes_link):
 def test_get_unique_network_id(kubernetes_link):
     network_ids = {}
 
-    actual_network_id = kubernetes_link._get_unique_network_id("a", network_ids)
+    actual_network_id = kubernetes_link._get_unique_network_id("A", network_ids)
 
     assert actual_network_id == EXPECTED_NETWORK_ID
-    assert network_ids == {4694369: 1}
+    assert network_ids == {1362434: 1}
 
 
-def test_get_unique_network_id_collision(kubernetes_link):
+def test_get_unique_network_id_collision(kubernetes_link, NETWORK_IDS_SINGLE):
     expected_network_id = EXPECTED_NETWORK_ID + 1
-    actual_network_id = kubernetes_link._get_unique_network_id("a", NETWORK_IDS_SINGLE)
+    actual_network_id = kubernetes_link._get_unique_network_id("A", NETWORK_IDS_SINGLE)
 
     assert actual_network_id == expected_network_id
-    assert NETWORK_IDS_SINGLE == {4694369: 1, expected_network_id: 1}
+    assert NETWORK_IDS_SINGLE == {1362434: 1, expected_network_id: 1}
 
 
-def test_get_unique_network_id_double_collision(kubernetes_link):
+def test_get_unique_network_id_double_collision(kubernetes_link, NETWORK_IDS_DOUBLE):
     expected_network_id = EXPECTED_NETWORK_ID + 2
-    actual_network_id = kubernetes_link._get_unique_network_id("a", NETWORK_IDS_DOUBLE)
+    actual_network_id = kubernetes_link._get_unique_network_id("A", NETWORK_IDS_DOUBLE)
 
     assert actual_network_id == expected_network_id
-    assert NETWORK_IDS_DOUBLE == {4694369: 1, 4694370: 1, expected_network_id: 1}
+    assert NETWORK_IDS_DOUBLE == {1362434: 1, 1362435: 1, expected_network_id: 1}
 
 
 #
@@ -292,13 +304,13 @@ def test_create(mock_setting_get_instance, kubernetes_link, default_link):
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.create")
 def test_deploy_link(mock_create, kubernetes_link, default_link):
     kubernetes_link._deploy_link({}, ("", default_link))
-    mock_create.called_once_with(default_link, EXPECTED_NETWORK_ID)
+    mock_create.assert_called_once_with(default_link, EXPECTED_NETWORK_ID)
 
 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.create")
-def test_deploy_link_collision(mock_create, kubernetes_link, default_link):
+def test_deploy_link_collision(mock_create, kubernetes_link, default_link, NETWORK_IDS_SINGLE):
     kubernetes_link._deploy_link(NETWORK_IDS_SINGLE, ("", default_link))
-    mock_create.called_once_with(default_link, EXPECTED_NETWORK_ID + 1)
+    mock_create.assert_called_once_with(default_link, EXPECTED_NETWORK_ID + 1)
 
 
 #
@@ -438,7 +450,7 @@ def test_get_links_by_filters(kubernetes_link):
     kubernetes_link.get_links_api_objects_by_filters("lab_hash_value", "link_name_value")
     filters = ["app=kathara", "name=link_name_value"]
 
-    kubernetes_link.client.list_namespaced_custom_object.called_once_with(
+    kubernetes_link.client.list_namespaced_custom_object.assert_called_once_with(
         group="k8s.cni.cncf.io",
         version="v1",
         namespace="lab_hash_value",
@@ -449,14 +461,27 @@ def test_get_links_by_filters(kubernetes_link):
 
 
 def test_get_links_by_filters_empty_filters(kubernetes_link):
+    ld1 = FakeLinkData(metadata=FakeLinkMetadata(name='lab_hash_value1'))
+    ld2 = FakeLinkData(metadata=FakeLinkMetadata(name='lab_hash_value2'))
+    kubernetes_link.kubernetes_namespace.get_all.return_value = [ld1, ld2]
+
     kubernetes_link.get_links_api_objects_by_filters()
 
     filters = ["app=kathara"]
 
-    kubernetes_link.client.list_namespaced_custom_object.called_once_with(
+    kubernetes_link.client.list_namespaced_custom_object.assert_any_call(
         group="k8s.cni.cncf.io",
         version="v1",
-        namespace="lab_hash_value",
+        namespace="lab_hash_value1",
+        plural="network-attachment-definitions",
+        label_selector=",".join(filters),
+        timeout_seconds=9999
+    )
+
+    kubernetes_link.client.list_namespaced_custom_object.assert_any_call(
+        group="k8s.cni.cncf.io",
+        version="v1",
+        namespace="lab_hash_value2",
         plural="network-attachment-definitions",
         label_selector=",".join(filters),
         timeout_seconds=9999
@@ -466,9 +491,9 @@ def test_get_links_by_filters_empty_filters(kubernetes_link):
 def test_get_links_by_filters_only_lab_hash(kubernetes_link):
     kubernetes_link.get_links_api_objects_by_filters("lab_hash_value")
 
-    filters = ["app=kathara", "lab_hash=lab_hash_value"]
+    filters = ["app=kathara"]
 
-    kubernetes_link.client.list_namespaced_custom_object.called_once_with(
+    kubernetes_link.client.list_namespaced_custom_object.assert_called_once_with(
         group="k8s.cni.cncf.io",
         version="v1",
         namespace="lab_hash_value",
@@ -479,11 +504,14 @@ def test_get_links_by_filters_only_lab_hash(kubernetes_link):
 
 
 def test_get_links_by_filters_only_link_name(kubernetes_link):
+    ld = FakeLinkData(metadata=FakeLinkMetadata(name='lab_hash_value'))
+    kubernetes_link.kubernetes_namespace.get_all.return_value = [ld]
+
     kubernetes_link.get_links_api_objects_by_filters(None, "link_name_value")
 
     filters = ["app=kathara", "name=link_name_value"]
 
-    kubernetes_link.client.list_namespaced_custom_object.called_once_with(
+    kubernetes_link.client.list_namespaced_custom_object.assert_called_once_with(
         group="k8s.cni.cncf.io",
         version="v1",
         namespace="lab_hash_value",
@@ -507,7 +535,7 @@ def test_undeploy(mock_get_links_by_filters, mock_undeploy_link, kubernetes_netw
 
     kubernetes_link.undeploy("lab_hash")
 
-    mock_get_links_by_filters.called_once_with(lab.hash)
+    mock_get_links_by_filters.assert_called_once_with(lab_hash="lab_hash")
     assert mock_undeploy_link.call_count == 3
 
 
@@ -520,7 +548,7 @@ def test_undeploy_empty_lab(mock_get_links_by_filters, mock_undeploy_link, kuber
 
     kubernetes_link.undeploy("lab_hash")
 
-    mock_get_links_by_filters.called_once_with(lab.hash)
+    mock_get_links_by_filters.assert_called_once_with(lab_hash="lab_hash")
     assert not mock_undeploy_link.called
 
 
@@ -541,7 +569,7 @@ def test_undeploy_selected_links(mock_get_links_by_filters, mock_undeploy_link, 
 
     kubernetes_link.undeploy("lab_hash", selected_links={"netprefix-b"})
 
-    mock_get_links_by_filters.called_once_with(lab.hash)
+    mock_get_links_by_filters.assert_called_once_with(lab_hash="lab_hash")
     assert mock_undeploy_link.call_count == 1
 
 
@@ -560,7 +588,7 @@ def test_wipe(mock_get_links_by_filters, mock_undeploy_link, kubernetes_link, ku
 
     kubernetes_link.wipe()
 
-    mock_get_links_by_filters.called_once_with(lab.hash)
+    mock_get_links_by_filters.assert_called_once_with()
     assert mock_undeploy_link.call_count == 3
 
 

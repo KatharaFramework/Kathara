@@ -1,10 +1,11 @@
 [project]
 name = "kathara"
-version = "3.7.8"
+version = "3.7.9"
 description = "A lightweight container-based network emulation tool."
 readme = "README.md"
 requires-python = ">=3.9"
-license = { file = "LICENSE" }
+license = 'gpl-3.0'
+license-files = ["LICENSE"]
 keywords = ["NETWORK-EMULATION", "CONTAINERS", "NFV"]
 authors = [
     { name = "Kathara Framework", email = "contact@kathara.org" }
@@ -22,7 +23,6 @@ classifiers = [
     "Intended Audience :: Education",
     "Intended Audience :: Telecommunications Industry",
     "Topic :: Software Development :: Build Tools",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11"

@@ -178,7 +178,6 @@ def test_run_with_privileged(mock_setting_get_instance, mock_is_admin, mock_pars
     command = LstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
         command.run('.', ['--privileged'])
-        assert not mock_setting.open_terminals
         assert mock_setting.terminal == '/usr/bin/xterm'
         mock_parse_lab.assert_called_once_with(os.getcwd())
         mock_parse_dep.assert_called_once_with(os.getcwd())
