@@ -299,6 +299,9 @@ class DockerMachine(object):
         if hosthome_mount and Setting.get_instance().remote_url is None:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
+        for host_path, volume in machine.meta["volumes"].items():
+            volumes[host_path] = {'bind': volume['guest_path'], 'mode': volume['mode']}
+
         privileged = lab_options['privileged_machines']
         if Setting.get_instance().remote_url is not None and privileged:
             privileged = False

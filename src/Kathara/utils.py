@@ -1,25 +1,25 @@
+import math
+import sys
+from itertools import islice
+from multiprocessing import cpu_count
+from sys import platform as _platform
+
 import base64
 import hashlib
 import importlib
 import io
 import logging
-import math
 import os
 import re
 import shutil
-import sys
 import tarfile
 import tempfile
+from binaryornot.check import is_binary
 from io import BytesIO
-from itertools import islice
-from multiprocessing import cpu_count
 from platform import node, machine
-from sys import platform as _platform
+from slug import slug
 from types import ModuleType
 from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable, Tuple
-
-from binaryornot.check import is_binary
-from slug import slug
 
 from .exceptions import HostArchitectureError, InvocationError
 
@@ -366,3 +366,25 @@ def parse_docker_engine_version(v: str) -> str:
             break
 
     return '.'.join(parts)
+
+
+def check_directory_permissions(path: str, mode: str = "ro"):
+    if not os.path.exists(path):
+        raise FileExistsError(f"Path `{path}` does not exist.")
+
+    if not os.path.isdir(path):
+        raise NotADirectoryError(f"Path `{path}` must be a directory.")
+
+    missing = []
+
+    if 'r' in mode and not os.access(path, os.R_OK):
+        missing.append("read (r)")
+    if 'w' in mode and not os.access(path, os.W_OK):
+        missing.append("write (w)")
+    if 'x' in mode and not os.access(path, os.X_OK):
+        missing.append("execute (x)")
+
+    if missing:
+        return False, missing
+    else:
+        return True, []

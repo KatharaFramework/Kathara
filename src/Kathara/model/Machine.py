@@ -1,5 +1,6 @@
 import collections
 import logging
+import os
 import re
 from io import BytesIO
 from typing import Dict, Any, Tuple, Optional, List, OrderedDict, TextIO, Union, BinaryIO
@@ -21,6 +22,7 @@ from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError,
 from ..foundation.model.FilesystemMixin import FilesystemMixin
 from ..setting.Setting import Setting
 from ..trdparty.strtobool.strtobool import strtobool
+from ..utils import check_directory_permissions
 
 MACHINE_CAPABILITIES: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
 
@@ -68,7 +70,8 @@ class Machine(FilesystemMixin):
             'sysctls': {},
             'envs': {},
             'ports': {},
-            'ulimits': {}
+            'ulimits': {},
+            'volumes': {}
         }
 
         self.api_object: Any = None
@@ -254,6 +257,25 @@ class Machine(FilesystemMixin):
                 raise MachineOptionError("Port value not valid on `%s`." % self.name)
             return old_value
 
+        if name == "volume":
+            values = value.split(':')
+            if len(values) == 3:
+                host_path, guest_path, mode = values
+            elif len(values) == 2:
+                host_path, guest_path = values
+                mode = 'ro'
+            else:
+                raise MachineOptionError(
+                    f"The volume specified {value} is not in a valid format: <host_path>:<guest_path>:[<mode>]")
+
+
+            permission, missing_permissions = check_directory_permissions(host_path, mode)
+            if permission:
+                self.meta['volumes'][os.path.abspath(host_path)] = {'guest_path': guest_path, 'mode': mode}
+            else:
+                raise MachineOptionError(
+                    f"To mount volume `{host_path}` in `{guest_path}` you missed the following permissions: `{missing_permissions}`.")
+
         old_value = self.meta[name] if name in self.meta else None
         self.meta[name] = value
         return old_value
@@ -307,6 +329,10 @@ class Machine(FilesystemMixin):
 
         if 'shell' in args and args['shell'] is not None:
             self.add_meta("shell", args['shell'])
+
+        if 'volumes' in args and args['volumes'] is not None:
+            for volume in args['volumes']:
+                self.add_meta("volume", volume)
 
     def check(self) -> None:
         """Sort interfaces and check if there are missing interface numbers.
@@ -517,6 +543,15 @@ class Machine(FilesystemMixin):
             raise MachineOptionError("Terminals Number value not valid on `%s`." % self.name)
 
         return num_terms
+
+    def get_volumes(self) -> dict[str, str]:
+        """Get the paths of the additional volumes mounted on the device.
+
+        Returns:
+            dict[str, str]: The paths of the additional volumes mounted on the device. Keys represent the paths on the
+                host, while values represent the paths on the device.
+        """
+        return self.meta['volumes']
 
     def is_ipv6_enabled(self) -> bool:
         """Check if IPv6 is enabled on the device.
