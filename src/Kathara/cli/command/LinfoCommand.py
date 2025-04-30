@@ -76,6 +76,10 @@ class LinfoCommand(Command):
 
         lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
         lab_path = utils.get_absolute_path(lab_path)
+
+        # Load custom 'kathara.conf' if it exists
+        self._load_custom_configuration(lab_path)
+
         try:
             lab = LabParser.parse(lab_path)
         except (Exception, IOError):

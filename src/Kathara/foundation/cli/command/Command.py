@@ -1,9 +1,12 @@
+import logging
+import os
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
 from rich.console import Console
 from rich.theme import Theme
 
+from Kathara.setting.Setting import Setting
 from ..CliArgs import CliArgs
 
 
@@ -33,3 +36,15 @@ class Command(ABC):
     @staticmethod
     def get_args() -> Dict[str, Any]:
         return CliArgs.get_instance().args
+
+    @staticmethod
+    def _load_custom_configuration(lab_path: str) -> None:
+        """Load custom configuration from the given lab path if it exists.
+
+        Args:
+            lab_path (str): Path to the lab directory
+        """
+        custom_conf_path = os.path.join(lab_path, 'kathara.conf')
+        if os.path.exists(custom_conf_path):
+            logging.info(f'Loading custom configuration file: {custom_conf_path} ...')
+            Setting.get_instance().load_from_disk(lab_path)
