@@ -44,7 +44,7 @@ class Command(ABC):
         Args:
             lab_path (str): Path to the lab directory
         """
-        custom_conf_path = os.path.join(lab_path, 'kathara.conf')
+        custom_conf_path = os.path.join(lab_path, Setting.SETTINGS_FILENAME)
         if os.path.exists(custom_conf_path):
             logging.info(f'Loading custom configuration file: {custom_conf_path} ...')
             Setting.get_instance().load_from_disk(lab_path)
