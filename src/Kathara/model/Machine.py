@@ -22,7 +22,6 @@ from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError,
 from ..foundation.model.FilesystemMixin import FilesystemMixin
 from ..setting.Setting import Setting
 from ..trdparty.strtobool.strtobool import strtobool
-from ..utils import check_directory_permissions
 
 MACHINE_CAPABILITIES: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
 
@@ -258,7 +257,7 @@ class Machine(FilesystemMixin):
             return old_value
 
         if name == "volume":
-            values = value.split(':')
+            values = value.split('|')
             if len(values) == 3:
                 host_path, guest_path, mode = values
             elif len(values) == 2:
@@ -266,15 +265,9 @@ class Machine(FilesystemMixin):
                 mode = 'ro'
             else:
                 raise MachineOptionError(
-                    f"The volume specified {value} is not in a valid format: <host_path>:<guest_path>:[<mode>]")
+                    f"The volume specified {value} is not in a valid format: <host_path>|<guest_path>|[<mode>]")
 
-
-            permission, missing_permissions = check_directory_permissions(host_path, mode)
-            if permission:
-                self.meta['volumes'][os.path.abspath(host_path)] = {'guest_path': guest_path, 'mode': mode}
-            else:
-                raise MachineOptionError(
-                    f"To mount volume `{host_path}` in `{guest_path}` you missed the following permissions: `{missing_permissions}`.")
+            self.meta['volumes'][os.path.abspath(host_path)] = {'guest_path': guest_path, 'mode': mode}
 
         old_value = self.meta[name] if name in self.meta else None
         self.meta[name] = value

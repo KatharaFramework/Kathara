@@ -337,38 +337,23 @@ def test_add_meta_ulimit_invalid_value(default_device):
 
 
 def test_add_meta_volume_default(default_device: Machine):
-    default_device.add_meta('volume', '.:/test')
+    default_device.add_meta('volume', '.|/test')
     assert default_device.meta['volumes'][os.path.abspath('.')] == {'guest_path': '/test', 'mode': 'ro'}
 
 
 def test_add_meta_volume_format_error(default_device: Machine):
     with pytest.raises(MachineOptionError):
-        default_device.add_meta('volume', '.:/te:st:')
+        default_device.add_meta('volume', '.|/te|st|')
 
 
 def test_add_meta_volume_rw_mode(default_device: Machine):
-    default_device.add_meta('volume', '.:/test:rw')
+    default_device.add_meta('volume', '.|/test|rw')
     assert default_device.meta['volumes'][os.path.abspath('.')] == {'guest_path': '/test', 'mode': 'rw'}
 
 
 def test_add_meta_volume_ro_mode(default_device: Machine):
-    default_device.add_meta('volume', '.:/test:ro')
+    default_device.add_meta('volume', '.|/test|ro')
     assert default_device.meta['volumes'][os.path.abspath('.')] == {'guest_path': '/test', 'mode': 'ro'}
-
-
-@mock.patch("src.Kathara.model.Machine.check_directory_permissions")
-def test_add_meta_volume_no_r_permission(mock_check_dir_permissions, default_device: Machine):
-    mock_check_dir_permissions.return_value = False, ["read (r)"]
-    with pytest.raises(MachineOptionError):
-        default_device.add_meta('volume', '.:/test:ro')
-
-
-@mock.patch("src.Kathara.model.Machine.check_directory_permissions")
-def test_add_meta_volume_no_w_permission(mock_check_dir_permissions, default_device: Machine):
-    mock_check_dir_permissions.return_value = False, ["write (w)"]
-    with pytest.raises(MachineOptionError):
-        default_device.add_meta('volume', '.:/test:rw')
-
 
 #
 # TEST: update_meta
@@ -414,10 +399,8 @@ def test_update_shell(default_device: Machine):
     assert default_device.get_shell() == "/bin/sh"
 
 
-@mock.patch("src.Kathara.model.Machine.check_directory_permissions")
-def test_update_volumes(mock_check_dir_permissions, default_device: Machine):
-    mock_check_dir_permissions.return_value = True, []
-    default_device.update_meta({'volumes': ['/host_path:/guest_path:rw', '/host_path_2:/guest_path_2:ro']})
+def test_update_volumes(default_device: Machine):
+    default_device.update_meta({'volumes': ['/host_path|/guest_path|rw', '/host_path_2|/guest_path_2|ro']})
     assert default_device.get_volumes()['/host_path'] == {'guest_path': '/guest_path', 'mode': 'rw'}
     assert default_device.get_volumes()['/host_path_2'] == {'guest_path': '/guest_path_2', 'mode': 'ro'}
 

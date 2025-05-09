@@ -13,7 +13,8 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
-from src.Kathara.exceptions import DockerPluginError, MachineBinaryError, PrivilegeError, InvocationError
+from src.Kathara.exceptions import DockerPluginError, MachineBinaryError, PrivilegeError, InvocationError, \
+    MachineOptionError
 from src.Kathara.types import SharedCollisionDomainsOption
 
 
@@ -560,7 +561,7 @@ def test_create_interface_mac_addr_on_old_engine(mock_get_current_user_name, moc
     assert not mock_copy_files.called
 
 
-@mock.patch("src.Kathara.model.Machine.check_directory_permissions")
+@mock.patch("src.Kathara.utils.check_directory_permissions")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
@@ -575,7 +576,7 @@ def test_create_volume(mock_get_current_user_name, mock_setting_get_instance, mo
     host_path = '/test/path'
     guest_path = '/test'
     mode = 'ro'
-    default_device.add_meta('volume', f'{host_path}:{guest_path}:{mode}')
+    default_device.add_meta('volume', f'{host_path}|{guest_path}|{mode}')
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
@@ -624,7 +625,7 @@ def test_create_volume(mock_get_current_user_name, mock_setting_get_instance, mo
     assert not mock_copy_files.called
 
 
-@mock.patch("src.Kathara.model.Machine.check_directory_permissions")
+@mock.patch("src.Kathara.utils.check_directory_permissions")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
@@ -639,12 +640,12 @@ def test_create_two_volumes(mock_get_current_user_name, mock_setting_get_instanc
     host_path_1 = '/test/path_1'
     guest_path_1 = '/test_1'
     mode_1 = 'ro'
-    default_device.add_meta('volume', f'{host_path_1}:{guest_path_1}:{mode_1}')
+    default_device.add_meta('volume', f'{host_path_1}|{guest_path_1}|{mode_1}')
 
     host_path_2 = '/test/path_2'
     guest_path_2 = '/test_2'
     mode_2 = 'ro'
-    default_device.add_meta('volume', f'{host_path_2}:{guest_path_2}:{mode_2}')
+    default_device.add_meta('volume', f'{host_path_2}|{guest_path_2}|{mode_2}')
 
     setting_mock = Mock()
     setting_mock.configure_mock(**{
@@ -693,6 +694,42 @@ def test_create_two_volumes(mock_get_current_user_name, mock_setting_get_instanc
         ulimits=[]
     )
 
+    assert not mock_copy_files.called
+
+
+@mock.patch("src.Kathara.utils.check_directory_permissions")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_volume_no_w_permission(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
+                                       mock_get_machines_api_objects_by_filters, mock_check_dir_permissions,
+                                       docker_machine,
+                                       default_device):
+    mock_get_machines_api_objects_by_filters.return_value = []
+    mock_get_current_user_name.return_value = "test-user"
+    mock_check_dir_permissions.return_value = False, ["write (w)"]
+
+    host_path = '/test/path'
+    guest_path = '/test'
+    mode = 'rw'
+    default_device.add_meta('volume', f'{host_path}|{guest_path}|{mode}')
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    with pytest.raises(PermissionError):
+        docker_machine.create(default_device)
+
+    assert not docker_machine.client.containers.create.called
     assert not mock_copy_files.called
 
 
