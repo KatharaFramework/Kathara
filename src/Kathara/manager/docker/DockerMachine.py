@@ -327,6 +327,9 @@ class DockerMachine(object):
             if machine.is_bridged():
                 labels["bridged_iface"] = str(machine.meta["bridged_iface"])
 
+            entrypoint = shlex.split(machine.meta["entrypoint"]) if "entrypoint" in machine.meta else None
+            args = shlex.split(machine.meta["args"]) if "args" in machine.meta else None
+
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,
                                                               hostname=machine.name,
@@ -345,7 +348,9 @@ class DockerMachine(object):
                                                               detach=True,
                                                               volumes=volumes,
                                                               labels=labels,
-                                                              ulimits=ulimits
+                                                              ulimits=ulimits,
+                                                              entrypoint=entrypoint,
+                                                              command=args
                                                               )
         except APIError as e:
             raise e

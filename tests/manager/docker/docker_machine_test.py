@@ -1,3 +1,4 @@
+import shlex
 import sys
 from unittest import mock
 from unittest.mock import Mock, call
@@ -147,7 +148,9 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, mock_copy
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
                 'shell': '/bin/bash'},
-        ulimits=[]
+        ulimits=[],
+        entrypoint=None,
+        command=None
     )
 
     assert not mock_copy_files.called
@@ -204,7 +207,193 @@ def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
                 'shell': '/bin/bash'},
-        ulimits=[]
+        ulimits=[],
+        entrypoint=None,
+        command=None
+    )
+
+    assert not mock_copy_files.called
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_with_entrypoint(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
+                                mock_get_machines_api_objects_by_filters, docker_machine, default_device):
+    mock_get_machines_api_objects_by_filters.return_value = []
+    mock_get_current_user_name.return_value = "test-user"
+
+    default_device.add_meta("entrypoint", "/bin/test hello")
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': True,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    docker_machine.create(default_device)
+    docker_machine.client.containers.create.assert_called_once_with(
+        image='kathara/test',
+        name='dev_prefix_test-user_test_device_9pe3y6IDMwx4PfOPu5mbNg',
+        hostname='test_device',
+        cap_add=['NET_ADMIN', 'NET_RAW', 'NET_BROADCAST', 'NET_BIND_SERVICE', 'SYS_ADMIN'],
+        privileged=False,
+        network=None,
+        network_mode='none',
+        networking_config=None,
+        sysctls={'net.ipv4.conf.all.rp_filter': 0,
+                 'net.ipv4.conf.default.rp_filter': 0,
+                 'net.ipv4.conf.lo.rp_filter': 0,
+                 'net.ipv4.ip_forward': 1,
+                 'net.ipv4.icmp_ratelimit': 0,
+                 'net.ipv6.conf.all.forwarding': 1,
+                 'net.ipv6.conf.all.accept_ra': 0,
+                 'net.ipv6.icmp.ratelimit': 0,
+                 'net.ipv6.conf.default.disable_ipv6': 0,
+                 'net.ipv6.conf.all.disable_ipv6': 0
+                 },
+        environment={},
+        mem_limit='64m',
+        nano_cpus=2000000000,
+        ports=None,
+        tty=True,
+        stdin_open=True,
+        detach=True,
+        volumes={},
+        labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
+                'shell': '/bin/bash'},
+        ulimits=[],
+        entrypoint=shlex.split("/bin/test hello"),
+        command=None
+    )
+
+    assert not mock_copy_files.called
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_with_args(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
+                          mock_get_machines_api_objects_by_filters, docker_machine, default_device):
+    mock_get_machines_api_objects_by_filters.return_value = []
+    mock_get_current_user_name.return_value = "test-user"
+
+    default_device.add_meta("args", "-n 20 -c 10 -f 30")
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': True,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    docker_machine.create(default_device)
+    docker_machine.client.containers.create.assert_called_once_with(
+        image='kathara/test',
+        name='dev_prefix_test-user_test_device_9pe3y6IDMwx4PfOPu5mbNg',
+        hostname='test_device',
+        cap_add=['NET_ADMIN', 'NET_RAW', 'NET_BROADCAST', 'NET_BIND_SERVICE', 'SYS_ADMIN'],
+        privileged=False,
+        network=None,
+        network_mode='none',
+        networking_config=None,
+        sysctls={'net.ipv4.conf.all.rp_filter': 0,
+                 'net.ipv4.conf.default.rp_filter': 0,
+                 'net.ipv4.conf.lo.rp_filter': 0,
+                 'net.ipv4.ip_forward': 1,
+                 'net.ipv4.icmp_ratelimit': 0,
+                 'net.ipv6.conf.all.forwarding': 1,
+                 'net.ipv6.conf.all.accept_ra': 0,
+                 'net.ipv6.icmp.ratelimit': 0,
+                 'net.ipv6.conf.default.disable_ipv6': 0,
+                 'net.ipv6.conf.all.disable_ipv6': 0
+                 },
+        environment={},
+        mem_limit='64m',
+        nano_cpus=2000000000,
+        ports=None,
+        tty=True,
+        stdin_open=True,
+        detach=True,
+        volumes={},
+        labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
+                'shell': '/bin/bash'},
+        ulimits=[],
+        entrypoint=None,
+        command=shlex.split("-n 20 -c 10 -f 30")
+    )
+
+    assert not mock_copy_files.called
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_with_entrypoint_and_args(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
+                                         mock_get_machines_api_objects_by_filters, docker_machine, default_device):
+    mock_get_machines_api_objects_by_filters.return_value = []
+    mock_get_current_user_name.return_value = "test-user"
+
+    default_device.add_meta("entrypoint", "/bin/test hello")
+    default_device.add_meta("args", "-n 20 -c 10 -f 30")
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': True,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    docker_machine.create(default_device)
+    docker_machine.client.containers.create.assert_called_once_with(
+        image='kathara/test',
+        name='dev_prefix_test-user_test_device_9pe3y6IDMwx4PfOPu5mbNg',
+        hostname='test_device',
+        cap_add=['NET_ADMIN', 'NET_RAW', 'NET_BROADCAST', 'NET_BIND_SERVICE', 'SYS_ADMIN'],
+        privileged=False,
+        network=None,
+        network_mode='none',
+        networking_config=None,
+        sysctls={'net.ipv4.conf.all.rp_filter': 0,
+                 'net.ipv4.conf.default.rp_filter': 0,
+                 'net.ipv4.conf.lo.rp_filter': 0,
+                 'net.ipv4.ip_forward': 1,
+                 'net.ipv4.icmp_ratelimit': 0,
+                 'net.ipv6.conf.all.forwarding': 1,
+                 'net.ipv6.conf.all.accept_ra': 0,
+                 'net.ipv6.icmp.ratelimit': 0,
+                 'net.ipv6.conf.default.disable_ipv6': 0,
+                 'net.ipv6.conf.all.disable_ipv6': 0
+                 },
+        environment={},
+        mem_limit='64m',
+        nano_cpus=2000000000,
+        ports=None,
+        tty=True,
+        stdin_open=True,
+        detach=True,
+        volumes={},
+        labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
+                'shell': '/bin/bash'},
+        ulimits=[],
+        entrypoint=shlex.split("/bin/test hello"),
+        command=shlex.split("-n 20 -c 10 -f 30")
     )
 
     assert not mock_copy_files.called
@@ -263,7 +452,9 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
                 'shell': '/bin/bash'},
-        ulimits=[]
+        ulimits=[],
+        entrypoint=None,
+        command=None
     )
     assert not mock_copy_files.called
 
@@ -360,7 +551,9 @@ def test_create_interface(mock_get_current_user_name, mock_setting_get_instance,
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
                 'shell': '/bin/bash'},
-        ulimits=[]
+        ulimits=[],
+        entrypoint=None,
+        command=None
     )
 
     assert not mock_copy_files.called
@@ -429,7 +622,9 @@ def test_create_interface_old_engine(mock_get_current_user_name, mock_setting_ge
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
                 'shell': '/bin/bash'},
-        ulimits=[]
+        ulimits=[],
+        entrypoint=None,
+        command=None
     )
 
     assert not mock_copy_files.called
@@ -506,7 +701,9 @@ def test_create_interface_mac_addr(mock_get_current_user_name, mock_setting_get_
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
                 'shell': '/bin/bash'},
-        ulimits=[]
+        ulimits=[],
+        entrypoint=None,
+        command=None
     )
 
     assert not mock_copy_files.called
@@ -586,7 +783,9 @@ def test_create_interface_mac_addr_on_old_engine(mock_get_current_user_name, moc
         volumes={},
         labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
                 'shell': '/bin/bash'},
-        ulimits=[]
+        ulimits=[],
+        entrypoint=None,
+        command=None
     )
 
     assert not mock_copy_files.called

@@ -428,6 +428,9 @@ class KubernetesMachine(object):
         for env_var_name, env_var_value in machine.meta['envs'].items():
             env.append(client.V1EnvVar(env_var_name, env_var_value))
 
+        entrypoint = shlex.split(machine.meta["entrypoint"]) if "entrypoint" in machine.meta else None
+        args = shlex.split(machine.meta["args"]) if "args" in machine.meta else None
+
         container_definition = client.V1Container(
             name=machine.meta['real_name'],
             image=machine.get_image(),
@@ -439,7 +442,9 @@ class KubernetesMachine(object):
             resources=resources,
             volume_mounts=volume_mounts,
             security_context=security_context,
-            env=env
+            env=env,
+            command=entrypoint,
+            args=args
         )
 
         pod_annotations = {}

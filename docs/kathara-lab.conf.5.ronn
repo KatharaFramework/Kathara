@@ -81,6 +81,12 @@ If `arg` is an option name, then `device` will be launched with option `arg` set
 
 * `privileged` (boolean):
 	Start the device in privileged mode. MUST BE ROOT FOR THIS OPTION.
+	
+* `entrypoint` (string):
+	Allows to specify the entrypoint command of the container.
+
+* `args` (string):
+	Allows to specify extra arguments for the entrypoint command. 
 
 
 ## NETWORK SCENARIO META INFORMATION
