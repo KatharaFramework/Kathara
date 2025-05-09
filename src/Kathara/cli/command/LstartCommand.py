@@ -213,9 +213,8 @@ class LstartCommand(Command):
 
         lab.add_option('hosthome_mount', args['hosthome_mount'])
         lab.add_option('shared_mount', args['shared_mount'])
-        lab.add_option('privileged_machines', args['privileged'])
 
-        if args['privileged']:
+        if args['privileged'] or any([x.is_privileged() for x in lab.machines.values()]):
             if not utils.is_admin():
                 raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
             else:
@@ -223,6 +222,7 @@ class LstartCommand(Command):
                     self.console.print(
                         "[yellow]\u26a0 Running devices with privileged capabilities, terminals might not open!"
                     )
+        lab.add_global_machine_metadata('privileged', args['privileged'])
 
         Kathara.get_instance().deploy_lab(
             lab, selected_machines=set(args['machine_name']), excluded_machines=set(args['excluded_machines'])

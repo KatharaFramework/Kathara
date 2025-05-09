@@ -130,9 +130,6 @@ class DockerMachine(object):
             PrivilegeError: If the privileged mode is active and the user does not have root privileges.
             InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
-        if lab.general_options['privileged_machines'] and not utils.is_admin():
-            raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
-
         if selected_machines and excluded_machines:
             raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
 
@@ -299,7 +296,9 @@ class DockerMachine(object):
         if hosthome_mount and Setting.get_instance().remote_url is None:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
-        privileged = lab_options['privileged_machines']
+        privileged = machine.is_privileged()
+        if privileged and not utils.is_admin():
+            raise PrivilegeError(f"You must be root in order to start device `{machine.name}` in privileged mode.")
         if Setting.get_instance().remote_url is not None and privileged:
             privileged = False
             logging.warning("Privileged flag is ignored with a remote Docker connection.")
