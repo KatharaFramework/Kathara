@@ -65,9 +65,7 @@ class Lab(LabFilesystemMixin):
         self.machines: Dict[str, 'MachinePackage.Machine'] = {}
         self.links: Dict[str, 'LinkPackage.Link'] = {}
 
-        self.general_options: Dict[str, Any] = {
-            'privileged_machines': False,
-        }
+        self.general_options: Dict[str, Any] = {}
 
         self.global_machine_metadata: Dict[str, Any] = {}
 

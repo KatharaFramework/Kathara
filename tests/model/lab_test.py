@@ -58,7 +58,7 @@ def test_default_scenario_creation(default_scenario: Lab):
     assert default_scenario.web is None
     assert default_scenario.machines == {}
     assert default_scenario.links == {}
-    assert default_scenario.general_options == {'privileged_machines': False}
+    assert default_scenario.general_options == {}
     assert not default_scenario.has_dependencies
     assert default_scenario.fs_type() == "memory"
     assert default_scenario.shared_path is None
@@ -79,7 +79,7 @@ def test_directory_scenario_creation_with_shared_files(directory_scenario: Lab, 
     assert directory_scenario.web is None
     assert directory_scenario.machines == {}
     assert directory_scenario.links == {}
-    assert directory_scenario.general_options == {'privileged_machines': False}
+    assert directory_scenario.general_options == {}
     assert not directory_scenario.has_dependencies
     assert os.path.normpath(directory_scenario.fs_path()) == os.path.normpath(temporary_path)
     assert directory_scenario.shared_path is None

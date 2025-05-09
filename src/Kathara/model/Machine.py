@@ -150,6 +150,11 @@ class Machine(FilesystemMixin):
         Raises:
             MachineOptionError: If the specified value is not valid for the specified property.
         """
+        if name == "privileged":
+            old_value = self.meta[name] if name in self.meta else None
+            self.meta[name] = strtobool(str(value))
+            return old_value
+
         if name == "exec":
             self.meta['exec_commands'].append(value)
             return None
@@ -267,6 +272,9 @@ class Machine(FilesystemMixin):
         Returns:
             None
         """
+        if 'privileged' in args and args['privileged'] is not None and args['privileged']:
+            self.add_meta("privileged", True)
+
         if 'exec_commands' in args and args['exec_commands'] is not None:
             for command in args['exec_commands']:
                 self.add_meta("exec", command)
@@ -371,6 +379,15 @@ class Machine(FilesystemMixin):
 
         # If no machine files are found, return None.
         return None
+
+    def is_privileged(self) -> bool:
+        """Return True if the device is privileged, else return False.
+
+        Returns:
+            bool: True if the device is privileged, else False.
+        """
+        return self.lab.global_machine_metadata["privileged"] if "privileged" in self.lab.global_machine_metadata else \
+            self.meta["privileged"] if "privileged" in self.meta else False
 
     def get_exec_commands(self) -> List[str]:
         """Get the device exec commands.
