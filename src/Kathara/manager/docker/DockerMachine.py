@@ -659,7 +659,7 @@ class DockerMachine(object):
 
         if logs and Setting.get_instance().print_startup_log:
             # Get the logs, if the command fails it means that the shell is not found.
-            cat_logs_cmd = "cat /var/log/shared.log /var/log/startup.log"
+            cat_logs_cmd = "cat /var/log/shared.log /var/log/startup.log /var/kathara/*"
             startup_command = [item for item in shell]
             startup_command.extend(['-c', cat_logs_cmd])
             exec_result = self._exec_run(container,
