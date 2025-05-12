@@ -300,13 +300,14 @@ class DockerMachine(object):
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
         for host_path, volume in machine.meta["volumes"].items():
-            permission, missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
-            if permission:
+            missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
+
+            if not missing_permissions:
                 volumes[host_path] = {'bind': volume['guest_path'], 'mode': volume['mode']}
             else:
                 raise PermissionError(
                     f"To mount volume `{host_path}` in `{volume['guest_path']}` "
-                    f"you miss the following permissions: `{missing_permissions}`.")
+                    f"you miss the following permissions: `{", ".join(missing_permissions)}`.")
 
         privileged = lab_options['privileged_machines']
         if Setting.get_instance().remote_url is not None and privileged:
