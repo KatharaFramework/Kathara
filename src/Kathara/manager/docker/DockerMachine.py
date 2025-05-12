@@ -2,6 +2,8 @@ import logging
 import re
 import shlex
 import sys
+import tarfile
+import tempfile
 import time
 from itertools import islice
 from multiprocessing.dummy import Pool
@@ -919,6 +921,33 @@ class DockerMachine(object):
             None
         """
         machine_api_object.put_archive(path, tar_data)
+
+    @staticmethod
+    def retrieve_files(machine_api_object: docker.models.containers.Container, src: str, dst: str) -> None:
+        """Get the file or directory from the Docker container specified by the machine_api_object into dst.
+
+        Args:
+            machine_api_object (docker.models.containers.Container): A Docker container.
+            src (str): The path of the file or folder to copy from the device.
+            dst (str): The destination path on the host.
+
+        Returns:
+            None
+        """
+        # Get the tar from the container
+        bits, stats = machine_api_object.get_archive(src)
+
+        # Create a tmp tar file and write the chunks from the container
+        with tempfile.NamedTemporaryFile(mode='wb+', suffix='.tar') as temp_file:
+            for chunk in bits:
+                temp_file.write(chunk)
+
+            # After writing, go at the beginning of file
+            temp_file.seek(0)
+
+            # Now, we need to extract the tmp tar file into the destination folder
+            with tarfile.open(fileobj=temp_file, mode='r') as tar_file:
+                tar_file.extractall(path=dst)
 
     def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None, user: str = None) -> \
             List[docker.models.containers.Container]:

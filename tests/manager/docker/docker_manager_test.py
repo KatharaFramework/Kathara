@@ -1005,7 +1005,17 @@ def test_copy_files(mock_copy_files, mock_pack_data_for_tar, docker_manager, def
     docker_manager.copy_files(default_device, data)
 
     mock_pack_data_for_tar.assert_called_once_with(data)
-    mock_copy_files(default_device.api_object, path="/", tar_data="packed_data")
+    mock_copy_files.assert_called_once_with(default_device.api_object, path="/", tar_data="packed_data")
+
+
+#
+# TEST: retrieve_files
+#
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.retrieve_files")
+def test_retrieve_files(mock_retrieve_files, docker_manager, default_device):
+    docker_manager.retrieve_files(default_device, "/test", "/path")
+
+    mock_retrieve_files.assert_called_once_with(default_device.api_object, "/test", "/path")
 
 
 #

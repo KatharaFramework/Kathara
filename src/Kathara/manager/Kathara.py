@@ -307,6 +307,19 @@ class Kathara(IManager):
         """
         self.manager.copy_files(machine, guest_to_host)
 
+    def retrieve_files(self, machine: Machine, src: str, dst: str) -> None:
+        """Copy files from a running device path to the host.
+
+        Args:
+            machine (Kathara.model.Machine): A running device object. It must have the api_object field populated.
+            src (str): The path of the file or folder to copy from the device.
+            dst (str): The destination path on the host.
+
+        Returns:
+            None
+        """
+        self.manager.retrieve_files(machine, src, dst)
+
     def get_machine_api_object(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                                lab: Optional[Lab] = None, all_users: bool = False) -> Any:
         """Return the corresponding API object of a running device in a network scenario.
