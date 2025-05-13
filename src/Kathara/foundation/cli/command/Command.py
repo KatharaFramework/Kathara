@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 from rich.console import Console
 from rich.theme import Theme
 
-from Kathara.setting.Setting import Setting
+from Kathara.setting.Setting import Setting, SETTINGS_FILENAME
 from ..CliArgs import CliArgs
 
 
@@ -44,7 +44,7 @@ class Command(ABC):
         Args:
             lab_path (str): Path to the lab directory
         """
-        custom_conf_path = os.path.join(lab_path, Setting.SETTINGS_FILENAME)
+        custom_conf_path = os.path.join(lab_path, SETTINGS_FILENAME)
         if os.path.exists(custom_conf_path):
             logging.info(f'Loading custom kathara.conf file from path `{custom_conf_path}`...')
             Setting.get_instance().load_from_disk(lab_path)
