@@ -328,7 +328,9 @@ class DockerMachine(object):
                 labels["bridged_iface"] = str(machine.meta["bridged_iface"])
 
             entrypoint = shlex.split(machine.meta["entrypoint"]) if "entrypoint" in machine.meta else None
-            args = shlex.split(machine.meta["args"]) if "args" in machine.meta else None
+            args = machine.meta["args"] if "args" in machine.meta and machine.meta["args"] else None
+            if args:
+                args = shlex.split(args) if type(args) == str else args
 
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,

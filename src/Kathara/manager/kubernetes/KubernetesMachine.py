@@ -429,7 +429,9 @@ class KubernetesMachine(object):
             env.append(client.V1EnvVar(env_var_name, env_var_value))
 
         entrypoint = shlex.split(machine.meta["entrypoint"]) if "entrypoint" in machine.meta else None
-        args = shlex.split(machine.meta["args"]) if "args" in machine.meta else None
+        args = machine.meta["args"] if "args" in machine.meta and machine.meta["args"] else None
+        if args:
+            args = shlex.split(args) if type(args) == str else args
 
         container_definition = client.V1Container(
             name=machine.meta['real_name'],

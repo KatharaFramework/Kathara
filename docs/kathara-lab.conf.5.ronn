@@ -83,7 +83,7 @@ If `arg` is an option name, then `device` will be launched with option `arg` set
 	Start the device in privileged mode. MUST BE ROOT FOR THIS OPTION.
 	
 * `entrypoint` (string):
-	Allows to specify the entrypoint command of the container.
+	Allows to specify the entrypoint command of the device.
 
 * `args` (string):
 	Allows to specify extra arguments for the entrypoint command. 
