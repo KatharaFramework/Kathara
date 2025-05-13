@@ -24,6 +24,7 @@ from ..setting.Setting import Setting
 from ..trdparty.strtobool.strtobool import strtobool
 
 MACHINE_CAPABILITIES: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
+ALLOWED_VOLUME_MODES: List[str] = ["ro", "rw", "rx"]
 
 
 class Machine(FilesystemMixin):
@@ -257,7 +258,7 @@ class Machine(FilesystemMixin):
             return old_value
 
         if name == "volume":
-            values = value.split('|')
+            values = list(filter(lambda x: x, value.split('|')))
             if len(values) == 3:
                 host_path, guest_path, mode = values
             elif len(values) == 2:
@@ -265,7 +266,14 @@ class Machine(FilesystemMixin):
                 mode = 'ro'
             else:
                 raise MachineOptionError(
-                    f"The volume specified {value} is not in a valid format: <host_path>|<guest_path>|[<mode>]")
+                    f"The volume specified `{value}` is not in a valid format: <host_path>|<guest_path>|[<mode>]"
+                )
+
+            if mode not in ALLOWED_VOLUME_MODES:
+                raise MachineOptionError(
+                    f"Invalid volume mode `{mode}` on `{host_path}` mount. "
+                    f"Allowed values are {', '.join(ALLOWED_VOLUME_MODES)}. "
+                )
 
             self.meta['volumes'][os.path.abspath(host_path)] = {'guest_path': guest_path, 'mode': mode}
 

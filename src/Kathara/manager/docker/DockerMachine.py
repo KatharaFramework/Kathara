@@ -307,7 +307,8 @@ class DockerMachine(object):
             else:
                 raise PermissionError(
                     f"To mount volume `{host_path}` in `{volume['guest_path']}` "
-                    f"you miss the following permissions: `{", ".join(missing_permissions)}`.")
+                    f"you miss the following permissions: `{', '.join(missing_permissions)}`."
+                )
 
         privileged = lab_options['privileged_machines']
         if Setting.get_instance().remote_url is not None and privileged:

@@ -618,6 +618,259 @@ def test_create_ipv6(mock_setting_get_instance, kubernetes_machine, default_devi
     )
 
 
+@mock.patch("src.Kathara.utils.check_directory_permissions")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_create_volume(mock_setting_get_instance, mock_check_dir_permissions, kubernetes_machine, default_device):
+    mock_check_dir_permissions.return_value = []
+
+    host_path = '/test/path'
+    guest_path = '/test'
+    mode = 'ro'
+    default_device.add_meta('volume', f'{host_path}|{guest_path}|{mode}')
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'device_prefix': 'devprefix',
+        'device_shell': '/bin/bash',
+        'enable_ipv6': True,
+        'image_pull_policy': 'Always',
+        'host_shared': False,
+        'docker_config_json': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    security_context = client.V1SecurityContext(privileged=True)
+    resources = client.V1ResourceRequirements(limits={
+        "memory": "64M",
+        "cpu": "2000m"
+    })
+
+    sysctl_commands = "; ".join(["sysctl -w -q %s=%d" % item for item in {'net.ipv4.conf.all.rp_filter': 0,
+                                                                          'net.ipv4.conf.default.rp_filter': 0,
+                                                                          'net.ipv4.conf.lo.rp_filter': 0,
+                                                                          'net.ipv4.ip_forward': 1,
+                                                                          'net.ipv4.icmp_ratelimit': 0,
+                                                                          'net.ipv6.conf.all.forwarding': 1,
+                                                                          'net.ipv6.conf.all.accept_ra': 0,
+                                                                          'net.ipv6.icmp.ratelimit': 0,
+                                                                          'net.ipv6.conf.default.disable_ipv6': 0,
+                                                                          'net.ipv6.conf.all.disable_ipv6': 0
+                                                                          }.items()])
+    startup_commands_string = "; ".join(STARTUP_COMMANDS) \
+        .format(machine_name="test_device", sysctl_commands=sysctl_commands, machine_commands="ls")
+
+    post_start = client.V1LifecycleHandler(
+        _exec=client.V1ExecAction(
+            command=["/bin/bash", "-c", startup_commands_string]
+        )
+    )
+    container_definition = client.V1Container(
+        name="devprefix-test-device-ec84ad3b",
+        image="kathara/test",
+        lifecycle=client.V1Lifecycle(post_start=post_start),
+        stdin=True,
+        tty=True,
+        image_pull_policy="Always",
+        ports=None,
+        resources=resources,
+        volume_mounts=[
+            client.V1VolumeMount(
+                name=f"volume0", mount_path=guest_path, read_only=True
+            )
+        ],
+        security_context=security_context,
+        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")]
+    )
+
+    pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
+                                       annotations={"k8s.v1.cni.cncf.io/networks": "[]"},
+                                       labels={"name": "test_device", "app": "kathara"}
+                                       )
+    pod_spec = client.V1PodSpec(containers=[container_definition],
+                                hostname="devprefix-test-device-ec84ad3b",
+                                dns_policy="None",
+                                dns_config=client.V1PodDNSConfig(nameservers=["127.0.0.1"]),
+                                volumes=[
+                                    client.V1Volume(
+                                        name=f"volume0",
+                                        host_path=client.V1HostPathVolumeSource(
+                                            path=host_path,
+                                            type='DirectoryOrCreate'
+                                        )
+                                    )
+                                ],
+                                image_pull_secrets=[]
+                                )
+
+    pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
+    label_selector = client.V1LabelSelector(match_labels={"name": "test_device", "app": "kathara"})
+    deployment_spec = client.V1DeploymentSpec(replicas=1, template=pod_template, selector=label_selector)
+
+    expected_definition = client.V1Deployment(api_version="apps/v1",
+                                              kind="Deployment",
+                                              metadata=client.V1ObjectMeta(
+                                                  name="devprefix-test-device-ec84ad3b",
+                                                  labels={"name": "test_device", "app": "kathara"}
+                                              ),
+                                              spec=deployment_spec
+                                              )
+
+    kubernetes_machine.create(default_device)
+
+    kubernetes_machine.client.create_namespaced_deployment.assert_called_once_with(
+        body=expected_definition,
+        namespace="FwFaxbiuhvSWb2KpN5zw"
+    )
+
+
+@mock.patch("src.Kathara.utils.check_directory_permissions")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_create_two_volumes(mock_setting_get_instance, mock_check_dir_permissions, kubernetes_machine, default_device):
+    mock_check_dir_permissions.return_value = []
+
+    host_path_1 = '/test/path_1'
+    guest_path_1 = '/test_1'
+    mode_1 = 'ro'
+    default_device.add_meta('volume', f'{host_path_1}|{guest_path_1}|{mode_1}')
+
+    host_path_2 = '/test/path_2'
+    guest_path_2 = '/test_2'
+    mode_2 = 'ro'
+    default_device.add_meta('volume', f'{host_path_2}|{guest_path_2}|{mode_2}')
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'device_prefix': 'devprefix',
+        'device_shell': '/bin/bash',
+        'enable_ipv6': True,
+        'image_pull_policy': 'Always',
+        'host_shared': False,
+        'docker_config_json': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    security_context = client.V1SecurityContext(privileged=True)
+    resources = client.V1ResourceRequirements(limits={
+        "memory": "64M",
+        "cpu": "2000m"
+    })
+
+    sysctl_commands = "; ".join(["sysctl -w -q %s=%d" % item for item in {'net.ipv4.conf.all.rp_filter': 0,
+                                                                          'net.ipv4.conf.default.rp_filter': 0,
+                                                                          'net.ipv4.conf.lo.rp_filter': 0,
+                                                                          'net.ipv4.ip_forward': 1,
+                                                                          'net.ipv4.icmp_ratelimit': 0,
+                                                                          'net.ipv6.conf.all.forwarding': 1,
+                                                                          'net.ipv6.conf.all.accept_ra': 0,
+                                                                          'net.ipv6.icmp.ratelimit': 0,
+                                                                          'net.ipv6.conf.default.disable_ipv6': 0,
+                                                                          'net.ipv6.conf.all.disable_ipv6': 0
+                                                                          }.items()])
+    startup_commands_string = "; ".join(STARTUP_COMMANDS) \
+        .format(machine_name="test_device", sysctl_commands=sysctl_commands, machine_commands="ls")
+
+    post_start = client.V1LifecycleHandler(
+        _exec=client.V1ExecAction(
+            command=["/bin/bash", "-c", startup_commands_string]
+        )
+    )
+    container_definition = client.V1Container(
+        name="devprefix-test-device-ec84ad3b",
+        image="kathara/test",
+        lifecycle=client.V1Lifecycle(post_start=post_start),
+        stdin=True,
+        tty=True,
+        image_pull_policy="Always",
+        ports=None,
+        resources=resources,
+        volume_mounts=[
+            client.V1VolumeMount(
+                name=f"volume0", mount_path=guest_path_1, read_only=True
+            ),
+            client.V1VolumeMount(
+                name=f"volume1", mount_path=guest_path_2, read_only=True
+            )
+        ],
+        security_context=security_context,
+        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")]
+    )
+
+    pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
+                                       annotations={"k8s.v1.cni.cncf.io/networks": "[]"},
+                                       labels={"name": "test_device", "app": "kathara"}
+                                       )
+    pod_spec = client.V1PodSpec(containers=[container_definition],
+                                hostname="devprefix-test-device-ec84ad3b",
+                                dns_policy="None",
+                                dns_config=client.V1PodDNSConfig(nameservers=["127.0.0.1"]),
+                                volumes=[
+                                    client.V1Volume(
+                                        name=f"volume0",
+                                        host_path=client.V1HostPathVolumeSource(
+                                            path=host_path_1,
+                                            type='DirectoryOrCreate'
+                                        )
+                                    ),
+                                    client.V1Volume(
+                                        name=f"volume1",
+                                        host_path=client.V1HostPathVolumeSource(
+                                            path=host_path_2,
+                                            type='DirectoryOrCreate'
+                                        )
+                                    )
+                                ],
+                                image_pull_secrets=[]
+                                )
+
+    pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
+    label_selector = client.V1LabelSelector(match_labels={"name": "test_device", "app": "kathara"})
+    deployment_spec = client.V1DeploymentSpec(replicas=1, template=pod_template, selector=label_selector)
+
+    expected_definition = client.V1Deployment(api_version="apps/v1",
+                                              kind="Deployment",
+                                              metadata=client.V1ObjectMeta(
+                                                  name="devprefix-test-device-ec84ad3b",
+                                                  labels={"name": "test_device", "app": "kathara"}
+                                              ),
+                                              spec=deployment_spec
+                                              )
+
+    kubernetes_machine.create(default_device)
+
+    kubernetes_machine.client.create_namespaced_deployment.assert_called_once_with(
+        body=expected_definition,
+        namespace="FwFaxbiuhvSWb2KpN5zw"
+    )
+
+
+@mock.patch("src.Kathara.utils.check_directory_permissions")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_create_volume_no_w_permission(mock_setting_get_instance, mock_check_dir_permissions, kubernetes_machine,
+                                       default_device):
+    mock_check_dir_permissions.return_value = ["write (w)"]
+
+    host_path = '/test/path'
+    guest_path = '/test'
+    mode = 'rw'
+    default_device.add_meta('volume', f'{host_path}|{guest_path}|{mode}')
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'device_prefix': 'devprefix',
+        'device_shell': '/bin/bash',
+        'enable_ipv6': True,
+        'image_pull_policy': 'Always',
+        'host_shared': False,
+        'docker_config_json': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    with pytest.raises(PermissionError):
+        kubernetes_machine.create(default_device)
+
+    assert not kubernetes_machine.client.create_namespaced_deployment.called
+
+
 #
 # TEST: _deploy_machine
 #

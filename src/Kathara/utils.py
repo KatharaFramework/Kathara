@@ -264,111 +264,6 @@ def get_current_user_info() -> Any:
     return exec_by_platform(passwd_info, lambda: None, passwd_info)
 
 
-# Architecture Test
-def get_architecture() -> str:
-    architecture = machine().lower()
-
-    logging.debug("Machine architecture is `%s`." % architecture)
-
-    if architecture in ["x86_64", "amd64"]:
-        return "amd64"
-    elif architecture == "i686":
-        return "386"
-    elif architecture in ["arm64", "aarch64"]:
-        return "arm64"
-    elif architecture == "armv7l":
-        return "armv7"
-    elif architecture == "armv6l":
-        return "armv6"
-    else:
-        raise HostArchitectureError(architecture)
-
-
-# Formatting Functions
-def human_readable_bytes(size_bytes: int) -> str:
-    if size_bytes == 0:
-        return "0 B"
-
-    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
-    i = int(math.floor(math.log(size_bytes, 1024)))
-    p = math.pow(1024, i)
-    s = round(size_bytes / p, 2)
-
-    return "%s %s" % (s, size_name[i])
-
-
-# Lab Functions
-def pack_file_for_tar(file_obj: Union[str, io.IOBase], arc_name: str) -> (tarfile.TarInfo, bytes):
-    if isinstance(file_obj, str):
-        file_content_patched = convert_win_2_linux(file_obj)
-        file_content = BytesIO(file_content_patched)
-        filesize = len(file_content_patched)
-    elif isinstance(file_obj, io.IOBase):
-        file_content = file_obj.read()
-        file_content = BytesIO(file_content.encode('utf-8') if isinstance(file_obj, io.TextIOBase) else file_content)
-        file_obj.seek(0, 2)
-        filesize = file_obj.tell()
-        file_obj.seek(0)
-    else:
-        raise ValueError("File type %s not supported" % type(file_obj))
-
-    tarinfo = tarfile.TarInfo(arc_name.replace("\\", "/"))  # Tar files must have Linux-style paths
-    tarinfo.size = filesize
-
-    return tarinfo, file_content
-
-
-def pack_files_for_tar(guest_to_host: Dict) -> bytes:
-    with tempfile.NamedTemporaryFile(mode='wb+', suffix='.tar.gz') as temp_file:
-        with tarfile.open(fileobj=temp_file, mode='w:gz') as tar_file:
-            for path, file_obj in guest_to_host.items():
-                tar_info, file_content = pack_file_for_tar(file_obj, arc_name=path)
-                tar_file.addfile(tar_info, file_content)
-
-        temp_file.seek(0)
-
-        tar_data = temp_file.read()
-
-    return tar_data
-
-
-def parse_cd_mac_address(value) -> Tuple[str, str]:
-    if '/' in value:
-        parts = [x for x in value.split('/') if x]
-
-        if len(parts) != 2:
-            raise SyntaxError(f"Invalid interface definition: `{value}`.")
-
-        cd_name = parts[0]
-        mac_address = parts[1]
-    else:
-        (cd_name, mac_address) = value, None
-
-    return cd_name, mac_address
-
-
-# Docker Engine Utils
-def parse_docker_engine_version(v: str) -> str:
-    parts = []
-    for part in v.split('.'):
-        numeric_part = ""
-        # Iterate over the single chars of the part
-        for char in part:
-            # As soon as we get a non-digit value, we break
-            if char.isdigit():
-                numeric_part += char
-            else:
-                break
-
-        # If the numeric_part is not empty, append it as a chunk of the version
-        if numeric_part:
-            parts.append(numeric_part)
-        else:
-            break
-
-    return '.'.join(parts)
-
-
 def check_directory_permissions(path: str, mode: str = "ro") -> list[str]:
     """
     Check directory permissions across different platforms.
@@ -494,3 +389,108 @@ def check_directory_permissions(path: str, mode: str = "ro") -> list[str]:
         check_directory_permissions_windows,
         check_directory_permissions_unix
     )
+
+
+# Architecture Test
+def get_architecture() -> str:
+    architecture = machine().lower()
+
+    logging.debug("Machine architecture is `%s`." % architecture)
+
+    if architecture in ["x86_64", "amd64"]:
+        return "amd64"
+    elif architecture == "i686":
+        return "386"
+    elif architecture in ["arm64", "aarch64"]:
+        return "arm64"
+    elif architecture == "armv7l":
+        return "armv7"
+    elif architecture == "armv6l":
+        return "armv6"
+    else:
+        raise HostArchitectureError(architecture)
+
+
+# Formatting Functions
+def human_readable_bytes(size_bytes: int) -> str:
+    if size_bytes == 0:
+        return "0 B"
+
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+
+    return "%s %s" % (s, size_name[i])
+
+
+# Lab Functions
+def pack_file_for_tar(file_obj: Union[str, io.IOBase], arc_name: str) -> (tarfile.TarInfo, bytes):
+    if isinstance(file_obj, str):
+        file_content_patched = convert_win_2_linux(file_obj)
+        file_content = BytesIO(file_content_patched)
+        filesize = len(file_content_patched)
+    elif isinstance(file_obj, io.IOBase):
+        file_content = file_obj.read()
+        file_content = BytesIO(file_content.encode('utf-8') if isinstance(file_obj, io.TextIOBase) else file_content)
+        file_obj.seek(0, 2)
+        filesize = file_obj.tell()
+        file_obj.seek(0)
+    else:
+        raise ValueError("File type %s not supported" % type(file_obj))
+
+    tarinfo = tarfile.TarInfo(arc_name.replace("\\", "/"))  # Tar files must have Linux-style paths
+    tarinfo.size = filesize
+
+    return tarinfo, file_content
+
+
+def pack_files_for_tar(guest_to_host: Dict) -> bytes:
+    with tempfile.NamedTemporaryFile(mode='wb+', suffix='.tar.gz') as temp_file:
+        with tarfile.open(fileobj=temp_file, mode='w:gz') as tar_file:
+            for path, file_obj in guest_to_host.items():
+                tar_info, file_content = pack_file_for_tar(file_obj, arc_name=path)
+                tar_file.addfile(tar_info, file_content)
+
+        temp_file.seek(0)
+
+        tar_data = temp_file.read()
+
+    return tar_data
+
+
+def parse_cd_mac_address(value) -> Tuple[str, str]:
+    if '/' in value:
+        parts = [x for x in value.split('/') if x]
+
+        if len(parts) != 2:
+            raise SyntaxError(f"Invalid interface definition: `{value}`.")
+
+        cd_name = parts[0]
+        mac_address = parts[1]
+    else:
+        (cd_name, mac_address) = value, None
+
+    return cd_name, mac_address
+
+
+# Docker Engine Utils
+def parse_docker_engine_version(v: str) -> str:
+    parts = []
+    for part in v.split('.'):
+        numeric_part = ""
+        # Iterate over the single chars of the part
+        for char in part:
+            # As soon as we get a non-digit value, we break
+            if char.isdigit():
+                numeric_part += char
+            else:
+                break
+
+        # If the numeric_part is not empty, append it as a chunk of the version
+        if numeric_part:
+            parts.append(numeric_part)
+        else:
+            break
+
+    return '.'.join(parts)

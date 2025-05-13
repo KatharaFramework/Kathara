@@ -1,10 +1,10 @@
 import sys
 from unittest import mock
+from unittest.mock import Mock, call
 
 import pytest
 from docker.errors import APIError
 from requests import Response
-from unittest.mock import Mock, call
 
 sys.path.insert(0, './')
 
@@ -13,8 +13,7 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
-from src.Kathara.exceptions import DockerPluginError, MachineBinaryError, PrivilegeError, InvocationError, \
-    MachineOptionError
+from src.Kathara.exceptions import DockerPluginError, MachineBinaryError, PrivilegeError, InvocationError
 from src.Kathara.types import SharedCollisionDomainsOption
 
 
@@ -571,7 +570,7 @@ def test_create_volume(mock_get_current_user_name, mock_setting_get_instance, mo
                        default_device):
     mock_get_machines_api_objects_by_filters.return_value = []
     mock_get_current_user_name.return_value = "test-user"
-    mock_check_dir_permissions.return_value = True, []
+    mock_check_dir_permissions.return_value = []
 
     host_path = '/test/path'
     guest_path = '/test'
@@ -635,7 +634,7 @@ def test_create_two_volumes(mock_get_current_user_name, mock_setting_get_instanc
                             default_device):
     mock_get_machines_api_objects_by_filters.return_value = []
     mock_get_current_user_name.return_value = "test-user"
-    mock_check_dir_permissions.return_value = True, []
+    mock_check_dir_permissions.return_value = []
 
     host_path_1 = '/test/path_1'
     guest_path_1 = '/test_1'
@@ -708,7 +707,7 @@ def test_create_volume_no_w_permission(mock_get_current_user_name, mock_setting_
                                        default_device):
     mock_get_machines_api_objects_by_filters.return_value = []
     mock_get_current_user_name.return_value = "test-user"
-    mock_check_dir_permissions.return_value = False, ["write (w)"]
+    mock_check_dir_permissions.return_value = ["write (w)"]
 
     host_path = '/test/path'
     guest_path = '/test'

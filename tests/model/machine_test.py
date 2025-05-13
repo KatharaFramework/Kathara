@@ -1,9 +1,9 @@
 import os.path
 import sys
 from unittest import mock
+from unittest.mock import Mock
 
 import pytest
-from unittest.mock import Mock
 
 from src.Kathara.exceptions import MachineCollisionDomainError
 
@@ -346,6 +346,16 @@ def test_add_meta_volume_format_error(default_device: Machine):
         default_device.add_meta('volume', '.|/te|st|')
 
 
+def test_add_meta_volume_format_error_2(default_device: Machine):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta('volume', '.|')
+
+
+def test_add_meta_volume_invalid_mode(default_device: Machine):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta('volume', '.|/te|xy')
+
+
 def test_add_meta_volume_rw_mode(default_device: Machine):
     default_device.add_meta('volume', '.|/test|rw')
     assert default_device.meta['volumes'][os.path.abspath('.')] == {'guest_path': '/test', 'mode': 'rw'}
@@ -354,6 +364,7 @@ def test_add_meta_volume_rw_mode(default_device: Machine):
 def test_add_meta_volume_ro_mode(default_device: Machine):
     default_device.add_meta('volume', '.|/test|ro')
     assert default_device.meta['volumes'][os.path.abspath('.')] == {'guest_path': '/test', 'mode': 'ro'}
+
 
 #
 # TEST: update_meta

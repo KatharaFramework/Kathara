@@ -1,7 +1,7 @@
 import argparse
 from typing import List
 
-from ..ui.utils import create_panel, interface_cd_mac
+from ..ui.utils import create_panel, interface_cd_mac, volume
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
@@ -162,6 +162,15 @@ class VstartCommand(Command):
             help='Set ulimit for the device.'
         )
         self.parser.add_argument(
+            '--volume',
+            type=volume,
+            dest='volumes',
+            metavar='HOST|GUEST|[MODE]',
+            nargs='+',
+            required=False,
+            help='Specify a volume to mount.'
+        )
+        self.parser.add_argument(
             '--shell',
             required=False,
             help='Set the shell (sh, bash, etc.) that should be used inside the device.'
@@ -198,6 +207,9 @@ class VstartCommand(Command):
                         "[yellow]\u26a0 Running devices with privileged capabilities, terminal might not open!"
                     )
 
+        volumes = args.pop('volumes')
+        eths = args.pop('eths')
+
         lab = Lab("kathara_vlab")
         lab.add_option('hosthome_mount', args['hosthome_mount'])
         lab.add_option('shared_mount', False)
@@ -205,8 +217,8 @@ class VstartCommand(Command):
 
         device = lab.get_or_new_machine(name, **args)
 
-        if args['eths']:
-            for iface_number, cd, mac_address in args['eths']:
+        if eths:
+            for iface_number, cd, mac_address in eths:
                 try:
                     lab.connect_machine_to_link(device.name, cd,
                                                 machine_iface_number=int(iface_number),
@@ -214,6 +226,10 @@ class VstartCommand(Command):
                 except ValueError:
                     s = f"{cd}/{mac_address}" if mac_address else f"{cd}"
                     raise SyntaxError(f"Interface number in `--eth {iface_number}:{s}` is not a number.")
+
+        if volumes:
+            for v in volumes:
+                device.add_meta("volume", v)
 
         Kathara.get_instance().deploy_lab(lab)
 

@@ -367,6 +367,22 @@ class KubernetesMachine(object):
         if Setting.get_instance().host_shared:
             volume_mounts.append(client.V1VolumeMount(name="shared", mount_path="/shared"))
 
+        # Mount volumes defined in the device
+        for idx, (host_path, volume) in enumerate(machine.meta["volumes"].items()):
+            missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
+
+            if not missing_permissions:
+                volume_mounts.append(
+                    client.V1VolumeMount(
+                        name=f"volume{idx}", mount_path=volume['guest_path'], read_only=volume['mode'] == "ro"
+                    )
+                )
+            else:
+                raise PermissionError(
+                    f"To mount volume `{host_path}` in `{volume['guest_path']}` "
+                    f"you miss the following permissions: `{', '.join(missing_permissions)}`."
+                )
+
         # Machine must be executed in privileged mode to run sysctls.
         security_context = client.V1SecurityContext(privileged=True)
 
@@ -480,6 +496,15 @@ class KubernetesMachine(object):
                 name="shared",
                 host_path=client.V1HostPathVolumeSource(
                     path='/home/shared',
+                    type='DirectoryOrCreate'
+                )
+            ))
+
+        for idx, (host_path, volume) in enumerate(machine.meta["volumes"].items()):
+            volumes.append(client.V1Volume(
+                name=f"volume{idx}",
+                host_path=client.V1HostPathVolumeSource(
+                    path=host_path,
                     type='DirectoryOrCreate'
                 )
             ))

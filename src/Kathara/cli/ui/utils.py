@@ -5,7 +5,7 @@ import shlex
 import subprocess
 import sys
 from datetime import datetime
-from typing import Any, Dict, Generator, Optional, Union
+from typing import Any, Dict, Generator, Optional, Union, Tuple
 from typing import Callable
 
 from rich import box
@@ -205,14 +205,14 @@ def open_machine_terminal(machine) -> None:
 
 
 # Types for argparse
-def alphanumeric(value, pat=re.compile(r"^\w+$")):
+def alphanumeric(value: str, pat: re.Pattern = re.compile(r"^\w+$")) -> str:
     if not pat.match(value):
         raise argparse.ArgumentTypeError("invalid alphanumeric value")
 
     return value
 
 
-def interface_cd_mac(value):
+def interface_cd_mac(value: str) -> Tuple[str, str, str]:
     n, cd, mac = None, None, None
     try:
         parts = value.split('/')
@@ -232,5 +232,13 @@ def interface_cd_mac(value):
     return n, cd, mac
 
 
-def cd_mac(value):
+def cd_mac(value) -> Tuple[str, str]:
     return parse_cd_mac_address(value)
+
+
+def volume(value: str) -> str:
+    values = list(filter(lambda x: x, value.split('|')))
+    if len(values) != 3 and len(values) != 2:
+        raise argparse.ArgumentTypeError("invalid volume definition: %s" % value)
+
+    return value
