@@ -6,6 +6,8 @@ import re
 import shlex
 import signal
 import sys
+import tarfile
+import tempfile
 import threading
 import uuid
 from multiprocessing.dummy import Pool
@@ -896,6 +898,41 @@ class KubernetesMachine(object):
             next(exec_output)
         except StopIteration:
             pass
+
+    def retrieve_files(self, machine_api_object: client.V1Deployment, src: str, dst: str) -> None:
+        """Get the file or directory from the Docker container specified by the machine_api_object into dst.
+
+        Args:
+            machine_api_object (docker.models.containers.Container): A Docker container.
+            src (str): The path of the file or folder to copy from the device.
+            dst (str): The destination path on the host.
+
+        Returns:
+            None
+        """
+        machine_name = machine_api_object.metadata.labels["name"]
+        machine_namespace = machine_api_object.metadata.namespace
+
+        # Get the tar from the Pod on the stdout
+        exec_output = self.exec(machine_namespace, machine_name, command=['tar', 'cf', '-', src], is_stream=True)
+
+        # Create a tmp tar file and write the output from the Pod
+        with tempfile.NamedTemporaryFile(mode='wb+', suffix='.tar') as temp_file:
+            # Write chunks in the temp tar file
+            while True:
+                try:
+                    stdout, _ = next(exec_output)
+                    if stdout:
+                        temp_file.write(stdout)
+                except StopIteration:
+                    break
+
+            # After writing, go at the beginning of file
+            temp_file.seek(0)
+
+            # Now, we need to extract the tmp tar file into the destination folder
+            with tarfile.open(fileobj=temp_file, mode='r') as tar_file:
+                tar_file.extractall(path=dst)
 
     def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None) -> List[client.V1Pod]:
         """Return the List of Kubernetes Pods.
