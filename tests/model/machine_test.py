@@ -210,6 +210,7 @@ def test_add_meta_env_complex(default_device: Machine):
     default_device.add_meta("env", "IFACES=linux:eth0,name=iface/name")
     assert default_device.meta['envs']['IFACES'] == "linux:eth0,name=iface/name"
 
+
 def test_add_meta_env_not_format_exception(default_device: Machine):
     with pytest.raises(MachineOptionError):
         default_device.add_meta("env", "MY_ENV_VAR")
@@ -480,3 +481,35 @@ def test_is_ipv6_enabled_mix():
     device2 = Machine(lab, "test_machine2")
     assert not device1.is_ipv6_enabled()
     assert not device2.is_ipv6_enabled()
+
+
+#
+# TEST: is_privileged
+#
+def test_is_privileged_from_lab_options():
+    lab = Lab('mem_test')
+    lab.add_global_machine_metadata("privileged", True)
+    device = Machine(lab, "test_machine")
+    assert device.is_privileged()
+
+
+def test_is_privileged_from_device_meta_bool():
+    kwargs = {"privileged": True}
+    device = Machine(Lab("test_lab"), "test_machine", **kwargs)
+    assert device.is_privileged()
+
+
+def test_is_privileged_from_device_meta_str():
+    kwargs = {"privileged": "True"}
+    device = Machine(Lab("test_lab"), "test_machine", **kwargs)
+    assert device.is_privileged()
+
+
+def test_is_privileged_mix():
+    lab = Lab('mem_test')
+    lab.add_global_machine_metadata("privileged", True)
+    kwargs = {"privileged": False}
+    device1 = Machine(lab, "test_machine1", **kwargs)
+    device2 = Machine(lab, "test_machine2")
+    assert device1.is_privileged()
+    assert device2.is_privileged()

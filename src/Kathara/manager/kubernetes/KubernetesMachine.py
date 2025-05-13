@@ -168,9 +168,6 @@ class KubernetesMachine(object):
                 k: v for k, v in machines if k not in excluded_machines
             }.items()
 
-        if lab.general_options['privileged_machines']:
-            logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
-
         # Do not open terminals on Megalos
         Setting.get_instance().open_terminals = False
 
@@ -301,13 +298,23 @@ class KubernetesMachine(object):
         # Get the global machine metadata into a local variable (just to avoid accessing the lab object every time)
         global_machine_metadata = machine.lab.global_machine_metadata
 
+        # If privileged is defined for the device, throw a warning.
+        if "privileged" in global_machine_metadata or machine.is_privileged():
+            logging.warning(
+                f'Privileged option is not supported on Megalos. It will be ignored on device `{machine.name}`.'
+            )
+
         # If bridged is defined for the device, throw a warning.
         if "bridged" in global_machine_metadata or machine.is_bridged():
-            logging.warning('Bridged option is not supported on Megalos. It will be ignored.')
+            logging.warning(
+                f'Bridged option is not supported on Megalos. It will be ignored on device `{machine.name}`.'
+            )
 
         # If any ulimit is defined fot the device throw a warning
         if "ulimits" in machine.meta and len(machine.meta["ulimits"].keys()) > 0:
-            logging.warning('Ulimit option is not supported on Megalos. It will be ignored.')
+            logging.warning(
+                f'Ulimit option is not supported on Megalos. It will be ignored on device `{machine.name}`.'
+            )
 
         # If any exec command is passed in command line, add it.
         if "exec" in global_machine_metadata:

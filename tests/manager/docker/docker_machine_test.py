@@ -210,15 +210,17 @@ def test_create_ipv6(mock_get_current_user_name, mock_setting_get_instance, mock
     assert not mock_copy_files.called
 
 
+@mock.patch("src.Kathara.utils.is_admin")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.copy_files")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.utils.get_current_user_name")
 def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance, mock_copy_files,
-                           mock_get_machines_api_objects_by_filters, docker_machine, default_device):
+                           mock_get_machines_api_objects_by_filters, mock_is_admin, docker_machine, default_device):
     mock_get_machines_api_objects_by_filters.return_value = []
+    mock_is_admin.return_value = True
 
-    default_device.lab.add_option("privileged_machines", True)
+    default_device.add_meta("privileged", True)
     mock_get_current_user_name.return_value = "test-user"
     setting_mock = Mock()
     setting_mock.configure_mock(**{
@@ -264,6 +266,36 @@ def test_create_privileged(mock_get_current_user_name, mock_setting_get_instance
         ulimits=[]
     )
     assert not mock_copy_files.called
+
+
+@mock.patch("src.Kathara.utils.is_admin")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_privilege_error(mock_get_current_user_name, mock_setting_get_instance,
+                                mock_get_machines_api_objects_by_filters, mock_is_admin, docker_machine,
+                                default_device):
+    mock_get_machines_api_objects_by_filters.return_value = []
+    mock_is_admin.return_value = False
+
+    default_device.add_meta("privileged", True)
+    mock_get_current_user_name.return_value = "test-user"
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': True,
+        "hosthome_mount": False,
+        "shared_mount": False,
+        'remote_url': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    with pytest.raises(PrivilegeError):
+        docker_machine.create(default_device)
+
+    assert not docker_machine.client.containers.create.called
 
 
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
@@ -697,38 +729,6 @@ def test_deploy_machines(mock_deploy_and_start, mock_setting_get_instance, docke
     mock_deploy_and_start.assert_any_call(('pc2', pc2))
 
 
-@mock.patch("src.Kathara.utils.is_admin")
-@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._deploy_and_start_machine")
-def test_deploy_machines_privilege_error(mock_deploy_and_start, mock_setting_get_instance, mock_is_admin,
-                                         docker_machine):
-    setting_mock = Mock()
-    setting_mock.configure_mock(**{
-        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
-        'device_prefix': 'dev_prefix',
-        "device_shell": '/bin/bash',
-        'enable_ipv6': False,
-        "hosthome_mount": False,
-        "shared_mount": False,
-        'remote_url': None
-    })
-    mock_setting_get_instance.return_value = setting_mock
-    mock_is_admin.return_value = False
-
-    lab = Lab("Default scenario")
-    lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
-    lab.get_or_new_machine("pc2", **{'image': 'kathara/test2'})
-    lab.general_options['privileged_machines'] = True
-    docker_machine.docker_image.check_from_list.return_value = None
-    mock_deploy_and_start.return_value = None
-
-    with pytest.raises(PrivilegeError):
-        docker_machine.deploy_machines(lab)
-
-    assert not docker_machine.docker_image.check_from_list.called
-    assert not mock_deploy_and_start.called
-
-
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._deploy_and_start_machine")
 def test_deploy_machines_selected_machines(mock_deploy_and_start, mock_setting_get_instance, docker_machine):
@@ -917,6 +917,7 @@ def test_create_driver_opt_ipv6(docker_machine, default_device, default_link):
         'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=0,net.ipv6.conf.IFNAME.forwarding=1',
     }
 
+
 def test_create_driver_opt_complete(docker_machine, default_device, default_link):
     interface = default_device.add_interface(default_link)
     default_device.add_meta('sysctl', "net.ipv6.neigh.eth0.anycast_delay=50")
@@ -926,6 +927,7 @@ def test_create_driver_opt_complete(docker_machine, default_device, default_link
         'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
         'com.docker.network.endpoint.sysctls': 'net.ipv4.conf.IFNAME.rp_filter=0,net.ipv6.conf.IFNAME.disable_ipv6=1,net.ipv6.neigh.IFNAME.anycast_delay=50',
     }
+
 
 def test_create_driver_old_docker(docker_machine, default_device, default_link):
     docker_machine._engine_version = '25.0.0'
