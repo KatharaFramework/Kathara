@@ -166,6 +166,18 @@ class VstartCommand(Command):
             required=False,
             help='Set the shell (sh, bash, etc.) that should be used inside the device.'
         )
+        self.parser.add_argument(
+            '--entrypoint',
+            metavar='ENTRYPOINT',
+            required=False,
+            help='Specify the entrypoint command of the device.'
+        )
+        self.parser.add_argument(
+            "args",
+            metavar='ARG',
+            nargs=argparse.REMAINDER,
+            help='Specify extra arguments for the entrypoint command.'
+        )
 
     def run(self, current_path: str, argv: List[str]) -> int:
         self.parse_args(argv)
@@ -202,6 +214,9 @@ class VstartCommand(Command):
                         "[yellow]\u26a0 Running devices with privileged capabilities, terminal might not open!"
                     )
         lab.add_global_machine_metadata('privileged', args['privileged'])
+
+        if args['args'] and args['args'][0] == "--":
+            args['args'] = args['args'][1:]
 
         device = lab.get_or_new_machine(name, **args)
 

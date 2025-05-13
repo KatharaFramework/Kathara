@@ -1,4 +1,5 @@
 import json
+import shlex
 import sys
 from unittest import mock
 from unittest.mock import Mock, call
@@ -173,7 +174,9 @@ def kubernetes_device_definition_image_pull_secrets():
         resources=resources,
         volume_mounts=[],
         security_context=security_context,
-        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")]
+        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")],
+        command=None,
+        args=None
     )
 
     pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
@@ -300,7 +303,9 @@ def test_build_definition_no_config(mock_setting_get_instance, default_device, k
         resources=resources,
         volume_mounts=[],
         security_context=security_context,
-        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")]
+        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")],
+        command=None,
+        args=None
     )
 
     pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
@@ -374,7 +379,9 @@ def test_build_definition(mock_setting_get_instance, config_map_mock, default_de
         resources=resources,
         volume_mounts=[client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara")],
         security_context=security_context,
-        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")]
+        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")],
+        command=None,
+        args=None
     )
 
     pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
@@ -451,7 +458,9 @@ def test_build_docker_config_json(mock_setting_get_instance, config_map_mock, de
         resources=resources,
         volume_mounts=[client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara")],
         security_context=security_context,
-        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")]
+        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")],
+        command=None,
+        args=None
     )
 
     pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
@@ -467,6 +476,250 @@ def test_build_docker_config_json(mock_setting_get_instance, config_map_mock, de
                                     config_map=client.V1ConfigMapVolumeSource(name="test_device_config_map")
                                 )],
                                 image_pull_secrets=[client.V1LocalObjectReference(name='private-registry')]
+                                )
+
+    pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
+    label_selector = client.V1LabelSelector(match_labels={"name": "test_device", "app": "kathara"})
+    deployment_spec = client.V1DeploymentSpec(replicas=1, template=pod_template, selector=label_selector)
+
+    expected_definition = client.V1Deployment(api_version="apps/v1",
+                                              kind="Deployment",
+                                              metadata=client.V1ObjectMeta(
+                                                  name="devprefix-test-device-ec84ad3b",
+                                                  labels={"name": "test_device", "app": "kathara"}
+                                              ),
+                                              spec=deployment_spec
+                                              )
+
+    actual_definition = kubernetes_machine._build_definition(default_device, config_map_mock)
+
+    assert actual_definition == expected_definition
+
+
+@mock.patch("kubernetes.client.models.v1_config_map.V1ConfigMap")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_build_definition_entrypoint(mock_setting_get_instance, config_map_mock, default_device, kubernetes_machine):
+    default_device.add_meta("entrypoint", "/bin/test hello")
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'device_prefix': 'devprefix',
+        'device_shell': '/bin/bash',
+        'enable_ipv6': False,
+        'image_pull_policy': 'Always',
+        'host_shared': False,
+        'docker_config_json': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    config_map_mock.metadata.name = "test_device_config_map"
+
+    security_context = client.V1SecurityContext(privileged=True)
+    resources = client.V1ResourceRequirements(limits={
+        "memory": "64M",
+        "cpu": "2000m"
+    })
+
+    startup_commands_string = "; ".join(STARTUP_COMMANDS) \
+        .format(machine_name="test_device", sysctl_commands="", machine_commands="ls")
+
+    post_start = client.V1LifecycleHandler(
+        _exec=client.V1ExecAction(
+            command=["/bin/bash", "-c", startup_commands_string]
+        )
+    )
+    container_definition = client.V1Container(
+        name="devprefix-test-device-ec84ad3b",
+        image="kathara/test",
+        lifecycle=client.V1Lifecycle(post_start=post_start),
+        stdin=True,
+        tty=True,
+        image_pull_policy="Always",
+        ports=None,
+        resources=resources,
+        volume_mounts=[client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara")],
+        security_context=security_context,
+        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")],
+        command=shlex.split("/bin/test hello"),
+        args=None
+    )
+
+    pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
+                                       annotations={"k8s.v1.cni.cncf.io/networks": "[]"},
+                                       labels={"name": "test_device", "app": "kathara"}
+                                       )
+    pod_spec = client.V1PodSpec(containers=[container_definition],
+                                hostname="devprefix-test-device-ec84ad3b",
+                                dns_policy="None",
+                                dns_config=client.V1PodDNSConfig(nameservers=["127.0.0.1"]),
+                                volumes=[client.V1Volume(
+                                    name="hostlab",
+                                    config_map=client.V1ConfigMapVolumeSource(name="test_device_config_map")
+                                )],
+                                image_pull_secrets=[]
+                                )
+
+    pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
+    label_selector = client.V1LabelSelector(match_labels={"name": "test_device", "app": "kathara"})
+    deployment_spec = client.V1DeploymentSpec(replicas=1, template=pod_template, selector=label_selector)
+
+    expected_definition = client.V1Deployment(api_version="apps/v1",
+                                              kind="Deployment",
+                                              metadata=client.V1ObjectMeta(
+                                                  name="devprefix-test-device-ec84ad3b",
+                                                  labels={"name": "test_device", "app": "kathara"}
+                                              ),
+                                              spec=deployment_spec
+                                              )
+
+    actual_definition = kubernetes_machine._build_definition(default_device, config_map_mock)
+
+    assert actual_definition == expected_definition
+
+
+@mock.patch("kubernetes.client.models.v1_config_map.V1ConfigMap")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_build_definition_entrypoint(mock_setting_get_instance, config_map_mock, default_device, kubernetes_machine):
+    default_device.add_meta("args", "-n 20 -c 10 -f 30")
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'device_prefix': 'devprefix',
+        'device_shell': '/bin/bash',
+        'enable_ipv6': False,
+        'image_pull_policy': 'Always',
+        'host_shared': False,
+        'docker_config_json': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    config_map_mock.metadata.name = "test_device_config_map"
+
+    security_context = client.V1SecurityContext(privileged=True)
+    resources = client.V1ResourceRequirements(limits={
+        "memory": "64M",
+        "cpu": "2000m"
+    })
+
+    startup_commands_string = "; ".join(STARTUP_COMMANDS) \
+        .format(machine_name="test_device", sysctl_commands="", machine_commands="ls")
+
+    post_start = client.V1LifecycleHandler(
+        _exec=client.V1ExecAction(
+            command=["/bin/bash", "-c", startup_commands_string]
+        )
+    )
+    container_definition = client.V1Container(
+        name="devprefix-test-device-ec84ad3b",
+        image="kathara/test",
+        lifecycle=client.V1Lifecycle(post_start=post_start),
+        stdin=True,
+        tty=True,
+        image_pull_policy="Always",
+        ports=None,
+        resources=resources,
+        volume_mounts=[client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara")],
+        security_context=security_context,
+        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")],
+        command=None,
+        args=shlex.split("-n 20 -c 10 -f 30")
+    )
+
+    pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
+                                       annotations={"k8s.v1.cni.cncf.io/networks": "[]"},
+                                       labels={"name": "test_device", "app": "kathara"}
+                                       )
+    pod_spec = client.V1PodSpec(containers=[container_definition],
+                                hostname="devprefix-test-device-ec84ad3b",
+                                dns_policy="None",
+                                dns_config=client.V1PodDNSConfig(nameservers=["127.0.0.1"]),
+                                volumes=[client.V1Volume(
+                                    name="hostlab",
+                                    config_map=client.V1ConfigMapVolumeSource(name="test_device_config_map")
+                                )],
+                                image_pull_secrets=[]
+                                )
+
+    pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
+    label_selector = client.V1LabelSelector(match_labels={"name": "test_device", "app": "kathara"})
+    deployment_spec = client.V1DeploymentSpec(replicas=1, template=pod_template, selector=label_selector)
+
+    expected_definition = client.V1Deployment(api_version="apps/v1",
+                                              kind="Deployment",
+                                              metadata=client.V1ObjectMeta(
+                                                  name="devprefix-test-device-ec84ad3b",
+                                                  labels={"name": "test_device", "app": "kathara"}
+                                              ),
+                                              spec=deployment_spec
+                                              )
+
+    actual_definition = kubernetes_machine._build_definition(default_device, config_map_mock)
+
+    assert actual_definition == expected_definition
+
+
+@mock.patch("kubernetes.client.models.v1_config_map.V1ConfigMap")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_build_definition_entrypoint(mock_setting_get_instance, config_map_mock, default_device, kubernetes_machine):
+    default_device.add_meta("entrypoint", "/bin/test hello")
+    default_device.add_meta("args", "-n 20 -c 10 -f 30")
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'device_prefix': 'devprefix',
+        'device_shell': '/bin/bash',
+        'enable_ipv6': False,
+        'image_pull_policy': 'Always',
+        'host_shared': False,
+        'docker_config_json': None
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    config_map_mock.metadata.name = "test_device_config_map"
+
+    security_context = client.V1SecurityContext(privileged=True)
+    resources = client.V1ResourceRequirements(limits={
+        "memory": "64M",
+        "cpu": "2000m"
+    })
+
+    startup_commands_string = "; ".join(STARTUP_COMMANDS) \
+        .format(machine_name="test_device", sysctl_commands="", machine_commands="ls")
+
+    post_start = client.V1LifecycleHandler(
+        _exec=client.V1ExecAction(
+            command=["/bin/bash", "-c", startup_commands_string]
+        )
+    )
+    container_definition = client.V1Container(
+        name="devprefix-test-device-ec84ad3b",
+        image="kathara/test",
+        lifecycle=client.V1Lifecycle(post_start=post_start),
+        stdin=True,
+        tty=True,
+        image_pull_policy="Always",
+        ports=None,
+        resources=resources,
+        volume_mounts=[client.V1VolumeMount(name="hostlab", mount_path="/tmp/kathara")],
+        security_context=security_context,
+        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")],
+        command=shlex.split("/bin/test hello"),
+        args=shlex.split("-n 20 -c 10 -f 30")
+    )
+
+    pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,
+                                       annotations={"k8s.v1.cni.cncf.io/networks": "[]"},
+                                       labels={"name": "test_device", "app": "kathara"}
+                                       )
+    pod_spec = client.V1PodSpec(containers=[container_definition],
+                                hostname="devprefix-test-device-ec84ad3b",
+                                dns_policy="None",
+                                dns_config=client.V1PodDNSConfig(nameservers=["127.0.0.1"]),
+                                volumes=[client.V1Volume(
+                                    name="hostlab",
+                                    config_map=client.V1ConfigMapVolumeSource(name="test_device_config_map")
+                                )],
+                                image_pull_secrets=[]
                                 )
 
     pod_template = client.V1PodTemplateSpec(metadata=pod_metadata, spec=pod_spec)
@@ -582,7 +835,9 @@ def test_create_ipv6(mock_setting_get_instance, kubernetes_machine, default_devi
         resources=resources,
         volume_mounts=[],
         security_context=security_context,
-        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")]
+        env=[client.V1EnvVar("_MEGALOS_SHELL", "/bin/bash")],
+        command=None,
+        args=None
     )
 
     pod_metadata = client.V1ObjectMeta(deletion_grace_period_seconds=0,

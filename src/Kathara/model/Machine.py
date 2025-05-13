@@ -316,6 +316,12 @@ class Machine(FilesystemMixin):
         if 'shell' in args and args['shell'] is not None:
             self.add_meta("shell", args['shell'])
 
+        if 'entrypoint' in args and args['entrypoint'] is not None:
+            self.add_meta("entrypoint", args['entrypoint'])
+
+        if 'args' in args and args['args'] is not None:
+            self.add_meta("args", args['args'])
+
     def check(self) -> None:
         """Sort interfaces and check if there are missing interface numbers.
 
