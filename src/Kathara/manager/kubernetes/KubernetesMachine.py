@@ -907,10 +907,18 @@ class KubernetesMachine(object):
         machine_namespace = machine_api_object.metadata.namespace
 
         # Get the tar from the Pod on the stdout
-        stdout, _, _ = self.exec(machine_namespace, machine_name, command=['tar', 'cf', '-', src], is_stream=False)
+        exec_output = self.exec(machine_namespace, machine_name, command=['tar', 'cf', '-', src], is_stream=True)
+
         # Create a tmp tar file and write the output from the Pod
         with tempfile.NamedTemporaryFile(mode='wb+', suffix='.tar') as temp_file:
-            temp_file.write(stdout)
+            # Write chunks in the temp tar file
+            while True:
+                try:
+                    stdout, _ = next(exec_output)
+                    if stdout:
+                        temp_file.write(stdout)
+                except StopIteration:
+                    break
 
             # After writing, go at the beginning of file
             temp_file.seek(0)
