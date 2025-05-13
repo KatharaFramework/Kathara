@@ -674,7 +674,7 @@ class KubernetesMachine(object):
         if logs and Setting.get_instance().print_startup_log:
             exec_output = self.exec(lab_hash,
                                     machine_name,
-                                    command="/bin/cat /var/log/shared.log /var/log/startup.log"
+                                    command="/bin/cat /var/log/shared.log /var/log/startup.log /var/kathara/*"
                                     )
             try:
                 print("--- Startup Commands Log\n")
