@@ -1,6 +1,8 @@
+import os
 import sys
 
 from ..utils import open_machine_terminal
+from .... import utils
 from ....model import Machine as MachinePackage
 from ....setting.Setting import Setting
 
@@ -27,9 +29,25 @@ class HandleMachineTerminal(object):
         Returns:
             None
         """
+        utils.exec_by_platform(self._flush_unix, self._flush_win, self._flush_unix)
+
+    def _flush_unix(self) -> None:
+        """Clean the stdout buffer on UNIX-based systems.
+
+        Returns:
+            None
+        """
         sys.stdout.write("\033[2J")
         sys.stdout.write("\033[0;0H")
         sys.stdout.flush()
+
+    def _flush_win(self) -> None:
+        """Clean the stdout buffer on Windows-based systems.
+
+        Returns:
+            None
+        """
+        os.system('cls')
 
     def print_wait_msg(self) -> None:
         """Print the startup commands waiting message.
