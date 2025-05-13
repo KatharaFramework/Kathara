@@ -1,3 +1,4 @@
+import os.path
 import sys
 from unittest import mock
 from unittest.mock import Mock
@@ -29,7 +30,8 @@ def test_default_device_parameters(default_device: Machine):
         'sysctls': {},
         'envs': {},
         'ports': {},
-        'ulimits': {}
+        'ulimits': {},
+        'volumes': {}
     }
     assert default_device.api_object is None
     assert default_device.fs is None
@@ -332,6 +334,86 @@ def test_add_meta_ulimit_soft_and_hard_unlimited(default_device):
 def test_add_meta_ulimit_invalid_value(default_device):
     with pytest.raises(MachineOptionError):
         default_device.add_meta("ulimit", "nofile=1024:-2")
+
+
+def test_add_meta_volume_default(default_device: Machine):
+    default_device.add_meta('volume', '.|/test')
+    assert default_device.meta['volumes'][os.path.abspath('.')] == {'guest_path': '/test', 'mode': 'ro'}
+
+
+def test_add_meta_volume_format_error(default_device: Machine):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta('volume', '.|/te|st|')
+
+
+def test_add_meta_volume_format_error_2(default_device: Machine):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta('volume', '.|')
+
+
+def test_add_meta_volume_invalid_mode(default_device: Machine):
+    with pytest.raises(MachineOptionError):
+        default_device.add_meta('volume', '.|/te|xy')
+
+
+def test_add_meta_volume_rw_mode(default_device: Machine):
+    default_device.add_meta('volume', '.|/test|rw')
+    assert default_device.meta['volumes'][os.path.abspath('.')] == {'guest_path': '/test', 'mode': 'rw'}
+
+
+def test_add_meta_volume_ro_mode(default_device: Machine):
+    default_device.add_meta('volume', '.|/test|ro')
+    assert default_device.meta['volumes'][os.path.abspath('.')] == {'guest_path': '/test', 'mode': 'ro'}
+
+
+#
+# TEST: update_meta
+#
+def test_update_meta_exec_commands(default_device: Machine):
+    default_device.update_meta({'exec_commands': ["command1", "command2"]})
+    assert default_device.meta['exec_commands'] == ["command1", "command2"]
+
+
+def test_update_meta_bridged(default_device: Machine):
+    default_device.update_meta({'bridged': True})
+    assert default_device.is_bridged()
+
+
+def test_update_meta_ports(default_device: Machine):
+    default_device.update_meta({'ports': ['8080:80/tcp', '9090:90/udp']})
+
+    assert default_device.get_ports()[(8080, 'tcp')] == 80
+    assert default_device.get_ports()[(9090, 'udp')] == 90
+
+
+def test_update_meta_sysctls(default_device: Machine):
+    default_device.update_meta({'sysctls': ['net.ipv6.conf.all.accept_ra=1', 'net.ipv4.conf.all.forwarding=0']})
+    assert default_device.get_sysctls()['net.ipv6.conf.all.accept_ra'] == 1
+    assert default_device.get_sysctls()['net.ipv4.conf.all.forwarding'] == 0
+
+
+def test_update_meta_envs(default_device: Machine):
+    default_device.update_meta({'envs': ['TEST=1', 'PATH=test']})
+    assert default_device.get_envs()['TEST'] == '1'
+    assert default_device.get_envs()['PATH'] == 'test'
+
+
+def test_update_ulimits(default_device: Machine):
+    default_device.update_meta({'ulimits': ['nofile=1024:2048', 'memlock=-1']})
+    assert default_device.get_ulimits()['nofile'] == {'soft': 1024, 'hard': 2048}
+    assert default_device.get_ulimits()['memlock'] == {'soft': -1, 'hard': -1}
+
+
+def test_update_shell(default_device: Machine):
+    assert default_device.get_shell() == "/bin/bash"
+    default_device.update_meta({'shell': '/bin/sh'})
+    assert default_device.get_shell() == "/bin/sh"
+
+
+def test_update_volumes(default_device: Machine):
+    default_device.update_meta({'volumes': ['/host_path|/guest_path|rw', '/host_path_2|/guest_path_2|ro']})
+    assert default_device.get_volumes()['/host_path'] == {'guest_path': '/guest_path', 'mode': 'rw'}
+    assert default_device.get_volumes()['/host_path_2'] == {'guest_path': '/guest_path_2', 'mode': 'ro'}
 
 
 #

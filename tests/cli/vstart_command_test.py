@@ -1,5 +1,6 @@
 import sys
 from unittest import mock
+from unittest.mock import Mock
 
 import pytest
 
@@ -32,7 +33,7 @@ def mock_setting(mock_setting_class):
 @pytest.fixture()
 def default_device_args():
     args = {
-        "terminals": None, "privileged": None, "num_terms": None, "eths": None, "exec_commands": None, "mem": None,
+        "terminals": None, "privileged": None, "num_terms": None, "exec_commands": None, "mem": None,
         "cpus": None, "image": None, "hosthome_mount": None, "xterm": None, "dry_mode": False, "bridged": False,
         "ports": None, "sysctls": None, "envs": None, "ulimits": None, "shell": None, "entrypoint": None, "args": [],
     }
@@ -196,7 +197,6 @@ def test_run_with_one_interface(mock_docker_manager, mock_manager_get_instance, 
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
-    default_device_args['eths'] = [('0', 'A', None)]
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
         with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
@@ -224,7 +224,6 @@ def test_run_with_one_interface_and_mac_address(mock_docker_manager, mock_manage
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
-    default_device_args['eths'] = [('0', 'A', '00:00:00:00:00:01')]
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
         with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
@@ -252,7 +251,6 @@ def test_run_with_two_interfaces(mock_docker_manager, mock_manager_get_instance,
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
-    default_device_args['eths'] = [('0', 'A', None), ('1', 'B', None)]
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
         with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
@@ -277,7 +275,6 @@ def test_run_with_two_interfaces_value_error(mock_setting_get_instance, mock_dep
                                              mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
     mock_setting_get_instance.return_value = mock_setting
     mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
-    default_device_args['eths'] = [('0', 'A'), ('Z', 'B')]
     command = VstartCommand()
     with pytest.raises(SyntaxError):
         with mock.patch.object(Lab, "add_option") as mock_add_option:
@@ -732,5 +729,36 @@ def test_run_with_entrypoint_and_args(mock_docker_manager, mock_manager_get_inst
             mock_add_option.assert_any_call('shared_mount', False)
             mock_add_global_machine_metadata.assert_any_call('privileged', None)
             mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
+
+
+@mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
+@mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_volume(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                         mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                         default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    mock_setting_get_instance.return_value = mock_setting
+
+    mock_device = Mock()
+
+    mock_get_or_new_machine.return_value = mock_device
+    volume = '.|/test|rw'
+    command = VstartCommand()
+    with mock.patch.object(Lab, "add_option") as mock_add_option:
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--volume', '.|/test|rw'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            mock_device.add_meta.assert_called_once_with("volume", volume)
             assert not mock_connect_machine_to_link.called
             mock_docker_manager.deploy_lab.assert_called_once()

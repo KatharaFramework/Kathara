@@ -88,6 +88,12 @@ If `arg` is an option name, then `device` will be launched with option `arg` set
 * `args` (string):
 	Allows to specify extra arguments for the entrypoint command. 
 
+* `volume` (string):
+	Specifies an additional volume to mount on the device. The syntax is HOST|GUEST|[MODE].
+	Mode can be: ro (read-only), rw (read-write), or rx.
+	The user must have appropriate permissions on the HOST directory; otherwise, an exception will be raised.
+	NOTE: On Megalos, the volume is mounted on the worker node where the device is running, not on the user's local machine.
+
 
 ## NETWORK SCENARIO META INFORMATION
 

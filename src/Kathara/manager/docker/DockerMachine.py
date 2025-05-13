@@ -298,6 +298,17 @@ class DockerMachine(object):
         if hosthome_mount and Setting.get_instance().remote_url is None:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
+        for host_path, volume in machine.meta["volumes"].items():
+            missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
+
+            if not missing_permissions:
+                volumes[host_path] = {'bind': volume['guest_path'], 'mode': volume['mode']}
+            else:
+                raise PermissionError(
+                    f"To mount volume `{host_path}` in `{volume['guest_path']}` "
+                    f"you miss the following permissions: `{', '.join(missing_permissions)}`."
+                )
+
         privileged = machine.is_privileged()
         if privileged and not utils.is_admin():
             raise PrivilegeError(f"You must be root in order to start device `{machine.name}` in privileged mode.")
