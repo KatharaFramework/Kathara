@@ -34,7 +34,6 @@ dependencies = [
     "kubernetes>=23.3.0",
     "requests>=2.22.0",
     "slug>=2.0",
-    "deepdiff==6.2.2",
     "pyroute2",
     "rich",
     "fs>=2.4.16",

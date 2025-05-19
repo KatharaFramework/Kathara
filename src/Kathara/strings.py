@@ -9,7 +9,6 @@ strings = {
     "lclean": "Stop a Kathara network scenario",
     "linfo": "Show information about a Kathara network scenario",
     "lrestart": "Restart a Kathara network scenario",
-    "ltest": "Test a Kathara network scenario",
     "lconfig": "Manage the network interfaces of a running Kathara device in a Kathara network scenario",
     "connect": "Connect to a Kathara device",
     "exec": "Execute a command in a Kathara device",
