@@ -68,6 +68,7 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
+- BREAKING: "ltest" command has been removed
 - Add the possibility to mount additional volumes on devices using the "volume" metadata
 - Allow to run a single device in privileged mode using the "privileged" metadata
 - Add the possibility to specify custom entrypoint and arguments for a device using the "entrypoint" and "args" metadata

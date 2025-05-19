@@ -3,7 +3,7 @@
 VERSION=3.8.0
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
-NO_BINARY_PACKAGES=pyroute2|pyuv|deepdiff
+NO_BINARY_PACKAGES=pyroute2|pyuv
 
 .PHONY: allSigned docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa clean venv autocompletion
 
