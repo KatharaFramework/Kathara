@@ -16,7 +16,7 @@
     <li><a href="#how-does-it-work">How does it work?</a></li>
     <li><a href="#installation">Installation</a></li>
     <li><a href="#quick-example">Quick Example</a></li>
-    <li><a href="#publications">Publications</a></li>
+    <li><a href="#publications-and-presentations">Publications</a></li>
     <li><a href="#external-tools">External Tools</a></li>
     <li><a href="#success-stories">Success Stories</a></li>
     <li><a href="#join-us">Join Us</a></li>
@@ -88,10 +88,11 @@ Kathará has been also presented in meetings and workshops:
 ## External Tools
 
 - [Netkit Lab Generator](https://github.com/KatharaFramework/Netkit-Lab-Generator), a GUI that allows the easy creation of a network scenario configuration and the visualization of its network topology.
-- [VFTGen](https://github.com/KatharaFramework/VFTGen), a tool that allows to create three levels Fat Tree topologies (single-plane or multi-planes) and automatically configure them to run on Kathará.
+- [VFTGen](https://github.com/KatharaFramework/VFTGen), a tool that allows creating three levels Fat Tree topologies (single-plane or multi-planes) and automatically configure them to run on Kathará.
 - [Tacatá](https://github.com/damiano-massarelli/Tacata), a lightweight Python script which creates Netkit and Kathará labs using an enriched version of the lab.conf file with a simple syntax.
 - [net-vis](https://github.com/Friscobuffo/net-vis-localhost), a tool that parses (and generates) the `lab.conf` file and all the `.startup` files to visualize the network.
 - [kathara-lab-starter](https://github.com/BuonHobo/kathara-lab-starter), an easy and extensible tool to get a kathara lab started.  Utilizing JSON input files, it accelerates setup, while minimizing configuration redundancies.
+- [NetGUI-Kathará](https://gitlab.com/eva.castro/netgui-kathara), NetGUI-Kathará is a graphical interface for Kathará that lets users design and manage network topologies. It also generates files for 3D traffic visualization with [WireXRk](https://pheras.gitlab.io/wirexrk/).
 
 ## Success Stories
 As far as we know, Kathará is currently being used in many [courses and projects](https://www.kathara.org/stories.html). 
