@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 from rich.console import Console
 from rich.theme import Theme
 
-from Kathara.setting.Setting import Setting, SETTINGS_FILENAME
+from ....setting.Setting import Setting, SETTINGS_FILENAME
 from ..CliArgs import CliArgs
 
 
