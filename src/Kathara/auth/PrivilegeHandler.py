@@ -35,8 +35,21 @@ class PrivilegeHandler(object):
 
             PrivilegeHandler.__instance = self
 
+    def drop_effective_privileges(self) -> None:
+        logging.debug("Called `drop_effective_privileges`...")
+        try:
+            os.seteuid(self.user_uid)
+        except OSError:
+            pass
+
+        try:
+            os.setegid(self.user_gid)
+        except OSError:
+            pass
+
     def drop_privileges(self) -> None:
-        logging.debug("Called `drop_privileges`...")
+        logging.debug(f"Calling `drop_privileges` with current values: "
+                      f"UID={os.getuid()}, EUID={os.geteuid()}, GID={os.getgid()}, EGID={os.getegid()}...")
 
         logging.debug(f"Reference count is {self._ref}.")
         if self._ref > 1:
@@ -49,38 +62,45 @@ class PrivilegeHandler(object):
             logging.debug(f"Reference count is {self._ref}, exiting.")
             return
 
-        logging.debug(f"Dropping privileges to UID={self.user_uid} and GID={self.user_gid}...")
+        logging.debug(f"Dropping privileges to EUID={self.user_uid} and EGID={self.user_gid}...")
 
-        try:
-            os.setuid(self.user_uid)
-        except OSError:
-            pass
-
-        try:
-            os.setgid(self.user_gid)
-        except OSError:
-            pass
+        self.drop_effective_privileges()
 
         self._ref = 0
         logging.debug(f"Reference count is reset to 0.")
 
+        logging.debug(f"Privileges after `drop_privileges`: "
+                      f"UID={os.getuid()}, EUID={os.geteuid()}, GID={os.getgid()}, EGID={os.getegid()}...")
+
+    def raise_effective_privileges(self) -> None:
+        logging.debug("Called `raise_effective_privileges`...")
+        try:
+            os.seteuid(self.effective_user_uid)
+        except OSError:
+            pass
+
+        try:
+            os.setegid(self.effective_user_gid)
+        except OSError:
+            pass
+
     def raise_privileges(self) -> None:
-        logging.debug("Called `raise_privileges`...")
+        logging.debug(f"Calling `raise_privileges` with current values: "
+                      f"UID={os.getuid()}, EUID={os.geteuid()}, GID={os.getgid()}, EGID={os.getegid()}...")
 
         self._ref += 1
         logging.debug(f"Reference count is now {self._ref}.")
         if self._ref > 1:
-            logging.debug("Reference count > 1, exiting.")
+            if os.getegid() == self.user_gid:
+                logging.debug("Reference count > 1, but EGID not set for the thread. Raising privileges...")
+                self.raise_effective_privileges()
+            else:
+                logging.debug("Reference count > 1 with privileges already correct, exiting.")
             return
 
-        logging.debug(f"Raising privileges to UID={self.effective_user_uid} and GID={self.effective_user_gid}...")
+        logging.debug(f"Raising privileges to EUID={self.effective_user_uid} and EGID={self.effective_user_gid}...")
 
-        try:
-            os.setuid(self.effective_user_uid)
-        except OSError:
-            pass
+        self.raise_effective_privileges()
 
-        try:
-            os.setgid(self.effective_user_gid)
-        except OSError:
-            pass
+        logging.debug(f"Privileges after `raise_privileges`: "
+                      f"UID={os.getuid()}, EUID={os.geteuid()}, GID={os.getgid()}, EGID={os.getegid()}...")

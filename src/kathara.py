@@ -131,6 +131,6 @@ if __name__ == '__main__':
 
     utils.check_python_version()
 
-    utils.exec_by_platform(PrivilegeHandler.get_instance().drop_privileges, lambda: None, lambda: None)
+    utils.exec_by_platform(PrivilegeHandler.get_instance().drop_effective_privileges, lambda: None, lambda: None)
 
     KatharaEntryPoint()
