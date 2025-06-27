@@ -20,6 +20,7 @@ from .DockerImage import DockerImage
 from .exec_stream.DockerExecStream import DockerExecStream
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
+from ...decorators import privileged
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError, DockerPluginError, \
     MachineBinaryError, MachineNotRunningError, PrivilegeError, InvocationError
@@ -966,6 +967,7 @@ class DockerMachine(object):
             with tarfile.open(fileobj=temp_file, mode='r') as tar_file:
                 tar_file.extractall(path=dst)
 
+    @privileged
     def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None, user: str = None) -> \
             List[docker.models.containers.Container]:
         """Return the Docker containers objects specified by lab_hash and user.
@@ -1010,6 +1012,7 @@ class DockerMachine(object):
 
         machines_stats = {}
 
+        @privileged
         def load_machine_stats(machine):
             if machine.name not in machines_stats:
                 machines_stats[machine.name] = DockerMachineStats(machine)
