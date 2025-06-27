@@ -411,9 +411,11 @@ def test_update_shell(default_device: Machine):
 
 
 def test_update_volumes(default_device: Machine):
-    default_device.update_meta({'volumes': ['/host_path|/guest_path|rw', '/host_path_2|/guest_path_2|ro']})
-    assert default_device.get_volumes()['/host_path'] == {'guest_path': '/guest_path', 'mode': 'rw'}
-    assert default_device.get_volumes()['/host_path_2'] == {'guest_path': '/guest_path_2', 'mode': 'ro'}
+    host_path = os.path.abspath(os.path.normpath('/host_path'))
+    host_path_2 = os.path.abspath(os.path.normpath('/host_path_2'))
+    default_device.update_meta({'volumes': [f'{host_path}|/guest_path|rw', f'{host_path_2}|/guest_path_2|ro']})
+    assert default_device.get_volumes()[host_path] == {'guest_path': '/guest_path', 'mode': 'rw'}
+    assert default_device.get_volumes()[host_path_2] == {'guest_path': '/guest_path_2', 'mode': 'ro'}
 
 
 #

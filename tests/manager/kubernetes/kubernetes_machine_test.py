@@ -1,4 +1,5 @@
 import json
+import os
 import shlex
 import sys
 from unittest import mock
@@ -878,7 +879,7 @@ def test_create_ipv6(mock_setting_get_instance, kubernetes_machine, default_devi
 def test_create_volume(mock_setting_get_instance, mock_check_dir_permissions, kubernetes_machine, default_device):
     mock_check_dir_permissions.return_value = []
 
-    host_path = '/test/path'
+    host_path = os.path.abspath(os.path.normpath('/test/path'))
     guest_path = '/test'
     mode = 'ro'
     default_device.add_meta('volume', f'{host_path}|{guest_path}|{mode}')
@@ -983,12 +984,12 @@ def test_create_volume(mock_setting_get_instance, mock_check_dir_permissions, ku
 def test_create_two_volumes(mock_setting_get_instance, mock_check_dir_permissions, kubernetes_machine, default_device):
     mock_check_dir_permissions.return_value = []
 
-    host_path_1 = '/test/path_1'
+    host_path_1 = os.path.abspath(os.path.normpath('/test/path_1'))
     guest_path_1 = '/test_1'
     mode_1 = 'ro'
     default_device.add_meta('volume', f'{host_path_1}|{guest_path_1}|{mode_1}')
 
-    host_path_2 = '/test/path_2'
+    host_path_2 = os.path.abspath(os.path.normpath('/test/path_2'))
     guest_path_2 = '/test_2'
     mode_2 = 'ro'
     default_device.add_meta('volume', f'{host_path_2}|{guest_path_2}|{mode_2}')
