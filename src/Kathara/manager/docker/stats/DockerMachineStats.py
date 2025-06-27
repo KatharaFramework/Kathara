@@ -27,11 +27,12 @@ class DockerMachineStats(IMachineStats):
         net_usage (str): The network usage of the Docker Container.
     """
     __slots__ = ['machine_api_object', 'stats', 'lab_hash', 'name', 'container_name', 'user', 'status', 'image',
-                 'pids', 'cpu_usage', 'mem_usage', 'mem_percent', 'net_usage']
+                 'pids', 'cpu_usage', 'mem_usage', 'mem_percent', 'net_usage', '_prev_stats']
 
     def __init__(self, machine_api_object: Container):
         self.machine_api_object: Container = machine_api_object
         self.stats: Generator[Dict[str, Any], None, None] = machine_api_object.stats(stream=True, decode=True)
+        self._prev_stats: Optional[Dict[str, Any]] = None
         # Static Information
         self.lab_hash: str = machine_api_object.labels['lab_hash']
         self.name: str = machine_api_object.labels['name']
@@ -86,10 +87,14 @@ class DockerMachineStats(IMachineStats):
         else:
             self.interfaces = "-"
 
-        if "system_cpu_usage" in updated_stats["cpu_stats"]:
-            cpu_usage = updated_stats["cpu_stats"]["cpu_usage"]["total_usage"] / \
-                        updated_stats["cpu_stats"]["system_cpu_usage"]
-            self.cpu_usage = f"{cpu_usage:.2f}%"
+        if self._prev_stats:
+            if "system_cpu_usage" in updated_stats["cpu_stats"] and "system_cpu_usage" in self._prev_stats["cpu_stats"]:
+                cpu_delta = updated_stats["cpu_stats"]["cpu_usage"]["total_usage"] - \
+                            self._prev_stats["cpu_stats"]["cpu_usage"]["total_usage"]
+                system_delta = updated_stats["cpu_stats"]["system_cpu_usage"] - \
+                               self._prev_stats["cpu_stats"]["system_cpu_usage"]
+                cpu_usage = (cpu_delta / system_delta) * updated_stats["cpu_stats"]["online_cpus"] * 100
+                self.cpu_usage = f"{cpu_usage:.2f}%"
 
         if "usage" in updated_stats["memory_stats"]:
             usage = updated_stats["memory_stats"]["usage"]
@@ -102,6 +107,8 @@ class DockerMachineStats(IMachineStats):
             rx_bytes = sum([net_stats["rx_bytes"] for (_, net_stats) in network_stats.items()])
             tx_bytes = sum([net_stats["tx_bytes"] for (_, net_stats) in network_stats.items()])
             self.net_usage = human_readable_bytes(rx_bytes) + " / " + human_readable_bytes(tx_bytes)
+
+        self._prev_stats = updated_stats
 
     def to_dict(self) -> Dict[str, Any]:
         """Transform statistics into a dict representation.
