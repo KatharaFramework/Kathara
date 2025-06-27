@@ -3,6 +3,7 @@ from typing import Dict, Any, Generator, Optional
 from docker.errors import NotFound
 from docker.models.containers import Container
 
+from ....decorators import privileged
 from ....foundation.manager.stats.IMachineStats import IMachineStats
 from ....utils import human_readable_bytes
 
@@ -50,6 +51,7 @@ class DockerMachineStats(IMachineStats):
 
         self.update()
 
+    @privileged
     def update(self) -> None:
         """Update dynamic statistics with the current ones.
 
