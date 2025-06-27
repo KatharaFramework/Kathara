@@ -59,13 +59,13 @@ download-pip: copy-debian-folder
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: zstandard
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --no-binary=:all: -r ../../requirements-no-binary.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --platform x86_64 --only-binary=:all: -r ../../requirements-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --no-binary=:all: nuitka==2.6.7
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --no-binary=:all: nuitka==2.7.10
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: flit_core
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: wheel
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: zstandard
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --no-binary=:all: -r ../../requirements-no-binary.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --platform arm64 --only-binary=:all: -r ../../requirements-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --no-binary=:all: nuitka==2.6.7
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --no-binary=:all: nuitka==2.7.10
 	rm Output/kathara-$(VERSION)/debian/pythonLibs_arm64/zstandard*.tar.gz
 	rm Output/kathara-$(VERSION)/debian/pythonLibs_amd64/zstandard*.tar.gz
 	rm -Rf Output/kathara-$(VERSION)/requirements-binary.txt Output/kathara-$(VERSION)/requirements-no-binary.txt
