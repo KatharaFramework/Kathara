@@ -416,13 +416,13 @@ class DockerMachine(object):
     def _get_iface_sysctls(sysctls: Dict[str, int], interface_num: int) -> Set[str]:
         """Extract and transform sysctl settings specific to a particular network interface.
 
-            Args:
-                sysctls (Dict[str, int]): The sysctls for the device.
-                interface_num (int): The interface number for which to match and transform sysctl settings.
+        Args:
+            sysctls (Dict[str, int]): The sysctls for the device.
+            interface_num (int): The interface number for which to match and transform sysctl settings.
 
-            Returns:
-                Set[str]: A set containing transformed sysctl settings strings for the specified interface.
-                    Each string includes the setting in "key=value" format with the interface name replaced by 'IFNAME'.
+        Returns:
+            Set[str]: A set containing transformed sysctl settings strings for the specified interface.
+                Each string includes the setting in "key=value" format with the interface name replaced by 'IFNAME'.
         """
         iface_sysctls = set()
         for sysctl_name, value in sysctls.items():

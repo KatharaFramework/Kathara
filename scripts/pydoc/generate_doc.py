@@ -1,8 +1,10 @@
+import os
 from lazydocs import generate_docs
 
 ignored_modules = [
     "Kathara.version", "Kathara.auth", "Kathara.cli", "Kathara.trdparty", "Kathara.foundation.cli",
-    "Kathara.foundation.test", "Kathara.exceptions", "Kathara.webhooks", "Kathara.validator", "Kathara.test", "kathara",
+    "Kathara.foundation.test", "Kathara.foundation.setting", "Kathara.exceptions", "Kathara.webhooks",
+    "Kathara.validator", "Kathara.test", "kathara",
     "Kathara.manager.kubernetes.terminal.KubernetesWSTerminal", "Kathara.foundation.factory",
     "Kathara.manager.docker.terminal.DockerTTYTerminal",
     "Kathara.foundation.manager.terminal.Terminal", "Kathara.foundation.manager.ManagerFactory",
