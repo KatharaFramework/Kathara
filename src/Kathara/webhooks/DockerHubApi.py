@@ -9,7 +9,7 @@ from ..utils import get_pool_size
 DOCKER_HUB_KATHARA_IMAGES_URL = "https://hub.docker.com/v2/repositories/kathara/?page_size=-1"
 DOCKER_HUB_KATHARA_TAGS_URL = "https://hub.docker.com/v2/repositories/{image_name}/tags/?page_size=-1&ordering"
 
-EXCLUDED_IMAGES = ['megalos-bgp-manager']
+EXCLUDED_IMAGES = ['megalos-bgp-manager', 'kathara', 'kathara-lab-checker']
 
 
 class DockerHubApi(object):

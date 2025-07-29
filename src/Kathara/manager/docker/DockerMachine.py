@@ -2,6 +2,8 @@ import logging
 import re
 import shlex
 import sys
+import tarfile
+import tempfile
 import time
 from itertools import islice
 from multiprocessing.dummy import Pool
@@ -18,6 +20,7 @@ from .DockerImage import DockerImage
 from .exec_stream.DockerExecStream import DockerExecStream
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
+from ...decorators import privileged
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MountDeniedError, MachineAlreadyExistsError, DockerPluginError, \
     MachineBinaryError, MachineNotRunningError, PrivilegeError, InvocationError
@@ -130,9 +133,6 @@ class DockerMachine(object):
             PrivilegeError: If the privileged mode is active and the user does not have root privileges.
             InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
-        if lab.general_options['privileged_machines'] and not utils.is_admin():
-            raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
-
         if selected_machines and excluded_machines:
             raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
 
@@ -299,7 +299,20 @@ class DockerMachine(object):
         if hosthome_mount and Setting.get_instance().remote_url is None:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
-        privileged = lab_options['privileged_machines']
+        for host_path, volume in machine.meta["volumes"].items():
+            missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
+
+            if not missing_permissions:
+                volumes[host_path] = {'bind': volume['guest_path'], 'mode': volume['mode']}
+            else:
+                raise PermissionError(
+                    f"To mount volume `{host_path}` in `{volume['guest_path']}` "
+                    f"you miss the following permissions: `{', '.join(missing_permissions)}`."
+                )
+
+        privileged = machine.is_privileged()
+        if privileged and not utils.is_admin():
+            raise PrivilegeError(f"You must be root in order to start device `{machine.name}` in privileged mode.")
         if Setting.get_instance().remote_url is not None and privileged:
             privileged = False
             logging.warning("Privileged flag is ignored with a remote Docker connection.")
@@ -328,6 +341,11 @@ class DockerMachine(object):
             if machine.is_bridged():
                 labels["bridged_iface"] = str(machine.meta["bridged_iface"])
 
+            entrypoint = shlex.split(machine.meta["entrypoint"]) if "entrypoint" in machine.meta else None
+            args = machine.meta["args"] if "args" in machine.meta and machine.meta["args"] else None
+            if args:
+                args = shlex.split(args) if type(args) == str else args
+
             machine_container = self.client.containers.create(image=image,
                                                               name=container_name,
                                                               hostname=machine.name,
@@ -346,7 +364,9 @@ class DockerMachine(object):
                                                               detach=True,
                                                               volumes=volumes,
                                                               labels=labels,
-                                                              ulimits=ulimits
+                                                              ulimits=ulimits,
+                                                              entrypoint=entrypoint,
+                                                              command=args
                                                               )
         except APIError as e:
             raise e
@@ -396,13 +416,13 @@ class DockerMachine(object):
     def _get_iface_sysctls(sysctls: Dict[str, int], interface_num: int) -> Set[str]:
         """Extract and transform sysctl settings specific to a particular network interface.
 
-            Args:
-                sysctls (Dict[str, int]): The sysctls for the device.
-                interface_num (int): The interface number for which to match and transform sysctl settings.
+        Args:
+            sysctls (Dict[str, int]): The sysctls for the device.
+            interface_num (int): The interface number for which to match and transform sysctl settings.
 
-            Returns:
-                Set[str]: A set containing transformed sysctl settings strings for the specified interface.
-                    Each string includes the setting in "key=value" format with the interface name replaced by 'IFNAME'.
+        Returns:
+            Set[str]: A set containing transformed sysctl settings strings for the specified interface.
+                Each string includes the setting in "key=value" format with the interface name replaced by 'IFNAME'.
         """
         iface_sysctls = set()
         for sysctl_name, value in sysctls.items():
@@ -659,7 +679,7 @@ class DockerMachine(object):
 
         if logs and Setting.get_instance().print_startup_log:
             # Get the logs, if the command fails it means that the shell is not found.
-            cat_logs_cmd = "cat /var/log/shared.log /var/log/startup.log"
+            cat_logs_cmd = "cat /var/log/shared.log /var/log/startup.log /var/kathara/*"
             startup_command = [item for item in shell]
             startup_command.extend(['-c', cat_logs_cmd])
             exec_result = self._exec_run(container,
@@ -920,6 +940,34 @@ class DockerMachine(object):
         """
         machine_api_object.put_archive(path, tar_data)
 
+    @staticmethod
+    def retrieve_files(machine_api_object: docker.models.containers.Container, src: str, dst: str) -> None:
+        """Get the file or directory from the Docker container specified by the machine_api_object into dst.
+
+        Args:
+            machine_api_object (docker.models.containers.Container): A Docker container.
+            src (str): The path of the file or folder to copy from the device.
+            dst (str): The destination path on the host.
+
+        Returns:
+            None
+        """
+        # Get the tar from the container
+        bits, stats = machine_api_object.get_archive(src)
+
+        # Create a tmp tar file and write the chunks from the container
+        with tempfile.NamedTemporaryFile(mode='wb+', suffix='.tar') as temp_file:
+            for chunk in bits:
+                temp_file.write(chunk)
+
+            # After writing, go at the beginning of file
+            temp_file.seek(0)
+
+            # Now, we need to extract the tmp tar file into the destination folder
+            with tarfile.open(fileobj=temp_file, mode='r') as tar_file:
+                tar_file.extractall(path=dst)
+
+    @privileged
     def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None, user: str = None) -> \
             List[docker.models.containers.Container]:
         """Return the Docker containers objects specified by lab_hash and user.
@@ -964,6 +1012,7 @@ class DockerMachine(object):
 
         machines_stats = {}
 
+        @privileged
         def load_machine_stats(machine):
             if machine.name not in machines_stats:
                 machines_stats[machine.name] = DockerMachineStats(machine)

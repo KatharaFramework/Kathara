@@ -19,7 +19,7 @@ Each device can be configured to have an arbitrary number of (virtual) network i
 By default, devices use a Docker Image which includes network oriented software such as routing daemons (RIP, OSPF, etc.), an HTTP server, firewalling utilities (`iptables`(8)), and diagnostic tools (`ping`(1), `traceroute`(1), `tcpdump`(1), etc.).  
 By configuring the appropriate software, it is possible to faithfully emulate a specific network device (e.g., a router).  
 
-Kathara provides two alternative interfaces to start and configure devices. A set of `v`-prefixed commands (vstart, vclean, vconfig), that allow to start and manage single devices while providing finegrained control on their configuration; and a set of `l`-prefixed commands (lstart, lclean, linfo, lrestart, lconfig, ltest), that ease setting up preconfigured network scenarios consisting of several devices.
+Kathara provides two alternative interfaces to start and configure devices. A set of `v`-prefixed commands (vstart, vclean, vconfig), that allow to start and manage single devices while providing finegrained control on their configuration; and a set of `l`-prefixed commands (lstart, lclean, linfo, lrestart, lconfig), that ease setting up preconfigured network scenarios consisting of several devices.
 
 Kathara also provides a set of global commands (connect, info, wipe, settings, check).
 
@@ -47,9 +47,6 @@ The possible kathara commands are:
 
 * `kathara-lrestart`(1):
     Restart a Kathara network scenario
-
-* `kathara-ltest`(1):
-    Test a Kathara network scenario
 
 * `kathara-lconfig`(1):
     Manage the network interfaces of a running Kathara device in a network scenario

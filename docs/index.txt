@@ -8,7 +8,6 @@ kathara-lstart(1)    kathara-lstart.1.ronn
 kathara-lclean(1)    kathara-lclean.1.ronn
 kathara-linfo(1)     kathara-linfo.1.ronn
 kathara-lrestart(1)  kathara-lrestart.1.ronn
-kathara-ltest(1)     kathara-ltest.1.ronn
 kathara-lconfig(1)   kathara-lconfig.1.ronn
 kathara-connect(1)   kathara-connect.1.ronn
 kathara-wipe(1)      kathara-wipe.1.ronn

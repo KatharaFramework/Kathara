@@ -499,6 +499,19 @@ class KubernetesManager(IManager):
 
         self.k8s_machine.copy_files(machine.api_object, path="/", tar_data=tar_data)
 
+    def retrieve_files(self, machine: Machine, src: str, dst: str) -> None:
+        """Copy files from a running device path to the host.
+
+        Args:
+            machine (Kathara.model.Machine): A running device object. It must have the api_object field populated.
+            src (str): The path of the file or folder to copy from the device.
+            dst (str): The destination path on the host.
+
+        Returns:
+            None
+        """
+        self.k8s_machine.retrieve_files(machine.api_object, src, dst)
+
     def get_machine_api_object(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                                lab: Optional[Lab] = None, all_users: bool = False) -> client.V1Pod:
         """Return the corresponding API object of a running device in a network scenario.

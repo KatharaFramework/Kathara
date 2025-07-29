@@ -1,25 +1,26 @@
+import math
+import sys
+from itertools import islice
+from multiprocessing import cpu_count
+from sys import platform as _platform
+
 import base64
 import hashlib
 import importlib
 import io
 import logging
-import math
 import os
 import re
 import shutil
-import sys
 import tarfile
 import tempfile
-from io import BytesIO
-from itertools import islice
-from multiprocessing import cpu_count
-from platform import node, machine
-from sys import platform as _platform
-from types import ModuleType
-from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable, Tuple
 
 from binaryornot.check import is_binary
+from io import BytesIO
+from platform import node, machine
 from slug import slug
+from types import ModuleType
+from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable, Tuple
 
 from .exceptions import HostArchitectureError, InvocationError
 
@@ -261,6 +262,133 @@ def get_current_user_info() -> Any:
         return pwd.getpwuid(user_id)
 
     return exec_by_platform(passwd_info, lambda: None, passwd_info)
+
+
+def check_directory_permissions(path: str, mode: str = "ro") -> list[str]:
+    """
+    Check directory permissions across different platforms.
+
+    Args:
+        path: Path to check permissions for
+        mode: Permission mode to check ('r' for read, 'w' for write, 'x' for execute)
+
+    Returns:
+        list[str]: A list containing any missing permissions
+    """
+
+    def check_directory_permissions_unix() -> list[str]:
+        if not os.path.exists(path):
+            raise FileExistsError(f"Path `{path}` does not exist.")
+
+        if not os.path.isdir(path):
+            raise NotADirectoryError(f"Path `{path}` must be a directory.")
+
+        missing = []
+
+        if 'r' in mode and not os.access(path, os.R_OK):
+            missing.append("read (r)")
+        if 'w' in mode and not os.access(path, os.W_OK):
+            missing.append("write (w)")
+        if 'x' in mode and not os.access(path, os.X_OK):
+            missing.append("execute (x)")
+
+        return missing
+
+    def check_directory_permissions_windows() -> list[str]:
+        import ctypes
+        from ctypes import wintypes
+
+        if not os.path.exists(path):
+            raise FileExistsError(f"Path `{path}` does not exist.")
+
+        if not os.path.isdir(path):
+            raise NotADirectoryError(f"Path `{path}` must be a directory.")
+
+        missing = []
+
+        generic_read = 0x80000000
+        generic_write = 0x40000000
+        generic_execute = 0x20000000
+
+        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+
+        create_file = kernel32.CreateFileW
+        create_file.argtypes = [
+            wintypes.LPCWSTR,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.LPVOID,
+            wintypes.DWORD,
+            wintypes.DWORD,
+            wintypes.HANDLE
+        ]
+        create_file.restype = wintypes.HANDLE
+
+        open_existing = 3
+        file_flag_backup_semantics = 0x02000000
+        invalid_handle_value = wintypes.HANDLE(-1).value
+        file_share_read = 0x00000001
+        file_share_write = 0x00000002
+
+        close_handle = kernel32.CloseHandle
+        close_handle.argtypes = [wintypes.HANDLE]
+        close_handle.restype = wintypes.BOOL
+
+        if 'r' in mode:
+            handle = create_file(
+                path,
+                generic_read,
+                file_share_read | file_share_write,
+                None,
+                open_existing,
+                file_flag_backup_semantics,
+                None
+            )
+
+            if handle == invalid_handle_value:
+                missing.append("read (r)")
+            else:
+                close_handle(handle)
+
+        if 'w' in mode:
+            handle = create_file(
+                path,
+                generic_write,
+                file_share_read | file_share_write,
+                None,
+                open_existing,
+                file_flag_backup_semantics,
+                None
+            )
+
+            if handle == invalid_handle_value:
+                missing.append("write (w)")
+            else:
+                close_handle(handle)
+
+        if 'x' in mode:
+            handle = create_file(
+                path,
+                generic_execute,
+                file_share_read | file_share_write,
+                None,
+                open_existing,
+                file_flag_backup_semantics,
+                None
+            )
+
+            if handle == invalid_handle_value:
+                missing.append("execute (x)")
+            else:
+                close_handle(handle)
+
+        return missing
+
+    return exec_by_platform(
+        check_directory_permissions_unix,
+        check_directory_permissions_windows,
+        check_directory_permissions_unix
+    )
 
 
 # Architecture Test

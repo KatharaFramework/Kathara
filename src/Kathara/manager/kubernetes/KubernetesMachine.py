@@ -6,6 +6,8 @@ import re
 import shlex
 import signal
 import sys
+import tarfile
+import tempfile
 import threading
 import uuid
 from multiprocessing.dummy import Pool
@@ -168,9 +170,6 @@ class KubernetesMachine(object):
                 k: v for k, v in machines if k not in excluded_machines
             }.items()
 
-        if lab.general_options['privileged_machines']:
-            logging.warning('Privileged option is not supported on Megalos. It will be ignored.')
-
         # Do not open terminals on Megalos
         Setting.get_instance().open_terminals = False
 
@@ -301,13 +300,23 @@ class KubernetesMachine(object):
         # Get the global machine metadata into a local variable (just to avoid accessing the lab object every time)
         global_machine_metadata = machine.lab.global_machine_metadata
 
+        # If privileged is defined for the device, throw a warning.
+        if "privileged" in global_machine_metadata or machine.is_privileged():
+            logging.warning(
+                f'Privileged option is not supported on Megalos. It will be ignored on device `{machine.name}`.'
+            )
+
         # If bridged is defined for the device, throw a warning.
         if "bridged" in global_machine_metadata or machine.is_bridged():
-            logging.warning('Bridged option is not supported on Megalos. It will be ignored.')
+            logging.warning(
+                f'Bridged option is not supported on Megalos. It will be ignored on device `{machine.name}`.'
+            )
 
         # If any ulimit is defined fot the device throw a warning
         if "ulimits" in machine.meta and len(machine.meta["ulimits"].keys()) > 0:
-            logging.warning('Ulimit option is not supported on Megalos. It will be ignored.')
+            logging.warning(
+                f'Ulimit option is not supported on Megalos. It will be ignored on device `{machine.name}`.'
+            )
 
         # If any exec command is passed in command line, add it.
         if "exec" in global_machine_metadata:
@@ -367,6 +376,22 @@ class KubernetesMachine(object):
         if Setting.get_instance().host_shared:
             volume_mounts.append(client.V1VolumeMount(name="shared", mount_path="/shared"))
 
+        # Mount volumes defined in the device
+        for idx, (host_path, volume) in enumerate(machine.meta["volumes"].items()):
+            missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
+
+            if not missing_permissions:
+                volume_mounts.append(
+                    client.V1VolumeMount(
+                        name=f"volume{idx}", mount_path=volume['guest_path'], read_only=volume['mode'] == "ro"
+                    )
+                )
+            else:
+                raise PermissionError(
+                    f"To mount volume `{host_path}` in `{volume['guest_path']}` "
+                    f"you miss the following permissions: `{', '.join(missing_permissions)}`."
+                )
+
         # Machine must be executed in privileged mode to run sysctls.
         security_context = client.V1SecurityContext(privileged=True)
 
@@ -421,6 +446,11 @@ class KubernetesMachine(object):
         for env_var_name, env_var_value in machine.meta['envs'].items():
             env.append(client.V1EnvVar(env_var_name, env_var_value))
 
+        entrypoint = shlex.split(machine.meta["entrypoint"]) if "entrypoint" in machine.meta else None
+        args = machine.meta["args"] if "args" in machine.meta and machine.meta["args"] else None
+        if args:
+            args = shlex.split(args) if type(args) == str else args
+
         container_definition = client.V1Container(
             name=machine.meta['real_name'],
             image=machine.get_image(),
@@ -432,7 +462,9 @@ class KubernetesMachine(object):
             resources=resources,
             volume_mounts=volume_mounts,
             security_context=security_context,
-            env=env
+            env=env,
+            command=entrypoint,
+            args=args
         )
 
         pod_annotations = {}
@@ -480,6 +512,15 @@ class KubernetesMachine(object):
                 name="shared",
                 host_path=client.V1HostPathVolumeSource(
                     path='/home/shared',
+                    type='DirectoryOrCreate'
+                )
+            ))
+
+        for idx, (host_path, volume) in enumerate(machine.meta["volumes"].items()):
+            volumes.append(client.V1Volume(
+                name=f"volume{idx}",
+                host_path=client.V1HostPathVolumeSource(
+                    path=host_path,
                     type='DirectoryOrCreate'
                 )
             ))
@@ -674,7 +715,7 @@ class KubernetesMachine(object):
         if logs and Setting.get_instance().print_startup_log:
             exec_output = self.exec(lab_hash,
                                     machine_name,
-                                    command="/bin/cat /var/log/shared.log /var/log/startup.log"
+                                    command="/bin/cat /var/log/shared.log /var/log/startup.log /var/kathara/*"
                                     )
             try:
                 print("--- Startup Commands Log\n")
@@ -889,6 +930,41 @@ class KubernetesMachine(object):
             next(exec_output)
         except StopIteration:
             pass
+
+    def retrieve_files(self, machine_api_object: client.V1Deployment, src: str, dst: str) -> None:
+        """Get the file or directory from the Docker container specified by the machine_api_object into dst.
+
+        Args:
+            machine_api_object (docker.models.containers.Container): A Docker container.
+            src (str): The path of the file or folder to copy from the device.
+            dst (str): The destination path on the host.
+
+        Returns:
+            None
+        """
+        machine_name = machine_api_object.metadata.labels["name"]
+        machine_namespace = machine_api_object.metadata.namespace
+
+        # Get the tar from the Pod on the stdout
+        exec_output = self.exec(machine_namespace, machine_name, command=['tar', 'cf', '-', src], is_stream=True)
+
+        # Create a tmp tar file and write the output from the Pod
+        with tempfile.NamedTemporaryFile(mode='wb+', suffix='.tar') as temp_file:
+            # Write chunks in the temp tar file
+            while True:
+                try:
+                    stdout, _ = next(exec_output)
+                    if stdout:
+                        temp_file.write(stdout)
+                except StopIteration:
+                    break
+
+            # After writing, go at the beginning of file
+            temp_file.seek(0)
+
+            # Now, we need to extract the tmp tar file into the destination folder
+            with tarfile.open(fileobj=temp_file, mode='r') as tar_file:
+                tar_file.extractall(path=dst)
 
     def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None) -> List[client.V1Pod]:
         """Return the List of Kubernetes Pods.

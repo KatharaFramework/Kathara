@@ -1,5 +1,6 @@
 import sys
 from unittest import mock
+from unittest.mock import Mock
 
 import pytest
 
@@ -32,9 +33,9 @@ def mock_setting(mock_setting_class):
 @pytest.fixture()
 def default_device_args():
     args = {
-        "terminals": None, "privileged": None, "num_terms": None, "eths": None, "exec_commands": None, "mem": None,
+        "terminals": None, "privileged": None, "num_terms": None, "exec_commands": None, "mem": None,
         "cpus": None, "image": None, "hosthome_mount": None, "xterm": None, "dry_mode": False, "bridged": False,
-        "ports": None, "sysctls": None, "envs": None, "ulimits": None, "shell": None
+        "ports": None, "sysctls": None, "envs": None, "ulimits": None, "shell": None, "entrypoint": None, "args": [],
     }
     return args
 
@@ -51,16 +52,17 @@ def test_run_no_params(mock_docker_manager, mock_manager_get_instance, mock_sett
     mock_setting_get_instance.return_value = mock_setting
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -76,16 +78,17 @@ def test_run_with_no_terminals(mock_docker_manager, mock_manager_get_instance, m
     default_device_args['terminals'] = False
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--noterminals'])
-        assert not mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--noterminals'])
+            assert not mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -102,16 +105,17 @@ def test_run_with_terminals(mock_docker_manager, mock_manager_get_instance, mock
     default_device_args['terminals'] = True
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--terminals'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--terminals'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -129,15 +133,16 @@ def test_run_with_privileged(mock_docker_manager, mock_manager_get_instance, moc
     default_device_args['privileged'] = True
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--privileged'])
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', True)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--privileged'])
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', True)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.utils.is_admin")
@@ -168,16 +173,17 @@ def test_run_with_two_terminals(mock_docker_manager, mock_manager_get_instance, 
     default_device_args['num_terms'] = '2'
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--num_terms', '2'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--num_terms', '2'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -191,19 +197,19 @@ def test_run_with_one_interface(mock_docker_manager, mock_manager_get_instance, 
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
-    default_device_args['eths'] = [('0', 'A', None)]
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--eth', '0:A'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        mock_connect_machine_to_link.assert_called_once_with('pc1', 'A', machine_iface_number=0, mac_address=None)
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--eth', '0:A'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            mock_connect_machine_to_link.assert_called_once_with('pc1', 'A', machine_iface_number=0, mac_address=None)
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -218,20 +224,20 @@ def test_run_with_one_interface_and_mac_address(mock_docker_manager, mock_manage
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
-    default_device_args['eths'] = [('0', 'A', '00:00:00:00:00:01')]
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--eth', '0:A/00:00:00:00:00:01'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        mock_connect_machine_to_link.assert_called_once_with('pc1', 'A', machine_iface_number=0,
-                                                             mac_address='00:00:00:00:00:01')
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--eth', '0:A/00:00:00:00:00:01'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            mock_connect_machine_to_link.assert_called_once_with('pc1', 'A', machine_iface_number=0,
+                                                                 mac_address='00:00:00:00:00:01')
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -245,20 +251,20 @@ def test_run_with_two_interfaces(mock_docker_manager, mock_manager_get_instance,
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
-    default_device_args['eths'] = [('0', 'A', None), ('1', 'B', None)]
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--eth', '0:A', '1:B'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        mock_connect_machine_to_link.assert_any_call('pc1', 'A', machine_iface_number=0, mac_address=None)
-        mock_connect_machine_to_link.assert_any_call('pc1', 'B', machine_iface_number=1, mac_address=None)
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--eth', '0:A', '1:B'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            mock_connect_machine_to_link.assert_any_call('pc1', 'A', machine_iface_number=0, mac_address=None)
+            mock_connect_machine_to_link.assert_any_call('pc1', 'B', machine_iface_number=1, mac_address=None)
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -269,21 +275,21 @@ def test_run_with_two_interfaces_value_error(mock_setting_get_instance, mock_dep
                                              mock_connect_machine_to_link, test_lab, mock_setting, default_device_args):
     mock_setting_get_instance.return_value = mock_setting
     mock_get_or_new_machine.return_value = Machine(test_lab, 'pc1')
-    default_device_args['eths'] = [('0', 'A'), ('Z', 'B')]
     command = VstartCommand()
     with pytest.raises(SyntaxError):
         with mock.patch.object(Lab, "add_option") as mock_add_option:
-            command.run('.', ['-n', 'pc1', '--eth', '0:A', 'Z:B'])
-            assert mock_setting.open_terminals
-            assert mock_setting.terminal == '/usr/bin/xterm'
-            assert mock_setting.device_shell == '/usr/bin/bash'
-            mock_add_option.assert_any_call('hosthome_mount', None)
-            mock_add_option.assert_any_call('shared_mount', False)
-            mock_add_option.assert_any_call('privileged_machines', None)
-            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-            mock_connect_machine_to_link.assert_any_call('pc1', 'A', machine_iface_number=0)
-            mock_connect_machine_to_link.assert_any_call('pc1', 'B', machine_iface_number=1)
-            assert not mock_deploy_lab.called
+            with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+                command.run('.', ['-n', 'pc1', '--eth', '0:A', 'Z:B'])
+                assert mock_setting.open_terminals
+                assert mock_setting.terminal == '/usr/bin/xterm'
+                assert mock_setting.device_shell == '/usr/bin/bash'
+                mock_add_option.assert_any_call('hosthome_mount', None)
+                mock_add_option.assert_any_call('shared_mount', False)
+                mock_add_global_machine_metadata.assert_any_call('privileged', None)
+                mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+                mock_connect_machine_to_link.assert_any_call('pc1', 'A', machine_iface_number=0)
+                mock_connect_machine_to_link.assert_any_call('pc1', 'B', machine_iface_number=1)
+                assert not mock_deploy_lab.called
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -299,16 +305,17 @@ def test_run_with_exec(mock_docker_manager, mock_manager_get_instance, mock_sett
     default_device_args['exec_commands'] = ['echo', 'test']
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--exec', 'echo', 'test'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--exec', 'echo', 'test'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -324,16 +331,17 @@ def test_run_with_mem(mock_docker_manager, mock_manager_get_instance, mock_setti
     default_device_args['mem'] = "64M"
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--mem', '64M'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--mem', '64M'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -349,16 +357,17 @@ def test_run_with_cpus(mock_docker_manager, mock_manager_get_instance, mock_sett
     default_device_args['cpus'] = "50"
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--cpus', '50'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--cpus', '50'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -374,16 +383,17 @@ def test_run_with_image(mock_docker_manager, mock_manager_get_instance, mock_set
     default_device_args['image'] = 'kathara/test'
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '-i', 'kathara/test'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '-i', 'kathara/test'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -399,16 +409,17 @@ def test_run_with_no_hosthome(mock_docker_manager, mock_manager_get_instance, mo
     default_device_args['hosthome_mount'] = False
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--no-hosthome'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', False)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--no-hosthome'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', False)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -424,16 +435,17 @@ def test_run_with_hosthome(mock_docker_manager, mock_manager_get_instance, mock_
     default_device_args['hosthome_mount'] = True
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--hosthome'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', True)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--hosthome'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', True)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -449,16 +461,17 @@ def test_run_with_terminal_emu(mock_docker_manager, mock_manager_get_instance, m
     default_device_args['xterm'] = 'terminal'
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--terminal-emu', 'terminal'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == 'terminal'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--terminal-emu', 'terminal'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == 'terminal'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -498,16 +511,17 @@ def test_run_with_bridged(mock_docker_manager, mock_manager_get_instance, mock_s
     default_device_args['bridged'] = True
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--bridged'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--bridged'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -523,16 +537,17 @@ def test_run_with_ports(mock_docker_manager, mock_manager_get_instance, mock_set
     default_device_args['ports'] = ['80:80/tcp']
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--port', '80:80/tcp'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--port', '80:80/tcp'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -548,16 +563,17 @@ def test_run_with_sysctl(mock_docker_manager, mock_manager_get_instance, mock_se
     default_device_args['sysctls'] = ['net.ip.test=True']
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--sysctl', 'net.ip.test=True'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--sysctl', 'net.ip.test=True'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -573,16 +589,17 @@ def test_run_with_env(mock_docker_manager, mock_manager_get_instance, mock_setti
     default_device_args['envs'] = ['VARIABLE=VALUE']
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--env', 'VARIABLE=VALUE'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--env', 'VARIABLE=VALUE'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -598,16 +615,17 @@ def test_run_with_shell(mock_docker_manager, mock_manager_get_instance, mock_set
     default_device_args['shell'] = '/test/shell'
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--shell', '/test/shell'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/test/shell'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--shell', '/test/shell'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/test/shell'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
 
 
 @mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
@@ -623,13 +641,124 @@ def test_run_with_ulimit(mock_docker_manager, mock_manager_get_instance, mock_se
     default_device_args['ulimits'] = ['testlimit=1:2', 'testlimitsoft=5']
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
-        command.run('.', ['-n', 'pc1', '--ulimit', 'testlimit=1:2', 'testlimitsoft=5'])
-        assert mock_setting.open_terminals
-        assert mock_setting.terminal == '/usr/bin/xterm'
-        assert mock_setting.device_shell == '/usr/bin/bash'
-        mock_add_option.assert_any_call('hosthome_mount', None)
-        mock_add_option.assert_any_call('shared_mount', False)
-        mock_add_option.assert_any_call('privileged_machines', None)
-        mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
-        assert not mock_connect_machine_to_link.called
-        mock_docker_manager.deploy_lab.assert_called_once()
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--ulimit', 'testlimit=1:2', 'testlimitsoft=5'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
+
+
+@mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
+@mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_entrypoint(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                             mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                             default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    mock_setting_get_instance.return_value = mock_setting
+    default_device_args['entrypoint'] = 'watch /etc/hosts'
+    command = VstartCommand()
+    with mock.patch.object(Lab, "add_option") as mock_add_option:
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--entrypoint', 'watch /etc/hosts'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
+
+
+@mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
+@mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_args(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                       mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                       default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    mock_setting_get_instance.return_value = mock_setting
+    default_device_args['args'] = ['-n', '20']
+    command = VstartCommand()
+    with mock.patch.object(Lab, "add_option") as mock_add_option:
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--', '-n', '20'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
+
+
+@mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
+@mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_entrypoint_and_args(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                                      mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                                      default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    mock_setting_get_instance.return_value = mock_setting
+    default_device_args['entrypoint'] = 'watch /etc/hosts'
+    default_device_args['args'] = ['-n', '20']
+    command = VstartCommand()
+    with mock.patch.object(Lab, "add_option") as mock_add_option:
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--entrypoint', 'watch /etc/hosts', '--', '-n', '20'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()
+
+
+@mock.patch("src.Kathara.model.Lab.Lab.connect_machine_to_link")
+@mock.patch("src.Kathara.model.Lab.Lab.get_or_new_machine")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_volume(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                         mock_get_or_new_machine, mock_connect_machine_to_link, test_lab, mock_setting,
+                         default_device_args):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    mock_setting_get_instance.return_value = mock_setting
+
+    mock_device = Mock()
+
+    mock_get_or_new_machine.return_value = mock_device
+    volume = '.|/test|rw'
+    command = VstartCommand()
+    with mock.patch.object(Lab, "add_option") as mock_add_option:
+        with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
+            command.run('.', ['-n', 'pc1', '--volume', '.|/test|rw'])
+            assert mock_setting.open_terminals
+            assert mock_setting.terminal == '/usr/bin/xterm'
+            assert mock_setting.device_shell == '/usr/bin/bash'
+            mock_add_option.assert_any_call('hosthome_mount', None)
+            mock_add_option.assert_any_call('shared_mount', False)
+            mock_add_global_machine_metadata.assert_any_call('privileged', None)
+            mock_get_or_new_machine.assert_called_once_with('pc1', **default_device_args)
+            mock_device.add_meta.assert_called_once_with("volume", volume)
+            assert not mock_connect_machine_to_link.called
+            mock_docker_manager.deploy_lab.assert_called_once()

@@ -1,7 +1,7 @@
 import argparse
 from typing import List
 
-from ..ui.utils import create_panel, interface_cd_mac
+from ..ui.utils import create_panel, interface_cd_mac, volume
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
@@ -162,9 +162,30 @@ class VstartCommand(Command):
             help='Set ulimit for the device.'
         )
         self.parser.add_argument(
+            '--volume',
+            type=volume,
+            dest='volumes',
+            metavar='HOST|GUEST|[MODE]',
+            nargs='+',
+            required=False,
+            help='Specify a volume to mount.'
+        )
+        self.parser.add_argument(
             '--shell',
             required=False,
             help='Set the shell (sh, bash, etc.) that should be used inside the device.'
+        )
+        self.parser.add_argument(
+            '--entrypoint',
+            metavar='ENTRYPOINT',
+            required=False,
+            help='Specify the entrypoint command of the device.'
+        )
+        self.parser.add_argument(
+            "args",
+            metavar='ARG',
+            nargs=argparse.REMAINDER,
+            help='Specify extra arguments for the entrypoint command.'
         )
 
     def run(self, current_path: str, argv: List[str]) -> int:
@@ -189,6 +210,10 @@ class VstartCommand(Command):
         Setting.get_instance().terminal = args['xterm'] or Setting.get_instance().terminal
         Setting.get_instance().device_shell = args['shell'] or Setting.get_instance().device_shell
 
+        lab = Lab("kathara_vlab")
+        lab.add_option('hosthome_mount', args['hosthome_mount'])
+        lab.add_option('shared_mount', False)
+
         if args['privileged']:
             if not utils.is_admin():
                 raise PrivilegeError("You must be root in order to start this Kathara device in privileged mode.")
@@ -197,16 +222,18 @@ class VstartCommand(Command):
                     self.console.print(
                         "[yellow]\u26a0 Running devices with privileged capabilities, terminal might not open!"
                     )
+        lab.add_global_machine_metadata('privileged', args['privileged'])
 
-        lab = Lab("kathara_vlab")
-        lab.add_option('hosthome_mount', args['hosthome_mount'])
-        lab.add_option('shared_mount', False)
-        lab.add_option('privileged_machines', args['privileged'])
+        if args['args'] and args['args'][0] == "--":
+            args['args'] = args['args'][1:]
+
+        volumes = args.pop('volumes')
+        eths = args.pop('eths')
 
         device = lab.get_or_new_machine(name, **args)
 
-        if args['eths']:
-            for iface_number, cd, mac_address in args['eths']:
+        if eths:
+            for iface_number, cd, mac_address in eths:
                 try:
                     lab.connect_machine_to_link(device.name, cd,
                                                 machine_iface_number=int(iface_number),
@@ -214,6 +241,10 @@ class VstartCommand(Command):
                 except ValueError:
                     s = f"{cd}/{mac_address}" if mac_address else f"{cd}"
                     raise SyntaxError(f"Interface number in `--eth {iface_number}:{s}` is not a number.")
+
+        if volumes:
+            for v in volumes:
+                device.add_meta("volume", v)
 
         Kathara.get_instance().deploy_lab(lab)
 

@@ -1,13 +1,13 @@
 #!/usr/bin/make -f
 
-VERSION=3.7.9
+VERSION=3.8.0
 DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
-NO_BINARY_PACKAGES=pyroute2|pyuv|deepdiff
+NO_BINARY_PACKAGES=pyroute2|pyuv
 
 .PHONY: allSigned docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa clean venv autocompletion
 
-allSigned: clean prepare-deb-source docker-signed_focal docker-signed_jammy docker-signed_noble
+allSigned: clean prepare-deb-source docker-signed_jammy docker-signed_noble
 
 docker-unsigned_%: clean prepare-deb-source docker-build-image_%
 	docker run -ti --rm -v `pwd`/../../:/opt/kathara kathara/linux-build-deb:$* /bin/bash -c \
@@ -59,13 +59,13 @@ download-pip: copy-debian-folder
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: zstandard
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --no-binary=:all: -r ../../requirements-no-binary.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --platform x86_64 --only-binary=:all: -r ../../requirements-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --no-binary=:all: nuitka==2.6.7
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --no-binary=:all: nuitka==2.7.10
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: flit_core
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: wheel
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --only-binary=:all: zstandard
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --no-binary=:all: -r ../../requirements-no-binary.txt
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --platform manylinux2014_aarch64 --platform arm64 --only-binary=:all: -r ../../requirements-binary.txt
-	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --no-binary=:all: nuitka==2.6.7
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_arm64 && /root/py-build-env/bin/pip download --no-binary=:all: nuitka==2.7.10
 	rm Output/kathara-$(VERSION)/debian/pythonLibs_arm64/zstandard*.tar.gz
 	rm Output/kathara-$(VERSION)/debian/pythonLibs_amd64/zstandard*.tar.gz
 	rm -Rf Output/kathara-$(VERSION)/requirements-binary.txt Output/kathara-$(VERSION)/requirements-no-binary.txt

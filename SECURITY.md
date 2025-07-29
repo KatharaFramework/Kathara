@@ -6,7 +6,7 @@ We release patches for security vulnerabilities only for the last version:
 
 | Version | Supported Versions |
 |---------|--------------------|
-| 3.7.9   | :white_check_mark: |
+| 3.8.0   | :white_check_mark: |
 
 ## Reporting a Vulnerability
 

@@ -1,5 +1,6 @@
 import collections
 import logging
+import os
 import re
 from io import BytesIO
 from typing import Dict, Any, Tuple, Optional, List, OrderedDict, TextIO, Union, BinaryIO
@@ -23,6 +24,7 @@ from ..setting.Setting import Setting
 from ..trdparty.strtobool.strtobool import strtobool
 
 MACHINE_CAPABILITIES: List[str] = ["NET_ADMIN", "NET_RAW", "NET_BROADCAST", "NET_BIND_SERVICE", "SYS_ADMIN"]
+ALLOWED_VOLUME_MODES: List[str] = ["ro", "rw", "rx"]
 
 
 class Machine(FilesystemMixin):
@@ -68,7 +70,8 @@ class Machine(FilesystemMixin):
             'sysctls': {},
             'envs': {},
             'ports': {},
-            'ulimits': {}
+            'ulimits': {},
+            'volumes': {}
         }
 
         self.api_object: Any = None
@@ -150,6 +153,11 @@ class Machine(FilesystemMixin):
         Raises:
             MachineOptionError: If the specified value is not valid for the specified property.
         """
+        if name == "privileged":
+            old_value = self.meta[name] if name in self.meta else None
+            self.meta[name] = strtobool(str(value))
+            return old_value
+
         if name == "exec":
             self.meta['exec_commands'].append(value)
             return None
@@ -254,6 +262,26 @@ class Machine(FilesystemMixin):
                 raise MachineOptionError("Port value not valid on `%s`." % self.name)
             return old_value
 
+        if name == "volume":
+            values = list(filter(lambda x: x, value.split('|')))
+            if len(values) == 3:
+                host_path, guest_path, mode = values
+            elif len(values) == 2:
+                host_path, guest_path = values
+                mode = 'ro'
+            else:
+                raise MachineOptionError(
+                    f"The volume specified `{value}` is not in a valid format: <host_path>|<guest_path>|[<mode>]"
+                )
+
+            if mode not in ALLOWED_VOLUME_MODES:
+                raise MachineOptionError(
+                    f"Invalid volume mode `{mode}` on `{host_path}` mount. "
+                    f"Allowed values are {', '.join(ALLOWED_VOLUME_MODES)}. "
+                )
+
+            self.meta['volumes'][os.path.abspath(host_path)] = {'guest_path': guest_path, 'mode': mode}
+
         old_value = self.meta[name] if name in self.meta else None
         self.meta[name] = value
         return old_value
@@ -267,6 +295,9 @@ class Machine(FilesystemMixin):
         Returns:
             None
         """
+        if 'privileged' in args and args['privileged'] is not None and args['privileged']:
+            self.add_meta("privileged", True)
+
         if 'exec_commands' in args and args['exec_commands'] is not None:
             for command in args['exec_commands']:
                 self.add_meta("exec", command)
@@ -307,6 +338,16 @@ class Machine(FilesystemMixin):
 
         if 'shell' in args and args['shell'] is not None:
             self.add_meta("shell", args['shell'])
+
+        if 'entrypoint' in args and args['entrypoint'] is not None:
+            self.add_meta("entrypoint", args['entrypoint'])
+
+        if 'args' in args and args['args'] is not None:
+            self.add_meta("args", args['args'])
+
+        if 'volumes' in args and args['volumes'] is not None:
+            for volume in args['volumes']:
+                self.add_meta("volume", volume)
 
     def check(self) -> None:
         """Sort interfaces and check if there are missing interface numbers.
@@ -371,6 +412,15 @@ class Machine(FilesystemMixin):
 
         # If no machine files are found, return None.
         return None
+
+    def is_privileged(self) -> bool:
+        """Return True if the device is privileged, else return False.
+
+        Returns:
+            bool: True if the device is privileged, else False.
+        """
+        return self.lab.global_machine_metadata["privileged"] if "privileged" in self.lab.global_machine_metadata else \
+            self.meta["privileged"] if "privileged" in self.meta else False
 
     def get_exec_commands(self) -> List[str]:
         """Get the device exec commands.
@@ -517,6 +567,15 @@ class Machine(FilesystemMixin):
             raise MachineOptionError("Terminals Number value not valid on `%s`." % self.name)
 
         return num_terms
+
+    def get_volumes(self) -> dict[str, str]:
+        """Get the paths of the additional volumes mounted on the device.
+
+        Returns:
+            dict[str, str]: The paths of the additional volumes mounted on the device. Keys represent the paths on the
+                host, while values represent the paths on the device.
+        """
+        return self.meta['volumes']
 
     def is_ipv6_enabled(self) -> bool:
         """Check if IPv6 is enabled on the device.

@@ -79,6 +79,21 @@ If `arg` is an option name, then `device` will be launched with option `arg` set
 	Use -1 for unlimited. If only a parameter is given e.g. ULIMIT=VALUE both soft and hard limit will have same value.
 	For instance, with this command is possible to set memlock soft and hard limit to unlimited: `device[ulimit]="memlock=-1:-1`.
 
+* `privileged` (boolean):
+	Start the device in privileged mode. MUST BE ROOT FOR THIS OPTION.
+	
+* `entrypoint` (string):
+	Allows to specify the entrypoint command of the device.
+
+* `args` (string):
+	Allows to specify extra arguments for the entrypoint command. 
+
+* `volume` (string):
+	Specifies an additional volume to mount on the device. The syntax is HOST|GUEST|[MODE].
+	Mode can be: ro (read-only), rw (read-write), or rx.
+	The user must have appropriate permissions on the HOST directory; otherwise, an exception will be raised.
+	NOTE: On Megalos, the volume is mounted on the worker node where the device is running, not on the user's local machine.
+
 
 ## NETWORK SCENARIO META INFORMATION
 
