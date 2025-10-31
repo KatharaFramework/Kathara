@@ -20,7 +20,6 @@ setup(
         "docker>=7.0.0",
         "kubernetes>=23.3.0",
         "requests>=2.22.0",
-        "slug>=2.0",
         "pyroute2",
         "rich",
         "fs>=2.4.16",
