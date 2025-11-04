@@ -14,11 +14,12 @@ import re
 import shutil
 import tarfile
 import tempfile
+import unicodedata
 
 from binaryornot.check import is_binary
 from io import BytesIO
 from platform import node, machine
-from slug import slug
+
 from types import ModuleType
 from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable, Tuple
 
@@ -230,6 +231,10 @@ def get_current_user_uid_gid() -> (int, int):
 
     return exec_by_platform(unix, lambda: (None, None), unix)
 
+def slug(value):
+    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    value = re.sub(r"[^\w\s-]", "", value).strip().lower()
+    return re.sub(r"[-\s]+", "-", value)
 
 def get_current_user_name() -> str:
     hostname = generate_urlsafe_hash(node())
