@@ -1,3 +1,17 @@
+import struct
+import sys
+
+
+def get_terminal_size_unix() -> (int, int):
+    import fcntl
+    import termios
+
+    buf = struct.pack("HHHH", 0, 0, 0, 0)
+    res = fcntl.ioctl(sys.stdin.fileno(), termios.TIOCGWINSZ, buf)
+    rows, cols, _, _ = struct.unpack("HHHH", res)
+    return cols, rows
+
+
 def get_terminal_size_windows() -> (int, int):
     try:
         from ctypes import windll, create_string_buffer

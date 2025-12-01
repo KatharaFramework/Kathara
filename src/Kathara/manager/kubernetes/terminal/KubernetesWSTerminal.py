@@ -1,65 +1,108 @@
+import asyncio
 import json
+import os
 import signal
-from typing import Callable
+import sys
+from typing import Optional
 
-import pyuv
 from kubernetes.stream.ws_client import RESIZE_CHANNEL
 
 from ....foundation.manager.terminal.Terminal import Terminal
-from ....foundation.manager.terminal.terminal_utils import get_terminal_size_windows
+from ....foundation.manager.terminal.terminal_utils import get_terminal_size_windows, get_terminal_size_unix
 from ....utils import exec_by_platform
 
 
 class KubernetesWSTerminal(Terminal):
+    __slots__ = ["_reader_task", "_stdin_task"]
+
+    def __init__(self, handler):
+        super().__init__(handler)
+
+        self._reader_task: Optional[asyncio.Task] = None
+        self._stdin_task: Optional[asyncio.Task] = None
+
     def _start_external(self) -> None:
-        self._external_terminal = pyuv.Timer(self._loop)
-        self._external_terminal.start(self._read_external_terminal(), 0, 0.001)
+        stdin_fd = sys.stdin.fileno()
+        stdout_fd = sys.stdout.fileno()
+
+        self._stdin_task = self._loop.create_task(self._stdin_to_ws(stdin_fd))
+        self._reader_task = self._loop.create_task(self._poll_ws_output(stdout_fd))
+
+    async def _stdin_to_ws(self, stdin_fd: int) -> None:
+        while not self._closed:
+            try:
+                data = await self._loop.run_in_executor(None, os.read, stdin_fd, 4096)
+            except OSError:
+                self.close()
+                break
+
+            if not data:
+                self.close()
+                break
+
+            try:
+                self.handler.write_stdin(data)
+            except Exception:
+                self.close()
+                break
+
+    async def _poll_ws_output(self, stdout_fd: int) -> None:
+        try:
+            while not self._closed:
+                if not self.handler.is_open():
+                    self.close()
+                    break
+
+                data = None
+                try:
+                    if self.handler.peek_stdout():
+                        data = self.handler.read_stdout()
+                    elif self.handler.peek_stderr():
+                        data = self.handler.read_stderr()
+                except Exception:
+                    self.close()
+                    break
+
+                if data:
+                    try:
+                        await self._loop.run_in_executor(None, os.write, stdout_fd, data.encode("utf-8"))
+                    except OSError:
+                        self.close()
+                        break
+
+                    if data.strip() == "\r\nexit\r\n":
+                        self.close()
+                        break
+        except asyncio.CancelledError:
+            pass
 
     def _on_close(self) -> None:
-        def unix_close():
-            self._system_stdin.set_mode(0)
+        if self._stdin_task is not None and not self._stdin_task.done():
+            self._stdin_task.cancel()
 
-            self._resize_signal.close()
+        if self._reader_task is not None and not self._reader_task.done():
+            self._reader_task.cancel()
+
+        def unix_close():
+            try:
+                self._loop.remove_signal_handler(signal.SIGWINCH)
+            except Exception:
+                pass
 
         exec_by_platform(unix_close, lambda: None, unix_close)
 
-    def _write_on_external_terminal(self) -> Callable:
-        def write_on_external_terminal(handle, data, error):
-            self.handler.write_stdin(data)
-
-        return write_on_external_terminal
-
-    def _read_external_terminal(self) -> Callable:
-        def read_external_terminal(timer_handle):
-            if not self.handler.is_open() and not self._external_terminal.closed:
-                self.close()
-                return
-
-            data = None
-            if self.handler.peek_stdout():
-                data = self.handler.read_stdout()
-            elif self.handler.peek_stderr():
-                data = self.handler.read_stderr()
-
-            if data:
-                self._system_stdout.write(data.encode('utf-8'))
-
-                if data.strip() == '\r\nexit\r\n':
-                    self.close()
-
-        return read_external_terminal
-
     def _resize_terminal(self) -> None:
         def resize_unix():
-            def resize_terminal(signal_handle, signal_num):
-                w, h = self._system_stdin.get_winsize()
-                self.handler.write_channel(RESIZE_CHANNEL, json.dumps({"Height": h, "Width": w}))
+            def resize():
+                cols, rows = get_terminal_size_unix()
+                self.handler.write_channel(RESIZE_CHANNEL, json.dumps({"Height": rows, "Width": cols}))
 
-            self._resize_signal = pyuv.Signal(self._loop)
-            self._resize_signal.start(resize_terminal, signal.SIGWINCH)
+            try:
+                self._loop.add_signal_handler(signal.SIGWINCH, resize)
+            except Exception:
+                signal.signal(signal.SIGWINCH, lambda *_: resize())
 
-            # Run first time to set the proper terminal size
-            resize_terminal(None, None)
+            resize()
 
         def resize_windows():
             w, h = get_terminal_size_windows()
