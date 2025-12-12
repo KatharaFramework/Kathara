@@ -45,20 +45,12 @@ class DockerTTYTerminal(Terminal):
             self.close()
             return
 
-        if self._external_fd is None:
-            self.close()
-            return
-
         try:
             os.write(self._external_fd, data)
         except OSError:
             self.close()
 
     def _on_external_readable(self, stdout_fd: int) -> None:
-        if self._external_fd is None:
-            self.close()
-            return
-
         try:
             data = os.read(self._external_fd, 4096)
         except OSError:
@@ -103,20 +95,12 @@ class DockerTTYTerminal(Terminal):
             pass
 
         if self._orig_term_attrs is not None:
-            termios.tcsetattr(
-                sys.stdin.fileno(),
-                termios.TCSADRAIN,
-                self._orig_term_attrs,
-            )
+            termios.tcsetattr(stdin_fd, termios.TCSADRAIN, self._orig_term_attrs)
 
     def _resize_terminal(self) -> None:
         def resize() -> None:
             cols, rows = get_terminal_size_unix()
-            self.client.api.exec_resize(
-                self.exec_id,
-                height=rows,
-                width=cols,
-            )
+            self.client.api.exec_resize(self.exec_id, height=rows, width=cols)
 
         try:
             self._loop.add_signal_handler(signal.SIGWINCH, resize)
