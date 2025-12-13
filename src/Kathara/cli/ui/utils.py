@@ -165,7 +165,7 @@ def open_machine_terminal(machine) -> None:
                              )
 
     def windows_connect() -> None:
-        complete_win_command = "& %s" % connect_command
+        complete_win_command = "chcp 65001 > $null; $OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new(); & %s" % connect_command
         logging.debug("Opening Windows terminal with command: %s." % complete_win_command)
         subprocess.Popen(["powershell.exe",
                           '-Command',

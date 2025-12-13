@@ -4,7 +4,6 @@ import msvcrt
 import os
 import sys
 from ctypes import wintypes
-import time
 from typing import Any, Optional
 
 import pywintypes
@@ -42,6 +41,64 @@ def _restore_console_mode(handle, old_mode):
     ctypes.windll.kernel32.SetConsoleMode(handle, old_mode)
 
 
+# Virtual Key Codes for arrow keys and function keys
+ANSI_ESC = "\x1b["
+
+keycodes = {
+    # Home/End
+    33: "5~",
+    34: "6~",
+    35: "F",
+    36: "H",
+    # Arrows
+    37: "D",
+    38: "A",
+    39: "C",
+    40: "B",
+    45: "2~",
+    46: "3~",
+    # F-keys
+    112: "11~",
+    113: "12~",
+    114: "13~",
+    115: "14~",
+    116: "15~",
+    117: "17~",
+    118: "18~",
+    119: "19~",
+    120: "20~",
+    121: "21~",
+    122: "23~",
+    123: "24~",
+}
+
+
+# Data structures for the Win32 KeyRecord
+KEY_EVENT = 0x0001
+
+
+class KEY_EVENT_RECORD(ctypes.Structure):
+    _fields_ = [
+        ("bKeyDown", wintypes.BOOL),
+        ("wRepeatCount", wintypes.WORD),
+        ("wVirtualKeyCode", wintypes.WORD),
+        ("wVirtualScanCode", wintypes.WORD),
+        ("uChar", wintypes.WCHAR),
+        ("dwControlKeyState", wintypes.DWORD),
+    ]
+
+
+class _EVENT_UNION(ctypes.Union):
+    _fields_ = [("KeyEvent", KEY_EVENT_RECORD)]
+
+
+class INPUT_RECORD(ctypes.Structure):
+    _fields_ = [
+        ("EventType", wintypes.WORD),
+        ("Event", _EVENT_UNION),
+    ]
+
+
 class DockerNPipeTerminal(Terminal):
     __slots__ = ["client", "exec_id", "_check_opened_task", "_pipe_handle", "_term_handle", "_orig_term_attrs"]
 
@@ -63,11 +120,39 @@ class DockerNPipeTerminal(Terminal):
         self._pipe_handle = self.handler._handle.handle
         win32pipe.SetNamedPipeHandleState(self._pipe_handle, 0x00000001, None, None)
 
-        # To get CTRL+C working inside
+        # To get macros work inside the terminal
         self._term_handle, self._orig_term_attrs = _set_raw_console_mode(stdin_fd)
 
         self._loop.create_task(self._stdin_to_external())
         self._loop.create_task(self._external_to_stdout(stdout_fd))
+
+    def _read_console_raw(self) -> bytes:
+        if not msvcrt.kbhit():
+            return b""
+
+        rec = INPUT_RECORD()
+        nread = wintypes.DWORD()
+        ok = ctypes.windll.kernel32.ReadConsoleInputW(self._term_handle, ctypes.byref(rec), 1, ctypes.byref(nread))
+        if not ok or nread.value == 0:
+            return b""
+        if rec.EventType != KEY_EVENT:
+            return b""
+
+        kev = rec.Event.KeyEvent
+        if not kev.bKeyDown:
+            return b""
+
+        # Check if it is a special key
+        ansi_sequence = keycodes.get(kev.wVirtualKeyCode, None)
+        if ansi_sequence:
+            return f"{ANSI_ESC}{ansi_sequence}".encode("utf-8")
+
+        # Otherwise return the character
+        uchar = kev.uChar if kev.uChar and kev.uChar != "\x00" else b""
+        if not uchar:
+            return uchar
+
+        return kev.uChar.encode("utf-8")
 
     @staticmethod
     def _npipe_write(handle: int, data: bytes) -> None:
@@ -79,39 +164,10 @@ class DockerNPipeTerminal(Terminal):
         except pywintypes.error as e:
             raise e
 
-
-    # second-code mapping (after '\x00' or '\xe0') -> ANSI escape sequence
-    _SPECIAL_TO_ANSI = {
-        'H': b'\x1b[A',  # Up
-        'P': b'\x1b[B',  # Down
-        'M': b'\x1b[C',  # Right
-        'K': b'\x1b[D',  # Left
-        'G': b'\x1b[H',  # Home
-        'O': b'\x1b[F',  # End
-        'R': b'\x1b[2~', # Insert
-        'S': b'\x1b[3~', # Delete
-        'I': b'\x1b[5~', # Page Up
-        'Q': b'\x1b[6~', # Page Down
-    }
-
-    def read_console_interruptible(self) -> bytes:
-        if msvcrt.kbhit():
-            ch = msvcrt.getwch()  # unicode char or prefix for special keys
-
-            if ch in ('\x00', '\xe0'):
-                code = msvcrt.getwch()  # second part
-                return self._SPECIAL_TO_ANSI.get(code, b'')  # ignore unhandled specials
-
-            # best-effort encode to UTF-8
-            return ch.encode('utf-8', errors='replace')
-        else:
-            return b""
-
-
     async def _stdin_to_external(self) -> None:
         while not self._closed:
             try:
-                data = await self._loop.run_in_executor(None, self.read_console_interruptible)
+                data = await self._loop.run_in_executor(None, self._read_console_raw)
             except OSError:
                 self.close()
                 break
