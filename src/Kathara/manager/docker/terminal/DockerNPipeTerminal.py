@@ -1,7 +1,7 @@
 import asyncio
 import ctypes
 import msvcrt
-import os
+import win32api
 import sys
 from ctypes import wintypes
 from typing import Any, Optional
@@ -41,9 +41,10 @@ def _restore_console_mode(handle, old_mode):
     ctypes.windll.kernel32.SetConsoleMode(handle, old_mode)
 
 
+STD_OUTPUT_HANDLE = -11
+
 # Virtual Key Codes for arrow keys and function keys
 ANSI_ESC = "\x1b["
-
 keycodes = {
     # Home/End
     33: "5~",
@@ -100,7 +101,7 @@ class INPUT_RECORD(ctypes.Structure):
 
 
 class DockerNPipeTerminal(Terminal):
-    __slots__ = ["client", "exec_id", "_check_opened_task", "_pipe_handle", "_term_handle", "_orig_term_attrs"]
+    __slots__ = ["client", "exec_id", "_pipe_handle", "_term_handle", "_orig_term_attrs"]
 
     def __init__(self, handler: Any, client: DockerClient, exec_id: str):
         super().__init__(handler)
@@ -108,25 +109,23 @@ class DockerNPipeTerminal(Terminal):
         self.client: DockerClient = client
         self.exec_id: str = exec_id
 
-        self._check_opened_task: Optional[asyncio.Task] = None
-
         self._pipe_handle: Optional[int] = None
         self._term_handle = None
         self._orig_term_attrs = None
 
     def _start_external(self) -> None:
         stdin_fd = sys.stdin.fileno()
-        stdout_fd = sys.stdout.fileno()
         self._pipe_handle = self.handler._handle.handle
         win32pipe.SetNamedPipeHandleState(self._pipe_handle, 0x00000001, None, None)
-
-        # To get macros work inside the terminal
         self._term_handle, self._orig_term_attrs = _set_raw_console_mode(stdin_fd)
+
+        stdout_fd = win32api.GetStdHandle(STD_OUTPUT_HANDLE)
 
         self._loop.create_task(self._stdin_to_external())
         self._loop.create_task(self._external_to_stdout(stdout_fd))
 
     def _read_console_raw(self) -> bytes:
+        # Return if no key is pressed
         if not msvcrt.kbhit():
             return b""
 
@@ -148,10 +147,6 @@ class DockerNPipeTerminal(Terminal):
             return f"{ANSI_ESC}{ansi_sequence}".encode("utf-8")
 
         # Otherwise return the character
-        uchar = kev.uChar if kev.uChar and kev.uChar != "\x00" else b""
-        if not uchar:
-            return uchar
-
         return kev.uChar.encode("utf-8")
 
     @staticmethod
@@ -168,7 +163,7 @@ class DockerNPipeTerminal(Terminal):
         while not self._closed:
             try:
                 data = await self._loop.run_in_executor(None, self._read_console_raw)
-            except OSError:
+            except Exception:
                 self.close()
                 break
 
@@ -190,6 +185,13 @@ class DockerNPipeTerminal(Terminal):
             if e.winerror in (232, 233):
                 return b""
             raise e
+        
+    def _write_console_raw(self, fd: int, data: bytes) -> None:
+        buffer = ctypes.create_unicode_buffer(data.decode('utf-8'))
+        written = wintypes.DWORD(0)
+        result = ctypes.windll.kernel32.WriteConsoleW(fd, buffer, len(buffer), ctypes.byref(written), None)
+        if not result:
+            raise Exception
 
     async def _external_to_stdout(self, stdout_fd: int) -> None:
         while not self._closed:
@@ -203,15 +205,15 @@ class DockerNPipeTerminal(Terminal):
                 continue
 
             try:
-                await self._loop.run_in_executor(None, os.write, stdout_fd, data)
-            except OSError:
+                await self._loop.run_in_executor(None, self._write_console_raw, stdout_fd, data)
+            except Exception:
                 self.close()
                 break
 
     def _on_close(self) -> None:
         for task in asyncio.all_tasks(self._loop):
-            task.cancel()
             task._log_destroy_pending = False
+            task.cancel()
 
         if self._term_handle is not None:
             _restore_console_mode(self._term_handle, self._orig_term_attrs)
