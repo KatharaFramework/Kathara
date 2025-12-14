@@ -1,8 +1,6 @@
 from typing import Any
 
 from .session.KubernetesWSTerminalSession import KubernetesWSTerminalSession
-from ....foundation.manager.terminal.console.UnixConsoleAdapter import UnixConsoleAdapter
-from ....foundation.manager.terminal.console.WindowsConsoleAdapter import WindowsConsoleAdapter
 from ....foundation.manager.terminal.core.TerminalRunner import TerminalRunner
 from ....utils import exec_by_platform
 
@@ -14,9 +12,11 @@ class KubernetesWSTerminal(object):
         session = KubernetesWSTerminalSession(handler)
 
         def unix():
+            from ....foundation.manager.terminal.console.UnixConsoleAdapter import UnixConsoleAdapter
             return UnixConsoleAdapter()
 
         def windows():
+            from ....foundation.manager.terminal.console.WindowsConsoleAdapter import WindowsConsoleAdapter
             return WindowsConsoleAdapter()
 
         console = exec_by_platform(unix, windows, unix)
