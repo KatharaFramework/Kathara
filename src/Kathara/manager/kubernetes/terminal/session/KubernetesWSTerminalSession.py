@@ -43,8 +43,8 @@ class KubernetesWSTerminalSession(ITerminalSession):
 
         try:
             self._handler.write_stdin(data)
-        except Exception:
-            raise
+        except Exception as e:
+            raise e
 
     def resize(self, cols: int, rows: int) -> None:
         if self._closed:
@@ -53,8 +53,8 @@ class KubernetesWSTerminalSession(ITerminalSession):
         payload = json.dumps({"Height": rows, "Width": cols})
         try:
             self._handler.write_channel(RESIZE_CHANNEL, payload)
-        except Exception:
-            raise
+        except Exception as e:
+            raise e
 
     def close(self) -> None:
         if self._closed:

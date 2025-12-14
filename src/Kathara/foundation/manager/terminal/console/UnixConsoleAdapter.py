@@ -79,11 +79,10 @@ class UnixConsoleAdapter(IConsoleAdapter):
 
         try:
             loop.add_signal_handler(signal.SIGWINCH, _emit_resize)
-            self._resize_handler_installed = True
         except Exception:
             signal.signal(signal.SIGWINCH, lambda *_: _emit_resize())
-            self._resize_handler_installed = True
 
+        self._resize_handler_installed = True
         _emit_resize()
 
     def unwatch_resize(self, loop: Any) -> None:
