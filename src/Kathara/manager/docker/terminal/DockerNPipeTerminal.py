@@ -1,12 +1,12 @@
 import asyncio
 import ctypes
 import msvcrt
-import win32api
 import sys
 from ctypes import wintypes
 from typing import Any, Optional
 
 import pywintypes
+import win32api
 import win32file
 import win32pipe
 from docker import DockerClient
@@ -76,6 +76,7 @@ keycodes = {
 
 # Data structures for the Win32 KeyRecord
 KEY_EVENT = 0x0001
+WINDOW_BUFFER_SIZE_EVENT = 0x0004
 
 
 class KEY_EVENT_RECORD(ctypes.Structure):
@@ -88,9 +89,17 @@ class KEY_EVENT_RECORD(ctypes.Structure):
         ("dwControlKeyState", wintypes.DWORD),
     ]
 
+class COORD(ctypes.Structure):
+    _fields_ = [("X", wintypes.SHORT), ("Y", wintypes.SHORT)]
+
+class WINDOW_BUFFER_SIZE_RECORD(ctypes.Structure):
+    _fields_ = [("dwSize", COORD)]
 
 class _EVENT_UNION(ctypes.Union):
-    _fields_ = [("KeyEvent", KEY_EVENT_RECORD)]
+    _fields_ = [
+        ("KeyEvent", KEY_EVENT_RECORD),
+        ("WindowBufferSize", WINDOW_BUFFER_SIZE_RECORD)
+    ]
 
 
 class INPUT_RECORD(ctypes.Structure):
@@ -125,29 +134,33 @@ class DockerNPipeTerminal(Terminal):
         self._loop.create_task(self._external_to_stdout(stdout_fd))
 
     def _read_console_raw(self) -> bytes:
-        # Return if no key is pressed
-        if not msvcrt.kbhit():
-            return b""
-
         rec = INPUT_RECORD()
         nread = wintypes.DWORD()
-        ok = ctypes.windll.kernel32.ReadConsoleInputW(self._term_handle, ctypes.byref(rec), 1, ctypes.byref(nread))
+        # Peek the buffer to avoid blocking read
+        ok = ctypes.windll.kernel32.PeekConsoleInputW(self._term_handle, ctypes.byref(rec), 1, ctypes.byref(nread))
         if not ok or nread.value == 0:
             return b""
-        if rec.EventType != KEY_EVENT:
-            return b""
+        # Force the read only to consume the buffer events
+        ctypes.windll.kernel32.ReadConsoleInputW(self._term_handle, ctypes.byref(rec), 1, ctypes.byref(nread))
+        
+        if rec.EventType == WINDOW_BUFFER_SIZE_EVENT:
+            size = rec.Event.WindowBufferSize.dwSize
+            w, h = size.X, size.Y
+            self.client.api.exec_resize(self.exec_id, height=h, width=w)
+        elif rec.EventType == KEY_EVENT:
+            kev = rec.Event.KeyEvent
+            if not kev.bKeyDown:
+                return b""
+            
+            # Check if it is a special key
+            ansi_sequence = keycodes.get(kev.wVirtualKeyCode, None)
+            if ansi_sequence:
+                return f"{ANSI_ESC}{ansi_sequence}".encode("utf-8")
 
-        kev = rec.Event.KeyEvent
-        if not kev.bKeyDown:
-            return b""
-
-        # Check if it is a special key
-        ansi_sequence = keycodes.get(kev.wVirtualKeyCode, None)
-        if ansi_sequence:
-            return f"{ANSI_ESC}{ansi_sequence}".encode("utf-8")
-
-        # Otherwise return the character
-        return kev.uChar.encode("utf-8")
+            # Otherwise return the character
+            return kev.uChar.encode("utf-8")
+        
+        return b""
 
     @staticmethod
     def _npipe_write(handle: int, data: bytes) -> None:
@@ -226,5 +239,4 @@ class DockerNPipeTerminal(Terminal):
             self._pipe_handle = None
 
     def _resize_terminal(self) -> None:
-        w, h = get_terminal_size_windows()
-        self.client.api.exec_resize(self.exec_id, height=h, width=w)
+        ...
