@@ -33,10 +33,7 @@ class TerminalRunner(object):
         try:
             self._loop.run_forever()
         finally:
-            try:
-                self._cleanup()
-            finally:
-                self._loop.close()
+            self._loop.close()
 
     def _on_resize(self, cols: int, rows: int) -> None:
         if self._closed:
@@ -92,7 +89,6 @@ class TerminalRunner(object):
                 return
 
             if not data:
-                await asyncio.sleep(0.01)
                 continue
 
             try:
@@ -123,7 +119,7 @@ class TerminalRunner(object):
         if self._loop is None:
             return
 
-        for task in list(asyncio.all_tasks(self._loop)):
+        for task in asyncio.all_tasks(self._loop):
             try:
                 task._log_destroy_pending = False
             except Exception:

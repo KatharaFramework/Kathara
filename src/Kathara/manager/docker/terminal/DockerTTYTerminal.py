@@ -17,6 +17,3 @@ class DockerTTYTerminal(object):
 
     def start(self) -> None:
         self._runner.start()
-
-    def close(self) -> None:
-        self._runner.close()

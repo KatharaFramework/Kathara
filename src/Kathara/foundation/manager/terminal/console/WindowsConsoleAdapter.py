@@ -1,14 +1,11 @@
 import asyncio
 import ctypes
-import msvcrt
-import sys
 from ctypes import wintypes
 from typing import Any, Optional, Dict, Tuple, Callable
 
-import chardet
-
 from ..core.IConsoleAdapter import IConsoleAdapter
 
+STD_INPUT_HANDLE: int = -10
 STD_OUTPUT_HANDLE: int = -11
 
 # Data structures for the Win32 Input Events
@@ -81,10 +78,9 @@ KEYCODES: Dict[int, str] = {
 
 
 class WindowsConsoleAdapter(IConsoleAdapter):
-    __slots__ = ["_stdin_fd", "_term_handle", "_orig_mode", "_stdout_handle", "_input_task", "_resize_cb"]
+    __slots__ = ["_term_handle", "_orig_mode", "_stdout_handle", "_input_task", "_resize_cb"]
 
     def __init__(self) -> None:
-        self._stdin_fd: int = sys.stdin.fileno()
         self._term_handle: Optional[int] = None
         self._orig_mode: Optional[int] = None
 
@@ -94,8 +90,8 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         self._resize_cb: Optional[Callable[[int, int], None]] = None
 
     @staticmethod
-    def _set_raw_console_mode(fd: int) -> Tuple[Optional[int], Optional[int]]:
-        handle = msvcrt.get_osfhandle(fd)
+    def _set_raw_console_mode() -> Tuple[Optional[int], Optional[int]]:
+        handle = ctypes.windll.kernel32.GetStdHandle(STD_INPUT_HANDLE)
         mode = wintypes.DWORD()
         if not ctypes.windll.kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
             return None, None
@@ -108,7 +104,7 @@ class WindowsConsoleAdapter(IConsoleAdapter):
 
         if not ctypes.windll.kernel32.SetConsoleMode(handle, new_mode):
             return None, None
-
+        
         return handle, old_mode
 
     @staticmethod
@@ -116,7 +112,7 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         ctypes.windll.kernel32.SetConsoleMode(handle, old_mode)
 
     def enter_raw(self) -> None:
-        self._term_handle, self._orig_mode = self._set_raw_console_mode(self._stdin_fd)
+        self._term_handle, self._orig_mode = self._set_raw_console_mode()
         self._stdout_handle = ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 
     def exit_raw(self) -> None:
@@ -126,13 +122,12 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         self._term_handle = None
         self._orig_mode = None
 
-    def _read_win_console_event(self) -> Optional[bytes]:
+    def _read_win_console_event(self) -> bytes:
         if self._term_handle is None:
             return b""
 
         rec = INPUT_RECORD()
         nread = wintypes.DWORD()
-
         # Peek the buffer to avoid blocking read
         ok = ctypes.windll.kernel32.PeekConsoleInputW(self._term_handle, ctypes.byref(rec), 1, ctypes.byref(nread))
         if not ok or nread.value == 0:
@@ -145,12 +140,12 @@ class WindowsConsoleAdapter(IConsoleAdapter):
                 size = rec.Event.WindowBufferSize.dwSize
                 cols, rows = int(size.X), int(size.Y)
                 self._resize_cb(cols, rows)
-            return None
+            return b""
 
         if rec.EventType == KEY_EVENT:
             kev = rec.Event.KeyEvent
             if not kev.bKeyDown:
-                return None
+                return b""
 
             # Check if it is a special key
             ansi = KEYCODES.get(int(kev.wVirtualKeyCode))
@@ -160,13 +155,13 @@ class WindowsConsoleAdapter(IConsoleAdapter):
             # Otherwise return the character
             ch = kev.uChar
             if ch is None:
-                return None
+                return b""
             try:
                 return ch.encode("utf-8")
             except Exception:
-                return None
+                return b""
 
-        return None
+        return b""
 
     def install_input_reader(self, loop: Any, on_bytes: Callable[[bytes], None], on_close: Callable[[], None]) -> None:
         if self._input_task is not None:
@@ -176,20 +171,18 @@ class WindowsConsoleAdapter(IConsoleAdapter):
             while True:
                 try:
                     data = await loop.run_in_executor(None, self._read_win_console_event)
-                    if data is None:
-                        await asyncio.sleep(0.001)
-                        continue
-
-                    if data == b"":
-                        await asyncio.sleep(0.001)
-                        continue
-
-                    on_bytes(data)
-                except asyncio.CancelledError:
-                    return
                 except Exception:
                     on_close()
-                    return
+                    break
+                
+                if not data:
+                    continue
+                
+                try:
+                    on_bytes(data)
+                except Exception:
+                    on_close()
+                    break
 
         self._input_task = loop.create_task(_pump())
 
@@ -204,8 +197,7 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         if self._stdout_handle is None:
             return
 
-        enc = chardet.detect(data).get("encoding") or "utf-8"
-        text = data.decode(enc, errors="replace")
+        text = data.decode("utf-8")
         buffer = ctypes.create_unicode_buffer(text)
         written = wintypes.DWORD(0)
         ok = ctypes.windll.kernel32.WriteConsoleW(self._stdout_handle, buffer, len(buffer), ctypes.byref(written), None)

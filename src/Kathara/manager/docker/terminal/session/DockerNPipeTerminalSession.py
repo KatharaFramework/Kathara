@@ -16,8 +16,7 @@ class DockerNPipeSession(ITerminalSession):
 
         self._exec_id: str = exec_id
 
-        self._pipe_handle: Optional[int] = None
-        self._pipe_handle = handler._handle.handle
+        self._pipe_handle: Optional[int] = handler._handle.handle
         win32pipe.SetNamedPipeHandleState(self._pipe_handle, 0x00000001, None, None)
 
     def read(self, n: int = 4096) -> bytes:
@@ -30,7 +29,7 @@ class DockerNPipeSession(ITerminalSession):
         except pywintypes.error as e:
             if getattr(e, "winerror", None) in (232, 233):
                 return b""
-            return b""
+            raise e
 
     def write(self, data: bytes) -> None:
         if self._closed or self._pipe_handle is None:
