@@ -86,7 +86,7 @@ class LstartCommand(Command):
             help="Apply metadata to all devices of a network scenario during startup."
         )
         self.parser.add_argument(
-            '--xterm', '--terminal-emu',
+            '--terminal-emu',
             required=False,
             help='Set a different terminal emulator application (Unix only).'
         )
@@ -154,7 +154,7 @@ class LstartCommand(Command):
 
         Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
             else Setting.get_instance().open_terminals
-        Setting.get_instance().terminal = args['xterm'] or Setting.get_instance().terminal
+        Setting.get_instance().terminal = args['terminal_emu'] or Setting.get_instance().terminal
 
         self.console.print(
             create_panel(
