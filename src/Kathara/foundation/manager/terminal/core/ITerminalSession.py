@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 
 class ITerminalSession(ABC):
@@ -7,11 +7,11 @@ class ITerminalSession(ABC):
 
     def __init__(self, handler: Any, client: Any) -> None:
         self._handler: Any = handler
-        self._client: Any = client
+        self._client: Optional[Any] = client
 
         self._closed: bool = False
 
-    def fileno(self) -> int:
+    def fileno(self) -> Optional[int]:
         raise NotImplementedError
 
     @abstractmethod

@@ -100,6 +100,10 @@ class TerminalRunner(object):
     def _start_stdout(self) -> None:
         def unix():
             self._session_fd = self.session.fileno()
+            if self._session_fd is None:
+                self._tasks.append(self._loop.create_task(self._threaded_stdout()))
+                return
+
             self._loop.add_reader(self._session_fd, self._on_session_readable)
 
         def windows():

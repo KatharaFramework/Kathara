@@ -1,10 +1,11 @@
 import asyncio
 import ctypes
 from ctypes import wintypes
-from typing import Any, Optional, Dict, Tuple, Callable
+from typing import Any, Optional, Dict, Callable
 
 from ..core.IConsoleAdapter import IConsoleAdapter
 
+# Low Level Win32 Handles
 STD_INPUT_HANDLE: int = -10
 STD_OUTPUT_HANDLE: int = -11
 
@@ -47,6 +48,7 @@ class INPUT_RECORD(ctypes.Structure):
 
 
 # Virtual Key Codes
+# Taken from https://github.com/prompt-toolkit/python-prompt-toolkit/blob/main/src/prompt_toolkit/input/win32.py#L140
 ANSI_ESC: str = "\x1b["
 KEYCODES: Dict[int, str] = {
     # Home/End
@@ -84,17 +86,16 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         self._term_handle: Optional[int] = None
         self._orig_mode: Optional[int] = None
 
-        self._stdout_handle: Optional[int] = None
+        self._stdout_handle: int = ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 
         self._input_task: Optional[asyncio.Task] = None
         self._resize_cb: Optional[Callable[[int, int], None]] = None
 
-    @staticmethod
-    def _set_raw_console_mode() -> Tuple[Optional[int], Optional[int]]:
+    def enter_raw(self) -> None:
         handle = ctypes.windll.kernel32.GetStdHandle(STD_INPUT_HANDLE)
         mode = wintypes.DWORD()
         if not ctypes.windll.kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
-            return None, None
+            return
 
         old_mode = mode.value
         new_mode = old_mode
@@ -103,21 +104,14 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         new_mode &= ~0x0001  # ENABLE_PROCESSED_INPUT
 
         if not ctypes.windll.kernel32.SetConsoleMode(handle, new_mode):
-            return None, None
-        
-        return handle, old_mode
+            return
 
-    @staticmethod
-    def _restore_console_mode(handle: int, old_mode: int) -> None:
-        ctypes.windll.kernel32.SetConsoleMode(handle, old_mode)
-
-    def enter_raw(self) -> None:
-        self._term_handle, self._orig_mode = self._set_raw_console_mode()
-        self._stdout_handle = ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+        self._term_handle = handle
+        self._orig_mode = old_mode
 
     def exit_raw(self) -> None:
         if self._term_handle is not None and self._orig_mode is not None:
-            self._restore_console_mode(self._term_handle, self._orig_mode)
+            ctypes.windll.kernel32.SetConsoleMode(self._term_handle, self._orig_mode)
 
         self._term_handle = None
         self._orig_mode = None
@@ -174,10 +168,10 @@ class WindowsConsoleAdapter(IConsoleAdapter):
                 except Exception:
                     on_close()
                     break
-                
+
                 if not data:
                     continue
-                
+
                 try:
                     on_bytes(data)
                 except Exception:

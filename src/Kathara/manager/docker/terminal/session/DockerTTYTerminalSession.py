@@ -1,5 +1,5 @@
 import os
-from typing import Any
+from typing import Any, Optional
 
 from docker import DockerClient
 
@@ -15,7 +15,7 @@ class DockerTTYTerminalSession(ITerminalSession):
         self._exec_id: str = exec_id
         self._external_fd: int = handler.fileno()
 
-    def fileno(self) -> int:
+    def fileno(self) -> Optional[int]:
         return self._external_fd
 
     def read(self, n: int = 4096) -> bytes:
