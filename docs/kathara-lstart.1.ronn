@@ -5,7 +5,7 @@ kathara-lstart(1) -- Start a Kathara network scenario
 ## SYNOPSIS
 
 `kathara lstart` [`-h`] [`--noterminals` \| `--terminals`] [`--privileged`]  
-[`-d` <DIRECTORY>] [`-F`] [`-l`] [`-o` [<OPTION> [<OPTION> ...]]] [`--xterm` <XTERM>]  
+[`-d` <DIRECTORY>] [`-F`] [`-l`] [`-o` [<OPTION> [<OPTION> ...]]] [`--terminal-emu` <TERMINAL_EMU>]  
 [`--print`]  [`--no-hosthome` \| `--hosthome`] [`--no-shared` \| `--shared`] [`--exclude` <DEVICE_NAME> [<DEVICE_NAME> ...]]  
 [<DEVICE_NAME> [<DEVICE_NAME> ...]]
 
@@ -59,7 +59,7 @@ The configuration of a Kathara network scenario consists of some files described
     Should be a list of double quoted strings, like `--pass "mem=64m" "image=kathara/frr"`.
     You can specify the same device options described in `kathara-lab.conf`(5).
 
-* `--xterm` <XTERM>, `--terminal-emu` <XTERM>:
+* `--terminal-emu` <TERMINAL_EMU>:
     Set a different terminal emulator application (Unix only).
 
     As an example: `gnome-terminal`(1). Override the default setting specified in `kathara.conf`(5) file. This option is ignored if used in conjunction with `--noterminals` or if `open_terminals` is set to false.
