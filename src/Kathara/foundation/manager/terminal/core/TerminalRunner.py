@@ -89,6 +89,7 @@ class TerminalRunner(object):
                 return
 
             if not data:
+                await asyncio.sleep(0.03)
                 continue
 
             try:

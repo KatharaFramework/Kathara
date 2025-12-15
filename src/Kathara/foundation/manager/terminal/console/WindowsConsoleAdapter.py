@@ -170,6 +170,7 @@ class WindowsConsoleAdapter(IConsoleAdapter):
                     break
 
                 if not data:
+                    await asyncio.sleep(0.01)
                     continue
 
                 try:
@@ -191,7 +192,7 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         if self._stdout_handle is None:
             return
 
-        text = data.decode("utf-8")
+        text = data.decode("utf-8", errors="replace")
         buffer = ctypes.create_unicode_buffer(text)
         written = wintypes.DWORD(0)
         ok = ctypes.windll.kernel32.WriteConsoleW(self._stdout_handle, buffer, len(buffer), ctypes.byref(written), None)
