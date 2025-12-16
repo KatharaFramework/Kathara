@@ -16,9 +16,22 @@ class DockerTTYTerminalSession(ITerminalSession):
         self._external_fd: int = handler.fileno()
 
     def fileno(self) -> Optional[int]:
+        """Return an OS-level file descriptor for the session, if available.
+
+        Returns:
+            Optional[int]: The file descriptor, or None if the session cannot be polled via fd-based readiness APIs.
+        """
         return self._external_fd
 
     def read(self, n: int = 4096) -> bytes:
+        """Read up to n bytes from the session output stream.
+
+        Args:
+            n (int): Maximum number of bytes to read.
+
+        Returns:
+            bytes: Data read from the session.
+        """
         if self._closed:
             return b""
 
@@ -28,15 +41,40 @@ class DockerTTYTerminalSession(ITerminalSession):
             return b""
 
     def write(self, data: bytes) -> None:
+        """Write bytes to the session input stream.
+
+        Args:
+            data (bytes): Data to send to the session.
+
+        Returns:
+            None
+        """
         if self._closed:
             return
 
         os.write(self._external_fd, data)
 
     def resize(self, cols: int, rows: int) -> None:
+        """Resize the session terminal dimensions.
+
+        Args:
+            cols (int): Terminal width in columns.
+            rows (int): Terminal height in rows.
+
+        Returns:
+            None
+        """
+        if self._closed:
+            return
+
         self._client.api.exec_resize(self._exec_id, height=rows, width=cols)
 
     def close(self) -> None:
+        """Close the session and release resources.
+
+        Returns:
+            None
+        """
         if self._closed:
             return
 

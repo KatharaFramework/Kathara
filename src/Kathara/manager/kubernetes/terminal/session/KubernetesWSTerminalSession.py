@@ -11,9 +11,22 @@ class KubernetesWSTerminalSession(ITerminalSession):
         super().__init__(handler, client)
 
     def fileno(self) -> Optional[int]:
+        """Return an OS-level file descriptor for the session, if available.
+
+        Returns:
+            Optional[int]: The file descriptor, or None if the session cannot be polled via fd-based readiness APIs.
+        """
         return None
 
     def read(self, n: int = 4096) -> bytes:
+        """Read up to n bytes from the session output stream.
+
+        Args:
+            n (int): Maximum number of bytes to read.
+
+        Returns:
+            bytes: Data read from the session.
+        """
         if self._closed:
             return b""
 
@@ -38,6 +51,14 @@ class KubernetesWSTerminalSession(ITerminalSession):
             return b""
 
     def write(self, data: bytes) -> None:
+        """Write bytes to the session input stream.
+
+        Args:
+            data (bytes): Data to send to the session.
+
+        Returns:
+            None
+        """
         if self._closed:
             return
 
@@ -47,6 +68,15 @@ class KubernetesWSTerminalSession(ITerminalSession):
             raise e
 
     def resize(self, cols: int, rows: int) -> None:
+        """Resize the session terminal dimensions.
+
+        Args:
+            cols (int): Terminal width in columns.
+            rows (int): Terminal height in rows.
+
+        Returns:
+            None
+        """
         if self._closed:
             return
 
@@ -57,6 +87,11 @@ class KubernetesWSTerminalSession(ITerminalSession):
             raise e
 
     def close(self) -> None:
+        """Close the session and release resources.
+
+        Returns:
+            None
+        """
         if self._closed:
             return
 

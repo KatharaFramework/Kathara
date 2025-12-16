@@ -20,6 +20,14 @@ class DockerNPipeSession(ITerminalSession):
         win32pipe.SetNamedPipeHandleState(self._pipe_handle, 0x00000001, None, None)
 
     def read(self, n: int = 4096) -> bytes:
+        """Read up to n bytes from the session output stream.
+
+        Args:
+            n (int): Maximum number of bytes to read.
+
+        Returns:
+            bytes: Data read from the session.
+        """
         if self._closed or self._pipe_handle is None:
             return b""
 
@@ -32,15 +40,40 @@ class DockerNPipeSession(ITerminalSession):
             raise e
 
     def write(self, data: bytes) -> None:
+        """Write bytes to the session input stream.
+
+        Args:
+            data (bytes): Data to send to the session.
+
+        Returns:
+            None
+        """
         if self._closed or self._pipe_handle is None:
             return
 
         win32file.WriteFile(self._pipe_handle, data)
 
     def resize(self, cols: int, rows: int) -> None:
+        """Resize the session terminal dimensions.
+
+        Args:
+            cols (int): Terminal width in columns.
+            rows (int): Terminal height in rows.
+
+        Returns:
+            None
+        """
+        if self._closed:
+            return
+
         self._client.api.exec_resize(self._exec_id, height=rows, width=cols)
 
     def close(self) -> None:
+        """Close the session and release resources.
+
+        Returns:
+            None
+        """
         if self._closed:
             return
 

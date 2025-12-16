@@ -15,6 +15,7 @@ WINDOW_BUFFER_SIZE_EVENT: int = 0x0004
 
 
 class KEY_EVENT_RECORD(ctypes.Structure):
+    """ctypes mapping of Win32 KEY_EVENT_RECORD structure."""
     _fields_ = [
         ("bKeyDown", wintypes.BOOL),
         ("wRepeatCount", wintypes.WORD),
@@ -26,14 +27,17 @@ class KEY_EVENT_RECORD(ctypes.Structure):
 
 
 class COORD(ctypes.Structure):
+    """ctypes mapping of Win32 COORD structure (X, Y)."""
     _fields_ = [("X", wintypes.SHORT), ("Y", wintypes.SHORT)]
 
 
 class WINDOW_BUFFER_SIZE_RECORD(ctypes.Structure):
+    """ctypes mapping of Win32 WINDOW_BUFFER_SIZE_RECORD structure."""
     _fields_ = [("dwSize", COORD)]
 
 
 class EVENT_UNION(ctypes.Union):
+    """ctypes union mapping the Win32 INPUT_RECORD.Event union."""
     _fields_ = [
         ("KeyEvent", KEY_EVENT_RECORD),
         ("WindowBufferSize", WINDOW_BUFFER_SIZE_RECORD),
@@ -41,6 +45,7 @@ class EVENT_UNION(ctypes.Union):
 
 
 class INPUT_RECORD(ctypes.Structure):
+    """ctypes mapping of Win32 INPUT_RECORD structure."""
     _fields_ = [
         ("EventType", wintypes.WORD),
         ("Event", EVENT_UNION),
@@ -80,6 +85,15 @@ KEYCODES: Dict[int, str] = {
 
 
 class WindowsConsoleAdapter(IConsoleAdapter):
+    """Windows-specific console adapter.
+
+    Attributes:
+        _term_handle (Optional[int]): Handle to STD_INPUT for ReadConsoleW.
+        _orig_mode (Optional[int]): Original input mode bits to restore on exit_raw().
+        _stdout_handle (int): Handle to STD_OUTPUT for WriteConsoleW.
+        _input_task (Optional[asyncio.Task]): Asyncio task pumping input events.
+        _resize_cb (Optional[Callable[[int, int], None]]): Callback invoked on console resize.
+    """
     __slots__ = ["_term_handle", "_orig_mode", "_stdout_handle", "_input_task", "_resize_cb"]
 
     def __init__(self) -> None:
@@ -92,6 +106,11 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         self._resize_cb: Optional[Callable[[int, int], None]] = None
 
     def enter_raw(self) -> None:
+        """Put the terminal into raw mode.
+
+        Returns:
+            None
+        """
         handle = ctypes.windll.kernel32.GetStdHandle(STD_INPUT_HANDLE)
         mode = wintypes.DWORD()
         if not ctypes.windll.kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
@@ -110,6 +129,11 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         self._orig_mode = old_mode
 
     def exit_raw(self) -> None:
+        """Restore the terminal to its previous mode (reverts "enter_raw").
+
+        Returns:
+            None
+        """
         if self._term_handle is not None and self._orig_mode is not None:
             ctypes.windll.kernel32.SetConsoleMode(self._term_handle, self._orig_mode)
 
@@ -117,6 +141,11 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         self._orig_mode = None
 
     def _read_win_console_event(self) -> bytes:
+        """Peek and consume a single Win32 console input event and map it to bytes.
+
+        Returns:
+            bytes: Data representing key input (including ANSI sequences for special keys)
+        """
         if self._term_handle is None:
             return b""
 
@@ -158,6 +187,16 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         return b""
 
     def install_input_reader(self, loop: Any, on_bytes: Callable[[bytes], None], on_close: Callable[[], None]) -> None:
+        """Start reading from stdin and route incoming bytes to callbacks (connected to the manager handler).
+
+        Args:
+            loop (Any): The asyncio event loop instance used to register readers/tasks.
+            on_bytes (Callable[[bytes], None]): Callback to handle received input bytes.
+            on_close (Callable[[], None]): Callback to handle stdin closing or errors.
+
+        Returns:
+            None
+        """
         if self._input_task is not None:
             return
 
@@ -182,6 +221,14 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         self._input_task = loop.create_task(_pump())
 
     def remove_input_reader(self, loop: Any) -> None:
+        """Stop reading stdin previously configured by "install_input_reader".
+
+         Args:
+             loop (Any): The asyncio event loop instance used to deregister.
+
+         Returns:
+             None
+         """
         if self._input_task is None:
             return
 
@@ -189,6 +236,14 @@ class WindowsConsoleAdapter(IConsoleAdapter):
         self._input_task = None
 
     def write_stdout(self, data: bytes) -> None:
+        """Write bytes to stdout.
+
+        Args:
+            data (bytes): Bytes to write to stdout.
+
+        Returns:
+            None
+        """
         if self._stdout_handle is None:
             return
 
@@ -200,9 +255,30 @@ class WindowsConsoleAdapter(IConsoleAdapter):
             raise RuntimeError
 
     def watch_resize(self, loop: Any, cb: Callable[[int, int], None]) -> None:
-        # Unused, resize is read from the console events, just install the callback
+        """Start monitoring terminal resize events.
+
+        Args:
+            loop (Any): The asyncio event loop instance used to register signal handlers or callbacks.
+            cb (Callable[[int, int], None]): Callback to handle the resize.
+
+        Returns:
+            None
+
+        Notes:
+            Unused, resize is read from console events, only installs the callback.
+        """
         self._resize_cb = cb
 
     def unwatch_resize(self, loop: Any) -> None:
-        # Unused, resize is read from the console events
+        """Stop monitoring terminal resize events.
+
+        Args:
+            loop (Any): The asyncio event loop instance used to deregister signal handlers or callbacks.
+
+        Returns:
+            None
+
+        Notes:
+            Unused, resize is read from console events.
+        """
         pass

@@ -6,6 +6,12 @@ from ....utils import exec_by_platform
 
 
 class KubernetesWSTerminal(object):
+    """High-level terminal runner for Kubernetes over WebSockets.
+
+    Args:
+        handler (Any): The exec session handler.
+    """
+
     __slots__ = ["_runner"]
 
     def __init__(self, handler: Any) -> None:
@@ -23,4 +29,9 @@ class KubernetesWSTerminal(object):
         self._runner = TerminalRunner(console=console, session=session)
 
     def start(self) -> None:
+        """Start the interactive terminal session.
+
+        Returns:
+            None
+        """
         self._runner.start()
