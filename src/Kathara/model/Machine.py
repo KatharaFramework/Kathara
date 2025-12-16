@@ -18,7 +18,8 @@ from . import Interface as InterfacePackage
 from . import Lab as LabPackage
 from . import Link as LinkPackage
 from .. import utils
-from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainError
+from ..exceptions import NonSequentialMachineInterfaceError, MachineOptionError, MachineCollisionDomainError, \
+    MountDeniedError
 from ..foundation.model.FilesystemMixin import FilesystemMixin
 from ..setting.Setting import Setting
 from ..trdparty.strtobool.strtobool import strtobool
@@ -571,14 +572,29 @@ class Machine(FilesystemMixin):
 
         return num_terms
 
-    def get_volumes(self) -> dict[str, str]:
+    def get_volumes(self) -> dict[str, dict[str, str]]:
         """Get the paths of the additional volumes mounted on the device.
 
         Returns:
-            dict[str, str]: The paths of the additional volumes mounted on the device. Keys represent the paths on the
-                host, while values represent the paths on the device.
+            dict[str, dict[str, str]]: The paths of the additional volumes mounted on the device.
+                Keys represent the paths on the host, while values represent the paths on the device.
+
+        Raises:
+            MountDeniedError: If the device cannot mount volumes.
         """
-        return self.meta['volumes']
+        if len(self.meta["volumes"]) > 0:
+            if "_mount_volumes" in self.lab.general_options:
+                can_mount = self.lab.general_options["_mount_volumes"]
+            else:
+                policy = Setting.get_instance().volume_mount_policy
+                can_mount = policy in ["Prompt", "Always"]
+        else:
+            can_mount = True
+
+        if can_mount:
+            return self.meta['volumes']
+
+        raise MountDeniedError(f"Device `{self.name}` cannot mount volumes.")
 
     def is_ipv6_enabled(self) -> bool:
         """Check if IPv6 is enabled on the device.

@@ -28,7 +28,7 @@ from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MachineAlreadyExistsError, MachineNotReadyError, MachineNotRunningError, MachineBinaryError, \
-    InvocationError
+    InvocationError, MountDeniedError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
@@ -388,24 +388,23 @@ class KubernetesMachine(object):
             volume_mounts.append(client.V1VolumeMount(name="shared", mount_path="/shared"))
 
         # Mount volumes defined in the device
-        if len(machine.meta["volumes"]) > 0:
-            if machine.lab.general_options["_mount_volumes"]:
-                for idx, (host_path, volume) in enumerate(machine.meta["volumes"].items()):
-                    missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
+        try:
+            for idx, (host_path, volume) in enumerate(machine.get_volumes().items()):
+                missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
 
-                    if not missing_permissions:
-                        volume_mounts.append(
-                            client.V1VolumeMount(
-                                name=f"volume{idx}", mount_path=volume['guest_path'], read_only=volume['mode'] == "ro"
-                            )
+                if not missing_permissions:
+                    volume_mounts.append(
+                        client.V1VolumeMount(
+                            name=f"volume{idx}", mount_path=volume['guest_path'], read_only=volume['mode'] == "ro"
                         )
-                    else:
-                        raise PermissionError(
-                            f"To mount volume `{host_path}` in `{volume['guest_path']}` "
-                            f"you miss the following permissions: `{', '.join(missing_permissions)}`."
-                        )
-            else:
-                logging.warning(f"Volumes of device `{machine.name}` will not be mounted.")
+                    )
+                else:
+                    raise PermissionError(
+                        f"To mount volume `{host_path}` in `{volume['guest_path']}` "
+                        f"you miss the following permissions: `{', '.join(missing_permissions)}`."
+                    )
+        except MountDeniedError:
+            logging.warning(f"Volumes of device `{machine.name}` will not be mounted.")
 
         # Machine must be executed in privileged mode to run sysctls.
         security_context = client.V1SecurityContext(privileged=True)
