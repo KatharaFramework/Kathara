@@ -280,7 +280,10 @@ class Machine(FilesystemMixin):
                     f"Allowed values are {', '.join(ALLOWED_VOLUME_MODES)}. "
                 )
 
-            self.meta['volumes'][os.path.abspath(host_path)] = {'guest_path': guest_path, 'mode': mode}
+            key_value = os.path.abspath(host_path)
+            old_value = self.meta['volumes'][key_value] if key_value in self.meta['volumes'] else None
+            self.meta['volumes'][key_value] = {'guest_path': guest_path, 'mode': mode}
+            return old_value
 
         old_value = self.meta[name] if name in self.meta else None
         self.meta[name] = value
