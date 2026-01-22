@@ -396,16 +396,16 @@ def test_run_with_two_general_option(mock_setting_get_instance, mock_parse_lab, 
 @mock.patch("src.Kathara.parser.netkit.DepParser.DepParser.parse")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
-def test_run_with_xterm(mock_setting_get_instance, mock_parse_lab, mock_parse_dep, mock_docker_manager,
-                        mock_manager_get_instance, test_lab,
-                        mock_setting):
+def test_run_with_terminal_emu(mock_setting_get_instance, mock_parse_lab, mock_parse_dep, mock_docker_manager,
+                               mock_manager_get_instance, test_lab,
+                               mock_setting):
     mock_parse_lab.return_value = test_lab
     mock_manager_get_instance.return_value = mock_docker_manager
     mock_setting_get_instance.return_value = mock_setting
     command = LstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
         with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:
-            command.run('.', ['--xterm', 'terminal'])
+            command.run('.', ['--terminal-emu', 'terminal'])
             assert mock_setting.open_terminals
             assert mock_setting.terminal == 'terminal'
             mock_parse_lab.assert_called_once_with(os.getcwd())
