@@ -217,7 +217,7 @@ class LstartCommand(Command):
         lab.add_option('hosthome_mount', args['hosthome_mount'])
         lab.add_option('shared_mount', args['shared_mount'])
 
-        if args['privileged'] or any([x.is_privileged() for x in lab.machines.values()]):
+        if args['privileged'] or any(x.is_privileged() for x in lab.machines.values()):
             if not utils.is_admin():
                 raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
             else:
