@@ -52,5 +52,5 @@ test = ["pytest"]
 "Source" = "https://github.com/KatharaFramework/Kathara"
 
 [build-system]
-requires = ["setuptools>=61.2", "wheel"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"

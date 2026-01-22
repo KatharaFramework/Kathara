@@ -18,7 +18,7 @@ new network protocols.
 
 %prep
 %autosetup
-python3.11 -m venv %{_builddir}/venv
+python3.13 -m venv %{_builddir}/venv
 %{_builddir}/venv/bin/pip install --upgrade pip
 %{_builddir}/venv/bin/pip install -r src/requirements.txt
 %{_builddir}/venv/bin/pip install nuitka
