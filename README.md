@@ -93,6 +93,7 @@ Kathará has been also presented in meetings and workshops:
 - [net-vis](https://github.com/Friscobuffo/net-vis-localhost), a tool that parses (and generates) the `lab.conf` file and all the `.startup` files to visualize the network.
 - [kathara-lab-starter](https://github.com/BuonHobo/kathara-lab-starter), an easy and extensible tool to get a kathara lab started.  Utilizing JSON input files, it accelerates setup, while minimizing configuration redundancies.
 - [NetGUI-Kathará](https://gitlab.com/eva.castro/netgui-kathara), NetGUI-Kathará is a graphical interface for Kathará that lets users design and manage network topologies. It also generates files for 3D traffic visualization with [WireXRk](https://pheras.gitlab.io/wirexrk/).
+- [NIKA](https://github.com/sands-lab/nika): A Network Arena for Benchmarking AI Agents on Network Troubleshooting. It offers an orchestration platform that connects AI agents with the network environment, enabling real-time troubleshooting in realistic conditions, and providing a human-facing interface to monitor agent performance.
 
 ## Success Stories
 As far as we know, Kathará is currently being used in many [courses and projects](https://www.kathara.org/stories.html). 
