@@ -655,12 +655,13 @@ def test_get_volumes_one_volume_always(mock_setting_get_instance, default_device
     })
     mock_setting_get_instance.return_value = setting_mock
 
-    host_path = '/test/path'
+    host_path = os.path.abspath('/test/path')
     guest_path = '/test'
     mode = 'rw'
     default_device.add_meta('volume', f'{host_path}|{guest_path}|{mode}')
 
     volumes = default_device.get_volumes()
+
     assert len(volumes) == 1
     assert volumes[host_path] == {"guest_path": guest_path, "mode": mode}
 
@@ -680,7 +681,7 @@ def test_get_volumes_one_volume_prompt(mock_setting_get_instance, default_device
     })
     mock_setting_get_instance.return_value = setting_mock
 
-    host_path = '/test/path'
+    host_path = os.path.abspath('/test/path')
     guest_path = '/test'
     mode = 'rw'
     default_device.add_meta('volume', f'{host_path}|{guest_path}|{mode}')
