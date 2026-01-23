@@ -112,7 +112,7 @@ class VstartCommand(Command):
             help='Mount "/hosthome" directory inside the device.'
         )
         self.parser.add_argument(
-            '--xterm', '--terminal-emu',
+            '--terminal-emu',
             required=False,
             help='Set a different terminal emulator application (Unix only).'
         )
@@ -207,7 +207,7 @@ class VstartCommand(Command):
 
         Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
             else Setting.get_instance().open_terminals
-        Setting.get_instance().terminal = args['xterm'] or Setting.get_instance().terminal
+        Setting.get_instance().terminal = args['terminal_emu'] or Setting.get_instance().terminal
         Setting.get_instance().device_shell = args['shell'] or Setting.get_instance().device_shell
 
         lab = Lab("kathara_vlab")

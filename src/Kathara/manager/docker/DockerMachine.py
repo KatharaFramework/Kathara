@@ -150,6 +150,14 @@ class DockerMachine(object):
         lab_images = set(map(lambda x: x[1].get_image(), machines))
         self.docker_image.check_from_list(lab_images)
 
+        policy = Setting.get_instance().volume_mount_policy
+        lab.add_option("_mount_volumes", policy in ['Prompt', 'Always'])
+        machines_with_volumes = dict(filter(lambda x: len(x[1].meta['volumes']) > 0, machines))
+        if len(machines_with_volumes) > 0:
+            EventDispatcher.get_instance().dispatch(
+                "machines_with_volumes", lab=lab, machines_with_volumes=machines_with_volumes
+            )
+
         shared_mount = lab.general_options['shared_mount'] if 'shared_mount' in lab.general_options \
             else Setting.get_instance().shared_mount
         if shared_mount:
@@ -175,6 +183,9 @@ class DockerMachine(object):
                 self._deploy_and_start_machine(item)
 
         EventDispatcher.get_instance().dispatch("machines_deploy_ended")
+
+        # Delete to avoid keeping dirty state
+        del lab.general_options['_mount_volumes']
 
     def _deploy_and_start_machine(self, machine_item: Tuple[str, Machine]) -> None:
         """Deploy and start a Docker container from the device contained in machine_item.
@@ -256,7 +267,7 @@ class DockerMachine(object):
         # Flag that bridged is already connected (because there's another check in `start`).
         if first_machine_iface is None and machine.is_bridged():
             first_network = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
-            machine.add_meta("bridge_connected", True)
+            machine.add_meta("_bridge_connected", True)
 
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
@@ -299,16 +310,19 @@ class DockerMachine(object):
         if hosthome_mount and Setting.get_instance().remote_url is None:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
-        for host_path, volume in machine.meta["volumes"].items():
-            missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
+        try:
+            for host_path, volume in machine.get_volumes().items():
+                missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
 
-            if not missing_permissions:
-                volumes[host_path] = {'bind': volume['guest_path'], 'mode': volume['mode']}
-            else:
-                raise PermissionError(
-                    f"To mount volume `{host_path}` in `{volume['guest_path']}` "
-                    f"you miss the following permissions: `{', '.join(missing_permissions)}`."
-                )
+                if not missing_permissions:
+                    volumes[host_path] = {'bind': volume['guest_path'], 'mode': volume['mode']}
+                else:
+                    raise PermissionError(
+                        f"To mount volume `{host_path}` in `{volume['guest_path']}` "
+                        f"you miss the following permissions: `{', '.join(missing_permissions)}`."
+                    )
+        except MountDeniedError:
+            logging.warning(f"Volumes of device `{machine.name}` will not be mounted.")
 
         privileged = machine.is_privileged()
         if privileged and not utils.is_admin():
@@ -516,7 +530,7 @@ class DockerMachine(object):
             self.connect_interface(machine, machine_iface)
 
         # Bridged connection required but not added in `deploy` method.
-        if "bridge_connected" not in machine.meta and machine.is_bridged():
+        if "_bridge_connected" not in machine.meta and machine.is_bridged():
             bridge_link = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
             bridge_link.connect(machine.api_object)
 
@@ -555,6 +569,10 @@ class DockerMachine(object):
                             )
 
         machine.api_object.reload()
+
+        # Delete to avoid keeping dirty state
+        if '_bridge_connected' in machine.meta:
+            del machine.meta['_bridge_connected']
 
     def undeploy(self, lab_hash: str, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Undeploy the devices contained in the network scenario defined by the lab_hash.

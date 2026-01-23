@@ -1,68 +1,37 @@
-import json
-import signal
-from typing import Callable
+from typing import Any
 
-import pyuv
-from kubernetes.stream.ws_client import RESIZE_CHANNEL
-
-from ....foundation.manager.terminal.Terminal import Terminal
-from ....foundation.manager.terminal.terminal_utils import get_terminal_size_windows
+from .session.KubernetesWSTerminalSession import KubernetesWSTerminalSession
+from ....foundation.manager.terminal.core.TerminalRunner import TerminalRunner
 from ....utils import exec_by_platform
 
 
-class KubernetesWSTerminal(Terminal):
-    def _start_external(self) -> None:
-        self._external_terminal = pyuv.Timer(self._loop)
-        self._external_terminal.start(self._read_external_terminal(), 0, 0.001)
+class KubernetesWSTerminal(object):
+    """High-level terminal runner for Kubernetes over WebSockets.
 
-    def _on_close(self) -> None:
-        def unix_close():
-            self._system_stdin.set_mode(0)
+    Args:
+        handler (Any): The exec session handler.
+    """
 
-            self._resize_signal.close()
+    __slots__ = ["_runner"]
 
-        exec_by_platform(unix_close, lambda: None, unix_close)
+    def __init__(self, handler: Any) -> None:
+        session = KubernetesWSTerminalSession(handler)
 
-    def _write_on_external_terminal(self) -> Callable:
-        def write_on_external_terminal(handle, data, error):
-            self.handler.write_stdin(data)
+        def unix():
+            from ....foundation.manager.terminal.console.UnixConsoleAdapter import UnixConsoleAdapter
+            return UnixConsoleAdapter()
 
-        return write_on_external_terminal
+        def windows():
+            from ....foundation.manager.terminal.console.WindowsConsoleAdapter import WindowsConsoleAdapter
+            return WindowsConsoleAdapter()
 
-    def _read_external_terminal(self) -> Callable:
-        def read_external_terminal(timer_handle):
-            if not self.handler.is_open() and not self._external_terminal.closed:
-                self.close()
-                return
+        console = exec_by_platform(unix, windows, unix)
+        self._runner = TerminalRunner(console=console, session=session)
 
-            data = None
-            if self.handler.peek_stdout():
-                data = self.handler.read_stdout()
-            elif self.handler.peek_stderr():
-                data = self.handler.read_stderr()
+    def start(self) -> None:
+        """Start the interactive terminal session.
 
-            if data:
-                self._system_stdout.write(data.encode('utf-8'))
-
-                if data.strip() == '\r\nexit\r\n':
-                    self.close()
-
-        return read_external_terminal
-
-    def _resize_terminal(self) -> None:
-        def resize_unix():
-            def resize_terminal(signal_handle, signal_num):
-                w, h = self._system_stdin.get_winsize()
-                self.handler.write_channel(RESIZE_CHANNEL, json.dumps({"Height": h, "Width": w}))
-
-            self._resize_signal = pyuv.Signal(self._loop)
-            self._resize_signal.start(resize_terminal, signal.SIGWINCH)
-
-            # Run first time to set the proper terminal size
-            resize_terminal(None, None)
-
-        def resize_windows():
-            w, h = get_terminal_size_windows()
-            self.handler.write_channel(RESIZE_CHANNEL, json.dumps({"Height": h, "Width": w}))
-
-        exec_by_platform(resize_unix, resize_windows, resize_unix)
+        Returns:
+            None
+        """
+        self._runner.start()

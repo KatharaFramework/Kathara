@@ -5,14 +5,14 @@ from unittest.mock import Mock
 
 import pytest
 
-from src.Kathara.exceptions import MachineCollisionDomainError
-
 sys.path.insert(0, './')
 
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Machine import Machine
 from src.Kathara.model.Link import Link
-from src.Kathara.exceptions import MachineOptionError, NonSequentialMachineInterfaceError
+from src.Kathara.exceptions import MachineOptionError, NonSequentialMachineInterfaceError, \
+    MachineCollisionDomainError, MountDeniedError
+from src.Kathara.types import SharedCollisionDomainsOption
 
 sys.path.insert(0, './src')
 
@@ -597,3 +597,119 @@ def test_is_privileged_mix():
     device2 = Machine(lab, "test_machine2")
     assert device1.is_privileged()
     assert device2.is_privileged()
+
+
+#
+# TEST: get_volumes
+#
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_get_volumes_no_volumes_always(mock_setting_get_instance, default_device):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False,
+        "volume_mount_policy": "Always"
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    volumes = default_device.get_volumes()
+    assert len(volumes) == 0
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_get_volumes_no_volumes_never(mock_setting_get_instance, default_device):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False,
+        "volume_mount_policy": "Always"
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    volumes = default_device.get_volumes()
+    assert len(volumes) == 0
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_get_volumes_one_volume_always(mock_setting_get_instance, default_device):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False,
+        "volume_mount_policy": "Always"
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    host_path = os.path.abspath('/test/path')
+    guest_path = '/test'
+    mode = 'rw'
+    default_device.add_meta('volume', f'{host_path}|{guest_path}|{mode}')
+
+    volumes = default_device.get_volumes()
+
+    assert len(volumes) == 1
+    assert volumes[host_path] == {"guest_path": guest_path, "mode": mode}
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_get_volumes_one_volume_prompt(mock_setting_get_instance, default_device):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False,
+        "volume_mount_policy": "Prompt"
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    host_path = os.path.abspath('/test/path')
+    guest_path = '/test'
+    mode = 'rw'
+    default_device.add_meta('volume', f'{host_path}|{guest_path}|{mode}')
+
+    volumes = default_device.get_volumes()
+    assert len(volumes) == 1
+    assert volumes[host_path] == {"guest_path": guest_path, "mode": mode}
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_get_volumes_one_volume_never(mock_setting_get_instance, default_device):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False,
+        "volume_mount_policy": "Never"
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    host_path = '/test/path'
+    guest_path = '/test'
+    mode = 'rw'
+    default_device.add_meta('volume', f'{host_path}|{guest_path}|{mode}')
+
+    with pytest.raises(MountDeniedError):
+        default_device.get_volumes()
