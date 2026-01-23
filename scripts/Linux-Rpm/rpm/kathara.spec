@@ -66,10 +66,9 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- BREAKING: "ltest" command has been removed
-- Add the possibility to mount additional volumes on devices using the "volume" metadata
-- Allow to run a single device in privileged mode using the "privileged" metadata
-- Add the possibility to specify custom entrypoint and arguments for a device using the "entrypoint" and "args" metadata
-- Allow specifying per-network-scenario "kathara.conf" configuration file
-- (Python API) Add "retrieve_files" method to copy files from devices to the host
+- Add a configurable setting to manage volume mounting behavior
+- Remove `--xterm` parameter from `vstart`/`lstart` commands
+- Remove the `pyuv` dependency
+- Add a timeout while checking for new releases on GitHub
+- Add a timeout while checking for new versions of Docker images
 - Minor fixes

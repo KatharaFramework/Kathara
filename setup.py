@@ -1,19 +1,17 @@
 from setuptools import find_packages, setup
 
-from setuptools import find_packages
-
 setup(
     name='kathara',
     package_dir={'': 'src'},
     packages=find_packages('src'),
     py_modules=['kathara'],
-    version='3.8.0',
+    version='3.8.1',
     license='gpl-3.0',
     description='A lightweight container-based network emulation tool.',
     author='Kathara Framework',
     author_email='contact@kathara.org',
     url='https://www.kathara.org',
-    download_url='https://github.com/KatharaFramework/Kathara/archive/refs/tags/3.8.0.tar.gz',
+    download_url='https://github.com/KatharaFramework/Kathara/archive/refs/tags/3.8.1.tar.gz',
     keywords=['NETWORK-EMULATION', 'CONTAINERS', 'NFV'],
     install_requires=[
         "binaryornot>=0.4.4",
