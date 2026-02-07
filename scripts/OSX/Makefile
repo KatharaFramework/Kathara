@@ -1,7 +1,7 @@
 #!/usr/bin/make -s
 
 PRODUCT=Kathara
-VERSION=3.8.0
+VERSION=3.8.1
 TARGET_DIRECTORY=Output
 APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
 ROFF_DIR=../../docs/Roff
@@ -18,7 +18,7 @@ allSigned_arm64: deps binary_arm64 manpages createInstaller_arm64 signProduct_ar
 default: all
 
 py_env:
-	python3.11 -m venv $(VENV_DIR)
+	python3.13 -m venv $(VENV_DIR)
 
 deps: py_env
 	$(VENV_DIR)/bin/pip install pyinstaller==6.9.0

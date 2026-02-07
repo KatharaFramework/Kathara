@@ -26,7 +26,7 @@ class FilesystemMixin(object):
         """Return the name of the class of the fs object, if present. Else, return None.
 
         Returns:
-            Optional (str): The name of the class of the fs object.
+            Optional[str]: The name of the class of the fs object.
         """
         return self.fs.__class__.__name__.lower().replace("fs", "") if self.fs else None
 
@@ -34,7 +34,7 @@ class FilesystemMixin(object):
         """Return the path of the filesystem, if fs has a path on the host. Else, return None
 
         Returns:
-            Optional (str): The path of the filesystem in the fs.
+            Optional[str]: The path of the filesystem in the fs.
         """
         return (self.fs.getsyspath("") if self.fs.hassyspath("") else None) if self.fs else None
 

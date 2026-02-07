@@ -29,7 +29,8 @@ DEFAULTS: Dict[str, Any] = {
     "device_prefix": 'kathara',
     "debug_level": 'INFO',
     "print_startup_log": True,
-    "enable_ipv6": False
+    "enable_ipv6": False,
+    "volume_mount_policy": "Always",
 }
 SETTINGS_FILENAME = "kathara.conf"
 DEFAULT_SETTINGS_PATH: str = os.path.join(utils.get_current_user_home(), ".config", SETTINGS_FILENAME)
@@ -39,7 +40,8 @@ class Setting(object):
     """Class responsible for interacting with Kathara Settings."""
 
     __slots__ = ['image', 'manager_type', 'terminal', 'open_terminals', 'device_shell', 'net_prefix',
-                 'device_prefix', 'debug_level', 'print_startup_log', 'enable_ipv6', 'last_checked', 'addons']
+                 'device_prefix', 'debug_level', 'print_startup_log', 'enable_ipv6', 'volume_mount_policy',
+                 'last_checked', 'addons']
 
     __instance: Setting = None
 
@@ -302,15 +304,17 @@ class Setting(object):
         self.addons = SettingsAddonFactory().create_instance(class_args=(self.manager_type.capitalize(),))
 
     def _to_dict(self) -> Dict[str, Any]:
-        return {"image": self.image,
-                "manager_type": self.manager_type,
-                "terminal": self.terminal,
-                "open_terminals": self.open_terminals,
-                "device_shell": self.device_shell,
-                "net_prefix": self.net_prefix,
-                "device_prefix": self.device_prefix,
-                "debug_level": self.debug_level,
-                "print_startup_log": self.print_startup_log,
-                "enable_ipv6": self.enable_ipv6,
-                "last_checked": self.last_checked
-                }
+        return {
+            "image": self.image,
+            "manager_type": self.manager_type,
+            "terminal": self.terminal,
+            "open_terminals": self.open_terminals,
+            "device_shell": self.device_shell,
+            "net_prefix": self.net_prefix,
+            "device_prefix": self.device_prefix,
+            "debug_level": self.debug_level,
+            "print_startup_log": self.print_startup_log,
+            "enable_ipv6": self.enable_ipv6,
+            "volume_mount_policy": self.volume_mount_policy,
+            "last_checked": self.last_checked
+        }

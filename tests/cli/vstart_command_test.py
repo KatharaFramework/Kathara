@@ -34,7 +34,7 @@ def mock_setting(mock_setting_class):
 def default_device_args():
     args = {
         "terminals": None, "privileged": None, "num_terms": None, "exec_commands": None, "mem": None,
-        "cpus": None, "image": None, "hosthome_mount": None, "xterm": None, "dry_mode": False, "bridged": False,
+        "cpus": None, "image": None, "hosthome_mount": None, "terminal_emu": None, "dry_mode": False, "bridged": False,
         "ports": None, "sysctls": None, "envs": None, "ulimits": None, "shell": None, "entrypoint": None, "args": [],
     }
     return args
@@ -458,7 +458,7 @@ def test_run_with_terminal_emu(mock_docker_manager, mock_manager_get_instance, m
                                mock_setting, default_device_args):
     mock_setting_get_instance.return_value = mock_setting
     mock_manager_get_instance.return_value = mock_docker_manager
-    default_device_args['xterm'] = 'terminal'
+    default_device_args['terminal_emu'] = 'terminal'
     command = VstartCommand()
     with mock.patch.object(Lab, "add_option") as mock_add_option:
         with mock.patch.object(Lab, "add_global_machine_metadata") as mock_add_global_machine_metadata:

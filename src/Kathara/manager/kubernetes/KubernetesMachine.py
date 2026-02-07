@@ -28,7 +28,7 @@ from .stats.KubernetesMachineStats import KubernetesMachineStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MachineAlreadyExistsError, MachineNotReadyError, MachineNotRunningError, MachineBinaryError, \
-    InvocationError
+    InvocationError, MountDeniedError
 from ...model.Lab import Lab
 from ...model.Machine import Machine
 from ...setting.Setting import Setting
@@ -173,6 +173,14 @@ class KubernetesMachine(object):
         # Do not open terminals on Megalos
         Setting.get_instance().open_terminals = False
 
+        policy = Setting.get_instance().volume_mount_policy
+        lab.add_option("_mount_volumes", policy in ['Prompt', 'Always'])
+        machines_with_volumes = dict(filter(lambda x: len(x[1].meta['volumes']) > 0, machines))
+        if len(machines_with_volumes) > 0:
+            EventDispatcher.get_instance().dispatch(
+                "machines_with_volumes", lab=lab, machines_with_volumes=machines_with_volumes
+            )
+
         wait_thread = threading.Thread(
             target=self._wait_machines_startup,
             args=(lab, set([k for k, _ in machines]) if selected_machines or excluded_machines else None)
@@ -194,6 +202,9 @@ class KubernetesMachine(object):
                 self._deploy_machine(item)
 
         wait_thread.join()
+
+        # Delete to avoid keeping dirty state
+        del lab.general_options['_mount_volumes']
 
     def _wait_machines_startup(self, lab: Lab, selected_machines: Set[str]) -> None:
         """Wait the startup of the selected machines. Return when the selected machines become `Ready`.
@@ -377,20 +388,23 @@ class KubernetesMachine(object):
             volume_mounts.append(client.V1VolumeMount(name="shared", mount_path="/shared"))
 
         # Mount volumes defined in the device
-        for idx, (host_path, volume) in enumerate(machine.meta["volumes"].items()):
-            missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
+        try:
+            for idx, (host_path, volume) in enumerate(machine.get_volumes().items()):
+                missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
 
-            if not missing_permissions:
-                volume_mounts.append(
-                    client.V1VolumeMount(
-                        name=f"volume{idx}", mount_path=volume['guest_path'], read_only=volume['mode'] == "ro"
+                if not missing_permissions:
+                    volume_mounts.append(
+                        client.V1VolumeMount(
+                            name=f"volume{idx}", mount_path=volume['guest_path'], read_only=volume['mode'] == "ro"
+                        )
                     )
-                )
-            else:
-                raise PermissionError(
-                    f"To mount volume `{host_path}` in `{volume['guest_path']}` "
-                    f"you miss the following permissions: `{', '.join(missing_permissions)}`."
-                )
+                else:
+                    raise PermissionError(
+                        f"To mount volume `{host_path}` in `{volume['guest_path']}` "
+                        f"you miss the following permissions: `{', '.join(missing_permissions)}`."
+                    )
+        except MountDeniedError:
+            logging.warning(f"Volumes of device `{machine.name}` will not be mounted.")
 
         # Machine must be executed in privileged mode to run sysctls.
         security_context = client.V1SecurityContext(privileged=True)
