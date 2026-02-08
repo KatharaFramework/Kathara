@@ -207,6 +207,13 @@ class TerminalRunner(object):
                 pass
             task.cancel()
 
+        for task in self._tasks:
+            try:
+                task._log_destroy_pending = False
+            except Exception:
+                pass
+            task.cancel()
+
         if self._session_fd is not None:
             try:
                 self._loop.remove_reader(self._session_fd)
