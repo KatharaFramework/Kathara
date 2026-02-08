@@ -1,26 +1,23 @@
-from distutils.core import setup
-
-from setuptools import find_packages
+from setuptools import find_packages, setup
 
 setup(
     name='kathara',
     package_dir={'': 'src'},
     packages=find_packages('src'),
     py_modules=['kathara'],
-    version='3.8.0',
+    version='3.8.1',
     license='gpl-3.0',
     description='A lightweight container-based network emulation tool.',
     author='Kathara Framework',
     author_email='contact@kathara.org',
     url='https://www.kathara.org',
-    download_url='https://github.com/KatharaFramework/Kathara/archive/refs/tags/3.8.0.tar.gz',
+    download_url='https://github.com/KatharaFramework/Kathara/archive/refs/tags/3.8.1.tar.gz',
     keywords=['NETWORK-EMULATION', 'CONTAINERS', 'NFV'],
     install_requires=[
         "binaryornot>=0.4.4",
         "docker>=7.0.0",
         "kubernetes>=23.3.0",
         "requests>=2.22.0",
-        "slug>=2.0",
         "pyroute2",
         "rich",
         "fs>=2.4.16",
@@ -40,6 +37,7 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11'
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.13',
     ],
 )

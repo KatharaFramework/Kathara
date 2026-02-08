@@ -17,6 +17,7 @@ from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
 from src.Kathara.exceptions import DockerPluginError, MachineBinaryError, PrivilegeError, InvocationError
 from src.Kathara.types import SharedCollisionDomainsOption
+from src.Kathara.event.EventDispatcher import EventDispatcher
 
 
 #
@@ -817,7 +818,8 @@ def test_create_volume(mock_get_current_user_name, mock_setting_get_instance, mo
         'enable_ipv6': False,
         'remote_url': None,
         'hosthome_mount': False,
-        'shared_mount': False
+        'shared_mount': False,
+        "volume_mount_policy": "Always"
     })
     mock_setting_get_instance.return_value = setting_mock
     docker_machine.create(default_device)
@@ -888,7 +890,8 @@ def test_create_two_volumes(mock_get_current_user_name, mock_setting_get_instanc
         'enable_ipv6': False,
         'remote_url': None,
         'hosthome_mount': False,
-        'shared_mount': False
+        'shared_mount': False,
+        "volume_mount_policy": "Always"
     })
     mock_setting_get_instance.return_value = setting_mock
     docker_machine.create(default_device)
@@ -958,7 +961,8 @@ def test_create_volume_no_w_permission(mock_get_current_user_name, mock_setting_
         'enable_ipv6': False,
         'remote_url': None,
         'hosthome_mount': False,
-        'shared_mount': False
+        'shared_mount': False,
+        "volume_mount_policy": "Always"
     })
     mock_setting_get_instance.return_value = setting_mock
     with pytest.raises(PermissionError):
@@ -966,6 +970,72 @@ def test_create_volume_no_w_permission(mock_get_current_user_name, mock_setting_
 
     assert not docker_machine.client.containers.create.called
     assert not mock_copy_files.called
+
+
+@mock.patch("src.Kathara.utils.check_directory_permissions")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_volume_never(mock_get_current_user_name, mock_setting_get_instance,
+                             mock_get_machines_api_objects_by_filters, mock_check_dir_permissions,
+                             docker_machine,
+                             default_device):
+    mock_get_machines_api_objects_by_filters.return_value = []
+    mock_get_current_user_name.return_value = "test-user"
+    mock_check_dir_permissions.return_value = ["write (w)"]
+
+    host_path = '/test/path'
+    guest_path = '/test'
+    mode = 'rw'
+    default_device.add_meta('volume', f'{host_path}|{guest_path}|{mode}')
+
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        'remote_url': None,
+        'hosthome_mount': False,
+        'shared_mount': False,
+        "volume_mount_policy": "Never"
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    docker_machine.create(default_device)
+    docker_machine.client.containers.create.assert_called_once_with(
+        image='kathara/test',
+        name='dev_prefix_test-user_test_device_9pe3y6IDMwx4PfOPu5mbNg',
+        hostname='test_device',
+        cap_add=['NET_ADMIN', 'NET_RAW', 'NET_BROADCAST', 'NET_BIND_SERVICE', 'SYS_ADMIN'],
+        privileged=False,
+        network=None,
+        network_mode='none',
+        networking_config=None,
+        sysctls={'net.ipv4.conf.all.rp_filter': 0,
+                 'net.ipv4.conf.default.rp_filter': 0,
+                 'net.ipv4.conf.lo.rp_filter': 0,
+                 'net.ipv4.ip_forward': 1,
+                 'net.ipv4.icmp_ratelimit': 0,
+                 'net.ipv6.conf.default.disable_ipv6': 1,
+                 'net.ipv6.conf.all.disable_ipv6': 1,
+                 'net.ipv6.conf.default.forwarding': 0,
+                 'net.ipv6.conf.all.forwarding': 0,
+                 },
+        environment={},
+        mem_limit='64m',
+        nano_cpus=2000000000,
+        ports=None,
+        tty=True,
+        stdin_open=True,
+        detach=True,
+        volumes={},
+        labels={'name': 'test_device', 'lab_hash': '9pe3y6IDMwx4PfOPu5mbNg', 'user': 'test-user', 'app': 'kathara',
+                'shell': '/bin/bash'},
+        ulimits=[],
+        entrypoint=None,
+        command=None
+    )
 
 
 #
@@ -1180,6 +1250,48 @@ def test_deploy_machines_selected_and_excluded_machines(mock_deploy_and_start, m
         docker_machine.deploy_machines(lab, selected_machines={"pc1", "pc3"}, excluded_machines={"pc1"})
     assert not docker_machine.docker_image.check_from_list.called
     assert not mock_deploy_and_start.called
+
+
+@mock.patch("src.Kathara.cli.ui.event.MountDevicesVolumes.confirmation_prompt")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine._deploy_and_start_machine")
+def test_deploy_machines_volume_prompt(mock_deploy_and_start, mock_setting_get_instance, mock_confirmation_prompt,
+                                       docker_machine):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'device_prefix': 'dev_prefix',
+        "device_shell": '/bin/bash',
+        'enable_ipv6': False,
+        "hosthome_mount": False,
+        "shared_mount": False,
+        'remote_url': None,
+        "volume_mount_policy": "Prompt"
+    })
+    mock_setting_get_instance.return_value = setting_mock
+
+    mock_confirmation_prompt.return_value = None
+
+    from src.Kathara.cli.ui.event.MountDevicesVolumes import MountDevicesVolumes
+    EventDispatcher.get_instance().register("machines_with_volumes", MountDevicesVolumes())
+
+    lab = Lab("Default scenario")
+    pc1 = lab.get_or_new_machine("pc1", **{'image': 'kathara/test1'})
+
+    host_path = '/test/path'
+    guest_path = '/test'
+    mode = 'rw'
+    pc1.add_meta('volume', f'{host_path}|{guest_path}|{mode}')
+
+    docker_machine.docker_image.check_from_list.return_value = None
+    mock_deploy_and_start.return_value = None
+    docker_machine.deploy_machines(lab)
+    docker_machine.docker_image.check_from_list.assert_called_once_with({'kathara/test1'})
+    assert mock_deploy_and_start.call_count == 1
+    mock_deploy_and_start.assert_any_call(('pc1', pc1))
+    mock_confirmation_prompt.assert_called_once()
+
+    EventDispatcher.get_instance().unregister("machines_with_volumes")
 
 
 #

@@ -1,6 +1,6 @@
 [project]
 name = "kathara"
-version = "3.8.0"
+version = "3.8.1"
 description = "A lightweight container-based network emulation tool."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -25,7 +25,8 @@ classifiers = [
     "Topic :: Software Development :: Build Tools",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11"
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.13"
 ]
 
 dependencies = [
@@ -33,7 +34,6 @@ dependencies = [
     "docker>=7.0.0",
     "kubernetes>=23.3.0",
     "requests>=2.22.0",
-    "slug>=2.0",
     "pyroute2",
     "rich",
     "fs>=2.4.16",
@@ -53,5 +53,5 @@ test = ["pytest"]
 "Source" = "https://github.com/KatharaFramework/Kathara"
 
 [build-system]
-requires = ["setuptools>=61.2", "wheel"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"

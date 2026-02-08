@@ -9,7 +9,7 @@ kathara-vstart(1) -- Start a new Kathara device
 [`--eth` <N:CD[/MAC_ADDR]> [<N:CD[/MAC_ADDR]> ...]]  
 [`-e` [<EXEC_COMMANDS> [<EXEC_COMMANDS> ...]]] [`--mem` <MEM>]  
 [`--cpus` <CPUS>] [`-i` <IMAGE>] [`--no-hosthome` \| `--hosthome`]  
-[`--xterm` <XTERM>] [`--print`] [`--bridged`]  
+[`--terminal-emu` <TERMINAL_EMU>] [`--print`] [`--bridged`]  
 [`--port` <[HOST\:]GUEST[/PROTOCOL]> [<[HOST\:]GUEST[/PROTOCOL]> ...]] [`--env` <ENV> [<ENV> ...]] 
 [`--sysctl` <SYSCTL> [<SYSCTL> ...]] [`--ulimit` <KEY=SOFT[\:HARD]> [<KEY=SOFT[\:HARD]> ...]] [`--shell` <SHELL>]  
 
@@ -84,7 +84,7 @@ Notice: unless differently stated, command line arguments (DEVICE_NAME) and opti
 
     Mount the home directory of the current user inside devices in the special directory `/hosthome`. This option makes the host filesystem accessible from inside devices, overriding the default setting specified in `kathara.conf`(5) file.
 
-* `--xterm` <XTERM>, `--terminal-emu` <XTERM>:
+* `--terminal-emu` <TERMINAL_EMU>:
     Set a different terminal emulator application (Unix only).
 
     As an example: `gnome-terminal`(1). Overrides the default setting specified in `kathara.conf`(5) file. This option is ignored if used in conjunction with `--noterminals` or if `open_terminals` is set to false.
@@ -146,7 +146,7 @@ Start a new device named router. The device will have two network interfaces. In
 
 Instead of actually starting a device, check if the passed device parameters are correct.
 
-    kathara vstart -n terminal_test --xterm gnome-terminal
+    kathara vstart -n terminal_test --terminal-emu gnome-terminal
 
 Start a device named terminal_test which uses the gnome-terminal terminal.
 

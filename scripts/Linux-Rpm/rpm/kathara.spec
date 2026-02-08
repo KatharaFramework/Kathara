@@ -18,8 +18,9 @@ new network protocols.
 
 %prep
 %autosetup
-python3.11 -m venv %{_builddir}/venv
+python3.13 -m venv %{_builddir}/venv
 %{_builddir}/venv/bin/pip install --upgrade pip
+%{_builddir}/venv/bin/pip install --upgrade "setuptools<81"
 %{_builddir}/venv/bin/pip install -r src/requirements.txt
 %{_builddir}/venv/bin/pip install nuitka
 %{_builddir}/venv/bin/pip install pytest
@@ -42,8 +43,6 @@ install -p -m 644 %{_builddir}/%{buildsubdir}/kathara.dist/*.so* %{buildroot}%{_
 install -p -m 755 %{_builddir}/%{buildsubdir}/kathara.dist/kathara %{buildroot}%{_libdir}/kathara/
 install -d -m 755 %{buildroot}%{_libdir}/kathara/certifi
 cp -r %{_builddir}/%{buildsubdir}/kathara.dist/certifi/* %{buildroot}%{_libdir}/kathara/certifi/
-install -d -m 755 %{buildroot}%{_libdir}/kathara/pyuv
-cp -r %{_builddir}/%{buildsubdir}/kathara.dist/pyuv/* %{buildroot}%{_libdir}/kathara/pyuv/
 install -d -m 755 %{buildroot}%{_mandir}
 cp -r %{_builddir}/%{buildsubdir}/manpages/* %{buildroot}%{_mandir}/
 install -d -m 755 %{buildroot}%{_sysconfdir}/bash_completion.d/
@@ -68,10 +67,9 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- BREAKING: "ltest" command has been removed
-- Add the possibility to mount additional volumes on devices using the "volume" metadata
-- Allow to run a single device in privileged mode using the "privileged" metadata
-- Add the possibility to specify custom entrypoint and arguments for a device using the "entrypoint" and "args" metadata
-- Allow specifying per-network-scenario "kathara.conf" configuration file
-- (Python API) Add "retrieve_files" method to copy files from devices to the host
+- Add a configurable setting to manage volume mounting behavior
+- Remove `--xterm` parameter from `vstart`/`lstart` commands
+- Remove the `pyuv` dependency
+- Add a timeout while checking for new releases on GitHub
+- Add a timeout while checking for new versions of Docker images
 - Minor fixes
