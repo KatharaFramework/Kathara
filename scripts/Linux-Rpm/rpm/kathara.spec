@@ -20,6 +20,7 @@ new network protocols.
 %autosetup
 python3.13 -m venv %{_builddir}/venv
 %{_builddir}/venv/bin/pip install --upgrade pip
+%{_builddir}/venv/bin/pip install --upgrade "setuptools<81"
 %{_builddir}/venv/bin/pip install -r src/requirements.txt
 %{_builddir}/venv/bin/pip install nuitka
 %{_builddir}/venv/bin/pip install pytest

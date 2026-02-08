@@ -10,10 +10,10 @@ VENV_DIR:=${CURDIR}/venv
 .PHONY: all_x86 allSigned_x86 all_arm64 allSigned_arm64 test deps manpages cleanall cleanman cleanbinary cleanenv
 all: all_x86 all_arm64
 allSigned: allSigned_x86 allSigned_arm64
-all_x86: deps binary_x86_64 manpages createInstaller_x86_64 clean
-allSigned_x86: deps binary_x86_64 manpages createInstaller_x86_64 signProduct_x86_64 clean
-all_arm64: deps binary_arm64 manpages createInstaller_arm64 clean
-allSigned_arm64: deps binary_arm64 manpages createInstaller_arm64 signProduct_arm64 clean
+all_x86: cleanall deps binary_x86_64 manpages createInstaller_x86_64 clean
+allSigned_x86: cleanall deps binary_x86_64 manpages createInstaller_x86_64 signProduct_x86_64 clean
+all_arm64: cleanall deps binary_arm64 manpages createInstaller_arm64 clean
+allSigned_arm64: cleanall deps binary_arm64 manpages createInstaller_arm64 signProduct_arm64 clean
 
 default: all
 
@@ -21,7 +21,8 @@ py_env:
 	python3.13 -m venv $(VENV_DIR)
 
 deps: py_env
-	$(VENV_DIR)/bin/pip install pyinstaller==6.9.0
+	$(VENV_DIR)/bin/pip install -U "setuptools<81"
+	$(VENV_DIR)/bin/pip install "pyinstaller==6.18.0"
 	$(VENV_DIR)/bin/pip install -r ../../src/requirements.txt
 	$(VENV_DIR)/bin/pip install pytest
 	$$(brew --prefix ruby)/bin/gem install ronn-ng --user-install
@@ -56,7 +57,9 @@ copyBuildDirectory_%: binary_% manpages
 
 	chmod -R 755 $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)
 
-	cp -a ../../src/kathara.dist/. $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)
+	cp -r ../../src/kathara.dist/kathara/_internal $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/_internal
+	find $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/_internal -type f -exec chmod 644 {} \;
+	cp -a ../../src/kathara.dist/kathara/kathara $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/
 	cp -a $(ROFF_DIR)/. $(TARGET_DIRECTORY)/darwinpkg/usr/local/share/man/
 
 	chmod -R 755 $(TARGET_DIRECTORY)/darwinpkg/usr/local/share/man/*
@@ -103,6 +106,9 @@ clean: cleanbinary cleanman cleanenv
 cleanall: cleanbinary cleanman cleanenv
 	if [ -d ../../src/kathara.dist ]; then \
 		rm -r ../../src/kathara.dist; \
+	fi
+	if [ -d ../../src/kathara.spec ]; then \
+		rm -r ../../src/kathara.spec; \
 	fi
 	if [ -d $(TARGET_DIRECTORY) ]; then \
 		rm -Rf $(TARGET_DIRECTORY); \

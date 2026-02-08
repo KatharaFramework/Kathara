@@ -53,7 +53,7 @@ download-pip: copy-debian-folder
 	mkdir Output/kathara-$(VERSION)/debian/pythonLibs_arm64
 	grep -Ev "$(NO_BINARY_PACKAGES)" Output/kathara-$(VERSION)/requirements.txt > Output/kathara-$(VERSION)/requirements-binary.txt
 	grep -E "$(NO_BINARY_PACKAGES)" Output/kathara-$(VERSION)/requirements.txt > Output/kathara-$(VERSION)/requirements-no-binary.txt
-	/root/py-build-env/bin/pip install --upgrade setuptools
+	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip install --upgrade "setuptools<81"
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: flit_core
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: wheel
 	cd Output/kathara-$(VERSION)/debian/pythonLibs_amd64 && /root/py-build-env/bin/pip download --platform manylinux2014_x86_64 --only-binary=:all: zstandard
