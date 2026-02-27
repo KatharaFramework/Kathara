@@ -4,8 +4,9 @@ kubernetes>=23.3.0
 requests>=2.22.0
 pyroute2
 rich
+setuptools<81.0.0
 fs>=2.4.16
-chardet
+chardet<6.0.0
 libtmux>=0.18.0; sys_platform == 'darwin' or sys_platform == 'linux'
 appscript>=1.1.0; sys_platform == 'darwin'
 pypiwin32>=223; sys_platform == 'win32'
