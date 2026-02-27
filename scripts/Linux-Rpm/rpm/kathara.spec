@@ -20,17 +20,54 @@ new network protocols.
 %autosetup
 python3.13 -m venv %{_builddir}/venv
 %{_builddir}/venv/bin/pip install --upgrade pip
-%{_builddir}/venv/bin/pip install --upgrade "setuptools<81"
 %{_builddir}/venv/bin/pip install -r src/requirements.txt
-%{_builddir}/venv/bin/pip install nuitka
+%{_builddir}/venv/bin/pip install pyinstaller
 %{_builddir}/venv/bin/pip install pytest
 
 %build
 %{_builddir}/venv/bin/python -m pytest
-cd src && %{_builddir}/venv/bin/python -m nuitka --lto=yes --plugin-enable=pylint-warnings --plugin-enable=multiprocessing --follow-imports --standalone --include-plugin-directory=Kathara --output-filename=kathara kathara.py
+cd src && %{_builddir}/venv/bin/pyinstaller \
+    --name kathara \
+    --strip \
+    --console \
+    --noconfirm \
+    --hidden-import=Kathara \
+    --hidden-import=Kathara.cli \
+    --hidden-import=Kathara.cli.command \
+    --hidden-import=Kathara.cli.command.CheckCommand \
+    --hidden-import=Kathara.cli.command.ConnectCommand \
+    --hidden-import=Kathara.cli.command.ExecCommand \
+    --hidden-import=Kathara.cli.command.LcleanCommand \
+    --hidden-import=Kathara.cli.command.LinfoCommand \
+    --hidden-import=Kathara.cli.command.ListCommand \
+    --hidden-import=Kathara.cli.command.LrestartCommand \
+    --hidden-import=Kathara.cli.command.LstartCommand \
+    --hidden-import=Kathara.cli.command.LconfigCommand \
+    --hidden-import=Kathara.cli.command.SettingsCommand \
+    --hidden-import=Kathara.cli.command.VcleanCommand \
+    --hidden-import=Kathara.cli.command.VconfigCommand \
+    --hidden-import=Kathara.cli.command.VstartCommand \
+    --hidden-import=Kathara.cli.command.WipeCommand \
+    --hidden-import=Kathara.cli.ui \
+    --hidden-import=Kathara.cli.ui.setting \
+    --hidden-import=Kathara.cli.ui.setting.DockerOptionsHandler \
+    --hidden-import=Kathara.cli.ui.setting.KubernetesOptionsHandler \
+    --hidden-import=Kathara.manager \
+    --hidden-import=Kathara.manager.Kathara \
+    --hidden-import=Kathara.manager.docker \
+    --hidden-import=Kathara.manager.docker.DockerManager \
+    --hidden-import=Kathara.manager.kubernetes \
+    --hidden-import=Kathara.manager.kubernetes.KubernetesManager \
+    --hidden-import=Kathara.setting \
+    --hidden-import=Kathara.setting.addon \
+    --hidden-import=Kathara.setting.addon.DockerSettingsAddon \
+    --hidden-import=Kathara.setting.addon.KubernetesSettingsAddon \
+    --additional-hooks-dir=. \
+    --paths=. \
+    kathara.py
 
 %install
-mv %{_builddir}/%{buildsubdir}/src/kathara.dist %{_builddir}/%{buildsubdir}/kathara.dist
+mv %{_builddir}/%{buildsubdir}/src/dist/kathara %{_builddir}/%{buildsubdir}/kathara.dist
 rm -rf %{buildroot}
 rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libbz2.so.1.0
 rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libexpat.so.1
@@ -39,16 +76,15 @@ rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libz.so.1
 rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libtinfo.so.5
 rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libcrypto.so.1.1
 install -d %{buildroot}%{_libdir}/kathara
-install -p -m 644 %{_builddir}/%{buildsubdir}/kathara.dist/*.so* %{buildroot}%{_libdir}/kathara/
-install -p -m 755 %{_builddir}/%{buildsubdir}/kathara.dist/kathara %{buildroot}%{_libdir}/kathara/
-install -d -m 755 %{buildroot}%{_libdir}/kathara/certifi
-cp -r %{_builddir}/%{buildsubdir}/kathara.dist/certifi/* %{buildroot}%{_libdir}/kathara/certifi/
+cp -r %{_builddir}/%{buildsubdir}/kathara.dist/_internal %{buildroot}%{_libdir}/kathara/_internal
+find %{buildroot}%{_libdir}/kathara/_internal -type f -exec chmod 644 {} \;
+install -p -m 2755 -g 962 %{_builddir}/%{buildsubdir}/kathara.dist/kathara %{buildroot}%{_libdir}/kathara/
+install -d -m 755 %{buildroot}%{_bindir}
+ln -sf %{_libdir}/kathara/kathara %{buildroot}%{_bindir}/kathara
 install -d -m 755 %{buildroot}%{_mandir}
 cp -r %{_builddir}/%{buildsubdir}/manpages/* %{buildroot}%{_mandir}/
 install -d -m 755 %{buildroot}%{_sysconfdir}/bash_completion.d/
 install -p -m 644 %{_builddir}/%{buildsubdir}/kathara.bash-completion %{buildroot}%{_sysconfdir}/bash_completion.d/
-mkdir %{buildroot}%{_bindir}
-ln -sf %{_libdir}/kathara/kathara %{buildroot}%{_bindir}/kathara
 
 %files
 %{_libdir}/kathara/*
