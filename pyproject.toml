@@ -3,7 +3,7 @@ name = "kathara"
 version = "3.8.1"
 description = "A lightweight container-based network emulation tool."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = 'gpl-3.0'
 license-files = ["LICENSE"]
 keywords = ["NETWORK-EMULATION", "CONTAINERS", "NFV"]
@@ -23,9 +23,9 @@ classifiers = [
     "Intended Audience :: Education",
     "Intended Audience :: Telecommunications Industry",
     "Topic :: Software Development :: Build Tools",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13"
 ]
 
@@ -37,7 +37,7 @@ dependencies = [
     "pyroute2",
     "rich",
     "fs>=2.4.16",
-    "chardet",
+    "chardet<6.0.0",
     "libtmux>=0.8.2; platform_system == 'darwin' or platform_system == 'linux'",
     "appscript>=1.1.0; platform_system == 'darwin'",
     "pypiwin32>=223; platform_system == 'win32'",
@@ -53,5 +53,5 @@ test = ["pytest"]
 "Source" = "https://github.com/KatharaFramework/Kathara"
 
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools<81.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
