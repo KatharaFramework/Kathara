@@ -689,11 +689,14 @@ class DockerMachine(object):
         else:
             raise ValueError("Invalid `wait` value.")
 
-        startup_waited = False
+        startup_waited = 0
         if should_wait:
             startup_waited = self._wait_startup_execution(container, n_retries=n_retries, retry_interval=retry_interval)
 
             EventDispatcher.get_instance().dispatch("machine_startup_wait_ended")
+
+            if startup_waited == 2:
+                return
 
         if logs and Setting.get_instance().print_startup_log:
             # Get the logs, if the command fails it means that the shell is not found.
@@ -889,7 +892,7 @@ class DockerMachine(object):
         return {'exit_code': int(exit_code) if exit_code is not None else None, 'Id': resp['Id'], 'output': exec_output}
 
     def _wait_startup_execution(self, container: docker.models.containers.Container,
-                                n_retries: Optional[int] = None, retry_interval: float = 1) -> bool:
+                                n_retries: Optional[int] = None, retry_interval: float = 1) -> int:
         """Wait until the startup commands are executed or until the user requests the control over the device.
 
         Args:
@@ -898,7 +901,8 @@ class DockerMachine(object):
             retry_interval (float): The time interval in seconds to wait for each retry. Default is 1.
 
         Returns:
-            bool: False if the user requests the control before the ending of the startup. Else, True.
+            bool: 0 if the user requests the control before the ending of the startup. 1, if the startup ends.
+                2 if an APIError occurred during execution.
         """
         logging.debug(f"Waiting startup commands execution for device {container.labels['name']}...")
 
@@ -907,7 +911,7 @@ class DockerMachine(object):
 
         retries = 0
         is_cmd_success = False
-        startup_waited = True
+        startup_waited = 1
         printed = False
         while not is_cmd_success:
             try:
@@ -928,7 +932,7 @@ class DockerMachine(object):
                 if utils.exec_by_platform(utils.wait_user_input_linux,
                                           utils.wait_user_input_windows,
                                           utils.wait_user_input_linux):
-                    startup_waited = False or is_cmd_success
+                    startup_waited = int(False or is_cmd_success)
                     break
 
                 if not is_cmd_success:
@@ -941,6 +945,8 @@ class DockerMachine(object):
             except KeyboardInterrupt:
                 # Disable the CTRL+C interrupt while waiting for startup, otherwise terminal will close.
                 pass
+            except APIError:
+                return 2
 
         return startup_waited
 
