@@ -795,7 +795,10 @@ class DockerMachine(object):
             raise ValueError("Invalid `wait` value.")
 
         if should_wait:
-            self._wait_startup_execution(container, n_retries=n_retries, retry_interval=retry_interval)
+            startup_waited = self._wait_startup_execution(container, n_retries=n_retries, retry_interval=retry_interval)
+
+            if startup_waited == 2:
+                raise MachineNotRunningError(machine_name)
 
         command = shlex.split(command) if type(command) is str else command
         exec_result = self._exec_run(container,
