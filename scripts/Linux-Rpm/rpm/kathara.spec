@@ -26,59 +26,14 @@ python3.13 -m venv %{_builddir}/venv
 
 %build
 %{_builddir}/venv/bin/python -m pytest
-cd src && %{_builddir}/venv/bin/pyinstaller \
-    --name kathara \
-    --strip \
-    --console \
-    --noconfirm \
-    --hidden-import=Kathara \
-    --hidden-import=Kathara.cli \
-    --hidden-import=Kathara.cli.command \
-    --hidden-import=Kathara.cli.command.CheckCommand \
-    --hidden-import=Kathara.cli.command.ConnectCommand \
-    --hidden-import=Kathara.cli.command.ExecCommand \
-    --hidden-import=Kathara.cli.command.LcleanCommand \
-    --hidden-import=Kathara.cli.command.LinfoCommand \
-    --hidden-import=Kathara.cli.command.ListCommand \
-    --hidden-import=Kathara.cli.command.LrestartCommand \
-    --hidden-import=Kathara.cli.command.LstartCommand \
-    --hidden-import=Kathara.cli.command.LconfigCommand \
-    --hidden-import=Kathara.cli.command.SettingsCommand \
-    --hidden-import=Kathara.cli.command.VcleanCommand \
-    --hidden-import=Kathara.cli.command.VconfigCommand \
-    --hidden-import=Kathara.cli.command.VstartCommand \
-    --hidden-import=Kathara.cli.command.WipeCommand \
-    --hidden-import=Kathara.cli.ui \
-    --hidden-import=Kathara.cli.ui.setting \
-    --hidden-import=Kathara.cli.ui.setting.DockerOptionsHandler \
-    --hidden-import=Kathara.cli.ui.setting.KubernetesOptionsHandler \
-    --hidden-import=Kathara.manager \
-    --hidden-import=Kathara.manager.Kathara \
-    --hidden-import=Kathara.manager.docker \
-    --hidden-import=Kathara.manager.docker.DockerManager \
-    --hidden-import=Kathara.manager.kubernetes \
-    --hidden-import=Kathara.manager.kubernetes.KubernetesManager \
-    --hidden-import=Kathara.setting \
-    --hidden-import=Kathara.setting.addon \
-    --hidden-import=Kathara.setting.addon.DockerSettingsAddon \
-    --hidden-import=Kathara.setting.addon.KubernetesSettingsAddon \
-    --additional-hooks-dir=. \
-    --paths=. \
-    kathara.py
+cd src && %{_builddir}/venv/bin/pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
 
 %install
-mv %{_builddir}/%{buildsubdir}/src/dist/kathara %{_builddir}/%{buildsubdir}/kathara.dist
 rm -rf %{buildroot}
-rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libbz2.so.1.0
-rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libexpat.so.1
-rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libtinfo.so.6
-rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libz.so.1
-rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libtinfo.so.5
-rm -f %{_builddir}/%{buildsubdir}/kathara.dist/libcrypto.so.1.1
 install -d %{buildroot}%{_libdir}/kathara
-cp -r %{_builddir}/%{buildsubdir}/kathara.dist/_internal %{buildroot}%{_libdir}/kathara/_internal
+cp -r %{_builddir}/%{buildsubdir}/src/kathara.dist/kathara/_internal %{buildroot}%{_libdir}/kathara/_internal
 find %{buildroot}%{_libdir}/kathara/_internal -type f -exec chmod 644 {} \;
-install -p -m 2755 -g 962 %{_builddir}/%{buildsubdir}/kathara.dist/kathara %{buildroot}%{_libdir}/kathara/
+install -p -m 2755 -g 962 %{_builddir}/%{buildsubdir}/src/kathara.dist/kathara/kathara %{buildroot}%{_libdir}/kathara/
 install -d -m 755 %{buildroot}%{_bindir}
 ln -sf %{_libdir}/kathara/kathara %{buildroot}%{_bindir}/kathara
 install -d -m 755 %{buildroot}%{_mandir}
@@ -99,7 +54,7 @@ fi
 chmod g+s %{_libdir}/kathara/kathara
 
 %preun
-%{_libdir}/kathara/kathara wipe -f -a 2> /dev/null || true
+%{_libdir}/kathara/kathara wipe -f -a &> /dev/null || true
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__

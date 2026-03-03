@@ -21,6 +21,7 @@ prepare-source:
 	sed -i -e 's/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
 	mkdir -p ~/rpmbuild/SOURCES/kathara-$(VERSION)/src
 	cp -r ../../src ~/rpmbuild/SOURCES/kathara-$(VERSION)
+	cp kathara.pyinstaller.spec ~/rpmbuild/SOURCES/kathara-$(VERSION)/src/kathara.spec
 	mkdir -p ~/rpmbuild/SOURCES/kathara-$(VERSION)/tests
 	cp -r ../../tests ~/rpmbuild/SOURCES/kathara-$(VERSION)
 
@@ -45,7 +46,7 @@ pack-source: prepare-source prepare-man-pages prepare-bash-completion
 
 build: pack-source
 	rpmbuild -ba ~/rpmbuild/SPECS/kathara.spec
-	mkdir Output
+	mkdir -p Output
 	cp -r ~/rpmbuild/RPMS/* Output
 
 clean:
