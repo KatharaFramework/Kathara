@@ -8,6 +8,7 @@
 let
   cfg = config.programs.kathara;
   jsonFormat = pkgs.formats.json { };
+  renderedSettings = builtins.toJSON (cfg.settings // typedSettings);
   typedSettings = lib.filterAttrs (_: value: value != null) {
     image = cfg.image;
     manager_type = cfg.manager;
@@ -129,8 +130,12 @@ in
   config = lib.mkIf cfg.enable {
     home.packages = [ cfg.package ];
 
-    xdg.configFile."kathara.conf".source = jsonFormat.generate "kathara.conf" (
-      cfg.settings // typedSettings
-    );
+    home.activation.katharaConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+            mkdir -p "${config.xdg.configHome}"
+            cat > "${config.xdg.configHome}/kathara.conf" <<'EOF'
+      ${renderedSettings}
+      EOF
+            chmod 600 "${config.xdg.configHome}/kathara.conf"
+    '';
   };
 }

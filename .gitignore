@@ -124,3 +124,6 @@ Dockerfile~
 
 # Pydoc
 /scripts/pydoc/docs
+
+# Nix Build
+/results/

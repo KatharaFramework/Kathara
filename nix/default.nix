@@ -13,6 +13,23 @@
   tmux,
 }:
 
+let
+  versions = {
+    binaryornot = "0.4.4";
+    docker = "7.0.0";
+    kubernetes = "23.3.0";
+    requests = "2.22.0";
+    slug = "2.0";
+    fs = "2.4.16";
+    libtmux = "0.8.2";
+    appscript = "1.1.0";
+    pypiwin32 = "223";
+    windows-curses = "2.1.0";
+    chardet = "";
+    rich = "";
+    pyroute2 = "";
+  };
+in
 python3Packages.buildPythonApplication rec {
   pname = "kathara";
   version = "3.8.0";
@@ -49,17 +66,7 @@ python3Packages.buildPythonApplication rec {
         };
       };
 
-      dockerPython = python3Packages.docker.overridePythonAttrs (old: rec {
-        version = "7.0.0";
-        src = fetchPypi {
-          pname = old.pname;
-          inherit version;
-          hash = "sha256-Mjc2+5LNlBj8XnEzvJU+EanaBPRIP4KLUn21U/Hn5aM=";
-        };
-        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ python3Packages.setuptools-scm ];
-        SETUPTOOLS_SCM_PRETEND_VERSION = version;
-      });
-
+      dockerPython = python3Packages.docker;
     in
     [
       dockerPython
@@ -67,10 +74,10 @@ python3Packages.buildPythonApplication rec {
       networkx
       pyroute2
       tabulate
-      requests
-      pyuv
       rich
       fs
+      pyuv
+      requests
       chardet
       libtmux
       slug
@@ -136,7 +143,14 @@ python3Packages.buildPythonApplication rec {
     install -d -m 755 "$out/bin"
     makeWrapper ${python3Packages.python}/bin/python "$out/bin/$pname" \
       --add-flags "$out/share/$pname/src/kathara.py" \
-      --prefix PATH : "${lib.makeBinPath [ docker tmux xterm ]}" \
+      --set PYTHONWARNINGS "ignore:pkg_resources is deprecated as an API:UserWarning:fs" \
+      --prefix PATH : "${
+        lib.makeBinPath [
+          docker
+          tmux
+          xterm
+        ]
+      }" \
       --prefix PYTHONPATH : "${python3Packages.makePythonPath propagatedBuildInputs}:$out/share/$pname/src"
 
     runHook postInstall
