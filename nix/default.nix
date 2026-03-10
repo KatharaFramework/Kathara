@@ -13,23 +13,6 @@
   tmux,
 }:
 
-let
-  versions = {
-    binaryornot = "0.4.4";
-    docker = "7.0.0";
-    kubernetes = "23.3.0";
-    requests = "2.22.0";
-    slug = "2.0";
-    fs = "2.4.16";
-    libtmux = "0.8.2";
-    appscript = "1.1.0";
-    pypiwin32 = "223";
-    windows-curses = "2.1.0";
-    chardet = "";
-    rich = "";
-    pyroute2 = "";
-  };
-in
 python3Packages.buildPythonApplication rec {
   pname = "kathara";
   version = "3.8.0";

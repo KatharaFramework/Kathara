@@ -7,7 +7,6 @@
 
 let
   cfg = config.programs.kathara;
-  jsonFormat = pkgs.formats.json { };
   renderedSettings = builtins.toJSON (cfg.settings // typedSettings);
   typedSettings = lib.filterAttrs (_: value: value != null) {
     image = cfg.image;
@@ -114,7 +113,7 @@ in
     };
 
     settings = lib.mkOption {
-      type = jsonFormat.type;
+      type = (pkgs.formats.json { }).type;
       default = { };
       example = {
         manager_type = "docker";

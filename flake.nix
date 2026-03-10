@@ -22,13 +22,11 @@
         let
           pkgs = import nixpkgs { inherit system; };
         in
-        {
+        rec {
           kathara = pkgs.callPackage ./nix { };
-          default = self.packages.${system}.kathara;
+          default = kathara;
         }
       );
-
-      defaultPackage = forAllSystems (system: self.packages.${system}.default);
 
       nixosModules.default =
         { pkgs, ... }:
@@ -42,7 +40,7 @@
       apps = forAllSystems (system: {
         default = {
           type = "app";
-          program = "${self.packages.${system}.kathara}/bin/kathara";
+          program = "${self.packages.${system}.default}/bin/kathara";
         };
       });
     };
