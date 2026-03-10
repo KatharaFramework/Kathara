@@ -7,7 +7,11 @@
 
 let
   cfg = config.programs.kathara;
+  # Final JSON content written to `~/.config/kathara.conf`.
+  # Typed options override same keys from `settings`.
   renderedSettings = builtins.toJSON (cfg.settings // typedSettings);
+  # Translate typed Home Manager options to Kathara config keys.
+  # Null values are dropped, so only explicitly-set keys are emitted.
   typedSettings = lib.filterAttrs (_: value: value != null) {
     image = cfg.image;
     manager_type = cfg.manager;
@@ -22,6 +26,7 @@ let
   };
 in
 {
+  # Home Manager module options under `programs.kathara.*`.
   options.programs.kathara = {
     enable = lib.mkEnableOption "Kathara";
 
@@ -126,9 +131,12 @@ in
     };
   };
 
+  # Effective config: install package and materialize config file when enabled.
   config = lib.mkIf cfg.enable {
     home.packages = [ cfg.package ];
 
+    # Activation script runs during Home Manager switch.
+    # It writes the JSON config with restricted permissions.
     home.activation.katharaConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
             mkdir -p "${config.xdg.configHome}"
             cat > "${config.xdg.configHome}/kathara.conf" <<'EOF'
