@@ -104,12 +104,6 @@ clean: cleanbinary cleanman cleanenv
 	fi
 
 cleanall: cleanbinary cleanman cleanenv
-	if [ -d ../../src/kathara.dist ]; then \
-		rm -r ../../src/kathara.dist; \
-	fi
-	if [ -d ../../src/kathara.spec ]; then \
-		rm -r ../../src/kathara.spec; \
-	fi
 	if [ -d $(TARGET_DIRECTORY) ]; then \
 		rm -Rf $(TARGET_DIRECTORY); \
 	fi
@@ -131,4 +125,10 @@ cleanman:
 cleanenv:
 	if [ -d $(VENV_DIR) ]; then \
 		rm -Rf $(VENV_DIR); \
+	fi
+	if [ -d ../../src/kathara.dist ]; then \
+		rm -r ../../src/kathara.dist; \
+	fi
+	if [ -d ../../src/kathara.spec ]; then \
+		rm -r ../../src/kathara.spec; \
 	fi
