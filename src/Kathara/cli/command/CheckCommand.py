@@ -67,7 +67,7 @@ class CheckCommand(Command):
             lab = Lab("kathara_test")
             lab.add_option('hosthome_mount', False)
 
-            machine = lab.get_or_new_machine("hello_world")
+            machine = lab.get_or_new_machine("hello_world", image="kathara/core")
             try:
                 Kathara.get_instance().deploy_machine(machine)
                 Kathara.get_instance().undeploy_machine(machine)
