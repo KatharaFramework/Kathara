@@ -9,7 +9,7 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 
 pip install --upgrade "setuptools<81"
 pip install win_inet_pton
-pip install "pyinstaller==6.9.0"
+pip install pyinstaller
 pip install -r ..\..\src\requirements.txt
 pip install pytest
 if %errorlevel% neq 0 exit /b %errorlevel%
