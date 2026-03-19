@@ -6,5 +6,5 @@ post_install() {
 }
 
 pre_remove() {
-    /usr/lib/kathara/kathara wipe -f -a 2> /dev/null || true
+    /usr/lib/kathara/kathara wipe -f -a &> /dev/null || true
 }

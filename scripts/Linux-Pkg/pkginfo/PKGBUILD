@@ -22,7 +22,7 @@ md5sums=('SKIP')
 
 prepare() {
   python3 -m venv $srcdir/venv
-  $srcdir/venv/bin/pip install --upgrade setuptools
+  $srcdir/venv/bin/pip install --upgrade "setuptools<81"
   $srcdir/venv/bin/pip install -r $srcdir/Kathara-$pkgver/src/requirements.txt
   $srcdir/venv/bin/pip install -r $srcdir/Kathara-$pkgver/scripts/autocompletion/requirements.txt
   $srcdir/venv/bin/pip install pyinstaller

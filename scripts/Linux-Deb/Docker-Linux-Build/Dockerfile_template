@@ -43,11 +43,10 @@ ENV PATH="/root/.rbenv/shims:/root/.rbenv/bin:$PATH"
 
 RUN add-apt-repository ppa:deadsnakes/ppa \
 	&& DEBIAN_FRONTEND=noninteractive apt install -y \
-	python3.11 \
-	python3.11-dev \
-	python3.11-venv \
-	python3-pip \
-	python3.11-distutils
+	python3.13 \
+	python3.13-dev \
+	python3.13-venv \
+	python3-pip
 
 RUN gem install ronn-ng
 RUN mkdir /root/.gnupg && chmod 700 /root/.gnupg

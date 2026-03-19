@@ -62,6 +62,13 @@ Checks on the correctness of the configuration are performed each time a Kathara
 
 	Default to `false`.
 
+* `volume_mount_policy` (string):
+    This parameter specifies the policy to apply when a device tries to mount volumes from the host.
+
+    Possible values are `Prompt`, `Always`, `Never`.
+
+    Default to `Always`.
+
 * `last_checked` (double):
 	Unix time (in milliseconds) of the last online check for Kathara updates. Each week, when the first Kathara command is launched, the system will check if the system and the default image are up-to-date.
 
@@ -149,7 +156,7 @@ Each Manager specifies additional parameters which are used only when the Manage
 ## EXAMPLE
 
         {
-            "image": "kathara/base",
+            "image": "kathara/core",
             "manager_type": "docker",
             "terminal": "/usr/bin/xterm",
             "open_terminals": true,
@@ -159,6 +166,7 @@ Each Manager specifies additional parameters which are used only when the Manage
             "debug_level": "INFO",
             "print_startup_log": true,
             "enable_ipv6": true,
+			"volume_mount_policy": "Always",
             "last_checked": 1600087624.6843708,
             "hosthome_mount": false,
             "shared_mount": true,

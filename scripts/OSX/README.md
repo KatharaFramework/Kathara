@@ -3,7 +3,7 @@
 1. Install `pkgbuild`, `productbuild` and `make` from Apple developer repository
     - If you have `XCode` installed you probably already have them installed
     - Otherwise, download them from [here](https://developer.apple.com/devcenter/mac/index.action)
-    - **NOTE:** You need Python 3.11 in order to compile the binary ([Quick link](https://www.python.org/downloads/release/python-3117/))
+    - **NOTE:** You need Python 3.13 in order to compile the binary ([Quick link](https://www.python.org/downloads/release/python-31312/))
 2. Install Ruby from Homebrew: `brew install ruby` 
 3. Change the Kathara version number in both `src/Kathara/version.py` and `Makefile` files.
 4. Run `make all_x86` or `make all_arm64` to automatically compile and create the package for the desired architecture.
@@ -20,7 +20,7 @@ You can compile the `x86` package on a Mac with Intel CPU, and the `arm64` on a 
 2. Install `pkgbuild`, `productbuild` and `make` from Apple developer repository
     - If you have `XCode` installed you probably already have them installed
     - Otherwise, download them from [here](https://developer.apple.com/devcenter/mac/index.action)
-    - **NOTE:** You need Python 3.11 in order to compile the binary ([Quick link](https://www.python.org/downloads/release/python-3117/))
+    - **NOTE:** You need Python 3.13 in order to compile the binary ([Quick link](https://www.python.org/downloads/release/python-31312/))
 3. Install Ruby from Homebrew: `brew install ruby` 
 4. Change the Kathara version number in both `src/Kathara/version.py` and `Makefile` files.
 5. Run `make allSigned_x86` or `make allSigned_arm64` to automatically compile and create the package for the desired architecture. 

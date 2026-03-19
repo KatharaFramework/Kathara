@@ -150,6 +150,14 @@ class DockerMachine(object):
         lab_images = set(map(lambda x: x[1].get_image(), machines))
         self.docker_image.check_from_list(lab_images)
 
+        policy = Setting.get_instance().volume_mount_policy
+        lab.add_option("_mount_volumes", policy in ['Prompt', 'Always'])
+        machines_with_volumes = dict(filter(lambda x: len(x[1].meta['volumes']) > 0, machines))
+        if len(machines_with_volumes) > 0:
+            EventDispatcher.get_instance().dispatch(
+                "machines_with_volumes", lab=lab, machines_with_volumes=machines_with_volumes
+            )
+
         shared_mount = lab.general_options['shared_mount'] if 'shared_mount' in lab.general_options \
             else Setting.get_instance().shared_mount
         if shared_mount:
@@ -175,6 +183,9 @@ class DockerMachine(object):
                 self._deploy_and_start_machine(item)
 
         EventDispatcher.get_instance().dispatch("machines_deploy_ended")
+
+        # Delete to avoid keeping dirty state
+        del lab.general_options['_mount_volumes']
 
     def _deploy_and_start_machine(self, machine_item: Tuple[str, Machine]) -> None:
         """Deploy and start a Docker container from the device contained in machine_item.
@@ -256,7 +267,7 @@ class DockerMachine(object):
         # Flag that bridged is already connected (because there's another check in `start`).
         if first_machine_iface is None and machine.is_bridged():
             first_network = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
-            machine.add_meta("bridge_connected", True)
+            machine.add_meta("_bridge_connected", True)
 
         # Sysctl params to pass to the container creation
         sysctl_parameters = {RP_FILTER_NAMESPACE % x: 0 for x in ["all", "default", "lo"]}
@@ -299,16 +310,19 @@ class DockerMachine(object):
         if hosthome_mount and Setting.get_instance().remote_url is None:
             volumes[utils.get_current_user_home()] = {'bind': '/hosthome', 'mode': 'rw'}
 
-        for host_path, volume in machine.meta["volumes"].items():
-            missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
+        try:
+            for host_path, volume in machine.get_volumes().items():
+                missing_permissions = utils.check_directory_permissions(host_path, volume['mode'])
 
-            if not missing_permissions:
-                volumes[host_path] = {'bind': volume['guest_path'], 'mode': volume['mode']}
-            else:
-                raise PermissionError(
-                    f"To mount volume `{host_path}` in `{volume['guest_path']}` "
-                    f"you miss the following permissions: `{', '.join(missing_permissions)}`."
-                )
+                if not missing_permissions:
+                    volumes[host_path] = {'bind': volume['guest_path'], 'mode': volume['mode']}
+                else:
+                    raise PermissionError(
+                        f"To mount volume `{host_path}` in `{volume['guest_path']}` "
+                        f"you miss the following permissions: `{', '.join(missing_permissions)}`."
+                    )
+        except MountDeniedError:
+            logging.warning(f"Volumes of device `{machine.name}` will not be mounted.")
 
         privileged = machine.is_privileged()
         if privileged and not utils.is_admin():
@@ -516,7 +530,7 @@ class DockerMachine(object):
             self.connect_interface(machine, machine_iface)
 
         # Bridged connection required but not added in `deploy` method.
-        if "bridge_connected" not in machine.meta and machine.is_bridged():
+        if "_bridge_connected" not in machine.meta and machine.is_bridged():
             bridge_link = machine.lab.get_or_new_link(BRIDGE_LINK_NAME).api_object
             bridge_link.connect(machine.api_object)
 
@@ -555,6 +569,10 @@ class DockerMachine(object):
                             )
 
         machine.api_object.reload()
+
+        # Delete to avoid keeping dirty state
+        if '_bridge_connected' in machine.meta:
+            del machine.meta['_bridge_connected']
 
     def undeploy(self, lab_hash: str, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
         """Undeploy the devices contained in the network scenario defined by the lab_hash.
@@ -671,11 +689,14 @@ class DockerMachine(object):
         else:
             raise ValueError("Invalid `wait` value.")
 
-        startup_waited = False
+        startup_waited = 0
         if should_wait:
             startup_waited = self._wait_startup_execution(container, n_retries=n_retries, retry_interval=retry_interval)
 
             EventDispatcher.get_instance().dispatch("machine_startup_wait_ended")
+
+            if startup_waited == 2:
+                return
 
         if logs and Setting.get_instance().print_startup_log:
             # Get the logs, if the command fails it means that the shell is not found.
@@ -774,7 +795,10 @@ class DockerMachine(object):
             raise ValueError("Invalid `wait` value.")
 
         if should_wait:
-            self._wait_startup_execution(container, n_retries=n_retries, retry_interval=retry_interval)
+            startup_waited = self._wait_startup_execution(container, n_retries=n_retries, retry_interval=retry_interval)
+
+            if startup_waited == 2:
+                raise MachineNotRunningError(machine_name)
 
         command = shlex.split(command) if type(command) is str else command
         exec_result = self._exec_run(container,
@@ -871,7 +895,7 @@ class DockerMachine(object):
         return {'exit_code': int(exit_code) if exit_code is not None else None, 'Id': resp['Id'], 'output': exec_output}
 
     def _wait_startup_execution(self, container: docker.models.containers.Container,
-                                n_retries: Optional[int] = None, retry_interval: float = 1) -> bool:
+                                n_retries: Optional[int] = None, retry_interval: float = 1) -> int:
         """Wait until the startup commands are executed or until the user requests the control over the device.
 
         Args:
@@ -880,7 +904,8 @@ class DockerMachine(object):
             retry_interval (float): The time interval in seconds to wait for each retry. Default is 1.
 
         Returns:
-            bool: False if the user requests the control before the ending of the startup. Else, True.
+            bool: 0 if the user requests the control before the ending of the startup. 1, if the startup ends.
+                2 if an APIError occurred during execution.
         """
         logging.debug(f"Waiting startup commands execution for device {container.labels['name']}...")
 
@@ -889,7 +914,7 @@ class DockerMachine(object):
 
         retries = 0
         is_cmd_success = False
-        startup_waited = True
+        startup_waited = 1
         printed = False
         while not is_cmd_success:
             try:
@@ -910,7 +935,7 @@ class DockerMachine(object):
                 if utils.exec_by_platform(utils.wait_user_input_linux,
                                           utils.wait_user_input_windows,
                                           utils.wait_user_input_linux):
-                    startup_waited = False or is_cmd_success
+                    startup_waited = int(False or is_cmd_success)
                     break
 
                 if not is_cmd_success:
@@ -923,6 +948,8 @@ class DockerMachine(object):
             except KeyboardInterrupt:
                 # Disable the CTRL+C interrupt while waiting for startup, otherwise terminal will close.
                 pass
+            except APIError:
+                return 2
 
         return startup_waited
 

@@ -6,10 +6,11 @@ import requests
 from ..exceptions import HTTPConnectionError
 from ..utils import get_pool_size
 
-DOCKER_HUB_KATHARA_IMAGES_URL = "https://hub.docker.com/v2/repositories/kathara/?page_size=-1"
-DOCKER_HUB_KATHARA_TAGS_URL = "https://hub.docker.com/v2/repositories/{image_name}/tags/?page_size=-1&ordering"
+DOCKER_HUB_KATHARA_IMAGES_URL: str = "https://hub.docker.com/v2/repositories/kathara/?page_size=-1"
+DOCKER_HUB_KATHARA_TAGS_URL: str = "https://hub.docker.com/v2/repositories/{image_name}/tags/?page_size=-1&ordering"
+REQUEST_TIMEOUT: int = 1
 
-EXCLUDED_IMAGES = ['megalos-bgp-manager', 'kathara', 'kathara-lab-checker']
+EXCLUDED_IMAGES: list[str] = ['megalos-bgp-manager', 'kathara', 'kathara-lab-checker']
 
 
 class DockerHubApi(object):
@@ -28,7 +29,9 @@ class DockerHubApi(object):
         """
         try:
             logging.debug("Getting Kathara images from Docker Hub...")
-            response = requests.get(DOCKER_HUB_KATHARA_IMAGES_URL)
+            response = requests.get(DOCKER_HUB_KATHARA_IMAGES_URL, timeout=(REQUEST_TIMEOUT, REQUEST_TIMEOUT))
+        except requests.exceptions.Timeout as e:
+            raise HTTPConnectionError(str(e))
         except requests.exceptions.ConnectionError as e:
             raise HTTPConnectionError(str(e))
 
@@ -59,7 +62,12 @@ class DockerHubApi(object):
             image_name = f"{image['namespace']}/{image['name']}"
             try:
                 logging.debug(f"Getting tags for image `{image_name}` from Docker Hub...")
-                response = requests.get(DOCKER_HUB_KATHARA_TAGS_URL.format(image_name=image_name))
+                response = requests.get(
+                    DOCKER_HUB_KATHARA_TAGS_URL.format(image_name=image_name),
+                    timeout=(REQUEST_TIMEOUT, REQUEST_TIMEOUT)
+                )
+            except requests.exceptions.Timeout as e:
+                raise HTTPConnectionError(str(e))
             except requests.exceptions.ConnectionError as e:
                 raise HTTPConnectionError(str(e))
 

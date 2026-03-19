@@ -7,7 +7,7 @@ import requests.exceptions
 sys.path.insert(0, './')
 
 from src.Kathara.webhooks.DockerHubApi import DockerHubApi, EXCLUDED_IMAGES, DOCKER_HUB_KATHARA_IMAGES_URL, \
-    DOCKER_HUB_KATHARA_TAGS_URL
+    DOCKER_HUB_KATHARA_TAGS_URL, REQUEST_TIMEOUT
 from src.Kathara.exceptions import HTTPConnectionError
 
 EXCLUDED_IMAGES.append("excluded")
@@ -51,7 +51,7 @@ def docker_hub_get_tags_response(mock_response):
 def test_get_images(mock_requests_get, docker_hub_get_images_response):
     mock_requests_get.return_value = docker_hub_get_images_response
     images = list(DockerHubApi.get_images())
-    mock_requests_get.assert_called_once_with(DOCKER_HUB_KATHARA_IMAGES_URL)
+    mock_requests_get.assert_called_once_with(DOCKER_HUB_KATHARA_IMAGES_URL, timeout=(REQUEST_TIMEOUT, REQUEST_TIMEOUT))
     assert len(images) == 2
     assert images[0]['name'] == 'test'
     assert images[1]['name'] == 'test-2'
@@ -71,6 +71,14 @@ def test_get_images_status_code_error(mock_requests_get):
         DockerHubApi.get_images()
 
 
+@mock.patch("requests.get")
+def test_get_images_timeout_error(mock_requests_get):
+    mock_requests_get.side_effect = requests.exceptions.Timeout
+
+    with pytest.raises(HTTPConnectionError):
+        DockerHubApi.get_images()
+
+
 #
 # TEST: get_tagged_images()
 #
@@ -85,8 +93,10 @@ def test_get_tagged_images(mock_get_images, mock_requests_get, docker_hub_get_ta
     tagged_images = DockerHubApi.get_tagged_images()
 
     calls = [
-        mock.call(DOCKER_HUB_KATHARA_TAGS_URL.format(image_name="kathara/test-0")),
-        mock.call(DOCKER_HUB_KATHARA_TAGS_URL.format(image_name="kathara/test-1"))
+        mock.call(DOCKER_HUB_KATHARA_TAGS_URL.format(image_name="kathara/test-0"),
+                  timeout=(REQUEST_TIMEOUT, REQUEST_TIMEOUT)),
+        mock.call(DOCKER_HUB_KATHARA_TAGS_URL.format(image_name="kathara/test-1"),
+                  timeout=(REQUEST_TIMEOUT, REQUEST_TIMEOUT))
     ]
     mock_requests_get.assert_has_calls(calls, any_order=True)
     assert len(tagged_images) == 8
@@ -120,5 +130,13 @@ def test_get_tagged_images_status_code_error(mock_get_images, mock_requests_get)
         {'name': 'test-1', 'namespace': 'kathara', 'is_private': False, 'content_types': ['image']}
     ]
     mock_requests_get.status_code = 404
+    with pytest.raises(HTTPConnectionError):
+        DockerHubApi.get_tagged_images()
+
+
+@mock.patch("requests.get")
+def test_get_tagged_images_timeout_error(mock_requests_get):
+    mock_requests_get.side_effect = requests.exceptions.Timeout
+
     with pytest.raises(HTTPConnectionError):
         DockerHubApi.get_tagged_images()

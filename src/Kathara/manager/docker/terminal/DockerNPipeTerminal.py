@@ -1,65 +1,42 @@
-import os
-from typing import Any, Optional, Callable
+from typing import Any
 
-import msvcrt
-import pyuv
-import win32pipe
 from docker import DockerClient
-from docker.errors import APIError
 
-from ....foundation.manager.terminal.Terminal import Terminal
-from ....foundation.manager.terminal.terminal_utils import get_terminal_size_windows
+from .session.DockerNPipeTerminalSession import DockerNPipeSession
+from ....foundation.manager.terminal.console.WindowsConsoleAdapter import WindowsConsoleAdapter
+from ....foundation.manager.terminal.core.IConsoleAdapter import IConsoleAdapter
+from ....foundation.manager.terminal.core.ITerminalSession import ITerminalSession
+from ....foundation.manager.terminal.core.TerminalRunner import TerminalRunner
 
 
-class DockerNPipeTerminal(Terminal):
-    __slots__ = ['client', 'exec_id', '_check_opened_timer']
+class DockerNPipeTerminal(object):
+    """High-level terminal runner for Docker over Named Pipes on Windows.
 
-    def __init__(self, handler: Any, client: DockerClient, exec_id: str):
-        super().__init__(handler)
+    Args:
+        handler (Any): The exec session handler.
+        client (DockerClient): Docker client instance.
+        exec_id (int): Docker exec ID identifying the running exec session.
+    """
 
-        self.client: DockerClient = client
-        self.exec_id: str = exec_id
+    __slots__ = ["_handler", "_runner"]
 
-        self._check_opened_timer: Optional[pyuv.Timer] = None
+    def __init__(self, handler: Any, client: DockerClient, exec_id: str) -> None:
+        console: IConsoleAdapter = WindowsConsoleAdapter()
+        session: ITerminalSession = DockerNPipeSession(handler=handler, client=client, exec_id=exec_id)
 
-    def _start_external(self) -> None:
-        terminal_fd = self._convert_pipe_to_fd()
+        self._handler: Any = handler
+        self._runner: TerminalRunner = TerminalRunner(console=console, session=session)
 
-        self._external_terminal = pyuv.Pipe(self._loop)
-        self._external_terminal.open(terminal_fd)
-        self._external_terminal.set_blocking(False)
-        self._external_terminal.start_read(self._read_external_terminal())
+    def start(self) -> None:
+        """Start the interactive terminal session.
 
-        self._check_opened_timer = pyuv.Timer(self._loop)
-        self._check_opened_timer.start(self._is_terminal_opened(), 0, 5)
+        Returns:
+            None
+        """
+        self._runner.start()
 
-    def _convert_pipe_to_fd(self) -> Any:
-        handle_id = self.handler._handle.handle
-        win32pipe.SetNamedPipeHandleState(handle_id, 0x00000001, None, None)
-        handle_fd = msvcrt.open_osfhandle(handle_id, os.O_APPEND)
-
-        return handle_fd
-
-    def _on_close(self) -> None:
-        self._check_opened_timer.close()
-
-    def _write_on_external_terminal(self) -> Callable:
-        def write_on_external_terminal(handle, data, error):
-            self._external_terminal.stop_read()
-            self._external_terminal.write(data)
-            self._external_terminal.start_read(self._read_external_terminal())
-
-        return write_on_external_terminal
-
-    def _resize_terminal(self) -> None:
-        w, h = get_terminal_size_windows()
-        self.client.api.exec_resize(self.exec_id, height=h, width=w)
-
-    def _is_terminal_opened(self) -> Callable:
-        def is_terminal_opened(timer_handle):
-            try:
-                self.client.api.exec_inspect(self.exec_id)
-            except APIError:
-                self.close()
-
-        return is_terminal_opened
+        # Force close the underlying object
+        try:
+            self._handler._response.close()
+        except Exception:
+            pass

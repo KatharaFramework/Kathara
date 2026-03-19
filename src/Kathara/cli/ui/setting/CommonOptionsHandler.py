@@ -368,6 +368,45 @@ class CommonOptionsHandler(OptionsHandler):
 
         enable_ipv6_item = SubmenuItem(enable_ipv6_string, enable_ipv6_menu, current_menu)
 
+        # Volume Mount Policy Option
+        volume_mount_policy_string = "Device Volume Mount Policy"
+        volume_mount_policy_menu = SelectionMenu(
+            strings=[],
+            title=volume_mount_policy_string,
+            subtitle=setting_utils.current_string("volume_mount_policy"),
+            prologue_text="""Choose the policy to apply when a device is trying to mount a volume from the host.             
+
+                                  \tDefault is %s.""" % DEFAULTS['volume_mount_policy'],
+            formatter=menu_formatter
+        )
+
+        volume_mount_policy_menu.append_item(
+            FunctionItem(
+                text="Always",
+                function=setting_utils.update_setting_value,
+                args=["volume_mount_policy", "Always"],
+                should_exit=True
+            )
+        )
+        volume_mount_policy_menu.append_item(
+            FunctionItem(
+                text="Prompt",
+                function=setting_utils.update_setting_value,
+                args=["volume_mount_policy", "Prompt"],
+                should_exit=True
+            )
+        )
+        volume_mount_policy_menu.append_item(
+            FunctionItem(
+                text="Never",
+                function=setting_utils.update_setting_value,
+                args=["volume_mount_policy", "Never"],
+                should_exit=True
+            )
+        )
+
+        volume_mount_policy_item = SubmenuItem(volume_mount_policy_string, volume_mount_policy_menu, current_menu)
+
         current_menu.append_item(manager_item)
         current_menu.append_item(submenu_item)
         current_menu.append_item(open_terminals_item)
@@ -378,6 +417,7 @@ class CommonOptionsHandler(OptionsHandler):
         current_menu.append_item(debug_level_item)
         current_menu.append_item(print_startup_log_item)
         current_menu.append_item(enable_ipv6_item)
+        current_menu.append_item(volume_mount_policy_item)
 
     def update_manager_value(self, current_menu: ConsoleMenu, value: str) -> None:
         setting_utils.update_setting_value("manager_type", value)

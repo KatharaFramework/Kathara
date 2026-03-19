@@ -1,6 +1,7 @@
 from .HandleDockerImagePull import HandleDockerImagePull
 from .HandleMachineTerminal import HandleMachineTerminal
 from .HandleProgressBar import HandleProgressBar
+from .MountDevicesVolumes import MountDevicesVolumes
 from .UpdateDockerImage import UpdateDockerImage
 from ....event.EventDispatcher import EventDispatcher
 
@@ -44,6 +45,8 @@ def unregister_cli_events() -> None:
     EventDispatcher.get_instance().unregister("machine_startup_wait_started")
     EventDispatcher.get_instance().unregister("machine_startup_wait_ended")
 
+    EventDispatcher.get_instance().unregister("machines_with_volumes")
+
     EventDispatcher.get_instance().unregister("docker_pull_started")
     EventDispatcher.get_instance().unregister("docker_pull_progress")
     EventDispatcher.get_instance().unregister("docker_pull_ended")
@@ -78,6 +81,8 @@ def _register_machine_events() -> None:
     EventDispatcher.get_instance().register("machine_deployed", machine_terminal_handler, "run")
     EventDispatcher.get_instance().register("machine_startup_wait_started", machine_terminal_handler, "print_wait_msg")
     EventDispatcher.get_instance().register("machine_startup_wait_ended", machine_terminal_handler, "flush")
+
+    EventDispatcher.get_instance().register("machines_with_volumes", MountDevicesVolumes())
 
 
 def _register_docker_image_pull_events():

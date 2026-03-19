@@ -86,7 +86,7 @@ class LstartCommand(Command):
             help="Apply metadata to all devices of a network scenario during startup."
         )
         self.parser.add_argument(
-            '--xterm', '--terminal-emu',
+            '--terminal-emu',
             required=False,
             help='Set a different terminal emulator application (Unix only).'
         )
@@ -154,7 +154,7 @@ class LstartCommand(Command):
 
         Setting.get_instance().open_terminals = args['terminals'] if args['terminals'] is not None \
             else Setting.get_instance().open_terminals
-        Setting.get_instance().terminal = args['xterm'] or Setting.get_instance().terminal
+        Setting.get_instance().terminal = args['terminal_emu'] or Setting.get_instance().terminal
 
         self.console.print(
             create_panel(
@@ -217,7 +217,7 @@ class LstartCommand(Command):
         lab.add_option('hosthome_mount', args['hosthome_mount'])
         lab.add_option('shared_mount', args['shared_mount'])
 
-        if args['privileged'] or any([x.is_privileged() for x in lab.machines.values()]):
+        if args['privileged'] or any(x.is_privileged() for x in lab.machines.values()):
             if not utils.is_admin():
                 raise PrivilegeError("You must be root in order to start Kathara devices in privileged mode.")
             else:
