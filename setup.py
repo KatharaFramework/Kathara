@@ -20,6 +20,7 @@ setup(
         "requests>=2.22.0",
         "pyroute2",
         "rich",
+        "setuptools<81",
         "fs>=2.4.16",
         "chardet<6.0.0",
         "libtmux>=0.8.2; platform_system == 'darwin' or platform_system == 'linux'",
