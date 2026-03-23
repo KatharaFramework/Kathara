@@ -130,7 +130,7 @@ def open_machine_terminal(machine) -> None:
         raise FileNotFoundError("Unable to find Kathara.")
 
     is_vmachine = "-v" if not machine.lab.has_host_path() else ""
-    connect_command = "%s connect %s -l %s" % (executable_path, is_vmachine, machine.name)
+    connect_command = f"{sys.executable} {executable_path} connect {is_vmachine} -l {machine.name}"
 
     logging.debug("Terminal will open in directory %s." % machine.lab.fs_path())
 
