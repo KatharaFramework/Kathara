@@ -54,9 +54,6 @@ pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
           a.scripts,
-          a.binaries,
-          a.zipfiles,
-          a.datas,
           [],
           name='kathara',
           debug=False,
@@ -64,7 +61,18 @@ exe = EXE(pyz,
           strip=False,
           upx=True,
           upx_exclude=[],
+          exclude_binaries=True,
           runtime_tmpdir=None,
           console=True,
           icon='app_icon.ico'
            )
+
+col = COLLECT(exe,
+              a.binaries,
+              a.zipfiles,
+              a.datas,
+              strip=False,
+              upx=True,
+              upx_exclude=[],
+              name='kathara'
+)
