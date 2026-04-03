@@ -43,7 +43,7 @@ WelcomeLabel2=Kathara is a lightweight container-based network emulation tool.%n
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "..\..\src\kathara.dist\kathara.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\src\kathara.dist\kathara\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
