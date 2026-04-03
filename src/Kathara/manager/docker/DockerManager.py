@@ -225,12 +225,13 @@ class DockerManager(IManager):
         self.docker_machine.connect_interface(machine, interface)
 
     @privileged
-    def disconnect_machine_from_link(self, machine: Machine, link: Link) -> None:
+    def disconnect_machine_from_link(self, machine: Machine, link: Link, keep_link: bool = False) -> None:
         """Disconnect a running Kathara device from a collision domain.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
             link (Kathara.model.Link): The Kathara collision domain from which disconnect the running device.
+            keep_link (bool): Keep collision domain. Default: False.
 
         Returns:
             None
@@ -262,14 +263,16 @@ class DockerManager(IManager):
         machine.remove_interface(link)
 
         self.docker_machine.disconnect_from_link(machine, link)
-        self.undeploy_link(link)
+        if not keep_link:
+            self.undeploy_link(link)
 
     @privileged
-    def undeploy_machine(self, machine: Machine) -> None:
+    def undeploy_machine(self, machine: Machine, keep_links: bool = False) -> None:
         """Undeploy a Kathara device.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
+            keep_links (bool): Keep device's collision domains when undeploying. Default: False.
 
         Returns:
             None
@@ -281,7 +284,10 @@ class DockerManager(IManager):
             raise LabNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
 
         self.docker_machine.undeploy(machine.lab.hash, selected_machines={machine.name})
-        self.docker_link.undeploy(machine.lab.hash, selected_links={x.link.name for x in machine.interfaces.values()})
+        if not keep_links:
+            self.docker_link.undeploy(
+                machine.lab.hash, selected_links={x.link.name for x in machine.interfaces.values()}
+            )
 
     @privileged
     def undeploy_link(self, link: Link) -> None:
@@ -304,7 +310,8 @@ class DockerManager(IManager):
     @privileged
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
                      selected_machines: Optional[Set[str]] = None,
-                     excluded_machines: Optional[Set[str]] = None) -> None:
+                     excluded_machines: Optional[Set[str]] = None,
+                     selected_links: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
@@ -316,6 +323,7 @@ class DockerManager(IManager):
                 Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
             excluded_machines (Optional[Set[str]]): If not None, exclude devices from being undeployed.
+            selected_links (Optional[Set[str]]): If not None, undeploy only the specified collision domains.
 
         Returns:
             None
@@ -335,7 +343,7 @@ class DockerManager(IManager):
 
         self.docker_machine.undeploy(lab_hash, selected_machines=selected_machines, excluded_machines=excluded_machines)
 
-        self.docker_link.undeploy(lab_hash)
+        self.docker_link.undeploy(lab_hash, selected_links=selected_links)
 
     @privileged
     def wipe(self, all_users: bool = False) -> None:

@@ -108,12 +108,13 @@ class Kathara(IManager):
         """
         self.manager.connect_machine_to_link(machine, link, mac_address)
 
-    def disconnect_machine_from_link(self, machine: Machine, link: Link) -> None:
+    def disconnect_machine_from_link(self, machine: Machine, link: Link, keep_link: bool = False) -> None:
         """Disconnect a Kathara device from a collision domain.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
             link (Kathara.model.Link): The Kathara collision domain from which disconnect the device.
+            keep_link (bool): Keep collision domain. Default: False.
 
         Returns:
             None
@@ -123,13 +124,14 @@ class Kathara(IManager):
             LabNotFoundError: If the collision domain is not associated to any network scenario.
             MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
         """
-        self.manager.disconnect_machine_from_link(machine, link)
+        self.manager.disconnect_machine_from_link(machine, link, keep_link)
 
-    def undeploy_machine(self, machine: Machine) -> None:
+    def undeploy_machine(self, machine: Machine, keep_links: bool = False) -> None:
         """Undeploy a Kathara device.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
+            keep_links (bool): Keep device's collision domains when undeploying. Default: False.
 
         Returns:
             None
@@ -137,7 +139,7 @@ class Kathara(IManager):
         Raises:
             LabNotFoundError: If the device specified is not associated to any network scenario.
         """
-        self.manager.undeploy_machine(machine)
+        self.manager.undeploy_machine(machine, keep_links)
 
     def undeploy_link(self, link: Link) -> None:
         """Undeploy a Kathara collision domain.
@@ -155,7 +157,8 @@ class Kathara(IManager):
 
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
                      selected_machines: Optional[Set[str]] = None,
-                     excluded_machines: Optional[Set[str]] = None) -> None:
+                     excluded_machines: Optional[Set[str]] = None,
+                     selected_links: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
@@ -167,6 +170,7 @@ class Kathara(IManager):
                 Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
             excluded_machines (Optional[Set[str]]): If not None, exclude devices from being undeployed.
+            selected_links (Optional[Set[str]]): If not None, undeploy only the specified collision domains.
 
         Returns:
             None
@@ -174,7 +178,7 @@ class Kathara(IManager):
         Raises:
             InvocationError: If a running network scenario hash or name is not specified.
         """
-        self.manager.undeploy_lab(lab_hash, lab_name, lab, selected_machines, excluded_machines)
+        self.manager.undeploy_lab(lab_hash, lab_name, lab, selected_machines, excluded_machines, selected_links)
 
     def wipe(self, all_users: bool = False) -> None:
         """Undeploy all the running network scenarios.
