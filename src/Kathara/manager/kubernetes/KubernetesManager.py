@@ -160,12 +160,13 @@ class KubernetesManager(IManager):
         """
         raise NotSupportedError("Unable to update a running device.")
 
-    def disconnect_machine_from_link(self, machine: Machine, link: Link) -> None:
+    def disconnect_machine_from_link(self, machine: Machine, link: Link, keep_link: bool = False) -> None:
         """Disconnect a Kathara device from a collision domain.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
             link (Kathara.model.Link): The Kathara collision domain from which disconnect the device.
+            keep_link (bool): Keep collision domain. Default: False.
 
         Returns:
             None
@@ -175,11 +176,12 @@ class KubernetesManager(IManager):
         """
         raise NotSupportedError("Unable to update a running device.")
 
-    def undeploy_machine(self, machine: Machine) -> None:
+    def undeploy_machine(self, machine: Machine, keep_links: bool = False) -> None:
         """Undeploy a Kathara device.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
+            keep_links (bool): Keep device's collision domains when undeploying. Default: False.
 
         Returns:
             None
@@ -198,20 +200,23 @@ class KubernetesManager(IManager):
                             if 'Terminating' not in running_machine.status.phase and
                             running_machine.metadata.labels["name"] != machine.name]
 
-        # From machines, save a set with all the attached networks (still needed)
-        running_networks = set()
-        for running_machine in running_machines:
-            network_annotation = json.loads(running_machine.metadata.annotations["k8s.v1.cni.cncf.io/networks"])
-            running_networks.update([net['name'] for net in network_annotation])
+        networks_to_delete = set()
+        if not keep_links:
+            # From machines, save a set with all the attached networks (still needed)
+            running_networks = set()
+            for running_machine in running_machines:
+                network_annotation = json.loads(running_machine.metadata.annotations["k8s.v1.cni.cncf.io/networks"])
+                running_networks.update([net['name'] for net in network_annotation])
 
-        # Difference between all networks of the machine to undeploy, and attached networks are the ones to delete
-        machine_networks = {self.k8s_link.get_network_name(x.link.name) for x in machine.interfaces.values()}
-        networks_to_delete = machine_networks - running_networks
+            # Difference between all networks of the machine to undeploy, and attached networks are the ones to delete
+            machine_networks = {self.k8s_link.get_network_name(x.link.name) for x in machine.interfaces.values()}
+            networks_to_delete = machine_networks - running_networks
 
         self.k8s_machine.undeploy(machine.lab.hash, selected_machines={machine.name})
-        self.k8s_link.undeploy(machine.lab.hash, selected_links=networks_to_delete)
+        if not keep_links:
+            self.k8s_link.undeploy(machine.lab.hash, selected_links=networks_to_delete)
 
-        if len(running_machines) <= 0:
+        if len(running_machines) <= 0 and not keep_links:
             logging.debug("Waiting for namespace deletion...")
 
             self.k8s_namespace.undeploy(lab_hash=machine.lab.hash)
@@ -251,7 +256,8 @@ class KubernetesManager(IManager):
 
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
                      selected_machines: Optional[Set[str]] = None,
-                     excluded_machines: Optional[Set[str]] = None) -> None:
+                     excluded_machines: Optional[Set[str]] = None,
+                     selected_links: Optional[Set[str]] = None) -> None:
         """Undeploy a Kathara network scenario.
 
         Args:
@@ -263,6 +269,7 @@ class KubernetesManager(IManager):
                 Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
             selected_machines (Optional[Set[str]]): If not None, undeploy only the specified devices.
             excluded_machines (Optional[Set[str]]): If not None, exclude devices from being undeployed.
+            selected_links (Optional[Set[str]]): If not None, undeploy only the specified collision domains.
 
         Returns:
             None
@@ -283,6 +290,7 @@ class KubernetesManager(IManager):
         lab_hash = lab_hash.lower()
 
         # When only some machines should be undeployed, special checks are required.
+        networks = None
         if selected_machines or excluded_machines:
             # Get all current deployed networks and save only their name
             networks = self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash)
@@ -298,12 +306,12 @@ class KubernetesManager(IManager):
             running_networks = set()
             for machine in running_machines:
                 network_annotation = json.loads(machine.metadata.annotations["k8s.v1.cni.cncf.io/networks"])
-                networks = [net['name'] for net in network_annotation]
+                machine_networks = [net['name'] for net in network_annotation]
 
                 # To be running, you are not selected to undeploy, or you are excluded from undeploy
                 if (selected_machines is not None and machine.metadata.labels["name"] not in selected_machines) or \
                         (excluded_machines is not None and machine.metadata.labels["name"] in excluded_machines):
-                    running_networks.update(networks)
+                    running_networks.update(machine_networks)
 
             # Difference between all networks and attached networks are the ones to delete
             networks_to_delete = all_networks - running_networks
@@ -314,6 +322,19 @@ class KubernetesManager(IManager):
             networks_to_delete = None
             running_machines = {}
 
+        if selected_links is not None:
+            # Get the networks if not already fetched from previous condition
+            networks = self.k8s_link.get_links_api_objects_by_filters(lab_hash=lab_hash) if not networks else networks
+            # Get the k8s name of the networks
+            selected_networks_to_delete = set([network["metadata"]["name"] for network in networks
+                                               if network['metadata']['labels']['name'] in selected_links])
+            # We could have machines selected, so we could already have a subset of the networks
+            # If some networks are already flagged to not be deleted, restrict the selected_links only to "safe" ones
+            networks_to_delete = (
+                networks_to_delete & selected_networks_to_delete
+                if networks_to_delete else selected_networks_to_delete
+            )
+
         self.k8s_machine.undeploy(lab_hash, selected_machines=selected_machines, excluded_machines=excluded_machines)
         self.k8s_link.undeploy(lab_hash, selected_links=networks_to_delete)
 
@@ -321,14 +342,15 @@ class KubernetesManager(IManager):
         # 1- No machines are selected/excluded
         # 2- There are machines selected but the difference is empty
         # 3- There are machines excluded and the intersection is empty
+        # 4- No links are selected
         undeploy_namespace = (
-                (not selected_machines and not excluded_machines) or
-                (selected_machines and not (running_machines - selected_machines)) or
-                (excluded_machines and not (running_machines & excluded_machines))
+                ((not selected_machines and not excluded_machines) or
+                 (selected_machines and not (running_machines - selected_machines)) or
+                 (excluded_machines and not (running_machines & excluded_machines))) and
+                not selected_links
         )
         if undeploy_namespace:
             logging.debug("Waiting for namespace deletion...")
-
             self.k8s_namespace.undeploy(lab_hash=lab_hash)
 
     def wipe(self, all_users: bool = False) -> None:
