@@ -666,9 +666,7 @@ def test_undeploy_lab_selected_and_excluded_machines(mock_undeploy_machine, mock
 def test_undeploy_lab_selected_links(mock_undeploy_machine, mock_undeploy_link, mock_get_links_api_objects,
                                      kubernetes_manager):
     mock_get_links_api_objects.return_value = [{'metadata': {'name': 'netprefix-a', 'labels': {'name': 'A'}}},
-                                               {'metadata': {'name': 'netprefix-b', 'labels': {'name': 'B'}}},
-                                               {'metadata': {'name': 'netprefix-c', 'labels': {'name': 'C'}}},
-                                               {'metadata': {'name': 'netprefix-d', 'labels': {'name': 'D'}}}]
+                                               {'metadata': {'name': 'netprefix-b', 'labels': {'name': 'B'}}}]
 
     kubernetes_manager.undeploy_lab('lab_hash', selected_links={'B'})
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines=None, excluded_machines=None)
@@ -680,15 +678,33 @@ def test_undeploy_lab_selected_links(mock_undeploy_machine, mock_undeploy_link, 
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.undeploy")
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.undeploy")
+def test_undeploy_lab_selected_machines_and_links(mock_undeploy_machine, mock_undeploy_link,
+                                                  mock_get_machines_api_objects, mock_get_links_api_objects,
+                                                  kubernetes_manager,
+                                                  kubernetes_pod_1):
+    mock_get_links_api_objects.return_value = [{'metadata': {'name': 'netprefix-a', 'labels': {'name': 'A'}}},
+                                               {'metadata': {'name': 'netprefix-b', 'labels': {'name': 'B'}}}]
+    mock_get_machines_api_objects.return_value = [kubernetes_pod_1]
+
+    kubernetes_manager.undeploy_lab('lab_hash', selected_machines={'pc1'}, selected_links={'B'})
+    mock_get_links_api_objects.assert_called_once_with(lab_hash='lab_hash')
+    mock_get_machines_api_objects.assert_called_once_with(lab_hash='lab_hash')
+    mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines={'pc1'}, excluded_machines=None)
+    mock_undeploy_link.assert_called_once_with('lab_hash', selected_links={'netprefix-b'})
+    assert not kubernetes_manager.k8s_namespace.undeploy.called
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_api_objects_by_filters")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.undeploy")
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.undeploy")
 def test_undeploy_lab_selected_machines_links_no_delete(mock_undeploy_machine, mock_undeploy_link,
                                                         mock_get_machines_api_objects, mock_get_links_api_objects,
                                                         kubernetes_manager,
-                                                        kubernetes_pod_1, kubernetes_pod_2, kubernetes_pod_3):
+                                                        kubernetes_pod_1, kubernetes_pod_2):
     mock_get_links_api_objects.return_value = [{'metadata': {'name': 'netprefix-a', 'labels': {'name': 'A'}}},
-                                               {'metadata': {'name': 'netprefix-b', 'labels': {'name': 'B'}}},
-                                               {'metadata': {'name': 'netprefix-c', 'labels': {'name': 'C'}}},
-                                               {'metadata': {'name': 'netprefix-d', 'labels': {'name': 'D'}}}]
-    mock_get_machines_api_objects.return_value = [kubernetes_pod_1, kubernetes_pod_2, kubernetes_pod_3]
+                                               {'metadata': {'name': 'netprefix-b', 'labels': {'name': 'B'}}}]
+    mock_get_machines_api_objects.return_value = [kubernetes_pod_1, kubernetes_pod_2]
 
     kubernetes_manager.undeploy_lab('lab_hash', selected_machines={'pc1'}, selected_links={'A'})
     mock_get_links_api_objects.assert_called_once_with(lab_hash='lab_hash')
@@ -705,12 +721,10 @@ def test_undeploy_lab_selected_machines_links_no_delete(mock_undeploy_machine, m
 def test_undeploy_lab_selected_machines_links_delete(mock_undeploy_machine, mock_undeploy_link,
                                                      mock_get_machines_api_objects, mock_get_links_api_objects,
                                                      kubernetes_manager,
-                                                     kubernetes_pod_1, kubernetes_pod_2, kubernetes_pod_3):
+                                                     kubernetes_pod_1, kubernetes_pod_2):
     mock_get_links_api_objects.return_value = [{'metadata': {'name': 'netprefix-a', 'labels': {'name': 'A'}}},
-                                               {'metadata': {'name': 'netprefix-b', 'labels': {'name': 'B'}}},
-                                               {'metadata': {'name': 'netprefix-c', 'labels': {'name': 'C'}}},
-                                               {'metadata': {'name': 'netprefix-d', 'labels': {'name': 'D'}}}]
-    mock_get_machines_api_objects.return_value = [kubernetes_pod_1, kubernetes_pod_2, kubernetes_pod_3]
+                                               {'metadata': {'name': 'netprefix-b', 'labels': {'name': 'B'}}}]
+    mock_get_machines_api_objects.return_value = [kubernetes_pod_1, kubernetes_pod_2]
 
     kubernetes_manager.undeploy_lab('lab_hash', selected_machines={'pc1'}, selected_links={'B'})
     mock_get_links_api_objects.assert_called_once_with(lab_hash='lab_hash')
