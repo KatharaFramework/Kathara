@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-VERSION=3.8.1
+VERSION=3.8.3
 PACKAGE_VERSION=1
 AUR_NAME=user
 AUR_MAIL=contact@kathara.org
