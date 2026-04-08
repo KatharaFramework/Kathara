@@ -590,13 +590,13 @@ class DockerMachine(object):
         Raises:
             InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
-        if selected_machines and excluded_machines:
+        if selected_machines is not None and excluded_machines is not None:
             raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
 
         containers = self.get_machines_api_objects_by_filters(lab_hash=lab_hash, user=utils.get_current_user_name())
-        if selected_machines:
+        if selected_machines is not None:
             containers = [item for item in containers if item.labels["name"] in selected_machines]
-        elif excluded_machines:
+        elif excluded_machines is not None:
             containers = [item for item in containers if item.labels["name"] not in excluded_machines]
 
         if len(containers) > 0:

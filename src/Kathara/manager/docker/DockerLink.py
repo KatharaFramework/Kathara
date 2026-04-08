@@ -162,7 +162,7 @@ class DockerLink(object):
             None
         """
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
-        if selected_links:
+        if selected_links is not None:
             networks = [item for item in networks if item.attrs["Labels"]["name"] in selected_links]
 
         for item in networks:
