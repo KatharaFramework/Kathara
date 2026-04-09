@@ -502,6 +502,18 @@ def test_disconnect_machine_from_link_two_links(mock_disconnect_from_link_machin
     assert mock_disconnect_from_link_machine.call_count == 2
 
 
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.undeploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.disconnect_from_link")
+def test_disconnect_machine_from_link_keep_link(mock_disconnect_from_link_machine, mock_undeploy_link, docker_manager,
+                                                default_device, default_link):
+    default_device.add_interface(default_link)
+
+    docker_manager.disconnect_machine_from_link(default_device, default_link, keep_link=True)
+
+    mock_disconnect_from_link_machine.assert_called_once_with(default_device, default_link)
+    assert not mock_undeploy_link.called
+
+
 def test_disconnect_machine_from_link_no_machine_lab(docker_manager, default_device, default_link):
     default_device.lab = None
 
@@ -546,6 +558,18 @@ def test_undeploy_machine_two_machines(mock_machine_undeploy, mock_link_undeploy
     mock_link_undeploy.assert_called_once_with(two_device_scenario.hash, selected_links=device_1_links)
 
 
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
+def test_undeploy_machine_keep_links(mock_machine_undeploy, mock_link_undeploy, docker_manager,
+                                     default_device, default_link):
+    default_device.add_interface(default_link)
+
+    docker_manager.undeploy_machine(default_device, keep_links=True)
+
+    mock_machine_undeploy.assert_called_once_with(default_device.lab.hash, selected_machines={default_device.name})
+    assert not mock_link_undeploy.called
+
+
 def test_undeploy_machine_no_lab(docker_manager, default_device):
     default_device.lab = None
 
@@ -577,7 +601,7 @@ def test_undeploy_link_no_lab(docker_manager, default_link):
 def test_undeploy_lab(mock_undeploy_machine, mock_undeploy_link, docker_manager):
     docker_manager.undeploy_lab(lab_hash='lab_hash')
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines=None, excluded_machines=None)
-    mock_undeploy_link.assert_called_once_with('lab_hash')
+    mock_undeploy_link.assert_called_once_with('lab_hash', selected_links=None)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
@@ -585,7 +609,7 @@ def test_undeploy_lab(mock_undeploy_machine, mock_undeploy_link, docker_manager)
 def test_undeploy_lab_selected_machines(mock_undeploy_machine, mock_undeploy_link, docker_manager):
     docker_manager.undeploy_lab(lab_hash='lab_hash', selected_machines={'pc1', 'pc2'})
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines={'pc1', 'pc2'}, excluded_machines=None)
-    mock_undeploy_link.assert_called_once_with('lab_hash')
+    mock_undeploy_link.assert_called_once_with('lab_hash', selected_links=None)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
@@ -593,7 +617,15 @@ def test_undeploy_lab_selected_machines(mock_undeploy_machine, mock_undeploy_lin
 def test_undeploy_lab_excluded_machines(mock_undeploy_machine, mock_undeploy_link, docker_manager):
     docker_manager.undeploy_lab(lab_hash='lab_hash', excluded_machines={'pc2'})
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines=None, excluded_machines={'pc2'})
-    mock_undeploy_link.assert_called_once_with('lab_hash')
+    mock_undeploy_link.assert_called_once_with('lab_hash', selected_links=None)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.undeploy")
+def test_undeploy_lab_selected_link(mock_undeploy_machine, mock_undeploy_link, docker_manager):
+    docker_manager.undeploy_lab(lab_hash='lab_hash', selected_links={'A'})
+    mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines=None, excluded_machines=None)
+    mock_undeploy_link.assert_called_once_with('lab_hash', selected_links={'A'})
 
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
@@ -613,7 +645,7 @@ def test_undeploy_lab_lab_name(mock_generate_urlsafe_hash, mock_undeploy_machine
 
     docker_manager.undeploy_lab(lab_name='lab_name')
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines=None, excluded_machines=None)
-    mock_undeploy_link.assert_called_once_with('lab_hash')
+    mock_undeploy_link.assert_called_once_with('lab_hash', selected_links=None)
     mock_generate_urlsafe_hash.assert_called_once_with("lab_name")
 
 
@@ -626,7 +658,7 @@ def test_undeploy_lab_lab_name_selected_machines(mock_generate_urlsafe_hash,
 
     docker_manager.undeploy_lab(lab_name='lab_name', selected_machines={'pc1', 'pc2'})
     mock_undeploy_machine.assert_called_once_with('lab_hash', selected_machines={'pc1', 'pc2'}, excluded_machines=None)
-    mock_undeploy_link.assert_called_once_with('lab_hash')
+    mock_undeploy_link.assert_called_once_with('lab_hash', selected_links=None)
     mock_generate_urlsafe_hash.assert_called_once_with("lab_name")
 
 
@@ -637,7 +669,7 @@ def test_undeploy_lab_lab_obj(mock_undeploy_machine, mock_undeploy_link, docker_
 
     docker_manager.undeploy_lab(lab=two_device_scenario)
     mock_undeploy_machine.assert_called_once_with(expected_hash, selected_machines=None, excluded_machines=None)
-    mock_undeploy_link.assert_called_once_with(expected_hash)
+    mock_undeploy_link.assert_called_once_with(expected_hash, selected_links=None)
 
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.undeploy")
@@ -650,7 +682,7 @@ def test_undeploy_lab_lab_obj_selected_machines(mock_undeploy_machine, mock_unde
     mock_undeploy_machine.assert_called_once_with(
         expected_hash, selected_machines={'pc1', 'pc2'}, excluded_machines=None
     )
-    mock_undeploy_link.assert_called_once_with(expected_hash)
+    mock_undeploy_link.assert_called_once_with(expected_hash, selected_links=None)
 
 
 def test_undeploy_lab_lab_hash_lab_obj(docker_manager, two_device_scenario):

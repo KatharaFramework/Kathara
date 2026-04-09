@@ -147,9 +147,9 @@ class DockerLink(object):
                 }
             )
 
-        if link.external:
-            logging.debug("External Interfaces required, connecting them...")
-            self._attach_external_interfaces(link.external, link.api_object)
+            if link.external:
+                logging.debug("External Interfaces required, connecting them...")
+                self._attach_external_interfaces(link.external, link.api_object)
 
     def undeploy(self, lab_hash: str, selected_links: Optional[Set[str]] = None) -> None:
         """Undeploy all the collision domains of the scenario specified by lab_hash.
@@ -162,7 +162,7 @@ class DockerLink(object):
             None
         """
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
-        if selected_links:
+        if selected_links is not None:
             networks = [item for item in networks if item.attrs["Labels"]["name"] in selected_links]
 
         for item in networks:

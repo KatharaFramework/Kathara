@@ -583,15 +583,15 @@ class KubernetesMachine(object):
         Raises:
             InvocationError: If both `selected_machines` and `excluded_machines` are specified.
         """
-        if selected_machines and excluded_machines:
+        if selected_machines is not None and excluded_machines is not None:
             raise InvocationError(f"You can either specify `selected_machines` or `excluded_machines`.")
 
         pods = self.get_machines_api_objects_by_filters(lab_hash=lab_hash)
         machines_to_watch = {item.metadata.labels["name"] for item in pods}
-        if selected_machines:
+        if selected_machines is not None:
             pods = [item for item in pods if item.metadata.labels["name"] in selected_machines]
             machines_to_watch = selected_machines if selected_machines else machines_to_watch
-        elif excluded_machines:
+        elif excluded_machines is not None:
             pods = [item for item in pods if item.metadata.labels["name"] not in excluded_machines]
             machines_to_watch = machines_to_watch if not excluded_machines else machines_to_watch - excluded_machines
 

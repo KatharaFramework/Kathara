@@ -80,4 +80,4 @@ class TMUX(object):
         window = session.windows.get(window_name=window_name, default=None)
 
         if window:
-            window.kill_window()
+            window.kill()

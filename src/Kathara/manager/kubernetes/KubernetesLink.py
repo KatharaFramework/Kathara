@@ -140,7 +140,7 @@ class KubernetesLink(object):
             None
         """
         networks = self.get_links_api_objects_by_filters(lab_hash=lab_hash)
-        if selected_links:
+        if selected_links is not None:
             networks = [item for item in networks if item["metadata"]["name"] in selected_links]
 
         if len(networks) > 0:

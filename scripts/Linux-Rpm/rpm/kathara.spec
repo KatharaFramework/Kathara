@@ -58,9 +58,6 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- Add a configurable setting to manage volume mounting behavior
-- Remove `--xterm` parameter from `vstart`/`lstart` commands
-- Remove the `pyuv` dependency
-- Add a timeout while checking for new releases on GitHub
-- Add a timeout while checking for new versions of Docker images
+- Add possibility to keep collision domains when undeploying a network scenario
+- Fix tmux DeprecatedError
 - Minor fixes
