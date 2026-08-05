@@ -7,6 +7,7 @@ kathara-lab.conf(5) -- Network scenario configuration file
 The main network scenario configuration file. In this file you can specify the names of devices to be started, any option that should be used when launching them, and the topology of the network that connects them. Optionally, you can also provide some descriptive information for the network scenario, which will be displayed upon its startup. This file is not explicitly required, but running a network scenario without a lab.conf file is kind of useless...
 
 This file is a list of `device[arg]=value` assignments, where `arg` can be an integer value or the name of an option (described below).
+Device names MUST contain only 1 to 30 lowercase letters, digits, or underscores.
 
 In order to establish a uniform convention, comment lines should always start with a hash character (`#`).
 
