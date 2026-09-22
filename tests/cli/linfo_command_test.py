@@ -172,3 +172,37 @@ def test_get_live_topology_info(mock_update, mock_docker_manager, mock_manager_g
         LinfoCommand()._get_topology_live_info(test_lab)
     mock_docker_manager.update_lab_from_api.assert_called_once_with(test_lab)
     mock_create_topology_table.assert_called_once_with(test_lab)
+
+
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+def test_run_with_labname(mock_parse_lab, mock_docker_manager, mock_manager_get_instance):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    lab = Lab('kathara_lab')
+    command = LinfoCommand()
+    command.run('.', ['--lab-name', 'kathara_lab'])
+    assert not mock_parse_lab.called
+    mock_docker_manager.get_machines_stats.assert_called_once_with(lab.hash)
+
+
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+def test_run_with_labname_and_conf(mock_parse_lab, mock_docker_manager, mock_manager_get_instance):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    command = LinfoCommand()
+    with pytest.raises(SystemExit):
+        command.run('.', ['--lab-name', 'kathara_lab', '-c'])
+    assert not mock_parse_lab.called
+
+
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+def test_run_with_labname_and_directory(mock_parse_lab, mock_docker_manager, mock_manager_get_instance):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    command = LinfoCommand()
+    with pytest.raises(SystemExit):
+        command.run('.', ['--lab-name', 'kathara_lab', '-d', os.path.join('/test', 'path')])
+    assert not mock_parse_lab.called
