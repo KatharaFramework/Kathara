@@ -21,14 +21,14 @@ If `arg` is an integer value, then `value` is the name of the collision domain t
 ### EXAMPLES
 
 1. Connect eth0 of `pc1` to collision domain `CD1` with a random MAC address:
-	```
+
 	pc1[0]="CD1"
-	```
+
 
 2. Connect eth1 of `pc1` to collision domain `CD2` with the specified MAC address:
-	```
+
 	pc1[1]="CD2/02:42:ac:11:00:02"
-	```
+
 
 ## DEVICE OPTIONS
 

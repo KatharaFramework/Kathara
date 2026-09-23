@@ -3,7 +3,7 @@
 VERSION=3.8.3
 PACKAGE_VERSION=1
 
-.PHONY: all clean docker-build-image prepare-source prepare-man-pages prepare-bash-completion pack-source build
+.PHONY: all clean docker-build docker-build-image prepare-source prepare-man-pages prepare-bash-completion pack-source build
 
 all: clean docker-build-image docker-build
 
