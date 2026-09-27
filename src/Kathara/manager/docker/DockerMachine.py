@@ -511,6 +511,13 @@ class DockerMachine(object):
         try:
             machine.api_object.start()
         except APIError as e:
+            # The container was created but never started: remove it, so that a failed start does not leave a
+            # device in the `Created` state behind.
+            try:
+                machine.api_object.remove(force=True)
+            except APIError as remove_error:
+                logging.debug(f"Cannot remove device `{machine.name}` after a failed start: {remove_error}")
+
             if e.response.status_code == 500 and e.explanation.startswith('Mounts denied'):
                 raise MountDeniedError("Host drive is not shared with Docker.")
             elif e.response.status_code == 500 and \

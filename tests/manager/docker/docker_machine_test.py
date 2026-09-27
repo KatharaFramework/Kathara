@@ -15,7 +15,8 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
-from src.Kathara.exceptions import DockerPluginError, MachineBinaryError, PrivilegeError, InvocationError
+from src.Kathara.exceptions import DockerPluginError, MachineBinaryError, PrivilegeError, InvocationError, \
+    MountDeniedError
 from src.Kathara.types import SharedCollisionDomainsOption
 from src.Kathara.event.EventDispatcher import EventDispatcher
 
@@ -1129,6 +1130,44 @@ def test_start_plugin_error_network_connect(default_device, default_link, defaul
     default_link_b.api_object.connect.side_effect = DockerPluginError("network does not exists")
     with pytest.raises(DockerPluginError):
         docker_machine.start(default_device)
+
+
+def test_start_api_error_removes_device(default_device, docker_machine):
+    response = Response()
+    response.status_code = 500
+    error = APIError("error", response=response, explanation="some start failure")
+    default_device.api_object.start.side_effect = error
+
+    with pytest.raises(APIError) as excinfo:
+        docker_machine.start(default_device)
+
+    assert excinfo.value is error
+    default_device.api_object.remove.assert_called_once_with(force=True)
+
+
+def test_start_api_error_mounts_denied_removes_device(default_device, docker_machine):
+    response = Response()
+    response.status_code = 500
+    default_device.api_object.start.side_effect = APIError("error", response=response,
+                                                           explanation="Mounts denied: /hosthome")
+
+    with pytest.raises(MountDeniedError):
+        docker_machine.start(default_device)
+
+    default_device.api_object.remove.assert_called_once_with(force=True)
+
+
+def test_start_api_error_remove_failure_keeps_start_error(default_device, docker_machine):
+    response = Response()
+    response.status_code = 500
+    error = APIError("error", response=response, explanation="some start failure")
+    default_device.api_object.start.side_effect = error
+    default_device.api_object.remove.side_effect = APIError("remove failed", response=response)
+
+    with pytest.raises(APIError) as excinfo:
+        docker_machine.start(default_device)
+
+    assert excinfo.value is error
 
 
 #
