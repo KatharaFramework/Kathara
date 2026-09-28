@@ -3,7 +3,7 @@ name: build-all
 on:
   workflow_dispatch:
   pull_request:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - 'src/**'
       - 'scripts/**'
@@ -21,6 +21,10 @@ jobs:
   prepare:
     name: Prepare Environment
     runs-on: self-hosted
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.base_ref == 'develop' && github.head_ref != 'main') ||
+      (github.base_ref == 'main' && github.head_ref == 'develop')
     outputs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
