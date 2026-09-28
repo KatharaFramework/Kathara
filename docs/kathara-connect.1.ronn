@@ -4,7 +4,7 @@ kathara-connect(1) -- Connect to a Kathara device
 
 ## SYNOPSIS
 
-`kathara connect` [`-h`] [`-d` <DIRECTORY> \| `-v`]  
+`kathara connect` [`-h`] [`-d` <DIRECTORY> \| `-v` \| `--lab-name` <LAB_NAME>]  
 [`--shell` <SHELL>] [`-l`]  
 <DEVICE_NAME>
 
@@ -22,12 +22,20 @@ Open a shell in device DEVICE_NAME.
 
     Connect to a Kathara device belonging to a network scenario that is located inside DIRECTORY.  
 	If no `-d` option is provided, assume the network scenario is located in the current directory.
-	This option cannot be used in conjuction with `-v` or `--vdevice`.
+	This option cannot be used in conjunction with `-v`, `--vmachine` or `--lab-name`.
 
-* `-v`, `--vdevice`:
+* `-v`, `--vmachine`:
 	The device has been started with vstart command.
 
-	This option cannot be used in conjuction with `-d` or `--directory`.
+	This option cannot be used in conjunction with `-d`, `--directory` or `--lab-name`.
+
+* `--lab-name` <LAB_NAME>:
+    Specify the name of the network scenario containing the specified device.
+
+    Only for network scenarios created by name, e.g. through the Kathara API.
+    For those started with `kathara-lstart`(1), use `-d` or `--directory`.
+
+    This option cannot be used in conjunction with `-d`, `--directory`, `-v` or `--vmachine`.
 
 * `--command` <SHELL>:
     Command that should be executed inside the device.
@@ -52,6 +60,10 @@ Connects to a device called `pc1`, started with `kathara-vstart`(1).
 	kathara connect as1r1
 
 Connects to a device called `as1r1` belonging to a network scenario located in current folder and started with `kathara-lstart`(1).
+
+	kathara connect --lab-name mylab pc1
+
+Connects to a device called `pc1` belonging to a network scenario named `mylab`, created by name through the Kathara API.
 
 m4_include(footer.txt)
 

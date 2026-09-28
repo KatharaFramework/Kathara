@@ -81,6 +81,19 @@ def test_run_with_v_option(mock_parse_lab, mock_docker_manager, mock_manager_get
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+def test_run_with_labname(mock_parse_lab, mock_docker_manager, mock_manager_get_instance):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    lab = Lab('kathara_lab')
+    command = ConnectCommand()
+    command.run('.', ['--lab-name', 'kathara_lab', 'pc1'])
+    assert not mock_parse_lab.called
+    mock_docker_manager.connect_tty.assert_called_once_with(machine_name="pc1", lab_hash=lab.hash, shell=None,
+                                                            logs=False)
+
+
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
 @mock.patch("src.Kathara.model.Lab.Lab")
 def test_run_all_params(mock_lab, mock_parse_lab, mock_docker_manager, mock_manager_get_instance):
     mock_manager_get_instance.return_value = mock_docker_manager
