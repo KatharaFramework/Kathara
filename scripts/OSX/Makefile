@@ -3,17 +3,22 @@
 PRODUCT=Kathara
 VERSION=__KATHARA_VERSION__
 TARGET_DIRECTORY=Output
-APPLE_DEVELOPER_CERTIFICATE_ID?=FakeID
 ROFF_DIR=../../docs/Roff
 VENV_DIR:=${CURDIR}/venv
+
+# Signing uses a dedicated keychain (not the login one), readable only by the build user and protected by its own password.
+# It must be unlocked before running the allSigned targets (see README.md).
+APPLE_DEVELOPER_CERTIFICATE_ID?=FakeID
+APPLE_KEYCHAIN?=$(HOME)/Library/Keychains/kathara-signing.keychain-db
+APPLE_NOTARY_PROFILE?=Kathara-notary
 
 .PHONY: all_x86 allSigned_x86 all_arm64 allSigned_arm64 test deps manpages cleanall cleanman cleanbinary cleanenv
 all: all_x86 all_arm64
 allSigned: allSigned_x86 allSigned_arm64
 all_x86: cleanall deps binary_x86_64 manpages createInstaller_x86_64 clean
-allSigned_x86: cleanall deps binary_x86_64 manpages createInstaller_x86_64 signProduct_x86_64 clean
+allSigned_x86: cleanall deps binary_x86_64 manpages signBinaries_x86_64 createInstaller_x86_64 signProduct_x86_64 notarize_x86_64 clean
 all_arm64: cleanall deps binary_arm64 manpages createInstaller_arm64 clean
-allSigned_arm64: cleanall deps binary_arm64 manpages createInstaller_arm64 signProduct_arm64 clean
+allSigned_arm64: cleanall deps binary_arm64 manpages signBinaries_arm64 createInstaller_arm64 signProduct_arm64 notarize_arm64 clean
 
 default: all
 
@@ -86,11 +91,28 @@ createInstaller_%: copyBuildDirectory_%
 	--package-path $(TARGET_DIRECTORY)/package $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION).pkg > /dev/null 2>&1
 
 
+# Signs every Mach-O file (executable, .dylib, .so) with hardened runtime, as required by notarization
+signBinaries_%: copyBuildDirectory_%
+	find $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT) -type f | while read -r f; do \
+		if file -b "$$f" | grep -q Mach-O; then \
+			codesign --force --options runtime --timestamp --keychain "$(APPLE_KEYCHAIN)" \
+			--sign "Developer ID Application: $(APPLE_DEVELOPER_CERTIFICATE_ID)" "$$f" || exit 1; \
+		fi; \
+	done
+
 signProduct_%:
-	@productsign --sign "Developer ID Installer: $(APPLE_DEVELOPER_CERTIFICATE_ID)" $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION).pkg \
+	productsign --timestamp --keychain "$(APPLE_KEYCHAIN)" --sign "Developer ID Installer: $(APPLE_DEVELOPER_CERTIFICATE_ID)" \
+	$(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION).pkg \
 	$(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg
 
 	pkgutil --check-signature $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg
+
+notarize_%:
+	xcrun notarytool submit $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg \
+	--keychain "$(APPLE_KEYCHAIN)" --keychain-profile "$(APPLE_NOTARY_PROFILE)" --wait
+	xcrun stapler staple $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg
+
+	spctl --assess --type install -vv $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg
 
 clean: cleanbinary cleanman cleanenv
 	if [ -d $(TARGET_DIRECTORY)/Resources ]; then \

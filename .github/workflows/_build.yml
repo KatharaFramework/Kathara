@@ -2,8 +2,7 @@ name: build-matrix
 
 # Reusable "build engine"
 #
-# Required configuration (in Actions Settings):
-#   Secret: APPLE_DEVELOPER_CERTIFICATE_ID
+# Secrets are only needed on the release path (sign-rpm / sign-macos), see the secrets below.
 on:
   workflow_call:
     inputs:
@@ -26,12 +25,20 @@ on:
         required: false
         type: string
         default: self-hosted
+      sign-macos:
+        description: 'Sign and notarize the macOS installers (only true on the release path)'
+        required: false
+        type: boolean
+        default: false
     secrets:
       RPM_GPG_PRIVATE_KEY:
         description: 'base64 of the armored RPM package signing key'
         required: false
       RPM_GPG_PASSPHRASE:
         description: 'passphrase of the RPM package signing key'
+        required: false
+      MACOS_KEYCHAIN_PASSWORD:
+        description: 'password of the signing keychain on the macOS runner'
         required: false
 
 permissions:
@@ -333,10 +340,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { arch: arm64,  make: allSigned_arm64, set_arch: ''             }
-          - { arch: x86_64, make: allSigned_x86  , set_arch: 'arch -x86_64' }
-          # - { arch: arm64,  make: all_arm64, set_arch: ''             }
-          # - { arch: x86_64, make: all_x86  , set_arch: 'arch -x86_64' }
+          - { arch: arm64,  target: arm64, set_arch: ''             }
+          - { arch: x86_64, target: x86  , set_arch: 'arch -x86_64' }
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
       - name: Cache OSX Package
@@ -344,7 +349,8 @@ jobs:
         id: cache-osx
         with:
           path: scripts/OSX/Output
-          key: pkg-${{matrix.arch}}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/OSX/**', '!scripts/OSX/Output/**') }}
+          # The signing flag is in the key, so an unsigned pull request build is never reused by a release.
+          key: pkg-${{matrix.arch}}-${{ inputs.sign-macos && 'signed' || 'unsigned' }}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/OSX/**', '!scripts/OSX/Output/**') }}
       # - uses: ./.github/actions/setup-python-build
       #   with:
       #     python-version: '3.14'
@@ -356,11 +362,30 @@ jobs:
       - name: Build macOS installer
         if: steps.cache-osx.outputs.cache-hit != 'true'
         env:
-          APPLE_DEVELOPER_CERTIFICATE_ID: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_ID }}
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+          APPLE_DEVELOPER_CERTIFICATE_ID: ${{ vars.APPLE_DEVELOPER_CERTIFICATE_ID }}
         shell: bash
         run: |
+          set -euo pipefail
           cd scripts/OSX
-          make ${{ matrix.make }} SET_ARCH='${{ matrix.set_arch }}' VERSION="${{ inputs.version }}"
+
+          if [ "${{ inputs.sign-macos }}" != "true" ]; then
+            make all_${{ matrix.target }} SET_ARCH='${{ matrix.set_arch }}' VERSION="${{ inputs.version }}"
+            exit 0
+          fi
+
+          for s in MACOS_KEYCHAIN_PASSWORD APPLE_DEVELOPER_CERTIFICATE_ID; do
+            [ -n "${!s:-}" ] || { echo "::error::$s is not set"; exit 1; }
+          done
+
+          # The signing keychain is created once on the runner (see scripts/OSX/README.md).
+          # It is unlocked only for this step; the password goes through stdin so it never shows up in the process list.
+          KC="$HOME/Library/Keychains/kathara-signing.keychain-db"
+          trap 'security lock-keychain "$KC"' EXIT
+          printf 'unlock-keychain -p "%s" "%s"\n' "$MACOS_KEYCHAIN_PASSWORD" "$KC" | security -i >/dev/null
+
+          make allSigned_${{ matrix.target }} SET_ARCH='${{ matrix.set_arch }}' VERSION="${{ inputs.version }}" \
+            APPLE_KEYCHAIN="$KC" APPLE_DEVELOPER_CERTIFICATE_ID="$APPLE_DEVELOPER_CERTIFICATE_ID"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
           name: macos-${{ matrix.arch }}

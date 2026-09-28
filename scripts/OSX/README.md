@@ -29,7 +29,9 @@ You can compile the `x86` package on a Mac with Intel CPU, and the `arm64` on a 
 On Rosetta enabled Mac with Apple CPU you can compile the `x86` package passing the `SET_ARCH='arch -x86_64'` variable to the make command.
     - Run `make deps` to automatically download and install dependencies for your architecture
     - Run `make binary_x86_64` or `make binary_arm64` to automatically compile the package
+    - Run `make signBinaries_x86_64` or `make signBinaries_arm64` to sign executables and shared objects
     - Run `make createInstaller_x86_64` or `make createInstaller_arm64` to create package
     - Run `make signProduct_x86_64` or `make signProduct_arm64` to sign the package
+    - Run `make notarize_x86_64` or `make notarize_arm64` to notarize package
     - Run `make clean` to clean all intermediate files
 6. Share the Kathara pkg signed in `Output` folder :)
