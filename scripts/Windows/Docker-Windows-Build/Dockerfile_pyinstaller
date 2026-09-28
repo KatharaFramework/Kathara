@@ -1,0 +1,9 @@
+FROM batonogov/pyinstaller-windows
+
+RUN python -m pip install --upgrade "setuptools<81"
+RUN python -m pip install \
+    win_inet_pton \
+    "pyinstaller==6.18.0"
+
+ENTRYPOINT ["/entrypoint.sh"]
+

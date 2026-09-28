@@ -1,0 +1,236 @@
+# Triggers a GitLab pipeline via API to update the Linux package repositories
+# (APT + YUM, one GitLab project, one site), push the package to AUR and PyPI.
+# Triggered when a stable GitHub Release is published (drafts and prereleases are ignored).
+# Since GitLab can't parse native GitHub webhooks, this uses curl to pass the release tag.
+# It can be re-run manually via the Actions tab.
+#
+# Required configuration (in Actions Settings):
+#   Secret: GITLAB_TRIGGER_TOKEN (trigger token of the Linux repo GitLab project)
+#           PYPI_API_TOKEN       (api token 'pypi-...' for kathara pypi project)
+#           AUR_SSH_KEY          (authorized ssh key to push on AUR)
+#   Vars:   GITLAB_PROJECT_ID    (numeric ID of the Linux repo GitLab project)
+#           GITLAB_REF           (target branch, default: main)
+#           GITLAB_API           (default: https://gitlab.com/api/v4)
+#           AUR_NAME             (git username allowed on AUR repo)
+#           AUR_EMAIL            (git email allowed on AUR repo)
+name: publish-remote
+
+on:
+  release:
+    types: [published]
+  # Manual re-run: Actions -> publish-remote -> Run workflow, enter a tag.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish"
+        required: true
+        type: string
+
+# Only reads metadata about the release; never writes to the repo.
+permissions:
+  contents: read
+
+# Never let two publishes race on the GitLab side. 
+# A newer release supersedes an in-flight older one rather than deploying on top of it.
+concurrency:
+  group: publish-remote
+  cancel-in-progress: True
+
+jobs:
+
+  version:
+    name: Get version
+    runs-on: self-hosted
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+        with:
+          ref: ${{ needs.gate.outputs.tag }}
+          persist-credentials: false
+
+      - id: get_version
+        uses: ./.github/actions/get-version
+
+  gate:
+    name: Gates Pre-Releases
+    runs-on: self-hosted
+    outputs:
+      proceed: ${{ steps.gate.outputs.proceed }}
+      tag: ${{ steps.rel.outputs.tag }}
+    steps:
+      - name: Resolve release tag and prerelease flag
+        id: rel
+        env:
+          # For release events these come from the payload; for manual runs the prerelease flag is unknown here and is resolved in the next step.
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          EVENT_PRERELEASE: ${{ github.event.release.prerelease }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "release" ]; then
+            tag="$EVENT_TAG"
+            prerelease="$EVENT_PRERELEASE"
+          else
+            tag="$INPUT_TAG"
+            prerelease="unknown"     # resolved via the API below
+          fi
+
+          if [ -z "$tag" ] || [ "$tag" = "null" ]; then
+            echo "::error::could not determine the release tag"
+            exit 1
+          fi
+          echo "tag=$tag"               >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag: $tag (prerelease=$prerelease)"
+
+      - name: Skip prereleases
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.rel.outputs.tag }}
+          PRERELEASE: ${{ steps.rel.outputs.prerelease }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          prerelease="$PRERELEASE"
+
+          # Manual dispatch: the payload carried no flag, so ask the API.
+          if [ "$prerelease" = "unknown" ]; then
+            prerelease="$(gh api "repos/$REPO/releases/tags/$TAG" \
+                            --jq '.prerelease' 2>/dev/null || echo "error")"
+            if [ "$prerelease" = "error" ]; then
+              echo "::error::release '$TAG' not found in $REPO"
+              exit 1
+            fi
+          fi
+
+          if [ "$prerelease" = "true" ]; then
+            echo "::notice::'$TAG' is a prerelease; the APT repository is not updated"
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "proceed=true"  >> "$GITHUB_OUTPUT"
+          fi
+
+  publish-linux-repo:
+    name: Publish Packages to APT+YUM Repo
+    runs-on: self-hosted
+    needs: [gate]
+    if: needs.gate.outputs.proceed == 'true'
+    steps:
+      - name: Trigger GitLab pipeline for the Linux repositories
+        env:
+          TRIGGER_TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN }}
+          PROJECT_ID: ${{ vars.GITLAB_PROJECT_ID }}
+          GITLAB_REF: ${{ vars.GITLAB_REF || 'main' }}
+          GITLAB_API: ${{ vars.GITLAB_API || 'https://gitlab.com/api/v4' }}
+          TAG: ${{ needs.gate.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$TRIGGER_TOKEN" ]; then
+            echo "::error::secret GITLAB_TRIGGER_TOKEN is not set"
+            exit 1
+          fi
+          if [ -z "$PROJECT_ID" ]; then
+            echo "::error::variable GITLAB_PROJECT_ID is not set"
+            exit 1
+          fi
+
+          echo "Triggering $GITLAB_API project $PROJECT_ID on ref '$GITLAB_REF' for release $TAG"
+
+          # RELEASE_TAG is the ONLY variable passed: the source repository is pinned in conf/repo.conf on the GitLab side and enforced by its guard job, so a leaked trigger token cannot point the pipeline at another GitHub repository.
+          # -sS quiet but keep errors; capture body and HTTP code separately so a non-201 can be reported with GitLab's own message.
+          body="$(mktemp)"
+          code="$(curl -sS -o "$body" -w '%{http_code}' --request POST \
+                    --form "token=$TRIGGER_TOKEN" \
+                    --form "ref=$GITLAB_REF" \
+                    --form "variables[RELEASE_TAG]=$TAG" \
+                    "$GITLAB_API/projects/$PROJECT_ID/trigger/pipeline")"
+
+          echo "HTTP $code"
+          if [ "$code" != "201" ]; then
+            echo "::error::GitLab returned HTTP $code (expected 201)"
+            cat "$body"
+            # 400 is almost always a wrong ref; 404 a wrong project id or token lacking access; 401/403 an invalid or revoked token.
+            case "$code" in
+              400) echo "::error::check that ref '$GITLAB_REF' exists on the GitLab project" ;;
+              401|403) echo "::error::the trigger token is invalid, revoked, or lacks access" ;;
+              404) echo "::error::project id '$PROJECT_ID' not found, or token cannot reach it" ;;
+            esac
+            exit 1
+          fi
+        
+          if [ -z "$(which jq)" ]; then
+            sudo apt-get install -y jq
+          fi
+          url="$(jq -r '.web_url // empty' "$body")"
+          echo "Pipeline created: ${url:-<no web_url in response>}"
+          {
+            echo "### APT + YUM publish triggered"
+            echo ""
+            echo "- Release: \`$TAG\`"
+            echo "- Pipeline: ${url:-n/a}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish-aur:
+    name: Publish Package to AUR
+    runs-on: [self-hosted, x64]
+    needs: [gate, version]
+    if: needs.gate.outputs.proceed == 'true'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+        with:
+          ref: ${{ needs.gate.outputs.tag }}
+          persist-credentials: false
+      - name: Push on AUR
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          AUR_NAME:  ${{ vars.AUR_NAME || 'user' }}
+          AUR_EMAIL: ${{ vars.AUR_EMAIL || 'contact@kathara.org' }}
+        run: |
+          cd scripts/Linux-Pkg
+          make allRemote AUR_KEY="${{ secrets.AUR_SSH_KEY || 'you_are_not_supposed_to_see_me' }}"
+
+          {
+            echo "### AUR publish triggered"
+            echo ""
+            echo "- Release: \`$VERSION\`"
+            echo "- Package: [Kathara AUR](https://aur.archlinux.org/packages/kathara)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish-pypi:
+    name: Publish Package to Pypi
+    runs-on: [self-hosted, ARM64]
+    needs: [gate, version]
+    if: needs.gate.outputs.proceed == 'true'
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+        with:
+          ref: ${{ needs.gate.outputs.tag }}
+          persist-credentials: false
+
+      - name: Setup config
+        run: |
+          sed -i -e "s|^version = \".*\"|version = \"${{ needs.version.outputs.version }}\"|" pyproject.toml
+          sed -i -e "s|^version = .*|version = ${{ needs.version.outputs.version }}|" setup.cfg
+          sed -i -e "s|version='[^']*'|version='${{ needs.version.outputs.version }}'|" setup.py
+          sed -i -e "s#refs/tags/[^']*\.tar\.gz#refs/tags/${{ needs.version.outputs.version }}.tar.gz#" setup.py
+
+      - name: Push to Pypi
+        env:
+          TWINE_USERNAME: '__token__'
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          cd scripts/pip-package && make upload
+
+          {
+            echo "### PyPI publish triggered"
+            echo ""
+            echo "- Release: \`$VERSION\`"
+            echo "- Package: [Kathara PyPI](https://pypi.org/project/kathara/$VERSION/)"
+          } >> "$GITHUB_STEP_SUMMARY"
