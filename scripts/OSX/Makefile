@@ -62,7 +62,7 @@ copyBuildDirectory_%: binary_% manpages
 
 	chmod -R 755 $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)
 
-	cp -r ../../src/kathara.dist/kathara/_internal $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/_internal
+	cp -a ../../src/kathara.dist/kathara/_internal $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/_internal
 	find $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/_internal -type f -exec chmod 644 {} \;
 	cp -a ../../src/kathara.dist/kathara/kathara $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/
 	cp -a $(ROFF_DIR)/. $(TARGET_DIRECTORY)/darwinpkg/usr/local/share/man/
