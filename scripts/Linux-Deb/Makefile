@@ -5,7 +5,7 @@ DEBIAN_PACKAGE_VERSION=1
 LAUNCHPAD_NAME=user
 NO_BINARY_PACKAGES=pyroute2
 
-.PHONY: allSigned docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa clean venv autocompletion
+.PHONY: allSigned prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder download-pip build-man build-deb-unsigned build-deb-signed ppa clean venv autocompletion
 
 allSigned: clean prepare-deb-source docker-signed_jammy docker-signed_noble
 

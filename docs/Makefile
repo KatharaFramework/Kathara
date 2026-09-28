@@ -2,9 +2,9 @@
 
 manual ::= "Kathara manual"
 
-.PHONY: all
+.PHONY: all markdown-build roff-build html-build docker-build-image cleanall
 
-all: markdown-build roff-build html-build docker-build-image build-%
+all: build-markdown build-roff build-html
 
 build-%: docker-build-image
 	docker run -ti --rm -v `pwd`:/root/docs kathara/linux-build-deb /bin/bash -c "cd /root/docs && make $*-build"

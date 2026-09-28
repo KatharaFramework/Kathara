@@ -5,7 +5,7 @@ PACKAGE_VERSION=1
 AUR_NAME=user
 AUR_MAIL=contact@kathara.org
 
-.PHONY: all allRemote clean docker-build-image docker-build-local docker-build-remote build-local build-remote
+.PHONY: all allRemote clean docker-build-image docker-build-local docker-build-remote prepare-files build-local build-remote
 
 all: clean docker-build-image docker-build-local
 
