@@ -216,15 +216,20 @@ class Kathara(IManager):
             archive_path, lab_hash, lab_name, lab, selected_machines, excluded_machines, filesystem_diff
         )
 
-    def restore_lab(self, archive_path: str, lab_hash: Optional[str] = None) -> Lab:
+    def restore_lab(self, archive_path: str, lab_hash: Optional[str] = None,
+                    lab: Optional[Lab] = None) -> Lab:
         """Restore a network scenario previously saved with `save_lab` and redeploy it.
 
         The committed images bundled in the archive are loaded, the topology is rebuilt from the
-        manifest, and the scenario is deployed from the saved images.
+        manifest (or taken from `lab`), and the scenario is deployed from the saved images.
 
         Args:
             archive_path (str): The path of the archive file created by `save_lab`.
             lab_hash (Optional[str]): If specified, override the hash of the restored network scenario.
+            lab (Optional[Kathara.model.Lab]): If specified, deploy this network scenario instead of the
+                one rebuilt from the manifest: each of its devices that appears in the save file is pointed
+                at the restored image, every other device option and the topology come from `lab`, the
+                saved scenario files are uploaded into `lab.fs`, and `lab_hash` is ignored.
 
         Returns:
             Kathara.model.Lab: The restored (and redeployed) network scenario.
@@ -233,7 +238,7 @@ class Kathara(IManager):
             InvocationError: If the archive is not a valid Kathara save file.
             NotSupportedError: If the current manager does not support restoring the network scenario state.
         """
-        return self.manager.restore_lab(archive_path, lab_hash)
+        return self.manager.restore_lab(archive_path, lab_hash, lab)
 
     def wipe(self, all_users: bool = False) -> None:
         """Undeploy all the running network scenarios.

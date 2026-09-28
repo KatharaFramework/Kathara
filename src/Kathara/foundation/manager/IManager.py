@@ -182,12 +182,17 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `save_lab` method.")
 
     @abstractmethod
-    def restore_lab(self, archive_path: str, lab_hash: Optional[str] = None) -> Lab:
+    def restore_lab(self, archive_path: str, lab_hash: Optional[str] = None,
+                    lab: Optional[Lab] = None) -> Lab:
         """Restore a network scenario previously saved with `save_lab` and redeploy it.
 
         Args:
             archive_path (str): The path of the archive file created by `save_lab`.
             lab_hash (Optional[str]): If specified, override the hash of the restored network scenario.
+            lab (Optional[Kathara.model.Lab]): If specified, deploy this network scenario instead of the
+                one rebuilt from the manifest: each of its devices that appears in the save file is pointed
+                at the restored image, every other device option and the topology come from `lab`, the
+                saved scenario files are uploaded into `lab.fs`, and `lab_hash` is ignored.
 
         Returns:
             Kathara.model.Lab: The restored (and redeployed) network scenario.

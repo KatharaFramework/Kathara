@@ -1132,6 +1132,11 @@ def test_restore_lab_not_supported(kubernetes_manager):
         kubernetes_manager.restore_lab("out.tar")
 
 
+def test_restore_lab_with_lab_not_supported(kubernetes_manager):
+    with pytest.raises(NotSupportedError):
+        kubernetes_manager.restore_lab("out.tar", lab=Lab("x"))
+
+
 #
 # TEST: get_machines_stats
 #

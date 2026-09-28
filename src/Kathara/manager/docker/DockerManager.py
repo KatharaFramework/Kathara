@@ -530,16 +530,22 @@ class DockerManager(IManager):
         return path in cls._DIFF_EXCLUDED_EXACT or path.startswith(cls._DIFF_EXCLUDED_PREFIXES)
 
     @privileged
-    def restore_lab(self, archive_path: str, lab_hash: Optional[str] = None) -> Lab:
+    def restore_lab(self, archive_path: str, lab_hash: Optional[str] = None,
+                    lab: Optional[Lab] = None) -> Lab:
         """Restore a network scenario previously saved with `save_lab` and redeploy it.
 
         For a full-image save, the bundled images are loaded into the local Docker repository. For a
         filesystem-diff save, each device image is reconstructed from its base image plus the saved
-        diff. The topology is then rebuilt from the manifest and the scenario is deployed.
+        diff. The topology is then rebuilt from the manifest (or taken from `lab`) and the scenario
+        is deployed.
 
         Args:
             archive_path (str): The path of the archive file created by `save_lab`.
             lab_hash (Optional[str]): If specified, override the hash of the restored network scenario.
+            lab (Optional[Kathara.model.Lab]): If specified, deploy this network scenario instead of the
+                one rebuilt from the manifest: each of its devices that appears in the save file is pointed
+                at the restored image, every other device option and the topology come from `lab`, the
+                saved scenario files are uploaded into `lab.fs`, and `lab_hash` is ignored.
 
         Returns:
             Kathara.model.Lab: The restored (and redeployed) network scenario.
@@ -563,9 +569,13 @@ class DockerManager(IManager):
                         logging.info(f"Loading saved image `{member.name}`... This may take a while.")
                         self.docker_image.load_images_from_tar(tar.extractfile(member))
 
-            lab = lab_from_dict(manifest)
-            if lab_hash:
-                lab.hash = lab_hash
+            if lab is None:
+                lab = lab_from_dict(manifest)
+                if lab_hash:
+                    lab.hash = lab_hash
+            else:
+                # The caller provides the topology and device options; only the images come from the save file.
+                self._apply_saved_images(lab, manifest)
 
             # Restore the network scenario files (startup/shutdown/shared/device dirs) into the lab filesystem.
             for member in tar.getmembers():
@@ -580,6 +590,20 @@ class DockerManager(IManager):
         self.deploy_lab(lab)
 
         return lab
+
+    @staticmethod
+    def _apply_saved_images(lab: Lab, manifest: Dict) -> None:
+        """Point the devices of `lab` that are in the save file at the restored images."""
+        saved_images = {machine_dict["name"]: machine_dict["meta"]["image"] for machine_dict in manifest["machines"]}
+
+        for name, machine in lab.machines.items():
+            if name in saved_images:
+                machine.add_meta("image", saved_images[name])
+            else:
+                logging.warning(f"Device `{name}` is not in the save file: it will be deployed from its own image.")
+
+        for name in sorted(saved_images.keys() - lab.machines.keys()):
+            logging.warning(f"Saved device `{name}` is not in the network scenario: its saved state is ignored.")
 
     def _restore_diff_images(self, tar: tarfile.TarFile, manifest: Dict) -> None:
         """Reconstruct each device image from its base image and saved filesystem diff."""

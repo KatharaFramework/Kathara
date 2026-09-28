@@ -376,12 +376,14 @@ class KubernetesManager(IManager):
         """
         raise NotSupportedError("Saving the network scenario state is only supported on Docker.")
 
-    def restore_lab(self, archive_path: str, lab_hash: Optional[str] = None) -> Lab:
+    def restore_lab(self, archive_path: str, lab_hash: Optional[str] = None,
+                    lab: Optional[Lab] = None) -> Lab:
         """Restore a network scenario previously saved with `save_lab` and redeploy it.
 
         Args:
             archive_path (str): The path of the archive file created by `save_lab`.
             lab_hash (Optional[str]): If specified, override the hash of the restored network scenario.
+            lab (Optional[Kathara.model.Lab]): If specified, the network scenario to deploy from the saved images.
 
         Returns:
             Kathara.model.Lab: The restored (and redeployed) network scenario.

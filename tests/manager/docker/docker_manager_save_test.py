@@ -275,3 +275,82 @@ def test_restore_lab_diff_builds_images_and_deploys(docker_manager, tmp_path):
     docker_manager.deploy_lab.assert_called_once()
     deployed = docker_manager.deploy_lab.call_args[0][0]
     assert deployed.get_machine("pc1").meta["image"] == "kathara_save_h:pc1"
+
+
+#
+# restore_lab: caller-provided network scenario (lab=)
+#
+def _diff_manifest_pc1():
+    return {
+        "save_format_version": 1, "save_mode": "diff",
+        "lab": {"name": "restored", "hash": "somehash", "general_options": {},
+                "global_machine_metadata": {}},
+        "machines": [{"name": "pc1", "meta": {"image": "kathara_save_h:pc1"},
+                      "original_image": "kathara/base", "deletions": [],
+                      "interfaces": [{"number": 0, "link": "A", "mac_address": None}]}],
+        "links": [{"name": "A"}],
+    }
+
+
+def _caller_lab():
+    lab = Lab("caller scenario")
+    pc1 = lab.get_or_new_machine("pc1", **{'image': 'kathara/base', 'envs': ['FOO=bar']})
+    pc2 = lab.get_or_new_machine("pc2", **{'image': 'kathara/other'})
+    lab.connect_machine_to_link(pc1.name, "A")
+    lab.connect_machine_to_link(pc2.name, "A")
+    lab.shared_path = "/tmp/shared"
+    return lab
+
+
+def test_restore_lab_with_lab_uses_caller_topology_and_saved_images(docker_manager, tmp_path):
+    archive = str(tmp_path / "scenario.tar")
+    _make_diff_archive(archive, _diff_manifest_pc1(), {"pc1": b"DIFFTAR"})
+
+    docker_manager.docker_image = Mock()
+    docker_manager.deploy_lab = Mock()
+
+    caller_lab = _caller_lab()
+    lab = docker_manager.restore_lab(archive, lab=caller_lab)
+
+    assert lab is caller_lab
+    docker_manager.deploy_lab.assert_called_once()
+    assert docker_manager.deploy_lab.call_args[0][0] is caller_lab
+    docker_manager.docker_image.build_image_from_diff.assert_called_once()
+
+    assert caller_lab.get_machine("pc1").meta["image"] == "kathara_save_h:pc1"
+    assert caller_lab.get_machine("pc1").meta["envs"] == {"FOO": "bar"}
+    assert caller_lab.get_machine("pc2").meta["image"] == "kathara/other"
+    assert caller_lab.shared_path == "/tmp/shared"
+    assert set(caller_lab.machines.keys()) == {"pc1", "pc2"}
+
+
+def test_restore_lab_with_lab_ignores_lab_hash(docker_manager, tmp_path):
+    archive = str(tmp_path / "scenario.tar")
+    _make_diff_archive(archive, _diff_manifest_pc1(), {"pc1": b"DIFFTAR"})
+
+    docker_manager.docker_image = Mock()
+    docker_manager.deploy_lab = Mock()
+
+    caller_lab = _caller_lab()
+    original_hash = caller_lab.hash
+    lab = docker_manager.restore_lab(archive, lab_hash="ignoredhash", lab=caller_lab)
+
+    assert lab.hash == original_hash
+    assert lab.hash != "somehash"
+
+
+def test_restore_lab_with_lab_uploads_lab_files_into_caller_fs(docker_manager, tmp_path):
+    manifest = _diff_manifest_pc1()
+    manifest["save_mode"] = "full"
+    archive = str(tmp_path / "scenario.tar")
+    _make_full_archive(archive, manifest, {"pc1": b"FAKE_IMG"}, {"/pc1.startup": b"echo hi\n"})
+
+    docker_manager.docker_image = Mock()
+    docker_manager.deploy_lab = Mock()
+
+    caller_lab = _caller_lab()
+    lab = docker_manager.restore_lab(archive, lab=caller_lab)
+
+    assert lab is caller_lab
+    assert caller_lab.fs.readbytes("/pc1.startup") == b"echo hi\n"
+    docker_manager.docker_image.load_images_from_tar.assert_called_once()
