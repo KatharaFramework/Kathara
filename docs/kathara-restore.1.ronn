@@ -1,0 +1,32 @@
+m4_changequote()
+kathara-restore(1) -- Restore a Kathara network scenario previously saved into a file
+=============================================
+
+## SYNOPSIS
+
+`kathara restore` [`-h`] [`-l`] <SAVE_FILE>
+
+## DESCRIPTION
+
+Restore a network scenario previously saved with `kathara-save`(1) and redeploy it, rebuilding the same network.
+
+The committed device images bundled in the save file are loaded into the local Docker repository, the network topology is rebuilt from the save file, and the scenario is deployed from the saved images. As a result, the restored devices come back with the filesystem state they had when they were saved.
+
+NOTE: This command is only available on the Docker manager.
+
+## OPTIONS
+
+* `-h`, `--help`:
+    Show a help message and exit.
+
+* `-l`, `--list`:
+    Show information about restored devices after the network scenario has been restored.
+
+* `SAVE_FILE`:
+    Path of the save file to restore, as created by `kathara-save`(1).
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-save`(1), `kathara-lstart`(1), `kathara-lclean`(1), `kathara-lab.conf`(5)

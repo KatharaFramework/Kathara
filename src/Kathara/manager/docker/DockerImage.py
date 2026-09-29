@@ -1,9 +1,14 @@
+import io
 import logging
-from typing import Union, List, Set
+import os
+import tarfile
+import tempfile
+from typing import Union, List, Set, Iterator
 
+import docker.models.containers
 import docker.models.images
 from docker import DockerClient
-from docker.errors import APIError
+from docker.errors import APIError, ImageNotFound
 
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
@@ -61,6 +66,108 @@ class DockerImage(object):
         for progress in response:
             EventDispatcher.get_instance().dispatch("docker_pull_progress", progress=progress)
         EventDispatcher.get_instance().dispatch("docker_pull_ended")
+
+    def commit_container(self, container: docker.models.containers.Container, repository: str,
+                         tag: str = "latest") -> str:
+        """Commit a running container into a new local Docker image, capturing its filesystem state.
+
+        Args:
+            container (docker.models.containers.Container): The container to commit.
+            repository (str): The repository name to assign to the committed image.
+            tag (str): The tag to assign to the committed image. Default is "latest".
+
+        Returns:
+            str: The reference (`repository:tag`) of the committed image.
+        """
+        image_ref = f"{repository}:{tag}"
+        logging.debug(f"Committing container `{container.name}` into image `{image_ref}`...")
+
+        # Drop a stale image with the same reference from a previous save, if any.
+        self.remove_image(image_ref)
+        container.commit(repository=repository, tag=tag)
+
+        return image_ref
+
+    def save_image_to_tar(self, image_name: str) -> Iterator[bytes]:
+        """Export a local Docker image as a tar stream (equivalent to `docker image save`).
+
+        Args:
+            image_name (str): The name of the local Docker image to export.
+
+        Returns:
+            Iterator[bytes]: A generator streaming the image tarball content.
+        """
+        logging.debug(f"Saving image `{image_name}` to tar...")
+        return self.client.images.get(image_name).save(named=True)
+
+    def load_images_from_tar(self, tar_stream: Union[bytes, Iterator[bytes]]) -> None:
+        """Load one or more Docker images from a tar stream (equivalent to `docker image load`).
+
+        Args:
+            tar_stream (Union[bytes, Iterator[bytes]]): The image tarball content.
+
+        Returns:
+            None
+        """
+        logging.debug("Loading images from tar...")
+        self.client.images.load(tar_stream)
+
+    def build_image_from_diff(self, base_image: str, tag: str, diff_tar_path: str,
+                              deletions: List[str]) -> docker.models.images.Image:
+        """Reconstruct an image from a base image plus a filesystem-diff tarball.
+
+        Builds an image equivalent to `base_image` with the saved changes applied: the diff tarball
+        (added/modified files) is extracted on top, and the recorded deletions are removed.
+
+        Args:
+            base_image (str): The base image to build upon.
+            tag (str): The tag to assign to the reconstructed image.
+            diff_tar_path (str): Path to the filesystem-diff tarball (added/modified files).
+            deletions (List[str]): Absolute paths removed relative to the base image.
+
+        Returns:
+            docker.models.images.Image: The reconstructed image.
+        """
+        dockerfile_lines = [f"FROM {base_image}", "ADD diff.tar /"]
+        if deletions:
+            # Single-quote each path for the shell, escaping embedded single quotes.
+            quoted = " ".join("'%s'" % p.replace("'", "'\\''") for p in deletions)
+            dockerfile_lines.append(f"RUN rm -rf {quoted}")
+        dockerfile = ("\n".join(dockerfile_lines) + "\n").encode("utf-8")
+
+        logging.debug(f"Reconstructing image `{tag}` from base `{base_image}`...")
+
+        # Assemble the build context (Dockerfile + diff.tar) on disk to avoid loading it into memory.
+        ctx_fd, ctx_path = tempfile.mkstemp(prefix="kathara_ctx_", suffix=".tar")
+        try:
+            with os.fdopen(ctx_fd, "wb") as ctx_file:
+                with tarfile.open(fileobj=ctx_file, mode="w") as ctx_tar:
+                    info = tarfile.TarInfo("Dockerfile")
+                    info.size = len(dockerfile)
+                    ctx_tar.addfile(info, io.BytesIO(dockerfile))
+                    ctx_tar.add(diff_tar_path, arcname="diff.tar")
+
+            with open(ctx_path, "rb") as ctx_file:
+                image, _ = self.client.images.build(
+                    fileobj=ctx_file, custom_context=True, tag=tag, rm=True, forcerm=True, pull=False
+                )
+            return image
+        finally:
+            os.remove(ctx_path)
+
+    def remove_image(self, image_name: str) -> None:
+        """Remove a local Docker image, ignoring the error if it does not exist.
+
+        Args:
+            image_name (str): The name of the local Docker image to remove.
+
+        Returns:
+            None
+        """
+        try:
+            self.client.images.remove(image_name, force=True)
+        except ImageNotFound:
+            logging.debug(f"Image `{image_name}` not found, skipping removal.")
 
     def check_for_updates(self, image_name: str) -> None:
         """Update the specified image.

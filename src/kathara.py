@@ -94,7 +94,7 @@ class KatharaEntryPoint(object):
 
             sys.exit(exit_code)
         except KeyboardInterrupt:
-            if args.command not in ['exec', 'linfo', 'list', 'settings']:
+            if args.command not in ['exec', 'linfo', 'list', 'settings', 'save']:
                 logging.warning("You interrupted Kathara during a command. The system may be in an inconsistent "
                                 "state! If you encounter any problem please run `kathara wipe`.")
             unregister_cli_events()

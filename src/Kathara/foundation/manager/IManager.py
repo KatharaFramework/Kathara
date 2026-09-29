@@ -153,6 +153,57 @@ class IManager(ABC):
         raise NotImplementedError("You must implement `undeploy_lab` method.")
 
     @abstractmethod
+    def save_lab(self, archive_path: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                 lab: Optional[Lab] = None, selected_machines: Optional[Set[str]] = None,
+                 excluded_machines: Optional[Set[str]] = None, filesystem_diff: bool = True) -> None:
+        """Save the state of a running network scenario into a single archive file.
+
+        Args:
+            archive_path (str): The path of the archive file to create.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
+            selected_machines (Optional[Set[str]]): If not None, save only the specified devices.
+            excluded_machines (Optional[Set[str]]): If not None, exclude devices from being saved.
+            filesystem_diff (bool): If True (default), save only the filesystem diff of each device
+                relative to its base image. If False, save the full committed device images.
+
+        Returns:
+            None
+
+        Raises:
+            InvocationError: If a running network scenario hash, name or object is not specified,
+                or if both `selected_machines` and `excluded_machines` are specified.
+            NotSupportedError: If the manager does not support saving the network scenario state.
+        """
+        raise NotImplementedError("You must implement `save_lab` method.")
+
+    @abstractmethod
+    def restore_lab(self, archive_path: str, lab_hash: Optional[str] = None,
+                    lab: Optional[Lab] = None) -> Lab:
+        """Restore a network scenario previously saved with `save_lab` and redeploy it.
+
+        Args:
+            archive_path (str): The path of the archive file created by `save_lab`.
+            lab_hash (Optional[str]): If specified, override the hash of the restored network scenario.
+            lab (Optional[Kathara.model.Lab]): If specified, deploy this network scenario instead of the
+                one rebuilt from the manifest: each of its devices that appears in the save file is pointed
+                at the restored image, every other device option and the topology come from `lab`, the
+                saved scenario files are uploaded into `lab.fs`, and `lab_hash` is ignored.
+
+        Returns:
+            Kathara.model.Lab: The restored (and redeployed) network scenario.
+
+        Raises:
+            InvocationError: If the archive is not a valid Kathara save file.
+            NotSupportedError: If the manager does not support restoring the network scenario state.
+        """
+        raise NotImplementedError("You must implement `restore_lab` method.")
+
+    @abstractmethod
     def wipe(self, all_users: bool = False) -> None:
         """Undeploy all the running network scenarios.
 

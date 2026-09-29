@@ -13,6 +13,8 @@ strings = {
     "connect": "Connect to a Kathara device",
     "exec": "Execute a command in a Kathara device",
     "wipe": "Delete all Kathara devices and collision domains, optionally also delete settings",
+    "save": "Save the state of a running Kathara network scenario into a file",
+    "restore": "Restore a Kathara network scenario previously saved into a file",
     "list": "Show all running Kathara devices of the current user",
     "settings": "Show and edit Kathara settings",
     "check": "Check your system environment"

@@ -1120,6 +1120,24 @@ def test_update_lab_from_api_not_supported(kubernetes_manager):
 
 
 #
+# TESTS: save_lab / restore_lab
+#
+def test_save_lab_not_supported(kubernetes_manager):
+    with pytest.raises(NotSupportedError):
+        kubernetes_manager.save_lab("out.tar", lab_name="test")
+
+
+def test_restore_lab_not_supported(kubernetes_manager):
+    with pytest.raises(NotSupportedError):
+        kubernetes_manager.restore_lab("out.tar")
+
+
+def test_restore_lab_with_lab_not_supported(kubernetes_manager):
+    with pytest.raises(NotSupportedError):
+        kubernetes_manager.restore_lab("out.tar", lab=Lab("x"))
+
+
+#
 # TEST: get_machines_stats
 #
 @mock.patch("src.Kathara.manager.kubernetes.KubernetesMachine.KubernetesMachine.get_machines_stats")
