@@ -4,7 +4,7 @@ kathara-exec(1) -- Execute a command in a Kathara device
 
 ## SYNOPSIS
 
-`kathara exec` [`-h`] [`-d` <DIRECTORY> \| `-v`]  
+`kathara exec` [`-h`] [`-d` <DIRECTORY> \| `-v` \| `--lab-name` <LAB_NAME>]  
 [`--no-stdout`] [`--no-stderr`] [`--wait`]  
 <DEVICE_NAME> <COMMAND> [<COMMAND> ...]
 
@@ -22,12 +22,20 @@ Execute a command in the Kathara device DEVICE_NAME.
 
     Execute the specified command in a Kathara device belonging to a network scenario that is located inside DIRECTORY.  
 	If no `-d` option is provided, assume the network scenario is located in the current directory.
-	This option cannot be used in conjuction with `-v` or `--vmachine`.
+	This option cannot be used in conjunction with `-v`, `--vmachine` or `--lab-name`.
 
 * `-v`, `--vmachine`:
 	The device has been started with vstart command.
 
-	This option cannot be used in conjuction with `-d` or `--directory`.
+	This option cannot be used in conjunction with `-d`, `--directory` or `--lab-name`.
+
+* `--lab-name` <LAB_NAME>:
+    Specify the name of the network scenario containing the specified device.
+
+    Only for network scenarios created by name, e.g., through the Kathara Python APIs.
+    For those started with `kathara-lstart`(1), use `-d` or `--directory`.
+
+    This option cannot be used in conjunction with `-d`, `--directory`, `-v` or `--vmachine`.
 
 * `--no-stdout`:
     Disable stdout of the executed command.
@@ -55,6 +63,10 @@ Execute the command ping into a device called `pc1`, started with `kathara-vstar
 	kathara exec as1r1 "ping 127.0.0.1"
 
 Execute the command ping into a device called `as1r1` belonging to a network scenario located in current folder and started with `kathara-lstart`(1).
+
+	kathara exec --lab-name mylab pc1 "ping 127.0.0.1"
+
+Execute the command ping into a device called `pc1` belonging to a network scenario named `mylab`, created by name through the Kathara API.
 
 m4_include(footer.txt)
 

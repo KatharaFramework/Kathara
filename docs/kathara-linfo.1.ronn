@@ -4,7 +4,7 @@ kathara-linfo(1) -- Show information about a Kathara network scenario
 
 ## SYNOPSIS
 
-`kathara linfo` [`-h`] [`-d` <DIRECTORY>] [`-w` \| `-c`] [`-n` <DEVICE_NAME> \| `-t`]
+`kathara linfo` [`-h`] [`-d` <DIRECTORY> \| `--lab-name` <LAB_NAME>] [`-w` \| `-c`] [`-n` <DEVICE_NAME> \| `-t`]
 
 
 ## DESCRIPTION
@@ -30,6 +30,15 @@ The following information are displayed:
     Specify the folder containing the network scenario.
 
     If no `-d` option is provided, assume the network scenario is located in the current directory.
+    This option cannot be used in conjunction with `--lab-name`.
+
+* `--lab-name` <LAB_NAME>:
+    Specify the name of the network scenario.
+
+    Only for network scenarios created by name, e.g., through the Kathara Python APIs.
+    For those started with `kathara-lstart`(1), use `-d` or `--directory`.
+
+    This option cannot be used in conjunction with `-d`, `--directory`, `-c` or `--conf`.
 
 * `-w`, `-l`, `--watch`, `--live`:
     Watch updates of network scenario status.
@@ -42,6 +51,8 @@ The following information are displayed:
     * Descriptive information (retrieved from `kathara-lab.conf`(5))
     * Number of devices that make up the network scenario
     * Number of networks that make up the network scenario
+
+    This option cannot be used in conjunction with `--lab-name`, since network scenarios created through the Python APIs have no `lab.conf` file.
 
 * `-t`, `--topology`:
     Display a mapping of devices attached to each collision domain. 

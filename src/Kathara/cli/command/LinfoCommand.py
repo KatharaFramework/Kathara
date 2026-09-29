@@ -32,10 +32,19 @@ class LinfoCommand(Command):
             help='Show a help message and exit.'
         )
 
-        self.parser.add_argument(
+        lab_group = self.parser.add_mutually_exclusive_group(required=False)
+
+        lab_group.add_argument(
             '-d', '--directory',
             required=False,
             help='Specify the folder containing the network scenario.'
+        )
+
+        lab_group.add_argument(
+            '--lab-name',
+            dest='lab_name',
+            metavar='LAB_NAME',
+            help='Name of the network scenario.'
         )
 
         group = self.parser.add_mutually_exclusive_group(required=False)
@@ -74,16 +83,22 @@ class LinfoCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
-        lab_path = utils.get_absolute_path(lab_path)
+        if args['lab_name'] and args['conf']:
+            self.parser.error("argument --lab-name: not allowed with argument -c/--conf")
 
-        # Load custom 'kathara.conf' if it exists
-        self._load_custom_configuration(lab_path)
+        if args['lab_name']:
+            lab = Lab(args['lab_name'])
+        else:
+            lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
+            lab_path = utils.get_absolute_path(lab_path)
 
-        try:
-            lab = LabParser.parse(lab_path)
-        except (Exception, IOError):
-            lab = Lab(None, path=lab_path)
+            # Load custom 'kathara.conf' if it exists
+            self._load_custom_configuration(lab_path)
+
+            try:
+                lab = LabParser.parse(lab_path)
+            except (Exception, IOError):
+                lab = Lab(None, path=lab_path)
 
         if args['watch']:
             if args['name']:
