@@ -32,7 +32,7 @@ Execute a command in the Kathara device DEVICE_NAME.
 * `--lab-name` <LAB_NAME>:
     Specify the name of the network scenario containing the specified device.
 
-    Only for network scenarios created by name, e.g. through the Kathara API.
+    Only for network scenarios created by name, e.g., through the Kathara Python APIs.
     For those started with `kathara-lstart`(1), use `-d` or `--directory`.
 
     This option cannot be used in conjunction with `-d`, `--directory`, `-v` or `--vmachine`.

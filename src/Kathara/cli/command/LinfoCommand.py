@@ -84,7 +84,7 @@ class LinfoCommand(Command):
         args = self.get_args()
 
         if args['lab_name'] and args['conf']:
-            self.parser.error("argument --lab-name not allowed with argument -c/--conf")
+            self.parser.error("argument --lab-name: not allowed with argument -c/--conf")
 
         if args['lab_name']:
             lab = Lab(args['lab_name'])
