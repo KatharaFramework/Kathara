@@ -26,7 +26,8 @@ setup(
         "libtmux>=0.8.2; platform_system == 'darwin' or platform_system == 'linux'",
         "appscript>=1.1.0; platform_system == 'darwin'",
         "pypiwin32>=223; platform_system == 'win32'",
-        "windows-curses>=2.1.0; platform_system == 'win32'"
+        "windows-curses>=2.1.0; platform_system == 'win32'",
+        "podman>=5.0.0"
     ],
     extras_require={
         'test': ["pytest"],

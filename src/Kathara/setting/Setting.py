@@ -15,7 +15,7 @@ from ..foundation.setting.SettingsAddonFactory import SettingsAddonFactory
 from ..webhooks.GitHubApi import GitHubApi
 
 AVAILABLE_DEBUG_LEVELS: List[str] = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "EXCEPTION"]
-AVAILABLE_MANAGERS: List[str] = ["docker", "kubernetes"]
+AVAILABLE_MANAGERS: List[str] = ["docker", "kubernetes", "podman"]
 
 ONE_WEEK: int = 604800
 

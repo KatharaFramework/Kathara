@@ -42,7 +42,7 @@ For more information about Kathará images please visit the dedicated [repositor
 
 Kathará extremely simplifies the creation of complex networks using the concept of **network scenario**: a directory containing a file with the network topology, and, foreach device, files and folders containing the configuration of that device.
 
-Kathará emulates network scenarios using either Docker or Kubernetes as backend virtualization system.
+Kathará emulates network scenarios using either Docker, Podman, or Kubernetes as backend virtualization system. The Podman backend runs rootless Podman 5 on Linux hosts, selected via the `manager_type` setting; Kathará installs its network plugin automatically on first use.
 
 ## Installation
 Install Docker and then run the installer specific for your Operating System. For a step-by-step guide check the [Wiki](https://github.com/KatharaFramework/Kathara/wiki).
