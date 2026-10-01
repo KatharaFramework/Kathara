@@ -18,6 +18,8 @@ Checks on the correctness of the configuration are performed each time a Kathara
 * `manager_type` (string):
     Manager used to launch the network scenario.
 
+    Possible values are `docker`, `kubernetes`, `podman`.
+
     Default to `docker`.
 
 * `terminal` (string):
@@ -116,6 +118,46 @@ Each Manager specifies additional parameters which are used only when the Manage
 
 * `cert_path` (string):
     This parameter specifies a TLS Cert path that could be required when using a Remote Docker daemon.
+
+    Default to null.
+
+### PODMAN
+
+The Podman manager runs rootless Podman 5 on Linux hosts. Features that require root privileges (privileged devices, collision domains shared between users, `wipe`/statistics of all users, external collision domains) are not supported in rootless mode and fail with an explicit error.
+
+* `network_plugin` (string):
+	This parameter specifies the Podman Network Plugin used to create collision domains. Currently, Kathara supports two plugins: `katharanp_vde` is the default plugin, based on VDE software switches, a userspace switch that forwards every frame. `katharanp` is based on Linux bridges, with the data plane in the kernel; LACP frames cannot cross a Linux bridge.
+
+	Possible values are `katharanp`, `katharanp_vde`.
+
+	Default to `katharanp_vde`.
+
+* `hosthome_mount` (boolean):
+	This parameter specifies if the `/hosthome` dir will be mounted inside the device, as for the Docker manager. On SELinux hosts, enabling this option disables SELinux label separation for the device.
+
+	Default to `false`.
+
+* `shared_mount` (boolean):
+	This parameter specifies if the `/shared` dir will be mounted inside the device, as for the Docker manager. On SELinux hosts, the network scenario `shared` folder is relabeled (`:z`) for the device.
+
+	Default to `true`.
+
+* `image_update_policy` (string):
+    This parameter specifies the policy when a Podman image update is available for a running device, as for the Docker manager.
+
+    Possible values are `Prompt`, `Always`, `Never`.
+
+    Default to `Prompt`.
+
+* `shared_cds` (integer):
+    This parameter allows to connect devices of different network scenarios to the same collision domains. Sharing collision domains between different users (enum value `3`) is not supported in rootless mode.
+
+    Possible values are `1` (enum value for `Not Shared`) and `2` (enum value for `Shared between network scenarios`).
+
+    Default to `1` (enum value for `Not Shared`).
+
+* `api_socket_url` (string):
+    This parameter specifies a local Podman API socket URL to connect to, instead of the automatically detected rootless user socket. Only `unix://` URLs are supported: a remote Podman connection cannot install the Kathara network plugin.
 
     Default to null.
 
