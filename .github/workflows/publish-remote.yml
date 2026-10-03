@@ -41,6 +41,7 @@ jobs:
   version:
     name: Get version
     runs-on: self-hosted
+    needs: [gate]
     permissions:
       contents: read
     outputs:
