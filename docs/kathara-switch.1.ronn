@@ -1,0 +1,95 @@
+m4_changequote()
+kathara-switch(1) -- Manage a Kathara collision domain deployed as a managed switch
+=============================================
+
+## SYNOPSIS
+
+`kathara switch` [`-h`] [`-d` <DIRECTORY> \| `-v`]  
+<CD_NAME> [<COMMAND> ...]
+
+## DESCRIPTION
+
+Send a command to the management console of the collision domain CD_NAME, which must be deployed in `managed` mode (see `kathara-lab.conf`(5)). Without COMMAND, open an interactive console on the collision domain: each line is a command, and `exit` (or `CTRL+D`) leaves the console.
+
+The collision domain is a VDE switch. The most useful commands are:
+
+* `help`:
+    Print the list of the commands.
+
+* `port/print`, `port/allprint`:
+    Print the ports which are in use, or all the ports. The interface of a device is described as `kathara <device>:eth<N>`.
+
+* `vlan/print`, `vlan/allprint`:
+    Print the VLANs and their ports.
+
+* `vlan/create` <VLAN>, `vlan/remove` <VLAN>:
+    Create or remove a VLAN.
+
+* `port/setvlan` <PORT> <VLAN>:
+    Set the VLAN of the untagged frames of a port (access port).
+
+* `vlan/addport` <VLAN> <PORT>, `vlan/delport` <VLAN> <PORT>:
+    Add or remove a port to the ports which exchange the frames of a VLAN with an 802.1Q tag (trunk port).
+
+* `hash/print`:
+    Print the MAC address table.
+
+* `port/sethub` <0|1>:
+    Make the collision domain behave as a switch (0) or as a hub (1).
+
+* `fstp/setfstp` <0|1>, `fstp/print`:
+    Enable or disable the fast spanning tree protocol, and print its state.
+
+The commands `shutdown`, `load` and `logout` are refused.
+
+The changes made with this command are kept as long as the collision domain is deployed. The port of a device interface keeps its configuration when the device restarts; the VLANs declared in `kathara-lab.conf`(5) are applied when the interface is connected for the first time.
+
+This command is only available with a local Docker daemon on Linux, to the users who are allowed to use it.
+
+## OPTIONS
+
+* `-h`, `--help`:
+    Show a help message and exit.
+
+* `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
+    Specify the folder containing the network scenario.
+
+    Manage a collision domain belonging to a network scenario that is located inside DIRECTORY.  
+	If no `-d` option is provided, assume the network scenario is located in the current directory.
+	This option cannot be used in conjuction with `-v` or `--vmachine`.
+
+* `-v`, `--vmachine`:
+	The collision domain has been created with vstart command.
+
+	This option cannot be used in conjuction with `-d` or `--directory`.
+
+* `<CD_NAME>`:
+    Name of the managed collision domain.
+
+* `<COMMAND>`:
+    Command sent to the collision domain. If omitted, an interactive console is opened.
+
+## EXIT STATUS
+
+With a COMMAND, the exit status is 0 if the command succeeds and 1 if the collision domain refuses it; the status code and the message of the switch are then printed on the standard error (e.g. `1017 File exists`).
+
+## EXAMPLES
+
+	kathara switch A port/print
+
+Print the ports of the collision domain `A` of the network scenario located in the current folder.
+
+	kathara switch -d path/to/network_scenario A vlan/create 30
+	kathara switch -d path/to/network_scenario A port/setvlan 3 30
+
+Create VLAN 30 on the collision domain `A` and make port 3 an access port of this VLAN.
+
+	kathara switch -v A
+
+Open an interactive console on the collision domain `A`, created with `kathara-vstart`(1).
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-lab.conf`(5), `kathara-vstart`(1), `kathara-lstart`(1), `kathara-lconfig`(1)

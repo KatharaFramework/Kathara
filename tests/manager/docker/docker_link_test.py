@@ -12,8 +12,9 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import BRIDGE_LINK_NAME
 from src.Kathara.manager.docker.DockerLink import DockerLink
 from src.Kathara import utils
-from src.Kathara.exceptions import PrivilegeError, InvocationError
-from src.Kathara.types import SharedCollisionDomainsOption
+from src.Kathara.exceptions import PrivilegeError, InvocationError, DockerPluginError, LinkModeError, \
+    LinkCommandError, NotSupportedError
+from src.Kathara.types import SharedCollisionDomainsOption, LinkMode
 
 
 #
@@ -589,3 +590,268 @@ def test_get_links_stats_privilege_error(mock_is_admin, docker_link):
     mock_is_admin.return_value = False
     with pytest.raises(PrivilegeError):
         next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_device", user=None))
+
+
+#
+# TEST: create (collision domain modes)
+#
+def _create_setting_mock():
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'net_prefix': 'kathara',
+        'remote_url': None,
+        'network_plugin': 'kathara/katharanp_vde'
+    })
+    return setting_mock
+
+
+@pytest.mark.parametrize("mode", [LinkMode.SWITCH, LinkMode.MANAGED])
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_mode(mock_get_current_user_name, mock_setting_get_instance, mode, docker_link, default_link):
+    docker_link.client.networks.list.return_value = []
+    docker_link.docker_plugin.supported_link_modes.return_value = {"hub", "switch", "managed"}
+    mock_get_current_user_name.return_value = 'user'
+    setting_mock = _create_setting_mock()
+    mock_setting_get_instance.return_value = setting_mock
+
+    default_link.mode = mode
+    docker_link.create(default_link)
+
+    docker_link.client.networks.create.assert_called_once_with(
+        name="kathara_user_A_lab-hash",
+        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
+        check_duplicate=True,
+        ipam=docker.types.IPAMConfig(driver='null'),
+        labels={
+            "name": "A",
+            "app": "kathara",
+            "external": "",
+            "user": "user",
+            "lab_hash": default_link.lab.hash,
+        },
+        options={"kathara.switch.mode": mode.value}
+    )
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_mode_hub(mock_get_current_user_name, mock_setting_get_instance, docker_link, default_link):
+    docker_link.client.networks.list.return_value = []
+    mock_get_current_user_name.return_value = 'user'
+    setting_mock = _create_setting_mock()
+    mock_setting_get_instance.return_value = setting_mock
+
+    default_link.mode = LinkMode.HUB
+    docker_link.create(default_link)
+
+    # A hub is what the plugin creates by default: nothing is asked to it
+    assert not docker_link.docker_plugin.supported_link_modes.called
+    docker_link.client.networks.create.assert_called_once_with(
+        name="kathara_user_A_lab-hash",
+        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
+        check_duplicate=True,
+        ipam=docker.types.IPAMConfig(driver='null'),
+        labels={
+            "name": "A",
+            "app": "kathara",
+            "external": "",
+            "user": "user",
+            "lab_hash": default_link.lab.hash,
+        }
+    )
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_mode_not_supported_error(mock_get_current_user_name, mock_setting_get_instance, docker_link,
+                                         default_link):
+    docker_link.client.networks.list.return_value = []
+    docker_link.docker_plugin.supported_link_modes.return_value = {"hub"}
+    mock_get_current_user_name.return_value = 'user'
+    mock_setting_get_instance.return_value = _create_setting_mock()
+
+    default_link.mode = LinkMode.SWITCH
+    with pytest.raises(DockerPluginError):
+        docker_link.create(default_link)
+
+    assert not docker_link.client.networks.create.called
+
+
+@pytest.mark.parametrize("options,expected", [
+    (None, LinkMode.HUB), ({}, LinkMode.HUB), ({"kathara.switch.mode": "managed"}, LinkMode.MANAGED)
+])
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_deployed_mode_adopted(mock_get_current_user_name, mock_setting_get_instance, options, expected,
+                                      docker_link, docker_network, default_link):
+    docker_network.attrs = {"Options": options}
+    docker_link.client.networks.list.return_value = [docker_network]
+    mock_get_current_user_name.return_value = 'user'
+    mock_setting_get_instance.return_value = _create_setting_mock()
+
+    docker_link.create(default_link)
+
+    assert default_link.api_object == docker_network
+    assert default_link.mode == expected
+    assert not docker_link.client.networks.create.called
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_deployed_mode_mismatch_error(mock_get_current_user_name, mock_setting_get_instance, docker_link,
+                                             docker_network, default_link):
+    docker_network.attrs = {"Options": {"kathara.switch.mode": "managed"}}
+    docker_link.client.networks.list.return_value = [docker_network]
+    mock_get_current_user_name.return_value = 'user'
+    mock_setting_get_instance.return_value = _create_setting_mock()
+
+    default_link.mode = "switch"
+    with pytest.raises(LinkModeError):
+        docker_link.create(default_link)
+
+
+#
+# TEST: get_link_mode
+#
+@pytest.mark.parametrize("options,expected", [
+    (None, LinkMode.HUB), ({}, LinkMode.HUB), ({"kathara.switch.mode": "hub"}, LinkMode.HUB),
+    ({"kathara.switch.mode": "switch"}, LinkMode.SWITCH), ({"kathara.switch.mode": "managed"}, LinkMode.MANAGED),
+    ({"kathara.switch.mode": "unknown"}, LinkMode.HUB)
+])
+def test_get_link_mode(options, expected, docker_network):
+    docker_network.attrs = {"Options": options}
+
+    assert DockerLink.get_link_mode(docker_network) == expected
+
+
+#
+# TEST: exec / get_ports
+#
+@pytest.fixture()
+def managed_network(docker_network):
+    docker_network.id = "0123456789abcdef"
+    docker_network.attrs = {"Labels": {"name": "A"}, "Options": {"kathara.switch.mode": "managed"}}
+    return docker_network
+
+
+def _local_setting_mock(remote_url=None):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{'remote_url': remote_url})
+    return setting_mock
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.VdeManagement")
+@mock.patch("src.Kathara.utils.is_platform")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_exec(mock_setting_get_instance, mock_is_platform, mock_vde_management, docker_link, managed_network):
+    mock_setting_get_instance.return_value = _local_setting_mock()
+    mock_is_platform.return_value = True
+    docker_link.docker_plugin.plugin_host_store_path.return_value = "/tmp/katharanp"
+    mock_vde_management.return_value.__enter__.return_value.exec.return_value = (1000, "Success", "VLAN 0010")
+
+    assert docker_link.exec(managed_network, "vlan/print") == "VLAN 0010"
+
+    mock_vde_management.assert_called_once_with("/tmp/katharanp/kt-0123456789ab/mgmt")
+    mock_vde_management.return_value.open.assert_called_once()
+    mock_vde_management.return_value.__enter__.return_value.exec.assert_called_once_with("vlan/print")
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.VdeManagement")
+@mock.patch("src.Kathara.utils.is_platform")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_exec_command_error(mock_setting_get_instance, mock_is_platform, mock_vde_management, docker_link,
+                            managed_network):
+    mock_setting_get_instance.return_value = _local_setting_mock()
+    mock_is_platform.return_value = True
+    docker_link.docker_plugin.plugin_host_store_path.return_value = "/tmp/katharanp"
+    mock_vde_management.return_value.__enter__.return_value.exec.return_value = (1017, "File exists", "")
+
+    with pytest.raises(LinkCommandError) as e:
+        docker_link.exec(managed_network, "vlan/create 10")
+
+    assert e.value.code == 1017
+    assert e.value.message == "File exists"
+
+
+@pytest.mark.parametrize("command", ["shutdown", " shutdown ", "load /etc/passwd", "logout"])
+@mock.patch("src.Kathara.manager.docker.DockerLink.VdeManagement")
+@mock.patch("src.Kathara.utils.is_platform")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_exec_forbidden_command_error(mock_setting_get_instance, mock_is_platform, mock_vde_management, command,
+                                      docker_link, managed_network):
+    mock_setting_get_instance.return_value = _local_setting_mock()
+    mock_is_platform.return_value = True
+    docker_link.docker_plugin.plugin_host_store_path.return_value = "/tmp/katharanp"
+
+    with pytest.raises(LinkCommandError) as e:
+        docker_link.exec(managed_network, command)
+
+    assert e.value.code == 1001
+    assert not mock_vde_management.return_value.__enter__.return_value.exec.called
+
+
+@pytest.mark.parametrize("options", [None, {"kathara.switch.mode": "switch"}])
+@mock.patch("src.Kathara.manager.docker.DockerLink.VdeManagement")
+@mock.patch("src.Kathara.utils.is_platform")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_exec_not_managed_error(mock_setting_get_instance, mock_is_platform, mock_vde_management, options,
+                                docker_link, managed_network):
+    mock_setting_get_instance.return_value = _local_setting_mock()
+    mock_is_platform.return_value = True
+    managed_network.attrs["Options"] = options
+
+    with pytest.raises(LinkModeError):
+        docker_link.exec(managed_network, "vlan/print")
+
+    assert not mock_vde_management.called
+
+
+@pytest.mark.parametrize("is_linux,remote_url", [(False, None), (True, "tcp://remote:2375")])
+@mock.patch("src.Kathara.manager.docker.DockerLink.VdeManagement")
+@mock.patch("src.Kathara.utils.is_platform")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_exec_not_supported_error(mock_setting_get_instance, mock_is_platform, mock_vde_management, is_linux,
+                                  remote_url, docker_link, managed_network):
+    mock_setting_get_instance.return_value = _local_setting_mock(remote_url)
+    mock_is_platform.return_value = is_linux
+
+    with pytest.raises(NotSupportedError):
+        docker_link.exec(managed_network, "vlan/print")
+
+    assert not mock_vde_management.called
+
+
+@pytest.mark.parametrize("error,expected", [
+    (PermissionError("denied"), PrivilegeError), (FileNotFoundError("missing"), DockerPluginError)
+])
+@mock.patch("src.Kathara.manager.docker.DockerLink.VdeManagement")
+@mock.patch("src.Kathara.utils.is_platform")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_exec_socket_error(mock_setting_get_instance, mock_is_platform, mock_vde_management, error, expected,
+                           docker_link, managed_network):
+    mock_setting_get_instance.return_value = _local_setting_mock()
+    mock_is_platform.return_value = True
+    docker_link.docker_plugin.plugin_host_store_path.return_value = "/tmp/katharanp"
+    mock_vde_management.return_value.open.side_effect = error
+
+    with pytest.raises(expected):
+        docker_link.exec(managed_network, "vlan/print")
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.VdeManagement")
+@mock.patch("src.Kathara.utils.is_platform")
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_get_ports(mock_setting_get_instance, mock_is_platform, mock_vde_management, docker_link, managed_network):
+    mock_setting_get_instance.return_value = _local_setting_mock()
+    mock_is_platform.return_value = True
+    docker_link.docker_plugin.plugin_host_store_path.return_value = "/tmp/katharanp"
+    management = mock_vde_management.return_value.__enter__.return_value
+    management.exec.side_effect = [(1000, "Success", "ports"), (1000, "Success", "vlans")]
+    mock_vde_management.parse_ports.return_value = {1: {}}
+
+    assert docker_link.get_ports(managed_network) == {1: {}}
+
+    management.exec.assert_has_calls([call("port/allprint"), call("vlan/allprint")])
+    mock_vde_management.parse_ports.assert_called_once_with("ports", "vlans")

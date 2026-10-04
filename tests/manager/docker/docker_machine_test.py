@@ -15,7 +15,8 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Machine import Machine
 from src.Kathara.manager.docker.DockerMachine import DockerMachine
-from src.Kathara.exceptions import DockerPluginError, MachineBinaryError, PrivilegeError, InvocationError
+from src.Kathara.exceptions import DockerPluginError, MachineBinaryError, PrivilegeError, InvocationError, \
+    InterfaceVlanError
 from src.Kathara.types import SharedCollisionDomainsOption
 from src.Kathara.event.EventDispatcher import EventDispatcher
 
@@ -1424,6 +1425,66 @@ def test_create_driver_old_docker(docker_machine, default_device, default_link):
         default_device, interface, docker_machine._get_iface_sysctls(default_device.get_sysctls(), interface.num)
     )
     assert order_driver_opt(driver_opt) == {'kathara.iface': str(interface.num), 'kathara.link': interface.link.name}
+
+
+def test_create_driver_opt_managed(docker_machine, default_device, default_link):
+    docker_machine._engine_version = '25.0.0'
+    default_link.mode = "managed"
+    interface = default_device.add_interface(default_link)
+    driver_opt = docker_machine._create_driver_opt(
+        default_device, interface, docker_machine._get_iface_sysctls(default_device.get_sysctls(), interface.num)
+    )
+    assert driver_opt == {
+        'kathara.iface': str(interface.num), 'kathara.link': interface.link.name,
+        'kathara.switch.label': 'test_device:eth0'
+    }
+
+
+def test_create_driver_opt_managed_vlans(docker_machine, default_device, default_link):
+    docker_machine._engine_version = '25.0.0'
+    default_link.mode = "managed"
+    interface = default_device.add_interface(default_link, number=2, vlan=10, tagged_vlans=[30, 20])
+    driver_opt = docker_machine._create_driver_opt(
+        default_device, interface, docker_machine._get_iface_sysctls(default_device.get_sysctls(), interface.num)
+    )
+    assert driver_opt == {
+        'kathara.iface': '2', 'kathara.link': interface.link.name,
+        'kathara.switch.label': 'test_device:eth2', 'kathara.switch.vlan': '10', 'kathara.switch.tagged': '20,30'
+    }
+
+
+@pytest.mark.parametrize("mode", [None, "hub", "switch"])
+def test_create_driver_opt_not_managed(docker_machine, default_device, default_link, mode):
+    docker_machine._engine_version = '25.0.0'
+    default_link.mode = mode
+    interface = default_device.add_interface(default_link)
+    driver_opt = docker_machine._create_driver_opt(
+        default_device, interface, docker_machine._get_iface_sysctls(default_device.get_sysctls(), interface.num)
+    )
+    assert driver_opt == {'kathara.iface': str(interface.num), 'kathara.link': interface.link.name}
+
+
+def test_create_driver_opt_vlans_not_managed_error(docker_machine, default_device, default_link):
+    default_link.mode = "switch"
+    interface = default_device.add_interface(default_link, vlan=10)
+    with pytest.raises(InterfaceVlanError):
+        docker_machine._create_driver_opt(
+            default_device, interface, docker_machine._get_iface_sysctls(default_device.get_sysctls(), interface.num)
+        )
+
+
+#
+# TEST: get_interface_vlans
+#
+@pytest.mark.parametrize("driver_opt,expected", [
+    (None, {}),
+    ({'kathara.iface': '0', 'kathara.link': 'A'}, {}),
+    ({'kathara.switch.label': 'pc1:eth0', 'kathara.switch.vlan': '10'}, {'vlan': 10}),
+    ({'kathara.switch.tagged': '20,30'}, {'tagged_vlans': [20, 30]}),
+    ({'kathara.switch.vlan': '10', 'kathara.switch.tagged': '20'}, {'vlan': 10, 'tagged_vlans': [20]}),
+])
+def test_get_interface_vlans(docker_machine, driver_opt, expected):
+    assert docker_machine.get_interface_vlans(driver_opt) == expected
 
 
 #

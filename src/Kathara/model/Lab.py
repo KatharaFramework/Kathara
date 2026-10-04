@@ -11,6 +11,7 @@ from . import Link as LinkPackage
 from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
 from .. import utils
+from ..types import LinkMode
 from ..exceptions import LinkNotFoundError, MachineNotFoundError, MachineAlreadyExistsError, LinkAlreadyExistsError, \
     InvocationError
 from ..foundation.model.LabFilesystemMixin import LabFilesystemMixin
@@ -90,7 +91,8 @@ class Lab(LabFilesystemMixin):
         self.hash = utils.generate_urlsafe_hash(value)
 
     def connect_machine_to_link(self, machine_name: str, link_name: str,
-                                machine_iface_number: int = None, mac_address: Optional[str] = None) \
+                                machine_iface_number: int = None, mac_address: Optional[str] = None,
+                                vlan: Optional[int] = None, tagged_vlans: Optional[List[int]] = None) \
             -> Tuple['MachinePackage.Machine', 'InterfacePackage.Interface']:
         """Connect the specified device to the specified collision domain.
 
@@ -100,6 +102,9 @@ class Lab(LabFilesystemMixin):
             machine_iface_number (int): The number of the device interface to connect. If it is None, the first free
                 number is used.
             mac_address (Optional[str]): The MAC address to assign to the interface.
+            vlan (Optional[int]): The VLAN of the untagged frames of the interface (managed collision domain).
+            tagged_vlans (Optional[List[int]]): The VLANs exchanged tagged with the interface
+                (managed collision domain).
 
         Returns:
             Tuple[Kathara.model.Machine.Machine, Kathara.model.Interface.Interface]: A tuple containing the Kathara
@@ -111,12 +116,14 @@ class Lab(LabFilesystemMixin):
         machine = self.get_or_new_machine(machine_name)
         link = self.get_or_new_link(link_name)
 
-        interface = machine.add_interface(link, number=machine_iface_number, mac_address=mac_address)
+        interface = machine.add_interface(link, number=machine_iface_number, mac_address=mac_address,
+                                          vlan=vlan, tagged_vlans=tagged_vlans)
 
         return machine, interface
 
     def connect_machine_obj_to_link(self, machine: 'MachinePackage.Machine', link_name: str,
-                                    machine_iface_number: int = None, mac_address: Optional[str] = None) \
+                                    machine_iface_number: int = None, mac_address: Optional[str] = None,
+                                    vlan: Optional[int] = None, tagged_vlans: Optional[List[int]] = None) \
             -> 'InterfacePackage.Interface':
         """Connect the specified device object to the specified collision domain.
 
@@ -126,6 +133,9 @@ class Lab(LabFilesystemMixin):
             machine_iface_number (int): The number of the device interface to connect. If it is None, the first free
                 number is used.
             mac_address (Optional[str]): The MAC address to assign to the interface.
+            vlan (Optional[int]): The VLAN of the untagged frames of the interface (managed collision domain).
+            tagged_vlans (Optional[List[int]]): The VLANs exchanged tagged with the interface
+                (managed collision domain).
 
         Returns:
             Kathara.model.Interface.Interface: The interface object associated to the new interface..
@@ -135,7 +145,8 @@ class Lab(LabFilesystemMixin):
         """
         link = self.get_or_new_link(link_name)
 
-        interface = machine.add_interface(link, number=machine_iface_number, mac_address=mac_address)
+        interface = machine.add_interface(link, number=machine_iface_number, mac_address=mac_address,
+                                          vlan=vlan, tagged_vlans=tagged_vlans)
 
         return interface
 
@@ -185,11 +196,15 @@ class Lab(LabFilesystemMixin):
 
         Raises:
             NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
+            InterfaceVlanError: If VLANs are set on an interface whose collision domain is not a managed switch.
         """
         logging.debug("Checking network scenario integrity...")
 
         for machine in self.machines.values():
             machine.check()
+
+            for interface in machine.interfaces.values():
+                interface.check_vlans()
 
     def get_links_from_machines(self, machines: Union[List[str], Set[str]]) -> Set[str]:
         """Return the name of the collision domains connected to the devices.
@@ -362,22 +377,25 @@ class Lab(LabFilesystemMixin):
 
         return self.links[name]
 
-    def new_link(self, name: str) -> 'LinkPackage.Link':
+    def new_link(self, name: str, mode: Optional[Union[LinkMode, str]] = None) -> 'LinkPackage.Link':
         """Create the collision domain and add it to the collision domains list.
 
         Args:
             name (str): The name of the collision domain.
+            mode (Optional[Union[Kathara.types.LinkMode, str]]): The behaviour of the collision domain
+                (hub, switch or managed). If None, the collision domain is a hub.
 
         Returns:
             Kathara.model.Link: A Kathara collision domain.
 
         Raises:
             LinkAlreadyExistsError: If the specified link is already in the network scenario.
+            LinkModeError: If the specified mode is not valid.
         """
         if name in self.links:
             raise LinkAlreadyExistsError(f"Collision domain {name} is already the network scenario.")
 
-        self.links[name] = LinkPackage.Link(self, name)
+        self.links[name] = LinkPackage.Link(self, name, mode=mode)
 
         return self.links[name]
 
