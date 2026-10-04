@@ -28,10 +28,18 @@ class LcleanCommand(Command):
             help='Show a help message and exit.'
         )
 
-        self.parser.add_argument(
+        group = self.parser.add_mutually_exclusive_group(required=False)
+
+        group.add_argument(
             '-d', '--directory',
             required=False,
             help='Specify the folder containing the network scenario.'
+        )
+        group.add_argument(
+            '--lab-name',
+            dest='lab_name',
+            metavar='LAB_NAME',
+            help='Name of the network scenario containing the device.'
         )
         self.parser.add_argument(
             '--exclude',
@@ -52,16 +60,19 @@ class LcleanCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
-        lab_path = utils.get_absolute_path(lab_path)
+        if args['lab_name']:
+            lab = Lab(args['lab_name'])
+        else:
+            lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
+            lab_path = utils.get_absolute_path(lab_path)
 
-        # Load custom 'kathara.conf' if it exists
-        self._load_custom_configuration(lab_path)
+            # Load custom 'kathara.conf' if it exists
+            self._load_custom_configuration(lab_path)
 
-        try:
-            lab = LabParser.parse(lab_path)
-        except (Exception, IOError):
-            lab = Lab(None, path=lab_path)
+            try:
+                lab = LabParser.parse(lab_path)
+            except (Exception, IOError):
+                lab = Lab(None, path=lab_path)
 
         self.console.print(create_panel("Stopping Network Scenario", style="blue bold", justify="center"))
 

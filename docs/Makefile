@@ -1,6 +1,8 @@
 #!/usr/bin/make -f
 
 manual ::= "Kathara manual"
+year ::= $(shell date +%Y)
+M4_FLAGS ::= -D__YEAR__=$(year)
 
 .PHONY: all markdown-build roff-build html-build docker-build-image cleanall
 
@@ -21,13 +23,13 @@ roff-build: $(foreach name,$(shell basename -as .ronn *.ronn),Roff/$(name))
 html-build: $(foreach name,$(shell basename -as .ronn *.ronn),Html/$(name).html)
 
 MD/%.markdown: %.ronn | MD/
-	cat $^ | m4 -P | ronn --manual=$(manual) -o $(dir $@) --markdown > $@
+	cat $^ | m4 -P $(M4_FLAGS) | ronn --manual=$(manual) -o $(dir $@) --markdown > $@
 
 Roff/%: %.ronn | Roff/
-	cat $^ | m4 -P | ronn --manual=$(manual) -o $(dir $@) --roff > $@
+	cat $^ | m4 -P $(M4_FLAGS) | ronn --manual=$(manual) -o $(dir $@) --roff > $@
 
 Html/%.html: %.ronn | Html/
-	cat $^ | m4 -P | ronn --manual=$(manual) -o $(dir $@) --html > $@
+	cat $^ | m4 -P $(M4_FLAGS) | ronn --manual=$(manual) -o $(dir $@) --html > $@
 
 MD/:
 	mkdir $@
