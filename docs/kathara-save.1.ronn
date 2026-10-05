@@ -4,7 +4,7 @@ kathara-save(1) -- Save the state of a running Kathara network scenario into a f
 
 ## SYNOPSIS
 
-`kathara save` [`-h`] [`-d` <DIRECTORY> | `-n` <NAME>] [`-o` <OUTPUT>] [`--diff` | `--full-images`] [`--exclude` <DEVICE_NAME> [<DEVICE_NAME> ...]] [<DEVICE_NAME> [<DEVICE_NAME> ...]]
+`kathara save` [`-h`] [`-d` <DIRECTORY> \| `-n` <NAME>] [`-o` <OUTPUT>] [`--diff` \| `--full-images`] [`--exclude` <DEVICE_NAME> [<DEVICE_NAME> ...]] [<DEVICE_NAME> [<DEVICE_NAME> ...]]
 
 ## DESCRIPTION
 
