@@ -18,6 +18,10 @@ def lab_to_dict(lab: Lab) -> Dict[str, Any]:
     configuration (`Machine.meta`), but NOT the container filesystem/runtime state (which is
     persisted separately as committed images by the manager).
 
+    The mode of each collision domain and the VLANs declared on the interfaces are part of the
+    network structure. The configuration made at runtime on a managed collision domain (e.g. with
+    `exec_link`) is not: a restored collision domain starts from the declared VLANs.
+
     Args:
         lab (Kathara.model.Lab.Lab): The network scenario to serialize.
 
@@ -31,6 +35,8 @@ def lab_to_dict(lab: Lab) -> Dict[str, Any]:
                 "number": number,
                 "link": interface.link.name,
                 "mac_address": interface.mac_address,
+                "vlan": interface.vlan,
+                "tagged_vlans": list(interface.tagged_vlans),
             }
             for number, interface in sorted(machine.interfaces.items(), key=lambda kv: kv[0])
             if interface is not None
@@ -42,7 +48,10 @@ def lab_to_dict(lab: Lab) -> Dict[str, Any]:
             "interfaces": interfaces,
         })
 
-    links = [{"name": link.name} for link in lab.links.values()]
+    links = [
+        {"name": link.name, "mode": link.mode.value if link.mode is not None else None}
+        for link in lab.links.values()
+    ]
 
     return {
         "save_format_version": SAVE_FORMAT_VERSION,
@@ -64,6 +73,10 @@ def lab_to_dict(lab: Lab) -> Dict[str, Any]:
 
 def lab_from_dict(data: Dict[str, Any]) -> Lab:
     """Rebuild a network scenario from a save manifest previously produced by `lab_to_dict`.
+
+    A manifest written before the collision domain modes existed has no `mode` in its collision
+    domains and no `vlan` / `tagged_vlans` in its interfaces: they are then left unspecified, as
+    they were when the network scenario was saved.
 
     Args:
         data (Dict[str, Any]): The manifest dictionary.
@@ -92,7 +105,7 @@ def lab_from_dict(data: Dict[str, Any]) -> Lab:
 
     # Create collision domains first, so that links with no attached device are preserved as well.
     for link_info in data.get("links", []):
-        lab.get_or_new_link(link_info["name"])
+        lab.get_or_new_link(link_info["name"]).mode = link_info.get("mode")
 
     for machine_info in data.get("machines", []):
         machine = lab.get_or_new_machine(machine_info["name"])
@@ -104,6 +117,8 @@ def lab_from_dict(data: Dict[str, Any]) -> Lab:
                 link,
                 number=interface_info["number"],
                 mac_address=interface_info.get("mac_address"),
+                vlan=interface_info.get("vlan"),
+                tagged_vlans=interface_info.get("tagged_vlans"),
             )
 
     return lab

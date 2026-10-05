@@ -2,8 +2,12 @@ import sys
 
 sys.path.insert(0, './')
 
+import pytest
+
+from src.Kathara.exceptions import LinkModeError, InterfaceVlanError
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.LabSerializer import lab_to_dict, lab_from_dict, SAVE_FORMAT_VERSION
+from src.Kathara.types import LinkMode
 
 
 def _build_lab():
@@ -114,3 +118,100 @@ def test_lab_from_dict_preserves_hash_not_derivable_from_name():
 
     restored = lab_from_dict(data)
     assert restored.hash == "a-custom-hash"
+
+
+def _build_lab_with_modes():
+    lab = Lab("Default scenario")
+    lab.new_link("A", mode="managed")
+    lab.new_link("B", mode=LinkMode.SWITCH)
+    lab.new_link("C", mode="hub")
+
+    lab.connect_machine_to_link("pc1", "A", vlan=10)
+    lab.connect_machine_to_link("pc2", "A", mac_address="00:11:22:33:44:55", vlan=20, tagged_vlans=[40, 30])
+    lab.connect_machine_to_link("r1", "A", tagged_vlans=[10, 20])
+    lab.connect_machine_to_link("r1", "B")
+    lab.connect_machine_to_link("r1", "C")
+    lab.connect_machine_to_link("r1", "D")
+
+    return lab
+
+
+def test_lab_to_dict_modes_and_vlans():
+    import json
+
+    data = lab_to_dict(_build_lab_with_modes())
+    # The modes are written as plain strings
+    data = json.loads(json.dumps(data))
+
+    assert {link["name"]: link["mode"] for link in data["links"]} == {
+        "A": "managed", "B": "switch", "C": "hub", "D": None
+    }
+
+    interfaces = {
+        (machine["name"], interface["number"]): interface
+        for machine in data["machines"] for interface in machine["interfaces"]
+    }
+    assert (interfaces[("pc1", 0)]["vlan"], interfaces[("pc1", 0)]["tagged_vlans"]) == (10, [])
+    assert (interfaces[("pc2", 0)]["vlan"], interfaces[("pc2", 0)]["tagged_vlans"]) == (20, [30, 40])
+    assert (interfaces[("r1", 0)]["vlan"], interfaces[("r1", 0)]["tagged_vlans"]) == (None, [10, 20])
+    assert (interfaces[("r1", 1)]["vlan"], interfaces[("r1", 1)]["tagged_vlans"]) == (None, [])
+
+
+def test_round_trip_preserves_modes_and_vlans():
+    lab = _build_lab_with_modes()
+
+    restored = lab_from_dict(lab_to_dict(lab))
+
+    assert restored.get_link("A").mode == LinkMode.MANAGED
+    assert restored.get_link("A").is_managed()
+    assert restored.get_link("B").mode == LinkMode.SWITCH
+    assert restored.get_link("C").mode == LinkMode.HUB
+    assert restored.get_link("D").mode is None
+
+    pc2 = restored.get_machine("pc2").interfaces[0]
+    assert (pc2.mac_address, pc2.vlan, pc2.tagged_vlans) == ("00:11:22:33:44:55", 20, [30, 40])
+    assert restored.get_machine("pc1").interfaces[0].vlan == 10
+    r1 = restored.get_machine("r1")
+    assert (r1.interfaces[0].vlan, r1.interfaces[0].tagged_vlans) == (None, [10, 20])
+    assert not r1.interfaces[1].has_vlans()
+
+    # The restored network scenario can be deployed: the VLANs are on a managed collision domain
+    restored.check_integrity()
+    # And it is saved as it was
+    assert lab_to_dict(restored) == lab_to_dict(lab)
+
+
+def test_lab_from_dict_without_modes_and_vlans():
+    # A manifest written before the collision domain modes existed.
+    data = {
+        "save_format_version": SAVE_FORMAT_VERSION,
+        "lab": {"name": "scenario", "hash": "somehash", "general_options": {}, "global_machine_metadata": {}},
+        "machines": [{"name": "pc1", "meta": {},
+                      "interfaces": [{"number": 0, "link": "A", "mac_address": None}]}],
+        "links": [{"name": "A"}, {"name": "B"}],
+    }
+
+    restored = lab_from_dict(data)
+
+    assert restored.get_link("A").mode is None
+    assert restored.get_link("B").mode is None
+    interface = restored.get_machine("pc1").interfaces[0]
+    assert interface.vlan is None
+    assert interface.tagged_vlans == []
+    assert not interface.has_vlans()
+
+
+def test_lab_from_dict_invalid_mode_error():
+    data = lab_to_dict(_build_lab_with_modes())
+    data["links"][0]["mode"] = "router"
+
+    with pytest.raises(LinkModeError):
+        lab_from_dict(data)
+
+
+def test_lab_from_dict_invalid_vlan_error():
+    data = lab_to_dict(_build_lab_with_modes())
+    data["machines"][0]["interfaces"][0]["vlan"] = 5000
+
+    with pytest.raises(InterfaceVlanError):
+        lab_from_dict(data)

@@ -18,6 +18,8 @@ By default, all the devices of the network scenario are saved. If a list of <DEV
 
 NOTE: This command is only available on the Docker manager. Only the filesystem is captured, not process/memory state: runtime-only configuration that was never persisted to disk (e.g. routes added by hand that are not part of a `.startup` script) is not preserved.
 
+The collision domains are saved with their mode and with the VLANs declared on the interfaces of the devices (see `kathara-lab.conf`(5)). The configuration made on a managed collision domain while the network scenario is running (see `kathara-switch`(1)) is not preserved: a restored collision domain starts from the declared VLANs.
+
 ## OPTIONS
 
 * `-h`, `--help`:
@@ -50,4 +52,4 @@ m4_include(footer.txt)
 
 ## SEE ALSO
 
-`kathara`(1), `kathara-restore`(1), `kathara-lstart`(1), `kathara-lclean`(1), `kathara-lab.conf`(5)
+`kathara`(1), `kathara-restore`(1), `kathara-lstart`(1), `kathara-lclean`(1), `kathara-switch`(1), `kathara-lab.conf`(5)
