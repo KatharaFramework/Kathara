@@ -4,7 +4,7 @@ kathara-lconfig(1) -- Attach network interfaces to a running Kathara device of a
 
 ## SYNOPSIS
 
-`kathara lconfig` [`-h`] [`-d` <DIRECTORY>] `-n` <DEVICE_NAME> (`--add` <CD[/MAC_ADDR]> [<CD[/MAC_ADDR]> ...] \| `--rm` <CD> [<CD> ...])
+`kathara lconfig` [`-h`] [`-d` <DIRECTORY>] `-n` <DEVICE_NAME> (`--add` <CD[/MAC_ADDR][/vlan=ID][/trunk=ID,...]> [<CD[/MAC_ADDR][/vlan=ID][/trunk=ID,...]> ...] \| `--rm` <CD> [<CD> ...]) [`--cd-mode` <CD>:<MODE> [<CD>:<MODE> ...]]
 
 ## DESCRIPTION
 
@@ -24,13 +24,17 @@ Manage the network interfaces of a running Kathara device in a network scenario.
 * `-n` <DEVICE_NAME>, `--name` <DEVICE_NAME>:
     Name of the device to configure.
 
-* `--add` <CD[/MAC_ADDR]> [<CD[/MAC_ADDR]> ...]:
+* `--add` <CD[/MAC_ADDR][/vlan=ID][/trunk=ID,...]> [<CD[/MAC_ADDR][/vlan=ID][/trunk=ID,...]> ...]:
 	Specify the collision domain to be connected to the device:
     
     `CD`: The name of the collision domain to which the specified interface must be connected. Note that the name of the collision domain must not contain spaces (" "), commas (",") and dots (".").
     
     `/MAC_ADDR`: An optional parameter to specify the MAC address of the interface (MAC address must be in the format `XX:XX:XX:XX:XX:XX`). If `MAC_ADDR` is not provided, Kathara will assign a random one. 
     
+    `/vlan=ID`: An optional parameter, only for a collision domain in `managed` mode: the VLAN (1-4094) of the untagged frames of the interface (access port). If it is not provided, the interface is in the default VLAN of the collision domain.
+
+    `/trunk=ID[,ID...]`: An optional parameter, only for a collision domain in `managed` mode: the VLANs whose frames are exchanged with an 802.1Q tag on the interface (trunk port).
+
     Equip the device with an additional network interface attached to a (virtual) collision domain whose name is <CD>. 
     The number of the resulting network interface is generated incrementing the number of the last network interface used by the device.
 
@@ -38,6 +42,11 @@ Manage the network interfaces of a running Kathara device in a network scenario.
 	Specify the collision domain to be disconnected from the device.
 
     Disconnect the device from the collision domain whose name is <CD> and remove the corresponding interface.
+
+* `--cd-mode` <CD>:<MODE> [<CD>:<MODE> ...]:
+    Set the mode of a collision domain: `hub` (default), `switch` or `managed`. See `kathara-lab.conf`(5) for their description.
+
+    Only for a collision domain which is created by the command: a collision domain which is already deployed keeps its mode.
 
 ## EXAMPLES
 
@@ -48,6 +57,14 @@ Connect `pc1` to collision domain `X` and `Y` (with random MAC addresses):
 Connect `pc1` to collision domain `X` with the specified MAC address:
     
     kathara lconfig -d path/to/network_scenario -n pc1 --add X/00:00:00:00:00:01
+
+Connect `pc1` to the managed collision domain `X`, as an access port of VLAN 10:
+    
+    kathara lconfig -d path/to/network_scenario -n pc1 --add X/vlan=10
+
+Connect `pc1` to a new collision domain `Z`, deployed as a switch:
+    
+    kathara lconfig -d path/to/network_scenario -n pc1 --add Z --cd-mode Z:switch
 
 Disconnect `pc1` from collision domain `X` and remove the corresponding interface:
     

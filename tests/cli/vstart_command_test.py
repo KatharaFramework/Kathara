@@ -9,7 +9,8 @@ sys.path.insert(0, './')
 from src.Kathara.cli.command.VstartCommand import VstartCommand
 from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Machine import Machine
-from src.Kathara.exceptions import PrivilegeError
+from src.Kathara.exceptions import PrivilegeError, LinkNotFoundError
+from src.Kathara.types import LinkMode
 
 
 @pytest.fixture()
@@ -762,3 +763,46 @@ def test_run_with_volume(mock_docker_manager, mock_manager_get_instance, mock_se
             mock_device.add_meta.assert_called_once_with("volume", volume)
             assert not mock_connect_machine_to_link.called
             mock_docker_manager.deploy_lab.assert_called_once()
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_cd_modes_and_vlans(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                                     mock_setting):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    mock_setting_get_instance.return_value = mock_setting
+    command = VstartCommand()
+    command.run('.', ['-n', 'pc1', '--eth', '0:A/vlan=10', '1:B/00:00:00:00:00:01/trunk=20,30', '2:C',
+                      '--cd-mode', 'A:managed', 'B:managed'])
+    (lab,), _ = mock_docker_manager.deploy_lab.call_args
+    interfaces = lab.get_machine('pc1').interfaces
+    assert lab.get_link('A').mode == LinkMode.MANAGED
+    assert lab.get_link('B').mode == LinkMode.MANAGED
+    assert lab.get_link('C').mode is None
+    assert (interfaces[0].vlan, interfaces[0].tagged_vlans) == (10, [])
+    assert (interfaces[1].mac_address, interfaces[1].vlan, interfaces[1].tagged_vlans) == \
+           ('00:00:00:00:00:01', None, [20, 30])
+    assert not interfaces[2].has_vlans()
+    # The mode of a collision domain is not an option of the device
+    assert 'cd_modes' not in lab.get_machine('pc1').meta
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_cd_mode_unknown_cd_error(mock_docker_manager, mock_manager_get_instance, mock_setting_get_instance,
+                                           mock_setting):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    mock_setting_get_instance.return_value = mock_setting
+    command = VstartCommand()
+    with pytest.raises(LinkNotFoundError):
+        command.run('.', ['-n', 'pc1', '--eth', '0:A', '--cd-mode', 'B:switch'])
+    assert not mock_docker_manager.deploy_lab.called
+
+
+@pytest.mark.parametrize("eth", ['0:A/vlan=ten', '0:A/', 'A/vlan=10', '0:A/vlan=10/vlan=20'])
+def test_run_with_invalid_interface_error(eth):
+    command = VstartCommand()
+    with pytest.raises(SystemExit):
+        command.run('.', ['-n', 'pc1', '--eth', eth])

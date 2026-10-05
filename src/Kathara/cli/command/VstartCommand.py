@@ -1,7 +1,7 @@
 import argparse
 from typing import List
 
-from ..ui.utils import create_panel, interface_cd_mac, volume
+from ..ui.utils import create_panel, interface_cd_mac, cd_mode, volume
 from ... import utils
 from ...exceptions import PrivilegeError
 from ...foundation.cli.command.Command import Command
@@ -69,10 +69,21 @@ class VstartCommand(Command):
             '--eth',
             type=interface_cd_mac,
             dest='eths',
-            metavar='N:CD/MAC',
+            metavar='N:CD[/MAC][/vlan=ID][/trunk=ID,...]',
             nargs='+',
             required=False,
-            help='Set a specific interface on a collision domain.'
+            help='Set a specific interface on a collision domain. '
+                 'On a managed collision domain, `vlan` is the VLAN of the untagged frames of the interface '
+                 'and `trunk` lists the VLANs exchanged tagged.'
+        )
+        self.parser.add_argument(
+            '--cd-mode',
+            type=cd_mode,
+            dest='cd_modes',
+            metavar='CD:MODE',
+            nargs='+',
+            required=False,
+            help='Set the mode of a collision domain: hub (default), switch or managed.'
         )
         self.parser.add_argument(
             '-e', '--exec',
@@ -229,18 +240,24 @@ class VstartCommand(Command):
 
         volumes = args.pop('volumes')
         eths = args.pop('eths')
+        cd_modes = args.pop('cd_modes')
 
         device = lab.get_or_new_machine(name, **args)
 
         if eths:
-            for iface_number, cd, mac_address in eths:
+            for iface_number, cd, mac_address, vlans in eths:
                 try:
                     lab.connect_machine_to_link(device.name, cd,
                                                 machine_iface_number=int(iface_number),
-                                                mac_address=mac_address)
+                                                mac_address=mac_address,
+                                                **vlans)
                 except ValueError:
                     s = f"{cd}/{mac_address}" if mac_address else f"{cd}"
                     raise SyntaxError(f"Interface number in `--eth {iface_number}:{s}` is not a number.")
+
+        if cd_modes:
+            for cd, mode in cd_modes:
+                lab.get_link(cd).mode = mode
 
         if volumes:
             for v in volumes:

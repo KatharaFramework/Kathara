@@ -57,6 +57,9 @@ The possible kathara commands are:
 * `kathara-exec`(1):
     Execute a command in a Kathara device
 
+* `kathara-switch`(1):
+    Manage a Kathara collision domain deployed as a managed switch
+
 * `kathara-wipe`(1):
     Delete all Kathara devices and collision domains, optionally also delete settings
 

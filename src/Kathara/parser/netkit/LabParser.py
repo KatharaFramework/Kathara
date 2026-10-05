@@ -3,8 +3,11 @@ import mmap
 import os
 import re
 
+from ...exceptions import LinkModeError
 from ...model.Lab import Lab, LAB_METADATA
-from ...utils import parse_cd_mac_address, RESERVED_MACHINE_NAMES
+from ...utils import parse_interface_definition, RESERVED_MACHINE_NAMES
+
+CD_MODE_REGEX = re.compile(r"^CD_MODE\[(?P<cd>\w+)\]=([\"\']?)(?P<value>[^\"\']+?)(\2)(\s+\#.*)?$")
 
 
 class LabParser(object):
@@ -37,6 +40,8 @@ class LabParser(object):
             raise IOError(f"Cannot open {conf_name} file.")
 
         lab = Lab(None, path=path)
+        # The modes of the collision domains, applied when all the devices are known
+        cd_modes = {}
 
         line_number = 1
         line = lab_mem_file.readline().decode('utf-8')
@@ -60,13 +65,14 @@ class LabParser(object):
                     interface_number = int(arg)
 
                     try:
-                        cd_name, mac_address = parse_cd_mac_address(value)
+                        cd_name, mac_address, vlans = parse_interface_definition(value)
                     except SyntaxError as e:
                         raise SyntaxError(f"In {conf_name} - Line {line_number}: {str(e)}")
 
                     if re.search(r"^\w+$", cd_name):
                         lab.connect_machine_to_link(key, cd_name,
-                                                    machine_iface_number=interface_number, mac_address=mac_address)
+                                                    machine_iface_number=interface_number, mac_address=mac_address,
+                                                    **vlans)
                     else:
                         raise SyntaxError(f"In {conf_name} - Line {line_number}: "
                                           f"Collision domain `{value}` contains non-alphanumeric characters.")
@@ -76,6 +82,10 @@ class LabParser(object):
                         logging.warning(f"In {conf_name} - Line {line_number}: "
                                         f"Device `{key}` already has a value assigned to meta `{arg}`. "
                                         f"Previous value has been overwritten with `{value}`.")
+            elif CD_MODE_REGEX.search(line.strip()):
+                # It's the mode of a collision domain, the last value is kept.
+                matches = CD_MODE_REGEX.search(line.strip())
+                cd_modes[matches.group("cd")] = (matches.group("value").strip(), line_number)
             else:
                 if not line.startswith('#') and \
                         line.strip():
@@ -88,6 +98,16 @@ class LabParser(object):
 
             line_number += 1
             line = lab_mem_file.readline().decode('utf-8')
+
+        for cd_name, (cd_mode, cd_line_number) in cd_modes.items():
+            if not lab.has_link(cd_name):
+                raise SyntaxError(f"In {conf_name} - Line {cd_line_number}: "
+                                  f"Collision domain `{cd_name}` is not used by any device.")
+
+            try:
+                lab.get_link(cd_name).mode = cd_mode
+            except LinkModeError as e:
+                raise SyntaxError(f"In {conf_name} - Line {cd_line_number}: {str(e)}")
 
         lab.check_integrity()
 

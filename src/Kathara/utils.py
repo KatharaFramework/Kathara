@@ -475,6 +475,44 @@ def parse_cd_mac_address(value) -> Tuple[str, str]:
     return cd_name, mac_address
 
 
+def parse_interface_definition(value: str) -> Tuple[str, Optional[str], Dict[str, Any]]:
+    """Parse the definition of an interface: `CD[/MAC_ADDRESS][/vlan=ID][/trunk=ID[,ID...]]`.
+
+    Args:
+        value (str): The definition of the interface.
+
+    Returns:
+        Tuple[str, Optional[str], Dict[str, Any]]: The name of the collision domain, the MAC address (if any) and
+            the VLANs of the interface, as a dict which only contains the keys that are set: `vlan` (the VLAN of the
+            untagged frames) and `tagged_vlans` (the list of the VLANs exchanged tagged).
+
+    Raises:
+        SyntaxError: If the definition is not valid.
+    """
+    cd_name, *options = value.split('/')
+    mac_address = None
+    vlans = {}
+
+    if not cd_name or (not options and '/' in value) or any(not x for x in options):
+        raise SyntaxError(f"Invalid interface definition: `{value}`.")
+
+    for option in options:
+        option_name, separator, option_value = option.partition('=')
+        try:
+            if not separator and mac_address is None and not vlans:
+                mac_address = option
+            elif option_name == 'vlan' and 'vlan' not in vlans:
+                vlans['vlan'] = int(option_value)
+            elif option_name == 'trunk' and 'tagged_vlans' not in vlans:
+                vlans['tagged_vlans'] = [int(x) for x in option_value.split(',')]
+            else:
+                raise ValueError
+        except ValueError:
+            raise SyntaxError(f"Invalid interface definition: `{value}`.")
+
+    return cd_name, mac_address, vlans
+
+
 # Docker Engine Utils
 def parse_docker_engine_version(v: str) -> str:
     parts = []

@@ -82,7 +82,8 @@ class Machine(FilesystemMixin):
 
         self.update_meta(kwargs)
 
-    def add_interface(self, link: 'LinkPackage.Link', number: int = None, mac_address: str = None) \
+    def add_interface(self, link: 'LinkPackage.Link', number: int = None, mac_address: str = None,
+                      vlan: Optional[int] = None, tagged_vlans: Optional[List[int]] = None) \
             -> 'InterfacePackage.Interface':
         """Add an interface to the device attached to the specified collision domain.
 
@@ -91,6 +92,9 @@ class Machine(FilesystemMixin):
             number (int): The number of the new interface. If it is None, the first free number is selected.
             mac_address (str): The MAC address of the interface. If None, a generated MAC address
                 is associated when the Machine is started.
+            vlan (Optional[int]): The VLAN of the untagged frames of the interface (managed collision domain).
+            tagged_vlans (Optional[List[int]]): The VLANs exchanged tagged with the interface
+                (managed collision domain).
 
         Returns:
             Interface: The object associated to this interface.
@@ -98,6 +102,7 @@ class Machine(FilesystemMixin):
         Raises:
             MachineCollisionDomainConflictError: If the interface number specified is already used on the device.
             MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
+            InterfaceVlanError: If a VLAN is not valid.
         """
         if number is None:
             number = len(self.interfaces.keys())
@@ -110,7 +115,7 @@ class Machine(FilesystemMixin):
                 f"Device `{self.name}` is already connected to collision domain `{link.name}`."
             )
 
-        interface = InterfacePackage.Interface(self, link, number, mac_address)
+        interface = InterfacePackage.Interface(self, link, number, mac_address, vlan, tagged_vlans)
         self.interfaces[number] = interface
         link.machines[self.name] = self
 

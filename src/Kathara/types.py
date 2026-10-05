@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import Enum, IntEnum
 
 
 class SharedCollisionDomainsOption(IntEnum):
@@ -23,3 +23,18 @@ class SharedCollisionDomainsOption(IntEnum):
             return "Share collision domains between network scenarios"
         elif value == 3:
             return "Share collision domains between users"
+
+
+class LinkMode(str, Enum):
+    """Enum representing the behaviour of a collision domain.
+
+    Attributes:
+        HUB (str): Each frame is sent to all the devices of the collision domain (value: "hub").
+        SWITCH (str): The collision domain learns the MAC addresses and sends a frame only to its destination,
+            without any configuration (value: "switch").
+        MANAGED (str): A switch which can be configured: VLANs declared on the interfaces of the devices and
+            commands sent at runtime (value: "managed").
+    """
+    HUB = "hub"
+    SWITCH = "switch"
+    MANAGED = "managed"

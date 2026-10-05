@@ -2,9 +2,10 @@ import sys
 
 import pytest
 
-from src.Kathara.exceptions import InterfaceMacAddressError
+from src.Kathara.exceptions import InterfaceMacAddressError, InterfaceVlanError
 from src.Kathara.exceptions import MachineCollisionDomainError
 from src.Kathara.parser.netkit.LabParser import LabParser
+from src.Kathara.types import LinkMode
 
 def test_one_device():
     lab = LabParser.parse("tests/parser/labconf/one_device")
@@ -102,3 +103,55 @@ def test_mac_address_error():
 def test_mac_address_parse_error():
     with pytest.raises(SyntaxError):
         LabParser.parse("tests/parser/labconf/mac_address_parse_error")
+
+
+def test_cd_mode():
+    lab = LabParser.parse("tests/parser/labconf/cd_mode")
+    assert len(lab.machines) == 2
+    assert len(lab.links) == 4
+    assert lab.links['A'].mode == LinkMode.MANAGED
+    assert lab.links['A'].is_managed()
+    assert lab.links['B'].mode == LinkMode.SWITCH
+    assert lab.links['C'].mode == LinkMode.HUB
+    assert lab.links['D'].mode is None
+
+
+def test_cd_mode_unknown_cd_error():
+    with pytest.raises(SyntaxError) as e:
+        LabParser.parse("tests/parser/labconf/cd_mode_unknown_cd_error")
+    assert "Line 3" in str(e.value)
+
+
+def test_cd_mode_invalid_error():
+    with pytest.raises(SyntaxError) as e:
+        LabParser.parse("tests/parser/labconf/cd_mode_invalid_error")
+    assert "Line 3" in str(e.value)
+
+
+def test_vlan():
+    lab = LabParser.parse("tests/parser/labconf/vlan")
+    assert lab.links['A'].mode == LinkMode.MANAGED
+    assert lab.machines['pc1'].interfaces[0].vlan == 10
+    assert lab.machines['pc1'].interfaces[0].tagged_vlans == []
+    assert lab.machines['pc2'].interfaces[0].mac_address == "00:00:00:00:00:01"
+    assert lab.machines['pc2'].interfaces[0].vlan == 20
+    assert lab.machines['r1'].interfaces[0].vlan is None
+    assert lab.machines['r1'].interfaces[0].tagged_vlans == [10, 20]
+    assert lab.machines['r2'].interfaces[0].vlan == 1
+    assert lab.machines['r2'].interfaces[0].tagged_vlans == [30]
+    assert not lab.machines['pc3'].interfaces[0].has_vlans()
+
+
+def test_vlan_not_managed_error():
+    with pytest.raises(InterfaceVlanError):
+        LabParser.parse("tests/parser/labconf/vlan_not_managed_error")
+
+
+def test_vlan_parse_error():
+    with pytest.raises(SyntaxError):
+        LabParser.parse("tests/parser/labconf/vlan_parse_error")
+
+
+def test_vlan_range_error():
+    with pytest.raises(InterfaceVlanError):
+        LabParser.parse("tests/parser/labconf/vlan_range_error")
