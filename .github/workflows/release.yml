@@ -1,0 +1,216 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Behaviour when main receives a push WITHOUT a version bump in version.py
+  # (i.e. CURRENT_VERSION already exists as a release/tag):
+  #   "False" -> the run is skipped cleanly (green, no release)
+  #   "True"  -> the run fails (red)
+  STRICT_RELEASE: False
+
+jobs:
+
+  version:
+    name: Resolve & gate version
+    runs-on: [self-hosted, x64]
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      prev_tag: ${{ steps.gate.outputs.prev_tag }}
+      should_release: ${{ steps.gate.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - id: get_version
+        uses: ./.github/actions/get-version
+
+      - name: Gate version against existing releases
+        id: gate
+        shell: bash
+        env:
+          NEW_VERSION: ${{ steps.get_version.outputs.version }}
+          STRICT_RELEASE: ${{ env.STRICT_RELEASE }}
+        run: |
+          new="$NEW_VERSION"
+
+          # Version format: X.Y.Z
+          if ! [[ "$new" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error file=src/Kathara/version.py::CURRENT_VERSION '$new' is not a valid X.Y.Z version"
+            exit 1
+          fi
+
+          # Latest existing release tag, empty if none yet (sort -V is semver-correct: 3.10.0 > 3.9.0)
+          git fetch --tags --force --quiet origin || true
+          latest="$(git tag --list | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)"
+          echo "prev_tag=$latest" >> "$GITHUB_OUTPUT"
+
+          # First release ever (empty string) -> go
+          if [ -z "$latest" ]; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::First release: $new"
+            exit 0
+          fi
+
+          # Same as latest -> main was pushed without bumping version.py
+          if [ "$new" = "$latest" ]; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            if [ "$STRICT_RELEASE" = "true" ]; then
+              echo "::error::version $new already released; bump version.py to release"
+              exit 1
+            fi
+            echo "::warning::version $new already released; skipping (STRICT_RELEASE=false)"
+            exit 0
+          fi
+
+          # Must be strictly greater than latest
+          if [ "$(printf '%s\n%s\n' "$new" "$latest" | sort -V | tail -1)" != "$new" ]; then
+            echo "::error file=src/Kathara/version.py::version $new must be greater than latest release $latest"
+            exit 1
+          fi
+
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
+          echo "::notice::New release $new (previous: $latest)"
+
+  build:
+    name: build
+    needs: [version]
+    if: needs.version.outputs.should_release == 'true'
+    uses: ./.github/workflows/_build.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+      # The RPMs must be signed before SHA256SUMS is computed below, so that the checksums published on the release cover the signed artifacts.
+      sign-rpm: true
+      # Switch to the self-hosted runner once the signing key lives on it:
+      #   rpm-signer-runs-on: 'self-hosted'
+      rpm-signer-runs-on: 'self-hosted'
+      sign-macos: true
+    # Only the secrets _build.yml declares.
+    secrets:
+      RPM_GPG_PRIVATE_KEY: ${{ secrets.RPM_GPG_PRIVATE_KEY }}
+      RPM_GPG_PASSPHRASE: ${{ secrets.RPM_GPG_PASSPHRASE }}
+      MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+
+  release:
+    name: Draft release ${{ needs.version.outputs.version }}
+    needs: [version, build]
+    if: needs.version.outputs.should_release == 'true'
+    runs-on: [self-hosted, x64]
+    permissions:
+      contents: write       # create the release (and the tag on publish)
+      pull-requests: read   # let the changelog builder read merged PRs
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+        with:
+          fetch-depth: 0
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c   # v8.0.1
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Build changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@c9bcd8238b6f41e05561348339429d360b1c0247   # v6.2.3
+        with:
+          mode: "COMMIT"
+          fromTag: ${{ needs.version.outputs.prev_tag }}
+          toTag: ${{ github.sha }}
+          failOnError: false
+          configurationJson: |
+            {
+              "template": "#{{CHANGELOG}}\n\n**Full Changelog**: #{{RELEASE_DIFF}}",
+              "empty_template": "- No notable changes since #{{FROM_TAG}}",
+              "commit_template": "- #{{TITLE}} (#{{MERGE_SHA}}) by @#{{AUTHOR}}",
+              "categories": [
+                { 
+                  "title": "## Changes", 
+                  "labels": [] 
+                }
+              ]
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Checksums over every published asset
+      # GitLab verifies them post-download and blocks publishing on mismatch to ensure cross-platform integrity.
+      #
+      # Filenames use only the basename.
+      # This matches how fetch-releases.sh expects assets, and makes the step immune to download-artifact's folder structure (flat vs. nested).
+      - name: Generate SHA256SUMS
+        working-directory: artifacts
+        run: |
+          set -euox pipefail
+
+          # Every file at any depth, excluding a SHA256SUMS from a previous run so the checksum file never tries to hash itself.
+          mapfile -t assets < <(find . -type f ! -name 'SHA256SUMS' | sort)
+          if [ ${#assets[@]} -eq 0 ]; then
+            echo "::error::no artifacts to checksum"
+            exit 1
+          fi
+
+          # Basenames must be unique: the release flattens everything to basename, and the GitLab side keys packages by basename too.
+          dupes="$(printf '%s\n' "${assets[@]}" | xargs -n1 basename | sort | uniq -d)"
+          if [ -n "$dupes" ]; then
+            echo "::error::duplicate basenames would collide as release assets:"
+            printf '%s\n' "$dupes"
+            exit 1
+          fi
+
+          : > SHA256SUMS
+          for f in "${assets[@]}"; do
+            # "<hash>  <basename>", regardless of the file's directory.
+            printf '%s  %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$(basename "$f")" >> SHA256SUMS
+          done
+
+          # Safety net for the GitLab contract: fail loudly if, for any reason, no .deb or no .rpm made it into the list.
+          # Everything else is optional; the packages of the Linux repositories are not.
+          deb_count="$(grep -c '\.deb$' SHA256SUMS || true)"
+          if [ "$deb_count" -eq 0 ]; then
+            echo "::error::SHA256SUMS contains no .deb entries — the APT side would have nothing to verify"
+            exit 1
+          fi
+          rpm_count="$(grep -c '\.rpm$' SHA256SUMS || true)"
+          if [ "$rpm_count" -eq 0 ]; then
+            echo "::error::SHA256SUMS contains no .rpm entries — the YUM side would have nothing to verify"
+            exit 1
+          fi
+
+          # Last gate before the checksums become canonical: every .rpm must already carry a signature.
+          # If rpm-sign was skipped or silently failed, the release stops here rather than shipping unsigned packages whose checksums are then blessed downstream.
+          sudo apt-get update -qq && sudo apt-get install -y -qq rpm
+          while IFS= read -r r; do
+            sig="$(rpm -qpi --nosignature "$r" 2>/dev/null | sed -n 's/^Signature *: //p')"
+            case "$sig" in
+              ''|'(none)') echo "::error::unsigned RPM in the release: $r"; exit 1 ;;
+            esac
+            echo "signed: $(basename "$r") — $sig"
+          done < <(find . -type f -name '*.rpm')
+
+          echo "Checksummed ${#assets[@]} assets ($deb_count .deb, $rpm_count .rpm):"
+          cat SHA256SUMS
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@2bb465e97f322d3cb2a965294d483e0d26a67aa9   # v3.0.1
+        with:
+          draft: true
+          tag_name: ${{ needs.version.outputs.version }}
+          name: ${{ needs.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          files: artifacts/**
+          fail_on_unmatched_files: false

@@ -4,6 +4,7 @@
 all: clean package upload
 
 package: clean
+	python3 -m pip install build
 	cd ../../ && python3 -m build --outdir='scripts/pip-package/dist'
 
 upload: package

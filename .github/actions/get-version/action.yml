@@ -1,0 +1,35 @@
+name: 'Get Kathará version'
+description: 'Reads CURRENT_VERSION from src/Kathara/version.py and exposes it as an output'
+
+outputs:
+  version:
+    description: 'The version string declared in src/Kathara/version.py'
+    value: ${{ steps.get_version.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - id: get_version
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # -m1: grep returns every matching line, and a multi-line value would let extra key=value pairs be injected into $GITHUB_OUTPUT.
+        # [^"]* instead of .*: the greedy form captures everything between the first and last quote on the line, not the version.
+        # || true: without it, pipefail aborts the step on a non-matching grep before the error message below is ever printed.
+        v="$(grep -m1 CURRENT_VERSION src/Kathara/version.py \
+             | sed -E 's/^[^"]*"([^"]*)".*/\1/' || true)"
+
+        if [ -z "$v" ]; then
+          echo "::error file=src/Kathara/version.py::Could not parse CURRENT_VERSION"
+          exit 1
+        fi
+
+        # Fail closed on anything that is not a plain X.Y.Z.
+        if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "::error file=src/Kathara/version.py::CURRENT_VERSION '$v' is not a valid X.Y.Z version"
+          exit 1
+        fi
+
+        echo "version=$v" >> "$GITHUB_OUTPUT"
+        echo "Kathará version is $v"

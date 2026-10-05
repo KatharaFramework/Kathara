@@ -1,0 +1,402 @@
+name: build-matrix
+
+# Reusable "build engine"
+#
+# Secrets are only needed on the release path (sign-rpm / sign-macos), see the secrets below.
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Kathará version'
+        required: true
+        type: string
+      retention-days:
+        description: 'Artifact retention in days'
+        required: false
+        type: number
+        default: 7
+      sign-rpm:
+        description: 'GPG-sign the RPM packages (only true on the release path)'
+        required: false
+        type: boolean
+        default: false
+      rpm-signer-runs-on:
+        description: 'Runner that holds the RPM signing key'
+        required: false
+        type: string
+        default: self-hosted
+      sign-macos:
+        description: 'Sign and notarize the macOS installers (only true on the release path)'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      RPM_GPG_PRIVATE_KEY:
+        description: 'base64 of the armored RPM package signing key'
+        required: false
+      RPM_GPG_PASSPHRASE:
+        description: 'passphrase of the RPM package signing key'
+        required: false
+      MACOS_KEYCHAIN_PASSWORD:
+        description: 'password of the signing keychain on the macOS runner'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+
+  test:
+    name: pytest (${{ matrix.os }})
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      matrix:
+        include:
+          - { os: linux, runs-on: [ self-hosted, linux ] }
+          - { os: macOS, runs-on: [ self-hosted, macOS ] }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      # - uses: ./.github/actions/setup-python-build
+      #   with:
+      #     python-version: '3.14'
+
+      - name: Run PyTest
+        shell: bash
+        run: |
+          python3 -m venv venv
+          ./venv/bin/python3 -m pip install pytest
+          ./venv/bin/python3 -m pip install -r src/requirements.txt
+          ./venv/bin/python3 -m pytest
+
+#================================================================================================
+  deb:
+    name: deb-${{ matrix.distro }}-${{ matrix.arch }}
+    needs: [test]
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # - { os: ubuntu, distro: focal,    arch: amd64, runs-on: [ self-hosted, x64  ] }
+          # - { os: ubuntu, distro: focal,    arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: ubuntu, distro: jammy,    arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: ubuntu, distro: jammy,    arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: ubuntu, distro: noble,    arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: ubuntu, distro: noble,    arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: ubuntu, distro: questing, arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: ubuntu, distro: questing, arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: ubuntu, distro: resolute, arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: ubuntu, distro: resolute, arch: arm64, runs-on: [ self-hosted, ARM64] }
+          # - { os: debian, distro: bullseye, arch: amd64, runs-on: [ self-hosted, x64  ] }
+          # - { os: debian, distro: bullseye, arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: debian, distro: bookworm, arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: debian, distro: bookworm, arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: debian, distro: trixie,   arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: debian, distro: trixie,   arch: arm64, runs-on: [ self-hosted, ARM64] }
+          - { os: debian, distro: forky,    arch: amd64, runs-on: [ self-hosted, x64  ] }
+          - { os: debian, distro: forky,    arch: arm64, runs-on: [ self-hosted, ARM64] }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache Deb Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-deb
+        with:
+          path: scripts/Linux-Deb/Output
+          key: deb-${{ matrix.distro }}-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Deb/**', '!scripts/Linux-Deb/Output/**') }}
+      - name: Build Deb Package
+        if: steps.cache-deb.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd scripts/Linux-Deb
+          make docker-unsigned_${{ matrix.distro }} OS=${{ matrix.os }} VERSION="${{ inputs.version }}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: deb-${{ matrix.distro }}-${{ matrix.arch }}
+          path: scripts/Linux-Deb/Output/*${{ matrix.arch }}.deb
+          if-no-files-found: warn
+          retention-days: ${{ inputs.retention-days }}
+
+#================================================================================================
+  rpm:
+    name: rpm-fc${{ matrix.release }}-${{ matrix.arch }}
+    needs: [test]
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { release: 43, arch: x86_64,  runs-on: [ self-hosted, x64  ] }
+          - { release: 43, arch: aarch64, runs-on: [ self-hosted, ARM64] }
+          - { release: 44, arch: x86_64,  runs-on: [ self-hosted, x64  ] }
+          - { release: 44, arch: aarch64, runs-on: [ self-hosted, ARM64] }
+          - { release: 45, arch: x86_64,  runs-on: [ self-hosted, x64  ] }
+          - { release: 45, arch: aarch64, runs-on: [ self-hosted, ARM64] }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache Rpm Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-rpm
+        with:
+          path: scripts/Linux-Rpm/Output
+          key: rpm-fc${{ matrix.release }}-${{ matrix.arch }}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Rpm/**', '!scripts/Linux-Rpm/Output/**') }}
+      - name: Build Rpm Package
+        if: steps.cache-rpm.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd scripts/Linux-Rpm
+          make docker-build_${{ matrix.release }} VERSION="${{ inputs.version }}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: rpm-fc${{ matrix.release }}-${{ matrix.arch }}
+          path: scripts/Linux-Rpm/Output/${{ matrix.arch }}/*.rpm
+          # A silently empty build would publish a yum repository with a missing releasever: on this path emptiness is an error.
+          if-no-files-found: error
+          retention-days: ${{ inputs.retention-days }}
+
+#================================================================================================
+# rpm-sign — the packages are signed HERE, on GitHub, before release.yml computes SHA256SUMS.
+# The GitHub release is therefore the single source of truth:
+# the GitLab pipeline only verifies, lays out and indexes what it downloads, and never has to modify a package (which would change its checksum).
+#
+# Runs only on the release path (sign-rpm: true), so pull request builds never touch the key.
+# Re-uploads each artifact under the same name with overwrite, so no unsigned copy survives to reach the release.
+#
+# Only the Kathara packages pass through here. The repository configuration
+# packages (kathara-archive-keyring, kathara-release) are built and signed by
+# the repository project itself, from its own conf/repo.conf: they carry that
+# site's URL, keys and layout, none of which this repository knows about.
+#================================================================================
+  rpm-sign:
+    name: sign-${{ matrix.artifact }}
+    needs: [rpm]
+    if: ${{ inputs.sign-rpm }}
+    runs-on: [self-hosted, linux]
+    strategy:
+      fail-fast: false
+      max-parallel: 1          # one signing key, one runs-on
+      matrix:
+        artifact:
+          - rpm-fc43-x86_64
+          - rpm-fc43-aarch64
+          - rpm-fc44-x86_64
+          - rpm-fc44-aarch64
+          - rpm-fc45-x86_64
+          - rpm-fc45-aarch64
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c   # v8.0.1
+        with:
+          name: ${{ matrix.artifact }}
+          path: rpms
+
+      - name: Sign and verify
+        shell: bash
+        env:
+          RPM_GPG_PRIVATE_KEY: ${{ secrets.RPM_GPG_PRIVATE_KEY }}
+          RPM_GPG_PASSPHRASE: ${{ secrets.RPM_GPG_PASSPHRASE }}
+        run: |
+          set -euox pipefail
+
+          command -v rpmsign >/dev/null 2>&1 || {
+            sudo apt-get update -qq && sudo apt-get install -y -qq rpm
+          }
+
+          # Everything the signing needs lives under a throwaway HOME, so neither ~/.rpmmacros nor the keyring of a persistent self-hosted runs-on is touched.
+          export HOME="$RUNNER_TEMP/rpm-signing"
+          rm -rf "$HOME"; mkdir -p "$HOME"; chmod 700 "$HOME"
+          export GNUPGHOME="$HOME/gnupg"; mkdir -p "$GNUPGHOME"; chmod 700 "$GNUPGHOME"
+          cleanup() { gpgconf --kill all >/dev/null 2>&1 || true; rm -rf "$HOME"; }
+          trap cleanup EXIT
+
+          if [ -z "${RPM_GPG_PRIVATE_KEY:-}" ]; then
+            echo "::error::secret RPM_GPG_PRIVATE_KEY is not set"
+            exit 1
+          fi
+          printf '%s' "$RPM_GPG_PRIVATE_KEY" | base64 -d | gpg --batch --quiet --import
+
+          # Pick the key that can actually SIGN.
+          # With the layout (certify-only primary + signing subkey) the 'sec' line is the primary,
+          # whose secret half is a stub and which carries no signing capability:
+          # passing it to gpg -u fails with "Unusable secret key".
+          # Field 12 holds the capabilities; 's' means signing.
+          KEYID="$(gpg --batch --list-secret-keys --with-colons \
+                   | awk -F: '$1=="ssb" && $12 ~ /s/ {print $5; exit}')"
+          if [ -z "$KEYID" ]; then
+            # Single-key layouts: the primary itself signs.
+            KEYID="$(gpg --batch --list-secret-keys --with-colons \
+                     | awk -F: '$1=="sec" && $12 ~ /s/ {print $5; exit}')"
+          fi
+          if [ -z "$KEYID" ]; then
+            echo "::error::the imported key has no usable signing key."
+            echo "The secret exported into RPM_GPG_PRIVATE_KEY must contain a signing"
+            echo "subkey (or a primary that can sign). Keys currently imported:"
+            gpg --batch --list-secret-keys --keyid-format long || true
+            echo "Regenerate the export with:"
+            echo "  gpg --export-secret-subkeys --armor \"<SIGNING_SUBKEY_FPR>!\" | base64 -w0"
+            exit 1
+          fi
+          echo "Signing with key $KEYID"
+
+          umask 077
+          PASSFILE="$HOME/passphrase"
+          printf '%s' "${RPM_GPG_PASSPHRASE:-}" > "$PASSFILE"
+
+          # SHA-256 is mandatory: SHA-1 signatures are rejected outright by the crypto policy of current Fedora and RHEL.
+          {
+            echo '%_signature gpg'
+            # The trailing '!' pins this exact key: without it gpg may resolve the id to another key of the same primary.
+            echo "%_gpg_name $KEYID!"
+            echo '%_gpg_digest_algo sha256'
+            echo "%_gpg_passphrase_file $PASSFILE"
+            echo '%__gpg_sign_cmd %{__gpg} gpg --no-verbose --no-armor --no-secmem-warning --batch --pinentry-mode loopback --passphrase-file %{_gpg_passphrase_file} --digest-algo sha256 -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}'
+          } > "$HOME/.rpmmacros"
+
+          shopt -s nullglob
+          pkgs=(rpms/*.rpm)
+          [ ${#pkgs[@]} -gt 0 ] || { echo "::error::no .rpm to sign"; exit 1; }
+
+          for p in "${pkgs[@]}"; do rpmsign --addsign "$p"; done
+
+          # Verify against the public half only: what succeeds here is exactly what a user's dnf will check.
+          RPMDB="$HOME/rpmdb"; mkdir -p "$RPMDB"
+          rpm --dbpath "$RPMDB" --initdb
+          gpg --batch --armor --export "$KEYID" > "$HOME/pub.asc"
+          rpmkeys --dbpath "$RPMDB" --import "$HOME/pub.asc"
+
+          for p in "${pkgs[@]}"; do
+            sig="$(rpm -qpi --nosignature "$p" 2>/dev/null | sed -n 's/^Signature *: //p')"
+            case "$sig" in
+              ''|'(none)') echo "::error::$(basename "$p") is still unsigned"; exit 1 ;;
+            esac
+            rpmkeys --dbpath "$RPMDB" --checksig "$p" >/dev/null \
+              || { echo "::error::$(basename "$p") failed signature verification"; exit 1; }
+            echo "$(basename "$p"): $sig"
+          done
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: ${{ matrix.artifact }}
+          path: rpms/*.rpm
+          if-no-files-found: error
+          overwrite: true
+          retention-days: ${{ inputs.retention-days }}
+
+#================================================================================================
+  pkg:
+    name: pkg-any
+    needs: [test]
+    runs-on: [self-hosted, x64]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache Pkg Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-pkg
+        with:
+          path: scripts/Linux-Pkg/Output
+          key: pkg-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Linux-Pkg/**', '!scripts/Linux-Pkg/Output/**') }}
+      - name: Build Pkg Package
+        if: steps.cache-pkg.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd scripts/Linux-Pkg
+          make all VERSION="${{ inputs.version }}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: pkg-any
+          path: scripts/Linux-Pkg/Output/*.pkg.tar.zst
+          if-no-files-found: warn
+          retention-days: ${{ inputs.retention-days }}
+
+#================================================================================================
+  windows:
+    name: windows-${{ matrix.arch }}
+    needs: [test]
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x64, runs-on: [ self-hosted, x64 ] }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache Windows Installer
+        id: cache-win
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae    #v5.0.5
+        with:
+          path: ./scripts/Windows/Output
+          key: win-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/Windows/**', '!scripts/Windows/Output/**') }}
+      - name: Build Windows Installer
+        if: steps.cache-win.outputs.cache-hit != 'true'
+        run: |
+          cd ./scripts/Windows/
+          make all_${{ matrix.arch }} VERSION="${{ inputs.version }}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: windows-${{ matrix.arch }}
+          path: scripts/Windows/Output/*.exe
+          if-no-files-found: warn
+          retention-days: ${{ inputs.retention-days }}
+
+# #================================================================================================
+  macos:
+    name: macos-${{ matrix.arch }}
+    needs: [test]
+    runs-on: [self-hosted, macOS, ARM64]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: arm64,  target: arm64, set_arch: ''             }
+          - { arch: x86_64, target: x86  , set_arch: 'arch -x86_64' }
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - name: Cache OSX Package
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae   # v5.0.5
+        id: cache-osx
+        with:
+          path: scripts/OSX/Output
+          # The signing flag is in the key, so an unsigned pull request build is never reused by a release.
+          key: pkg-${{matrix.arch}}-${{ inputs.sign-macos && 'signed' || 'unsigned' }}-${{ inputs.version }}-${{ hashFiles('src/**', 'scripts/OSX/**', '!scripts/OSX/Output/**') }}
+      # - uses: ./.github/actions/setup-python-build
+      #   with:
+      #     python-version: '3.14'
+      # - name: Install Ruby
+      #   uses: ruby/setup-ruby@89f90524b88a01fe6e0b732220432cc6142926af    #v1.313.0
+      #   with:
+      #     ruby-version: '4.0'
+      #     bundler-cache: true
+      - name: Build macOS installer
+        if: steps.cache-osx.outputs.cache-hit != 'true'
+        env:
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+          APPLE_DEVELOPER_CERTIFICATE_ID: ${{ vars.APPLE_DEVELOPER_CERTIFICATE_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd scripts/OSX
+
+          if [ "${{ inputs.sign-macos }}" != "true" ]; then
+            make all_${{ matrix.target }} SET_ARCH='${{ matrix.set_arch }}' VERSION="${{ inputs.version }}"
+            exit 0
+          fi
+
+          for s in MACOS_KEYCHAIN_PASSWORD APPLE_DEVELOPER_CERTIFICATE_ID; do
+            [ -n "${!s:-}" ] || { echo "::error::$s is not set"; exit 1; }
+          done
+
+          # The signing keychain is created once on the runner (see scripts/OSX/README.md).
+          # It is unlocked only for this step; the password goes through stdin so it never shows up in the process list.
+          KC="$HOME/Library/Keychains/kathara-signing.keychain-db"
+          trap 'security lock-keychain "$KC"' EXIT
+          printf 'unlock-keychain -p "%s" "%s"\n' "$MACOS_KEYCHAIN_PASSWORD" "$KC" | security -i >/dev/null
+
+          make allSigned_${{ matrix.target }} SET_ARCH='${{ matrix.set_arch }}' VERSION="${{ inputs.version }}" \
+            APPLE_KEYCHAIN="$KC" APPLE_DEVELOPER_CERTIFICATE_ID="$APPLE_DEVELOPER_CERTIFICATE_ID"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
+        with:
+          name: macos-${{ matrix.arch }}
+          # Signed builds keep the intermediate unsigned .pkg next to the -signed one: publish only the latter.
+          path: ${{ inputs.sign-macos && 'scripts/OSX/Output/*-signed.pkg' || 'scripts/OSX/Output/*.pkg' }}
+          if-no-files-found: warn
+          retention-days: ${{ inputs.retention-days }}
+
+#================================================================================================

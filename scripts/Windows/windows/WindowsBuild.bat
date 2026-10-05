@@ -10,14 +10,14 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 pip install --upgrade "setuptools<81"
 pip install win_inet_pton
 pip install "pyinstaller==6.18.0"
-pip install -r ..\..\src\requirements.txt
+pip install -r ..\..\..\src\requirements.txt
 pip install pytest
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-copy Assets\kathara.spec ..\..\src\
-copy Assets\app_icon.ico ..\..\src\
+copy Assets\kathara.spec ..\..\..\src\
+copy Assets\app_icon.ico ..\..\..\src\
 
-cd ..\..
+cd ..\..\..
 pytest
 if %errorlevel% neq 0 exit /b %errorlevel%
 
@@ -36,7 +36,9 @@ rmdir /S /Q kathara.build
 CALL %VENV_DIR%\Scripts\deactivate
 rmdir /S /Q %VENV_DIR%
 
-cd ..\scripts\Windows
+copy ..\LICENSE ..\scripts\Windows\windows
+
+cd ..\scripts\Windows\windows
 set "arch=%PROCESSOR_ARCHITECTURE%"
 if /I "%arch%"=="AMD64" (
     set "arch_suffix=x64"

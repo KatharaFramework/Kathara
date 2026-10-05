@@ -1,4 +1,4 @@
-FROM ubuntu:__DISTRO__
+FROM __OS__:__DISTRO__
 
 ENV TZ=Europe/Rome
 ENV RUBYOPT="-KU -E utf-8:utf-8"
@@ -21,7 +21,6 @@ RUN apt update && \
 	libffi-dev \
 	lintian \
 	patchelf \
-	software-properties-common \
 	zlib1g-dev
 
 RUN apt install -y \
@@ -41,16 +40,27 @@ RUN apt install -y \
 
 ENV PATH="/root/.rbenv/shims:/root/.rbenv/bin:$PATH"
 
-RUN add-apt-repository ppa:deadsnakes/ppa \
-	&& DEBIAN_FRONTEND=noninteractive apt install -y \
+RUN (DEBIAN_FRONTEND=noninteractive apt install -y \
+	python3.14 \
+	python3.14-dev \
+	python3.14-venv \
+	python3-pip) || \
+	(apt install -y gpg && \
+	curl -fsSl "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf23c5a6cf475977595c89f51ba6932366a755776" | gpg --dearmor -o /etc/apt/trusted.gpg.d/deadsnakes.gpg && \
+	echo 'deb https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu __DISTRO__ main' > /etc/apt/sources.list.d/deadsnakes.list && \
+	echo 'deb-src https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu __DISTRO__ main' >> /etc/apt/sources.list.d/deadsnakes.list && \
+	apt update && DEBIAN_FRONTEND=noninteractive apt -o DPkg::options::="--force-overwrite" install -y \
+	python3.14 \
+	python3.14-dev \
+	python3.14-venv \
+	python3-pip) || \
+    (DEBIAN_FRONTEND=noninteractive apt -o DPkg::options::="--force-overwrite" install -y \
 	python3.13 \
 	python3.13-dev \
 	python3.13-venv \
-	python3-pip
+	python3-pip) || \
+	(echo "no python...?" && exit 67)
 
 RUN gem install ronn-ng
-RUN mkdir /root/.gnupg && chmod 700 /root/.gnupg
-
-COPY dput.cf /root/.dput.cf
 
 WORKDIR /opt/kathara/scripts/Linux-Deb

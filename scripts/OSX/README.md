@@ -8,6 +8,7 @@
 3. Change the Kathara version number in both `src/Kathara/version.py` and `Makefile` files.
 4. Run `make all_x86` or `make all_arm64` to automatically compile and create the package for the desired architecture.
 You can compile the `x86` package on a Mac with Intel CPU, and the `arm64` on a Mac with Apple CPU.
+On Rosetta enabled Mac with Apple CPU you can compile the `x86` package passing the `SET_ARCH='arch -x86_64'` variable to the make command.
     - Run `make deps` to automatically download and install dependencies for your architecture
     - Run `make binary_x86_64` or `make binary_arm64` to automatically compile the package
     - Run `make createInstaller_x86_64` or `make createInstaller_arm64` to create package
@@ -25,9 +26,12 @@ You can compile the `x86` package on a Mac with Intel CPU, and the `arm64` on a 
 4. Change the Kathara version number in both `src/Kathara/version.py` and `Makefile` files.
 5. Run `make allSigned_x86` or `make allSigned_arm64` to automatically compile and create the package for the desired architecture. 
 You can compile the `x86` package on a Mac with Intel CPU, and the `arm64` on a Mac with Apple CPU.
+On Rosetta enabled Mac with Apple CPU you can compile the `x86` package passing the `SET_ARCH='arch -x86_64'` variable to the make command.
     - Run `make deps` to automatically download and install dependencies for your architecture
     - Run `make binary_x86_64` or `make binary_arm64` to automatically compile the package
+    - Run `make signBinaries_x86_64` or `make signBinaries_arm64` to sign executables and shared objects
     - Run `make createInstaller_x86_64` or `make createInstaller_arm64` to create package
     - Run `make signProduct_x86_64` or `make signProduct_arm64` to sign the package
+    - Run `make notarize_x86_64` or `make notarize_arm64` to notarize package
     - Run `make clean` to clean all intermediate files
 6. Share the Kathara pkg signed in `Output` folder :)
