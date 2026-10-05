@@ -4,7 +4,7 @@ kathara-lconfig(1) -- Attach network interfaces to a running Kathara device of a
 
 ## SYNOPSIS
 
-`kathara lconfig` [`-h`] [`-d` <DIRECTORY>] `-n` <DEVICE_NAME> (`--add` <CD[/MAC_ADDR][/vlan=ID][/trunk=ID,...]> [<CD[/MAC_ADDR][/vlan=ID][/trunk=ID,...]> ...] \| `--rm` <CD> [<CD> ...]) [`--cd-mode` <CD:MODE> [<CD:MODE> ...]]
+`kathara lconfig` [`-h`] [`-d` <DIRECTORY>] `-n` <DEVICE_NAME> (`--add` <CD[/MAC_ADDR][/vlan=ID][/trunk=ID,...]> [<CD[/MAC_ADDR][/vlan=ID][/trunk=ID,...]> ...] \| `--rm` <CD> [<CD> ...]) [`--cd-mode` <CD>:<MODE> [<CD>:<MODE> ...]]
 
 ## DESCRIPTION
 
@@ -43,7 +43,7 @@ Manage the network interfaces of a running Kathara device in a network scenario.
 
     Disconnect the device from the collision domain whose name is <CD> and remove the corresponding interface.
 
-* `--cd-mode` <CD:MODE> [<CD:MODE> ...]:
+* `--cd-mode` <CD>:<MODE> [<CD>:<MODE> ...]:
     Set the mode of a collision domain: `hub` (default), `switch` or `managed`. See `kathara-lab.conf`(5) for their description.
 
     Only for a collision domain which is created by the command: a collision domain which is already deployed keeps its mode.

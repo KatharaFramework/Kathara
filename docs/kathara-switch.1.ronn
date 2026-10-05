@@ -63,10 +63,10 @@ This command is only available with a local Docker daemon on Linux, to the users
 
 	This option cannot be used in conjuction with `-d` or `--directory`.
 
-* `<CD_NAME>`:
+* <CD_NAME>:
     Name of the managed collision domain.
 
-* `<COMMAND>`:
+* <COMMAND>:
     Command sent to the collision domain. If omitted, an interactive console is opened.
 
 ## EXIT STATUS
