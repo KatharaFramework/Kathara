@@ -118,6 +118,11 @@ class KubernetesLink(object):
             link.api_object = networks.pop()
             return
 
+        if link.type is not None:
+            logging.warning(
+                f'Collision domain types are not supported on Megalos. It will be ignored on collision domain `{link.name}`.'
+            )
+
         link.api_object = self.client.create_namespaced_custom_object(group=K8S_NET_GROUP,
                                                                       version=K8S_NET_VERSION,
                                                                       namespace=link.lab.hash,
@@ -127,7 +132,9 @@ class KubernetesLink(object):
 
         # If external is defined for a link, throw a warning.
         if link.external:
-            logging.warning('External is not supported on Megalos. It will be ignored.')
+            logging.warning(
+                f'External is not supported on Megalos. It will be ignored on collision domain `{link.name}`.'
+            )
 
     def undeploy(self, lab_hash: str, selected_links: Optional[Set[str]] = None) -> None:
         """Undeploy all the links of the scenario specified by lab_hash.

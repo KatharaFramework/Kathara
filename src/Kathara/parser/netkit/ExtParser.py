@@ -6,6 +6,10 @@ from typing import Dict, List, Optional
 
 from ...model.ExternalLink import ExternalLink
 
+# E.g. A enp9s0
+# B enp9s0.20
+LINE_REGEX = re.compile(r"^(?P<link>\w+)\s+(?P<interface>\w+)(?P<vlan>\.\d+)?$")
+
 
 class ExtParser(object):
     """Class responsible for parsing lab.ext file."""
@@ -30,7 +34,7 @@ class ExtParser(object):
         lab_ext_path = os.path.join(path, 'lab.ext')
 
         if not os.path.exists(lab_ext_path):
-            return None
+            raise FileNotFoundError(f"lab.ext file does not exist.")
 
         if os.stat(lab_ext_path).st_size == 0:
             logging.warning("lab.ext file is empty. Ignoring...")
@@ -48,25 +52,22 @@ class ExtParser(object):
         line_number = 1
         line = ext_mem_file.readline().decode('utf-8')
         while line:
-            # E.g. A enp9s0
-            # B enp9s0.20
-            matches = re.search(r"^(?P<link>\w+)\s+(?P<interface>\w+)(?P<vlan>\.\d+)?$",
-                                line.strip()
-                                )
+            matches = LINE_REGEX.fullmatch(line.strip())
 
             if matches:
                 link = matches.group("link").strip()
                 interface = matches.group("interface").strip()
                 vlan = int(matches.group("vlan").strip().replace(".", "")) if matches.group("vlan") else None
 
-                if vlan:
-                    if 0 <= vlan >= 4095:
-                        raise ValueError(f"In file lab.ext, line {line_number}: VLAN ID must be in range [1, 4094].")
+                try:
+                    external_link = ExternalLink(interface, vlan)
+                except ValueError as e:
+                    raise ValueError(f"In file lab.ext, line {line_number}: {e}")
 
                 if link not in external_links:
                     external_links[link] = []
 
-                external_links[link].append(ExternalLink(interface, vlan))
+                external_links[link].append(external_link)
             elif not line.startswith('#') and line.strip():
                 raise SyntaxError(f"In file lab.ext - Line {line_number}.")
 

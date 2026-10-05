@@ -11,7 +11,6 @@ from requests.exceptions import ConnectionError as RequestsConnectionError
 from .DockerImage import DockerImage
 from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
-from .DockerPlugin import DockerPlugin
 from .exec_stream.DockerExecStream import DockerExecStream
 from .stats.DockerLinkStats import DockerLinkStats
 from .stats.DockerMachineStats import DockerMachineStats
@@ -72,13 +71,10 @@ class DockerManager(IManager):
         except DockerException as e:
             raise DockerDaemonConnectionError(str(e))
 
-        docker_plugin = DockerPlugin(self.client)
-        docker_plugin.check_and_download_plugin()
-
         self.docker_image: DockerImage = DockerImage(self.client)
 
         self.docker_machine: DockerMachine = DockerMachine(self.client, self.docker_image)
-        self.docker_link: DockerLink = DockerLink(self.client, docker_plugin)
+        self.docker_link: DockerLink = DockerLink(self.client)
 
     @privileged
     def deploy_machine(self, machine: Machine) -> None:
@@ -752,6 +748,7 @@ class DockerManager(IManager):
                     network = lab_networks[network_name]
                     link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
                     link.api_object = network
+                    link.type = network.attrs["Labels"].get("type") or None
                     iface_number = int(network_options["DriverOpts"]["kathara.iface"])
 
                     iface_mac_addr = None
@@ -823,6 +820,7 @@ class DockerManager(IManager):
             current_ifaces = dict([(x[0].name, x[1]) for x in current_ifaces])
             for link in dynamic_links:
                 link.api_object = deployed_networks_by_link_name[link.name]
+                link.type = link.api_object.attrs["Labels"].get("type") or None
                 iface_options = current_ifaces[link.name]
                 iface_mac_addr = None
                 iface_number = int(iface_options["DriverOpts"]["kathara.iface"])

@@ -471,6 +471,42 @@ def test_attach_external_links_link_not_found_error(default_scenario: Lab):
         default_scenario.attach_external_links({"A": [external_link]})
 
 
+def test_new_link_default_type(default_scenario: Lab):
+    link = default_scenario.new_link("A")
+    assert link.type is None
+
+
+def test_assign_link_types(default_scenario: Lab):
+    link_a = default_scenario.new_link("A")
+    link_b = default_scenario.new_link("B")
+    link_c = default_scenario.new_link("C")
+    default_scenario.assign_link_types({"A": "p2p", "B": "hub"})
+    assert link_a.type == "p2p"
+    assert link_b.type == "hub"
+    assert link_c.type is None
+
+
+def test_assign_link_types_overwrites_previous_type(default_scenario: Lab):
+    link = default_scenario.new_link("A")
+    default_scenario.assign_link_types({"A": "p2p"})
+    default_scenario.assign_link_types({"A": "bridge"})
+    assert link.type == "bridge"
+
+
+def test_assign_link_types_invalid_type(default_scenario: Lab):
+    link = default_scenario.new_link("A")
+    with pytest.raises(ValueError, match="Invalid collision domain type"):
+        default_scenario.assign_link_types({"A": "switch"})
+
+    assert link.type is None
+
+
+def test_assign_link_types_link_not_found_error(default_scenario: Lab):
+    default_scenario.new_link("A")
+    with pytest.raises(LinkNotFoundError):
+        default_scenario.assign_link_types({"A": "p2p", "B": "hub"})
+
+
 def test_intersect_machines(default_scenario: Lab):
     default_scenario.connect_machine_to_link("pc1", "A")
     default_scenario.connect_machine_to_link("pc2", "A")

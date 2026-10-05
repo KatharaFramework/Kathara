@@ -1,4 +1,5 @@
 import copy
+import logging
 import sys
 from collections import namedtuple
 from unittest import mock
@@ -102,6 +103,16 @@ def kubernetes_network():
                         }"""
         }
     }
+
+
+@pytest.fixture()
+def k8s_setting():
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'manager': 'kubernetes',
+        'net_prefix': 'netprefix'
+    })
+    return setting_mock
 
 
 #
@@ -296,6 +307,54 @@ def test_create(mock_setting_get_instance, kubernetes_link, default_link):
         plural="network-attachment-definitions",
         body=network_definition
     )
+
+
+@pytest.mark.parametrize("link_type", ["bridge", "hub", "p2p"])
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_create_with_link_type_warns_and_ignores_it(mock_setting_get_instance, k8s_setting, kubernetes_link,
+                                                    default_link, caplog, link_type):
+    mock_setting_get_instance.return_value = k8s_setting
+    kubernetes_link.client.list_namespaced_custom_object.return_value = {"items": []}
+    default_link.type = link_type
+
+    with caplog.at_level(logging.WARNING):
+        kubernetes_link.create(default_link, 1)
+
+    assert "Collision domain types are not supported on Megalos" in caplog.text
+    assert "collision domain `A`" in caplog.text
+
+    # The collision domain is deployed anyway, the type does not reach the network definition
+    kubernetes_link.client.create_namespaced_custom_object.assert_called_once()
+    body = kubernetes_link.client.create_namespaced_custom_object.call_args.kwargs["body"]
+    assert link_type not in str(body)
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def test_create_without_link_type_does_not_warn(mock_setting_get_instance, k8s_setting, kubernetes_link,
+                                                default_link, caplog):
+    mock_setting_get_instance.return_value = k8s_setting
+    kubernetes_link.client.list_namespaced_custom_object.return_value = {"items": []}
+
+    with caplog.at_level(logging.WARNING):
+        kubernetes_link.create(default_link, 1)
+
+    assert "not supported on Megalos" not in caplog.text
+    kubernetes_link.client.create_namespaced_custom_object.assert_called_once()
+
+
+@mock.patch("src.Kathara.manager.kubernetes.KubernetesLink.KubernetesLink.get_links_api_objects_by_filters")
+def test_create_already_deployed_link_does_not_warn(mock_get_links_api_objects_by_filters, kubernetes_link,
+                                                    default_link, kubernetes_network, caplog):
+    # The existing network is reused, nothing is created, so there is nothing to warn about
+    mock_get_links_api_objects_by_filters.return_value = [kubernetes_network]
+    default_link.type = "p2p"
+
+    with caplog.at_level(logging.WARNING):
+        kubernetes_link.create(default_link, 1)
+
+    assert "not supported on Megalos" not in caplog.text
+    assert default_link.api_object == kubernetes_network
+    assert not kubernetes_link.client.create_namespaced_custom_object.called
 
 
 #

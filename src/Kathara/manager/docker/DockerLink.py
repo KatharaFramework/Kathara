@@ -26,9 +26,9 @@ class DockerLink(object):
     """The class responsible for deploying Kathara collision domains as Docker networks and interact with them."""
     __slots__ = ['client', 'docker_plugin']
 
-    def __init__(self, client: DockerClient, docker_plugin: DockerPlugin) -> None:
+    def __init__(self, client: DockerClient) -> None:
         self.client: DockerClient = client
-        self.docker_plugin: DockerPlugin = docker_plugin
+        self.docker_plugin: DockerPlugin = DockerPlugin(self.client)
 
     def deploy_links(self, lab: Lab, selected_links: Set[str] = None, excluded_links: Set[str] = None) -> None:
         """Deploy all the network scenario collision domains as Docker networks.
@@ -58,6 +58,11 @@ class DockerLink(object):
             }.items()
 
         if len(links) > 0:
+            link_plugins = set(
+                map(lambda x: self.docker_plugin.get_plugin_from_link_type(x[1].type), links)
+            )
+            self.docker_plugin.check_from_list(link_plugins)
+
             pool_size = utils.get_pool_size()
             items = utils.chunk_list(links, pool_size)
 
@@ -136,12 +141,13 @@ class DockerLink(object):
 
             link.api_object = self.client.networks.create(
                 name=link_name,
-                driver=f"{Setting.get_instance().network_plugin}:{utils.get_architecture()}",
+                driver=self.docker_plugin.get_plugin_from_link_type(link.type),
                 check_duplicate=True,
                 ipam=network_ipam_config,
                 labels={
                     "name": link.name,
                     "app": "kathara",
+                    "type": link.type if link.type is not None else "",
                     "external": ";".join([x.get_full_name() for x in link.external]),
                     **additional_labels
                 }
@@ -336,20 +342,21 @@ class DockerLink(object):
         if not utils.is_admin():
             raise PrivilegeError("You must be root in order to use external collision domains.")
 
+        link_plugin = network.attrs["Driver"]
         for external_link in external_links:
             (name, vlan) = external_link.get_name_and_vlan()
             interface_index = Networking.get_or_new_interface(external_link.interface, name, vlan)
             bridge_name = self._get_bridge_name(network)
 
-            def vde_attach():
-                plugin_pid = self.docker_plugin.plugin_pid()
-                switch_path = os.path.join(self.docker_plugin.plugin_store_path(), bridge_name)
+            def vde_attach(plugin_name):
+                plugin_pid = self.docker_plugin.plugin_pid(plugin_name)
+                switch_path = os.path.join(self.docker_plugin.plugin_store_path(plugin_name), bridge_name)
                 Networking.attach_interface_ns(external_link.get_full_name(), interface_index, switch_path, plugin_pid)
 
-            def bridge_attach():
+            def bridge_attach(_):
                 Networking.attach_interface_bridge(interface_index, bridge_name)
 
-            self.docker_plugin.exec_by_version(vde_attach, bridge_attach)
+            self.docker_plugin.exec_by_version(link_plugin, vde_attach, bridge_attach, lambda _: None)
 
     def _delete_external_interfaces(self, external_links: List[str], network: docker.models.networks.Network) -> None:
         """Remove external collision domains from a Docker network.
@@ -371,14 +378,15 @@ class DockerLink(object):
         if not utils.is_admin():
             raise PrivilegeError("You must be root in order to use external collision domains.")
 
+        link_plugin = network.attrs["Driver"]
         for external_link in external_links:
-            def vde_delete():
-                plugin_pid = self.docker_plugin.plugin_pid()
-                switch_path = os.path.join(self.docker_plugin.plugin_store_path(),
+            def vde_delete(plugin_name):
+                plugin_pid = self.docker_plugin.plugin_pid(plugin_name)
+                switch_path = os.path.join(self.docker_plugin.plugin_store_path(plugin_name),
                                            self._get_bridge_name(network))
                 Networking.remove_interface_ns(external_link, switch_path, plugin_pid)
 
-            self.docker_plugin.exec_by_version(vde_delete, lambda: None)
+            self.docker_plugin.exec_by_version(link_plugin, vde_delete, lambda _: None, lambda _: None)
 
             if re.search(r"^\w+\.\d+$", external_link):
                 # Only remove VLAN interfaces, physical ones cannot be removed.

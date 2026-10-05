@@ -7,6 +7,10 @@ from typing import List, Optional
 from ...exceptions import MachineDependencyError
 from ...trdparty.depgen import depgen
 
+# E.g. MACHINE: MACHINE1 MACHINE2 MACHINE3
+# Or MACHINE:MACHINE1 MACHINE2 MACHINE3
+LINE_REGEX = re.compile(r"^(?P<key>\w+):\s?(?P<deps>(\w+ ?)+)$")
+
 
 class DepParser(object):
     """Class responsible for parsing the lab.dep file."""
@@ -51,11 +55,7 @@ class DepParser(object):
         while line:
             line = line.strip()
             if line and not line.startswith('#'):
-                # E.g. MACHINE: MACHINE1 MACHINE2 MACHINE3
-                # Or MACHINE:MACHINE1 MACHINE2 MACHINE3
-                matches = re.search(r"^(?P<key>\w+):\s?(?P<deps>(\w+ ?)+)$",
-                                    line
-                                    )
+                matches = LINE_REGEX.fullmatch(line.strip())
 
                 if matches:
                     key = matches.group("key").strip()

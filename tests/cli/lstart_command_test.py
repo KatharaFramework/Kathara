@@ -1,5 +1,7 @@
+import logging
 import os
 import sys
+from types import SimpleNamespace
 from unittest import mock
 
 import pytest
@@ -8,7 +10,8 @@ sys.path.insert(0, './')
 
 from src.Kathara.cli.command.LstartCommand import LstartCommand
 from src.Kathara.model.Lab import Lab
-from src.Kathara.exceptions import PrivilegeError
+from src.Kathara.exceptions import PrivilegeError, LinkNotFoundError
+from src.Kathara.model.ExternalLink import ExternalLink
 
 
 @pytest.fixture()
@@ -29,6 +32,28 @@ def mock_setting(mock_setting_class):
         'terminal': '/usr/bin/xterm',
     })
     return setting
+
+
+@pytest.fixture()
+def lstart_env(test_lab, mock_setting):
+    """Patches everything lstart needs; lab.link and lab.ext are absent unless a test sets their return values."""
+    with mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance") as mock_manager_get_instance, \
+            mock.patch("src.Kathara.parser.netkit.DepParser.DepParser.parse", return_value=None), \
+            mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse", return_value=test_lab), \
+            mock.patch("src.Kathara.setting.Setting.Setting.get_instance", return_value=mock_setting), \
+            mock.patch("src.Kathara.parser.netkit.LinkParser.LinkParser.parse",
+                       side_effect=FileNotFoundError) as mock_parse_link, \
+            mock.patch("src.Kathara.parser.netkit.ExtParser.ExtParser.parse",
+                       side_effect=FileNotFoundError) as mock_parse_ext, \
+            mock.patch("src.Kathara.utils.is_admin", return_value=True) as mock_is_admin, \
+            mock.patch("src.Kathara.utils.is_platform", return_value=True) as mock_is_platform:
+        manager = mock.MagicMock()
+        mock_manager_get_instance.return_value = manager
+
+        yield SimpleNamespace(
+            lab=test_lab, manager=manager, parse_link=mock_parse_link, parse_ext=mock_parse_ext,
+            is_admin=mock_is_admin, is_platform=mock_is_platform
+        )
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -655,3 +680,185 @@ def test_run_exclude_two_device(mock_setting_get_instance, mock_parse_lab, mock_
             mock_docker_manager.deploy_lab.assert_called_once_with(
                 test_lab, selected_machines=set(), excluded_machines={'pc1', 'pc2'}
             )
+
+
+def test_run_no_link_no_ext(lstart_env):
+    LstartCommand().run('.', [])
+
+    lstart_env.parse_link.assert_called_once_with(os.getcwd())
+    lstart_env.parse_ext.assert_called_once_with(os.getcwd())
+    assert all(link.type is None for link in lstart_env.lab.links.values())
+    assert all(not link.external for link in lstart_env.lab.links.values())
+    lstart_env.manager.deploy_lab.assert_called_once()
+
+
+def test_run_link_types(lstart_env):
+    lstart_env.parse_link.side_effect = None
+    lstart_env.parse_link.return_value = ({'A': 'p2p', 'B': 'hub'}, {})
+
+    LstartCommand().run('.', [])
+
+    assert lstart_env.lab.links['A'].type == 'p2p'
+    assert lstart_env.lab.links['B'].type == 'hub'
+    lstart_env.manager.deploy_lab.assert_called_once()
+
+
+def test_run_link_types_link_not_found(lstart_env):
+    lstart_env.parse_link.side_effect = None
+    lstart_env.parse_link.return_value = ({'Z': 'p2p'}, {})
+
+    with pytest.raises(LinkNotFoundError):
+        LstartCommand().run('.', [])
+
+    assert not lstart_env.manager.deploy_lab.called
+
+
+def test_run_link_types_only_does_not_require_root_or_linux(lstart_env):
+    lstart_env.is_admin.return_value = False
+    lstart_env.is_platform.return_value = False
+    lstart_env.parse_link.side_effect = None
+    lstart_env.parse_link.return_value = ({'A': 'p2p'}, {})
+
+    LstartCommand().run('.', [])
+
+    assert lstart_env.lab.links['A'].type == 'p2p'
+    lstart_env.manager.deploy_lab.assert_called_once()
+
+
+def test_run_link_external_links(lstart_env):
+    external_link = ExternalLink('eth0')
+    lstart_env.parse_link.side_effect = None
+    lstart_env.parse_link.return_value = ({}, {'A': [external_link]})
+
+    LstartCommand().run('.', [])
+
+    assert lstart_env.lab.links['A'].external == [external_link]
+    lstart_env.manager.deploy_lab.assert_called_once()
+
+
+def test_run_ext_external_links(lstart_env):
+    external_link = ExternalLink('eth0', 30)
+    lstart_env.parse_ext.side_effect = None
+    lstart_env.parse_ext.return_value = {'A': [external_link]}
+
+    LstartCommand().run('.', [])
+
+    assert lstart_env.lab.links['A'].external == [external_link]
+    lstart_env.manager.deploy_lab.assert_called_once()
+
+
+def test_run_ext_empty_file(lstart_env):
+    lstart_env.parse_ext.side_effect = None
+    lstart_env.parse_ext.return_value = None
+
+    LstartCommand().run('.', [])
+
+    assert all(not link.external for link in lstart_env.lab.links.values())
+    lstart_env.manager.deploy_lab.assert_called_once()
+
+
+def test_run_ext_deprecation_warning(lstart_env, caplog):
+    lstart_env.parse_ext.side_effect = None
+    lstart_env.parse_ext.return_value = {'A': [ExternalLink('eth0')]}
+
+    with caplog.at_level(logging.WARNING):
+        LstartCommand().run('.', [])
+
+    assert "`lab.ext` is deprecated" in caplog.text
+
+
+def test_run_no_ext_no_deprecation_warning(lstart_env, caplog):
+    lstart_env.parse_link.side_effect = None
+    lstart_env.parse_link.return_value = ({}, {'A': [ExternalLink('eth0')]})
+
+    with caplog.at_level(logging.WARNING):
+        LstartCommand().run('.', [])
+
+    assert "deprecated" not in caplog.text
+
+
+def test_run_link_and_ext_different_collision_domains(lstart_env):
+    link_external = ExternalLink('eth0')
+    ext_external = ExternalLink('eth1', 20)
+    lstart_env.parse_link.side_effect = None
+    lstart_env.parse_link.return_value = ({'A': 'p2p'}, {'A': [link_external]})
+    lstart_env.parse_ext.side_effect = None
+    lstart_env.parse_ext.return_value = {'B': [ext_external]}
+
+    LstartCommand().run('.', [])
+
+    assert lstart_env.lab.links['A'].external == [link_external]
+    assert lstart_env.lab.links['B'].external == [ext_external]
+    lstart_env.manager.deploy_lab.assert_called_once()
+
+
+def test_run_same_collision_domain_in_link_and_ext(lstart_env):
+    lstart_env.parse_link.side_effect = None
+    lstart_env.parse_link.return_value = ({}, {'A': [ExternalLink('eth0')], 'B': [ExternalLink('eth0')]})
+    lstart_env.parse_ext.side_effect = None
+    lstart_env.parse_ext.return_value = {'A': [ExternalLink('eth1')], 'B': [ExternalLink('eth1')]}
+
+    with pytest.raises(ValueError) as e:
+        LstartCommand().run('.', [])
+
+    assert "`A`" in str(e.value) and "`B`" in str(e.value)
+    assert "`lab.link` and `lab.ext`" in str(e.value)
+    assert all(not link.external for link in lstart_env.lab.links.values())
+    assert not lstart_env.manager.deploy_lab.called
+
+
+def test_run_external_links_no_root(lstart_env):
+    lstart_env.is_admin.return_value = False
+    lstart_env.parse_link.side_effect = None
+    lstart_env.parse_link.return_value = ({}, {'A': [ExternalLink('eth0')]})
+
+    with pytest.raises(PrivilegeError):
+        LstartCommand().run('.', [])
+
+    assert not lstart_env.manager.deploy_lab.called
+
+
+def test_run_ext_links_no_root(lstart_env):
+    lstart_env.is_admin.return_value = False
+    lstart_env.parse_ext.side_effect = None
+    lstart_env.parse_ext.return_value = {'A': [ExternalLink('eth0')]}
+
+    with pytest.raises(PrivilegeError):
+        LstartCommand().run('.', [])
+
+    assert not lstart_env.manager.deploy_lab.called
+
+
+def test_run_external_links_not_linux(lstart_env):
+    lstart_env.is_platform.return_value = False
+    lstart_env.parse_link.side_effect = None
+    lstart_env.parse_link.return_value = ({}, {'A': [ExternalLink('eth0')]})
+
+    with pytest.raises(OSError):
+        LstartCommand().run('.', [])
+
+    assert not lstart_env.manager.deploy_lab.called
+
+
+def test_run_external_links_collision_domain_not_found(lstart_env):
+    lstart_env.parse_link.side_effect = None
+    lstart_env.parse_link.return_value = ({}, {'Z': [ExternalLink('eth0')]})
+
+    with pytest.raises(LinkNotFoundError):
+        LstartCommand().run('.', [])
+
+    assert not lstart_env.manager.deploy_lab.called
+
+
+def test_run_dry_mode_with_link_and_ext(lstart_env, capsys):
+    lstart_env.parse_link.side_effect = None
+    lstart_env.parse_link.return_value = ({'A': 'p2p'}, {})
+    lstart_env.parse_ext.side_effect = None
+    lstart_env.parse_ext.return_value = {'B': [ExternalLink('eth0')]}
+
+    assert LstartCommand().run('.', ['--dry-mode']) == 0
+
+    out = capsys.readouterr().out
+    assert "lab.link" in out
+    assert "lab.ext" in out
+    assert not lstart_env.manager.deploy_lab.called

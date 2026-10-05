@@ -1,5 +1,5 @@
 import argparse
-import os
+import logging
 from typing import List
 
 from ..ui.utils import create_lab_table
@@ -12,6 +12,7 @@ from ...parser.netkit.DepParser import DepParser
 from ...parser.netkit.ExtParser import ExtParser
 from ...parser.netkit.FolderParser import FolderParser
 from ...parser.netkit.LabParser import LabParser
+from ...parser.netkit.LinkParser import LinkParser
 from ...parser.netkit.OptionParser import OptionParser
 from ...setting.Setting import Setting
 from ...strings import strings, wiki_description
@@ -186,31 +187,53 @@ class LstartCommand(Command):
 
         lab.global_machine_metadata = OptionParser.parse(args['global_machine_metadata'])
 
-        lab_ext_path = os.path.join(lab_path, 'lab.ext')
-        lab_ext_exists = False
-        if os.path.exists(lab_ext_path):
+        link_types, link_external_links = {}, {}
+        try:
+            lab_link_exists = True
+            link_types, link_external_links = LinkParser.parse(lab_path)
+        except FileNotFoundError:
+            lab_link_exists = False
+
+        if link_types:
+            lab.assign_link_types(link_types)
+
+        ext_external_links = {}
+        try:
             lab_ext_exists = True
-            if utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2):
-                if utils.is_admin():
-                    external_links = ExtParser.parse(lab_path)
+            ext_external_links = ExtParser.parse(lab_path) or {}
 
-                    if external_links:
-                        lab.attach_external_links(external_links)
+            logging.warning(
+                "`lab.ext` is deprecated and will be removed in future versions. Migrate to `lab.link`."
+            )
+        except FileNotFoundError:
+            lab_ext_exists = False
 
-                        # Since xterm does not work with "sudo", we do not open terminals when lab.ext is present.
-                        Setting.get_instance().open_terminals = False
-                else:
-                    raise PrivilegeError("You must be root in order to use lab.ext file.")
-            else:
-                raise OSError("lab.ext is only available on Linux systems.")
+        # A collision domain can be configured in lab.link or in lab.ext, not both.
+        duplicated = link_external_links.keys() & ext_external_links.keys()
+        if duplicated:
+            raise ValueError(
+                f"Collision domains {', '.join(map(lambda x: f"`{x}`", duplicated))} "
+                f"are defined in both `lab.link` and `lab.ext`."
+            )
 
-        # If dry mode, we just check if the lab.conf is correct.
+        external_links = {**ext_external_links, **link_external_links}
+        if external_links:
+            if not (utils.is_platform(utils.LINUX) or utils.is_platform(utils.LINUX2)):
+                raise OSError("External links are only available on Linux systems.")
+            if not utils.is_admin():
+                raise PrivilegeError("You must be root in order to use external links.")
+
+            lab.attach_external_links(external_links)
+
+        # If dry mode, we just check if the configurations are correct.
         if args['dry_mode']:
             self.console.print("[green]\u2713 [bold]lab.conf[/bold] file is correct.")
             if dependencies:
                 self.console.print("[green]\u2713 [bold]lab.dep[/bold] file is correct.")
             if lab_ext_exists:
                 self.console.print("[green]\u2713 [bold]lab.ext[/bold] file is correct.")
+            if lab_link_exists:
+                self.console.print("[green]\u2713 [bold]lab.link[/bold] file is correct.")
 
             return 0
 

@@ -1,0 +1,9 @@
+# Collision domain types
+A[type]="p2p"
+B[type]=hub
+C[type]="bridge" # inline comment
+
+# External links
+A[external]="enp0s25"
+A[external]="enp0s25.30"
+B[external]=enp0s25.12

@@ -35,23 +35,33 @@ def bridged_link():
 
 
 @pytest.fixture()
-@mock.patch("src.Kathara.manager.docker.DockerPlugin.DockerPlugin")
-@mock.patch("docker.DockerClient")
-def docker_link(mock_obj, mock_docker_plugin):
-    return DockerLink(mock_obj, mock_docker_plugin)
-
-
-@pytest.fixture()
 @mock.patch("docker.models.networks.Network")
 def docker_network(mock_network):
     return mock_network
 
 
 @pytest.fixture()
-@mock.patch("src.Kathara.manager.docker.DockerPlugin.DockerPlugin")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerPlugin")
 @mock.patch("docker.DockerClient")
 def docker_link(mock_docker_client, mock_docker_plugin):
-    return DockerLink(mock_docker_client, mock_docker_plugin)
+    return DockerLink(mock_docker_client)
+
+
+@pytest.fixture()
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+def docker_link_real_plugin(mock_setting_get_instance, docker_link):
+    from src.Kathara.manager.docker.DockerPlugin import DockerPlugin
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{'network_plugin': 'kathara/katharanp'})
+    mock_setting_get_instance.return_value = setting_mock
+    docker_link.docker_plugin = DockerPlugin(docker_link.client)
+    return docker_link
+
+
+def _network_with_driver(driver):
+    network = Mock()
+    network.configure_mock(**{'attrs': {'Driver': driver}, 'id': 'a' * 64})
+    return network
 
 
 #
@@ -122,12 +132,47 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_li
     docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
         name="kathara_user_A_lab-hash",
-        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
+        driver=docker_link.docker_plugin.get_plugin_from_link_type.return_value,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
             "name": "A",
             "app": "kathara",
+            "type": "",
+            "external": "",
+            "user": "user",
+            "lab_hash": default_link.lab.hash,
+        }
+    )
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_with_link_type(mock_get_current_user_name, mock_setting_get_instance, docker_link, default_link):
+    docker_link.client.networks.list.return_value = []
+    docker_link.docker_plugin.get_plugin_from_link_type.return_value = "kathara/katharanp_p2p:amd64"
+
+    mock_get_current_user_name.return_value = 'user'
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'net_prefix': 'kathara',
+        'remote_url': None,
+        'network_plugin': 'kathara/katharanp'
+    })
+    mock_setting_get_instance.return_value = setting_mock
+    default_link.type = "p2p"
+    docker_link.create(default_link)
+    docker_link.docker_plugin.get_plugin_from_link_type.assert_called_once_with("p2p")
+    docker_link.client.networks.create.assert_called_once_with(
+        name="kathara_user_A_lab-hash",
+        driver="kathara/katharanp_p2p:amd64",
+        check_duplicate=True,
+        ipam=docker.types.IPAMConfig(driver='null'),
+        labels={
+            "name": "A",
+            "app": "kathara",
+            "type": "p2p",
             "external": "",
             "user": "user",
             "lab_hash": default_link.lab.hash,
@@ -164,12 +209,13 @@ def test_create_external(mock_get_current_user_name, mock_setting_get_instance, 
     docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
         name="kathara_user_A_lab-hash",
-        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
+        driver=docker_link.docker_plugin.get_plugin_from_link_type.return_value,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
             "name": "A",
             "app": "kathara",
+            "type": "",
             "external": "eth0",
             "user": "user",
             "lab_hash": default_link.lab.hash,
@@ -206,12 +252,13 @@ def test_create_external_os_error(mock_get_current_user_name, mock_setting_get_i
         docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
         name="kathara_user_A_lab-hash",
-        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
+        driver=docker_link.docker_plugin.get_plugin_from_link_type.return_value,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
             "name": "A",
             "app": "kathara",
+            "type": "",
             "external": "eth0",
             "user": "user",
             "lab_hash": default_link.lab.hash,
@@ -245,12 +292,13 @@ def test_create_external_privilege_error(mock_get_current_user_name, mock_settin
         docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
         name="kathara_user_A_lab-hash",
-        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
+        driver=docker_link.docker_plugin.get_plugin_from_link_type.return_value,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
             "name": "A",
             "app": "kathara",
+            "type": "",
             "external": "eth0",
             "user": "user",
             "lab_hash": default_link.lab.hash,
@@ -280,12 +328,13 @@ def test_create_shared_cds_between_users(mock_get_current_user_name, mock_settin
     docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
         name="kathara_A",
-        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
+        driver=docker_link.docker_plugin.get_plugin_from_link_type.return_value,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
             "name": "A",
             "app": "kathara",
+            "type": "",
             "external": ""
         }
     )
@@ -309,13 +358,14 @@ def test_create_shared_cds_between_labs(mock_get_current_user_name, mock_setting
     docker_link.create(default_link)
     docker_link.client.networks.create.assert_called_once_with(
         name="kathara_user_A",
-        driver=f"{setting_mock.network_plugin}:{utils.get_architecture()}",
+        driver=docker_link.docker_plugin.get_plugin_from_link_type.return_value,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
         labels={
             "name": "A",
             "user": "user",
             "app": "kathara",
+            "type": "",
             "external": ""
         }
     )
@@ -348,6 +398,33 @@ def test_deploy_links(mock_deploy_link, docker_link):
     mock_deploy_link.assert_any_call(("B", link_b))
     mock_deploy_link.assert_any_call(("C", link_c))
     assert mock_deploy_link.call_count == 3
+
+
+def test_deploy_links_checks_plugins_of_deployed_links(docker_link):
+    lab = Lab("Default scenario")
+    lab.get_or_new_link("A").type = "p2p"
+    lab.get_or_new_link("B").type = "hub"
+    lab.get_or_new_link("C").type = "p2p"
+    lab.get_or_new_link("D")
+    docker_link.docker_plugin.get_plugin_from_link_type.side_effect = lambda x: f"plugin-{x}"
+    docker_link.deploy_links(lab)
+    docker_link.docker_plugin.check_from_list.assert_called_once_with(
+        {"plugin-p2p", "plugin-hub", "plugin-None"}
+    )
+
+
+def test_deploy_links_checks_only_selected_links_plugins(docker_link):
+    lab = Lab("Default scenario")
+    lab.get_or_new_link("A").type = "p2p"
+    lab.get_or_new_link("B").type = "hub"
+    docker_link.docker_plugin.get_plugin_from_link_type.side_effect = lambda x: f"plugin-{x}"
+    docker_link.deploy_links(lab, selected_links={"A"})
+    docker_link.docker_plugin.check_from_list.assert_called_once_with({"plugin-p2p"})
+
+
+def test_deploy_links_no_link_does_not_check_plugins(docker_link):
+    docker_link.deploy_links(Lab("Default scenario"))
+    assert not docker_link.docker_plugin.check_from_list.called
 
 
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._deploy_link")
@@ -589,3 +666,105 @@ def test_get_links_stats_privilege_error(mock_is_admin, docker_link):
     mock_is_admin.return_value = False
     with pytest.raises(PrivilegeError):
         next(docker_link.get_links_stats(lab_hash="lab_hash", link_name="test_device", user=None))
+
+
+#
+# TEST: _attach_external_interfaces
+#
+@mock.patch("src.Kathara.os.Networking.Networking.attach_interface_ns")
+@mock.patch("src.Kathara.os.Networking.Networking.attach_interface_bridge")
+@mock.patch("src.Kathara.os.Networking.Networking.get_or_new_interface")
+@mock.patch("src.Kathara.utils.is_admin")
+@mock.patch("src.Kathara.utils.is_platform")
+def test_attach_external_interfaces_bridge_driver(mock_is_platform, mock_is_admin, mock_get_intf, mock_attach_bridge,
+                                                  mock_attach_ns, docker_link_real_plugin):
+    mock_is_platform.return_value = True
+    mock_is_admin.return_value = True
+    mock_get_intf.return_value = 7
+    network = _network_with_driver(f"kathara/katharanp:{utils.get_architecture()}")
+
+    docker_link_real_plugin._attach_external_interfaces([ExternalLink("eth0")], network)
+
+    mock_attach_bridge.assert_called_once()
+    assert mock_attach_bridge.call_args.args[0] == 7
+    assert not mock_attach_ns.called
+
+
+@mock.patch("src.Kathara.os.Networking.Networking.attach_interface_ns")
+@mock.patch("src.Kathara.os.Networking.Networking.attach_interface_bridge")
+@mock.patch("src.Kathara.os.Networking.Networking.get_or_new_interface")
+@mock.patch("src.Kathara.utils.is_admin")
+@mock.patch("src.Kathara.utils.is_platform")
+def test_attach_external_interfaces_p2p_driver(mock_is_platform, mock_is_admin, mock_get_intf, mock_attach_bridge,
+                                               mock_attach_ns, docker_link_real_plugin):
+    mock_is_platform.return_value = True
+    mock_is_admin.return_value = True
+    mock_get_intf.return_value = 7
+    network = _network_with_driver(f"kathara/katharanp_p2p:{utils.get_architecture()}")
+
+    docker_link_real_plugin._attach_external_interfaces([ExternalLink("eth0")], network)
+
+    assert not mock_attach_bridge.called
+    assert not mock_attach_ns.called
+
+
+#
+# TEST: _delete_external_interfaces
+#
+@mock.patch("src.Kathara.os.Networking.Networking.remove_interface")
+@mock.patch("src.Kathara.os.Networking.Networking.remove_interface_ns")
+@mock.patch("src.Kathara.utils.is_admin")
+@mock.patch("src.Kathara.utils.is_platform")
+def test_delete_external_interfaces_bridge_driver(mock_is_platform, mock_is_admin, mock_remove_interface_ns,
+                                                  mock_remove_interface, docker_link_real_plugin):
+    mock_is_platform.return_value = True
+    mock_is_admin.return_value = True
+    network = _network_with_driver(f"kathara/katharanp:{utils.get_architecture()}")
+
+    docker_link_real_plugin._delete_external_interfaces(["eth0", "eth0.20"], network)
+
+    assert not mock_remove_interface_ns.called
+    # Only VLAN interfaces are removed
+    mock_remove_interface.assert_called_once_with("eth0.20")
+
+
+@mock.patch("src.Kathara.os.Networking.Networking.remove_interface")
+@mock.patch("src.Kathara.os.Networking.Networking.remove_interface_ns")
+@mock.patch("src.Kathara.utils.is_admin")
+@mock.patch("src.Kathara.utils.is_platform")
+def test_delete_external_interfaces_p2p_driver(mock_is_platform, mock_is_admin, mock_remove_interface_ns,
+                                               mock_remove_interface, docker_link_real_plugin):
+    mock_is_platform.return_value = True
+    mock_is_admin.return_value = True
+    network = _network_with_driver(f"kathara/katharanp_p2p:{utils.get_architecture()}")
+
+    docker_link_real_plugin._delete_external_interfaces(["eth0"], network)
+
+    assert not mock_remove_interface_ns.called
+    assert not mock_remove_interface.called
+
+
+@mock.patch("src.Kathara.os.Networking.Networking.remove_interface")
+@mock.patch("src.Kathara.os.Networking.Networking.remove_interface_ns")
+@mock.patch("src.Kathara.utils.is_admin")
+@mock.patch("src.Kathara.utils.is_platform")
+def test_delete_external_interfaces_vde_driver(mock_is_platform, mock_is_admin, mock_remove_interface_ns,
+                                               mock_remove_interface, docker_link_real_plugin):
+    mock_is_platform.return_value = True
+    mock_is_admin.return_value = True
+    plugin_name = f"kathara/katharanp_vde:{utils.get_architecture()}"
+    network = _network_with_driver(plugin_name)
+    with mock.patch(
+            "src.Kathara.manager.docker.DockerPlugin.DockerPlugin.plugin_pid",
+            return_value=1234
+    ) as mock_plugin_pid, mock.patch(
+        "src.Kathara.manager.docker.DockerPlugin.DockerPlugin.plugin_store_path",
+        return_value="/store"
+    ) as mock_plugin_store_path:
+        docker_link_real_plugin._delete_external_interfaces(["eth0"], network)
+
+    mock_plugin_pid.assert_called_once_with(plugin_name)
+    mock_plugin_store_path.assert_called_once_with(plugin_name)
+    mock_remove_interface_ns.assert_called_once()
+    assert mock_remove_interface_ns.call_args.args[0] == "eth0"
+    assert mock_remove_interface_ns.call_args.args[2] == 1234

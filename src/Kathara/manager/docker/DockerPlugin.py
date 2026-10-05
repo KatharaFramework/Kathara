@@ -1,7 +1,7 @@
 import json
 import logging
 import os.path
-from typing import Callable, Any, Dict
+from typing import Callable, Any, Dict, Optional, Set
 
 from docker import DockerClient
 from docker.errors import NotFound
@@ -10,26 +10,38 @@ from ... import utils
 from ...exceptions import DockerPluginError
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
+from ...types import CollisionDomainTypesOption
 
 LINUX_PLUGIN_NAME = "kathara/katharanp"
 VDE_PLUGIN_NAME = "kathara/katharanp_vde"
+P2P_PLUGIN_NAME = "kathara/katharanp_p2p"
 
 HOSTTMP_KEY = "tmp"
 XTABLES_CONFIGURATION_KEY = "xtables_lock"
 XTABLES_LOCK_PATH = "/run/xtables.lock"
 
+LINK_TYPE_TO_PLUGIN = {
+    CollisionDomainTypesOption.BRIDGE: LINUX_PLUGIN_NAME,
+    CollisionDomainTypesOption.HUB: VDE_PLUGIN_NAME,
+    CollisionDomainTypesOption.P2P: P2P_PLUGIN_NAME
+}
+
 
 class DockerPlugin(object):
     """Class responsible for interacting with Docker Plugins."""
-    __slots__ = ['client', 'current_name']
+    __slots__ = ['_default_name', 'client']
 
     PLUGIN_STATE_PATH = "/run/docker/runtime-runc/plugins.moby/{id}/state.json"
 
     def __init__(self, client: DockerClient):
+        self._default_name: str = f"{Setting.get_instance().network_plugin}:{utils.get_architecture()}"
         self.client: DockerClient = client
-        self.current_name: str = f"{Setting.get_instance().network_plugin}:{utils.get_architecture()}"
 
-    def check_and_download_plugin(self) -> None:
+    def check_from_list(self, plugins: Set[str]) -> None:
+        for plugin in plugins:
+            self._check_and_download(plugin)
+
+    def _check_and_download(self, plugin_name: str) -> None:
         """Check the presence of the Kathara Network Plugin and download it or upgrade it, if needed.
 
         Returns:
@@ -40,83 +52,95 @@ class DockerPlugin(object):
             DockerPluginError: If the Kathara Network Plugin is not enabled on remote Docker connection.
         """
         try:
-            logging.debug("Checking plugin `%s`..." % self.current_name)
-            plugin = self.client.plugins.get(self.current_name)
+            logging.debug(f"Checking plugin `{plugin_name}`...")
+            plugin = self.client.plugins.get(plugin_name)
 
             # Check for plugin updates.
             plugin.upgrade()
         except NotFound:
             if Setting.get_instance().remote_url is None:
-                logging.info(f"Installing Kathara Network Plugin ({self.current_name})...")
-                plugin = self.client.plugins.install(self.current_name)
-                logging.info("Kathara Network Plugin installed successfully!")
+                logging.info(f"Installing Kathara Network Plugin ({plugin_name})...")
+                plugin = self.client.plugins.install(plugin_name)
+                logging.info(f"Kathara Network Plugin ({plugin_name}) installed successfully!")
             else:
-                raise DockerPluginError("Kathara Network Plugin not found on remote Docker connection.")
+                raise DockerPluginError(
+                    f"Kathara Network Plugin ({plugin_name}) not found on remote Docker connection."
+                )
 
         if Setting.get_instance().remote_url is None:
-            if self.is_vde() and not plugin.enabled:
-                logging.debug("Enabling plugin `%s`..." % self.current_name)
-                plugin.enable()
-            elif self.is_bridge():
+            if plugin_name != f"{LINUX_PLUGIN_NAME}:{utils.get_architecture()}":
+                if not plugin.enabled:
+                    logging.debug(f"Enabling plugin `{plugin_name}`...")
+                    plugin.enable()
+            else:
                 xtables_lock_mount = self._xtables_lock_mount()
                 if not plugin.enabled:
                     self._configure_xtables_mount(plugin, xtables_lock_mount)
-                    logging.debug("Enabling plugin `%s`..." % self.current_name)
+                    logging.debug(f"Enabling plugin `{plugin_name}`...")
                     plugin.enable()
                 else:
                     # Get the mount of xtables.lock from the current plugin configuration
-                    mount_obj = list(filter(lambda x: x["Name"] == XTABLES_CONFIGURATION_KEY,
-                                            plugin.attrs["Settings"]["Mounts"])).pop()
+                    mount_obj = list(
+                        filter(
+                            lambda x: x["Name"] == XTABLES_CONFIGURATION_KEY,
+                            plugin.attrs["Settings"]["Mounts"]
+                        )
+                    ).pop()
 
                     # If it's not equal to the computed one, fix the mount
                     if mount_obj["Source"] != xtables_lock_mount:
                         plugin.disable()
                         self._configure_xtables_mount(plugin, xtables_lock_mount)
-                        logging.debug("Enabling plugin `%s`..." % self.current_name)
+                        logging.debug(f"Enabling plugin `{plugin_name}`...")
                         plugin.enable()
         else:
             if not plugin.enabled:
-                raise DockerPluginError("Kathara Network Plugin not enabled on remote Docker connection.")
+                raise DockerPluginError(
+                    f"Kathara Network Plugin ({plugin_name}) not enabled on remote Docker connection."
+                )
 
-    @staticmethod
-    def is_vde() -> bool:
-        """Check if the current enabled plugin is the VDE version.
+    def get_plugin_from_link_type(self, link_type: Optional[CollisionDomainTypesOption]) -> str:
+        """Get plugin name from the link type.
 
-        Returns:
-            bool: True if the running plugin is the VDE version.
-        """
-        return Setting.get_instance().network_plugin == VDE_PLUGIN_NAME
-
-    @staticmethod
-    def is_bridge() -> bool:
-        """Check if the current enabled plugin is the Linux bridge version.
+        Args:
+            link_type (Optional[str]): The link type. If None, defaults to the plugin in the settings.
 
         Returns:
-            bool: True if the running plugin is the Linux bridge version.
+            str: The Docker plugin name.
         """
-        return Setting.get_instance().network_plugin == LINUX_PLUGIN_NAME
+        if link_type is None:
+            return self._default_name
 
-    def exec_by_version(self, fun_vde: Callable, fun_bridge: Callable) -> Any:
+        return f"{LINK_TYPE_TO_PLUGIN[link_type]}:{utils.get_architecture()}"
+
+    def exec_by_version(self, plugin_name: str, fun_vde: Callable, fun_bridge: Callable, fun_p2p: Callable) -> Any:
         """Executes the callback depending on the enabled plugin version.
 
         Returns:
             Any: The result of the callback.
         """
-        if self.is_vde():
-            return fun_vde()
-        elif self.is_bridge():
-            return fun_bridge()
+        # Strip architecture tag
+        base_name = plugin_name.rsplit(":", 1)[0]
 
-    def plugin_pid(self) -> int:
+        if base_name == VDE_PLUGIN_NAME:
+            return fun_vde(plugin_name)
+        elif base_name == P2P_PLUGIN_NAME:
+            return fun_p2p(plugin_name)
+        elif base_name == LINUX_PLUGIN_NAME:
+            return fun_bridge(plugin_name)
+        else:
+            raise DockerPluginError(f"Invalid plugin name `{plugin_name}`.")
+
+    def plugin_pid(self, plugin_name: str) -> int:
         """Get the plugin process PID from the plugin state file.
 
         Returns:
             int: The plugin process PID.
         """
-        state = self._get_plugin_state()
+        state = self._get_plugin_state(plugin_name)
         return state['init_process_pid']
 
-    def plugin_store_path(self) -> str:
+    def plugin_store_path(self, plugin_name: str) -> str:
         """Get the plugin storage path (VDE only) from the plugin settings.
 
         Returns:
@@ -125,7 +149,7 @@ class DockerPlugin(object):
         Raises:
             FileNotFoundError: If the storage path mount point cannot be found.
         """
-        plugin = self.client.plugins.get(self.current_name)
+        plugin = self.client.plugins.get(plugin_name)
         settings = plugin.settings
 
         hosttmp_mount = None
@@ -139,13 +163,13 @@ class DockerPlugin(object):
 
         raise FileNotFoundError(f"Unable to find `{HOSTTMP_KEY}` in plugin mounts.")
 
-    def _get_plugin_state(self) -> Dict:
+    def _get_plugin_state(self, plugin_name: str) -> Dict:
         """Get the plugin state.json file content from the Docker plugin state path.
 
         Returns:
             Dict: The content of the state.json file, parsed. Empty dict if the file cannot be found.
         """
-        plugin = self.client.plugins.get(self.current_name)
+        plugin = self.client.plugins.get(plugin_name)
         plugin_state_json = self.PLUGIN_STATE_PATH.format(id=plugin.id)
         if not os.path.exists(plugin_state_json):
             return {}
@@ -176,7 +200,7 @@ class DockerPlugin(object):
         Returns:
             None
         """
-        logging.debug("Configuring xtables.lock source to `%s`..." % xtables_lock_mount)
+        logging.debug(f"Configuring xtables.lock source to `{xtables_lock_mount}`...")
         plugin.configure({
             XTABLES_CONFIGURATION_KEY + '.source': xtables_lock_mount
         })
