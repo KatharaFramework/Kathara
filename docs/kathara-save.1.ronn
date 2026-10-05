@@ -1,0 +1,55 @@
+m4_changequote()
+kathara-save(1) -- Save the state of a running Kathara network scenario into a file
+=============================================
+
+## SYNOPSIS
+
+`kathara save` [`-h`] [`-d` <DIRECTORY> \| `-n` <NAME>] [`-o` <OUTPUT>] [`--diff` \| `--full-images`] [`--exclude` <DEVICE_NAME> [<DEVICE_NAME> ...]] [<DEVICE_NAME> [<DEVICE_NAME> ...]]
+
+## DESCRIPTION
+
+Save the current state of a running network scenario into a single archive file, so that it can later be recreated with `kathara-restore`(1).
+
+The filesystem state of each running device (e.g. packages installed and configuration files edited at runtime) is captured and bundled together with the network topology (devices, collision domains, interfaces and device configuration) into the output archive.
+
+By default (`--diff`), only the filesystem changes of each device relative to its base image are saved, producing a small archive. On restore, the base images must be available (they are pulled if necessary). With `--full-images`, the entire committed image of each device is saved instead, producing a larger but fully self-contained archive.
+
+By default, all the devices of the network scenario are saved. If a list of <DEVICE_NAME>s is provided, then only devices with a matching name are saved.
+
+NOTE: This command is only available on the Docker manager. Only the filesystem is captured, not process/memory state: runtime-only configuration that was never persisted to disk (e.g. routes added by hand that are not part of a `.startup` script) is not preserved.
+
+The collision domains are saved with their mode and with the VLANs declared on the interfaces of the devices (see `kathara-lab.conf`(5)). The configuration made on a managed collision domain while the network scenario is running (see `kathara-switch`(1)) is not preserved: a restored collision domain starts from the declared VLANs.
+
+## OPTIONS
+
+* `-h`, `--help`:
+    Show a help message and exit.
+
+* `-d` <DIRECTORY>, `--directory` <DIRECTORY>:
+	Specify the folder containing the running network scenario to save.
+
+	If no `-d` option is provided, assume the network scenario is located in the current directory.
+
+* `-n` <NAME>, `--name` <NAME>:
+    Save a running network scenario by its name, instead of by its directory.
+
+* `-o` <OUTPUT>, `--output` <OUTPUT>:
+    Path of the save file to create. If not provided, defaults to `<name>.tar` in the current directory.
+
+* `--diff`:
+    Save only the filesystem changes of each device relative to its base image (default). Produces a smaller file, but the base images must be available on restore.
+
+* `--full-images`:
+    Save the full committed image of each device. Produces a larger but self-contained file.
+
+* `--exclude` [<DEVICE_NAME> [<DEVICE_NAME> ...]]
+    A list of device names. You can exclude certain devices of the network scenario from being saved.
+
+* `DEVICE_NAME`:
+    A list of device names. Instead of saving the whole network scenario, only specified devices are saved.
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-restore`(1), `kathara-lstart`(1), `kathara-lclean`(1), `kathara-switch`(1), `kathara-lab.conf`(5)

@@ -7,6 +7,7 @@ sys.path.insert(0, './')
 
 from src.Kathara.cli.command.VconfigCommand import VconfigCommand
 from src.Kathara.model.Lab import Lab
+from src.Kathara.types import LinkMode
 
 @mock.patch("src.Kathara.model.Lab.Lab.get_or_new_link")
 @mock.patch("src.Kathara.model.Lab.Lab.get_machine")
@@ -68,3 +69,44 @@ def test_run_remove_interface(mock_docker_manager, mock_manager_get_instance, mo
     mock_docker_manager.get_machine_api_object.assert_called_once_with('pc1', lab_name='kathara_vlab')
     mock_docker_manager.get_link_api_object.assert_called_once_with('A', lab_name='kathara_vlab')
     mock_docker_manager.disconnect_machine_from_link.assert_called_once()
+
+
+@mock.patch("src.Kathara.model.Lab.Lab.get_or_new_link")
+@mock.patch("src.Kathara.model.Lab.Lab.get_machine")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_add_interface_with_vlans(mock_docker_manager, mock_manager_get_instance, mock_get_machine,
+                                      mock_get_or_new_link):
+    lab = Lab('kathara_vlab')
+    pc1 = lab.new_machine("pc1")
+    link_a = lab.get_or_new_link("A")
+    mock_get_machine.return_value = pc1
+    mock_get_or_new_link.return_value = link_a
+    mock_manager_get_instance.return_value = mock_docker_manager
+    command = VconfigCommand()
+    command.run('.', ['-n', 'pc1', '--add', 'A/00:00:00:00:00:01/vlan=10/trunk=20,30'])
+    mock_docker_manager.connect_machine_to_link.assert_called_once_with(
+        pc1, link_a, mac_address='00:00:00:00:00:01', vlan=10, tagged_vlans=[20, 30]
+    )
+
+
+@mock.patch("src.Kathara.model.Lab.Lab.get_machine")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_add_interface_with_cd_mode(mock_docker_manager, mock_manager_get_instance, mock_get_machine):
+    lab = Lab('kathara_vlab')
+    pc1 = lab.new_machine("pc1")
+    mock_get_machine.return_value = pc1
+    mock_manager_get_instance.return_value = mock_docker_manager
+    command = VconfigCommand()
+    command.run('.', ['-n', 'pc1', '--add', 'A/vlan=10', 'B', '--cd-mode', 'A:managed'])
+    (_, link_a), kwargs_a = mock_docker_manager.connect_machine_to_link.call_args_list[0]
+    (_, link_b), kwargs_b = mock_docker_manager.connect_machine_to_link.call_args_list[1]
+    assert (link_a.name, link_a.mode, kwargs_a) == ("A", LinkMode.MANAGED, {'mac_address': None, 'vlan': 10})
+    assert (link_b.name, link_b.mode, kwargs_b) == ("B", None, {'mac_address': None})
+
+
+def test_run_cd_mode_error():
+    command = VconfigCommand()
+    with pytest.raises(SystemExit):
+        command.run('.', ['-n', 'pc1', '--add', 'A', '--cd-mode', 'A:router'])

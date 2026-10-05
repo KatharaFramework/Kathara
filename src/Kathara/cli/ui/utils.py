@@ -20,7 +20,8 @@ from ... import utils
 from ...foundation.manager.stats.IMachineStats import IMachineStats
 from ...model.Lab import Lab
 from ...setting.Setting import Setting
-from ...utils import parse_cd_mac_address
+from ...types import LinkMode
+from ...utils import parse_interface_definition
 
 FORBIDDEN_TABLE_COLUMNS = ["container_name"]
 
@@ -212,28 +213,36 @@ def alphanumeric(value: str, pat: re.Pattern = re.compile(r"^\w+$")) -> str:
     return value
 
 
-def interface_cd_mac(value: str) -> Tuple[str, str, str]:
-    n, cd, mac = None, None, None
+def interface_cd_mac(value: str) -> Tuple[str, str, Optional[str], Dict[str, Any]]:
     try:
-        parts = value.split('/')
-        (n, cd) = parts[0].split(':')
-        if len(parts) == 2:
-            if parts[1]:
-                mac = parts[1]
-            else:
-                raise ValueError
-    except ValueError:
+        (n, definition) = value.split(':', 1)
+        (cd, mac, vlans) = parse_interface_definition(definition)
+    except (ValueError, SyntaxError):
         raise argparse.ArgumentTypeError("invalid interface definition: %s" % value)
 
     if not re.search(r"^\w+$", cd):
         raise argparse.ArgumentTypeError(f"invalid interface definition, "
                                          f"collision domain `{cd}` contains non-alphanumeric characters")
 
-    return n, cd, mac
+    return n, cd, mac, vlans
 
 
-def cd_mac(value) -> Tuple[str, str]:
-    return parse_cd_mac_address(value)
+def cd_mac(value) -> Tuple[str, Optional[str], Dict[str, Any]]:
+    return parse_interface_definition(value)
+
+
+def cd_mode(value: str) -> Tuple[str, LinkMode]:
+    try:
+        (cd, mode) = value.split(':')
+        if not re.search(r"^\w+$", cd):
+            raise ValueError
+
+        return cd, LinkMode(mode.lower())
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"invalid collision domain mode: {value} "
+            f"(expected CD:MODE, where MODE is one of: {', '.join([x.value for x in LinkMode])})"
+        )
 
 
 def volume(value: str) -> str:

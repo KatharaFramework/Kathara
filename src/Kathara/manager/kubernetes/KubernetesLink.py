@@ -20,6 +20,7 @@ from ...exceptions import InvocationError
 from ...model.Lab import Lab
 from ...model.Link import Link
 from ...setting.Setting import Setting
+from ...types import LinkMode
 
 MAX_K8S_LINK_NUMBER = (1 << 24) - 10
 
@@ -128,6 +129,12 @@ class KubernetesLink(object):
         # If external is defined for a link, throw a warning.
         if link.external:
             logging.warning('External is not supported on Megalos. It will be ignored.')
+
+        # If a mode other than the default one is defined for a link, throw a warning.
+        if link.mode is not None and link.mode != LinkMode.HUB:
+            logging.warning(
+                f'Collision domain mode is not supported on Megalos. It will be ignored on `{link.name}`.'
+            )
 
     def undeploy(self, lab_hash: str, selected_links: Optional[Set[str]] = None) -> None:
         """Undeploy all the links of the scenario specified by lab_hash.

@@ -144,13 +144,17 @@ class KubernetesManager(IManager):
             else:
                 raise e
 
-    def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None) -> None:
+    def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None,
+                                vlan: Optional[int] = None, tagged_vlans: Optional[List[int]] = None) -> None:
         """Connect a Kathara device to a collision domain.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
             link (Kathara.model.Link): A Kathara collision domain object.
             mac_address (Optional[str]): The MAC address to assign to the interface.
+            vlan (Optional[int]): The VLAN of the untagged frames of the interface (managed collision domain).
+            tagged_vlans (Optional[List[int]]): The VLANs exchanged tagged with the interface
+                (managed collision domain).
 
         Returns:
             None
@@ -353,6 +357,46 @@ class KubernetesManager(IManager):
             logging.debug("Waiting for namespace deletion...")
             self.k8s_namespace.undeploy(lab_hash=lab_hash)
 
+    def save_lab(self, archive_path: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                 lab: Optional[Lab] = None, selected_machines: Optional[Set[str]] = None,
+                 excluded_machines: Optional[Set[str]] = None, filesystem_diff: bool = True) -> None:
+        """Save the state of a running network scenario into a single archive file.
+
+        Args:
+            archive_path (str): The path of the archive file to create.
+            lab_hash (Optional[str]): The hash of the network scenario.
+            lab_name (Optional[str]): The name of the network scenario.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+            selected_machines (Optional[Set[str]]): If not None, save only the specified devices.
+            excluded_machines (Optional[Set[str]]): If not None, exclude devices from being saved.
+            filesystem_diff (bool): If True (default), save only the filesystem diff of each device
+                relative to its base image. If False, save the full committed device images.
+
+        Returns:
+            None
+
+        Raises:
+            NotSupportedError: Saving the network scenario state is only supported on Docker.
+        """
+        raise NotSupportedError("Saving the network scenario state is only supported on Docker.")
+
+    def restore_lab(self, archive_path: str, lab_hash: Optional[str] = None,
+                    lab: Optional[Lab] = None) -> Lab:
+        """Restore a network scenario previously saved with `save_lab` and redeploy it.
+
+        Args:
+            archive_path (str): The path of the archive file created by `save_lab`.
+            lab_hash (Optional[str]): If specified, override the hash of the restored network scenario.
+            lab (Optional[Kathara.model.Lab]): If specified, the network scenario to deploy from the saved images.
+
+        Returns:
+            Kathara.model.Lab: The restored (and redeployed) network scenario.
+
+        Raises:
+            NotSupportedError: Restoring the network scenario state is only supported on Docker.
+        """
+        raise NotSupportedError("Restoring the network scenario state is only supported on Docker.")
+
     def wipe(self, all_users: bool = False) -> None:
         """Undeploy all the running network scenarios.
 
@@ -505,6 +549,96 @@ class KubernetesManager(IManager):
             logging.warning("Wait option has no effect on Megalos.")
 
         return self.exec(machine.name, command, lab=machine.lab, wait=wait, stream=stream)
+
+    def exec_link(self, link_name: str, command: str, lab_hash: Optional[str] = None,
+                  lab_name: Optional[str] = None, lab: Optional[Lab] = None) -> str:
+        """Run a command on the management console of a managed collision domain in a running network scenario.
+
+        Args:
+            link_name (str): The name of the collision domain.
+            command (str): The command, e.g. `vlan/create 10` or `port/print`.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
+
+        Returns:
+            str: The text printed by the command.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
+            LinkNotFoundError: If the collision domain is not found.
+            LinkModeError: If the collision domain is not a managed switch.
+            LinkCommandError: If the command fails.
+            NotSupportedError: If the manager cannot manage collision domains.
+        """
+        raise NotSupportedError("Unable to manage a collision domain.")
+
+    def exec_link_obj(self, link: Link, command: str) -> str:
+        """Run a command on the management console of a managed collision domain in a running network scenario.
+
+        Args:
+            link (Kathara.model.Link): The collision domain.
+            command (str): The command, e.g. `vlan/create 10` or `port/print`.
+
+        Returns:
+            str: The text printed by the command.
+
+        Raises:
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
+            LinkNotFoundError: If the collision domain is not found.
+            LinkModeError: If the collision domain is not a managed switch.
+            LinkCommandError: If the command fails.
+            NotSupportedError: If the manager cannot manage collision domains.
+        """
+        raise NotSupportedError("Unable to manage a collision domain.")
+
+    def get_link_ports(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                       lab: Optional[Lab] = None) -> Dict[int, Dict[str, Any]]:
+        """Return the ports of a managed collision domain in a running network scenario.
+
+        Args:
+            link_name (str): The name of the collision domain.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
+
+        Returns:
+            Dict[int, Dict[str, Any]]: For each port number: `vlan` (the VLAN of the untagged frames),
+                `tagged_vlans` (the VLANs exchanged tagged), `active` (True when something is plugged) and
+                `endpoints` (what is plugged: `<device>:eth<N>` for the interface of a device).
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
+            LinkNotFoundError: If the collision domain is not found.
+            LinkModeError: If the collision domain is not a managed switch.
+            NotSupportedError: If the manager cannot manage collision domains.
+        """
+        raise NotSupportedError("Unable to manage a collision domain.")
+
+    def get_link_ports_obj(self, link: Link) -> Dict[int, Dict[str, Any]]:
+        """Return the ports of a managed collision domain in a running network scenario.
+
+        Args:
+            link (Kathara.model.Link): The collision domain.
+
+        Returns:
+            Dict[int, Dict[str, Any]]: For each port number: `vlan` (the VLAN of the untagged frames),
+                `tagged_vlans` (the VLANs exchanged tagged), `active` (True when something is plugged) and
+                `endpoints` (what is plugged: `<device>:eth<N>` for the interface of a device).
+
+        Raises:
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
+            LinkNotFoundError: If the collision domain is not found.
+            LinkModeError: If the collision domain is not a managed switch.
+            NotSupportedError: If the manager cannot manage collision domains.
+        """
+        raise NotSupportedError("Unable to manage a collision domain.")
 
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, Union[str, io.IOBase]]) -> None:
         """Copy files on a running device in the specified paths.

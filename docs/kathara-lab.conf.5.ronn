@@ -17,18 +17,59 @@ If `arg` is an integer value, then `value` is the name of the collision domain t
 - `arg`: An integer value representing the interface number (e.g., 0).
 - `CD1`: The name of the collision domain to which the specified interface must be connected. Note that the name of the collision domain must not contain spaces (" "), commas (",") and dots (".").
 - `/MAC_ADDR`: An optional parameter to specify the MAC address of the interface of `device` (MAC address must be in the format `XX:XX:XX:XX:XX:XX`). If `MAC_ADDR` is not provided, Kathara will assign a random one.
+- `/vlan=ID`: An optional parameter, only for a collision domain in `managed` mode (see below): the VLAN (1-4094) of the untagged frames of the interface (access port). If it is not provided, the interface is in the default VLAN of the collision domain.
+- `/trunk=ID[,ID...]`: An optional parameter, only for a collision domain in `managed` mode: the VLANs whose frames are exchanged with an 802.1Q tag on the interface (trunk port).
 
 ### EXAMPLES
 
 1. Connect eth0 of `pc1` to collision domain `CD1` with a random MAC address:
+
 	```
 	pc1[0]="CD1"
 	```
 
 2. Connect eth1 of `pc1` to collision domain `CD2` with the specified MAC address:
+
 	```
 	pc1[1]="CD2/02:42:ac:11:00:02"
 	```
+
+3. Connect eth0 of `pc2` to the managed collision domain `CD3`, as an access port of VLAN 10:
+
+	```
+	pc2[0]="CD3/vlan=10"
+	```
+
+4. Connect eth0 of `r1` to the managed collision domain `CD3`, as a trunk port of VLANs 10 and 20 (`r1` uses the VLAN interfaces `eth0.10` and `eth0.20`):
+
+	```
+	r1[0]="CD3/trunk=10,20"
+	```
+
+## COLLISION DOMAIN MODES
+
+By default, a collision domain behaves as a hub: each frame is received by all the devices connected to it. The mode of a collision domain can be changed with a `CD_MODE[CD]=mode` assignment, where `CD` is the name of a collision domain used by at least one device and `mode` is one of:
+
+* `hub`:
+	Each frame is sent to all the devices of the collision domain. This is the default.
+
+* `switch`:
+	The collision domain learns the MAC addresses of the devices and sends a frame only to its destination. It cannot be configured. Frames with an 802.1Q tag are not forwarded: use `hub` or `managed` for a collision domain crossed by a VLAN trunk.
+
+* `managed`:
+	A switch which can be configured. The VLANs of the interfaces are declared with the `/vlan=ID` and `/trunk=ID[,ID...]` parameters described above, and the switch can be inspected and reconfigured while the network scenario is running with `kathara-switch`(1): VLANs, port table, MAC address table, spanning tree. Each device interface is plugged into a port named `device:ethN`, which keeps its configuration when the device restarts.
+
+The modes other than `hub` require the VDE version of the Kathara Network Plugin (`kathara/katharanp_vde`), in a version which supports them. They are not available on Megalos.
+
+### EXAMPLES
+
+	pc1[0]="A/vlan=10"
+	pc2[0]="A/vlan=20"
+	r1[0]="A/trunk=10,20"
+	r1[1]="B"
+
+	CD_MODE[A]="managed"
+	CD_MODE[B]="switch"
 
 ## DEVICE OPTIONS
 
@@ -135,9 +176,11 @@ Example of a `lab.conf`(5) file.
 	pc2[mem]="128m"
 	pc2[shell]="/bin/sh" 
 
+	CD_MODE[C]="switch" # Collision domain C is a switch instead of a hub
+
 
 m4_include(footer.txt)
 
 ## SEE ALSO
 
-`kathara`(1), `kathara-lstart`(1), [Kathara official site](https://www.kathara.org)
+`kathara`(1), `kathara-lstart`(1), `kathara-switch`(1), [Kathara official site](https://www.kathara.org)

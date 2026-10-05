@@ -1,7 +1,7 @@
 import json
 import logging
 import os.path
-from typing import Callable, Any, Dict
+from typing import Callable, Any, Dict, Set
 
 from docker import DockerClient
 from docker.errors import NotFound
@@ -10,11 +10,22 @@ from ... import utils
 from ...exceptions import DockerPluginError
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
+from ...types import LinkMode
 
 LINUX_PLUGIN_NAME = "kathara/katharanp"
 VDE_PLUGIN_NAME = "kathara/katharanp_vde"
 
 HOSTTMP_KEY = "tmp"
+PLUGIN_STORE_DIRNAME = "katharanp"
+
+# Environment variable of the plugin which lists the collision domain modes it supports.
+LINK_MODES_ENV = "KATHARA_SWITCH_MODES"
+# Network option: the mode of the collision domain.
+SWITCH_MODE_OPTION = "kathara.switch.mode"
+# Endpoint options: the name of the switch port and its VLANs (managed collision domains).
+SWITCH_LABEL_OPTION = "kathara.switch.label"
+SWITCH_VLAN_OPTION = "kathara.switch.vlan"
+SWITCH_TAGGED_OPTION = "kathara.switch.tagged"
 XTABLES_CONFIGURATION_KEY = "xtables_lock"
 XTABLES_LOCK_PATH = "/run/xtables.lock"
 
@@ -125,17 +136,49 @@ class DockerPlugin(object):
         Raises:
             FileNotFoundError: If the storage path mount point cannot be found.
         """
+        return os.path.join(self._hosttmp_mount()['Destination'], PLUGIN_STORE_DIRNAME)
+
+    def plugin_host_store_path(self) -> str:
+        """Get the path of the plugin storage (VDE only) on the host, from the plugin settings.
+
+        Returns:
+            str: The path of the plugin storage on the host.
+
+        Raises:
+            FileNotFoundError: If the storage path mount point cannot be found.
+        """
+        return os.path.join(self._hosttmp_mount()['Source'], PLUGIN_STORE_DIRNAME)
+
+    def supported_link_modes(self) -> Set[str]:
+        """Get the collision domain modes supported by the current plugin, from the plugin settings.
+
+        Returns:
+            Set[str]: The names of the supported modes. A plugin which does not declare them only creates hubs.
+        """
+        plugin = self.client.plugins.get(self.current_name)
+
+        for env in plugin.settings.get('Env') or []:
+            (name, _, value) = env.partition('=')
+            if name == LINK_MODES_ENV:
+                return {x.strip() for x in value.split(',') if x.strip()}
+
+        return {LinkMode.HUB.value}
+
+    def _hosttmp_mount(self) -> Dict:
+        """Get the mount of the plugin storage (VDE only) from the plugin settings.
+
+        Returns:
+            Dict: The mount of the plugin storage.
+
+        Raises:
+            FileNotFoundError: If the storage path mount point cannot be found.
+        """
         plugin = self.client.plugins.get(self.current_name)
         settings = plugin.settings
 
-        hosttmp_mount = None
         for mount in settings['Mounts']:
             if mount['Name'] == HOSTTMP_KEY:
-                hosttmp_mount = mount['Destination']
-                break
-
-        if hosttmp_mount:
-            return os.path.join(hosttmp_mount, "katharanp")
+                return mount
 
         raise FileNotFoundError(f"Unable to find `{HOSTTMP_KEY}` in plugin mounts.")
 

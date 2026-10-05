@@ -232,3 +232,54 @@ def test_check_and_download_remote_vde_plugin_not_enabled(mock_setting_get_insta
     assert str(e.value) == "Kathara Network Plugin not enabled on remote Docker connection."
     assert not mock_xtables_lock_mount.called
     assert not mock_configure_xtables_mount.called
+
+
+#
+# TEST: plugin_store_path / plugin_host_store_path
+#
+def _plugin_with_settings(docker_plugin, settings):
+    plugin = Mock()
+    plugin.settings = settings
+    docker_plugin.client.plugins.get.return_value = plugin
+
+
+def test_plugin_store_paths(docker_plugin_vde):
+    _plugin_with_settings(docker_plugin_vde, {'Mounts': [
+        {'Name': 'var_run_docker', 'Source': '/var/run/docker', 'Destination': '/var/run/docker'},
+        {'Name': 'tmp', 'Source': '/tmp', 'Destination': '/hosttmp'}
+    ]})
+
+    assert docker_plugin_vde.plugin_store_path() == "/hosttmp/katharanp"
+    assert docker_plugin_vde.plugin_host_store_path() == "/tmp/katharanp"
+
+
+def test_plugin_store_paths_no_mount_error(docker_plugin_vde):
+    _plugin_with_settings(docker_plugin_vde, {'Mounts': []})
+
+    with pytest.raises(FileNotFoundError):
+        docker_plugin_vde.plugin_store_path()
+
+    with pytest.raises(FileNotFoundError):
+        docker_plugin_vde.plugin_host_store_path()
+
+
+#
+# TEST: supported_link_modes
+#
+@pytest.mark.parametrize("env,expected", [
+    (["KATHARA_SWITCH_MODES=hub,switch,managed"], {"hub", "switch", "managed"}),
+    (["OTHER=1", "KATHARA_SWITCH_MODES=hub, switch"], {"hub", "switch"}),
+    (["OTHER=1"], {"hub"}),
+    ([], {"hub"}),
+    (None, {"hub"}),
+])
+def test_supported_link_modes(docker_plugin_vde, env, expected):
+    _plugin_with_settings(docker_plugin_vde, {'Mounts': [], 'Env': env})
+
+    assert docker_plugin_vde.supported_link_modes() == expected
+
+
+def test_supported_link_modes_no_env(docker_plugin_vde):
+    _plugin_with_settings(docker_plugin_vde, {'Mounts': []})
+
+    assert docker_plugin_vde.supported_link_modes() == {"hub"}
