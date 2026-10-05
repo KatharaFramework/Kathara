@@ -26,9 +26,14 @@ class SettingsNotFoundError(Exception):
         super().__init__(f"Settings file not found in path `{path}`.")
 
 
-class DockerDaemonConnectionError(Exception):
+class ContainerEngineConnectionError(Exception):
     def __init__(self, message: str) -> None:
-        super().__init__(f"Cannot connect to Docker Daemon, this may indicate that it is not running. {message}")
+        super().__init__(f"Cannot connect to the container engine, this may indicate that it is not running. {message}")
+
+
+# Kept for backward compatibility: existing code catching `DockerDaemonConnectionError` still works,
+# since Docker was the only backend when this name was introduced.
+DockerDaemonConnectionError = ContainerEngineConnectionError
 
 
 class NotSupportedError(Exception):
@@ -168,6 +173,8 @@ class DockerImageNotFoundError(Exception):
 class DockerPluginError(Exception):
     pass
 
+class PodmanPluginError(Exception):
+    pass
 
 # Kubernetes Exceptions
 class KubernetesConfigMapError(Exception):

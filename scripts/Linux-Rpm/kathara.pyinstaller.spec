@@ -25,16 +25,20 @@ hiddenimports = ['Kathara',
                 'Kathara.cli.ui.setting',
                 'Kathara.cli.ui.setting.DockerOptionsHandler',
                 'Kathara.cli.ui.setting.KubernetesOptionsHandler',
+                'Kathara.cli.ui.setting.PodmanOptionsHandler',
                 'Kathara.manager',
                 'Kathara.manager.Kathara',
                 'Kathara.manager.docker',
                 'Kathara.manager.docker.DockerManager',
                 'Kathara.manager.kubernetes',
                 'Kathara.manager.kubernetes.KubernetesManager',
+                'Kathara.manager.podman',
+                'Kathara.manager.podman.PodmanManager',
                 'Kathara.setting',
                 'Kathara.setting.addon',
                 'Kathara.setting.addon.DockerSettingsAddon',
-                'Kathara.setting.addon.KubernetesSettingsAddon'
+                'Kathara.setting.addon.KubernetesSettingsAddon',
+                'Kathara.setting.addon.PodmanSettingsAddon'
                 ]
 hiddenimports += collect_submodules('rich')
 
