@@ -206,12 +206,16 @@ class Lab(LabFilesystemMixin):
             None
 
         Raises:
-            NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
+            NonSequentialMachineInterfaceError: If a machine does not satisfy its constraints.
+            LinkInvalidError: If a collision domain does not satisfy its constraints.
         """
         logging.debug("Checking network scenario integrity...")
 
         for machine in self.machines.values():
             machine.check()
+
+        for link in self.links.values():
+            link.check()
 
     def get_links_from_machines(self, machines: Union[List[str], Set[str]]) -> Set[str]:
         """Return the name of the collision domains connected to the devices.

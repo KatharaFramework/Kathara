@@ -56,3 +56,8 @@ test = ["pytest"]
 [build-system]
 requires = ["setuptools<81.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:pkg_resources is deprecated as an API",
+    "ignore:Deprecated call to `pkg_resources.declare_namespace",
+]

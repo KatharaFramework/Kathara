@@ -48,6 +48,47 @@ def test_add_interface(default_device: Machine):
     assert interface == default_device.interfaces[0]
 
 
+def test_add_interface_p2p_link(default_device: Machine):
+    lab = default_device.lab
+    link = lab.new_link("A")
+    link.type = "p2p"
+    default_device.add_interface(link)
+    lab.get_or_new_machine("pc2").add_interface(link)
+    assert set(link.machines.keys()) == {"test_machine", "pc2"}
+
+
+def test_add_interface_p2p_link_third_endpoint(default_device: Machine):
+    lab = default_device.lab
+    link = lab.new_link("A")
+    link.type = "p2p"
+    lab.get_or_new_machine("pc1").add_interface(link)
+    lab.get_or_new_machine("pc2").add_interface(link)
+
+    with pytest.raises(MachineCollisionDomainError, match="already has two endpoints"):
+        default_device.add_interface(link)
+
+    # Nothing changed
+    assert len(default_device.interfaces) == 0
+    assert set(link.machines.keys()) == {"pc1", "pc2"}
+
+
+def test_add_interface_not_p2p_link_many_endpoints(default_device: Machine):
+    lab = default_device.lab
+    link = lab.new_link("A")
+    for name in ["pc1", "pc2", "pc3"]:
+        lab.get_or_new_machine(name).add_interface(link)
+
+    default_device.add_interface(link)
+    assert len(link.machines) == 4
+
+
+def test_check_does_not_check_links(default_device: Machine):
+    link = default_device.lab.new_link("A")
+    link.type = "p2p"
+    default_device.add_interface(link)
+    default_device.check()
+
+
 def test_add_interface_with_number(default_device: Machine):
     interface = default_device.add_interface(Link(default_device.lab, "A"), number=2)
     assert len(default_device.interfaces) == 1
@@ -120,6 +161,33 @@ def test_remove_interface_one(default_device: Machine):
     assert default_device.name not in link_a.machines
 
 
+def test_remove_interface_p2p_link(default_device: Machine):
+    # Removing an endpoint while defining the network scenario is allowed, only the runtime one is not
+    lab = default_device.lab
+    link = lab.new_link("A")
+    link.type = "p2p"
+    default_device.add_interface(link)
+    lab.get_or_new_machine("pc2").add_interface(link)
+
+    default_device.remove_interface(link)
+
+    assert default_device.interfaces[0] is None
+    assert set(link.machines.keys()) == {"pc2"}
+
+
+def test_remove_interface_p2p_link_then_add_another_endpoint(default_device: Machine):
+    lab = default_device.lab
+    link = lab.new_link("A")
+    link.type = "p2p"
+    lab.get_or_new_machine("pc1").add_interface(link)
+    lab.get_or_new_machine("pc2").add_interface(link)
+    lab.machines["pc2"].remove_interface(link)
+
+    default_device.add_interface(link)
+
+    assert set(link.machines.keys()) == {"pc1", "test_machine"}
+
+
 def test_remove_interface_exception(default_device: Machine):
     link = Link(default_device.lab, "A")
     with pytest.raises(MachineCollisionDomainError):
@@ -132,6 +200,50 @@ def test_add_remove_add_interface(default_device: Machine):
     default_device.remove_interface(link)
     interface = default_device.add_interface(link)
     assert default_device.interfaces[1] == interface
+
+
+def test_add_interface_reuses_number_of_removed_interface(default_device: Machine):
+    # Removing an interface leaves a `None` placeholder, so the number can be set again explicitly
+    link_a = Link(default_device.lab, "A")
+    link_b = Link(default_device.lab, "B")
+    default_device.add_interface(link_a)
+    default_device.add_interface(link_b)
+    default_device.remove_interface(link_a)
+    assert default_device.interfaces[0] is None
+
+    interface = default_device.add_interface(Link(default_device.lab, "C"), number=0)
+
+    assert default_device.interfaces[0] == interface
+    assert interface.link.name == "C"
+    assert default_device.interfaces[1].link == link_b
+    assert "test_machine" not in link_a.machines
+
+
+def test_add_interface_reuses_number_of_removed_interface_on_same_cd(default_device: Machine):
+    link = Link(default_device.lab, "A")
+    default_device.add_interface(link)
+    default_device.remove_interface(link)
+
+    interface = default_device.add_interface(link, number=0)
+
+    assert default_device.interfaces[0] == interface
+    assert link.machines["test_machine"] == default_device
+
+
+def test_add_interface_number_of_removed_interface_still_checks_other_conditions(default_device: Machine):
+    link_a = Link(default_device.lab, "A")
+    link_b = Link(default_device.lab, "B")
+    default_device.add_interface(link_a)
+    default_device.add_interface(link_b)
+    default_device.remove_interface(link_a)
+
+    # Freed number, but the device is already connected to `B`
+    with pytest.raises(MachineCollisionDomainError, match="already connected"):
+        default_device.add_interface(link_b, number=0)
+
+    # Still used number
+    with pytest.raises(MachineCollisionDomainError, match="already set"):
+        default_device.add_interface(Link(default_device.lab, "C"), number=1)
 
 
 def test_add_remove_three_interfaces(default_device: Machine):

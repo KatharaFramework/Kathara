@@ -14,7 +14,8 @@ from src.Kathara.utils import generate_urlsafe_hash
 from src.Kathara.manager.docker.stats.DockerLinkStats import DockerLinkStats
 from src.Kathara.manager.docker.stats.DockerMachineStats import DockerMachineStats
 from src.Kathara.exceptions import MachineNotFoundError, LabNotFoundError, InvocationError, LinkNotFoundError, \
-    MachineNotRunningError, MachineCollisionDomainError
+    MachineNotRunningError, MachineCollisionDomainError, LinkInvalidError, NotSupportedError
+from src.Kathara.model.ExternalLink import ExternalLink
 from src.Kathara.types import SharedCollisionDomainsOption, CollisionDomainTypesOption
 
 
@@ -238,6 +239,15 @@ def _two_networks_container(docker_container):
     }
 
 
+@pytest.fixture()
+def p2p_scenario():
+    lab = Lab("p2p scenario")
+    lab.connect_machine_to_link("pc1", "A")
+    lab.connect_machine_to_link("pc2", "A")
+    lab.assign_link_types({"A": "p2p"})
+    return lab
+
+
 #
 # TEST: deploy_lab
 #
@@ -302,6 +312,47 @@ def test_deploy_lab_selected_and_excluded_machines(mock_deploy_links, mock_deplo
     assert not mock_deploy_links.called
 
 
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_lab_p2p(mock_deploy_links, mock_deploy_machines, docker_manager, p2p_scenario):
+    docker_manager.deploy_lab(p2p_scenario)
+    mock_deploy_links.assert_called_once()
+    mock_deploy_machines.assert_called_once()
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_lab_p2p_one_endpoint(mock_deploy_links, mock_deploy_machines, docker_manager):
+    lab = Lab("p2p scenario")
+    lab.connect_machine_to_link("pc1", "A")
+    lab.assign_link_types({"A": "p2p"})
+    with pytest.raises(LinkInvalidError):
+        docker_manager.deploy_lab(lab)
+
+    assert not mock_deploy_links.called
+    assert not mock_deploy_machines.called
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_lab_p2p_selected_machines_checks_whole_lab(mock_deploy_links, mock_deploy_machines, docker_manager,
+                                                           p2p_scenario):
+    # Deploying only pc1 is fine, since the other endpoint is defined in the network scenario
+    docker_manager.deploy_lab(p2p_scenario, selected_machines={"pc1"})
+    mock_deploy_links.assert_called_once()
+
+
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_lab_p2p_external_link(mock_deploy_links, mock_deploy_machines, docker_manager, p2p_scenario):
+    p2p_scenario.attach_external_links({"A": [ExternalLink("eth0")]})
+    with pytest.raises(LinkInvalidError, match="external"):
+        docker_manager.deploy_lab(p2p_scenario)
+
+    assert not mock_deploy_links.called
+    assert not mock_deploy_machines.called
+
+
 #
 # TEST: deploy_machine
 #
@@ -322,6 +373,46 @@ def test_deploy_machine_no_lab(docker_manager, default_device):
         docker_manager.deploy_machine(default_device)
 
 
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+def test_deploy_machine_p2p(mock_deploy_machines, mock_deploy_links, docker_manager, p2p_scenario):
+    docker_manager.deploy_machine(p2p_scenario.machines["pc1"])
+    mock_deploy_links.assert_called_once()
+    mock_deploy_machines.assert_called_once()
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+def test_deploy_machine_p2p_one_endpoint(mock_deploy_machines, mock_deploy_links, docker_manager):
+    # The other endpoint can be connected later, so a single endpoint is fine
+    lab = Lab("p2p scenario")
+    lab.connect_machine_to_link("pc1", "A")
+    lab.assign_link_types({"A": "p2p"})
+    docker_manager.deploy_machine(lab.machines["pc1"])
+    mock_deploy_links.assert_called_once()
+    mock_deploy_machines.assert_called_once()
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+def test_deploy_machine_p2p_external_link(mock_deploy_machines, mock_deploy_links, docker_manager, p2p_scenario):
+    p2p_scenario.attach_external_links({"A": [ExternalLink("eth0")]})
+    with pytest.raises(LinkInvalidError, match="external"):
+        docker_manager.deploy_machine(p2p_scenario.machines["pc1"])
+
+    assert not mock_deploy_links.called
+    assert not mock_deploy_machines.called
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.deploy_machines")
+def test_deploy_machine_checks_links_once(mock_deploy_machines, mock_deploy_links, docker_manager, p2p_scenario):
+    with mock.patch("src.Kathara.model.Link.Link.check") as mock_check:
+        docker_manager.deploy_machine(p2p_scenario.machines["pc1"])
+
+    mock_check.assert_called_once_with(strict=False)
+
+
 #
 # TEST: deploy_link
 #
@@ -336,6 +427,24 @@ def test_deploy_link_no_lab(docker_manager, default_link):
 
     with pytest.raises(LabNotFoundError):
         docker_manager.deploy_link(default_link)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_link_p2p_without_endpoints_yet(mock_deploy_links, docker_manager, default_link):
+    # Endpoints can be connected later, at runtime
+    default_link.type = "p2p"
+    docker_manager.deploy_link(default_link)
+    mock_deploy_links.assert_called_once_with(default_link.lab, selected_links={default_link.name})
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_deploy_link_p2p_external_link(mock_deploy_links, docker_manager, default_link):
+    default_link.type = "p2p"
+    default_link.external.append(ExternalLink("eth0"))
+    with pytest.raises(LinkInvalidError, match="external"):
+        docker_manager.deploy_link(default_link)
+
+    assert not mock_deploy_links.called
 
 
 #
@@ -464,6 +573,27 @@ def test_connect_machine_to_link_machine_exited_error(docker_manager, default_de
         docker_manager.connect_machine_to_link(default_device, default_link)
 
 
+@pytest.mark.parametrize("existing_endpoints", [0, 1, 2])
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.deploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_interface")
+def test_connect_machine_to_link_p2p_not_supported_at_runtime(mock_connect_interface_machine, mock_deploy_link,
+                                                              docker_manager, default_device, default_link,
+                                                              existing_endpoints):
+    default_link.type = "p2p"
+    existing = ["pc1", "pc2"][:existing_endpoints]
+    for name in existing:
+        Machine(default_link.lab, name).add_interface(default_link)
+
+    with pytest.raises(NotSupportedError, match="at runtime"):
+        docker_manager.connect_machine_to_link(default_device, default_link)
+
+    # Nothing is deployed or connected, and the model is unchanged
+    assert not mock_deploy_link.called
+    assert not mock_connect_interface_machine.called
+    assert len(default_device.interfaces) == 0
+    assert set(default_link.machines.keys()) == set(existing)
+
+
 #
 # TEST: disconnect_machine_from_link
 #
@@ -542,6 +672,46 @@ def test_disconnect_machine_from_link_no_link_lab(docker_manager, default_device
 
     with pytest.raises(LabNotFoundError):
         docker_manager.disconnect_machine_from_link(default_device, default_link)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.undeploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.disconnect_from_link")
+def test_disconnect_machine_from_link_p2p(mock_disconnect_from_link_machine, mock_undeploy_link, docker_manager,
+                                          default_device, default_link):
+    default_link.type = "p2p"
+    default_device.add_interface(default_link)
+    Machine(default_link.lab, "other_device").add_interface(default_link)
+
+    with pytest.raises(NotSupportedError, match="at runtime"):
+        docker_manager.disconnect_machine_from_link(default_device, default_link)
+
+    assert not mock_disconnect_from_link_machine.called
+    assert not mock_undeploy_link.called
+    assert 0 in default_device.interfaces
+    assert set(default_link.machines.keys()) == {"test_device", "other_device"}
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.undeploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.disconnect_from_link")
+def test_disconnect_machine_from_link_p2p_with_keep_link(mock_disconnect_from_link_machine, mock_undeploy_link,
+                                                         docker_manager, default_device, default_link):
+    default_link.type = "p2p"
+    default_device.add_interface(default_link)
+
+    with pytest.raises(NotSupportedError, match="at runtime"):
+        docker_manager.disconnect_machine_from_link(default_device, default_link, keep_link=True)
+
+    assert not mock_disconnect_from_link_machine.called
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.undeploy_link")
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.disconnect_from_link")
+def test_disconnect_machine_from_link_not_p2p_is_allowed(mock_disconnect_from_link_machine, mock_undeploy_link,
+                                                         docker_manager, default_device, default_link):
+    default_link.type = "hub"
+    default_device.add_interface(default_link)
+    docker_manager.disconnect_machine_from_link(default_device, default_link)
+    mock_disconnect_from_link_machine.assert_called_once_with(default_device, default_link)
 
 
 #

@@ -73,7 +73,7 @@ class IManager(ABC):
         Raises:
             LabNotFoundError: If the device specified is not associated to any network scenario.
             LabNotFoundError: If the collision domain is not associated to any network scenario.
-            MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
+            MachineCollisionDomainError: If the device is already connected to the collision domain.
         """
         raise NotImplementedError("You must implement `connect_machine_to_link` method.")
 
@@ -91,7 +91,7 @@ class IManager(ABC):
         Raises:
             LabNotFoundError: If the device specified is not associated to any network scenario.
             LabNotFoundError: If the collision domain is not associated to any network scenario.
-            MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
+            MachineCollisionDomainError: If the device is not connected to the collision domain.
         """
         raise NotImplementedError("You must implement `disconnect_machine_from_link` method.")
 

@@ -96,18 +96,25 @@ class Machine(FilesystemMixin):
             Interface: The object associated to this interface.
 
         Raises:
-            MachineCollisionDomainConflictError: If the interface number specified is already used on the device.
-            MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
+            MachineCollisionDomainError: If the interface number specified is already used on the device.
+            MachineCollisionDomainError: If the device is already connected to the collision domain.
+            MachineCollisionDomainError: If the collision domain is point-to-point and already has two endpoints.
         """
         if number is None:
             number = len(self.interfaces.keys())
 
-        if number in self.interfaces:
+        if number in self.interfaces and self.interfaces[number] is not None:
             raise MachineCollisionDomainError(f"Interface {number} already set on device `{self.name}`.")
 
         if self.name in link.machines:
             raise MachineCollisionDomainError(
                 f"Device `{self.name}` is already connected to collision domain `{link.name}`."
+            )
+
+        if link.is_p2p() and len(link.machines) >= 2:
+            raise MachineCollisionDomainError(
+                f"Cannot connect device `{self.name}` to point-to-point collision domain `{link.name}`, "
+                f"it already has two endpoints."
             )
 
         interface = InterfacePackage.Interface(self, link, number, mac_address)
@@ -126,7 +133,7 @@ class Machine(FilesystemMixin):
             None
 
         Raises:
-            MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
+            MachineCollisionDomainError: If the device is not connected to the collision domain.
         """
         if self.name not in link.machines:
             raise MachineCollisionDomainError(

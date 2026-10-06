@@ -125,6 +125,10 @@ class InterfaceMacAddressError(Exception):
 
 
 # Link Exceptions
+class LinkInvalidError(Exception):
+    pass
+
+
 class LinkNotFoundError(Exception):
     pass
 

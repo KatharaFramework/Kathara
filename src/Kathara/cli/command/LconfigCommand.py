@@ -6,6 +6,7 @@ from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...parser.netkit.LabParser import LabParser
+from ...parser.netkit.LinkParser import LinkParser
 from ...strings import strings, wiki_description
 
 
@@ -69,6 +70,12 @@ class LconfigCommand(Command):
         self._load_custom_configuration(lab_path)
 
         lab = LabParser.parse(lab_path)
+        try:
+            link_types, _ = LinkParser.parse(lab_path)
+            if link_types:
+                lab.assign_link_types(link_types)
+        except FileNotFoundError:
+            pass
 
         Kathara.get_instance().update_lab_from_api(lab)
 

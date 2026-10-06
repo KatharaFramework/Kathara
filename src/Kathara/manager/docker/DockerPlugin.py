@@ -5,6 +5,7 @@ from typing import Callable, Any, Dict, Optional, Set
 
 from docker import DockerClient
 from docker.errors import NotFound
+from docker.models.plugins import Plugin
 
 from ... import utils
 from ...exceptions import DockerPluginError
@@ -38,11 +39,26 @@ class DockerPlugin(object):
         self.client: DockerClient = client
 
     def check_from_list(self, plugins: Set[str]) -> None:
+        """Check a list of specified plugins.
+
+        Args:
+            plugins (Set[str]): A set of plugin names to check.
+
+        Returns:
+            None
+
+        Raises:
+            DockerPluginError: If the Kathara Network Plugin is not found on remote Docker connection.
+            DockerPluginError: If the Kathara Network Plugin is not enabled on remote Docker connection.
+        """
         for plugin in plugins:
             self._check_and_download(plugin)
 
     def _check_and_download(self, plugin_name: str) -> None:
-        """Check the presence of the Kathara Network Plugin and download it or upgrade it, if needed.
+        """Check the presence of the specified Kathara Network Plugin and download it or upgrade it, if needed.
+
+        Args:
+            plugin_name (str): The plugin name.
 
         Returns:
             None
@@ -134,6 +150,9 @@ class DockerPlugin(object):
     def plugin_pid(self, plugin_name: str) -> int:
         """Get the plugin process PID from the plugin state file.
 
+        Args:
+            plugin_name (str): The plugin name.
+
         Returns:
             int: The plugin process PID.
         """
@@ -142,6 +161,9 @@ class DockerPlugin(object):
 
     def plugin_store_path(self, plugin_name: str) -> str:
         """Get the plugin storage path (VDE only) from the plugin settings.
+
+        Args:
+            plugin_name (str): The plugin name.
 
         Returns:
             str: The plugin storage path.
@@ -165,6 +187,9 @@ class DockerPlugin(object):
 
     def _get_plugin_state(self, plugin_name: str) -> Dict:
         """Get the plugin state.json file content from the Docker plugin state path.
+
+        Args:
+            plugin_name (str): The plugin name.
 
         Returns:
             Dict: The content of the state.json file, parsed. Empty dict if the file cannot be found.
@@ -194,8 +219,12 @@ class DockerPlugin(object):
         return utils.exec_by_platform(_mount_xtables_lock_linux, _mount_xtables_lock_windows, lambda: "")
 
     @staticmethod
-    def _configure_xtables_mount(plugin, xtables_lock_mount) -> None:
+    def _configure_xtables_mount(plugin: Plugin, xtables_lock_mount: str) -> None:
         """Changes the Docker plugin configuration by settings the correct xtables.lock path (Linux bridge only).
+
+        Args:
+            plugin (Plugin): The plugin to configure.
+            xtables_lock_mount (str): The xtables.lock path.
 
         Returns:
             None

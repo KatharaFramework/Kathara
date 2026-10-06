@@ -3,6 +3,7 @@ from typing import List, Any, Dict, Optional, Union
 from . import Lab as LabPackage
 from . import Machine as MachinePackage
 from .ExternalLink import ExternalLink
+from ..exceptions import LinkInvalidError
 from ..types import CollisionDomainTypesOption
 
 BRIDGE_LINK_NAME = "kathara_host_bridge"
@@ -49,6 +50,53 @@ class Link(object):
             ValueError: If the value is not a supported collision domain type.
         """
         self._type = CollisionDomainTypesOption.parse(value) if value is not None else None
+
+    def check(self, strict: bool = True) -> None:
+        """Check if the collision domain satisfies the constraints of its type.
+
+        Args:
+            strict (bool): Boolean that allows to relax conditions. Defaults to True.
+
+        Returns:
+            None
+
+        Raises:
+            LinkInvalidError: If the collision domain is point-to-point and does not satisfy its constraints.
+        """
+        if self.is_p2p():
+            if len(self.external) > 0:
+                raise LinkInvalidError(
+                    f"Point-to-point collision domain `{self.name}` cannot have external interfaces."
+                )
+
+            if len(self.machines) > 2 or (strict and len(self.machines) != 2):
+                raise LinkInvalidError(
+                    f"Point-to-point collision domain `{self.name}` must have exactly two endpoints, found {len(self.machines)}."
+                )
+
+    def is_bridge(self) -> bool:
+        """Check if the collision domain is bridge.
+
+        Returns:
+            bool: If the collision domain is bridge.
+        """
+        return self.type == CollisionDomainTypesOption.BRIDGE
+
+    def is_hub(self) -> bool:
+        """Check if the collision domain is hub.
+
+        Returns:
+            bool: If the collision domain is hub.
+        """
+        return self.type == CollisionDomainTypesOption.HUB
+
+    def is_p2p(self) -> bool:
+        """Check if the collision domain is point-to-point.
+
+        Returns:
+            bool: If the collision domain is point-to-point.
+        """
+        return self.type == CollisionDomainTypesOption.P2P
 
     def __repr__(self) -> str:
         return "Link(%s, %s, %s)" % (self.name, self.type, self.external)
