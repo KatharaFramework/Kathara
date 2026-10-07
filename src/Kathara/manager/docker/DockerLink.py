@@ -13,7 +13,7 @@ from .DockerPlugin import DockerPlugin
 from .stats.DockerLinkStats import DockerLinkStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import PrivilegeError, InvocationError
+from ...exceptions import PrivilegeError, InvocationError, LinkInvalidError
 from ...model.ExternalLink import ExternalLink
 from ...model.Lab import Lab
 from ...model.Link import BRIDGE_LINK_NAME, Link
@@ -128,7 +128,14 @@ class DockerLink(object):
             link_name=link.name, lab_hash=filter_lab_hash, user=filter_user
         )
         if networks:
-            link.api_object = networks.pop()
+            network = networks.pop()
+            network_type = network.attrs["Labels"].get("type") or None
+            if link.type != network_type:
+                raise LinkInvalidError(
+                    f"Collision domain `{link.name}` is already deployed with type `{network_type}`, "
+                    f"but `{link.type}` is required."
+                )
+            link.api_object = network
         else:
             network_ipam_config = docker.types.IPAMConfig(driver='null')
 

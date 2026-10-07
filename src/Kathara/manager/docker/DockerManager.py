@@ -725,6 +725,13 @@ class DockerManager(IManager):
                 all_users=Setting.get_instance().shared_cds == SharedCollisionDomainsOption.USERS
             ))
         )
+        if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
+            for network in lab_networks.values():
+                network.reload()
+
+                link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
+                link.api_object = network
+                link.type = network.attrs["Labels"].get("type") or None
 
         for container in lab_containers:
             container.reload()
@@ -802,8 +809,15 @@ class DockerManager(IManager):
                 all_users=Setting.get_instance().shared_cds == SharedCollisionDomainsOption.USERS
             ))
         )
-        for network in deployed_networks.values():
-            network.reload()
+        if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
+            for network in deployed_networks.values():
+                network.reload()
+
+                link = lab.get_or_new_link(network.attrs["Labels"]["name"])
+                link.api_object = network
+                network_type = network.attrs["Labels"].get("type") or None
+                if link.type is None:
+                    link.type = network_type
 
         deployed_networks_by_link_name = dict(
             map(lambda x: (x.attrs["Labels"]["name"], x), deployed_networks.values())
@@ -843,7 +857,9 @@ class DockerManager(IManager):
             current_ifaces = dict([(x[0].name, x[1]) for x in current_ifaces])
             for link in dynamic_links:
                 link.api_object = deployed_networks_by_link_name[link.name]
-                link.type = link.api_object.attrs["Labels"].get("type") or None
+                if link.type is None:
+                    link.type = link.api_object.attrs["Labels"].get("type") or None
+
                 iface_options = current_ifaces[link.name]
                 iface_mac_addr = None
                 iface_number = int(iface_options["DriverOpts"]["kathara.iface"])

@@ -248,6 +248,12 @@ def p2p_scenario():
     return lab
 
 
+def _setting_with_shared_cds(shared_cds):
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{'shared_cds': shared_cds})
+    return setting_mock
+
+
 #
 # TEST: deploy_lab
 #
@@ -1680,6 +1686,45 @@ def test_get_lab_from_api_link_type_invalid_label(mock_get_links_api_objects, mo
         docker_manager.get_lab_from_api(lab_name="lab_test")
 
 
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_api_objects")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_api_objects")
+def test_get_lab_from_api_network_without_devices(mock_get_links_api_objects, mock_get_machines_api_objects,
+                                                  mock_setting_get_instance, docker_container, docker_network,
+                                                  docker_network_b, docker_manager):
+    mock_setting_get_instance.return_value = _setting_with_shared_cds(SharedCollisionDomainsOption.NOT_SHARED)
+    docker_network_b.attrs["Labels"]["type"] = "p2p"
+    mock_get_machines_api_objects.return_value = [docker_container]
+    # `test_network_b` has no device attached
+    mock_get_links_api_objects.return_value = [docker_network, docker_network_b]
+
+    lab = docker_manager.get_lab_from_api(lab_name="lab_test")
+
+    assert set(lab.links.keys()) == {"test_network", "test_network_b"}
+    assert lab.links["test_network_b"].api_object == docker_network_b
+    assert lab.links["test_network_b"].type == CollisionDomainTypesOption.P2P
+    assert lab.links["test_network_b"].machines == {}
+
+
+@pytest.mark.parametrize("shared_cds", [SharedCollisionDomainsOption.LABS, SharedCollisionDomainsOption.USERS])
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_api_objects")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_api_objects")
+def test_get_lab_from_api_shared_cds_only_attached_networks(mock_get_links_api_objects, mock_get_machines_api_objects,
+                                                            mock_setting_get_instance, docker_container,
+                                                            docker_network, docker_network_b, docker_manager,
+                                                            shared_cds):
+    # Shared networks may belong to other network scenarios, so only the ones attached to the devices are loaded
+    mock_setting_get_instance.return_value = _setting_with_shared_cds(shared_cds)
+    mock_get_machines_api_objects.return_value = [docker_container]
+    mock_get_links_api_objects.return_value = [docker_network, docker_network_b]
+
+    lab = docker_manager.get_lab_from_api(lab_name="lab_test")
+
+    assert set(lab.links.keys()) == {"test_network"}
+    assert lab.links["test_network"].api_object == docker_network
+
+
 #
 # TESTS: update_lab_from_api
 #
@@ -1826,6 +1871,100 @@ def test_update_lab_from_api_static_link_type_is_kept(mock_get_links_api_objects
 
     docker_manager.update_lab_from_api(lab)
     assert lab.links["test_network"].type == CollisionDomainTypesOption.HUB
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_api_objects")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_api_objects")
+def test_update_lab_from_api_network_without_devices(mock_get_links_api_objects, mock_get_machines_api_objects,
+                                                     mock_setting_get_instance, docker_container, docker_network,
+                                                     docker_network_b, docker_manager):
+    mock_setting_get_instance.return_value = _setting_with_shared_cds(SharedCollisionDomainsOption.NOT_SHARED)
+    lab = Lab("test")
+    device = lab.get_or_new_machine(docker_container.labels["name"])
+    device.add_interface(lab.new_link(docker_network.attrs["Labels"]["name"]))
+    docker_network_b.attrs["Labels"]["type"] = "p2p"
+    mock_get_machines_api_objects.return_value = [docker_container]
+    mock_get_links_api_objects.return_value = [docker_network, docker_network_b]
+
+    docker_manager.update_lab_from_api(lab)
+
+    assert set(lab.links.keys()) == {"test_network", "test_network_b"}
+    assert lab.links["test_network_b"].api_object == docker_network_b
+    assert lab.links["test_network_b"].type == CollisionDomainTypesOption.P2P
+    assert lab.links["test_network_b"].machines == {}
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_api_objects")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_api_objects")
+def test_update_lab_from_api_network_without_devices_declared_in_lab(mock_get_links_api_objects,
+                                                                     mock_get_machines_api_objects,
+                                                                     mock_setting_get_instance, docker_container,
+                                                                     docker_network, docker_network_b,
+                                                                     docker_manager):
+    mock_setting_get_instance.return_value = _setting_with_shared_cds(SharedCollisionDomainsOption.NOT_SHARED)
+    lab = Lab("test")
+    device = lab.get_or_new_machine(docker_container.labels["name"])
+    device.add_interface(lab.new_link(docker_network.attrs["Labels"]["name"]))
+    # Declared without a type, the type of the network is used
+    untyped_link = lab.new_link(docker_network_b.attrs["Labels"]["name"])
+    docker_network_b.attrs["Labels"]["type"] = "hub"
+    mock_get_machines_api_objects.return_value = [docker_container]
+    mock_get_links_api_objects.return_value = [docker_network, docker_network_b]
+
+    docker_manager.update_lab_from_api(lab)
+
+    assert lab.links["test_network_b"] is untyped_link
+    assert untyped_link.api_object == docker_network_b
+    assert untyped_link.type == CollisionDomainTypesOption.HUB
+
+
+@pytest.mark.parametrize("shared_cds", [SharedCollisionDomainsOption.LABS, SharedCollisionDomainsOption.USERS])
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_api_objects")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_api_objects")
+def test_update_lab_from_api_shared_cds_only_attached_networks(mock_get_links_api_objects,
+                                                               mock_get_machines_api_objects,
+                                                               mock_setting_get_instance, docker_container,
+                                                               docker_network, docker_network_b, docker_manager,
+                                                               shared_cds):
+    mock_setting_get_instance.return_value = _setting_with_shared_cds(shared_cds)
+    lab = Lab("test")
+    device = lab.get_or_new_machine(docker_container.labels["name"])
+    static_link = lab.new_link(docker_network.attrs["Labels"]["name"])
+    device.add_interface(static_link)
+    mock_get_machines_api_objects.return_value = [docker_container]
+    mock_get_links_api_objects.return_value = [docker_network, docker_network_b]
+
+    docker_manager.update_lab_from_api(lab)
+
+    assert set(lab.links.keys()) == {"test_network"}
+    # Static collision domains still get their API object from the devices
+    assert static_link.api_object == docker_network
+
+
+@pytest.mark.parametrize("shared_cds", [SharedCollisionDomainsOption.LABS, SharedCollisionDomainsOption.USERS])
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_machines_api_objects")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_links_api_objects")
+def test_update_lab_from_api_shared_cds_dynamic_link(mock_get_links_api_objects, mock_get_machines_api_objects,
+                                                     mock_setting_get_instance, docker_container, docker_network,
+                                                     docker_network_b, docker_manager, shared_cds):
+    # A collision domain attached at runtime gets its API object and type from the device networks
+    mock_setting_get_instance.return_value = _setting_with_shared_cds(shared_cds)
+    lab = Lab("test")
+    device = lab.get_or_new_machine(docker_container.labels["name"])
+    device.add_interface(lab.new_link(docker_network.attrs["Labels"]["name"]))
+    docker_network_b.attrs["Labels"]["type"] = "hub"
+    mock_get_machines_api_objects.return_value = [docker_container]
+    mock_get_links_api_objects.return_value = [docker_network, docker_network_b]
+    _two_networks_container(docker_container)
+
+    docker_manager.update_lab_from_api(lab)
+
+    assert lab.links["test_network_b"].api_object == docker_network_b
+    assert lab.links["test_network_b"].type == CollisionDomainTypesOption.HUB
 
 
 #

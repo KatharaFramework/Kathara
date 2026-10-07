@@ -12,7 +12,7 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara.model.Link import BRIDGE_LINK_NAME
 from src.Kathara.manager.docker.DockerLink import DockerLink
 from src.Kathara import utils
-from src.Kathara.exceptions import PrivilegeError, InvocationError
+from src.Kathara.exceptions import PrivilegeError, InvocationError, LinkInvalidError
 from src.Kathara.types import SharedCollisionDomainsOption
 
 
@@ -61,6 +61,24 @@ def docker_link_real_plugin(mock_setting_get_instance, docker_link):
 def _network_with_driver(driver):
     network = Mock()
     network.configure_mock(**{'attrs': {'Driver': driver}, 'id': 'a' * 64})
+    return network
+
+
+@pytest.fixture()
+def not_shared_setting():
+    setting_mock = Mock()
+    setting_mock.configure_mock(**{
+        'shared_cds': SharedCollisionDomainsOption.NOT_SHARED,
+        'net_prefix': 'kathara',
+        'remote_url': None,
+        'network_plugin': 'kathara/katharanp'
+    })
+    return setting_mock
+
+
+def _deployed_network(labels):
+    network = Mock()
+    network.attrs = {"Labels": {"name": "A", "app": "kathara", **labels}}
     return network
 
 
@@ -371,6 +389,54 @@ def test_create_shared_cds_between_labs(mock_get_current_user_name, mock_setting
     )
 
 
+@pytest.mark.parametrize("link_type, labels", [
+    (None, {"type": ""}),
+    (None, {}),  # Networks without the `type` label
+    ("bridge", {"type": "bridge"}),
+    ("hub", {"type": "hub"}),
+    ("p2p", {"type": "p2p"}),
+])
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_reuses_network_with_same_type(mock_get_current_user_name, mock_setting_get_instance, docker_link,
+                                              default_link, not_shared_setting, link_type, labels):
+    mock_get_current_user_name.return_value = 'user'
+    mock_setting_get_instance.return_value = not_shared_setting
+    network = _deployed_network(labels)
+    docker_link.client.networks.list.return_value = [network]
+    default_link.type = link_type
+
+    docker_link.create(default_link)
+
+    assert default_link.api_object == network
+    assert not docker_link.client.networks.create.called
+
+
+@pytest.mark.parametrize("link_type, labels", [
+    ("p2p", {"type": ""}),
+    ("p2p", {}),
+    (None, {"type": "p2p"}),  # e.g., another network scenario sharing the collision domain declared it p2p
+    ("hub", {"type": "p2p"}),
+    ("bridge", {"type": ""}),  # Same driver with the default plugin, but declared differently
+])
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_existing_network_with_different_type(mock_get_current_user_name, mock_setting_get_instance,
+                                                     docker_link, default_link, not_shared_setting, link_type,
+                                                     labels):
+    mock_get_current_user_name.return_value = 'user'
+    mock_setting_get_instance.return_value = not_shared_setting
+    docker_link.client.networks.list.return_value = [_deployed_network(labels)]
+    default_link.type = link_type
+
+    with pytest.raises(LinkInvalidError, match="already deployed with type"):
+        docker_link.create(default_link)
+
+    # The collision domain is not bound to the wrong network, and nothing is created
+    assert default_link.api_object is None
+    assert not docker_link.client.networks.create.called
+
+
 #
 # TEST: _deploy_link
 #
@@ -400,7 +466,8 @@ def test_deploy_links(mock_deploy_link, docker_link):
     assert mock_deploy_link.call_count == 3
 
 
-def test_deploy_links_checks_plugins_of_deployed_links(docker_link):
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._deploy_link")
+def test_deploy_links_checks_plugins_of_deployed_links(mock_deploy_link, docker_link):
     lab = Lab("Default scenario")
     lab.get_or_new_link("A").type = "p2p"
     lab.get_or_new_link("B").type = "hub"
@@ -413,7 +480,8 @@ def test_deploy_links_checks_plugins_of_deployed_links(docker_link):
     )
 
 
-def test_deploy_links_checks_only_selected_links_plugins(docker_link):
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._deploy_link")
+def test_deploy_links_checks_only_selected_links_plugins(mock_deploy_link, docker_link):
     lab = Lab("Default scenario")
     lab.get_or_new_link("A").type = "p2p"
     lab.get_or_new_link("B").type = "hub"
