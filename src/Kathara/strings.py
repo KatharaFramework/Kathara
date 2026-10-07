@@ -12,6 +12,7 @@ strings = {
     "lconfig": "Manage the network interfaces of a running Kathara device in a Kathara network scenario",
     "connect": "Connect to a Kathara device",
     "exec": "Execute a command in a Kathara device",
+    "switch": "Manage a Kathara collision domain deployed as a managed switch",
     "wipe": "Delete all Kathara devices and collision domains, optionally also delete settings",
     "list": "Show all running Kathara devices of the current user",
     "settings": "Show and edit Kathara settings",

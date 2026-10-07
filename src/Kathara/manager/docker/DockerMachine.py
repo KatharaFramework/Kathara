@@ -17,6 +17,7 @@ from docker.types import Ulimit
 from docker.utils import version_lt, version_gte
 
 from .DockerImage import DockerImage
+from .DockerPlugin import SWITCH_LABEL_OPTION, SWITCH_VLAN_OPTION, SWITCH_TAGGED_OPTION
 from .exec_stream.DockerExecStream import DockerExecStream
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
@@ -455,7 +456,12 @@ class DockerMachine(object):
 
         Returns:
             Dict[str, str]: A dict containing the network driver options for a device.
+
+        Raises:
+            InterfaceVlanError: If VLANs are set on an interface whose collision domain is not a managed switch.
         """
+        interface.check_vlans()
+
         driver_opt = {'kathara.iface': str(interface.num), 'kathara.link': interface.link.name}
         if version_gte(self._engine_version, "27.0.0"):
             sysctl_opts = {"net.ipv4.conf.IFNAME.rp_filter=0"}
@@ -472,7 +478,34 @@ class DockerMachine(object):
         if interface.mac_address:
             driver_opt['kathara.mac_addr'] = interface.mac_address
 
+        if interface.link.is_managed():
+            # The port of the switch is named after the interface, and it gets its VLANs
+            driver_opt[SWITCH_LABEL_OPTION] = f"{machine.name}:eth{interface.num}"
+            if interface.vlan is not None:
+                driver_opt[SWITCH_VLAN_OPTION] = str(interface.vlan)
+            if interface.tagged_vlans:
+                driver_opt[SWITCH_TAGGED_OPTION] = ",".join(map(str, interface.tagged_vlans))
+
         return driver_opt
+
+    @staticmethod
+    def get_interface_vlans(driver_opt: Optional[Dict[str, str]]) -> Dict[str, Any]:
+        """Return the VLANs of an interface from the network driver options of a device.
+
+        Args:
+            driver_opt (Optional[Dict[str, str]]): The network driver options of an interface.
+
+        Returns:
+            Dict[str, Any]: The `vlan` and `tagged_vlans` arguments of the interface, only when they are set.
+        """
+        vlans = {}
+        if driver_opt:
+            if driver_opt.get(SWITCH_VLAN_OPTION):
+                vlans['vlan'] = int(driver_opt[SWITCH_VLAN_OPTION])
+            if driver_opt.get(SWITCH_TAGGED_OPTION):
+                vlans['tagged_vlans'] = [int(x) for x in driver_opt[SWITCH_TAGGED_OPTION].split(',')]
+
+        return vlans
 
     @staticmethod
     def disconnect_from_link(machine: Machine, link: Link) -> None:

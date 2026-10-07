@@ -1,7 +1,7 @@
 import argparse
 from typing import List
 
-from ..ui.utils import alphanumeric, cd_mac, create_panel
+from ..ui.utils import alphanumeric, cd_mac, cd_mode, create_panel
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...model.Lab import Lab
@@ -38,9 +38,11 @@ class VconfigCommand(Command):
             '--add',
             type=cd_mac,
             dest='to_add',
-            metavar='CD/MAC',
+            metavar='CD[/MAC][/vlan=ID][/trunk=ID,...]',
             nargs='+',
-            help='Specify the collision domain to add.'
+            help='Specify the collision domain to add. '
+                 'On a managed collision domain, `vlan` is the VLAN of the untagged frames of the interface '
+                 'and `trunk` lists the VLANs exchanged tagged.'
         )
         group.add_argument(
             '--rm',
@@ -49,6 +51,16 @@ class VconfigCommand(Command):
             metavar='CD',
             nargs='+',
             help='Specify the collision domain to remove.'
+        )
+        self.parser.add_argument(
+            '--cd-mode',
+            type=cd_mode,
+            dest='cd_modes',
+            metavar='CD:MODE',
+            nargs='+',
+            required=False,
+            help='Set the mode of a collision domain: hub (default), switch or managed. '
+                 'Only for a collision domain which is created by the command.'
         )
 
     def run(self, current_path: str, argv: List[str]) -> int:
@@ -67,14 +79,17 @@ class VconfigCommand(Command):
         )
 
         if args['to_add']:
-            for cd_name, mac_address in args['to_add']:
+            cd_modes = dict(args['cd_modes'] or [])
+            for cd_name, mac_address, vlans in args['to_add']:
                 self.console.print(
                     f"[green]+ Adding interface to device `{machine_name}` on collision domain `{cd_name}`" +
                     (f" with MAC Address {mac_address}" if mac_address else "") +
                     f"..."
                 )
                 link = lab.get_or_new_link(cd_name)
-                Kathara.get_instance().connect_machine_to_link(device, link, mac_address=mac_address)
+                if cd_name in cd_modes:
+                    link.mode = cd_modes[cd_name]
+                Kathara.get_instance().connect_machine_to_link(device, link, mac_address=mac_address, **vlans)
 
         if args['to_remove']:
             for cd_to_remove in args['to_remove']:

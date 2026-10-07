@@ -1850,3 +1850,82 @@ def test_get_link_stats_obj_lab_not_found_error(mock_get_link_stats, docker_mana
     with pytest.raises(LabNotFoundError):
         docker_manager.get_link_stats_obj(default_link)
     assert not mock_get_link_stats.called
+
+
+#
+# TESTS: exec_link / get_link_ports
+#
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.exec")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_link_api_object")
+def test_exec_link(mock_get_link_api_object, mock_exec, docker_manager, docker_network):
+    mock_get_link_api_object.return_value = docker_network
+    mock_exec.return_value = "VLAN 0010"
+
+    assert docker_manager.exec_link("test_network", "vlan/print", lab_hash="lab_hash") == "VLAN 0010"
+
+    mock_get_link_api_object.assert_called_once_with("test_network", "lab_hash", None, None)
+    mock_exec.assert_called_once_with(docker_network, "vlan/print")
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.exec_link")
+def test_exec_link_obj(mock_exec_link, docker_manager, default_link):
+    docker_manager.exec_link_obj(default_link, "vlan/print")
+
+    mock_exec_link.assert_called_once_with(default_link.name, "vlan/print", lab=default_link.lab)
+
+
+def test_exec_link_obj_no_lab_error(docker_manager, default_link):
+    default_link.lab = None
+
+    with pytest.raises(LabNotFoundError):
+        docker_manager.exec_link_obj(default_link, "vlan/print")
+
+
+def test_exec_link_invocation_error(docker_manager):
+    with pytest.raises(InvocationError):
+        docker_manager.exec_link("test_network", "vlan/print")
+
+
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.get_ports")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_link_api_object")
+def test_get_link_ports(mock_get_link_api_object, mock_get_ports, docker_manager, docker_network):
+    mock_get_link_api_object.return_value = docker_network
+    mock_get_ports.return_value = {1: {'vlan': 10, 'tagged_vlans': [], 'active': True, 'endpoints': ['pc1:eth0']}}
+
+    ports = docker_manager.get_link_ports("test_network", lab_name="lab_name")
+
+    assert ports[1]['endpoints'] == ['pc1:eth0']
+    mock_get_link_api_object.assert_called_once_with("test_network", None, "lab_name", None)
+    mock_get_ports.assert_called_once_with(docker_network)
+
+
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager.get_link_ports")
+def test_get_link_ports_obj(mock_get_link_ports, docker_manager, default_link):
+    docker_manager.get_link_ports_obj(default_link)
+
+    mock_get_link_ports.assert_called_once_with(default_link.name, lab=default_link.lab)
+
+
+def test_get_link_ports_obj_no_lab_error(docker_manager, default_link):
+    default_link.lab = None
+
+    with pytest.raises(LabNotFoundError):
+        docker_manager.get_link_ports_obj(default_link)
+
+
+#
+# TESTS: connect_machine_to_link (VLANs)
+#
+@mock.patch("src.Kathara.manager.docker.DockerMachine.DockerMachine.connect_interface")
+@mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink.deploy_links")
+def test_connect_machine_to_link_vlans(mock_deploy_links, mock_connect_interface, docker_manager, default_device,
+                                       default_link):
+    default_link.lab = default_device.lab
+    default_link.mode = "managed"
+
+    docker_manager.connect_machine_to_link(default_device, default_link, vlan=10, tagged_vlans=[20])
+
+    interface = default_device.interfaces[0]
+    assert interface.vlan == 10
+    assert interface.tagged_vlans == [20]
+    mock_connect_interface.assert_called_once_with(default_device, interface)

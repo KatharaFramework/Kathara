@@ -1,6 +1,6 @@
 import io
 import logging
-from typing import Set, Dict, Generator, Tuple, List, Optional, Union
+from typing import Any, Set, Dict, Generator, Tuple, List, Optional, Union
 
 import docker
 import docker.models.containers
@@ -175,13 +175,17 @@ class DockerManager(IManager):
         )
 
     @privileged
-    def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None) -> None:
+    def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None,
+                                vlan: Optional[int] = None, tagged_vlans: Optional[List[int]] = None) -> None:
         """Create a new interface on a running Kathara device and connect it to a collision domain.
 
         Args:
             machine (Kathara.model.Machine): A Kathara machine object.
             link (Kathara.model.Link): A Kathara collision domain object.
             mac_address (Optional[str]): The MAC address to assign to the interface.
+            vlan (Optional[int]): The VLAN of the untagged frames of the interface (managed collision domain).
+            tagged_vlans (Optional[List[int]]): The VLANs exchanged tagged with the interface
+                (managed collision domain).
 
         Returns:
             None
@@ -219,7 +223,8 @@ class DockerManager(IManager):
             else:
                 iface_number = max(machine.interfaces.keys()) + 1
 
-        interface = machine.add_interface(link, mac_address=mac_address, number=iface_number)
+        interface = machine.add_interface(link, mac_address=mac_address, number=iface_number,
+                                          vlan=vlan, tagged_vlans=tagged_vlans)
 
         self.deploy_link(link)
         self.docker_machine.connect_interface(machine, interface)
@@ -506,6 +511,104 @@ class DockerManager(IManager):
         return self.exec(machine.name, command, lab=machine.lab, wait=wait, stream=stream)
 
     @privileged
+    def exec_link(self, link_name: str, command: str, lab_hash: Optional[str] = None,
+                  lab_name: Optional[str] = None, lab: Optional[Lab] = None) -> str:
+        """Run a command on the management console of a managed collision domain in a running network scenario.
+
+        Args:
+            link_name (str): The name of the collision domain.
+            command (str): The command, e.g. `vlan/create 10` or `port/print`.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
+
+        Returns:
+            str: The text printed by the command.
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
+            LinkNotFoundError: If the collision domain is not found.
+            LinkModeError: If the collision domain is not a managed switch.
+            LinkCommandError: If the command fails.
+            NotSupportedError: If the manager cannot manage collision domains.
+        """
+        return self.docker_link.exec(self.get_link_api_object(link_name, lab_hash, lab_name, lab), command)
+
+    def exec_link_obj(self, link: Link, command: str) -> str:
+        """Run a command on the management console of a managed collision domain in a running network scenario.
+
+        Args:
+            link (Kathara.model.Link): The collision domain.
+            command (str): The command, e.g. `vlan/create 10` or `port/print`.
+
+        Returns:
+            str: The text printed by the command.
+
+        Raises:
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
+            LinkNotFoundError: If the collision domain is not found.
+            LinkModeError: If the collision domain is not a managed switch.
+            LinkCommandError: If the command fails.
+            NotSupportedError: If the manager cannot manage collision domains.
+        """
+        if not link.lab:
+            raise LabNotFoundError(f"Link `{link.name}` is not associated to a network scenario.")
+
+        return self.exec_link(link.name, command, lab=link.lab)
+
+    @privileged
+    def get_link_ports(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
+                       lab: Optional[Lab] = None) -> Dict[int, Dict[str, Any]]:
+        """Return the ports of a managed collision domain in a running network scenario.
+
+        Args:
+            link_name (str): The name of the collision domain.
+            lab_hash (Optional[str]): The hash of the network scenario.
+                Can be used as an alternative to lab_name and lab. If None, lab_name or lab should be set.
+            lab_name (Optional[str]): The name of the network scenario.
+                Can be used as an alternative to lab_hash and lab. If None, lab_hash or lab should be set.
+            lab (Optional[Kathara.model.Lab]): The network scenario object.
+                Can be used as an alternative to lab_hash and lab_name. If None, lab_hash or lab_name should be set.
+
+        Returns:
+            Dict[int, Dict[str, Any]]: For each port number: `vlan` (the VLAN of the untagged frames),
+                `tagged_vlans` (the VLANs exchanged tagged), `active` (True when something is plugged) and
+                `endpoints` (what is plugged: `<device>:eth<N>` for the interface of a device).
+
+        Raises:
+            InvocationError: If a running network scenario hash or name is not specified.
+            LinkNotFoundError: If the collision domain is not found.
+            LinkModeError: If the collision domain is not a managed switch.
+            NotSupportedError: If the manager cannot manage collision domains.
+        """
+        return self.docker_link.get_ports(self.get_link_api_object(link_name, lab_hash, lab_name, lab))
+
+    def get_link_ports_obj(self, link: Link) -> Dict[int, Dict[str, Any]]:
+        """Return the ports of a managed collision domain in a running network scenario.
+
+        Args:
+            link (Kathara.model.Link): The collision domain.
+
+        Returns:
+            Dict[int, Dict[str, Any]]: For each port number: `vlan` (the VLAN of the untagged frames),
+                `tagged_vlans` (the VLANs exchanged tagged), `active` (True when something is plugged) and
+                `endpoints` (what is plugged: `<device>:eth<N>` for the interface of a device).
+
+        Raises:
+            LabNotFoundError: If the collision domain is not associated to any network scenario.
+            LinkNotFoundError: If the collision domain is not found.
+            LinkModeError: If the collision domain is not a managed switch.
+            NotSupportedError: If the manager cannot manage collision domains.
+        """
+        if not link.lab:
+            raise LabNotFoundError(f"Link `{link.name}` is not associated to a network scenario.")
+
+        return self.get_link_ports(link.name, lab=link.lab)
+
+    @privileged
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, Union[str, io.IOBase]]) -> None:
         """Copy files on a running device in the specified paths.
 
@@ -752,6 +855,7 @@ class DockerManager(IManager):
                     network = lab_networks[network_name]
                     link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
                     link.api_object = network
+                    link.mode = self.docker_link.get_link_mode(network)
                     iface_number = int(network_options["DriverOpts"]["kathara.iface"])
 
                     iface_mac_addr = None
@@ -762,7 +866,8 @@ class DockerManager(IManager):
                             for s in network_options["DriverOpts"]["com.docker.network.endpoint.sysctls"].split(","):
                                 device.add_meta("sysctl", s.replace("IFNAME", f"eth{iface_number}"))
 
-                    device.add_interface(link, mac_address=iface_mac_addr, number=iface_number)
+                    device.add_interface(link, mac_address=iface_mac_addr, number=iface_number,
+                                         **self.docker_machine.get_interface_vlans(network_options["DriverOpts"]))
 
         return reconstructed_lab
 
@@ -819,10 +924,13 @@ class DockerManager(IManager):
             for link in static_links:
                 if link.name in deployed_networks_by_link_name:
                     link.api_object = deployed_networks_by_link_name[link.name]
+                    if link.mode is None:
+                        link.mode = self.docker_link.get_link_mode(link.api_object)
 
             current_ifaces = dict([(x[0].name, x[1]) for x in current_ifaces])
             for link in dynamic_links:
                 link.api_object = deployed_networks_by_link_name[link.name]
+                link.mode = self.docker_link.get_link_mode(link.api_object)
                 iface_options = current_ifaces[link.name]
                 iface_mac_addr = None
                 iface_number = int(iface_options["DriverOpts"]["kathara.iface"])
@@ -834,7 +942,8 @@ class DockerManager(IManager):
                         for s in iface_options["DriverOpts"]["com.docker.network.endpoint.sysctls"].split(","):
                             device.add_meta("sysctl", s.replace("IFNAME", f"eth{iface_number}"))
 
-                device.add_interface(link, mac_address=iface_mac_addr, number=iface_number)
+                device.add_interface(link, mac_address=iface_mac_addr, number=iface_number,
+                                     **self.docker_machine.get_interface_vlans(iface_options["DriverOpts"]))
 
             for link in deleted_links:
                 device.remove_interface(link)

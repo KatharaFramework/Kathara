@@ -124,6 +124,10 @@ class InterfaceMacAddressError(Exception):
         )
 
 
+class InterfaceVlanError(Exception):
+    pass
+
+
 # Link Exceptions
 class LinkNotFoundError(Exception):
     pass
@@ -131,6 +135,20 @@ class LinkNotFoundError(Exception):
 
 class LinkAlreadyExistsError(Exception):
     pass
+
+
+class LinkModeError(Exception):
+    pass
+
+
+class LinkCommandError(Exception):
+    __slots__ = ['code', 'message']
+
+    def __init__(self, link_name: str, command: str, code: int, message: str) -> None:
+        self.code: int = code
+        self.message: str = message
+
+        super().__init__(f"Command `{command}` on collision domain `{link_name}` failed: {code} {message}")
 
 
 # Test Exceptions
