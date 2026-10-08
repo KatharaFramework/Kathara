@@ -1,7 +1,10 @@
 import io
 import logging
 import os
+import sys
 from typing import Set, Dict, Generator, Tuple, List, Optional, Union
+
+from .PodmanVM import PodmanVM
 
 from .PodmanPlugin import PodmanPlugin
 from .libpod_compat import LibpodCompat
@@ -33,13 +36,30 @@ from ...types import SharedCollisionDomainsOption
 from ...utils import pack_files_for_tar, check_required_single_not_none_var, check_single_not_none_var
 
 def default_podman_socket() -> str:
-    """Return the default Podman service socket URL: the current user's rootless socket under the XDG runtime
-    directory. The rootful system socket is never used, since the Podman manager is rootless only.
+    """Return the default Podman service socket URL for the current user (the Podman manager is rootless only).
+
+    On Linux it is the user's rootless socket under the XDG runtime directory; the rootful system socket is
+    never used. On macOS it is the API socket of the default `podman machine` VM.
 
     Returns:
         str: A `unix://` URL pointing to the Podman service socket.
+
+    Raises:
+        PodmanPluginError: On macOS, if the podman machine is missing, stopped or rootful.
+        NotSupportedError: On any other platform.
     """
-    return f"unix://{os.path.join(get_runtime_dir(), 'podman', 'podman.sock')}"
+    if sys.platform == "darwin":
+        return PodmanVM.default().socket_url
+    elif sys.platform.startswith("linux"):
+        return f"unix://{os.path.join(get_runtime_dir(), 'podman', 'podman.sock')}"
+    elif sys.platform == "win32":
+        raise NotSupportedError(
+            "The Podman backend does not support native Windows hosts. "
+            "Run Kathara inside WSL instead, in a Linux distro with Podman 5 and systemd enabled "
+            "(e.g. Fedora): there it works as on any Linux host."
+        )
+    else:
+        raise NotSupportedError(f"The Podman backend is not supported on this platform: {sys.platform}.")
 
 
 def check_podman_status(method):
