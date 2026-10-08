@@ -73,14 +73,14 @@ def check_podman_status(method):
         # Client is initialized after constructor call
         client = args[0].client
 
+        hint = ("make sure the default `podman machine` VM is running (e.g. `podman machine start`)"
+                if sys.platform == "darwin" else
+                "make sure it is running (e.g. `systemctl --user enable --now podman.socket`)")
         try:
             if not client.ping():
-                raise ContainerEngineConnectionError(
-                    "The Podman service did not respond. Make sure it is running "
-                    "(e.g. `systemctl --user enable --now podman.socket`)."
-                )
+                raise ContainerEngineConnectionError(f"The Podman service did not respond: {hint}.")
         except (RequestsConnectionError, PodmanError, APIError) as e:
-            raise ContainerEngineConnectionError(str(e))
+            raise ContainerEngineConnectionError(f"{e} ({hint})")
 
         # Only once the service answers: installing the plugin restarts it.
         PodmanPlugin().check_and_download_plugin()

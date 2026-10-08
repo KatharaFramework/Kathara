@@ -206,3 +206,24 @@ def test_get_release_version_nested_shape(mock_podman_client_cls, mock_setting_g
     manager = PodmanManager()
 
     assert manager.get_release_version() == "4.9.3"
+      
+#
+# TEST: default_podman_socket on each platform
+#
+@mock.patch("src.Kathara.manager.podman.PodmanManager.PodmanVM.default")
+def test_default_podman_socket_macos_uses_the_machine_socket(mock_vm_default):
+    mock_vm_default.return_value.socket_url = "unix:///var/folders/xx/T/podman/podman-machine-default-api.sock"
+    with mock.patch.object(sys, "platform", "darwin"):
+        assert default_podman_socket() == "unix:///var/folders/xx/T/podman/podman-machine-default-api.sock"
+
+
+def test_default_podman_socket_windows_points_to_wsl():
+    with mock.patch.object(sys, "platform", "win32"):
+        with pytest.raises(NotSupportedError, match="WSL"):
+            default_podman_socket()
+
+
+def test_default_podman_socket_unknown_platform():
+    with mock.patch.object(sys, "platform", "sunos5"):
+        with pytest.raises(NotSupportedError, match="sunos5"):
+            default_podman_socket()
