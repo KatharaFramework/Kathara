@@ -1,7 +1,6 @@
 #!/usr/bin/make -f
 
 VERSION=__KATHARA_VERSION__
-PACKAGE_VERSION=1
 
 .PHONY: all docker-build-installer docker-build-executable docker-build-image-pyinstaller prepare-source prepare-executable clean-assets clean
 
