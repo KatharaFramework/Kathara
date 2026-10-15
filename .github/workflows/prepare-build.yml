@@ -57,6 +57,11 @@ jobs:
             echo "::error file=src/Kathara/version.py::version $VERSION must be greater than the latest tag $latest"
             exit 1
           fi
+          # The changelog must have a section for this version.
+          if ! grep -qE "^## \[$VERSION\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
+            echo "::error file=CHANGELOG.md::add a '## [$VERSION] - YYYY-MM-DD' section to CHANGELOG.md"
+            exit 1
+          fi
           echo "Release PR OK: $VERSION (latest tag: ${latest:-none})"
 
   build:
