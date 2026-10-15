@@ -2,7 +2,7 @@
 
 VERSION?=__KATHARA_VERSION__
 DEBIAN_PACKAGE_VERSION=1
-OS=ubuntu
+OS?=ubuntu
 
 .PHONY: docker-build-image prepare-deb-source unpack-deb-source clean-output-folder copy-debian-folder build-man build-deb-unsigned clean venv autocompletion
 
@@ -23,8 +23,6 @@ docker-build-image_%:
 		cd Docker-Linux-Build && sed -i -e "s|__DISTRO__|jammy|g" Dockerfile; \
 	elif [ $* = "trixie" ] ; then \
 		cd Docker-Linux-Build && sed -i -e "s|__DISTRO__|noble|g" Dockerfile; \
-	elif [ $* = "forky" ] ; then \
-		cd Docker-Linux-Build && sed -i -e "s|__DISTRO__|resolute|g" Dockerfile; \
 	else \
 		cd Docker-Linux-Build && sed -i -e "s|__DISTRO__|$*|g" Dockerfile; \
 	fi
@@ -52,7 +50,7 @@ clean-output-folder:
 copy-debian-folder:
 	cp -r debian Output/kathara-$(VERSION)/
 	if [ -z "$$(which python3.14)" ] ; then \
-		sed -i 's|python3.14|python3.13|g' Output/kathara-$(VERSION)/debian/control ; \
+		sed -i 's|python3.14 (>= 3.14.0)|python3.13 (>= 3.13.0)|g' Output/kathara-$(VERSION)/debian/control ; \
 		sed -i 's|python3.14|python3.13|g' Output/kathara-$(VERSION)/debian/rules   ; \
 	fi
 	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog

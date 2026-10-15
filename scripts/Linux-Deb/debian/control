@@ -4,7 +4,7 @@ Section: misc
 Priority: optional
 Standards-Version: 3.9.8
 Build-Depends: debhelper (>= 10),
-	python3.14 (>= 3.13.0),
+	python3.14 (>= 3.14.0),
 	python3-pip (>= 9.0.0),
 	python3.14-dev (>= 3.13.0),
 	python3.14-venv (>= 3.13.0),
