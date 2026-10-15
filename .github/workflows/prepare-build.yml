@@ -1,0 +1,67 @@
+name: build-all
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, edited]
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'docs/**'
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+
+  prepare:
+    name: Prepare Environment
+    runs-on: self-hosted
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10   # v6.0.3
+      - id: get_version
+        uses: ./.github/actions/get-version
+
+      # Release PRs (develop -> main) are gated here, before any build starts.
+      - name: Check release PR
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          TITLE: ${{ github.event.pull_request.title }}
+          VERSION: ${{ steps.get_version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          if [ "$HEAD_REF" != "develop" ]; then
+            echo "::error::PRs to main must come from develop, not '$HEAD_REF'"
+            exit 1
+          fi
+
+          if [ "$TITLE" != "Kathará v$VERSION" ]; then
+            echo "::error::PR title '$TITLE' must be 'Kathará v$VERSION' (CURRENT_VERSION in src/Kathara/version.py)"
+            exit 1
+          fi
+
+          # Must be strictly greater than the latest X.Y.Z tag (this also covers out reusing any existing tag).
+          latest="$(git ls-remote --tags --refs origin | sed 's|.*refs/tags/||' \
+                    | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)"
+          if [ -n "$latest" ] && [ "$(printf '%s\n' "$VERSION" "$latest" | sort -V | tail -1)" = "$latest" ]; then
+            echo "::error file=src/Kathara/version.py::version $VERSION must be greater than the latest tag $latest"
+            exit 1
+          fi
+          echo "Release PR OK: $VERSION (latest tag: ${latest:-none})"
+
+  build:
+    name: build
+    needs: [prepare]
+    uses: ./.github/workflows/_build.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
