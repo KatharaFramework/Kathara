@@ -32,7 +32,7 @@ prepare-source:
 	sed -i -e 's/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g' ~/rpmbuild/SPECS/kathara.spec
 	mkdir -p ~/rpmbuild/SOURCES/kathara-$(VERSION)/src
 	cp -r ../../src ~/rpmbuild/SOURCES/kathara-$(VERSION)
-	cp kathara.pyinstaller.spec ~/rpmbuild/SOURCES/kathara-$(VERSION)/src/kathara.spec
+	cp ../common/* ~/rpmbuild/SOURCES/kathara-$(VERSION)/src
 	mkdir -p ~/rpmbuild/SOURCES/kathara-$(VERSION)/tests
 	cp -r ../../tests ~/rpmbuild/SOURCES/kathara-$(VERSION)
 
@@ -116,6 +116,9 @@ cleanbinary:
 	cd /opt/kathara/src && find . | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
 	if [ -e /opt/kathara/src/kathara.spec ]; then \
 		rm /opt/kathara/src/kathara.spec; \
+	fi
+	if [ -e /opt/kathara/src/app_icon.ico ]; then \
+		rm /opt/kathara/src/app_icon.ico; \
 	fi
 	if [ -d /opt/kathara/src/kathara.build ]; then \
 		rm -r /opt/kathara/src/kathara.build; \

@@ -25,13 +25,13 @@ docker-build-image-pyinstaller:
 prepare-source:
 	mkdir -p Output
 	cp -r ../../src Output
-	cp windows/Assets/kathara.spec Output/src
-	cp windows/Assets/app_icon.ico Output/src
+	cp ../common/* Output/src
 
 prepare-executable_%: 
 	mv Output/src/dist Output/kathara.dist
 	rm -rf Output/src
 	cp -r windows/Assets Output
+	cp ../common/* Output/Assets
 	cp 	  windows/installer.iss Output
 	cp ../../LICENSE Output
 	cd Output && sed -r -i 's|__VERSION__|$(VERSION)|g' installer.iss

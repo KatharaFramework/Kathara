@@ -45,8 +45,7 @@ test:
 	cd ../.. && $(SET_ARCH) $(VENV_DIR)/bin/python3 -m pytest
 
 binary_%: test
-	cp ./kathara.spec ../../src/
-	sed -i '' -e "s:__ARCH__:$*:g" ../../src/kathara.spec
+	cp ../common/* ../../src/
 	cd ../../src && $(SET_ARCH) $(VENV_DIR)/bin/pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
 
 copyBuildDirectory_%: binary_% manpages

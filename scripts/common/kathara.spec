@@ -63,7 +63,9 @@ exe = EXE(pyz,
           upx_exclude=[],
           exclude_binaries=True,
           runtime_tmpdir=None,
-          console=True)
+          console=True,
+          icon='app_icon.ico'
+)
 
 col = COLLECT(exe,
               a.binaries,

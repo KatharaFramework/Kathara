@@ -33,7 +33,7 @@ docker-build-image_%:
 prepare-deb-source:
 	mkdir Output
 	cp -r ../../src Output/kathara-$(VERSION)
-	cp ./kathara.spec Output/kathara-$(VERSION)/
+	cp ../common/* Output/kathara-$(VERSION)/
 	cd Output; tar -zcf kathara_$(VERSION).orig.tar.gz kathara-$(VERSION)
 
 unpack-deb-source:
@@ -51,6 +51,8 @@ copy-debian-folder:
 	cp -r debian Output/kathara-$(VERSION)/
 	if [ -z "$$(which python3.14)" ] ; then \
 		sed -i 's|python3.14 (>= 3.14.0)|python3.13 (>= 3.13.0)|g' Output/kathara-$(VERSION)/debian/control ; \
+		sed -i 's|python3.14-dev (>= 3.14.0)|python3.13-dev (>= 3.13.0)|g' Output/kathara-$(VERSION)/debian/control ; \
+		sed -i 's|python3.14-venv (>= 3.14.0)|python3.13-venv (>= 3.13.0)|g' Output/kathara-$(VERSION)/debian/control ; \
 		sed -i 's|python3.14|python3.13|g' Output/kathara-$(VERSION)/debian/rules   ; \
 	fi
 	sed -i -e "s|__DATE__|$$(date -R)|g" Output/kathara-$(VERSION)/debian/changelog

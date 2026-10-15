@@ -14,8 +14,8 @@ pip install -r ..\..\..\src\requirements.txt
 pip install pytest
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-copy Assets\kathara.spec ..\..\..\src\
-copy Assets\app_icon.ico ..\..\..\src\
+copy ..\..\common\kathara.spec ..\..\..\src\
+copy ..\..\common\app_icon.ico ..\..\..\src\
 
 cd ..\..\..
 pytest
@@ -47,6 +47,9 @@ if /I "%arch%"=="AMD64" (
 ) else (
     set "arch_suffix=x86"
 )
+
+copy ..\..\common\kathara.spec Assets\
+copy ..\..\common\app_icon.ico Assets\
 
 iscc /DMyArchitecture=%arch_suffix% .\installer.iss
 cmd.exe
