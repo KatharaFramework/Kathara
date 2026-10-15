@@ -10,6 +10,7 @@ from src.Kathara.cli.command.LconfigCommand import LconfigCommand
 from src.Kathara.model.Machine import Machine
 from src.Kathara.model.Link import Link
 from src.Kathara.model.Lab import Lab
+from src.Kathara.model.ExternalLink import ExternalLink
 from src.Kathara.exceptions import MachineNotFoundError, NotSupportedError, LinkNotFoundError
 
 
@@ -276,13 +277,13 @@ def test_run_system_exit_error():
 def test_run_assigns_link_types_before_updating_from_api(mock_parse_lab, mock_docker_manager,
                                                          mock_manager_get_instance, mock_parse_link, test_lab):
     mock_parse_lab.return_value = test_lab
-    mock_parse_link.return_value = ({'A': 'p2p', 'B': 'hub'}, {})
+    mock_parse_link.return_value = {'A': {'type': 'p2p'}, 'B': {'type': 'hub'}}
     mock_manager_get_instance.return_value = mock_docker_manager
 
     # The types must already be assigned when the running network scenario is loaded
     types_when_updated = {}
     mock_docker_manager.update_lab_from_api.side_effect = \
-        lambda lab: types_when_updated.update({name: link.type for name, link in lab.links.items()})
+        lambda lab: types_when_updated.update({name: link.meta['type'] for name, link in lab.links.items()})
 
     LconfigCommand().run('.', ['-n', 'pc1', '--add', 'B'])
 
@@ -305,7 +306,7 @@ def test_run_without_lab_link(mock_parse_lab, mock_docker_manager, mock_manager_
 
     LconfigCommand().run('.', ['-n', 'pc1', '--add', 'A'])
 
-    assert all(link.type is None for link in test_lab.links.values())
+    assert all(link.meta['type'] is None for link in test_lab.links.values())
     mock_docker_manager.connect_machine_to_link.assert_called_once()
 
 
@@ -316,7 +317,7 @@ def test_run_without_lab_link(mock_parse_lab, mock_docker_manager, mock_manager_
 def test_run_lab_link_unknown_collision_domain(mock_parse_lab, mock_docker_manager, mock_manager_get_instance,
                                                mock_parse_link, test_lab):
     mock_parse_lab.return_value = test_lab
-    mock_parse_link.return_value = ({'Z': 'p2p'}, {})
+    mock_parse_link.return_value = {'Z': {'type': 'p2p'}}
     mock_manager_get_instance.return_value = mock_docker_manager
 
     with pytest.raises(LinkNotFoundError):
@@ -332,7 +333,7 @@ def test_run_lab_link_unknown_collision_domain(mock_parse_lab, mock_docker_manag
 def test_run_add_interface_p2p_link(mock_parse_lab, mock_manager_get_instance, mock_parse_link, docker_manager,
                                     p2p_lab):
     mock_parse_lab.return_value = p2p_lab
-    mock_parse_link.return_value = ({'A': 'p2p'}, {})
+    mock_parse_link.return_value = {'A': {'type': 'p2p'}}
     mock_manager_get_instance.return_value = docker_manager
 
     with mock.patch(
@@ -351,7 +352,7 @@ def test_run_add_interface_p2p_link(mock_parse_lab, mock_manager_get_instance, m
 def test_run_remove_interface_p2p_link(mock_parse_lab, mock_manager_get_instance, mock_parse_link, docker_manager,
                                        p2p_lab):
     mock_parse_lab.return_value = p2p_lab
-    mock_parse_link.return_value = ({'A': 'p2p'}, {})
+    mock_parse_link.return_value = {'A': {'type': 'p2p'}}
     mock_manager_get_instance.return_value = docker_manager
 
     with mock.patch(
@@ -369,7 +370,7 @@ def test_run_remove_interface_p2p_link(mock_parse_lab, mock_manager_get_instance
 def test_run_add_interface_not_p2p_link_with_lab_link(mock_parse_lab, mock_manager_get_instance, mock_parse_link,
                                                       docker_manager, p2p_lab):
     mock_parse_lab.return_value = p2p_lab
-    mock_parse_link.return_value = ({'A': 'p2p', 'B': 'hub'}, {})
+    mock_parse_link.return_value = {'A': {'type': 'p2p'}, 'B': {'type': 'hub'}}
     mock_manager_get_instance.return_value = docker_manager
 
     with mock.patch(
@@ -380,3 +381,22 @@ def test_run_add_interface_not_p2p_link_with_lab_link(mock_parse_lab, mock_manag
     mock_deploy_link.assert_called_once_with(p2p_lab.get_link('B'))
     mock_connect_interface.assert_called_once()
     assert 'pc3' in p2p_lab.get_link('B').machines
+
+
+@mock.patch("src.Kathara.parser.netkit.LinkParser.LinkParser.parse")
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+def test_run_ignores_external_links_of_lab_link(mock_parse_lab, mock_docker_manager, mock_manager_get_instance,
+                                                mock_parse_link, test_lab):
+    # External interfaces cannot be attached at runtime
+    mock_parse_lab.return_value = test_lab
+    mock_parse_link.return_value = {'A': {'type': 'hub', 'external': [ExternalLink('eth0')]},
+                                    'B': {'external': [ExternalLink('eth1')]}}
+    mock_manager_get_instance.return_value = mock_docker_manager
+
+    LconfigCommand().run('.', ['-n', 'pc1', '--add', 'A'])
+
+    assert test_lab.get_link('A').meta['type'] == 'hub'
+    assert test_lab.get_link('A').meta['external'] == []
+    assert test_lab.get_link('B').meta['external'] == []

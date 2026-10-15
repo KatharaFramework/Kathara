@@ -51,7 +51,7 @@ def test_add_interface(default_device: Machine):
 def test_add_interface_p2p_link(default_device: Machine):
     lab = default_device.lab
     link = lab.new_link("A")
-    link.type = "p2p"
+    link.add_meta('type', "p2p")
     default_device.add_interface(link)
     lab.get_or_new_machine("pc2").add_interface(link)
     assert set(link.machines.keys()) == {"test_machine", "pc2"}
@@ -60,7 +60,7 @@ def test_add_interface_p2p_link(default_device: Machine):
 def test_add_interface_p2p_link_third_endpoint(default_device: Machine):
     lab = default_device.lab
     link = lab.new_link("A")
-    link.type = "p2p"
+    link.add_meta('type', "p2p")
     lab.get_or_new_machine("pc1").add_interface(link)
     lab.get_or_new_machine("pc2").add_interface(link)
 
@@ -84,7 +84,7 @@ def test_add_interface_not_p2p_link_many_endpoints(default_device: Machine):
 
 def test_check_does_not_check_links(default_device: Machine):
     link = default_device.lab.new_link("A")
-    link.type = "p2p"
+    link.add_meta('type', "p2p")
     default_device.add_interface(link)
     default_device.check()
 
@@ -165,7 +165,7 @@ def test_remove_interface_p2p_link(default_device: Machine):
     # Removing an endpoint while defining the network scenario is allowed, only the runtime one is not
     lab = default_device.lab
     link = lab.new_link("A")
-    link.type = "p2p"
+    link.add_meta('type', "p2p")
     default_device.add_interface(link)
     lab.get_or_new_machine("pc2").add_interface(link)
 
@@ -178,7 +178,7 @@ def test_remove_interface_p2p_link(default_device: Machine):
 def test_remove_interface_p2p_link_then_add_another_endpoint(default_device: Machine):
     lab = default_device.lab
     link = lab.new_link("A")
-    link.type = "p2p"
+    link.add_meta('type', "p2p")
     lab.get_or_new_machine("pc1").add_interface(link)
     lab.get_or_new_machine("pc2").add_interface(link)
     lab.machines["pc2"].remove_interface(link)

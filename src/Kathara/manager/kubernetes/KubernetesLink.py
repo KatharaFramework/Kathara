@@ -118,7 +118,7 @@ class KubernetesLink(object):
             link.api_object = networks.pop()
             return
 
-        if link.type is not None:
+        if link.meta['type'] is not None:
             logging.warning(
                 f'Collision domain types are not supported on Megalos. It will be ignored on collision domain `{link.name}`.'
             )
@@ -131,7 +131,7 @@ class KubernetesLink(object):
                                                                       )
 
         # If external is defined for a link, throw a warning.
-        if link.external:
+        if link.meta['external']:
             logging.warning(
                 f'External is not supported on Megalos. It will be ignored on collision domain `{link.name}`.'
             )

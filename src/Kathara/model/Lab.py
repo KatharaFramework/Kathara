@@ -176,13 +176,13 @@ class Lab(LabFilesystemMixin):
                     f"Collision domain {link_name} not found in network scenario collision domains."
                 )
 
-            self.links[link_name].external += link_external_links
+            self.links[link_name].meta['external'] += link_external_links
 
-    def assign_link_types(self, link_types: Dict[str, str]) -> None:
-        """Assign types to the collision domains in the network scenario.
+    def assign_link_meta(self, link_meta: Dict[str, Any]) -> None:
+        """Assign meta properties to the collision domains in the network scenario.
 
         Args:
-            link_types (Dict[str, str]): Keys are collision domain names, values are type strings.
+            link_meta (Dict[str, Any]): Keys are collision domain names, values are dicts of meta properties.
 
         Returns:
             None
@@ -190,14 +190,15 @@ class Lab(LabFilesystemMixin):
         Raises:
             LinkNotFoundError: If the collision domain specified is not associated to the network scenario.
             ValueError: If a type is not a supported collision domain type.
+            LinkOptionError: If the value of a meta property is not valid.
         """
-        for link_name, link_type in link_types.items():
+        for link_name, meta in link_meta.items():
             if link_name not in self.links:
                 raise LinkNotFoundError(
                     f"Collision domain {link_name} not found in network scenario collision domains."
                 )
 
-            self.links[link_name].type = link_type
+            self.links[link_name].update_meta(meta)
 
     def check_integrity(self) -> None:
         """Check if the network interfaces numbers of all the devices in the network scenario are correctly assigned.

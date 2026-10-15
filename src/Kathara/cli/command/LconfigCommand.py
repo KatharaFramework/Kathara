@@ -71,9 +71,13 @@ class LconfigCommand(Command):
 
         lab = LabParser.parse(lab_path)
         try:
-            link_types, _ = LinkParser.parse(lab_path)
-            if link_types:
-                lab.assign_link_types(link_types)
+            link_metas = LinkParser.parse(lab_path)
+            if link_metas:
+                # External interfaces cannot be attached at runtime, ignore them
+                lab.assign_link_meta({
+                    x: {k: val for k, val in v.items() if k != 'external'}
+                    for x, v in link_metas.items()
+                })
         except FileNotFoundError:
             pass
 

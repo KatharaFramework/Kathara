@@ -1,27 +1,25 @@
-import math
-import sys
-from itertools import islice
-from multiprocessing import cpu_count
-from sys import platform as _platform
-
 import base64
 import hashlib
 import importlib
 import io
 import logging
+import math
 import os
 import re
 import shutil
+import sys
 import tarfile
 import tempfile
 import unicodedata
-
-from binaryornot.check import is_binary
 from io import BytesIO
+from itertools import islice
+from multiprocessing import cpu_count
 from platform import node, machine
-
+from sys import platform as _platform
 from types import ModuleType
 from typing import Any, Optional, Match, Generator, List, Callable, Union, Dict, Iterable, Tuple
+
+from binaryornot.check import is_binary
 
 from .exceptions import HostArchitectureError, InvocationError
 
@@ -121,6 +119,27 @@ def check_required_single_not_none_var(**kwargs) -> None:
         raise InvocationError(f"You must specify a parameter among {', '.join(kwargs.keys())}")
     elif len(not_none) > 1:
         raise InvocationError(f"You must specify only a parameter among {', '.join(kwargs.keys())}")
+
+
+def parse_uint(value: Union[int, str], bit_size: int = 64) -> int:
+    # bool is a subclass of int, but True/False are not meaningful integer values
+    if isinstance(value, bool) or not isinstance(value, (int, str)):
+        raise ValueError(f"`{value}` is not an integer.")
+
+    if isinstance(value, int):
+        int_value = value
+    else:
+        str_value = value.strip()
+        try:
+            int_value = int(str_value, 16) if str_value.lower().startswith("0x") else int(str_value, 10)
+        except ValueError:
+            raise ValueError(f"`{value}` is not an integer.") from None
+
+    max_value = 2 ** bit_size - 1
+    if not 0 <= int_value <= max_value:
+        raise ValueError(f"`{value}` is out of range, it must be between 0 and {max_value}.")
+
+    return int_value
 
 
 # Platform Specific Functions
@@ -227,10 +246,12 @@ def get_current_user_uid_gid() -> (int, int):
 
     return exec_by_platform(unix, lambda: (None, None), unix)
 
+
 def slug(value):
     value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
     value = re.sub(r"[^\w\s-]", "", value).strip().lower()
     return re.sub(r"[-\s]+", "-", value)
+
 
 def get_current_user_name() -> str:
     hostname = generate_urlsafe_hash(node())

@@ -15,7 +15,7 @@ from src.Kathara.model.Lab import Lab
 from src.Kathara import utils
 from tempfile import mkdtemp
 from src.Kathara.exceptions import MachineOptionError, MachineAlreadyExistsError, MachineNotFoundError, \
-    LinkAlreadyExistsError, LinkNotFoundError, InvocationError, LinkInvalidError
+    LinkAlreadyExistsError, LinkNotFoundError, InvocationError, LinkInvalidError, LinkOptionError
 
 
 @pytest.fixture()
@@ -460,7 +460,7 @@ def test_attach_external_links(default_scenario: Lab):
     link = default_scenario.new_link("A")
     external_link = ExternalLink("eth0")
     default_scenario.attach_external_links({"A": [external_link]})
-    assert link.external == [external_link]
+    assert link.meta['external'] == [external_link]
 
 
 def test_attach_external_links_link_not_found_error(default_scenario: Lab):
@@ -471,56 +471,76 @@ def test_attach_external_links_link_not_found_error(default_scenario: Lab):
 
 def test_new_link_default_type(default_scenario: Lab):
     link = default_scenario.new_link("A")
-    assert link.type is None
+    assert link.meta['type'] is None
 
 
-def test_assign_link_types(default_scenario: Lab):
+def test_assign_link_meta(default_scenario: Lab):
     link_a = default_scenario.new_link("A")
     link_b = default_scenario.new_link("B")
     link_c = default_scenario.new_link("C")
-    default_scenario.assign_link_types({"A": "p2p", "B": "hub"})
-    assert link_a.type == "p2p"
-    assert link_b.type == "hub"
-    assert link_c.type is None
+    default_scenario.assign_link_meta({"A": {"type": "p2p"}, "B": {"type": "hub"}})
+    assert link_a.meta['type'] == "p2p"
+    assert link_b.meta['type'] == "hub"
+    assert link_c.meta['type'] is None
 
 
-def test_assign_link_types_overwrites_previous_type(default_scenario: Lab):
+def test_assign_link_meta_overwrites_previous_type(default_scenario: Lab):
     link = default_scenario.new_link("A")
-    default_scenario.assign_link_types({"A": "p2p"})
-    default_scenario.assign_link_types({"A": "bridge"})
-    assert link.type == "bridge"
+    default_scenario.assign_link_meta({"A": {"type": "p2p"}})
+    default_scenario.assign_link_meta({"A": {"type": "bridge"}})
+    assert link.meta['type'] == "bridge"
 
 
-def test_assign_link_types_invalid_type(default_scenario: Lab):
+def test_assign_link_meta_invalid_type(default_scenario: Lab):
     link = default_scenario.new_link("A")
     with pytest.raises(ValueError, match="Invalid collision domain type"):
-        default_scenario.assign_link_types({"A": "switch"})
+        default_scenario.assign_link_meta({"A": {"type": "switch"}})
 
-    assert link.type is None
+    assert link.meta['type'] is None
 
 
-def test_assign_link_types_link_not_found_error(default_scenario: Lab):
+def test_assign_link_meta_bridge_metas(default_scenario: Lab):
+    link = default_scenario.new_link("A")
+    default_scenario.assign_link_meta({"A": {"type": "bridge", "ageing_time": "30000", "group_fwd_mask": "0x4000"}})
+    assert link.meta['ageing_time'] == 30000
+    assert link.meta['group_fwd_mask'] == 0x4000
+
+
+def test_assign_link_meta_invalid_option(default_scenario: Lab):
+    default_scenario.new_link("A")
+    with pytest.raises(LinkOptionError):
+        default_scenario.assign_link_meta({"A": {"group_fwd_mask": "1"}})
+
+
+def test_assign_link_meta_link_not_found_error(default_scenario: Lab):
     default_scenario.new_link("A")
     with pytest.raises(LinkNotFoundError):
-        default_scenario.assign_link_types({"A": "p2p", "B": "hub"})
+        default_scenario.assign_link_meta({"A": {"type": "p2p"}, "B": {"type": "hub"}})
+
+
+def test_check_integrity_bridge_metas_on_hub(default_scenario: Lab):
+    default_scenario.connect_machine_to_link("pc1", "A")
+    default_scenario.assign_link_meta({"A": {"type": "hub", "ageing_time": "100"}})
+    with pytest.raises(LinkInvalidError, match="only be used on `bridge`"):
+        default_scenario.check_integrity()
 
 
 def test_check_integrity_p2p_link(default_scenario: Lab):
     default_scenario.connect_machine_to_link("pc1", "A")
     default_scenario.connect_machine_to_link("pc2", "A")
-    default_scenario.assign_link_types({"A": "p2p"})
+    default_scenario.assign_link_meta({"A": {"type": "p2p"}})
     default_scenario.check_integrity()
 
 
 def test_check_integrity_p2p_link_one_endpoint(default_scenario: Lab):
     default_scenario.connect_machine_to_link("pc1", "A")
-    default_scenario.assign_link_types({"A": "p2p"})
+    default_scenario.assign_link_meta({"A": {"type": "p2p"}})
     with pytest.raises(LinkInvalidError, match="`A`"):
         default_scenario.check_integrity()
 
 
 def test_check_integrity_p2p_link_without_endpoints(default_scenario: Lab):
-    default_scenario.new_link("A").type = "p2p"
+    default_scenario.new_link("A").add_meta('type', "p2p")
     with pytest.raises(LinkInvalidError, match="found 0"):
         default_scenario.check_integrity()
 
@@ -529,7 +549,7 @@ def test_check_integrity_p2p_link_three_endpoints(default_scenario: Lab):
     for name in ["pc1", "pc2", "pc3"]:
         default_scenario.connect_machine_to_link(name, "A")
 
-    default_scenario.assign_link_types({"A": "p2p"})
+    default_scenario.assign_link_meta({"A": {"type": "p2p"}})
     with pytest.raises(LinkInvalidError, match="found 3"):
         default_scenario.check_integrity()
 
@@ -538,7 +558,7 @@ def test_check_integrity_p2p_link_with_external_link(default_scenario: Lab):
     default_scenario.connect_machine_to_link("pc1", "A")
     default_scenario.connect_machine_to_link("pc2", "A")
     default_scenario.attach_external_links({"A": [ExternalLink("eth0")]})
-    default_scenario.assign_link_types({"A": "p2p"})
+    default_scenario.assign_link_meta({"A": {"type": "p2p"}})
     with pytest.raises(LinkInvalidError, match="external"):
         default_scenario.check_integrity()
 
@@ -559,7 +579,7 @@ def test_check_integrity_only_p2p_links_are_constrained(default_scenario: Lab):
         default_scenario.connect_machine_to_link(name, "A")
         default_scenario.connect_machine_to_link(name, "B")
 
-    default_scenario.assign_link_types({"A": "hub", "B": "bridge"})
+    default_scenario.assign_link_meta({"A": {"type": "hub"}, "B": {"type": "bridge"}})
     default_scenario.check_integrity()
 
 

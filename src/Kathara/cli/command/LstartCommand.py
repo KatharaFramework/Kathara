@@ -187,15 +187,20 @@ class LstartCommand(Command):
 
         lab.global_machine_metadata = OptionParser.parse(args['global_machine_metadata'])
 
-        link_types, link_external_links = {}, {}
+        link_metas = {}
         try:
             lab_link_exists = True
-            link_types, link_external_links = LinkParser.parse(lab_path)
+            link_metas = LinkParser.parse(lab_path)
         except FileNotFoundError:
             lab_link_exists = False
 
-        if link_types:
-            lab.assign_link_types(link_types)
+        if link_metas:
+            # Compatibility patch for now since we still have the lab.ext
+            # Removes external as a link meta, it is handled below
+            lab.assign_link_meta({
+                x: {k: val for k, val in v.items() if k != 'external'}
+                for x, v in link_metas.items()
+            })
 
         ext_external_links = {}
         try:
@@ -208,6 +213,8 @@ class LstartCommand(Command):
         except FileNotFoundError:
             lab_ext_exists = False
 
+        # Compatibility patch for now since we still have the lab.ext
+        link_external_links = {x: v['external'] for x, v in link_metas.items() if 'external' in v}
         # A collision domain can be configured in lab.link or in lab.ext, not both.
         duplicated = link_external_links.keys() & ext_external_links.keys()
         if duplicated:

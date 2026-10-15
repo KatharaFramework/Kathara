@@ -315,7 +315,7 @@ def test_create_with_link_type_warns_and_ignores_it(mock_setting_get_instance, k
                                                     default_link, caplog, link_type):
     mock_setting_get_instance.return_value = k8s_setting
     kubernetes_link.client.list_namespaced_custom_object.return_value = {"items": []}
-    default_link.type = link_type
+    default_link.add_meta('type', link_type)
 
     with caplog.at_level(logging.WARNING):
         kubernetes_link.create(default_link, 1)
@@ -347,7 +347,7 @@ def test_create_already_deployed_link_does_not_warn(mock_get_links_api_objects_b
                                                     default_link, kubernetes_network, caplog):
     # The existing network is reused, nothing is created, so there is nothing to warn about
     mock_get_links_api_objects_by_filters.return_value = [kubernetes_network]
-    default_link.type = "p2p"
+    default_link.add_meta('type', "p2p")
 
     with caplog.at_level(logging.WARNING):
         kubernetes_link.create(default_link, 1)

@@ -76,9 +76,9 @@ def not_shared_setting():
     return setting_mock
 
 
-def _deployed_network(labels):
+def _deployed_network(labels, options=None):
     network = Mock()
-    network.attrs = {"Labels": {"name": "A", "app": "kathara", **labels}}
+    network.attrs = {"Labels": {"name": "A", "app": "kathara", **labels}, "Options": options}
     return network
 
 
@@ -153,6 +153,7 @@ def test_create(mock_get_current_user_name, mock_setting_get_instance, docker_li
         driver=docker_link.docker_plugin.get_plugin_from_link_type.return_value,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
+        options=None,
         labels={
             "name": "A",
             "app": "kathara",
@@ -179,7 +180,7 @@ def test_create_with_link_type(mock_get_current_user_name, mock_setting_get_inst
         'network_plugin': 'kathara/katharanp'
     })
     mock_setting_get_instance.return_value = setting_mock
-    default_link.type = "p2p"
+    default_link.add_meta('type', "p2p")
     docker_link.create(default_link)
     docker_link.docker_plugin.get_plugin_from_link_type.assert_called_once_with("p2p")
     docker_link.client.networks.create.assert_called_once_with(
@@ -187,6 +188,7 @@ def test_create_with_link_type(mock_get_current_user_name, mock_setting_get_inst
         driver="kathara/katharanp_p2p:amd64",
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
+        options=None,
         labels={
             "name": "A",
             "app": "kathara",
@@ -230,6 +232,7 @@ def test_create_external(mock_get_current_user_name, mock_setting_get_instance, 
         driver=docker_link.docker_plugin.get_plugin_from_link_type.return_value,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
+        options=None,
         labels={
             "name": "A",
             "app": "kathara",
@@ -273,6 +276,7 @@ def test_create_external_os_error(mock_get_current_user_name, mock_setting_get_i
         driver=docker_link.docker_plugin.get_plugin_from_link_type.return_value,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
+        options=None,
         labels={
             "name": "A",
             "app": "kathara",
@@ -313,6 +317,7 @@ def test_create_external_privilege_error(mock_get_current_user_name, mock_settin
         driver=docker_link.docker_plugin.get_plugin_from_link_type.return_value,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
+        options=None,
         labels={
             "name": "A",
             "app": "kathara",
@@ -349,6 +354,7 @@ def test_create_shared_cds_between_users(mock_get_current_user_name, mock_settin
         driver=docker_link.docker_plugin.get_plugin_from_link_type.return_value,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
+        options=None,
         labels={
             "name": "A",
             "app": "kathara",
@@ -379,6 +385,7 @@ def test_create_shared_cds_between_labs(mock_get_current_user_name, mock_setting
         driver=docker_link.docker_plugin.get_plugin_from_link_type.return_value,
         check_duplicate=True,
         ipam=docker.types.IPAMConfig(driver='null'),
+        options=None,
         labels={
             "name": "A",
             "user": "user",
@@ -404,7 +411,7 @@ def test_create_reuses_network_with_same_type(mock_get_current_user_name, mock_s
     mock_setting_get_instance.return_value = not_shared_setting
     network = _deployed_network(labels)
     docker_link.client.networks.list.return_value = [network]
-    default_link.type = link_type
+    default_link.add_meta('type', link_type)
 
     docker_link.create(default_link)
 
@@ -427,12 +434,69 @@ def test_create_existing_network_with_different_type(mock_get_current_user_name,
     mock_get_current_user_name.return_value = 'user'
     mock_setting_get_instance.return_value = not_shared_setting
     docker_link.client.networks.list.return_value = [_deployed_network(labels)]
-    default_link.type = link_type
+    default_link.add_meta('type', link_type)
 
     with pytest.raises(LinkInvalidError, match="already deployed with type"):
         docker_link.create(default_link)
 
     # The collision domain is not bound to the wrong network, and nothing is created
+    assert default_link.api_object is None
+    assert not docker_link.client.networks.create.called
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_bridge_with_driver_opts(mock_get_current_user_name, mock_setting_get_instance, docker_link,
+                                        default_link, not_shared_setting):
+    mock_get_current_user_name.return_value = 'user'
+    mock_setting_get_instance.return_value = not_shared_setting
+    docker_link.client.networks.list.return_value = []
+    default_link.update_meta({'type': 'bridge', 'ageing_time': 0, 'group_fwd_mask': 8})
+
+    docker_link.create(default_link)
+
+    assert docker_link.client.networks.create.call_args.kwargs['options'] == {
+        'kathara.ageing_time': '0',
+        'kathara.group_fwd_mask': '8',
+    }
+
+
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_reuses_network_with_same_driver_opts(mock_get_current_user_name, mock_setting_get_instance,
+                                                     docker_link, default_link, not_shared_setting):
+    mock_get_current_user_name.return_value = 'user'
+    mock_setting_get_instance.return_value = not_shared_setting
+    # Options not managed by Kathara are ignored
+    network = _deployed_network({"type": "bridge"}, {'kathara.ageing_time': '100', 'other.option': 'x'})
+    docker_link.client.networks.list.return_value = [network]
+    default_link.update_meta({'type': 'bridge', 'ageing_time': 100})
+
+    docker_link.create(default_link)
+
+    assert default_link.api_object == network
+    assert not docker_link.client.networks.create.called
+
+
+@pytest.mark.parametrize("meta, options", [
+    ({'ageing_time': 100}, {'kathara.ageing_time': '200'}),  # Different value
+    ({'ageing_time': 100}, None),  # Not set on the network
+    ({}, {'kathara.group_fwd_mask': '8'}),  # Not set on the collision domain
+    ({'ageing_time': 100}, {'kathara.ageing_time': '100', 'kathara.group_fwd_mask': '8'}),
+])
+@mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
+@mock.patch("src.Kathara.utils.get_current_user_name")
+def test_create_existing_network_with_different_driver_opts(mock_get_current_user_name, mock_setting_get_instance,
+                                                            docker_link, default_link, not_shared_setting, meta,
+                                                            options):
+    mock_get_current_user_name.return_value = 'user'
+    mock_setting_get_instance.return_value = not_shared_setting
+    docker_link.client.networks.list.return_value = [_deployed_network({"type": "bridge"}, options)]
+    default_link.update_meta({'type': 'bridge', **meta})
+
+    with pytest.raises(LinkInvalidError, match="already deployed with options"):
+        docker_link.create(default_link)
+
     assert default_link.api_object is None
     assert not docker_link.client.networks.create.called
 
@@ -469,9 +533,9 @@ def test_deploy_links(mock_deploy_link, docker_link):
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._deploy_link")
 def test_deploy_links_checks_plugins_of_deployed_links(mock_deploy_link, docker_link):
     lab = Lab("Default scenario")
-    lab.get_or_new_link("A").type = "p2p"
-    lab.get_or_new_link("B").type = "hub"
-    lab.get_or_new_link("C").type = "p2p"
+    lab.get_or_new_link("A").add_meta('type', "p2p")
+    lab.get_or_new_link("B").add_meta('type', "hub")
+    lab.get_or_new_link("C").add_meta('type', "p2p")
     lab.get_or_new_link("D")
     docker_link.docker_plugin.get_plugin_from_link_type.side_effect = lambda x: f"plugin-{x}"
     docker_link.deploy_links(lab)
@@ -483,8 +547,8 @@ def test_deploy_links_checks_plugins_of_deployed_links(mock_deploy_link, docker_
 @mock.patch("src.Kathara.manager.docker.DockerLink.DockerLink._deploy_link")
 def test_deploy_links_checks_only_selected_links_plugins(mock_deploy_link, docker_link):
     lab = Lab("Default scenario")
-    lab.get_or_new_link("A").type = "p2p"
-    lab.get_or_new_link("B").type = "hub"
+    lab.get_or_new_link("A").add_meta('type', "p2p")
+    lab.get_or_new_link("B").add_meta('type', "hub")
     docker_link.docker_plugin.get_plugin_from_link_type.side_effect = lambda x: f"plugin-{x}"
     docker_link.deploy_links(lab, selected_links={"A"})
     docker_link.docker_plugin.check_from_list.assert_called_once_with({"plugin-p2p"})
@@ -836,3 +900,26 @@ def test_delete_external_interfaces_vde_driver(mock_is_platform, mock_is_admin, 
     mock_remove_interface_ns.assert_called_once()
     assert mock_remove_interface_ns.call_args.args[0] == "eth0"
     assert mock_remove_interface_ns.call_args.args[2] == 1234
+
+
+#
+# TEST: _link_driver_opts
+#
+def test_link_driver_opts_bridge(default_link):
+    default_link.update_meta({'type': 'bridge', 'ageing_time': 30000, 'group_fwd_mask': '0x4000'})
+    # Values must be strings, the Docker API only accepts strings as network options
+    assert DockerLink._link_driver_opts(default_link) == {
+        'kathara.ageing_time': '30000',
+        'kathara.group_fwd_mask': '16384',
+    }
+
+
+def test_link_driver_opts_bridge_without_metas(default_link):
+    default_link.add_meta('type', 'bridge')
+    assert DockerLink._link_driver_opts(default_link) == {}
+
+
+@pytest.mark.parametrize("link_type", [None, "hub", "p2p"])
+def test_link_driver_opts_not_bridge(default_link, link_type):
+    default_link.update_meta({'type': link_type, 'ageing_time': 30000})
+    assert DockerLink._link_driver_opts(default_link) == {}

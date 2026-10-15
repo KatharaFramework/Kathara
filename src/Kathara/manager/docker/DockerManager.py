@@ -731,7 +731,12 @@ class DockerManager(IManager):
 
                 link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
                 link.api_object = network
-                link.type = network.attrs["Labels"].get("type") or None
+                link.add_meta('type', network.attrs["Labels"].get("type") or None)
+                driver_opts = network.attrs.get("Options") or {}
+                if 'kathara.ageing_time' in driver_opts:
+                    link.add_meta('ageing_time', driver_opts['kathara.ageing_time'])
+                if 'kathara.group_fwd_mask' in driver_opts:
+                    link.add_meta('group_fwd_mask', driver_opts['kathara.group_fwd_mask'])
 
         for container in lab_containers:
             container.reload()
@@ -778,7 +783,12 @@ class DockerManager(IManager):
                     network = lab_networks[network_name]
                     link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
                     link.api_object = network
-                    link.type = network.attrs["Labels"].get("type") or None
+                    link.add_meta('type', network.attrs["Labels"].get("type") or None)
+                    driver_opts = network.attrs.get("Options") or {}
+                    if 'kathara.ageing_time' in driver_opts:
+                        link.add_meta('ageing_time', driver_opts['kathara.ageing_time'])
+                    if 'kathara.group_fwd_mask' in driver_opts:
+                        link.add_meta('group_fwd_mask', driver_opts['kathara.group_fwd_mask'])
                     iface_number = int(network_options["DriverOpts"]["kathara.iface"])
 
                     iface_mac_addr = None
@@ -815,9 +825,14 @@ class DockerManager(IManager):
 
                 link = lab.get_or_new_link(network.attrs["Labels"]["name"])
                 link.api_object = network
-                network_type = network.attrs["Labels"].get("type") or None
-                if link.type is None:
-                    link.type = network_type
+                # Do not override the metas declared in the network scenario
+                if link.meta['type'] is None:
+                    link.add_meta('type', network.attrs["Labels"].get("type") or None)
+                driver_opts = network.attrs.get("Options") or {}
+                if 'ageing_time' not in link.meta and 'kathara.ageing_time' in driver_opts:
+                    link.add_meta('ageing_time', driver_opts['kathara.ageing_time'])
+                if 'group_fwd_mask' not in link.meta and 'kathara.group_fwd_mask' in driver_opts:
+                    link.add_meta('group_fwd_mask', driver_opts['kathara.group_fwd_mask'])
 
         deployed_networks_by_link_name = dict(
             map(lambda x: (x.attrs["Labels"]["name"], x), deployed_networks.values())
@@ -857,8 +872,14 @@ class DockerManager(IManager):
             current_ifaces = dict([(x[0].name, x[1]) for x in current_ifaces])
             for link in dynamic_links:
                 link.api_object = deployed_networks_by_link_name[link.name]
-                if link.type is None:
-                    link.type = link.api_object.attrs["Labels"].get("type") or None
+                # Do not override the metas declared in the network scenario
+                if link.meta['type'] is None:
+                    link.add_meta('type', link.api_object.attrs["Labels"].get("type") or None)
+                driver_opts = link.api_object.attrs.get("Options") or {}
+                if 'ageing_time' not in link.meta and 'kathara.ageing_time' in driver_opts:
+                    link.add_meta('ageing_time', driver_opts['kathara.ageing_time'])
+                if 'group_fwd_mask' not in link.meta and 'kathara.group_fwd_mask' in driver_opts:
+                    link.add_meta('group_fwd_mask', driver_opts['kathara.group_fwd_mask'])
 
                 iface_options = current_ifaces[link.name]
                 iface_mac_addr = None

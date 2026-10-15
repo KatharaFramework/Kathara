@@ -148,7 +148,7 @@ class Machine(FilesystemMixin):
         )
         link.machines.pop(self.name)
 
-    def add_meta(self, name: str, value: Any) -> None:
+    def add_meta(self, name: str, value: Any) -> Optional[Any]:
         """Add a meta property to the device.
 
         Args:

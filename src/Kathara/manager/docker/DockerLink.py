@@ -19,7 +19,7 @@ from ...model.Lab import Lab
 from ...model.Link import BRIDGE_LINK_NAME, Link
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
-from ...types import SharedCollisionDomainsOption
+from ...types import SharedCollisionDomainsOption, CollisionDomainTypesOption
 
 
 class DockerLink(object):
@@ -59,7 +59,7 @@ class DockerLink(object):
 
         if len(links) > 0:
             link_plugins = set(
-                map(lambda x: self.docker_plugin.get_plugin_from_link_type(x[1].type), links)
+                map(lambda x: self.docker_plugin.get_plugin_from_link_type(x[1].meta['type']), links)
             )
             self.docker_plugin.check_from_list(link_plugins)
 
@@ -130,11 +130,22 @@ class DockerLink(object):
         if networks:
             network = networks.pop()
             network_type = network.attrs["Labels"].get("type") or None
-            if link.type != network_type:
+            if link.meta['type'] != network_type:
                 raise LinkInvalidError(
                     f"Collision domain `{link.name}` is already deployed with type `{network_type}`, "
-                    f"but `{link.type}` is required."
+                    f"but `{link.meta['type']}` is required."
                 )
+
+            network_driver_opts = {
+                k: v for k, v in (network.attrs.get("Options") or {}).items() if k.startswith("kathara.")
+            }
+            driver_opts = self._link_driver_opts(link)
+            if driver_opts != network_driver_opts:
+                raise LinkInvalidError(
+                    f"Collision domain `{link.name}` is already deployed with options `{network_driver_opts}`, "
+                    f"but `{driver_opts}` are required."
+                )
+
             link.api_object = network
         else:
             network_ipam_config = docker.types.IPAMConfig(driver='null')
@@ -146,23 +157,26 @@ class DockerLink(object):
             if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
                 additional_labels["lab_hash"] = link.lab.hash
 
+            driver_opts = self._link_driver_opts(link)
+
             link.api_object = self.client.networks.create(
                 name=link_name,
-                driver=self.docker_plugin.get_plugin_from_link_type(link.type),
+                driver=self.docker_plugin.get_plugin_from_link_type(link.meta['type']),
                 check_duplicate=True,
                 ipam=network_ipam_config,
+                options=driver_opts or None,
                 labels={
                     "name": link.name,
                     "app": "kathara",
-                    "type": link.type if link.type is not None else "",
-                    "external": ";".join([x.get_full_name() for x in link.external]),
+                    "type": link.meta['type'] if link.meta['type'] is not None else "",
+                    "external": ";".join([x.get_full_name() for x in link.meta['external']]),
                     **additional_labels
                 }
             )
 
-            if link.external:
+            if link.meta['external']:
                 logging.debug("External Interfaces required, connecting them...")
-                self._attach_external_interfaces(link.external, link.api_object)
+                self._attach_external_interfaces(link.meta['external'], link.api_object)
 
     def undeploy(self, lab_hash: str, selected_links: Optional[Set[str]] = None) -> None:
         """Undeploy all the collision domains of the scenario specified by lab_hash.
@@ -428,3 +442,22 @@ class DockerLink(object):
             return f"{Setting.get_instance().net_prefix}_{link.name}"
         elif Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
             return f"{Setting.get_instance().net_prefix}_{utils.get_current_user_name()}_{link.name}_{link.lab.hash}"
+
+    @staticmethod
+    def _link_driver_opts(link: Link) -> Dict[str, str]:
+        """Return the driver options of the Docker network representing the collision domain.
+
+        Args:
+            link (Kathara.model.Link.Link): A Kathara collision domain.
+
+        Returns:
+            Dict[str, str]: Keys are driver option names, values are their values.
+        """
+        driver_opts = {}
+        if link.meta['type'] == CollisionDomainTypesOption.BRIDGE:
+            if 'ageing_time' in link.meta:
+                driver_opts['kathara.ageing_time'] = str(link.meta['ageing_time'])
+            if 'group_fwd_mask' in link.meta:
+                driver_opts['kathara.group_fwd_mask'] = str(link.meta['group_fwd_mask'])
+
+        return driver_opts

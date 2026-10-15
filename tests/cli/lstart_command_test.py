@@ -687,25 +687,25 @@ def test_run_no_link_no_ext(lstart_env):
 
     lstart_env.parse_link.assert_called_once_with(os.getcwd())
     lstart_env.parse_ext.assert_called_once_with(os.getcwd())
-    assert all(link.type is None for link in lstart_env.lab.links.values())
-    assert all(not link.external for link in lstart_env.lab.links.values())
+    assert all(link.meta['type'] is None for link in lstart_env.lab.links.values())
+    assert all(not link.meta['external'] for link in lstart_env.lab.links.values())
     lstart_env.manager.deploy_lab.assert_called_once()
 
 
 def test_run_link_types(lstart_env):
     lstart_env.parse_link.side_effect = None
-    lstart_env.parse_link.return_value = ({'A': 'bridge', 'B': 'hub'}, {})
+    lstart_env.parse_link.return_value = {'A': {'type': 'bridge'}, 'B': {'type': 'hub'}}
 
     LstartCommand().run('.', [])
 
-    assert lstart_env.lab.links['A'].type == 'bridge'
-    assert lstart_env.lab.links['B'].type == 'hub'
+    assert lstart_env.lab.links['A'].meta['type'] == 'bridge'
+    assert lstart_env.lab.links['B'].meta['type'] == 'hub'
     lstart_env.manager.deploy_lab.assert_called_once()
 
 
 def test_run_link_types_link_not_found(lstart_env):
     lstart_env.parse_link.side_effect = None
-    lstart_env.parse_link.return_value = ({'Z': 'p2p'}, {})
+    lstart_env.parse_link.return_value = {'Z': {'type': 'p2p'}}
 
     with pytest.raises(LinkNotFoundError):
         LstartCommand().run('.', [])
@@ -717,22 +717,22 @@ def test_run_link_types_only_does_not_require_root_or_linux(lstart_env):
     lstart_env.is_admin.return_value = False
     lstart_env.is_platform.return_value = False
     lstart_env.parse_link.side_effect = None
-    lstart_env.parse_link.return_value = ({'A': 'hub'}, {})
+    lstart_env.parse_link.return_value = {'A': {'type': 'hub'}}
 
     LstartCommand().run('.', [])
 
-    assert lstart_env.lab.links['A'].type == 'hub'
+    assert lstart_env.lab.links['A'].meta['type'] == 'hub'
     lstart_env.manager.deploy_lab.assert_called_once()
 
 
 def test_run_link_external_links(lstart_env):
     external_link = ExternalLink('eth0')
     lstart_env.parse_link.side_effect = None
-    lstart_env.parse_link.return_value = ({}, {'A': [external_link]})
+    lstart_env.parse_link.return_value = {'A': {'external': [external_link]}}
 
     LstartCommand().run('.', [])
 
-    assert lstart_env.lab.links['A'].external == [external_link]
+    assert lstart_env.lab.links['A'].meta['external'] == [external_link]
     lstart_env.manager.deploy_lab.assert_called_once()
 
 
@@ -743,7 +743,7 @@ def test_run_ext_external_links(lstart_env):
 
     LstartCommand().run('.', [])
 
-    assert lstart_env.lab.links['A'].external == [external_link]
+    assert lstart_env.lab.links['A'].meta['external'] == [external_link]
     lstart_env.manager.deploy_lab.assert_called_once()
 
 
@@ -753,7 +753,7 @@ def test_run_ext_empty_file(lstart_env):
 
     LstartCommand().run('.', [])
 
-    assert all(not link.external for link in lstart_env.lab.links.values())
+    assert all(not link.meta['external'] for link in lstart_env.lab.links.values())
     lstart_env.manager.deploy_lab.assert_called_once()
 
 
@@ -769,7 +769,7 @@ def test_run_ext_deprecation_warning(lstart_env, caplog):
 
 def test_run_no_ext_no_deprecation_warning(lstart_env, caplog):
     lstart_env.parse_link.side_effect = None
-    lstart_env.parse_link.return_value = ({}, {'A': [ExternalLink('eth0')]})
+    lstart_env.parse_link.return_value = {'A': {'external': [ExternalLink('eth0')]}}
 
     with caplog.at_level(logging.WARNING):
         LstartCommand().run('.', [])
@@ -781,20 +781,20 @@ def test_run_link_and_ext_different_collision_domains(lstart_env):
     link_external = ExternalLink('eth0')
     ext_external = ExternalLink('eth1', 20)
     lstart_env.parse_link.side_effect = None
-    lstart_env.parse_link.return_value = ({'A': 'hub'}, {'A': [link_external]})
+    lstart_env.parse_link.return_value = {'A': {'type': 'hub', 'external': [link_external]}}
     lstart_env.parse_ext.side_effect = None
     lstart_env.parse_ext.return_value = {'B': [ext_external]}
 
     LstartCommand().run('.', [])
 
-    assert lstart_env.lab.links['A'].external == [link_external]
-    assert lstart_env.lab.links['B'].external == [ext_external]
+    assert lstart_env.lab.links['A'].meta['external'] == [link_external]
+    assert lstart_env.lab.links['B'].meta['external'] == [ext_external]
     lstart_env.manager.deploy_lab.assert_called_once()
 
 
 def test_run_same_collision_domain_in_link_and_ext(lstart_env):
     lstart_env.parse_link.side_effect = None
-    lstart_env.parse_link.return_value = ({}, {'A': [ExternalLink('eth0')], 'B': [ExternalLink('eth0')]})
+    lstart_env.parse_link.return_value = {'A': {'external': [ExternalLink('eth0')]}, 'B': {'external': [ExternalLink('eth0')]}}
     lstart_env.parse_ext.side_effect = None
     lstart_env.parse_ext.return_value = {'A': [ExternalLink('eth1')], 'B': [ExternalLink('eth1')]}
 
@@ -803,14 +803,14 @@ def test_run_same_collision_domain_in_link_and_ext(lstart_env):
 
     assert "`A`" in str(e.value) and "`B`" in str(e.value)
     assert "`lab.link` and `lab.ext`" in str(e.value)
-    assert all(not link.external for link in lstart_env.lab.links.values())
+    assert all(not link.meta['external'] for link in lstart_env.lab.links.values())
     assert not lstart_env.manager.deploy_lab.called
 
 
 def test_run_external_links_no_root(lstart_env):
     lstart_env.is_admin.return_value = False
     lstart_env.parse_link.side_effect = None
-    lstart_env.parse_link.return_value = ({}, {'A': [ExternalLink('eth0')]})
+    lstart_env.parse_link.return_value = {'A': {'external': [ExternalLink('eth0')]}}
 
     with pytest.raises(PrivilegeError):
         LstartCommand().run('.', [])
@@ -832,7 +832,7 @@ def test_run_ext_links_no_root(lstart_env):
 def test_run_external_links_not_linux(lstart_env):
     lstart_env.is_platform.return_value = False
     lstart_env.parse_link.side_effect = None
-    lstart_env.parse_link.return_value = ({}, {'A': [ExternalLink('eth0')]})
+    lstart_env.parse_link.return_value = {'A': {'external': [ExternalLink('eth0')]}}
 
     with pytest.raises(OSError):
         LstartCommand().run('.', [])
@@ -842,7 +842,7 @@ def test_run_external_links_not_linux(lstart_env):
 
 def test_run_external_links_collision_domain_not_found(lstart_env):
     lstart_env.parse_link.side_effect = None
-    lstart_env.parse_link.return_value = ({}, {'Z': [ExternalLink('eth0')]})
+    lstart_env.parse_link.return_value = {'Z': {'external': [ExternalLink('eth0')]}}
 
     with pytest.raises(LinkNotFoundError):
         LstartCommand().run('.', [])
@@ -852,7 +852,7 @@ def test_run_external_links_collision_domain_not_found(lstart_env):
 
 def test_run_dry_mode_with_link_and_ext(lstart_env, capsys):
     lstart_env.parse_link.side_effect = None
-    lstart_env.parse_link.return_value = ({'A': 'hub'}, {})
+    lstart_env.parse_link.return_value = {'A': {'type': 'hub'}}
     lstart_env.parse_ext.side_effect = None
     lstart_env.parse_ext.return_value = {'B': [ExternalLink('eth0')]}
 
@@ -870,10 +870,10 @@ def test_run_p2p_link(lstart_env):
     lab.connect_machine_to_link('pc2', 'A')
     with mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse", return_value=lab):
         lstart_env.parse_link.side_effect = None
-        lstart_env.parse_link.return_value = ({'A': 'p2p'}, {})
+        lstart_env.parse_link.return_value = {'A': {'type': 'p2p'}}
 
         LstartCommand().run('.', [])
 
-    assert lab.links['A'].type == 'p2p'
+    assert lab.links['A'].meta['type'] == 'p2p'
     # The constraints of the collision domains are checked by the manager when deploying the lab
     lstart_env.manager.deploy_lab.assert_called_once()
