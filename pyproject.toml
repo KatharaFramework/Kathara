@@ -3,7 +3,7 @@ name = "kathara"
 version = "3.8.3"
 description = "A lightweight container-based network emulation tool."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = 'gpl-3.0'
 license-files = ["LICENSE"]
 keywords = ["NETWORK-EMULATION", "CONTAINERS", "NFV"]
@@ -23,7 +23,6 @@ classifiers = [
     "Intended Audience :: Education",
     "Intended Audience :: Telecommunications Industry",
     "Topic :: Software Development :: Build Tools",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14"

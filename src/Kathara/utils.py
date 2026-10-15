@@ -38,8 +38,8 @@ RESERVED_MACHINE_NAMES: List[str] = ['shared', '_test']
 
 # Generic Functions
 def check_python_version() -> None:
-    if sys.version_info < (3, 9):
-        logging.critical("Python version should be at least 3.9")
+    if sys.version_info < (3, 12):
+        logging.critical("Python version should be at least 3.12")
         sys.exit(1)
 
 

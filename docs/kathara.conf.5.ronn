@@ -81,7 +81,7 @@ Each Manager specifies additional parameters which are used only when the Manage
 ### KATHARA (Docker)
 
 * `network_plugin` (string):
-	This parameter specifies the Docker Network Plugin version used to create collision domains. Currently, Kathara supports two plugin versions: `kathara/katharanp` is the legacy plugin based on Linux bridges. `kathara/katharanp_vde` plugin is the default plugin, based on VDE software switches.
+	This parameter specifies the default Docker Network Plugin version used to create collision domains if a collision domain type is not specified.
 
 	Possible values are `kathara/katharanp`, `kathara/katharanp_vde`.
 

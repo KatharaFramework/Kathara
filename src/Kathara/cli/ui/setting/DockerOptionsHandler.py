@@ -16,7 +16,8 @@ class DockerOptionsHandler(OptionsHandler):
             strings=[],
             title=network_plugin_string,
             subtitle=setting_utils.current_string("network_plugin"),
-            prologue_text="""Choose Docker Network Plugin version for collision domains.
+            prologue_text="""Choose default Docker Network Plugin version for collision domains """
+                          """(if collision domain type is not specified).
                           
                           `kathara/katharanp` plugin is based on Linux bridges.
                           

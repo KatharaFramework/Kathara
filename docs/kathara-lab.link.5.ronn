@@ -1,0 +1,107 @@
+m4_changequote()
+kathara-lab.link(5) -- Network scenario collision domains file
+=============================================
+
+## DESCRIPTION
+
+The `lab.link` file specifies additional parameters of the collision domains of a network scenario, such as their type, the external networks they are connected to and other specific configurations.
+
+The file is optional. Each collision domain referenced in `lab.link` must be used by at least one device in `kathara-lab.conf`(5).
+
+**NOTE: On Megalos (Kubernetes), collision domain configurations are ignored and a warning is shown.**
+
+## SYNTAX
+
+Each line assigns a value to a parameter of a collision domain, with the following syntax:
+
+	collision_domain[parameter]=value
+
+The value can be optionally enclosed in single or double quotes. Lines starting with a hash character (`#`) are assumed to be comments and simply ignored. A comment can also follow a value, separated by at least one space.
+
+The following parameters are supported:
+
+* `type`:
+	The type of the collision domain. Possible values are:
+
+	`bridge`: The collision domain uses a Linux bridge.
+
+	`hub`: The collision domain uses a VDE switch.
+
+	`p2p`: The collision domain is a point-to-point link between exactly two devices. See **POINT-TO-POINT COLLISION DOMAINS**.
+
+	If the type of a collision domain is not specified, the default one specified in `kathara.conf`(5) is used. If the type is specified more than once for the same collision domain, the last value is used.
+
+* `external`:
+	Connect the collision domain to a physical network interface of the host. The value is the name of the interface, optionally followed by a VLAN ID, with the syntax `physical_interface.VLAN_ID`. In this way, the traffic of the collision domain will be tagged with the specified VLAN ID. The name of the interface can only contain letters, digits and underscores.
+
+	The parameter can be specified more than once for the same collision domain, to connect it to many interfaces. It is also possible to use the same physical network interface for different collision domains, each one with a different VLAN ID.
+
+	VLAN IDs must be in range [1, 4094].
+
+	This parameter is only available on Linux platforms and needs root permissions to be used.
+
+	** Keep in mind that these operations could damage your network if performed incorrectly. Use them with caution. **
+
+* `ageing_time`:
+	**NOTE: Only available on explicit `bridge` collision domains**. It cannot be used on collision domains without a type.
+
+	The ageing time of the forwarding database (FDB) entries of the bridge, in centiseconds (e.g., `30000` is 300 seconds). After this time, a MAC address learned by the bridge is removed if no frames are received from it. The value `0` disables the ageing, so entries are never removed.
+
+	Possible values are integers in range [0, 4294967295], in decimal or hexadecimal (e.g., `0x7530`) notation. If not specified, `0` is used.
+
+* `group_fwd_mask`:
+	**NOTE: Only available on explicit `bridge` collision domains**. It cannot be used on collision domains without a type.
+
+	The bitmask of link-local group addresses (`01:80:C2:00:00:0X`) that the bridge forwards, instead of dropping them. Bit `X` corresponds to the address `01:80:C2:00:00:0X` (e.g., `0x4000` forwards LLDP frames, sent to `01:80:C2:00:00:0E`).
+
+	Possible values are integers in range [0, 65535], in decimal or hexadecimal notation. Bits 0, 1 and 2 cannot be set, since STP, MAC Pause and LACP frames cannot be forwarded by Linux bridges. If not specified, `0xfff8` is used.
+
+## POINT-TO-POINT COLLISION DOMAINS
+
+A collision domain of type `p2p` must satisfy the following constraints:
+
+* It must connect exactly two different devices. Starting a network scenario with a point-to-point collision domain connected to fewer or more than two devices fails.
+
+* It cannot be connected to external networks, either using the `external` parameter or `kathara-lab.ext`(5).
+
+* Its devices cannot be changed at runtime. Connecting a device to a running point-to-point collision domain, or disconnecting one from it, using `kathara-lconfig`(1) or `kathara-vconfig`(1) fails.
+
+## RELATION WITH LAB.EXT
+
+`lab.link` replaces `kathara-lab.ext`(5), which is deprecated and will be removed in future versions.
+
+Both files can be used in the same network scenario, as long as each collision domain is connected to external networks in only one of them. If a collision domain has external connections in both `lab.link` and `lab.ext`, the network scenario does not start.
+
+An entry of `lab.ext` such as:
+
+	A enp9s0.20
+
+is equivalent to the following entry of `lab.link`:
+
+	A[external]="enp9s0.20"
+
+## EXAMPLE
+
+		# Collision domain A is a point-to-point link
+		A[type]="p2p"
+		# Collision domain B is a hub
+		B[type]="hub"
+		# Collision domain C, on interface enp9s0
+		C[external]="enp9s0"
+		# Collision domain D, on interface enp9s0 with VLAN ID = 20
+		D[external]="enp9s0.20"
+		# Collision domain E is a bridge, on interface eth1 with VLAN ID = 4001
+		E[type]="bridge"
+		E[external]="eth1.4001"
+		# Collision domain F is a bridge that ages FDB entries after 300 seconds and forwards LLDP frames
+		F[type]="bridge"
+		F[ageing_time]=30000
+		F[group_fwd_mask]="0x4000"
+
+Example of a `lab.link`(5) file.
+
+m4_include(footer.txt)
+
+## SEE ALSO
+
+`kathara`(1), `kathara-lstart`(1), `kathara-lconfig`(1), `kathara-lab.conf`(5), `kathara-lab.ext`(5), `kathara.conf`(5), [Kathara official site](https://www.kathara.org)
