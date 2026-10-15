@@ -1,6 +1,6 @@
 binaryornot==0.4.4
 docker>=7.0.0
-kubernetes>=23.3.0
+kubernetes>=23.3.0,<37
 requests>=2.22.0
 pyroute2
 rich
