@@ -6,10 +6,6 @@ post_install() {
     chgrp --reference=/usr/lib/kathara/kathara /usr/lib/kathara/_internal
 }
 
-post_upgrade() {
-    post_install
-}
-
 pre_remove() {
     /usr/lib/kathara/kathara wipe -f -a &> /dev/null || true
 }
