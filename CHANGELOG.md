@@ -2,11 +2,6 @@
 
 All notable changes to Kathará are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-Every release PR (`develop` -> `main`) must add a `## [X.Y.Z] - YYYY-MM-DD` section
-for the version in `src/Kathara/version.py`. Use these headings, in this order, and
-skip the ones you don't need: Added, Changed, Deprecated, Removed, Fixed.
-
 ## [3.8.4] - 2026-10-15
 
 ### Added
