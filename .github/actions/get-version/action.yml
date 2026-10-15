@@ -14,11 +14,8 @@ runs:
       run: |
         set -euo pipefail
 
-        # -m1: grep returns every matching line, and a multi-line value would let extra key=value pairs be injected into $GITHUB_OUTPUT.
-        # [^"]* instead of .*: the greedy form captures everything between the first and last quote on the line, not the version.
-        # || true: without it, pipefail aborts the step on a non-matching grep before the error message below is ever printed.
-        v="$(grep -m1 CURRENT_VERSION src/Kathara/version.py \
-             | sed -E 's/^[^"]*"([^"]*)".*/\1/' || true)"
+        # Parse version from CURRENT_VERSION constant in version.py
+        v=$(grep '^CURRENT_VERSION' src/Kathara/version.py | cut -d '"' -f 2)
 
         if [ -z "$v" ]; then
           echo "::error file=src/Kathara/version.py::Could not parse CURRENT_VERSION"
