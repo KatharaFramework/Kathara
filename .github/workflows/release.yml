@@ -89,7 +89,7 @@ jobs:
     name: build
     needs: [version]
     if: needs.version.outputs.should_release == 'true'
-    uses: ./.github/workflows/_build.yml
+    uses: ./.github/workflows/build.yml
     with:
       version: ${{ needs.version.outputs.version }}
       # The RPMs must be signed before SHA256SUMS is computed below, so that the checksums published on the release cover the signed artifacts.
@@ -98,7 +98,7 @@ jobs:
       #   rpm-signer-runs-on: 'self-hosted'
       rpm-signer-runs-on: 'self-hosted'
       sign-macos: true
-    # Only the secrets _build.yml declares.
+    # Only the secrets build.yml declares.
     secrets:
       RPM_GPG_PRIVATE_KEY: ${{ secrets.RPM_GPG_PRIVATE_KEY }}
       RPM_GPG_PASSPHRASE: ${{ secrets.RPM_GPG_PASSPHRASE }}

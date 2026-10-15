@@ -5,9 +5,11 @@
 VERSION?=__KATHARA_VERSION__
 PACKAGE_VERSION=1
 # Fedora release used by a plain `make all`. CI overrides it per matrix entry by calling `make docker-build_<release>` directly.
-DEFAULT_RELEASE=43
+DEFAULT_RELEASE?=43
+# Directory searched (recursively) for .rpm files by `make sign`.
+RPM_DIR?=Output
 
-.PHONY: all clean prepare-source prepare-man-pages prepare-bash-completion pack-source build cleanbinary
+.PHONY: all clean prepare-source prepare-man-pages prepare-bash-completion pack-source build sign cleanbinary
 
 all: docker-build_$(DEFAULT_RELEASE)
 
@@ -59,6 +61,51 @@ build: pack-source
 	rpmbuild -ba ~/rpmbuild/SPECS/kathara.spec
 	mkdir -p Output
 	cp -r ~/rpmbuild/RPMS/* Output
+
+
+sign: SHELL=/bin/bash
+sign:
+	@set -euo pipefail; \
+	[ -n "$${RPM_GPG_PRIVATE_KEY:-}" ] || { echo "::error::RPM_GPG_PRIVATE_KEY is not set"; exit 1; }; \
+	mapfile -t pkgs < <(find "$(RPM_DIR)" -type f -name '*.rpm'); \
+	[ $${#pkgs[@]} -gt 0 ] || { echo "::error::no .rpm to sign in $(RPM_DIR)"; exit 1; }; \
+	export HOME="$$(mktemp -d)"; chmod 700 "$$HOME"; \
+	export GNUPGHOME="$$HOME/gnupg"; mkdir -m 700 "$$GNUPGHOME"; \
+	trap 'gpgconf --kill all >/dev/null 2>&1 || true; rm -rf "$$HOME"' EXIT; \
+	printf '%s' "$$RPM_GPG_PRIVATE_KEY" | base64 -d | gpg --batch --quiet --import; \
+	signing_key() { gpg --batch --list-secret-keys --with-colons | awk -F: -v t="$$1" '$$1==t && $$12 ~ /s/ {print $$5; exit}'; }; \
+	KEYID="$$(signing_key ssb)"; \
+	[ -n "$$KEYID" ] || KEYID="$$(signing_key sec)"; \
+	if [ -z "$$KEYID" ]; then \
+		echo "::error::the imported key has no usable signing key."; \
+		echo "The secret exported into RPM_GPG_PRIVATE_KEY must contain a signing subkey (or a primary that can sign). Keys currently imported:"; \
+		gpg --batch --list-secret-keys --keyid-format long || true; \
+		echo "Regenerate the export with:"; \
+		echo "  gpg --export-secret-subkeys --armor \"<SIGNING_SUBKEY_FPR>!\" | base64 -w0"; \
+		exit 1; \
+	fi; \
+	echo "Signing with key $$KEYID"; \
+	umask 077; \
+	printf '%s' "$${RPM_GPG_PASSPHRASE:-}" > "$$HOME/passphrase"; \
+	printf '%s\n' \
+		'%_signature gpg' \
+		"%_gpg_name $$KEYID!" \
+		'%_gpg_digest_algo sha256' \
+		"%_gpg_passphrase_file $$HOME/passphrase" \
+		'%__gpg_sign_cmd %{__gpg} gpg --no-verbose --no-armor --no-secmem-warning --batch --pinentry-mode loopback --passphrase-file %{_gpg_passphrase_file} --digest-algo sha256 -u "%{_gpg_name}" -sbo %{__signature_filename} %{__plaintext_filename}' \
+		> "$$HOME/.rpmmacros"; \
+	for p in "$${pkgs[@]}"; do rpmsign --addsign "$$p"; done; \
+	mkdir "$$HOME/rpmdb"; \
+	rpm --dbpath "$$HOME/rpmdb" --initdb; \
+	gpg --batch --armor --export "$$KEYID" > "$$HOME/pub.asc"; \
+	rpmkeys --dbpath "$$HOME/rpmdb" --import "$$HOME/pub.asc"; \
+	for p in "$${pkgs[@]}"; do \
+		sig="$$(rpm -qpi --nosignature "$$p" 2>/dev/null | sed -n 's/^Signature *: //p')"; \
+		case "$$sig" in ''|'(none)') echo "::error::$$(basename "$$p") is still unsigned"; exit 1 ;; esac; \
+		rpmkeys --dbpath "$$HOME/rpmdb" --checksig "$$p" >/dev/null \
+			|| { echo "::error::$$(basename "$$p") failed signature verification"; exit 1; }; \
+		echo "$$(basename "$$p"): $$sig"; \
+	done
 
 clean:
 	if [ -d Output ]; then \

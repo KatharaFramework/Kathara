@@ -1,4 +1,4 @@
-name: build-all
+name: build-matrix
 
 on:
   workflow_dispatch:
@@ -62,6 +62,6 @@ jobs:
   build:
     name: build
     needs: [prepare]
-    uses: ./.github/workflows/_build.yml
+    uses: ./.github/workflows/build.yml
     with:
       version: ${{ needs.prepare.outputs.version }}
