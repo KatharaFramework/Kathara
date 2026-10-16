@@ -3,6 +3,7 @@ post_install() {
         chown root:docker /usr/lib/kathara/kathara
     fi
     chmod g+s /usr/lib/kathara/kathara
+    chgrp --reference=/usr/lib/kathara/kathara /usr/lib/kathara/_internal
 }
 
 pre_remove() {

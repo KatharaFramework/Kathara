@@ -1,7 +1,5 @@
 #!/usr/bin/make -f
 
-ARCHITECTURE:=$(shell dpkg-architecture -qDEB_HOST_ARCH)
-
 %:
 	dh $@ --with bash-completion
 
@@ -11,23 +9,24 @@ override_dh_auto_clean:
 	find . | grep -E "(__pycache__|\.pyc|\.pyo)$$" | xargs rm -rf
 
 override_dh_auto_configure:
-	python3.13 -m venv $(CURDIR)/venv
-	$(CURDIR)/venv/bin/pip3.13 install --no-index --find-links $(CURDIR)/debian/pythonLibs_$(ARCHITECTURE)/ $(CURDIR)/debian/pythonLibs_$(ARCHITECTURE)/*
+	python3.14 -m venv $(CURDIR)/venv
+	$(CURDIR)/venv/bin/python3.14 -m pip install -r $(CURDIR)/requirements.txt
+	$(CURDIR)/venv/bin/python3.14 -m pip install pyinstaller
 
 override_dh_auto_build:
-	$(CURDIR)/venv/bin/python3.13 -m nuitka --lto=no --show-progress --plugin-enable=pylint-warnings \
-		--follow-imports --standalone --include-plugin-directory=Kathara --include-package=rich --include-package-data=rich --output-filename=kathara kathara.py
+	$(CURDIR)/venv/bin/pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
 
 override_dh_auto_install:
 	rm -rf $(CURDIR)/debian/kathara/usr/lib/kathara/*
-	cp -r $(CURDIR)/kathara.dist/* $(CURDIR)/debian/kathara/usr/lib/kathara/
-	chmod 400 $(CURDIR)/debian/kathara/usr/lib/kathara/*.so*
+	cp -r $(CURDIR)/kathara.dist/kathara/* $(CURDIR)/debian/kathara/usr/lib/kathara/
+	chmod 400 $(CURDIR)/debian/kathara/usr/lib/kathara/_internal/*.so*
 	chmod 755 $(CURDIR)/debian/kathara/usr/lib/kathara/kathara
 
 override_dh_strip:
-	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libbz2.so.1.0
-	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libexpat.so.1
-	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libtinfo.so.6
-	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libz.so.1
-	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libtinfo.so.5
-	rm -f $(CURDIR)/debian/kathara/usr/lib/kathara/libcrypto.so.1.1
+	rm  -f $(CURDIR)/debian/kathara/usr/lib/kathara/*libbz2.so.1.0
+	rm  -f $(CURDIR)/debian/kathara/usr/lib/kathara/*libexpat.so.1
+	rm  -f $(CURDIR)/debian/kathara/usr/lib/kathara/*libtinfo.so.6
+	rm  -f $(CURDIR)/debian/kathara/usr/lib/kathara/*libz.so.1
+	rm  -f $(CURDIR)/debian/kathara/usr/lib/kathara/*libtinfo.so.5
+	rm  -f $(CURDIR)/debian/kathara/usr/lib/kathara/*libcrypto.so.1.1
+	rm -rf $(CURDIR)/venv

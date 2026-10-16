@@ -1,6 +1,0 @@
-[ppa:katharaframework/kathara]
-fqdn = ppa.launchpad.net
-method = ftp
-incoming = ~katharaframework/ubuntu/kathara/
-login = __LAUNCHPAD_NAME__
-allow_unsigned_uploads = 0

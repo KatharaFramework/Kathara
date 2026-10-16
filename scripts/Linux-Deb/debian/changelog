@@ -1,7 +1,5 @@
 kathara (__VERSION__-__DEBIAN_PACKAGE_VERSION____UBUNTU_VERSION__) __UBUNTU_VERSION__; urgency=low
 
-    * Add possibility to keep collision domains when undeploying a network scenario
-    * Fix tmux DeprecatedError
-    * Minor fixes
+    * Placeholder
 
  -- Kathara Team <contact@kathara.org>  __DATE__

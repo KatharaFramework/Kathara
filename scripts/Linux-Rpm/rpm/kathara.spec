@@ -52,6 +52,7 @@ if [ $(getent group docker) ]; then
     chown root:docker %{_libdir}/kathara/kathara
 fi
 chmod g+s %{_libdir}/kathara/kathara
+chgrp --reference=%{_libdir}/kathara/kathara %{_libdir}/kathara/_internal
 
 %preun
 %{_libdir}/kathara/kathara wipe -f -a &> /dev/null || true
