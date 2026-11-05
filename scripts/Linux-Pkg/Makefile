@@ -1,11 +1,12 @@
 #!/usr/bin/make -f
 
-VERSION=3.8.3
+VERSION?=__KATHARA_VERSION__
 PACKAGE_VERSION=1
-AUR_NAME=user
-AUR_MAIL=contact@kathara.org
+AUR_NAME?=user
+AUR_MAIL?=contact@kathara.org
+CHANGELOG_MD?=../../CHANGELOG.md
 
-.PHONY: all allRemote clean docker-build-image docker-build-local docker-build-remote build-local build-remote
+.PHONY: all allRemote changelog clean docker-build-image docker-build-local docker-build-remote build-local build-remote
 
 all: clean docker-build-image docker-build-local
 
@@ -13,20 +14,35 @@ allRemote: clean docker-build-image docker-build-remote
 
 docker-build-local: docker-build-image
 	mkdir -p Output
-	docker run -ti -v `pwd`:/home/builduser/kathara:ro -v `pwd`/Output:/home/builduser/output -v `pwd`/../..:/home/builduser/kathara-source/Kathara-$(VERSION):ro  kathara/linux-build-pkg /usr/bin/su -c \
-		"make -f /home/builduser/kathara/Makefile build-local" builduser
+	docker run -v `pwd`:/home/builduser/kathara:ro -v `pwd`/Output:/home/builduser/output \
+			   -v `pwd`/../../CHANGELOG.md:/home/builduser/CHANGELOG.md:ro \
+			   -v `pwd`/../..:/home/builduser/kathara-source/Kathara-$(VERSION):ro  \
+			   -e VERSION="$(VERSION)" kathara/linux-build-pkg /usr/bin/su -c \
+		"chown builduser:builduser /home/builduser/output && \
+		su -c 'make -f /home/builduser/kathara/Makefile build-local' builduser && \
+		chown -R $(shell id -u):$(shell id -g) /home/builduser/output"
 
 docker-build-remote: docker-build-image
-	docker run -ti --rm -v ~/.ssh:/home/builduser/ssh:ro -v `pwd`:/home/builduser/kathara:ro kathara/linux-build-pkg /usr/bin/su -c \
+	@docker run --rm -v `pwd`:/home/builduser/kathara:ro -v `pwd`/../../CHANGELOG.md:/home/builduser/CHANGELOG.md:ro -e VERSION="$(VERSION)" -e AUR_KEY="$(AUR_KEY)" kathara/linux-build-pkg /usr/bin/su -c \
 		"make -f /home/builduser/kathara/Makefile build-remote" builduser
+
+CHANGELOG_CMD = test -s $(CHANGELOG_MD) && \
+	{ grep -q '^\#\# \[$(VERSION)\]' $(CHANGELOG_MD) || printf '\#\# [$(VERSION)] - %s\n- Development build\n' "$$(date -u +%F)"; cat $(CHANGELOG_MD); } \
+	| awk ' \
+		/^\#\# \[[0-9]/ { if (n++) print ""; print $$4 " Kathara Team <contact@kathara.org>\n\n* Release v" substr($$2, 2, length($$2) - 2); next }; \
+		/^- / && n { print "    * " substr($$0, 3) }'
+
+changelog:
+	@$(CHANGELOG_CMD)
 
 docker-build-image:
 	cd Docker-Linux-Build && docker build -t kathara/linux-build-pkg .
 
+# Runs inside the container, where CHANGELOG.md is mounted at /home/builduser/CHANGELOG.md.
+prepare-files: CHANGELOG_MD=/home/builduser/CHANGELOG.md
 prepare-files:
 	cp -r /home/builduser/kathara/pkginfo/* /home/builduser/build
-	sed -i -e "s|__DATE__|$$(date -R)|g" /home/builduser/build/kathara.changelog
-	sed -i -e 's/__VERSION__/$(VERSION)/g' /home/builduser/build/kathara.changelog
+	$(CHANGELOG_CMD) > /home/builduser/build/kathara.changelog
 	sed -i -e 's/__VERSION__/$(VERSION)/g' /home/builduser/build/PKGBUILD
 	sed -i -e 's/__PACKAGE_VERSION__/$(PACKAGE_VERSION)/g' /home/builduser/build/PKGBUILD
 
@@ -40,7 +56,8 @@ build-local: prepare-files
 
 build-remote: prepare-files
 	sed -i -e 's/__SOURCE__/"https:\/\/github.com\/KatharaFramework\/Kathara\/archive\/refs\/tags\/\$$\pkgver.tar.gz"/g' /home/builduser/build/PKGBUILD
-	cp -r /home/builduser/ssh/ /home/builduser/.ssh/ && chmod 600 /home/builduser/.ssh/id_rsa
+	mkdir -p /home/builduser/.ssh
+	printf '%s\n' "$$AUR_KEY" > /home/builduser/.ssh/id_rsa && chmod 600 /home/builduser/.ssh/id_rsa
 	ssh-keyscan aur.archlinux.org > /home/builduser/.ssh/known_hosts
 	cd .. && git clone ssh://aur@aur.archlinux.org/kathara kathara-aur
 	cd ../kathara-aur && git checkout master
@@ -55,4 +72,4 @@ build-remote: prepare-files
 clean:
 	if [ -d Output ]; then \
 		rm -rf Output; \
-	fi
+	fi	

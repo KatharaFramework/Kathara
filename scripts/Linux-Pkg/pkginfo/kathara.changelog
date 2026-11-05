@@ -1,6 +1,0 @@
-__DATE__ Kathara Team <******@kathara.org>
-
-* Release v__VERSION__
-    * Add possibility to keep collision domains when undeploying a network scenario
-    * Fix tmux DeprecatedError
-    * Minor fixes

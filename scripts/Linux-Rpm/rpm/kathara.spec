@@ -52,12 +52,9 @@ if [ $(getent group docker) ]; then
     chown root:docker %{_libdir}/kathara/kathara
 fi
 chmod g+s %{_libdir}/kathara/kathara
+chgrp --reference=%{_libdir}/kathara/kathara %{_libdir}/kathara/_internal
 
 %preun
 %{_libdir}/kathara/kathara wipe -f -a &> /dev/null || true
 
 %changelog
-*  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- Add possibility to keep collision domains when undeploying a network scenario
-- Fix tmux DeprecatedError
-- Minor fixes

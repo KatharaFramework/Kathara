@@ -2,10 +2,11 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Kathara"
-#define MyAppVersion "3.8.3"
+#define MyAppVersion "__VERSION__"
 #define MyAppPublisher "Kathara Team"
 #define MyAppURL "https://www.kathara.org"
 #define MyAppExeName "kathara.exe"
+; #define MyArchitecture "__ARCH__"
 
 #include "Assets\environment.iss"
 
@@ -24,15 +25,17 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-LicenseFile=..\..\LICENSE
+LicenseFile=LICENSE
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
 OutputBaseFilename=Kathara-windows-installer-{#MyArchitecture}-{#MyAppVersion}
+OutputDir=.
 SetupIconFile=Assets\app_icon.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 ChangesEnvironment=True
+ArchitecturesAllowed={#MyArchitecture}
 ArchitecturesInstallIn64BitMode={#MyArchitecture}
 UninstallDisplayIcon={app}\Kathara.exe
 
@@ -43,7 +46,7 @@ WelcomeLabel2=Kathara is a lightweight container-based network emulation tool.%n
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "..\..\src\kathara.dist\kathara\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\..\src\kathara.dist\kathara\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
