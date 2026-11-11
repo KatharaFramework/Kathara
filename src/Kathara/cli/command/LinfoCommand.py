@@ -156,6 +156,15 @@ class LinfoCommand(Command):
 
     def _get_conf_info(self, lab: Lab, machine_name: str = None) -> None:
         if machine_name:
+            if machine_name not in lab.machines:
+                self.console.print(
+                    create_panel(
+                        f"Device `{machine_name}` Not Found.",
+                        title=f"{machine_name} Information",
+                        style="red bold"
+                    )
+                )
+                return
             self.console.print(
                 create_panel(
                     str(lab.machines[machine_name]),
