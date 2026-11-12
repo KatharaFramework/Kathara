@@ -42,6 +42,12 @@ class ExecCommand(Command):
             action="store_true",
             help='The device has been started with vstart command.',
         )
+        group.add_argument(
+            '--lab-name',
+            dest='lab_name',
+            metavar='LAB_NAME',
+            help='Name of the network scenario containing the device.'
+        )
         self.parser.add_argument(
             '--no-stdout',
             dest="no_stdout",
@@ -79,6 +85,8 @@ class ExecCommand(Command):
 
         if args['vmachine']:
             lab = Lab("kathara_vlab")
+        elif args['lab_name']:
+            lab = Lab(args['lab_name'])
         else:
             lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
             lab_path = utils.get_absolute_path(lab_path)

@@ -4,6 +4,8 @@ kathara-lab.ext(5) -- Network scenario external networks file
 
 ## DESCRIPTION
 
+**This file is deprecated and will be removed in future versions. Use the `external` parameter of `kathara-lab.link`(5) instead.**
+
 This feature allows Kathara to outsource collision domains to external networks by sending network traffic created by devices to the host's physical interfaces.
 
 It is possible to separate traffic of different collision domains using VLANs. Many sub-interfaces, one for each VLAN tag used, of a physical network interface are created to separate the various domains.
@@ -26,6 +28,8 @@ VLAN ID 0 and 4095 are reserved and can not be used.
 
 ** Keep in mind that these operations could damage your network if performed incorrectly. Use them with caution. **
 
+A collision domain cannot be connected to external networks in both `lab.ext` and `kathara-lab.link`(5). Point-to-point collision domains cannot be connected to external networks.
+
 ## EXAMPLE
 
 		# Collision domain A, on interface enp9s0
@@ -41,4 +45,4 @@ m4_include(footer.txt)
 
 ## SEE ALSO
 
-`kathara`(1), `kathara-lstart`(1), [Kathara official site](https://www.kathara.org)
+`kathara`(1), `kathara-lstart`(1), `kathara-lab.link`(5), [Kathara official site](https://www.kathara.org)

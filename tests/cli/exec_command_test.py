@@ -127,6 +127,25 @@ def test_run_with_v_option(mock_stderr_write, mock_stdout_write, mock_parse_lab,
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+@mock.patch('sys.stdout.write')
+@mock.patch('sys.stderr.write')
+def test_run_with_labname(mock_stderr_write, mock_stdout_write, mock_parse_lab, mock_docker_manager,
+                          mock_manager_get_instance, exec_output):
+    mock_manager_get_instance.return_value = mock_docker_manager
+    lab = Lab('kathara_lab')
+    mock_docker_manager.exec.return_value = exec_output
+    command = ExecCommand()
+    command.run('.', ['--lab-name', 'kathara_lab', 'pc1', 'test command'])
+    assert not mock_parse_lab.called
+    mock_docker_manager.exec.assert_called_once_with("pc1", 'test command', lab_hash=lab.hash, wait=False)
+    mock_stdout_write.assert_called_once_with('stdout')
+    mock_stderr_write.assert_called_once_with('stderr')
+    exec_output._client.api.exec_inspect.assert_called_once_with('id')
+
+
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
 @mock.patch("src.Kathara.model.Lab.Lab")
 @mock.patch('sys.stdout.write')
 @mock.patch('sys.stderr.write')

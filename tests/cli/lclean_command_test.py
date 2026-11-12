@@ -5,6 +5,7 @@ from unittest import mock
 sys.path.insert(0, './')
 
 from src.Kathara.cli.command.LcleanCommand import LcleanCommand
+from src.Kathara.model.Lab import Lab
 
 
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
@@ -49,6 +50,18 @@ def test_run_with_directory_relative_path(mock_lab, mock_parse_lab, mock_docker_
     mock_parse_lab.assert_called_once_with(os.path.join(os.getcwd(), 'test', 'path'))
     mock_docker_manager.undeploy_lab.assert_called_once_with(
         lab_hash=mock_lab.hash, selected_machines=None, excluded_machines=None
+    )
+
+
+@mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
+@mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
+def test_run_with_labname(mock_docker_manager, mock_manager_get_instance):
+    lab = Lab('test-lab')
+    mock_manager_get_instance.return_value = mock_docker_manager
+    command = LcleanCommand()
+    command.run('.', ['--lab-name', "test-lab"])
+    mock_docker_manager.undeploy_lab.assert_called_once_with(
+        lab_hash=lab.hash, selected_machines=None, excluded_machines=None
     )
 
 

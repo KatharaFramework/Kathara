@@ -6,6 +6,7 @@ from ... import utils
 from ...foundation.cli.command.Command import Command
 from ...manager.Kathara import Kathara
 from ...parser.netkit.LabParser import LabParser
+from ...parser.netkit.LinkParser import LinkParser
 from ...strings import strings, wiki_description
 
 
@@ -69,6 +70,16 @@ class LconfigCommand(Command):
         self._load_custom_configuration(lab_path)
 
         lab = LabParser.parse(lab_path)
+        try:
+            link_metas = LinkParser.parse(lab_path)
+            if link_metas:
+                # External interfaces cannot be attached at runtime, ignore them
+                lab.assign_link_meta({
+                    x: {k: val for k, val in v.items() if k != 'external'}
+                    for x, v in link_metas.items()
+                })
+        except FileNotFoundError:
+            pass
 
         Kathara.get_instance().update_lab_from_api(lab)
 
