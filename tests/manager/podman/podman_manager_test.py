@@ -26,6 +26,13 @@ def _setting_mock(**overrides):
     return setting_mock
 
 
+@pytest.fixture(autouse=True)
+def linux_platform(monkeypatch):
+    # These tests cover the Linux code paths: pin the platform so they behave the same on every CI host.
+    # The macOS path (podman machine) is covered in podman_vm_test.py.
+    monkeypatch.setattr("src.Kathara.manager.podman.PodmanManager.sys.platform", "linux")
+
+
 @mock.patch("src.Kathara.setting.Setting.Setting.get_instance")
 @mock.patch("src.Kathara.manager.podman.PodmanManager.PodmanClient")
 def test_init_raises_on_ping_failure(mock_podman_client_cls, mock_setting_get_instance):
