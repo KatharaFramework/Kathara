@@ -123,7 +123,9 @@ Each Manager specifies additional parameters which are used only when the Manage
 
 ### PODMAN
 
-The Podman manager runs rootless Podman 5 on Linux hosts. Features that require root privileges (privileged devices, collision domains shared between users, `wipe`/statistics of all users, external collision domains) are not supported in rootless mode and fail with an explicit error.
+The Podman manager runs rootless Podman 5 on Linux hosts. On macOS, it uses the default rootless `podman machine` VM, where the network plugin is installed. On Windows, it is supported only inside WSL, in a Linux distro with Podman 5 and systemd enabled. Features that require root privileges (privileged devices, collision domains shared between users, `wipe`/statistics of all users, external collision domains) are not supported in rootless mode and fail with an explicit error.
+
+On macOS, Kathara runs on the Mac and requires the default `podman machine` VM to be rootless and running. If the machine is missing, stopped or rootful, Kathara stops with a hint: `podman machine init`, `podman machine start`, `podman machine set --rootful=false` (then restart the machine). Bind mounts only work for host folders shared with the VM: by default `/Users`, `/private` (which includes `/tmp`) and `/var/folders`. This affects the network scenario `shared` folder, `hosthome_mount` and volumes. A network scenario on another disk (e.g. under `/Volumes`) needs that folder shared when the machine is created, for example `podman machine init -v /Volumes:/Volumes`.
 
 * `network_plugin` (string):
 	This parameter specifies the Podman Network Plugin used to create collision domains. Currently, Kathara supports two plugins: `katharanp_vde` is the default plugin, based on VDE software switches, a userspace switch that forwards every frame. `katharanp` is based on Linux bridges, with the data plane in the kernel; LACP frames cannot cross a Linux bridge.
@@ -157,7 +159,7 @@ The Podman manager runs rootless Podman 5 on Linux hosts. Features that require 
     Default to `1` (enum value for `Not Shared`).
 
 * `api_socket_url` (string):
-    This parameter specifies a local Podman API socket URL to connect to, instead of the automatically detected rootless user socket. Only `unix://` URLs are supported: a remote Podman connection cannot install the Kathara network plugin.
+    This parameter specifies a local Podman API socket URL to connect to, instead of the automatically detected socket: the rootless user socket on Linux, the `podman machine` socket on macOS. Only `unix://` URLs are supported: a remote Podman connection cannot install the Kathara network plugin.
 
     Default to null.
 
