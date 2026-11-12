@@ -91,11 +91,12 @@ class Link(object):
                 group_fwd_mask = utils.parse_uint(value, bit_size=16)
             except ValueError as e:
                 raise LinkOptionError(f"Invalid `group_fwd_mask` on collision domain `{self.name}`: {e}")
-            # STP, MAC Pause and LACP frames cannot be forwarded (BR_GROUPFWD_RESTRICTED)
+            # The kernel rejects bits 0-2 (BR_GROUPFWD_RESTRICTED): 01:80:C2:00:00:00 is already forwarded when STP is
+            # disabled, while 01:80:C2:00:00:01 and 01:80:C2:00:00:02 are never forwarded
             if group_fwd_mask & 0x0007:
                 raise LinkOptionError(
                     f"Invalid `group_fwd_mask` on collision domain `{self.name}`: "
-                    f"bits 0-2 (STP, MAC Pause and LACP) cannot be set."
+                    f"bits 0-2 cannot be set, they are rejected by the Linux kernel."
                 )
 
             self.meta[name] = group_fwd_mask

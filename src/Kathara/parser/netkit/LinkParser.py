@@ -65,7 +65,7 @@ class LinkParser(object):
                     raise SyntaxError(
                         f"In lab.link - Line {line_number}: "
                         f"Invalid argument `{arg}`. "
-                        f"Supported arguments are {', '.join(SUPPORTED_ARGS)}."
+                        f"Supported arguments are {', '.join(sorted(SUPPORTED_ARGS))}."
                     )
 
                 if arg == "type":

@@ -43,18 +43,18 @@ The following parameters are supported:
 	** Keep in mind that these operations could damage your network if performed incorrectly. Use them with caution. **
 
 * `ageing_time`:
-	**NOTE: Only available on explicit `bridge` collision domains**. It cannot be used on collision domains without a type.
+	**NOTE: Only available on explicit `bridge` collision domains**. It cannot be used on collision domains without a type, even if the default type in `kathara.conf`(5) is `bridge`, since the default can change.
 
-	The ageing time of the forwarding database (FDB) entries of the bridge, in centiseconds (e.g., `30000` is 300 seconds). After this time, a MAC address learned by the bridge is removed if no frames are received from it. The value `0` disables the ageing, so entries are never removed.
+	The ageing time of the forwarding database (FDB) entries of the bridge, in centiseconds (e.g., `30000` is 300 seconds). After this time, a MAC address learned by the bridge is removed if no frames are received from it. With `0` the bridge learns no addresses and repeats every frame on every port, like a hub.
 
 	Possible values are integers in range [0, 4294967295], in decimal or hexadecimal (e.g., `0x7530`) notation. If not specified, `0` is used.
 
 * `group_fwd_mask`:
-	**NOTE: Only available on explicit `bridge` collision domains**. It cannot be used on collision domains without a type.
+	**NOTE: Only available on explicit `bridge` collision domains**. It cannot be used on collision domains without a type, even if the default type in `kathara.conf`(5) is `bridge`, since the default can change.
 
 	The bitmask of link-local group addresses (`01:80:C2:00:00:0X`) that the bridge forwards, instead of dropping them. Bit `X` corresponds to the address `01:80:C2:00:00:0X` (e.g., `0x4000` forwards LLDP frames, sent to `01:80:C2:00:00:0E`).
 
-	Possible values are integers in range [0, 65535], in decimal or hexadecimal notation. Bits 0, 1 and 2 cannot be set, since STP, MAC Pause and LACP frames cannot be forwarded by Linux bridges. If not specified, `0xfff8` is used.
+	Possible values are integers in range [0, 65535], in decimal or hexadecimal notation. Bits 0, 1 and 2 cannot be set, since they are rejected by the Linux kernel. Kathara bridges have the spanning tree protocol disabled, so `01:80:C2:00:00:00` (STP) is always forwarded, while `01:80:C2:00:00:01` (MAC Pause) and `01:80:C2:00:00:02` (LACP) are never forwarded, whatever the mask. If not specified, `0xfff8` is used.
 
 ## POINT-TO-POINT COLLISION DOMAINS
 

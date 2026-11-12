@@ -46,6 +46,13 @@ def test_invalid_argument():
         LinkParser.parse("tests/parser/lablink/invalid_arg")
 
 
+def test_invalid_argument_lists_supported_args_sorted():
+    with pytest.raises(
+            SyntaxError, match="Supported arguments are ageing_time, external, group_fwd_mask, type\\."
+    ):
+        LinkParser.parse("tests/parser/lablink/invalid_arg")
+
+
 def test_invalid_type():
     with pytest.raises(SyntaxError, match="Line 1: Invalid collision domain type `switch`"):
         LinkParser.parse("tests/parser/lablink/invalid_type")
