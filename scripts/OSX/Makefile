@@ -1,51 +1,37 @@
 #!/usr/bin/make -s
 
 PRODUCT=Kathara
-VERSION=3.9.0
+VERSION=__KATHARA_VERSION__
 TARGET_DIRECTORY=Output
-APPLE_DEVELOPER_CERTIFICATE_ID=FakeID
-APPLE_CERTIFICATE_PATH=
-APPLE_CERTIFICATE_PASSWORD=
-comma:=,
-ROFF_DIR="../../docs/Roff"
-VENV_DIR:="${CURDIR}/venv"
+ROFF_DIR=../../docs/Roff
+VENV_DIR:=${CURDIR}/venv
 
-.PHONY: all allSigned manpages clean cleanall cleanman cleanbinary cleanenv tart-build-image tart-clean-image
+# Signing uses a dedicated keychain (not the login one), readable only by the build user and protected by its own password.
+# It must be unlocked before running the allSigned targets (see README.md).
+APPLE_DEVELOPER_CERTIFICATE_ID?=FakeID
+APPLE_KEYCHAIN?=$(HOME)/Library/Keychains/kathara-signing.keychain-db
+APPLE_NOTARY_PROFILE?=Kathara-notary
 
-all: cleanall
-	$(MAKE) package_x86_64
-	$(MAKE) package_arm64
+.PHONY: all_x86 allSigned_x86 all_arm64 allSigned_arm64 test deps manpages cleanall cleanman cleanbinary cleanenv
+.PHONY: tart-build-image tart-clean-image
+all: all_x86 all_arm64
+allSigned: allSigned_x86 allSigned_arm64
+all_x86: cleanall deps binary_x86_64 manpages createInstaller_x86_64 clean
+allSigned_x86: cleanall deps binary_x86_64 manpages signBinaries_x86_64 createInstaller_x86_64 signProduct_x86_64 notarize_x86_64 clean
+all_arm64: cleanall deps binary_arm64 manpages createInstaller_arm64 clean
+allSigned_arm64: cleanall deps binary_arm64 manpages signBinaries_arm64 createInstaller_arm64 signProduct_arm64 notarize_arm64 clean
 
-allSigned: cleanall
-	$(MAKE) packageSigned_x86_64
-	$(MAKE) packageSigned_arm64
+default: all
 
-package_%: deps_% createInstaller_%
-	$(MAKE) clean
-
-packageSigned_%: deps_% createInstaller_% signProduct_%
-	$(MAKE) clean
-
-# $(1): extra `tart run` flags, $(2): commands to run in the VM before make, $(3): make targets
-define tart_build
+# Tart: runs the build inside a disposable macOS VM (see README.md)
+# Rosetta is needed (and enabled by the provisioning) to build the x86 package on the arm64 VM
+tart-build_%:
 	tart list --source local --quiet | grep -qx kathara-osx-build || $(MAKE) tart-build-image
 	tart delete kathara-build > /dev/null 2>&1 || true
 	tart clone kathara-osx-build kathara-build
-	nohup tart run --no-graphics --dir=kathara:$(CURDIR)/../.. $(1) kathara-build > /dev/null 2>&1 &
+	nohup tart run --no-graphics --dir=kathara:$(CURDIR)/../.. kathara-build > /dev/null 2>&1 &
 	until tart exec kathara-build true > /dev/null 2>&1; do sleep 2; done
-	tart exec kathara-build zsh -lc "$(2) cd '/Volumes/My Shared Files/kathara/scripts/OSX' && make APPLE_DEVELOPER_CERTIFICATE_ID='$(APPLE_DEVELOPER_CERTIFICATE_ID)' $(3)"; status=$$?; tart stop kathara-build; tart delete kathara-build; exit $$status
-endef
-
-tart-build_%:
-	$(call tart_build,,,$(if $(filter all,$*),all,cleanall package_$*))
-
-tart-buildSigned_%:
-	[ -f "$(APPLE_CERTIFICATE_PATH)" ] || { echo "Set APPLE_CERTIFICATE_PATH to the Developer ID Installer .p12 file"; exit 1; }
-	$(call tart_build,--dir=certs:$(dir $(abspath $(APPLE_CERTIFICATE_PATH))):ro,\
-		security unlock-keychain -p admin login.keychain && \
-		security import '/Volumes/My Shared Files/certs/$(notdir $(APPLE_CERTIFICATE_PATH))' -k login.keychain -P '$(APPLE_CERTIFICATE_PASSWORD)' -T /usr/bin/productsign && \
-		security set-key-partition-list -S apple-tool:$(comma)apple: -s -k admin login.keychain > /dev/null &&,\
-		$(if $(filter all,$*),allSigned,cleanall packageSigned_$*))
+	tart exec kathara-build zsh -lc "cd '/Volumes/My Shared Files/kathara/scripts/OSX' && make VERSION='$(VERSION)' all_$* $(if $(filter x86,$*),SET_ARCH='arch -x86_64')"; status=$$?; tart stop kathara-build; tart delete kathara-build; exit $$status
 
 tart-build-image: tart-clean-image
 	tart clone ghcr.io/cirruslabs/macos-tahoe-base:latest kathara-img
@@ -59,14 +45,15 @@ tart-clean-image:
 	tart delete kathara-osx-build > /dev/null 2>&1 || true
 	tart delete kathara-img > /dev/null 2>&1 || true
 
-py_env_%:
-	arch -$* python3.13 -m venv $(VENV_DIR)
+py_env:
+	$(SET_ARCH) python3 -m venv $(VENV_DIR)
 
-deps_%: py_env_%
-	arch -$* $(VENV_DIR)/bin/python3 -m pip install -U "setuptools<81"
-	arch -$* $(VENV_DIR)/bin/python3 -m pip install "pyinstaller==6.18.0"
-	arch -$* $(VENV_DIR)/bin/python3 -m pip install -r ../../src/requirements.txt
-	arch -$* $(VENV_DIR)/bin/python3 -m pip install pytest
+deps: py_env
+	$(SET_ARCH) $(VENV_DIR)/bin/pip install -U "setuptools<81"
+	$(SET_ARCH) $(VENV_DIR)/bin/pip install "pyinstaller==6.18.0"
+	$(SET_ARCH) $(VENV_DIR)/bin/pip install -r ../../src/requirements.txt
+	$(SET_ARCH) $(VENV_DIR)/bin/pip install pytest
+	gem install ronn-ng
 
 manpages:
 	cd ../../docs && make roff-build;
@@ -77,13 +64,12 @@ manpages:
 		mv $$man_file $(ROFF_DIR)/$$man_file_dir; \
 	done;
 
-test_%:
-	cd ../.. && arch -$* $(VENV_DIR)/bin/python3 -m pytest
+test:
+	cd ../.. && $(SET_ARCH) $(VENV_DIR)/bin/python3 -m pytest
 
-binary_%: test_%
-	cp ./kathara.spec ../../src/
-	sed -i '' -e "s:__ARCH__:$*:g" ../../src/kathara.spec
-	cd ../../src && arch -$* $(VENV_DIR)/bin/python3 -m PyInstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
+binary_%: test
+	cp ../common/* ../../src/
+	cd ../../src && $(SET_ARCH) $(VENV_DIR)/bin/pyinstaller --distpath=./kathara.dist --workpath=./kathara.build kathara.spec
 
 copyBuildDirectory_%: binary_% manpages
 	[ -d $(TARGET_DIRECTORY) ] || mkdir $(TARGET_DIRECTORY)
@@ -98,13 +84,16 @@ copyBuildDirectory_%: binary_% manpages
 
 	chmod -R 755 $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)
 
-	cp -r ../../src/kathara.dist/kathara/_internal $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/_internal
+	cp -a ../../src/kathara.dist/kathara/_internal $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/_internal
 	find $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/_internal -type f -exec chmod 644 {} \;
 	cp -a ../../src/kathara.dist/kathara/kathara $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/
 	cp -a $(ROFF_DIR)/. $(TARGET_DIRECTORY)/darwinpkg/usr/local/share/man/
 
 	chmod -R 755 $(TARGET_DIRECTORY)/darwinpkg/usr/local/share/man/*
 	chmod 644 $(TARGET_DIRECTORY)/darwinpkg/usr/local/share/man/*/*
+
+	mkdir -p $(TARGET_DIRECTORY)/package
+	chmod -R 755 $(TARGET_DIRECTORY)/package
 
 	cp ../../LICENSE $(TARGET_DIRECTORY)/Resources/
 
@@ -114,25 +103,38 @@ copyBuildDirectory_%: binary_% manpages
 	installed_man_pages=$$(echo $$installed_man_pages | sed -e "s:\n::g"); \
 	sed -i '' -e "s:__MANPAGES__:$$installed_man_pages:g" $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT)/uninstall.sh
 
+
 createInstaller_%: copyBuildDirectory_%
 	chmod +x darwin/scripts/*
-	rm -rf /tmp/kathara && mkdir -p /tmp/kathara
 	pkgbuild --identifier org.kathara.kathara --version $(VERSION) --scripts darwin/scripts \
-		--root $(TARGET_DIRECTORY)/darwinpkg /tmp/kathara/$(PRODUCT).pkg > /dev/null 2>&1
+	--root $(TARGET_DIRECTORY)/darwinpkg $(TARGET_DIRECTORY)/package/$(PRODUCT).pkg > /dev/null 2>&1
+	
+	productbuild --distribution darwin/Distribution --resources $(TARGET_DIRECTORY)/Kathara \
+	--package-path $(TARGET_DIRECTORY)/package $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION).pkg > /dev/null 2>&1
 
-	productbuild --distribution darwin/Distribution --resources $(TARGET_DIRECTORY)/Resources \
-		--package-path /tmp/kathara /tmp/kathara/$(PRODUCT)-macos-installer-$*-$(VERSION).pkg > /dev/null 2>&1
-	cp /tmp/kathara/$(PRODUCT)-macos-installer-$*-$(VERSION).pkg $(TARGET_DIRECTORY)/
-	rm -rf /tmp/kathara
+
+# Signs every Mach-O file (executable, .dylib, .so) with hardened runtime, as required by notarization
+signBinaries_%: copyBuildDirectory_%
+	find $(TARGET_DIRECTORY)/darwinpkg/Library/$(PRODUCT) -type f | while read -r f; do \
+		if file -b "$$f" | grep -q Mach-O; then \
+			codesign --force --options runtime --timestamp --keychain "$(APPLE_KEYCHAIN)" \
+			--sign "Developer ID Application: $(APPLE_DEVELOPER_CERTIFICATE_ID)" "$$f" || exit 1; \
+		fi; \
+	done
 
 signProduct_%:
-	rm -rf /tmp/kathara && mkdir -p /tmp/kathara
-	productsign --sign "Developer ID Installer: $(APPLE_DEVELOPER_CERTIFICATE_ID)" $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION).pkg \
-		/tmp/kathara/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg
-	cp /tmp/kathara/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg $(TARGET_DIRECTORY)/
-	rm -rf /tmp/kathara
+	productsign --timestamp --keychain "$(APPLE_KEYCHAIN)" --sign "Developer ID Installer: $(APPLE_DEVELOPER_CERTIFICATE_ID)" \
+	$(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION).pkg \
+	$(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg
 
 	pkgutil --check-signature $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg
+
+notarize_%:
+	xcrun notarytool submit $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg \
+	--keychain "$(APPLE_KEYCHAIN)" --keychain-profile "$(APPLE_NOTARY_PROFILE)" --wait
+	xcrun stapler staple $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg
+
+	spctl --assess --type install -vv $(TARGET_DIRECTORY)/$(PRODUCT)-macos-installer-$*-$(VERSION)-signed.pkg
 
 clean: cleanbinary cleanman cleanenv
 	if [ -d $(TARGET_DIRECTORY)/Resources ]; then \
@@ -140,6 +142,9 @@ clean: cleanbinary cleanman cleanenv
 	fi
 	if [ -d $(TARGET_DIRECTORY)/darwinpkg ]; then \
 		rm -Rf $(TARGET_DIRECTORY)/darwinpkg; \
+	fi
+	if [ -d $(TARGET_DIRECTORY)/package ]; then \
+		rm -Rf $(TARGET_DIRECTORY)/package; \
 	fi
 
 cleanall: cleanbinary cleanman cleanenv

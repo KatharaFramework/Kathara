@@ -7,5 +7,6 @@ if [ $(getent group docker) ]; then
 fi
 
 chmod g+s /usr/lib/kathara/kathara
+chgrp --reference=/usr/lib/kathara/kathara /usr/lib/kathara/_internal
 
 #DEBHELPER#
