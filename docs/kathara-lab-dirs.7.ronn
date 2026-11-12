@@ -12,8 +12,11 @@ A generic network scenario directory `lab-path` should have the following struct
 * `lab-path/lab.dep`:
 	See `kathara-lab.dep`(5)
 
+* `lab-path/lab.link`:
+	See `kathara-lab.link`(5)
+
 * `lab-path/lab.ext`:
-	See `kathara-lab.ext`(5)
+	Deprecated, see `kathara-lab.ext`(5)
 
 * `lab-path/device/`:
 	Each subdirectory inside `lab-path` represents a device to be started, whose name will be the same as the one of the subdirectory.

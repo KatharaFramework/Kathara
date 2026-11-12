@@ -11,14 +11,13 @@ from requests.exceptions import ConnectionError as RequestsConnectionError
 from .DockerImage import DockerImage
 from .DockerLink import DockerLink
 from .DockerMachine import DockerMachine
-from .DockerPlugin import DockerPlugin
 from .exec_stream.DockerExecStream import DockerExecStream
 from .stats.DockerLinkStats import DockerLinkStats
 from .stats.DockerMachineStats import DockerMachineStats
 from ... import utils
 from ...decorators import privileged
 from ...exceptions import DockerDaemonConnectionError, LinkNotFoundError, MachineCollisionDomainError, \
-    InvocationError, LabNotFoundError, MachineNotRunningError
+    InvocationError, LabNotFoundError, MachineNotRunningError, NotSupportedError
 from ...exceptions import MachineNotFoundError
 from ...foundation.manager.IManager import IManager
 from ...model.Lab import Lab
@@ -72,13 +71,10 @@ class DockerManager(IManager):
         except DockerException as e:
             raise DockerDaemonConnectionError(str(e))
 
-        docker_plugin = DockerPlugin(self.client)
-        docker_plugin.check_and_download_plugin()
-
         self.docker_image: DockerImage = DockerImage(self.client)
 
         self.docker_machine: DockerMachine = DockerMachine(self.client, self.docker_image)
-        self.docker_link: DockerLink = DockerLink(self.client, docker_plugin)
+        self.docker_link: DockerLink = DockerLink(self.client)
 
     @privileged
     def deploy_machine(self, machine: Machine) -> None:
@@ -94,11 +90,15 @@ class DockerManager(IManager):
             LabNotFoundError: If the specified device is not associated to any network scenario.
             PrivilegeError: If the user start the device in privileged mode without having root privileges.
             NonSequentialMachineInterfaceError: If there is a missing interface number in any device of the lab.
+            LinkInvalidError: If a collision domain of the device does not satisfy the constraints of its type.
         """
         if not machine.lab:
             raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
 
         machine.check()
+        for interface in machine.interfaces.values():
+            # Endpoints can be connected later, do not require them to be exactly two yet
+            interface.link.check(strict=False)
 
         self.docker_link.deploy_links(machine.lab, selected_links={x.link.name for x in machine.interfaces.values()})
         self.docker_machine.deploy_machines(machine.lab, selected_machines={machine.name})
@@ -115,9 +115,13 @@ class DockerManager(IManager):
 
         Raises:
             LabNotFoundError: If the collision domain is not associated to any network scenario.
+            LinkInvalidError: If the collision domain is point-to-point and does not satisfy its constraints.
         """
         if not link.lab:
             raise LabNotFoundError("Collision domain `%s` is not associated to a network scenario." % link.name)
+
+        # Endpoints can be connected later, do not require them to be exactly two yet
+        link.check(strict=False)
 
         self.docker_link.deploy_links(link.lab, selected_links={link.name})
 
@@ -190,10 +194,11 @@ class DockerManager(IManager):
             LabNotFoundError: If the device specified is not associated to any network scenario.
             MachineNotRunningError: If the specified device is not running.
             LabNotFoundError: If the collision domain is not associated to any network scenario.
-            MachineCollisionDomainConflictError: If the device is already connected to the collision domain.
+            MachineCollisionDomainError: If the device is already connected to the collision domain.
+            NotSupportedError: If the collision domain is point-to-point.
         """
         if not machine.lab:
-            raise LabNotFoundError("Device `%s` is not associated to a network scenario." % machine.name)
+            raise LabNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
 
         if not machine.api_object:
             raise MachineNotRunningError(machine.name)
@@ -208,6 +213,12 @@ class DockerManager(IManager):
         if machine.name in link.machines:
             raise MachineCollisionDomainError(
                 f"Device `{machine.name}` is already connected to collision domain `{link.name}`."
+            )
+
+        if link.is_p2p():
+            # p2p cannot be added at runtime
+            raise NotSupportedError(
+                f"Cannot connect device `{machine.name}` to point-to-point collision domain `{link.name}` at runtime."
             )
 
         iface_number = None
@@ -240,7 +251,8 @@ class DockerManager(IManager):
             LabNotFoundError: If the device specified is not associated to any network scenario.
             MachineNotRunningError: If the specified device is not running.
             LabNotFoundError: If the collision domain is not associated to any network scenario.
-            MachineCollisionDomainConflictError: If the device is not connected to the collision domain.
+            MachineCollisionDomainError: If the device is not connected to the collision domain.
+            NotSupportedError: If the collision domain is point-to-point.
         """
         if not machine.lab:
             raise LabNotFoundError(f"Device `{machine.name}` is not associated to a network scenario.")
@@ -258,6 +270,13 @@ class DockerManager(IManager):
         if machine.name not in link.machines:
             raise MachineCollisionDomainError(
                 f"Device `{machine.name}` is not connected to collision domain `{link.name}`."
+            )
+
+        if link.is_p2p():
+            # p2p cannot be removed at runtime
+            raise NotSupportedError(
+                f"Cannot disconnect device `{machine.name}` from "
+                f"point-to-point collision domain `{link.name}` at runtime."
             )
 
         machine.remove_interface(link)
@@ -706,6 +725,18 @@ class DockerManager(IManager):
                 all_users=Setting.get_instance().shared_cds == SharedCollisionDomainsOption.USERS
             ))
         )
+        if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
+            for network in lab_networks.values():
+                network.reload()
+
+                link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
+                link.api_object = network
+                link.add_meta('type', network.attrs["Labels"].get("type") or None)
+                driver_opts = network.attrs.get("Options") or {}
+                if 'kathara.ageing_time' in driver_opts:
+                    link.add_meta('ageing_time', driver_opts['kathara.ageing_time'])
+                if 'kathara.group_fwd_mask' in driver_opts:
+                    link.add_meta('group_fwd_mask', driver_opts['kathara.group_fwd_mask'])
 
         for container in lab_containers:
             container.reload()
@@ -752,6 +783,12 @@ class DockerManager(IManager):
                     network = lab_networks[network_name]
                     link = reconstructed_lab.get_or_new_link(network.attrs["Labels"]["name"])
                     link.api_object = network
+                    link.add_meta('type', network.attrs["Labels"].get("type") or None)
+                    driver_opts = network.attrs.get("Options") or {}
+                    if 'kathara.ageing_time' in driver_opts:
+                        link.add_meta('ageing_time', driver_opts['kathara.ageing_time'])
+                    if 'kathara.group_fwd_mask' in driver_opts:
+                        link.add_meta('group_fwd_mask', driver_opts['kathara.group_fwd_mask'])
                     iface_number = int(network_options["DriverOpts"]["kathara.iface"])
 
                     iface_mac_addr = None
@@ -782,8 +819,20 @@ class DockerManager(IManager):
                 all_users=Setting.get_instance().shared_cds == SharedCollisionDomainsOption.USERS
             ))
         )
-        for network in deployed_networks.values():
-            network.reload()
+        if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
+            for network in deployed_networks.values():
+                network.reload()
+
+                link = lab.get_or_new_link(network.attrs["Labels"]["name"])
+                link.api_object = network
+                # Do not override the metas declared in the network scenario
+                if link.meta['type'] is None:
+                    link.add_meta('type', network.attrs["Labels"].get("type") or None)
+                driver_opts = network.attrs.get("Options") or {}
+                if 'ageing_time' not in link.meta and 'kathara.ageing_time' in driver_opts:
+                    link.add_meta('ageing_time', driver_opts['kathara.ageing_time'])
+                if 'group_fwd_mask' not in link.meta and 'kathara.group_fwd_mask' in driver_opts:
+                    link.add_meta('group_fwd_mask', driver_opts['kathara.group_fwd_mask'])
 
         deployed_networks_by_link_name = dict(
             map(lambda x: (x.attrs["Labels"]["name"], x), deployed_networks.values())
@@ -823,6 +872,15 @@ class DockerManager(IManager):
             current_ifaces = dict([(x[0].name, x[1]) for x in current_ifaces])
             for link in dynamic_links:
                 link.api_object = deployed_networks_by_link_name[link.name]
+                # Do not override the metas declared in the network scenario
+                if link.meta['type'] is None:
+                    link.add_meta('type', link.api_object.attrs["Labels"].get("type") or None)
+                driver_opts = link.api_object.attrs.get("Options") or {}
+                if 'ageing_time' not in link.meta and 'kathara.ageing_time' in driver_opts:
+                    link.add_meta('ageing_time', driver_opts['kathara.ageing_time'])
+                if 'group_fwd_mask' not in link.meta and 'kathara.group_fwd_mask' in driver_opts:
+                    link.add_meta('group_fwd_mask', driver_opts['kathara.group_fwd_mask'])
+
                 iface_options = current_ifaces[link.name]
                 iface_mac_addr = None
                 iface_number = int(iface_options["DriverOpts"]["kathara.iface"])
