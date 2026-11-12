@@ -111,11 +111,12 @@ SHUTDOWN_COMMANDS = [
 
 class DockerMachine(object):
     """The class responsible for deploying Kathara devices as Docker container and interact with them."""
-    __slots__ = ['client', '_engine_version', 'docker_image']
+    __slots__ = ['_engine_version', 'client', 'docker_image']
 
     def __init__(self, client: DockerClient, docker_image: DockerImage) -> None:
-        self.client: DockerClient = client
         self._engine_version: str = parse_docker_engine_version(client.version()['Version'])
+
+        self.client: DockerClient = client
         self.docker_image: DockerImage = docker_image
 
     def deploy_machines(self, lab: Lab, selected_machines: Set[str] = None, excluded_machines: Set[str] = None) -> None:
@@ -511,6 +512,13 @@ class DockerMachine(object):
         try:
             machine.api_object.start()
         except APIError as e:
+            # The container was created but never started: remove it, so that a failed start does not leave a
+            # device in the `Created` state behind.
+            try:
+                machine.api_object.remove(force=True)
+            except APIError as remove_error:
+                logging.debug(f"Cannot remove device `{machine.name}` after a failed start: {remove_error}")
+
             if e.response.status_code == 500 and e.explanation.startswith('Mounts denied'):
                 raise MountDeniedError("Host drive is not shared with Docker.")
             elif e.response.status_code == 500 and \
