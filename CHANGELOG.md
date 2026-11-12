@@ -2,6 +2,22 @@
 
 All notable changes to Kathará are documented in this file.
 
+## [3.9.0] - 2026-11-12
+
+### Added
+- Add `lab.link` file, it allows to define the type of each collision domain (bridge, hub, point-to-point), with extra parameters, and to connect it to external networks (#402)
+- Add the possibility to specify a scenario name in `connect`, `exec`, `linfo` and `lclean` through `--lab-name` (#398)
+- (Docker) Add support for point-to-point collision domains through a new network plugin that uses veth pairs (#402)
+
+### Changed
+- (Docker) Remove devices that fail to start (#399)
+
+### Deprecated
+- `lab.ext` is deprecated in favor of `lab.link`
+
+### Fixed
+- Minor fixes (#390, #389)
+
 ## [3.8.4] - 2026-10-15
 
 ### Added
