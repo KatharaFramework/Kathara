@@ -25,8 +25,10 @@ By default, stops all the devices of the network scenario. If a list of <DEVICE_
 * `--lab-name` <LAB_NAME>:
     Specify the name of the network scenario containing the specified device.
 
-    Only for network scenarios created by name, e.g., through the Kathara Python APIs.
-    For those started with `kathara-lstart`(1), use `-d` or `--directory`.
+    Only works for a network scenario started with a name, i.e., one that declares `LAB_NAME` in `kathara-lab.conf`(5) or that was started through the Kathara Python APIs.
+    Otherwise, the network scenario is identified by its path, and must be selected with `-d` or `--directory`.
+
+    Settings in the `kathara.conf`(5) file of the network scenario directory are not loaded. If it changes `manager_type` or `remote_url`, the network scenario cannot be found by name.
 
     This option cannot be used in conjunction with `-d` or `--directory`.
 
