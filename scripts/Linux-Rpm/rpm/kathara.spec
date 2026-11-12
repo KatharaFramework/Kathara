@@ -58,6 +58,8 @@ chmod g+s %{_libdir}/kathara/kathara
 
 %changelog
 *  __DATE__ Kathara Team <******@kathara.org> - __VERSION__-__PACKAGE_VERSION__
-- Add possibility to keep collision domains when undeploying a network scenario
-- Fix tmux DeprecatedError
+- Add `lab.link` file, it allows to define the type of each collision domain (bridge, hub, point-to-point), with extra parameters, and to connect it to external networks. It replaces the (now) deprecated `lab.ext`
+- Add the possibility to specify a scenario name in `connect`, `exec`, `linfo` and `lclean` through `--lab-name`
+- (Docker) Add support for point-to-point collision domains through a new network plugin that uses veth pairs
+- (Docker) Remove devices that fail to start
 - Minor fixes
