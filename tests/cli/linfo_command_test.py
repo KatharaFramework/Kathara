@@ -121,6 +121,14 @@ def test_run_with_conf_and_name(mock_parse_lab, mock_get_conf_info, test_lab):
     mock_get_conf_info.assert_called_once_with(test_lab, machine_name='pc1')
 
 
+@mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
+def test_run_with_conf_and_unknown_name(mock_parse_lab, test_lab, capsys):
+    mock_parse_lab.return_value = test_lab
+    command = LinfoCommand()
+    assert command.run('.', ['-c', '-n', 'ghost']) == 0
+    assert "Device `ghost` Not Found." in capsys.readouterr().out
+
+
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")

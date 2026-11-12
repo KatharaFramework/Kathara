@@ -1,5 +1,5 @@
 import argparse
-from typing import List
+from typing import List, Optional
 
 from rich.live import Live
 
@@ -169,14 +169,13 @@ class LinfoCommand(Command):
 
                 live.update(table)
 
-    def _get_conf_info(self, lab: Lab, machine_name: str = None) -> None:
+    def _get_conf_info(self, lab: Lab, machine_name: Optional[str] = None) -> None:
         if machine_name:
-            self.console.print(
-                create_panel(
-                    str(lab.machines[machine_name]),
-                    title=f"{machine_name} Information"
-                )
-            )
+            machine = lab.machines.get(machine_name)
+            message = str(machine) if machine else f"Device `{machine_name}` Not Found."
+            style = None if machine else "red bold"
+
+            self.console.print(create_panel(message, title=f"{machine_name} Information", style=style))
             return
 
         lab_meta_information = str(lab)
