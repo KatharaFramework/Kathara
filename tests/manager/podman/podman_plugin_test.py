@@ -144,3 +144,32 @@ def test_check_and_download_plugin_rejects_remote_connections_first(mock_setting
         with pytest.raises(PodmanPluginError, match="remote Podman connection"):
             PodmanPlugin().check_and_download_plugin()
     mock_vm_default.assert_not_called()
+
+@mock.patch("src.Kathara.manager.podman.PodmanPlugin.get_runtime_dir", return_value="/run/user/1000")
+@mock.patch("src.Kathara.manager.podman.PodmanPlugin.subprocess.run")
+@mock.patch("src.Kathara.manager.podman.PodmanPlugin.shutil.which", return_value="/usr/bin/systemctl")
+def test_restart_podman_service_runs_as_the_real_user(mock_which, mock_run, mock_runtime_dir):
+    # With the setuid binary uid != euid, and systemd drops the session environment: systemctl must run
+    # entirely as the real user, with the session variables passed explicitly.
+    mock_run.return_value = mock.Mock(returncode=0, stderr="")
+
+    with mock.patch("src.Kathara.manager.podman.PodmanPlugin.os.getuid", return_value=1000), \
+            mock.patch("src.Kathara.manager.podman.PodmanPlugin.os.getgid", return_value=1000):
+        PodmanPlugin._restart_podman_service()
+
+    args, kwargs = mock_run.call_args
+    assert args[0] == ["/usr/bin/systemctl", "--user", "try-restart", "podman.service"]
+    assert kwargs["user"] == 1000
+    assert kwargs["group"] == 1000
+    assert kwargs["env"]["XDG_RUNTIME_DIR"] == "/run/user/1000"
+    assert kwargs["env"]["DBUS_SESSION_BUS_ADDRESS"] == "unix:path=/run/user/1000/bus"
+
+
+@mock.patch("src.Kathara.manager.podman.PodmanPlugin.get_runtime_dir", return_value="/run/user/1000")
+@mock.patch("src.Kathara.manager.podman.PodmanPlugin.subprocess.run")
+@mock.patch("src.Kathara.manager.podman.PodmanPlugin.shutil.which", return_value="/usr/bin/systemctl")
+def test_restart_podman_service_failure_raises(mock_which, mock_run, mock_runtime_dir):
+    mock_run.return_value = mock.Mock(returncode=1, stderr="Failed to connect to user scope bus")
+
+    with pytest.raises(PodmanPluginError, match="Failed to connect to user scope bus"):
+        PodmanPlugin._restart_podman_service()

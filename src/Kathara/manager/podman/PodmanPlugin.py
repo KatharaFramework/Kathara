@@ -9,6 +9,7 @@ import tarfile
 import tempfile
 from typing import Optional
 import subprocess
+from podman.client import get_runtime_dir
 
 from .PodmanVM import PodmanVM
 from ... import utils
@@ -273,9 +274,20 @@ class PodmanPlugin(object):
                 "Restart the Podman API service manually and run Kathara again."
             )
 
+        uid, gid = os.getuid(), os.getgid()
+        runtime_dir = get_runtime_dir()
+        env = {
+            **os.environ,
+            "XDG_RUNTIME_DIR": runtime_dir,
+            "DBUS_SESSION_BUS_ADDRESS": f"unix:path={runtime_dir}/bus",
+        }
+
         logging.debug("Restarting the Podman API service...")
+        # systemd ignores the session environment in a setuid context (uid != euid):
+        # run systemctl entirely as the real user, who owns the user service manager.
         result = subprocess.run([systemctl, "--user", "try-restart", "podman.service"],
-                                capture_output=True, text=True, timeout=30)
+                                capture_output=True, text=True, timeout=30,
+                                user=uid, group=gid, env=env)
         if result.returncode != 0:
             raise PodmanPluginError(
                 f"Cannot restart the Podman service to load the Kathara network plugin: {result.stderr.strip()}"
