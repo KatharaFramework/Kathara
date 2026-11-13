@@ -13,7 +13,7 @@ import chardet
 import podman.domain.containers
 import podman.domain.networks
 from podman import PodmanClient
-from podman.errors import APIError
+from podman.errors import APIError, NotFound
 
 from .interfaces import IFACE_ALIAS_PREFIX, build_iface_alias, parse_iface_alias  # noqa: F401
 from .libpod_compat import LibpodCompat
@@ -41,6 +41,10 @@ OCI_RUNTIME_RE = re.compile(
 
 # Per-interface sysctls (`net.ipv{4,6}.{conf,neigh}.ethN.*`): group 2 is the interface name.
 IFACE_SYSCTL_RE = re.compile(r"net\.ipv[46]\.(conf|neigh)\.(eth\d+)\.")
+
+# Ubuntu 26.04: the AppArmor profile of pasta rejects SIGTERM from Podman when the shared rootless
+# network namespace is torn down. Podman reports this error, but the namespace is cleaned up anyway.
+ROOTLESS_NETNS_KILL_ERROR = "rootless netns: kill network process: permission denied"
 
 def get_container_ifaces(container: podman.domain.containers.Container,
                          networks_by_name: Dict[str, podman.domain.networks.Network]) -> Dict[str, Dict[str, Any]]:
@@ -1180,7 +1184,7 @@ class PodmanMachine(object):
                                 f"Shutdown commands will not be executed."
                                 )
 
-        container.remove(v=True, force=True)
+        self._remove_container(container)
     
     @staticmethod 
     def _translate_start_error(machine: Machine, error: APIError) -> Exception:
@@ -1203,3 +1207,28 @@ class PodmanMachine(object):
             return MachineOptionError(f"Cannot publish a port of device `{machine.name}`: {explanation}")
 
         return error
+    
+    @staticmethod
+    def _remove_container(container: podman.domain.containers.Container) -> None:
+        """Force-remove a Podman container, tolerating the pasta AppArmor denial on some distributions.
+
+        Args:
+            container (podman.domain.containers.Container): The Podman container to remove.
+
+        Returns:
+            None
+
+        Raises:
+            APIError: If the Podman APIs return any other error.
+        """
+        try:
+            container.remove(v=True, force=True)
+        except APIError as e:
+            if ROOTLESS_NETNS_KILL_ERROR not in str(e):
+                raise
+            logging.warning("Podman could not stop its rootless network process (a known AppArmor issue "
+                            "on some distributions): the device is removed anyway.")
+            try:
+                container.remove(v=True, force=True)
+            except NotFound:
+                pass

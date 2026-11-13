@@ -482,3 +482,22 @@ def test_start_failure_remove_error_keeps_original_error(podman_machine, default
         podman_machine.start(default_device)
 
     assert excinfo.value.explanation == "some other libpod failure"
+    
+def test_remove_container_tolerates_the_pasta_apparmor_denial():
+    container = mock.Mock()
+    container.remove.side_effect = [
+        APIError("removing container network: rootless netns: kill network process: permission denied"),
+        None,
+    ]
+
+    PodmanMachine._remove_container(container)
+
+    assert container.remove.call_count == 2
+
+
+def test_remove_container_raises_other_api_errors():
+    container = mock.Mock()
+    container.remove.side_effect = APIError("something else")
+
+    with pytest.raises(APIError, match="something else"):
+        PodmanMachine._remove_container(container)
