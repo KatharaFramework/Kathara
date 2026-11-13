@@ -23,7 +23,6 @@ from .exec_stream.PodmanExecStream import PodmanExecStream
 from .stats.PodmanLinkStats import PodmanLinkStats
 from .stats.PodmanMachineStats import PodmanMachineStats
 from ... import utils
-from ...decorators import privileged
 from ...exceptions import ContainerEngineConnectionError, LinkNotFoundError, MachineCollisionDomainError, \
     InvocationError, LabNotFoundError, MachineNotRunningError, NotSupportedError
 from ...exceptions import MachineNotFoundError
@@ -65,7 +64,6 @@ def default_podman_socket() -> str:
 def check_podman_status(method):
     """Decorator function to check if the Podman service is running properly."""
 
-    @privileged
     def check_podman(*args, **kw):
         # Call the constructor first
         method(*args, **kw)
@@ -109,7 +107,6 @@ class PodmanManager(IManager):
         self.podman_machine: PodmanMachine = PodmanMachine(self.client, self.podman_image)
         self.podman_link: PodmanLink = PodmanLink(self.client)
 
-    @privileged
     def deploy_machine(self, machine: Machine) -> None:
         """Deploy a Kathara device.
 
@@ -137,7 +134,6 @@ class PodmanManager(IManager):
         self.podman_link.deploy_links(machine.lab, selected_links={x.link.name for x in machine.interfaces.values()})
         self.podman_machine.deploy_machines(machine.lab, selected_machines={machine.name})
 
-    @privileged
     def deploy_link(self, link: Link) -> None:
         """Deploy a Kathara collision domain.
 
@@ -155,7 +151,6 @@ class PodmanManager(IManager):
 
         self.podman_link.deploy_links(link.lab, selected_links={link.name})
 
-    @privileged
     def deploy_lab(self, lab: Lab, selected_machines: Optional[Set[str]] = None,
                    excluded_machines: Optional[Set[str]] = None) -> None:
         """Deploy a Kathara network scenario.
@@ -219,7 +214,6 @@ class PodmanManager(IManager):
             lab, selected_machines=selected_machines, excluded_machines=excluded_machines
         )
 
-    @privileged
     def connect_machine_to_link(self, machine: Machine, link: Link, mac_address: Optional[str] = None) -> None:
         """Create a new interface on a running Kathara device and connect it to a collision domain.
 
@@ -269,7 +263,6 @@ class PodmanManager(IManager):
         self.deploy_link(link)
         self.podman_machine.connect_interface(machine, interface)
 
-    @privileged
     def disconnect_machine_from_link(self, machine: Machine, link: Link, keep_link: bool = False) -> None:
         """Disconnect a running Kathara device from a collision domain.
 
@@ -311,7 +304,6 @@ class PodmanManager(IManager):
         if not keep_link:
             self.undeploy_link(link)
 
-    @privileged
     def undeploy_machine(self, machine: Machine, keep_links: bool = False) -> None:
         """Undeploy a Kathara device.
 
@@ -334,7 +326,6 @@ class PodmanManager(IManager):
                 machine.lab.hash, selected_links={x.link.name for x in machine.interfaces.values()}
             )
 
-    @privileged
     def undeploy_link(self, link: Link) -> None:
         """Undeploy a Kathara collision domain.
 
@@ -352,7 +343,6 @@ class PodmanManager(IManager):
 
         self.podman_link.undeploy(link.lab.hash, selected_links={link.name})
 
-    @privileged
     def undeploy_lab(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
                      selected_machines: Optional[Set[str]] = None,
                      excluded_machines: Optional[Set[str]] = None,
@@ -390,7 +380,6 @@ class PodmanManager(IManager):
 
         self.podman_link.undeploy(lab_hash, selected_links=selected_links)
 
-    @privileged
     def wipe(self, all_users: bool = False) -> None:
         """Undeploy all the running network scenarios.
 
@@ -414,7 +403,6 @@ class PodmanManager(IManager):
         self.podman_machine.wipe(user=user_name)
         self.podman_link.wipe(user=user_name)
 
-    @privileged
     def connect_tty(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                     lab: Optional[Lab] = None, shell: str = None, logs: bool = False,
                     wait: Union[bool, Tuple[int, float]] = True) -> None:
@@ -481,7 +469,6 @@ class PodmanManager(IManager):
 
         self.connect_tty(machine.name, lab=machine.lab, shell=shell, logs=logs, wait=wait)
 
-    @privileged
     def exec(self, machine_name: str, command: Union[List[str], str], lab_hash: Optional[str] = None,
              lab_name: Optional[str] = None, lab: Optional[Lab] = None, wait: Union[bool, Tuple[int, float]] = False,
              stream: bool = True) -> Union[PodmanExecStream, Tuple[bytes, bytes, int]]:
@@ -552,7 +539,6 @@ class PodmanManager(IManager):
 
         return self.exec(machine.name, command, lab=machine.lab, wait=wait, stream=stream)
 
-    @privileged
     def copy_files(self, machine: Machine, guest_to_host: Dict[str, Union[str, io.IOBase]]) -> None:
         """Copy files on a running device in the specified paths.
 
@@ -571,7 +557,6 @@ class PodmanManager(IManager):
                                        tar_data=tar_data
                                        )
 
-    @privileged
     def retrieve_files(self, machine: Machine, src: str, dst: str) -> None:
         """Copy files from a running device path to the host.
 
@@ -585,7 +570,6 @@ class PodmanManager(IManager):
         """
         self.podman_machine.retrieve_files(machine.api_object, src, dst)
 
-    @privileged
     def get_machine_api_object(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                                lab: Optional[Lab] = None, all_users: bool = False) \
             -> podman.domain.containers.Container:
@@ -623,7 +607,6 @@ class PodmanManager(IManager):
 
         raise MachineNotFoundError(f"Device `{machine_name}` not found.")
 
-    @privileged
     def get_machines_api_objects(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                                  lab: Optional[Lab] = None, all_users: bool = False) \
             -> List[podman.domain.containers.Container]:
@@ -653,7 +636,6 @@ class PodmanManager(IManager):
         user_name = utils.get_current_user_name() if not all_users else None
         return self.podman_machine.get_machines_api_objects_by_filters(lab_hash=lab_hash, user=user_name)
 
-    @privileged
     def get_link_api_object(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                             lab: Optional[Lab] = None, all_users: bool = False) -> podman.domain.networks.Network:
         """Return the corresponding API object of a collision domain in a network scenario.
@@ -690,7 +672,6 @@ class PodmanManager(IManager):
 
         raise LinkNotFoundError(f"Collision Domain `{link_name}` not found.")
 
-    @privileged
     def get_links_api_objects(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                               lab: Optional[Lab] = None, all_users: bool = False) \
             -> List[podman.domain.networks.Network]:
@@ -720,7 +701,6 @@ class PodmanManager(IManager):
         user_name = utils.get_current_user_name() if not all_users else None
         return self.podman_link.get_links_api_objects_by_filters(lab_hash=lab_hash, user=user_name)
 
-    @privileged
     def get_lab_from_api(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None) -> Lab:
         """Return the network scenario (specified by the hash or name), building it from API objects.
 
@@ -798,7 +778,6 @@ class PodmanManager(IManager):
 
         return reconstructed_lab
 
-    @privileged
     def update_lab_from_api(self, lab: Lab) -> None:
         """Update the passed network scenario from API objects.
 
@@ -859,7 +838,6 @@ class PodmanManager(IManager):
             for link in deleted_links:
                 device.remove_interface(link)
 
-    @privileged
     def get_machines_stats(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                            lab: Optional[Lab] = None, machine_name: str = None, all_users: bool = False) \
             -> Generator[Dict[str, PodmanMachineStats], None, None]:
@@ -894,7 +872,6 @@ class PodmanManager(IManager):
         return self.podman_machine.get_machines_stats(lab_hash=lab_hash, machine_name=machine_name,
                                                        user=user_name)
 
-    @privileged
     def get_machine_stats(self, machine_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                           lab: Optional[Lab] = None, all_users: bool = False) \
             -> Generator[Optional[PodmanMachineStats], None, None]:
@@ -951,7 +928,6 @@ class PodmanManager(IManager):
 
         return self.get_machine_stats(machine.name, lab=machine.lab, all_users=all_users)
 
-    @privileged
     def get_links_stats(self, lab_hash: Optional[str] = None, lab_name: Optional[str] = None, lab: Optional[Lab] = None,
                         link_name: str = None, all_users: bool = False) \
             -> Generator[Dict[str, PodmanLinkStats], None, None]:
@@ -984,7 +960,6 @@ class PodmanManager(IManager):
         user_name = utils.get_current_user_name() if not all_users else None
         return self.podman_link.get_links_stats(lab_hash=lab_hash, link_name=link_name, user=user_name)
 
-    @privileged
     def get_link_stats(self, link_name: str, lab_hash: Optional[str] = None, lab_name: Optional[str] = None,
                        lab: Optional[Lab] = None, all_users: bool = False) \
             -> Generator[Optional[PodmanLinkStats], None, None]:
@@ -1043,7 +1018,6 @@ class PodmanManager(IManager):
 
         return self.get_link_stats(link.name, lab=link.lab, all_users=all_users)
 
-    @privileged
     def check_image(self, image_name: str) -> None:
         """Check if the specified image is valid.
 
@@ -1059,7 +1033,6 @@ class PodmanManager(IManager):
         """
         self.podman_image.check(image_name)
 
-    @privileged
     def get_release_version(self) -> str:
         """Return the current manager version.
 

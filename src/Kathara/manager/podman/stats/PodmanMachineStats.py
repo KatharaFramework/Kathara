@@ -3,7 +3,6 @@ from typing import Dict, Any, Generator, Optional
 from podman.domain.containers import Container
 from podman.errors import NotFound
 
-from ....decorators import privileged
 from ....foundation.manager.stats.IMachineStats import IMachineStats
 from ....utils import human_readable_bytes
 from ..interfaces import parse_iface_alias
@@ -53,7 +52,6 @@ class PodmanMachineStats(IMachineStats):
 
         self.update()
 
-    @privileged
     def update(self) -> None:
         """Update dynamic statistics with the current ones.
 

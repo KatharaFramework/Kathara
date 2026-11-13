@@ -22,7 +22,6 @@ from .exec_stream.PodmanExecStream import PodmanExecStream
 from .rootless import not_supported_in_rootless
 from .stats.PodmanMachineStats import PodmanMachineStats
 from ... import utils
-from ...decorators import privileged
 from ...event.EventDispatcher import EventDispatcher
 from ...exceptions import MachineAlreadyExistsError, MachineBinaryError, MachineNotRunningError, \
     InvocationError, MachineOptionError, MountDeniedError
@@ -1061,7 +1060,6 @@ class PodmanMachine(object):
             with tarfile.open(fileobj=temp_file, mode='r') as tar_file:
                 tar_file.extractall(path=dst)
 
-    @privileged
     def get_machines_api_objects_by_filters(self, lab_hash: str = None, machine_name: str = None, user: str = None) -> \
             List[podman.domain.containers.Container]:
         """Return the Podman containers objects specified by lab_hash and user.
@@ -1109,7 +1107,6 @@ class PodmanMachine(object):
 
         machines_stats = {}
 
-        @privileged
         def load_machine_stats(machine):
             if machine.name not in machines_stats:
                 machines_stats[machine.name] = PodmanMachineStats(machine)
