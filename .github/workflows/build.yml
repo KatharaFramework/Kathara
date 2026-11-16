@@ -20,11 +20,6 @@ on:
         required: false
         type: boolean
         default: false
-      rpm-signer-runs-on:
-        description: 'Runner that holds the RPM signing key'
-        required: false
-        type: string
-        default: self-hosted
       sign-macos:
         description: 'Sign and notarize the macOS installers (only true on the release path)'
         required: false
@@ -102,10 +97,11 @@ jobs:
         run: |
           cd scripts/Linux-Deb
           make docker-unsigned_${{ matrix.distro }} OS=${{ matrix.os }} VERSION="${{ inputs.version }}"
+      # archive: false uploads the bare file (no zip); the artifact is named after the file, so the glob must match exactly one.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
-          name: deb-${{ matrix.distro }}-${{ matrix.arch }}
           path: scripts/Linux-Deb/Output/*${{ matrix.arch }}.deb
+          archive: false
           if-no-files-found: warn
           retention-days: ${{ inputs.retention-days }}
 
@@ -138,67 +134,42 @@ jobs:
         run: |
           cd scripts/Linux-Rpm
           make docker-build_${{ matrix.release }} VERSION="${{ inputs.version }}"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
-        with:
-          name: rpm-fc${{ matrix.release }}-${{ matrix.arch }}
-          path: scripts/Linux-Rpm/Output/${{ matrix.arch }}/*.rpm
-          # A silently empty build would publish a yum repository with a missing releasever: on this path emptiness is an error.
-          if-no-files-found: error
-          retention-days: ${{ inputs.retention-days }}
-
-#================================================================================================
-# rpm-sign — the packages are signed HERE, on GitHub, before release.yml computes SHA256SUMS.
-# The GitHub release is therefore the single source of truth:
-# the GitLab pipeline only verifies, lays out and indexes what it downloads, and never has to modify a package (which would change its checksum).
-#
-# Runs only on the release path (sign-rpm: true), so pull request builds never touch the key.
-# Re-uploads each artifact under the same name with overwrite, so no unsigned copy survives to reach the release.
-#
-# Only the Kathara packages pass through here. The repository configuration
-# packages (kathara-archive-keyring, kathara-release) are built and signed by
-# the repository project itself, from its own conf/repo.conf: they carry that
-# site's URL, keys and layout, none of which this repository knows about.
-#================================================================================
-  rpm-sign:
-    name: sign-${{ matrix.artifact }}
-    needs: [rpm]
-    if: ${{ inputs.sign-rpm }}
-    runs-on: [self-hosted, linux]
-    strategy:
-      fail-fast: false
-      max-parallel: 1          # one signing key, one runs-on
-      matrix:
-        artifact:
-          - rpm-fc43-x86_64
-          - rpm-fc43-aarch64
-          - rpm-fc44-x86_64
-          - rpm-fc44-aarch64
-          - rpm-fc45-x86_64
-          - rpm-fc45-aarch64
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333   # v8.0.2
-        with:
-          name: ${{ matrix.artifact }}
-          path: rpms
-
+      # Signing — the packages are signed HERE, on GitHub, before release.yml computes SHA256SUMS.
+      # The GitHub release is therefore the single source of truth:
+      # the GitLab pipeline only verifies, lays out and indexes what it downloads, and never has to modify a package (which would change its checksum).
+      #
+      # Runs only on the release path (sign-rpm: true), so pull request builds never touch the key.
+      # Signs a COPY outside scripts/Linux-Rpm/Output: the cache keeps unsigned packages only,
+      # so no later pull request build can restore and upload a signed one.
+      # On this path only the signed copy is uploaded: no unsigned package can reach the release.
+      #
+      # Only the Kathara packages pass through here. The repository configuration
+      # packages (kathara-archive-keyring, kathara-release) are built and signed by
+      # the repository project itself, from its own conf/repo.conf: they carry that
+      # site's URL, keys and layout, none of which this repository knows about.
       - name: Sign and verify
+        if: ${{ inputs.sign-rpm }}
         shell: bash
         env:
           RPM_GPG_PRIVATE_KEY: ${{ secrets.RPM_GPG_PRIVATE_KEY }}
           RPM_GPG_PASSPHRASE: ${{ secrets.RPM_GPG_PASSPHRASE }}
+          SIGNED_DIR: ${{ runner.temp }}/rpm-signed
         run: |
+          set -euo pipefail
           command -v rpmsign >/dev/null 2>&1 || {
             sudo apt-get update -qq && sudo apt-get install -y -qq rpm
           }
-          make -C scripts/Linux-Rpm sign RPM_DIR="$GITHUB_WORKSPACE/rpms"
+          rm -rf "$SIGNED_DIR" && mkdir -p "$SIGNED_DIR"
+          cp scripts/Linux-Rpm/Output/${{ matrix.arch }}/*.rpm "$SIGNED_DIR"/
+          make -C scripts/Linux-Rpm sign RPM_DIR="$SIGNED_DIR"
 
+      # archive: false uploads the bare file (no zip); the artifact is named after the file, so the glob must match exactly one.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
-          name: ${{ matrix.artifact }}
-          path: rpms/*.rpm
+          path: ${{ inputs.sign-rpm && format('{0}/rpm-signed/*.rpm', runner.temp) || format('scripts/Linux-Rpm/Output/{0}/*.rpm', matrix.arch) }}
+          archive: false
+          # A silently empty build would publish a yum repository with a missing releasever: on this path emptiness is an error.
           if-no-files-found: error
-          overwrite: true
           retention-days: ${{ inputs.retention-days }}
 
 #================================================================================================
@@ -220,10 +191,11 @@ jobs:
         run: |
           cd scripts/Linux-Pkg
           make all VERSION="${{ inputs.version }}"
+      # archive: false uploads the bare file (no zip); the artifact is named after the file, so the glob must match exactly one.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
-          name: pkg-any
           path: scripts/Linux-Pkg/Output/*.pkg.tar.zst
+          archive: false
           if-no-files-found: warn
           retention-days: ${{ inputs.retention-days }}
 
@@ -250,10 +222,11 @@ jobs:
         run: |
           cd ./scripts/Windows/
           make all_${{ matrix.arch }} VERSION="${{ inputs.version }}"
+      # archive: false uploads the bare file (no zip); the artifact is named after the file, so the glob must match exactly one.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
-          name: windows-${{ matrix.arch }}
           path: scripts/Windows/Output/*.exe
+          archive: false
           if-no-files-found: warn
           retention-days: ${{ inputs.retention-days }}
 
@@ -304,9 +277,10 @@ jobs:
 
           make allSigned_${{ matrix.target }} SET_ARCH='${{ matrix.set_arch }}' VERSION="${{ inputs.version }}" \
             APPLE_KEYCHAIN="$KC" APPLE_DEVELOPER_CERTIFICATE_ID="$APPLE_DEVELOPER_CERTIFICATE_ID"
+      # archive: false uploads the bare file (no zip); the artifact is named after the file, so the glob must match exactly one.
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a   #v7.0.1
         with:
-          name: macos-${{ matrix.arch }}
+          archive: false
           # Signed builds keep the intermediate unsigned .pkg next to the -signed one: publish only the latter.
           path: ${{ inputs.sign-macos && 'scripts/OSX/Output/*-signed.pkg' || 'scripts/OSX/Output/*.pkg' }}
           if-no-files-found: warn
