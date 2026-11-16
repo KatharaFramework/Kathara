@@ -1,5 +1,5 @@
 import argparse
-from typing import List
+from typing import List, Optional
 
 from rich.live import Live
 
@@ -32,10 +32,19 @@ class LinfoCommand(Command):
             help='Show a help message and exit.'
         )
 
-        self.parser.add_argument(
+        lab_group = self.parser.add_mutually_exclusive_group(required=False)
+
+        lab_group.add_argument(
             '-d', '--directory',
             required=False,
             help='Specify the folder containing the network scenario.'
+        )
+
+        lab_group.add_argument(
+            '--lab-name',
+            dest='lab_name',
+            metavar='LAB_NAME',
+            help='Name of the network scenario.'
         )
 
         group = self.parser.add_mutually_exclusive_group(required=False)
@@ -74,16 +83,22 @@ class LinfoCommand(Command):
         self.parse_args(argv)
         args = self.get_args()
 
-        lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
-        lab_path = utils.get_absolute_path(lab_path)
+        if args['lab_name'] and args['conf']:
+            self.parser.error("argument --lab-name: not allowed with argument -c/--conf")
 
-        # Load custom 'kathara.conf' if it exists
-        self._load_custom_configuration(lab_path)
+        if args['lab_name']:
+            lab = Lab(args['lab_name'])
+        else:
+            lab_path = args['directory'].replace('"', '').replace("'", '') if args['directory'] else current_path
+            lab_path = utils.get_absolute_path(lab_path)
 
-        try:
-            lab = LabParser.parse(lab_path)
-        except (Exception, IOError):
-            lab = Lab(None, path=lab_path)
+            # Load custom 'kathara.conf' if it exists
+            self._load_custom_configuration(lab_path)
+
+            try:
+                lab = LabParser.parse(lab_path)
+            except (Exception, IOError):
+                lab = Lab(None, path=lab_path)
 
         if args['watch']:
             if args['name']:
@@ -154,14 +169,13 @@ class LinfoCommand(Command):
 
                 live.update(table)
 
-    def _get_conf_info(self, lab: Lab, machine_name: str = None) -> None:
+    def _get_conf_info(self, lab: Lab, machine_name: Optional[str] = None) -> None:
         if machine_name:
-            self.console.print(
-                create_panel(
-                    str(lab.machines[machine_name]),
-                    title=f"{machine_name} Information"
-                )
-            )
+            machine = lab.machines.get(machine_name)
+            message = str(machine) if machine else f"Device `{machine_name}` Not Found."
+            style = None if machine else "red bold"
+
+            self.console.print(create_panel(message, title=f"{machine_name} Information", style=style))
             return
 
         lab_meta_information = str(lab)

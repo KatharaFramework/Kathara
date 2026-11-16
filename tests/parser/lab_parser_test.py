@@ -2,9 +2,12 @@ import sys
 
 import pytest
 
+sys.path.insert(0, './')
+
 from src.Kathara.exceptions import InterfaceMacAddressError
 from src.Kathara.exceptions import MachineCollisionDomainError
 from src.Kathara.parser.netkit.LabParser import LabParser
+
 
 def test_one_device():
     lab = LabParser.parse("tests/parser/labconf/one_device")
@@ -26,11 +29,15 @@ def test_one_device():
 
 def test_one_device_lab_description():
     lab = LabParser.parse("tests/parser/labconf/one_device_lab_description")
+    assert lab.name == "test"
     assert lab.description == "Description"
     assert lab.version == "1.0"
     assert lab.author == "Author"
     assert lab.email == "test@email.org"
     assert lab.web == "https://www.lab-test.org/"
+
+    assert lab.machines['pc1']
+    assert len(lab.machines['pc1'].interfaces) == 2
 
 
 def test_one_device_interface_name_error():
@@ -102,3 +109,11 @@ def test_mac_address_error():
 def test_mac_address_parse_error():
     with pytest.raises(SyntaxError):
         LabParser.parse("tests/parser/labconf/mac_address_parse_error")
+
+
+def test_device_uppercase():
+    with pytest.raises(
+            SyntaxError,
+            match="Device names must contain 1 to 30 lowercase letters, digits, or underscores."
+    ):
+        LabParser.parse("tests/parser/labconf/device_uppercase")

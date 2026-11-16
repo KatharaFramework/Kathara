@@ -13,22 +13,22 @@ from .DockerPlugin import DockerPlugin
 from .stats.DockerLinkStats import DockerLinkStats
 from ... import utils
 from ...event.EventDispatcher import EventDispatcher
-from ...exceptions import PrivilegeError, InvocationError
+from ...exceptions import PrivilegeError, InvocationError, LinkInvalidError
 from ...model.ExternalLink import ExternalLink
 from ...model.Lab import Lab
 from ...model.Link import BRIDGE_LINK_NAME, Link
 from ...os.Networking import Networking
 from ...setting.Setting import Setting
-from ...types import SharedCollisionDomainsOption
+from ...types import SharedCollisionDomainsOption, CollisionDomainTypesOption
 
 
 class DockerLink(object):
     """The class responsible for deploying Kathara collision domains as Docker networks and interact with them."""
     __slots__ = ['client', 'docker_plugin']
 
-    def __init__(self, client: DockerClient, docker_plugin: DockerPlugin) -> None:
+    def __init__(self, client: DockerClient) -> None:
         self.client: DockerClient = client
-        self.docker_plugin: DockerPlugin = docker_plugin
+        self.docker_plugin: DockerPlugin = DockerPlugin(self.client)
 
     def deploy_links(self, lab: Lab, selected_links: Set[str] = None, excluded_links: Set[str] = None) -> None:
         """Deploy all the network scenario collision domains as Docker networks.
@@ -58,6 +58,11 @@ class DockerLink(object):
             }.items()
 
         if len(links) > 0:
+            link_plugins = set(
+                map(lambda x: self.docker_plugin.get_plugin_from_link_type(x[1].meta['type']), links)
+            )
+            self.docker_plugin.check_from_list(link_plugins)
+
             pool_size = utils.get_pool_size()
             items = utils.chunk_list(links, pool_size)
 
@@ -123,7 +128,25 @@ class DockerLink(object):
             link_name=link.name, lab_hash=filter_lab_hash, user=filter_user
         )
         if networks:
-            link.api_object = networks.pop()
+            network = networks.pop()
+            network_type = network.attrs["Labels"].get("type") or None
+            if link.meta['type'] != network_type:
+                raise LinkInvalidError(
+                    f"Collision domain `{link.name}` is already deployed with type `{network_type}`, "
+                    f"but `{link.meta['type']}` is required."
+                )
+
+            network_driver_opts = {
+                k: v for k, v in (network.attrs.get("Options") or {}).items() if k.startswith("kathara.")
+            }
+            driver_opts = self._link_driver_opts(link)
+            if driver_opts != network_driver_opts:
+                raise LinkInvalidError(
+                    f"Collision domain `{link.name}` is already deployed with options `{network_driver_opts}`, "
+                    f"but `{driver_opts}` are required."
+                )
+
+            link.api_object = network
         else:
             network_ipam_config = docker.types.IPAMConfig(driver='null')
 
@@ -134,22 +157,26 @@ class DockerLink(object):
             if Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
                 additional_labels["lab_hash"] = link.lab.hash
 
+            driver_opts = self._link_driver_opts(link)
+
             link.api_object = self.client.networks.create(
                 name=link_name,
-                driver=f"{Setting.get_instance().network_plugin}:{utils.get_architecture()}",
+                driver=self.docker_plugin.get_plugin_from_link_type(link.meta['type']),
                 check_duplicate=True,
                 ipam=network_ipam_config,
+                options=driver_opts or None,
                 labels={
                     "name": link.name,
                     "app": "kathara",
-                    "external": ";".join([x.get_full_name() for x in link.external]),
+                    "type": link.meta['type'] if link.meta['type'] is not None else "",
+                    "external": ";".join([x.get_full_name() for x in link.meta['external']]),
                     **additional_labels
                 }
             )
 
-            if link.external:
+            if link.meta['external']:
                 logging.debug("External Interfaces required, connecting them...")
-                self._attach_external_interfaces(link.external, link.api_object)
+                self._attach_external_interfaces(link.meta['external'], link.api_object)
 
     def undeploy(self, lab_hash: str, selected_links: Optional[Set[str]] = None) -> None:
         """Undeploy all the collision domains of the scenario specified by lab_hash.
@@ -336,20 +363,21 @@ class DockerLink(object):
         if not utils.is_admin():
             raise PrivilegeError("You must be root in order to use external collision domains.")
 
+        link_plugin = network.attrs["Driver"]
         for external_link in external_links:
             (name, vlan) = external_link.get_name_and_vlan()
             interface_index = Networking.get_or_new_interface(external_link.interface, name, vlan)
             bridge_name = self._get_bridge_name(network)
 
-            def vde_attach():
-                plugin_pid = self.docker_plugin.plugin_pid()
-                switch_path = os.path.join(self.docker_plugin.plugin_store_path(), bridge_name)
+            def vde_attach(plugin_name):
+                plugin_pid = self.docker_plugin.plugin_pid(plugin_name)
+                switch_path = os.path.join(self.docker_plugin.plugin_store_path(plugin_name), bridge_name)
                 Networking.attach_interface_ns(external_link.get_full_name(), interface_index, switch_path, plugin_pid)
 
-            def bridge_attach():
+            def bridge_attach(_):
                 Networking.attach_interface_bridge(interface_index, bridge_name)
 
-            self.docker_plugin.exec_by_version(vde_attach, bridge_attach)
+            self.docker_plugin.exec_by_version(link_plugin, vde_attach, bridge_attach, lambda _: None)
 
     def _delete_external_interfaces(self, external_links: List[str], network: docker.models.networks.Network) -> None:
         """Remove external collision domains from a Docker network.
@@ -371,14 +399,15 @@ class DockerLink(object):
         if not utils.is_admin():
             raise PrivilegeError("You must be root in order to use external collision domains.")
 
+        link_plugin = network.attrs["Driver"]
         for external_link in external_links:
-            def vde_delete():
-                plugin_pid = self.docker_plugin.plugin_pid()
-                switch_path = os.path.join(self.docker_plugin.plugin_store_path(),
+            def vde_delete(plugin_name):
+                plugin_pid = self.docker_plugin.plugin_pid(plugin_name)
+                switch_path = os.path.join(self.docker_plugin.plugin_store_path(plugin_name),
                                            self._get_bridge_name(network))
                 Networking.remove_interface_ns(external_link, switch_path, plugin_pid)
 
-            self.docker_plugin.exec_by_version(vde_delete, lambda: None)
+            self.docker_plugin.exec_by_version(link_plugin, vde_delete, lambda _: None, lambda _: None)
 
             if re.search(r"^\w+\.\d+$", external_link):
                 # Only remove VLAN interfaces, physical ones cannot be removed.
@@ -413,3 +442,22 @@ class DockerLink(object):
             return f"{Setting.get_instance().net_prefix}_{link.name}"
         elif Setting.get_instance().shared_cds == SharedCollisionDomainsOption.NOT_SHARED:
             return f"{Setting.get_instance().net_prefix}_{utils.get_current_user_name()}_{link.name}_{link.lab.hash}"
+
+    @staticmethod
+    def _link_driver_opts(link: Link) -> Dict[str, str]:
+        """Return the driver options of the Docker network representing the collision domain.
+
+        Args:
+            link (Kathara.model.Link.Link): A Kathara collision domain.
+
+        Returns:
+            Dict[str, str]: Keys are driver option names, values are their values.
+        """
+        driver_opts = {}
+        if link.meta['type'] == CollisionDomainTypesOption.BRIDGE:
+            if 'ageing_time' in link.meta:
+                driver_opts['kathara.ageing_time'] = str(link.meta['ageing_time'])
+            if 'group_fwd_mask' in link.meta:
+                driver_opts['kathara.group_fwd_mask'] = str(link.meta['group_fwd_mask'])
+
+        return driver_opts

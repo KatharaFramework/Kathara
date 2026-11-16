@@ -1,6 +1,8 @@
+import re
 from typing import Optional, Tuple
 
 MAX_INTERFACE_NAME_LENGTH = 15
+INTERFACE_NAME_REGEX = re.compile(r"^[^\s/]+$")
 
 
 class ExternalLink(object):
@@ -9,8 +11,25 @@ class ExternalLink(object):
     __slots__ = ['interface', 'vlan']
 
     def __init__(self, interface: str, vlan: Optional[int] = None) -> None:
+        """Create a new ExternalLink object.
+
+        Args:
+            interface (str): The name of the host interface.
+            vlan (Optional[int]): The VLAN ID, if any.
+
+        Raises:
+            ValueError: If the interface name is not valid or the VLAN ID is out of range.
+        """
+        if not isinstance(interface, str) or not INTERFACE_NAME_REGEX.fullmatch(interface):
+            raise ValueError(
+                f"Invalid interface name `{interface}`. It cannot be empty or contain whitespaces or slashes."
+            )
+
+        if vlan is not None and (isinstance(vlan, bool) or not isinstance(vlan, int) or not 1 <= vlan <= 4094):
+            raise ValueError(f"VLAN ID must be in range [1, 4094].")
+
         self.interface: str = interface
-        self.vlan: int = vlan
+        self.vlan: Optional[int] = vlan
 
     def get_name_and_vlan(self) -> Tuple[str, Optional[int]]:
         """Return a tuple composed by the name of the attached interface and, if present, the vlan tag.

@@ -51,3 +51,25 @@ def test_full_name(external_link_vlan):
 def test_full_name_no_vlan(external_link_no_vlan):
     full_name = external_link_no_vlan.get_full_name()
     assert full_name == "eth0"
+
+
+@pytest.mark.parametrize("vlan", [1, 100, 4094])
+def test_external_link_valid_vlan(vlan):
+    assert ExternalLink("eth0", vlan).vlan == vlan
+
+
+@pytest.mark.parametrize("vlan", [0, -1, 4095, 100984, "10", 1.5, True])
+def test_external_link_invalid_vlan(vlan):
+    with pytest.raises(ValueError, match=r"VLAN ID must be in range \[1, 4094\]"):
+        ExternalLink("eth0", vlan)
+
+
+@pytest.mark.parametrize("interface", ["eth0", "enp0s25", "br-lan", "docker0", "eth0_1", "a"])
+def test_external_link_valid_interface(interface):
+    assert ExternalLink(interface).interface == interface
+
+
+@pytest.mark.parametrize("interface", ["", " ", "eth 0", "eth/0", "eth0\n", None, 1])
+def test_external_link_invalid_interface(interface):
+    with pytest.raises(ValueError, match="Invalid interface name"):
+        ExternalLink(interface)

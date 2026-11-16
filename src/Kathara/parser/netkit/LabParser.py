@@ -6,6 +6,8 @@ import re
 from ...model.Lab import Lab, LAB_METADATA
 from ...utils import parse_cd_mac_address, RESERVED_MACHINE_NAMES
 
+LINE_REGEX = re.compile(r"^(?P<key>[A-Za-z0-9_]{1,30})\[(?P<arg>\w+)\]=([\"\']?)(?P<value>[^\"\']+)(\3)(\s+\#.*)?$")
+
 
 class LabParser(object):
     """Class responsible for parsing the lab.conf file."""
@@ -41,15 +43,19 @@ class LabParser(object):
         line_number = 1
         line = lab_mem_file.readline().decode('utf-8')
         while line:
-            matches = re.search(
-                r"^(?P<key>[a-z0-9_]{1,30})\[(?P<arg>\w+)\]=([\"\']?)(?P<value>[^\"\']+)(\3)(\s+\#.*)?$",
-                line.strip()
-            )
+            matches = LINE_REGEX.fullmatch(line.strip())
 
             if matches:
                 key = matches.group("key").strip()
                 arg = matches.group("arg").strip()
                 value = matches.group("value").replace('"', '').replace("'", '')
+
+                if not re.fullmatch(r"[a-z0-9_]{1,30}", key):
+                    raise SyntaxError(
+                        f"In {conf_name} - Line {line_number}: "
+                        f"Invalid device name `{key}`. "
+                        f"Device names must contain 1 to 30 lowercase letters, digits, or underscores."
+                    )
 
                 if key in RESERVED_MACHINE_NAMES:
                     raise ValueError(f"In {conf_name} - Line {line_number}: "
@@ -77,8 +83,7 @@ class LabParser(object):
                                         f"Device `{key}` already has a value assigned to meta `{arg}`. "
                                         f"Previous value has been overwritten with `{value}`.")
             else:
-                if not line.startswith('#') and \
-                        line.strip():
+                if not line.startswith('#') and line.strip():
                     if not any([line.startswith(f"{x}=") for x in LAB_METADATA]):
                         raise SyntaxError(f"In {conf_name} - Line {line_number}: `{line}`.")
                     else:

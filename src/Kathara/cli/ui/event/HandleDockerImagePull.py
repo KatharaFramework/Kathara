@@ -40,6 +40,9 @@ class HandleDockerImagePull(object):
         """
         if self.progress_bar:
             completed = False
+            if 'status' not in progress:
+                return
+
             if progress['status'] == 'Download complete':
                 description = f'[Download Complete {progress["id"]}]'
                 completed = True

@@ -18,7 +18,7 @@
     3. Compile Kathara into a binary.
     4. Create a `.pkg` package.
     5. Automatically remove the Docker container.
-3. Output file is located in the `Output` directory
+3. Output file is located in the `Output` directory.
 
 # Changelog
 

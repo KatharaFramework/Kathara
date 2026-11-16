@@ -13,6 +13,7 @@ APPLE_KEYCHAIN?=$(HOME)/Library/Keychains/kathara-signing.keychain-db
 APPLE_NOTARY_PROFILE?=Kathara-notary
 
 .PHONY: all_x86 allSigned_x86 all_arm64 allSigned_arm64 test deps manpages cleanall cleanman cleanbinary cleanenv
+.PHONY: tart-build-image tart-clean-image
 all: all_x86 all_arm64
 allSigned: allSigned_x86 allSigned_arm64
 all_x86: cleanall deps binary_x86_64 manpages createInstaller_x86_64 clean
@@ -21,6 +22,28 @@ all_arm64: cleanall deps binary_arm64 manpages createInstaller_arm64 clean
 allSigned_arm64: cleanall deps binary_arm64 manpages signBinaries_arm64 createInstaller_arm64 signProduct_arm64 notarize_arm64 clean
 
 default: all
+
+# Tart: runs the build inside a disposable macOS VM (see README.md)
+# Rosetta is needed (and enabled by the provisioning) to build the x86 package on the arm64 VM
+tart-build_%:
+	tart list --source local --quiet | grep -qx kathara-osx-build || $(MAKE) tart-build-image
+	tart delete kathara-build > /dev/null 2>&1 || true
+	tart clone kathara-osx-build kathara-build
+	nohup tart run --no-graphics --dir=kathara:$(CURDIR)/../.. kathara-build > /dev/null 2>&1 &
+	until tart exec kathara-build true > /dev/null 2>&1; do sleep 2; done
+	tart exec kathara-build zsh -lc "cd '/Volumes/My Shared Files/kathara/scripts/OSX' && make VERSION='$(VERSION)' all_$* $(if $(filter x86,$*),SET_ARCH='arch -x86_64')"; status=$$?; tart stop kathara-build; tart delete kathara-build; exit $$status
+
+tart-build-image: tart-clean-image
+	tart clone ghcr.io/cirruslabs/macos-tahoe-base:latest kathara-img
+	nohup tart run --no-graphics kathara-img > /dev/null 2>&1 &
+	until tart exec kathara-img true > /dev/null 2>&1; do sleep 2; done
+	tart exec -i kathara-img /bin/bash -s < Tart-OSX-Build/provision.sh
+	tart stop kathara-img
+	tart rename kathara-img kathara-osx-build
+
+tart-clean-image:
+	tart delete kathara-osx-build > /dev/null 2>&1 || true
+	tart delete kathara-img > /dev/null 2>&1 || true
 
 py_env:
 	$(SET_ARCH) python3 -m venv $(VENV_DIR)

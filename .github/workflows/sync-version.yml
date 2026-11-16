@@ -1,0 +1,54 @@
+name: sync-version
+
+# Writes CURRENT_VERSION from src/Kathara/version.py into the files that repeat it,
+# and commits the result back to the branch that received the bump.
+# Pushes made with GITHUB_TOKEN don't trigger other workflows, so this can't loop or re-run release.yml.
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/Kathara/version.py'
+  workflow_dispatch:
+
+concurrency:
+  group: sync-version-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Sync version in repo files
+    runs-on: [self-hosted, x64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+
+      - id: get_version
+        uses: ./.github/actions/get-version
+
+      - name: Update files
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
+        run: |
+          set -euo pipefail
+          sed -i -e "s|^version = \".*\"|version = \"$VERSION\"|" pyproject.toml
+          sed -i -e "s|^version = .*|version = $VERSION|" setup.cfg
+          sed -i -e "s|version='[^']*'|version='$VERSION'|" setup.py
+          sed -i -e "s#refs/tags/[^']*\.tar\.gz#refs/tags/$VERSION.tar.gz#" setup.py
+          sed -i -E "s/^\| [0-9]+\.[0-9]+\.[0-9]+ +\|/| $VERSION   |/" SECURITY.md
+          sed -i -E "s/(placeholder: \")[0-9]+\.[0-9]+\.[0-9]+\"/\1$VERSION\"/" .github/ISSUE_TEMPLATE/bug_report.yml
+
+      - name: Commit and push
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "Files already at $VERSION, nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Bump version to $VERSION in packaging metadata and docs"
+          git push origin "HEAD:$GITHUB_REF_NAME"
