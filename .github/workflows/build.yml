@@ -135,8 +135,6 @@ jobs:
           cd scripts/Linux-Rpm
           make docker-build_${{ matrix.release }} VERSION="${{ inputs.version }}"
       # Signing — the packages are signed here, on GitHub, before release.yml computes SHA256SUMS.
-      # The GitHub release is therefore the single source of truth:
-      # the GitLab pipeline only verifies, lays out and indexes what it downloads, and never has to modify a package (which would change its checksum).
       #
       # Runs only on the release path (sign-rpm: true), so pull request builds never touch the key.
       # Signs a copy outside scripts/Linux-Rpm/Output: the cache keeps unsigned packages only,
