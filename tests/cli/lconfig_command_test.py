@@ -270,7 +270,7 @@ def test_run_system_exit_error():
         command.run('.', ['-n', 'pc1', '--rm', 'A', '--add', 'A'])
 
 
-@mock.patch("src.Kathara.parser.netkit.LinkParser.LinkParser.parse")
+@mock.patch("src.Kathara.parser.netkit.LinksParser.LinksParser.parse")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
@@ -294,7 +294,7 @@ def test_run_assigns_link_types_before_updating_from_api(mock_parse_lab, mock_do
     )
 
 
-@mock.patch("src.Kathara.parser.netkit.LinkParser.LinkParser.parse")
+@mock.patch("src.Kathara.parser.netkit.LinksParser.LinksParser.parse")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
@@ -310,7 +310,7 @@ def test_run_without_lab_link(mock_parse_lab, mock_docker_manager, mock_manager_
     mock_docker_manager.connect_machine_to_link.assert_called_once()
 
 
-@mock.patch("src.Kathara.parser.netkit.LinkParser.LinkParser.parse")
+@mock.patch("src.Kathara.parser.netkit.LinksParser.LinksParser.parse")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
@@ -327,7 +327,7 @@ def test_run_lab_link_unknown_collision_domain(mock_parse_lab, mock_docker_manag
     assert not mock_docker_manager.connect_machine_to_link.called
 
 
-@mock.patch("src.Kathara.parser.netkit.LinkParser.LinkParser.parse")
+@mock.patch("src.Kathara.parser.netkit.LinksParser.LinksParser.parse")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
 def test_run_add_interface_p2p_link(mock_parse_lab, mock_manager_get_instance, mock_parse_link, docker_manager,
@@ -346,7 +346,7 @@ def test_run_add_interface_p2p_link(mock_parse_lab, mock_manager_get_instance, m
     assert len(p2p_lab.get_machine('pc3').interfaces) == 0
 
 
-@mock.patch("src.Kathara.parser.netkit.LinkParser.LinkParser.parse")
+@mock.patch("src.Kathara.parser.netkit.LinksParser.LinksParser.parse")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
 def test_run_remove_interface_p2p_link(mock_parse_lab, mock_manager_get_instance, mock_parse_link, docker_manager,
@@ -364,7 +364,7 @@ def test_run_remove_interface_p2p_link(mock_parse_lab, mock_manager_get_instance
     assert set(p2p_lab.get_link('A').machines.keys()) == {'pc1', 'pc2'}
 
 
-@mock.patch("src.Kathara.parser.netkit.LinkParser.LinkParser.parse")
+@mock.patch("src.Kathara.parser.netkit.LinksParser.LinksParser.parse")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")
 def test_run_add_interface_not_p2p_link_with_lab_link(mock_parse_lab, mock_manager_get_instance, mock_parse_link,
@@ -383,7 +383,7 @@ def test_run_add_interface_not_p2p_link_with_lab_link(mock_parse_lab, mock_manag
     assert 'pc3' in p2p_lab.get_link('B').machines
 
 
-@mock.patch("src.Kathara.parser.netkit.LinkParser.LinkParser.parse")
+@mock.patch("src.Kathara.parser.netkit.LinksParser.LinksParser.parse")
 @mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance")
 @mock.patch("src.Kathara.manager.docker.DockerManager.DockerManager")
 @mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse")

@@ -1,12 +1,12 @@
 m4_changequote()
-kathara-lab.link(5) -- Network scenario collision domains file
+kathara-lab.links(5) -- Network scenario collision domains file
 =============================================
 
 ## DESCRIPTION
 
-The `lab.link` file specifies additional parameters of the collision domains of a network scenario, such as their type, the external networks they are connected to and other specific configurations.
+The `lab.links` file specifies additional parameters of the collision domains of a network scenario, such as their type, the external networks they are connected to and other specific configurations.
 
-The file is optional. Each collision domain referenced in `lab.link` must be used by at least one device in `kathara-lab.conf`(5).
+The file is optional. Each collision domain referenced in `lab.links` must be used by at least one device in `kathara-lab.conf`(5).
 
 **NOTE: On Megalos (Kubernetes), collision domain configurations are ignored and a warning is shown.**
 
@@ -68,15 +68,15 @@ A collision domain of type `p2p` must satisfy the following constraints:
 
 ## RELATION WITH LAB.EXT
 
-`lab.link` replaces `kathara-lab.ext`(5), which is deprecated and will be removed in future versions.
+`lab.links` replaces `kathara-lab.ext`(5), which is deprecated and will be removed in future versions.
 
-Both files can be used in the same network scenario, as long as each collision domain is connected to external networks in only one of them. If a collision domain has external connections in both `lab.link` and `lab.ext`, the network scenario does not start.
+Both files can be used in the same network scenario, as long as each collision domain is connected to external networks in only one of them. If a collision domain has external connections in both `lab.links` and `lab.ext`, the network scenario does not start.
 
 An entry of `lab.ext` such as:
 
 	A enp9s0.20
 
-is equivalent to the following entry of `lab.link`:
+is equivalent to the following entry of `lab.links`:
 
 	A[external]="enp9s0.20"
 
@@ -98,7 +98,7 @@ is equivalent to the following entry of `lab.link`:
 		F[ageing_time]=30000
 		F[group_fwd_mask]="0x4000"
 
-Example of a `lab.link`(5) file.
+Example of a `lab.links`(5) file.
 
 m4_include(footer.txt)
 

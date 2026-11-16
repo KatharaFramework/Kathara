@@ -12,7 +12,7 @@ from ...parser.netkit.DepParser import DepParser
 from ...parser.netkit.ExtParser import ExtParser
 from ...parser.netkit.FolderParser import FolderParser
 from ...parser.netkit.LabParser import LabParser
-from ...parser.netkit.LinkParser import LinkParser
+from ...parser.netkit.LinksParser import LinksParser
 from ...parser.netkit.OptionParser import OptionParser
 from ...setting.Setting import Setting
 from ...strings import strings, wiki_description
@@ -189,10 +189,10 @@ class LstartCommand(Command):
 
         link_metas = {}
         try:
-            lab_link_exists = True
-            link_metas = LinkParser.parse(lab_path)
+            lab_links_exists = True
+            link_metas = LinksParser.parse(lab_path)
         except FileNotFoundError:
-            lab_link_exists = False
+            lab_links_exists = False
 
         if link_metas:
             # Compatibility patch for now since we still have the lab.ext
@@ -208,19 +208,19 @@ class LstartCommand(Command):
             ext_external_links = ExtParser.parse(lab_path) or {}
 
             logging.warning(
-                "`lab.ext` is deprecated and will be removed in future versions. Migrate to `lab.link`."
+                "`lab.ext` is deprecated and will be removed in future versions. Migrate to `lab.links`."
             )
         except FileNotFoundError:
             lab_ext_exists = False
 
         # Compatibility patch for now since we still have the lab.ext
         link_external_links = {x: v['external'] for x, v in link_metas.items() if 'external' in v}
-        # A collision domain can be configured in lab.link or in lab.ext, not both.
+        # A collision domain can be configured in lab.links or in lab.ext, not both.
         duplicated = link_external_links.keys() & ext_external_links.keys()
         if duplicated:
             raise ValueError(
                 f"Collision domains {', '.join(map(lambda x: f"`{x}`", duplicated))} "
-                f"are defined in both `lab.link` and `lab.ext`."
+                f"are defined in both `lab.links` and `lab.ext`."
             )
 
         external_links = {**ext_external_links, **link_external_links}
@@ -239,8 +239,8 @@ class LstartCommand(Command):
                 self.console.print("[green]\u2713 [bold]lab.dep[/bold] file is correct.")
             if lab_ext_exists:
                 self.console.print("[green]\u2713 [bold]lab.ext[/bold] file is correct.")
-            if lab_link_exists:
-                self.console.print("[green]\u2713 [bold]lab.link[/bold] file is correct.")
+            if lab_links_exists:
+                self.console.print("[green]\u2713 [bold]lab.links[/bold] file is correct.")
 
             return 0
 

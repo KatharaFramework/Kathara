@@ -12,8 +12,8 @@ A generic network scenario directory `lab-path` should have the following struct
 * `lab-path/lab.dep`:
 	See `kathara-lab.dep`(5)
 
-* `lab-path/lab.link`:
-	See `kathara-lab.link`(5)
+* `lab-path/lab.links`:
+	See `kathara-lab.links`(5)
 
 * `lab-path/lab.ext`:
 	Deprecated, see `kathara-lab.ext`(5)

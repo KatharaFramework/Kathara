@@ -36,12 +36,12 @@ def mock_setting(mock_setting_class):
 
 @pytest.fixture()
 def lstart_env(test_lab, mock_setting):
-    """Patches everything lstart needs; lab.link and lab.ext are absent unless a test sets their return values."""
+    """Patches everything lstart needs; lab.links and lab.ext are absent unless a test sets their return values."""
     with mock.patch("src.Kathara.manager.Kathara.Kathara.get_instance") as mock_manager_get_instance, \
             mock.patch("src.Kathara.parser.netkit.DepParser.DepParser.parse", return_value=None), \
             mock.patch("src.Kathara.parser.netkit.LabParser.LabParser.parse", return_value=test_lab), \
             mock.patch("src.Kathara.setting.Setting.Setting.get_instance", return_value=mock_setting), \
-            mock.patch("src.Kathara.parser.netkit.LinkParser.LinkParser.parse",
+            mock.patch("src.Kathara.parser.netkit.LinksParser.LinksParser.parse",
                        side_effect=FileNotFoundError) as mock_parse_link, \
             mock.patch("src.Kathara.parser.netkit.ExtParser.ExtParser.parse",
                        side_effect=FileNotFoundError) as mock_parse_ext, \
@@ -802,7 +802,7 @@ def test_run_same_collision_domain_in_link_and_ext(lstart_env):
         LstartCommand().run('.', [])
 
     assert "`A`" in str(e.value) and "`B`" in str(e.value)
-    assert "`lab.link` and `lab.ext`" in str(e.value)
+    assert "`lab.links` and `lab.ext`" in str(e.value)
     assert all(not link.meta['external'] for link in lstart_env.lab.links.values())
     assert not lstart_env.manager.deploy_lab.called
 
@@ -859,7 +859,7 @@ def test_run_dry_mode_with_link_and_ext(lstart_env, capsys):
     assert LstartCommand().run('.', ['--dry-mode']) == 0
 
     out = capsys.readouterr().out
-    assert "lab.link" in out
+    assert "lab.links" in out
     assert "lab.ext" in out
     assert not lstart_env.manager.deploy_lab.called
 

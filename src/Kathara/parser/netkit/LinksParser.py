@@ -14,40 +14,40 @@ LINE_REGEX = re.compile(r"^(?P<name>\w+)\[(?P<arg>\w+)\]=([\"\']?)(?P<value>[^\"
 EXTERNAL_IFACE_REGEX = re.compile(r"^(?P<interface>\w+)(?P<vlan>\.\d+)?$")
 
 
-class LinkParser(object):
-    """Class responsible for parsing lab.link file."""
+class LinksParser(object):
+    """Class responsible for parsing lab.links file."""
 
     @staticmethod
     def parse(path: str) -> Dict[str, Any]:
-        """Parse the lab.link file and return the meta properties of the collision domains.
+        """Parse the lab.links file and return the meta properties of the collision domains.
 
         Args:
-            path (str): The path to the directory containing the lab.link file.
+            path (str): The path to the directory containing the lab.links file.
 
         Returns:
             Dict[str, Any]: Keys are collision domain names, values are dicts of meta properties.
 
         Raises:
-            FileNotFoundError: If the lab.link file does not exist.
-            IOError: If the lab.link file cannot be opened.
-            SyntaxError: If the lab.link file is malformed, or contains an invalid argument or type.
+            FileNotFoundError: If the lab.links file does not exist.
+            IOError: If the lab.links file cannot be opened.
+            SyntaxError: If the lab.links file is malformed, or contains an invalid argument or type.
             ValueError: If an external interface name or VLAN ID is not valid.
         """
-        lab_link_path = os.path.join(path, 'lab.link')
+        lab_links_path = os.path.join(path, 'lab.links')
 
-        if not os.path.exists(lab_link_path):
-            raise FileNotFoundError(f"lab.link file does not exist.")
+        if not os.path.exists(lab_links_path):
+            raise FileNotFoundError(f"lab.links file does not exist.")
 
-        if os.stat(lab_link_path).st_size == 0:
-            logging.warning("lab.link file is empty. Ignoring...")
+        if os.stat(lab_links_path).st_size == 0:
+            logging.warning("lab.links file is empty. Ignoring...")
             return {}
 
-        # Reads lab.link in memory so it is faster.
+        # Reads lab.links in memory so it is faster.
         try:
-            with open(lab_link_path, 'r') as link_file:
+            with open(lab_links_path, 'r') as link_file:
                 link_mem_file = mmap.mmap(link_file.fileno(), 0, access=mmap.ACCESS_READ)
         except Exception:
-            raise IOError("Cannot open lab.link file.")
+            raise IOError("Cannot open lab.links file.")
 
         link_metas = {}
 
@@ -63,7 +63,7 @@ class LinkParser(object):
 
                 if arg not in SUPPORTED_ARGS:
                     raise SyntaxError(
-                        f"In lab.link - Line {line_number}: "
+                        f"In lab.links - Line {line_number}: "
                         f"Invalid argument `{arg}`. "
                         f"Supported arguments are {', '.join(sorted(SUPPORTED_ARGS))}."
                     )
@@ -72,14 +72,14 @@ class LinkParser(object):
                     try:
                         link_type = CollisionDomainTypesOption.parse(value)
                     except ValueError as e:
-                        raise SyntaxError(f"In lab.link - Line {line_number}: {e}")
+                        raise SyntaxError(f"In lab.links - Line {line_number}: {e}")
 
                     if name not in link_metas:
                         link_metas[name] = {}
 
                     if 'type' in link_metas[name] and link_metas[name]['type'] != link_type:
                         logging.warning(
-                            f"In lab.link - Line {line_number}: "
+                            f"In lab.links - Line {line_number}: "
                             f"Collision domain `{name}` already has a type assigned. "
                             f"Previous value has been overwritten with `{value}`."
                         )
@@ -94,7 +94,7 @@ class LinkParser(object):
                         try:
                             external_link = ExternalLink(interface, vlan)
                         except ValueError as e:
-                            raise ValueError(f"In file lab.link, line {line_number}: {e}")
+                            raise ValueError(f"In file lab.links, line {line_number}: {e}")
 
                         if name not in link_metas:
                             link_metas[name] = {}
@@ -103,7 +103,7 @@ class LinkParser(object):
 
                         link_metas[name]['external'].append(external_link)
                     else:
-                        raise SyntaxError(f"In file lab.link - Line {line_number}.")
+                        raise SyntaxError(f"In file lab.links - Line {line_number}.")
                 else:
                     # Either ageing_time or group_fwd_mask, validated when assigned to the collision domain
                     if name not in link_metas:
@@ -111,14 +111,14 @@ class LinkParser(object):
 
                     if arg in link_metas[name] and link_metas[name][arg] != value:
                         logging.warning(
-                            f"In lab.link - Line {line_number}: "
+                            f"In lab.links - Line {line_number}: "
                             f"Collision domain `{name}` already has `{arg}` assigned. "
                             f"Previous value has been overwritten with `{value}`."
                         )
 
                     link_metas[name][arg] = value
             elif not line.startswith('#') and line.strip():
-                raise SyntaxError(f"In file lab.link - Line {line_number}.")
+                raise SyntaxError(f"In file lab.links - Line {line_number}.")
 
             line_number += 1
             line = link_mem_file.readline().decode('utf-8')
