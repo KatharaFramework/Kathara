@@ -134,19 +134,14 @@ jobs:
         run: |
           cd scripts/Linux-Rpm
           make docker-build_${{ matrix.release }} VERSION="${{ inputs.version }}"
-      # Signing — the packages are signed HERE, on GitHub, before release.yml computes SHA256SUMS.
+      # Signing — the packages are signed here, on GitHub, before release.yml computes SHA256SUMS.
       # The GitHub release is therefore the single source of truth:
       # the GitLab pipeline only verifies, lays out and indexes what it downloads, and never has to modify a package (which would change its checksum).
       #
       # Runs only on the release path (sign-rpm: true), so pull request builds never touch the key.
-      # Signs a COPY outside scripts/Linux-Rpm/Output: the cache keeps unsigned packages only,
+      # Signs a copy outside scripts/Linux-Rpm/Output: the cache keeps unsigned packages only,
       # so no later pull request build can restore and upload a signed one.
       # On this path only the signed copy is uploaded: no unsigned package can reach the release.
-      #
-      # Only the Kathara packages pass through here. The repository configuration
-      # packages (kathara-archive-keyring, kathara-release) are built and signed by
-      # the repository project itself, from its own conf/repo.conf: they carry that
-      # site's URL, keys and layout, none of which this repository knows about.
       - name: Sign and verify
         if: ${{ inputs.sign-rpm }}
         shell: bash
